@@ -124,16 +124,15 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
     # read results from ppc for these buses
-    V012 = np.array(np.zeros((3, n_res_eg)))
+    V012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
     V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.array(np.zeros((3, n_res_eg)))
-    S012[:, eg_idx_ppc] = np.array([-(ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
+    S012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
+    S012[:, eg_idx_ppc] = np.array([(ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
 
     Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=eg_idx_ppc)
-    Sabc = Sabc * 1e3
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))

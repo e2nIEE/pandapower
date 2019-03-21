@@ -19,7 +19,7 @@ try:
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
-
+from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.makeYbus import makeYbus
@@ -155,7 +155,7 @@ def load_mapping(net,ppci1):
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="auto",
               tolerance_mva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-              numba=True, recycle=None, check_connectivity=True, r_switch=0.0,
+              numba=True, recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0,v_debug =False, **kwargs):
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
@@ -191,7 +191,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode,r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode,switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle, voltage_depend_loads=False, delta=delta_q)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,v_debug=v_debug)
@@ -326,6 +326,24 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     ppci0["internal"]["Yt"] = Y0_t
     ppci1["internal"]["Yt"] = Y1_t
     ppci2["internal"]["Yt"] = Y2_t
+    
+    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new)
+    I012_res = phase_to_sequence(I_abc_pu)
+    S012_res = S_from_VI_elementwise(V012_new,I012_res) * ppci1["baseMVA"]
+    
+    eg_is_mask = net["_is_elements"]['ext_grid']
+    ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
+    eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
+    eg_idx_ppc = ext_grid_lookup[eg_is_idx]
+    """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
+    eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
+    
+    ppci0["gen"][eg_idx_ppc, PG] = S012_res[0,eg_bus_idx_ppc].real
+    ppci1["gen"][eg_idx_ppc, PG] = S012_res[1,eg_bus_idx_ppc].real
+    ppci2["gen"][eg_idx_ppc, PG] = S012_res[2,eg_bus_idx_ppc].real
+    ppci0["gen"][eg_idx_ppc, QG] = S012_res[0,eg_bus_idx_ppc].imag
+    ppci1["gen"][eg_idx_ppc, QG] = S012_res[1,eg_bus_idx_ppc].imag
+    ppci2["gen"][eg_idx_ppc, QG] = S012_res[2,eg_bus_idx_ppc].imag
     
     ppc0 = net["_ppc0"]
     ppc1 = net["_ppc1"]
