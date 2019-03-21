@@ -254,127 +254,6 @@ class opf_model(object):
             self.lin["order"].append(name)
 
 
-    def add_costs(self, name, cp, varsets):
-        """Adds a set of user costs to the model.
-
-        Adds a named block of user-defined costs to the model. Each set is
-        defined by the C{cp} dict described below. All user-defined sets of
-        costs are combined together into a single set of cost parameters in
-        a single C{cp} dict by L{build_cost_params}. This full aggregate set of
-        cost parameters can be retrieved from the model by L{get_cost_params}.
-
-        Let C{x} refer to the vector formed by combining the specified
-        C{varsets}, and C{f_u(x, cp)} be the cost at C{x} corresponding to the
-        cost parameters contained in C{cp}, where C{cp} is a dict with the
-        following fields::
-            N      - nw x nx sparse matrix
-            Cw     - nw x 1 vector
-            H      - nw x nw sparse matrix (optional, all zeros by default)
-            dd, mm - nw x 1 vectors (optional, all ones by default)
-            rh, kk - nw x 1 vectors (optional, all zeros by default)
-
-        These parameters are used as follows to compute C{f_u(x, CP)}::
-
-            R  = N*x - rh
-
-                    /  kk(i),  R(i) < -kk(i)
-            K(i) = <   0,     -kk(i) <= R(i) <= kk(i)
-                    \ -kk(i),  R(i) > kk(i)
-
-            RR = R + K
-
-            U(i) =  /  0, -kk(i) <= R(i) <= kk(i)
-                    \  1, otherwise
-
-            DDL(i) = /  1, dd(i) = 1
-                     \  0, otherwise
-
-            DDQ(i) = /  1, dd(i) = 2
-                     \  0, otherwise
-
-            Dl = diag(mm) * diag(U) * diag(DDL)
-            Dq = diag(mm) * diag(U) * diag(DDQ)
-
-            w = (Dl + Dq * diag(RR)) * RR
-
-            f_u(x, CP) = 1/2 * w'*H*w + Cw'*w
-        """
-        ## prevent duplicate named cost sets
-        if name in self.cost["idx"]["N"]:
-            stderr.write('opf_model.add_costs: cost set named \'%s\' already exists\n' % name)
-
-        if varsets is None:
-            varsets = []
-
-        if len(varsets) == 0:
-            varsets = self.var["order"]
-
-        nw, nx = cp["N"].shape
-
-        ## check sizes
-        nv = 0
-        for k in range(len(varsets)):
-            nv = nv + self.var["idx"]["N"][varsets[k]]
-
-        if nx != nv:
-            if nw == 0:
-                cp["N"] = sparse(nw, nx)
-            else:
-                stderr.write('opf_model.add_costs: number of columns in N (%d x %d) does not match\nnumber of variables (%d)\n' % (nw, nx, nv))
-
-        if cp["Cw"].shape[0] != nw:
-            stderr.write('opf_model.add_costs: number of rows of Cw (%d x %d) and N (%d x %d) must match\n' % (cp["Cw"].shape[0], nw, nx))
-
-        if 'H' in cp:
-            if (cp["H"].shape[0] != nw) | (cp["H"].shape[1] != nw):
-                stderr.write('opf_model.add_costs: both dimensions of H (%d x %d) must match the number of rows in N (%d x %d)\n' % (cp["H"].shape, nw, nx))
-
-        if 'dd' in cp:
-            if cp["dd"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of dd (%d x %d) and N (%d x %d) must match\n' % (cp["dd"].shape, nw, nx))
-
-        if 'rh' in cp:
-            if cp["rh"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of rh (%d x %d) and N (%d x %d) must match\n' % (cp["rh"].shape, nw, nx))
-
-        if 'kk' in cp:
-            if cp["kk"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of kk (%d x %d) and N (%d x %d) must match\n' % (cp["kk"].shape, nw, nx))
-
-        if 'mm' in cp:
-            if cp["mm"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of mm (%d x %d) and N (%d x %d) must match\n' % (cp["mm"].shape, nw, nx))
-
-        ## add info about this user cost set
-        self.cost["idx"]["i1"][name]  = self.cost["N"] #+ 1     ## starting index
-        self.cost["idx"]["iN"][name]  = self.cost["N"] + nw    ## ing index
-        self.cost["idx"]["N"][name]   = nw                ## number of costs (nw)
-        self.cost["data"]["N"][name]  = cp["N"]
-        self.cost["data"]["Cw"][name] = cp["Cw"]
-        self.cost["data"]["vs"][name] = varsets
-        if 'H' in cp:
-            self.cost["data"]["H"][name]  = cp["H"]
-
-        if 'dd' in cp:
-            self.cost["data"]["dd"]["name"] = cp["dd"]
-
-        if 'rh' in cp:
-            self.cost["data"]["rh"]["name"] = cp["rh"]
-
-        if 'kk' in cp:
-            self.cost["data"]["kk"]["name"] = cp["kk"]
-
-        if 'mm' in cp:
-            self.cost["data"]["mm"]["name"] = cp["mm"]
-
-        ## update number of vars and var sets
-        self.cost["N"]  = self.cost["idx"]["iN"][name]
-        self.cost["NS"] = self.cost["NS"] + 1
-
-        ## put name in ordered list of var sets
-        self.cost["order"].append(name)
-
-
     def add_vars(self, name, N, v0=None, vl=None, vu=None):
         """ Adds a set of variables to the model.
 
@@ -446,123 +325,13 @@ class opf_model(object):
         kk = zeros(nw)                       ## default => no dead zone
         mm = ones(nw)                        ## default => no scaling
 
-        ## fill in each piece
-        for k in range(self.cost["NS"]):
-            name = self.cost["order"][k]
-            Nk = self.cost["data"]["N"][name]          ## N for kth cost set
-            i1 = self.cost["idx"]["i1"][name]          ## starting row index
-            iN = self.cost["idx"]["iN"][name]          ## ing row index
-            if self.cost["idx"]["N"][name]:            ## non-zero number of rows to add
-                vsl = self.cost["data"]["vs"][name]    ## var set list
-                kN = 0                                 ## initialize last col of Nk used
-                for v in vsl:
-                    j1 = self.var["idx"]["i1"][v]     ## starting column in N
-                    jN = self.var["idx"]["iN"][v]     ## ing column in N
-                    k1 = kN                           ## starting column in Nk
-                    kN = kN + self.var["idx"]["N"][v] ## ing column in Nk
-                    N[i1:iN, j1:jN] = Nk[:, k1:kN].todense()
-
-                Cw[i1:iN] = self.cost["data"]["Cw"][name]
-                if name in self.cost["data"]["H"]:
-                    H[i1:iN, i1:iN] = self.cost["data"]["H"][name].todense()
-
-                if name in self.cost["data"]["dd"]:
-                    dd[i1:iN] = self.cost["data"]["dd"][name]
-
-                if name in self.cost["data"]["rh"]:
-                    rh[i1:iN] = self.cost["data"]["rh"][name]
-
-                if name in self.cost["data"]["kk"]:
-                    kk[i1:iN] = self.cost["data"]["kk"][name]
-
-                if name in self.cost["data"]["mm"]:
-                    mm[i1:iN] = self.cost["data"]["mm"][name]
-
-        if nw:
-            N = sparse(N)
-            H = sparse(H)
 
         ## save in object
         self.cost["params"] = {
             'N': N, 'Cw': Cw, 'H': H, 'dd': dd, 'rh': rh, 'kk': kk, 'mm': mm }
 
 
-    def compute_cost(self, x, name=None):
-        """ Computes a user-defined cost.
-
-        Computes the value of a user defined cost, either for all user
-        defined costs or for a named set of costs. Requires calling
-        L{build_cost_params} first to build the full set of parameters.
-
-        Let C{x} be the full set of optimization variables and C{f_u(x, cp)} be
-        the user-defined cost at C{x}, corresponding to the set of cost
-        parameters in the C{cp} dict returned by L{get_cost_params}, where
-        C{cp} is a dict with the following fields::
-            N      - nw x nx sparse matrix
-            Cw     - nw x 1 vector
-            H      - nw x nw sparse matrix (optional, all zeros by default)
-            dd, mm - nw x 1 vectors (optional, all ones by default)
-            rh, kk - nw x 1 vectors (optional, all zeros by default)
-
-        These parameters are used as follows to compute C{f_u(x, cp)}::
-
-            R  = N*x - rh
-
-                    /  kk(i),  R(i) < -kk(i)
-            K(i) = <   0,     -kk(i) <= R(i) <= kk(i)
-                    \ -kk(i),  R(i) > kk(i)
-
-            RR = R + K
-
-            U(i) =  /  0, -kk(i) <= R(i) <= kk(i)
-                    \  1, otherwise
-
-            DDL(i) = /  1, dd(i) = 1
-                     \  0, otherwise
-
-            DDQ(i) = /  1, dd(i) = 2
-                     \  0, otherwise
-
-            Dl = diag(mm) * diag(U) * diag(DDL)
-            Dq = diag(mm) * diag(U) * diag(DDQ)
-
-            w = (Dl + Dq * diag(RR)) * RR
-
-            F_U(X, CP) = 1/2 * w'*H*w + Cw'*w
-        """
-        if name is None:
-            cp = self.get_cost_params()
-        else:
-            cp = self.get_cost_params(name)
-
-        N, Cw, H, dd, rh, kk, mm = \
-            cp["N"], cp["Cw"], cp["H"], cp["dd"], cp["rh"], cp["kk"], cp["mm"]
-        nw = N.shape[0]
-        r = N * x - rh                 ## Nx - rhat
-        iLT = find(r < -kk)            ## below dead zone
-        iEQ = find((r == 0) & (kk == 0))   ## dead zone doesn't exist
-        iGT = find(r > kk)             ## above dead zone
-        iND = r_[iLT, iEQ, iGT]        ## rows that are Not in the Dead region
-        iL = find(dd == 1)             ## rows using linear function
-        iQ = find(dd == 2)             ## rows using quadratic function
-        LL = sparse((ones(len(iL)), (iL, iL)), (nw, nw))
-        QQ = sparse((ones(len(iQ)), (iQ, iQ)), (nw, nw))
-        kbar = sparse((r_[   ones(len(iLT)),
-                             zeros(len(iEQ)),
-                             -ones(len(iGT))], (iND, iND)), (nw, nw)) * kk
-        rr = r + kbar                  ## apply non-dead zone shift
-        M = sparse((mm[iND], (iND, iND)), (nw, nw))  ## dead zone or scale
-        diagrr = sparse((rr, (arange(nw), arange(nw))), (nw, nw))
-
-        ## linear rows multiplied by rr(i), quadratic rows by rr(i)^2
-        w = M * (LL + QQ * diagrr) * rr
-
-        f = dot(w * H, w) / 2 + dot(Cw, w)
-
-        return f
-
-
-    def get_cost_params(self, name=None):
+    def get_cost_params(self):
         """Returns the cost parameter struct for user-defined costs.
 
         Requires calling L{build_cost_params} first to build the full set of
@@ -583,19 +352,6 @@ class opf_model(object):
             stderr.write('opf_model.get_cost_params: must call build_cost_params first\n')
 
         cp = self.cost["params"]
-
-        if name is not None:
-            if self.getN('cost', name):
-                idx = arange(self.cost["idx"]["i1"][name], self.cost["idx"]["iN"][name])
-                nwa = self.cost["idx"]["i1"][name]
-                nwb = self.cost["idx"]["iN"][name]
-                cp["N"]  = cp["N"][idx, :]
-                cp["Cw"] = cp["Cw"][idx]
-                cp["H"]  = cp["H"][nwa:nwb, nwa:nwb]
-                cp["dd"] = cp["dd"][idx]
-                cp["rh"] = cp["rh"][idx]
-                cp["kk"] = cp["kk"][idx]
-                cp["mm"] = cp["mm"][idx]
 
         return cp
 
@@ -673,7 +429,7 @@ class opf_model(object):
         return N
 
 
-    def getv(self, name=None):
+    def getv(self):
         """Returns initial value, lower bound and upper bound for opt variables.
 
         Returns the initial value, lower bound and upper bound for the full
@@ -683,22 +439,12 @@ class opf_model(object):
             x, xmin, xmax = getv(om)
             Pg, Pmin, Pmax = getv(om, 'Pg')
         """
-        if name is None:
-            v0 = array([]); vl = array([]); vu = array([])
-            for k in range(self.var["NS"]):
-                name = self.var["order"][k]
-                v0 = r_[ v0, self.var["data"]["v0"][name] ]
-                vl = r_[ vl, self.var["data"]["vl"][name] ]
-                vu = r_[ vu, self.var["data"]["vu"][name] ]
-        else:
-            if name in self.var["idx"]["N"]:
-                v0 = self.var["data"]["v0"][name]
-                vl = self.var["data"]["vl"][name]
-                vu = self.var["data"]["vu"][name]
-            else:
-                v0 = array([])
-                vl = array([])
-                vu = array([])
+        v0 = array([]); vl = array([]); vu = array([])
+        for k in range(self.var["NS"]):
+            name = self.var["order"][k]
+            v0 = r_[ v0, self.var["data"]["v0"][name] ]
+            vl = r_[ vl, self.var["data"]["vl"][name] ]
+            vu = r_[ vu, self.var["data"]["vu"][name] ]
 
         return v0, vl, vu
 
