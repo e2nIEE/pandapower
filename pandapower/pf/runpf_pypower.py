@@ -13,7 +13,7 @@
 """
 
 from time import time
-
+from packaging import version
 from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d
 
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
@@ -99,11 +99,9 @@ def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
     if numba:
         try:
-            from numba import _version as nb_version
+            from numba._version import version_version as nb_version
             # get numba Version (in order to use it it must be > 0.25)
-            nb_version = float(nb_version.version_version[:4])
-
-            if nb_version < 0.25:
+            if version.parse(nb_version) < version.parse("0.25"):
                 logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
                 numba = False
 

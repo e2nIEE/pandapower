@@ -6,6 +6,7 @@
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, zeros
+from packaging import version
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
@@ -331,7 +332,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": float(__version__[:3]),
+        "version": __version__,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -1756,10 +1757,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    try:
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except TypeError:  # legacy for pandas <0.21
+    if version.parse(pd.__version__) < version.parse("0.21"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+    else:
+        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:

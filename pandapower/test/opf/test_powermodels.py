@@ -13,7 +13,6 @@ import numpy as np
 
 try:
     from julia import Main
-
     julia_installed = True
 except ImportError:
     julia_installed = False

@@ -326,7 +326,7 @@ def _build_bus_ppc(net, ppc):
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
-    element_bus_idx = bus_lookup[net[element][bus_column]]
+    element_bus_idx = bus_lookup[net[element][bus_column].values]
     aux_idx = bus_lookup[aux[element]]
     ppc["bus"][aux_idx, BASE_KV] = ppc["bus"][element_bus_idx, BASE_KV]
     if net._options["mode"] == "opf":

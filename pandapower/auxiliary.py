@@ -32,6 +32,7 @@ import numpy as np
 import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
+from packaging import version
 import six
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
@@ -40,7 +41,7 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit
-    from numba import _version as numba_version
+    from numba._version import version_version as numba_version
 except ImportError:
     from .pf.no_numba import jit
 
@@ -573,8 +574,7 @@ def _check_if_numba_is_installed(numba):
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
-        nb_version = float(numba_version.version_version[:4])
-        if nb_version < 0.25:
+        if version.parse(numba_version) < version.parse("0.2.5"):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False
