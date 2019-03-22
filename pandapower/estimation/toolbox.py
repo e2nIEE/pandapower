@@ -10,22 +10,44 @@ import pandapower as pp
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp
 
-def _get_bus_ppc_mapping(net):
-    try:
-        rundcpp(net)
-    except:
-        pass
+#def _get_bus_ppc_mapping(net):
+#    try:
+#        rundcpp(net)
+#    except:
+#        pass
+#
+#    bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
+#                    set(net.shunt.bus)).union(set(net.gen.bus)).union(
+#                    set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
+#                    set(net.xward.bus))
+#
+#    bus_ppc = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppc"])
+#    bus_ppc['bus_with_elements'] = bus_ppc.index.isin(bus_with_elements).astype(int)   
+#    ppc_bus_with_elements = bus_ppc.groupby('bus_ppc')['bus_with_elements'].sum()
+#    bus_ppc.loc[:, 'elements_in_cluster'] = ppc_bus_with_elements[bus_ppc['bus_ppc'].values].values 
+#    return bus_ppc
 
+def _get_bus_ppc_mapping(net, bus_to_be_fused):
     bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
                     set(net.shunt.bus)).union(set(net.gen.bus)).union(
                     set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
                     set(net.xward.bus))
+#        bus_with_pq_measurement = set(net.measurement[(net.measurement.measurement_type=='p')&(net.measurement.element_type=='bus')].element.values)
+#        bus_with_elements = bus_with_elements.union(bus_with_pq_measurement)
+    
+    bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
+    bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
+    existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
+    bus_ppci['vn_kv'] = net.bus.loc[existed_bus.index, 'vn_kv']
+    ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
+    bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values 
+    bus_ppci['bus_to_be_fused'] = False
+    if bus_to_be_fused is not None:
+        bus_ppci.loc[bus_to_be_fused, 'bus_to_be_fused'] = True
+        bus_cluster_to_be_fused_mask = bus_ppci.groupby('bus_ppci')['bus_to_be_fused'].any()
+        bus_ppci.loc[bus_cluster_to_be_fused_mask[bus_ppci['bus_ppci'].values].values, 'bus_to_be_fused'] = True    
+    return bus_ppci
 
-    bus_ppc = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppc"])
-    bus_ppc['bus_with_elements'] = bus_ppc.index.isin(bus_with_elements).astype(int)   
-    ppc_bus_with_elements = bus_ppc.groupby('bus_ppc')['bus_with_elements'].sum()
-    bus_ppc.loc[:, 'elements_in_cluster'] = ppc_bus_with_elements[bus_ppc['bus_ppc'].values].values 
-    return bus_ppc
 
 def set_bb_switch_impedance(net, z_ohm=0.1, prevent_fusing_bus_with_elements = False):
     """
@@ -63,7 +85,7 @@ def set_bb_switch_impedance(net, z_ohm=0.1, prevent_fusing_bus_with_elements = F
             imp_switch_sel = (net.switch.et=='b')&(net.switch.closed)&\
                 (net.switch.bus.isin(bus_to_be_handled)|net.switch.element.isin(bus_to_be_handled))
             net.switch.loc[imp_switch_sel, 'z_ohm'] = z_ohm
-            
+
             #check if fused buses were isolated by the switching type change
             lookup_discon = _get_bus_ppc_mapping(net)
             imp_switch = net.switch.loc[imp_switch_sel, :]
@@ -108,7 +130,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
             else:
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
-            
+
     for br_type in branch_meas_type.keys():
         if not net['res_'+br_type].empty:
             for br_ix, br_res in net['res_'+br_type].iterrows():

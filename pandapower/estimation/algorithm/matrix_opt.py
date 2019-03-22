@@ -56,15 +56,14 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters):
         super(LAVEstimatorOpt, self).__init__(ppci, non_nan_meas_mask, z, sigma, **hyperparameters)
         self.jac_available = True
-        
+
     def cost_function(self, E):
         self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
         self.v = E[self.num_non_slack_bus:]
         rx = self.base_algebra.create_rx(self.v, self.delta)
         cost = np.sum(np.abs(rx))
-        print(cost)
         return cost
-    
+
     def create_rx_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
@@ -73,10 +72,9 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
         self.v = E[self.num_non_slack_bus:]
         rx = self.base_algebra.create_rx(self.v, self.delta)
         hx_jac = self.base_algebra.create_hx_jacobian(self.v, self.delta)
-        jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)  
-        print(jac)
+        jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)
         return jac
-    
+
 
 class QCEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters):
@@ -107,14 +105,13 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         drho = 2 * rx.reshape((-1, 1))
         if np.any(np.abs(rx/self.sigma) > self.a):
             drho[np.abs(rx/self.sigma) > self.a] = 0
-        jac = - np.sum(drho * hx_jac, axis=0)  
+        jac = - np.sum(drho * hx_jac, axis=0)
         return jac
-    
+
 
 class QLEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters):
-        super(QLEstimatorOpt, self).__init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters)
-        
+        super(QLEstimatorOpt, self).__init__(ppci, non_nan_meas_mask, z, sigma, **hyperparameters)     
         assert 'a' in hyperparameters
         self.a = hyperparameters['a']
         self.jac_available = True

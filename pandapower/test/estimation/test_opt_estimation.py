@@ -12,7 +12,10 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
+from pandapower.estimation.toolbox import add_virtual_meas_from_loadflow
 from copy import deepcopy
+
+
 
 
 def test_2bus():
@@ -32,10 +35,38 @@ def test_2bus():
     pp.create_measurement(net, "v", "bus", 1.02, 0.1, 1)   # u2
 
     # 2. Do state estimation
-    success = estimate(net, init='flat', algorithm="lav")
+    success = estimate(net, init='flat', algorithm="opt", estimator='lav')
     assert success
+    
+    
+def test_four_bus():
+    net = nw.simple_four_bus_system()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+    
+    success = estimate(net, algorithm="opt", estimator="lav")
+    assert success
+    
+    
+def test_case30():
+    net = nw.case30()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+
+    success = estimate(net, init='flat', algorithm="opt", estimator='wls')
+    assert success
+
+    net_wls = deepcopy(net)
+    estimate(net_wls)
+    assert np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, rtol=0.01)
+    assert np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, rtol=0.01)
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
     
-    net = nw.case14()
+#    net = nw.simple_four_bus_system()
+#    pp.runpp(net)
+#    add_virtual_meas_from_loadflow(net)
+#    
+#    success = estimate(net, algorithm="opt", estimator="lav")

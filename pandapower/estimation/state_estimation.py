@@ -9,9 +9,9 @@ from scipy.stats import chi2
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.topology import estimate_voltage_vector
 
-from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
-                                                  _init_ppc, _add_aux_elements_for_bb_switch, \
-    _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch, _add_zero_injection
+from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, _init_ppc,\
+    _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
+from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_switch_impedance
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
 from pandapower.estimation.algorithm.wls import WLSAlgorithm, WLSZeroInjectionConstraintsAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
@@ -48,36 +48,39 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     Wrapper function for WLS state estimation.
     INPUT:
         **net** - The net within this line should be created
+
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6
+
         **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
+
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True
         
         **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
         to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
         'wls_estimator with zero constraints' the buses will be handled as constraints
-        "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
-            identified as zero injection bus  
-        "aux_bus": only aux bus will be identified as zero injection bus
-        None: no bus will be identified as zero injection bus
-        iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
-            as zero-injection bus
-        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+            "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+                identified as zero injection bus  
+            "aux_bus": only aux bus will be identified as zero injection bus
+            None: no bus will be identified as zero injection bus
+            iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+                as zero-injection bus
+
         **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
         be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
         auxiliary line will be automatically added to the network to make the buses with different p,q injection
         measurements identifieble
-        "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
-        None: buses with bb-switches and individual p,q measurements will be reconfigurated
-            by auxiliary elements
-        iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
-            if one of the bus among the buses connected through bb switch is given, then all of them will still
-            be fused
+            "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+            None: buses with bb-switches and individual p,q measurements will be reconfigurated
+                by auxiliary elements
+            iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+                if one of the bus among the buses connected through bb switch is given, then all of them will still
+                be fused
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
@@ -200,23 +203,28 @@ class StateEstimation:
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
         OPTIONAL:
-            **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
-            phase shifts in transformers Default is True
-            
-            **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
-            'wls_estimator with zero constraints' the buses will be handled as constraints
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6
+
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True
+        
+        **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        'wls_estimator with zero constraints' the buses will be handled as constraints
             "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
                 identified as zero injection bus  
             "aux_bus": only aux bus will be identified as zero injection bus
             None: no bus will be identified as zero injection bus
             iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
                 as zero-injection bus
-    
-            **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
-            be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
-            auxiliary line will be automatically added to the network to make the buses with different p,q injection
-            measurements identifieble
+
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+        auxiliary line will be automatically added to the network to make the buses with different p,q injection
+        measurements identifieble
             "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
             None: buses with bb-switches and individual p,q measurements will be reconfigurated
                 by auxiliary elements
