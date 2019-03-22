@@ -31,9 +31,10 @@ from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
+          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a power system optimization using PowerModels.jl. with a custom julia file.
+    
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -83,9 +84,10 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a linearized power system optimization using PowerModels.jl.
+    
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -137,9 +139,10 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a non-linear power system optimization using PowerModels.jl.
+
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -190,7 +193,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net)
 
 
-def _runpm(net):
+def _runpm(net): #pragma: no cover
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -215,7 +218,7 @@ def _runpm(net):
         logger.warning("OPF did not converge!")
 
 
-def _call_powermodels(pm, julia_file):
+def _call_powermodels(pm, julia_file): #pragma: no cover
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
     with open(buffer_file, 'w') as outfile:
@@ -240,7 +243,7 @@ def _call_powermodels(pm, julia_file):
     return result_pm
 
 
-def ppc_to_pm(net, ppc):
+def ppc_to_pm(net, ppc): #pragma: no cover
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
           "baseMVA": ppc["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
@@ -329,7 +332,7 @@ def ppc_to_pm(net, ppc):
     return pm
 
 
-def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
+def pm_results_to_ppc_results(net, ppc, ppci, result_pm): #pragma: no cover
     options = net._options
     sol = result_pm["solution"]
     for i, bus in sol["bus"].items():
