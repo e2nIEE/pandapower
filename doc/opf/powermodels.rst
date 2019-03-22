@@ -37,4 +37,8 @@ Usage
 
 The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_powermodels.ipynb>`_.
 
+.. autofunction:: pandapower.runpm_ac_opf
+
+.. autofunction:: pandapower.runpm_dc_opf
+
 .. autofunction:: pandapower.runpm
