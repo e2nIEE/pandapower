@@ -154,7 +154,7 @@ def load_mapping(net,ppci1):
 # 3 phase algorithm function
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="auto",
-              tolerance_mva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
+              tolerance_mva=1e-8, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
               numba=True, recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0,v_debug =False, **kwargs):
     overrule_options = {}
@@ -182,7 +182,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         init = "dc" if calculate_voltage_angles else "flat"
 
     
-    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    default_max_iteration = {"nr": 100, "bfsw": 10, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
 
@@ -246,12 +246,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #             Iteration using Power mismatch criterion
     # =============================================================================
     t0 = time()
-    while (S_mismatch > tolerance_mva).any() and count < 3*max_iteration :
+    while (S_mismatch > tolerance_mva).any() and count < 5*max_iteration :
         # =============================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
         Sabc_pu = -np.divide(Sabc, ppci1["baseMVA"])
-        Iabc_it = np.divide(Sabc_pu, Vabc_it).conjugate()
+        Iabc_it = (np.divide(Sabc_pu, Vabc_it)).conjugate()
         I012_it = phase_to_sequence(Iabc_it)
 
         I0_pu_it = X012_to_X0(I012_it)
@@ -260,7 +260,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         V1_for_S1 = V012_it[1, :]
         I1_for_S1 = -I012_it[1, :]
         S1 = np.multiply(V1_for_S1, I1_for_S1.conjugate())
-
         # =============================================================================
         # Current used to find S1 Positive sequence power
         # =============================================================================
@@ -272,7 +271,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
         I1_from_V_it = I1_from_V012(V012_it, Y1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
-
         V1_pu_it = V1_from_ppc(ppci1)
         V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
         V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
@@ -286,7 +284,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
-        S_mismatch = np.abs(S1[pq_bus] - s_from_voltage[pq_bus])*ppci0["baseMVA"]
+        S_mismatch = np.abs(np.abs(S1[pq_bus]) - np.abs(s_from_voltage[pq_bus]))
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1

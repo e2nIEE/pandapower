@@ -82,7 +82,7 @@ def check_it(net):
 def test_2bus_network(net):
     "#-o---o"
     pp.add_zero_impedance_parameters(net)
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     check_it(net)    
 
 
@@ -91,7 +91,7 @@ def test_2bus_network_single_isolated_busses(net):
     pp.create_bus(net, vn_kv=110)
     pp.create_bus(net, vn_kv=110, in_service=False)
     pp.add_zero_impedance_parameters(net)
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     check_it(net)    
 
 #@pytest.mark.xfail
@@ -103,7 +103,7 @@ def test_2bus_network_isolated_net_part(net):
     create_asymmetric_load(net, b2, p_A_mw=50, q_A_mvar=50, p_B_mw=10, q_B_mvar=15,
                    p_C_mw=10, q_C_mvar=5)
     pp.add_zero_impedance_parameters(net)
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     check_it(net)
 
 #@pytest.mark.xfail
@@ -166,7 +166,7 @@ def test_4bus_network():
                        p_C_mw=10, q_C_mvar=5)
     create_asymmetric_load(net, busp, p_A_mw=50, q_A_mvar=20, p_B_mw=60, q_B_mvar=20,
                        p_C_mw=10, q_C_mvar=5)
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     
     v_a_pf = np.array([0.98085729,  0.97828577,  0.97774307,  0.9780892])
     v_b_pf = np.array([0.97711997,  0.97534651,  0.97648197,  0.97586805])
@@ -262,7 +262,7 @@ def test_in_serv_load():
     
     pp.add_zero_impedance_parameters(net)
     
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     
     assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
                                               np.array([0.96742893, 0.74957533]))
@@ -303,7 +303,7 @@ def test_in_serv_load():
     create_asymmetric_load(net, busk, p_A_mw=50, q_A_mvar=100, p_B_mw=29, q_B_mvar=38,
                    p_C_mw=10, q_C_mvar=5, in_service=False)
 
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     
     assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
                                               np.array([0.96742893, 0.74957533]))
@@ -451,7 +451,7 @@ def test_3ph_bus_mapping_order():
     pp.add_zero_impedance_parameters(net)
     pp.create_load(net, b2, p_mw=0.030, q_mvar=0.030)
     pp.runpp(net)
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     
     assert np.allclose(net.res_bus_3ph.vmA_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
     assert net.res_bus_3ph.index.tolist() == net.res_bus.index.tolist()
@@ -483,7 +483,7 @@ def test_3ph_two_bus_line_powerfactory():
     pp.create_asymmetric_load(net, b2, p_A_mw=0.020, q_A_mvar=0.010, p_B_mw=0.015, q_B_mvar=0.005, p_C_mw=0.025,
                        q_C_mvar=0.010)
     
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     
     assert np.allclose(net.res_bus_3ph.vmA_pu, np.array([0.99939853552, 0.97401782343]))
     assert np.allclose(net.res_bus_3ph.vmB_pu, np.array([1.0013885141, 0.98945593737]))
@@ -649,7 +649,7 @@ def test_trafo_vg_loadflow():
     for vc in results.keys():
         
         make_nw(net, vc)
-        runpp_3ph(net)
+        assert runpp_3ph(net)[3]["success"]
 #        print(net.res_bus_3ph)
 #        try:
 #             runpp_3ph(net)
@@ -664,10 +664,10 @@ def test_2trafos():
     net = pp.create_empty_network() 
     make_nw(net, "YNyn")
     make_nw(net, "YNyn")
-    runpp_3ph(net)
+    assert runpp_3ph(net)[3]["success"]
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
     
-@pytest.mark.xfail
+#@pytest.mark.xfail
 def test_3ph_isolated_nodes():
     V_base = 110  # 110kV Base Voltage
     MVA_base = 100  # 100 MVA
