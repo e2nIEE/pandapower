@@ -683,7 +683,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (negative for generation!)
+        **p_mw** (float) - The real power of the static generator 
 
     OPTIONAL:
 
@@ -974,7 +974,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **bus** (int) - The bus id to which the generator is connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the generator (negative for generation!)
+        **p_mw** (float, default 0) - The real power of the generator
 
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
