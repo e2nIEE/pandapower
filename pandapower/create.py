@@ -1074,6 +1074,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
             net.gen.loc[:, "xdss_pu"] = pd.Series()
+        if "rdss_pu" not in net.gen.columns:
+            net.gen.loc[:, "rdss_pu"] = pd.Series()
         net.gen.loc[index, "xdss_pu"] = float(xdss_pu)
 
     if not isnan(rdss_pu):
