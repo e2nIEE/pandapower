@@ -3,14 +3,30 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-
 from setuptools import setup, find_packages
+import re
 
 with open('README.rst', 'rb') as f:
     install = f.read().decode('utf-8')
+    
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
+
+classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: BSD License',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3']
+with open('.travis.yml', 'rb') as f:
+    lines = f.read().decode('utf-8')
+    for version in re.findall('python: 3.[0-9]', lines):
+        classifiers.append('Programming Language :: Python :: 3.%s'%version[-1])
 
 long_description = '\n\n'.join((install, changelog))
 
@@ -32,21 +48,5 @@ setup(
                       "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"]},
     packages=find_packages(),
     include_package_data=True,
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Education',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Topic :: Scientific/Engineering',
-    ],
+    classifiers = classifiers
 )
