@@ -10,7 +10,7 @@ develop
 ----------------------
 - [CHANGED] units from kW/kVAr/kVA to MW/MVAr/MVA in all elements #73
 - [CHANGED] signing system from load to generation in gen, sgen and ext_grid #208
-- [CHANGED] all trafo tap parameters from tp_ to tap_, tp_mid to tap_neutral #246
+- [CHANGED] all trafo tap parameters from 'tp' to 'tap', tp_mid to tap_neutral #246
 - [CHANGED] all trafo short-circuit voltage parameter names from "vsc" to "vk" #246
 - [CHANGED] definition of cost functions #211
 - [CHANGED] definition of measurements in measurement table #343
