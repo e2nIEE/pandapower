@@ -9,9 +9,9 @@
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
    
-.. image:: https://www.pandapower.org/images/home/shield_python_versions.svg
+.. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
-   :alt: PyPI
+   :alt: versions
 
 .. image:: https://readthedocs.org/projects/pandapower/badge/
    :target: http://pandapower.readthedocs.io/

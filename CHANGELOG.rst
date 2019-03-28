@@ -1,7 +1,7 @@
 Change Log
 =============
 
-develop
+[2.0.1]- 2019-03-28
 ----------------------
 - [FIXED] bug in short-circuit impedance of gens
 - [ADDED] use estimation of rdss_pu defined in IEC 60909 of gens if not defined
