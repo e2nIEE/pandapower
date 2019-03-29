@@ -1,9 +1,27 @@
 Change Log
 =============
-[develop]
+
+[2.0.1]- 2019-03-28
 ----------------------
-- [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
-- [ADDED] Load flow and OPF for user-defined temperature of lines, with the optional columns in line table "alpha" and "temperature_degree_celsius"
+- [FIXED] bug in short-circuit impedance of gens
+- [ADDED] use estimation of rdss_pu defined in IEC 60909 of gens if not defined
+
+[2.0.0]- 2019-03-21
+----------------------
+- [CHANGED] units from kW/kVAr/kVA to MW/MVAr/MVA in all elements #73
+- [CHANGED] signing system from load to generation in gen, sgen and ext_grid #208
+- [CHANGED] all trafo tap parameters from 'tp' to 'tap', tp_mid to tap_neutral #246
+- [CHANGED] all trafo short-circuit voltage parameter names from "vsc" to "vk" #246
+- [CHANGED] definition of cost functions #211
+- [CHANGED] definition of measurements in measurement table #343
+- [ADDED] interface to PowerModels.jl for OPF #207
+- [CHANGED] removed Python 2 support #224
+- [ADDED] load flow and OPF for user-defined temperature of lines, with the optional columns in line table "alpha" and "temperature_degree_celsius" #283
+- [ADDED] z_ohm parameter in net.switch to assign resistance to switches #259
+- [FIXED] initializing from results also considers auxiliary buses #236
+- [ADDED] trafo3w switches are supported in create_nxgraph #271
+- [CHANGED] create_nxgraph adds edges in multigraph with key=(element, idx) instead of key=0,1.. #85
+- [CHANGED] patch size in create_bus_collection is not duplicated for rectangles anymore #181
 
 [1.6.1] - 2019-02-18
 ----------------------

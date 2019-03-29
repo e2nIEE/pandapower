@@ -1096,7 +1096,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
 def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     net.load.p_mw *= 100
-    diag = pp.diagnostic(net)
+    diag = pp.diagnostic(net, report_style=None)
 
 if __name__ == "__main__":
     pytest.main(["test_diagnostic.py", "-xs"])

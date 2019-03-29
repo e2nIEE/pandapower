@@ -9,6 +9,7 @@ import json
 import os
 import pickle
 import sys
+from packaging import version
 from warnings import warn
 
 try:
@@ -220,13 +221,12 @@ def from_pickle(filename, convert=True):
                     net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
                                             data=df_dict["data"])
             else:
-                # TODO: is this legacy code?
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    try:
-                        net[key] = net[key].reindex(item["columns"], axis=1)
-                    except TypeError:  # legacy for pandas <0.21
+                    if version.parse(pd.__version__) < version.parse("0.21"):
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                    else:
+                        net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -265,10 +265,10 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    pd_version = float(pd.__version__[:4])
-    if pd_version < 0.21:
+    pd_version = version.parse(pd.__version__)
+    if pd_version < version.parse("0.21"):
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    elif pd_version < 0.24:
+    elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
         xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
