@@ -74,7 +74,7 @@ class WLSAlgorithm:
         E = np.r_[delta_masked, v_m]
         return non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask
 
-    def estimate(self, ppci):
+    def estimate(self, ppci, **kwargs):
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
             self.wls_preprocessing(ppci)
 
@@ -135,7 +135,7 @@ class WLSAlgorithm:
 
 
 class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci):
+    def estimate(self, ppci, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
         zero_injection_bus = np.argwhere(ppci["bus"][:, bus_cols+ZERO_INJ_FLAG] == True).ravel()

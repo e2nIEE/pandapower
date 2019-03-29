@@ -43,7 +43,7 @@ def _initialize_voltage(net, init, calculate_voltage_angles):
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
-             **hyperparameter):
+             **opt_vars):
     """
     Wrapper function for WLS state estimation.
     INPUT:
@@ -90,7 +90,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
     return se.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
-                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **hyperparameter)
+                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, opt_vars=opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -181,7 +181,7 @@ class StateEstimation:
         self.bad_data_present = None
 
     def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
-                 zero_injection=None, fuse_buses_with_bb_switch='all', **hyperparameter):
+                 zero_injection=None, fuse_buses_with_bb_switch='all', opt_vars=None):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -263,8 +263,8 @@ class StateEstimation:
         ppci = _add_measurements_to_ppc(self.net, ppci, zero_injection)
 
         # Estimate voltage magnitude and angle with the given estimator
-        V = self.solver.estimate(ppci, **hyperparameter)
-        
+        V = self.solver.estimate(ppci, opt_vars=opt_vars)
+
         if self.solver.successful:
             # calculate the branch power flow and bus power injection based on the estimated voltage vector
             ppci = _calc_power_flow(ppci, V)
@@ -316,7 +316,7 @@ class StateEstimation:
         self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
-        J = np.dot(self.estimator.r.T, np.dot(self.solver.R_inv, self.solver.r))
+        J = np.dot(self.solver.r.T, np.dot(self.solver.R_inv, self.solver.r))
 
         # Number of measurements
         m = len(self.net.measurement)

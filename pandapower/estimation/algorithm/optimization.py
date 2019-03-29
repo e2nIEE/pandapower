@@ -6,8 +6,8 @@
 import numpy as np
 from scipy.optimize import minimize
 
-from pandapower.estimation.algorithm.matrix_opt import (WLSEstimatorOpt, LAVEstimatorOpt, 
-                                                        QCEstimatorOpt, QLEstimatorOpt)
+from pandapower.estimation.algorithm.matrix_opt import \
+    (WLSEstimatorOpt, LAVEstimatorOpt, QCEstimatorOpt, QLEstimatorOpt)
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 DEFAULT_OPT_METHOD = "Newton-CG"
@@ -16,31 +16,25 @@ ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
                      'qc': QCEstimatorOpt,
                      'ql': QLEstimatorOpt}
 
+
 class OptAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, **hyperparameter):
-        assert 'estimator' in hyperparameter and hyperparameter['estimator'] in ESTIMATOR_MAPPING
-        opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in hyperparameter else hyperparameter['opt_method']
+    def estimate(self, ppci, opt_vars=None):
+        assert 'estimator' in opt_vars and opt_vars['estimator'] in ESTIMATOR_MAPPING
+        opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in opt_vars else opt_vars['opt_method']
 
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
             self.wls_preprocessing(ppci)
 
         # matrix calculation object
-        estm = ESTIMATOR_MAPPING[hyperparameter['estimator']](ppci, non_nan_meas_mask, 
-                                z=z, sigma=r_cov, **hyperparameter)
-#        sem = WLSEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
-#        sem = LAVEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
+        estm = ESTIMATOR_MAPPING[opt_vars['estimator']](ppci, non_nan_meas_mask, 
+                                z=z, sigma=r_cov, **opt_vars)
 
         res = minimize(estm.cost_function, x0=E, 
                        method=opt_method, jac=estm.create_rx_jacobian, 
-                       tol=self.tolerance, options={'maxiter':50, 'disp': True})
-#        res = minimize(sem.cost_function, E, 
-#                       method="Powell", jac=sem.create_rx_jacobian, tol=self.tolerance)
-#        res = minimize(sem.cost_function, E, 
-#                       method="BFGS", jac=sem.create_rx_jacobian, tol=self.tolerance)
-#        res = minimize(sem.cost_function, E, 
-#                       method="CG", jac=sem.create_rx_jacobian, tol=self.tolerance)
-#        res = minimize(sem.cost_function, E, 
-#                       method="Nelder-Mead", jac=sem.create_rx_jacobian, tol=self.tolerance)
+                       tol=self.tolerance, options={'maxiter':100, 'disp': True})
+#        res = minimize(estm.cost_function, x0=E, 
+#                       method=opt_method, jac=estm.create_rx_jacobian, 
+#                       tol=self.tolerance, options={'disp': True})
 
         self.successful = res.success
         if self.successful:
@@ -51,6 +45,34 @@ class OptAlgorithm(WLSAlgorithm):
             return V
         else:
             raise Exception("Optimiaztion failed! State Estimation not successful!")
+            
+
+#from nevergrad.optimization import optimizerlib    
+#
+#class OptAlgorithm(WLSAlgorithm):
+#    def estimate(self, ppci, opt_vars=None):
+#        assert 'estimator' in opt_vars and opt_vars['estimator'] in ESTIMATOR_MAPPING
+#        opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in opt_vars else opt_vars['opt_method']
+#
+#        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
+#            self.wls_preprocessing(ppci)
+#
+#        # matrix calculation object
+#        estm = ESTIMATOR_MAPPING[opt_vars['estimator']](ppci, non_nan_meas_mask, 
+#                                z=z, sigma=r_cov, **opt_vars)
+#   
+#        optimizer = optimizerlib.CMA(dimension=E.shape[0], budget=10000)
+#        res = optimizer.optimize(estm.cost_function, verbosity=True)
+#
+#        self.successful = True
+#
+#        E = res
+#        delta[non_slack_buses] = E[:len(non_slack_buses)]
+#        v_m = E[len(non_slack_buses):]
+#        V = v_m * np.exp(1j * delta)
+#        return V
+##        else:
+##            raise Exception("Optimiaztion failed! State Estimation not successful!")
         
 if __name__ == '__main__':
     import pandapower as pp

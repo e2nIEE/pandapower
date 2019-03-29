@@ -8,7 +8,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack, diags
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.idx_bus import BUS_TYPE
+from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.pypower.makeYbus import makeYbus
 
 __all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
@@ -18,6 +18,8 @@ class BaseAlgebra:
     def __init__(self, ppci, non_nan_meas_mask, z):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppci = ppci
+        self.baseMVA = ppci['baseMVA']
+        self.bus_baseKV = self.ppci['bus'][:, BASE_KV].real.astype(int)
         self.z = z
         self.fb = self.ppci["branch"][:, F_BUS].real.astype(int)
         self.tb = self.ppci["branch"][:, T_BUS].real.astype(int)
@@ -59,24 +61,25 @@ class BaseAlgebra:
     def create_hx(self, v, delta):
         f_bus, t_bus = self.fb, self.tb
         V = v * np.exp(1j * delta)
-        Sfe = V[f_bus] * np.conj(self.Yf * V)
+        Sfe = V[f_bus] * np.conj(self.Yf * V) 
         Ste = V[t_bus] * np.conj(self.Yt * V)
-        Sbuse = V * np.conj(self.Ybus * V)
+        Sbuse = V * np.conj(self.Ybus * V) 
         Ife = np.abs(Sfe)/v[f_bus]
         Ite = np.abs(Ste)/v[t_bus]
-        hx = np.r_[np.real(Sbuse),
-                   np.real(Sfe),
-                   np.real(Ste),
-                   np.imag(Sbuse),
-                   np.imag(Sfe),
-                   np.imag(Ste),
+        hx = np.r_[np.real(Sbuse) * self.baseMVA,
+                   np.real(Sfe) * self.baseMVA,
+                   np.real(Ste) * self.baseMVA,
+                   np.imag(Sbuse) * self.baseMVA,
+                   np.imag(Sfe) * self.baseMVA,
+                   np.imag(Ste) * self.baseMVA,
                    v,
-                   Ife,
-                   Ite]
+                   Ife * self.baseMVA / self.bus_baseKV[f_bus],
+                   Ite * self.baseMVA / self.bus_baseKV[t_bus]] 
         return hx[self.non_nan_meas_mask]
 
     def create_hx_jacobian(self, v, delta):
         # Using sparse matrix in creation sub-jacobian matrix
+        f_bus, t_bus = self.fb, self.tb
         V = v * np.exp(1j * delta)
         Vnorm = V / np.abs(V)
         diagV, diagVnorm = diags(V).tocsr(), diags(Vnorm).tocsr()
@@ -86,26 +89,28 @@ class BaseAlgebra:
         dif_dth, dit_dth, dif_dv, dit_dv = self._dibr_dv(diagV, diagVnorm)
         dv_dth, dv_dv = self._dVbus_dv(V)
 
-        h_jac_th = vstack([np.real(dSbus_dth),
+        s_jac_th = vstack([np.real(dSbus_dth),
                            np.real(dSf_dth),
                            np.real(dSt_dth),
                            np.imag(dSbus_dth),
                            np.imag(dSf_dth),
-                           np.imag(dSt_dth),
-                           dv_dth,
-                           dif_dth,
-                           dit_dth])
-        h_jac_v = vstack([np.real(dSbus_dv),
+                           np.imag(dSt_dth)])
+        s_jac_v = vstack([np.real(dSbus_dv),
                           np.real(dSf_dv),
                           np.real(dSt_dv),
                           np.imag(dSbus_dv),
                           np.imag(dSf_dv),
-                          np.imag(dSt_dv),
-                          dv_dv,
-                          dif_dv,
-                          dit_dv])
-        h_jac = hstack([h_jac_th, h_jac_v])
-        return h_jac.toarray()[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
+                          np.imag(dSt_dv)])
+
+        s_jac = hstack([s_jac_th, s_jac_v]).toarray() * self.baseMVA
+        v_jac = np.c_[dv_dth, dv_dv]
+        i_jac = vstack([hstack([dif_dth, dif_dv]),
+                        hstack([dit_dth, dit_dv])]).toarray() *\
+                        (self.baseMVA / np.r_[self.bus_baseKV[f_bus], 
+                                              self.bus_baseKV[t_bus]]).reshape(-1, 1)
+        return np.r_[s_jac,
+                     v_jac,
+                     i_jac][self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
 
     def _dSbus_dv(self, V, diagV, diagVnorm):
         diagIbus = csr_matrix((self.Ybus * V, (range(self.n_bus), range(self.n_bus))))

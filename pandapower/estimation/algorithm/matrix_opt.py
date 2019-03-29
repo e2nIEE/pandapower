@@ -37,7 +37,7 @@ class WLSEstimatorOpt(BaseEstimatorOpt):
         self.v = E[self.num_non_slack_bus:]
         rx = self.base_algebra.create_rx(self.v, self.delta)
         cost = np.sum((1/self.sigma**2) * (rx**2))
-        print(cost)
+#        print(cost)
         return cost
 
     def create_rx_jacobian(self, E):
@@ -82,7 +82,7 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         assert 'a' in hyperparameters
         self.a = hyperparameters['a']
         self.jac_available = True
-        
+
     def cost_function(self, E):
         self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
         self.v = E[self.num_non_slack_bus:]
@@ -90,9 +90,9 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         cost = (1/self.sigma**2) * (rx**2)
         if np.any(np.abs(rx/self.sigma) > self.a):
             cost[np.abs(rx/self.sigma) > self.a] = (self.a**2 / self.sigma**2)[np.abs(rx/self.sigma) > self.a]
-        print(np.sum(cost))
+#        print(np.sum(cost))
         return np.sum(cost)
-    
+
     def create_rx_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
@@ -124,9 +124,9 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         if np.any(np.abs(rx/self.sigma) > self.a):
             cost[np.abs(rx/self.sigma) > self.a] = (2*self.a*self.sigma*np.abs(rx) -\
                 self.a**2 * self.sigma**2)[np.abs(rx/self.sigma) > self.a]
-        print(np.sum(cost))
+#        print(np.sum(cost))
         return np.sum(cost)
-    
+
     def create_rx_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
