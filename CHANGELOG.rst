@@ -1,6 +1,11 @@
 Change Log
 =============
 
+[2.0.1]- 2019-03-28
+----------------------
+- [FIXED] bug in short-circuit impedance of gens
+- [ADDED] use estimation of rdss_pu defined in IEC 60909 of gens if not defined
+
 [2.0.0]- 2019-03-21
 ----------------------
 - [CHANGED] units from kW/kVAr/kVA to MW/MVAr/MVA in all elements #73
