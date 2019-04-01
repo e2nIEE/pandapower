@@ -43,11 +43,11 @@ def net():
 
 def check_it(net):
     assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
-                       np.array([0.96742893, 0.74957533]))
+                       np.array([0.96742893, 0.74957533]),atol=1e-8)
     assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)],
-                       np.array([1.01302766, 1.09137945]))
+                       np.array([1.01302766, 1.09137945]),atol=1e-8)
     assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)],
-                       np.array([1.019784, 1.05124282]))
+                       np.array([1.019784, 1.05124282]),atol=1e-8)
 
     assert abs(net.res_line_3ph.iA_from_ka.values[0] - 1.34212045) < 1e-5
     assert abs(net.res_line_3ph.iA_to_ka.values[0]   - 1.48537916) < 1e-5
@@ -172,9 +172,9 @@ def test_4bus_network():
     v_b_pf = np.array([0.97711997,  0.97534651,  0.97648197,  0.97586805])
     v_c_pf = np.array([1.04353786,  1.04470864,  1.04421233,  1.04471106])
     
-    assert np.allclose(net.res_bus_3ph.vmA_pu,v_a_pf,atol=1e-4 )
-    assert np.allclose(net.res_bus_3ph.vmB_pu,v_b_pf,atol=1e-4 )
-    assert np.allclose(net.res_bus_3ph.vmC_pu,v_c_pf,atol=1e-4 )
+    assert np.allclose(net.res_bus_3ph.vmA_pu,v_a_pf,atol=1e-8 )
+    assert np.allclose(net.res_bus_3ph.vmB_pu,v_b_pf,atol=1e-8 )
+    assert np.allclose(net.res_bus_3ph.vmC_pu,v_c_pf,atol=1e-8 )
     
     i_a_f_pf = np.array([0.98898804851	,    0.87075816277		,	0.95760407055	,	0.21780921494 	,	0.03712221482])
     i_b_f_pf = np.array([0.68943734300	,	1.03463205150 	,	1.14786582480	,	0.42795802661	,	0.10766244499])
@@ -529,7 +529,7 @@ def check_results(net, vc, result):
 #           , net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaC_degree
             )
             ,axis =0)
-    if not np.allclose(result, res_vm_kv,atol=1e-2):
+    if not np.allclose(result, res_vm_kv,atol=1e-3):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
         
 def make_nw(net,vector_group):
