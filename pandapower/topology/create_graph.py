@@ -3,29 +3,29 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from itertools import combinations
+
 import networkx as nx
 import numpy as np
-from itertools import combinations
+
+from pandapower.auxiliary import _init_nx_options
+from pandapower.build_branch import _calc_impedance_parameters_from_dataframe, \
+    _calc_branch_values_from_trafo_df, \
+    _trafo_df_from_trafo3w
+from pandapower.build_bus import _build_bus_ppc
+from pandapower.pd2ppc import _init_ppc
+from pandapower.pypower.idx_bus import BASE_KV
 
 try:
     import pplog as logging
 except ImportError:
     import logging
 
-from pandapower.topology.graph_tool_interface import graph_tool_available
 try:
     from pandapower.topology.graph_tool_interface import GraphToolInterface
+    graph_tool_available = True
 except ImportError as e:
-    pass
-
-from pandapower.pd2ppc import _init_ppc
-from pandapower.auxiliary import _init_nx_options
-from pandapower.pypower.idx_bus import BASE_KV
-
-from pandapower.build_branch import _calc_impedance_parameters_from_dataframe, \
-    _calc_branch_values_from_trafo_df, \
-    _trafo_df_from_trafo3w
-from pandapower.build_bus import _build_bus_ppc
+    graph_tool_available = False
 
 INDEX = 0
 F_BUS = 1
@@ -185,7 +185,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                     if branch_impedance_unit == "ohm" else 1
                 r = {side: r for side, r in zip(sides, np.split(r_all, 3))}
                 x = {side: x for side, x in zip(sides, np.split(x_all, 3))}
-            open_switch = np.zeros(trafo3w.shape[0], dtype=bool)
+
             if respect_switches:
                 # for trafo3ws the bus where the open switch is located also matters. Open switches
                 # are therefore defined by the tuple (idx, b) where idx is the trafo3w index and b

@@ -1,12 +1,10 @@
 import copy
-
+import mock
 try:
     from graph_tool import Graph
-    graph_tool_available = True
 except ImportError:
-    graph_tool_available = False
-    pass
-
+    GraphToolInterface = mock.Mock
+    raise ImportError
 
 class GraphToolInterface(Graph):
     """

@@ -14,8 +14,10 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_traf
     add_test_trafo, add_test_line, \
     add_test_impedance, \
     add_test_bus_bus_switch
+from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 from pandapower.topology import create_nxgraph
-from pandapower.topology.graph_tool_interface import graph_tool_available
+from pandapower.topology.create_graph import graph_tool_available
+
 
 libraries = ["networkx"]
 if graph_tool_available:
