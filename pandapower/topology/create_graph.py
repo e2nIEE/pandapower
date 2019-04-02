@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import mock
 from itertools import combinations
 
 import networkx as nx
@@ -26,6 +26,7 @@ try:
     graph_tool_available = True
 except ImportError as e:
     graph_tool_available = False
+    GraphToolInterface = mock.Mock
 
 INDEX = 0
 F_BUS = 1
