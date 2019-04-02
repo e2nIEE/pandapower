@@ -66,8 +66,10 @@ def test_determine_stubs(feeder_network):
 
 def test_determine_stubs_meshed(meshed_network):
     net = meshed_network
-    stubs = top.determine_stubs(net)
-    assert not len(stubs)
+    # root == LV side of trafo at ext_grid. Then ext_grid bus itself (0) == stub
+    stubs = top.determine_stubs(net, roots=[1])
+    assert len(stubs) == 1
+    assert stubs.pop() == 0
 
 
 def test_distance(feeder_network):
