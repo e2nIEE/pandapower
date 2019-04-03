@@ -191,7 +191,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
     low = {root: 0 for root in roots}
     visited = set(roots)
     path = []
-    stack = [(root, root, iter(g[root])) for root in roots]
+    stack = [(root, root, iter(sorted(g[root]))) for root in roots]
     while stack:
         grandparent, parent, children = stack[-1]
         try:
@@ -206,7 +206,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
             else:
                 low[child] = discovery[child] = len(discovery)
                 visited.add(child)
-                stack.append((parent, child, iter(g[child])))
+                stack.append((parent, child, iter(sorted(g[child]))))
         except StopIteration:
             stack.pop()
             if low[parent] >= discovery[grandparent]:
