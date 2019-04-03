@@ -2,7 +2,6 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import mock
 from itertools import combinations
 
 import networkx as nx
@@ -26,7 +25,6 @@ try:
     graph_tool_available = True
 except ImportError as e:
     graph_tool_available = False
-    GraphToolInterface = mock.Mock
 
 INDEX = 0
 F_BUS = 1
@@ -226,8 +224,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
 
     # add all buses that were not added when creating branches
     if len(mg.nodes()) < len(net.bus.index):
-        if isinstance(mg, GraphToolInterface):
-            mg.add_vertex(max(net.bus.index) + 1)
+        if graph_tool_available and isinstance(mg, GraphToolInterface):
+                mg.add_vertex(max(net.bus.index) + 1)
         else:
             for b in set(net.bus.index) - set(mg.nodes()):
                 mg.add_node(b)
