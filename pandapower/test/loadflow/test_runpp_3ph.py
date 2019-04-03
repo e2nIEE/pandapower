@@ -94,7 +94,7 @@ def test_2bus_network_single_isolated_busses(net):
     assert runpp_3ph(net)[3]["success"]
     check_it(net)    
 
-#@pytest.mark.xfail
+
 def test_2bus_network_isolated_net_part(net):
     "#-o---o o---o"
     b1 = pp.create_bus(net, vn_kv=110)
@@ -106,7 +106,6 @@ def test_2bus_network_isolated_net_part(net):
     assert runpp_3ph(net)[3]["success"]
     check_it(net)
 
-#@pytest.mark.xfail
 def test_2bus_network_singel_oos_bus(net):
     "#-o---x---o"
     b1 = pp.create_bus(net, vn_kv=110)
@@ -529,127 +528,121 @@ def check_results(net, vc, result):
 #           , net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaC_degree
             )
             ,axis =0)
-    if not np.allclose(result, res_vm_kv,atol=1e-3):
+    if not np.allclose(result, res_vm_kv,atol=1e-4):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
         
-def make_nw(net,vector_group):
-    b1 = pp.create_bus(net, 110, zone=vector_group, index=pp.get_free_id(net.bus))
-    b2 = pp.create_bus(net, 20, zone=vector_group)
-#    pp.create_bus(net, 20, in_service=False)
-    b3 = pp.create_bus(net, 20, zone=vector_group)
-    b4 = pp.create_bus(net, 20, zone=vector_group)
-#    pp.create_bus(net, 20)
+def make_nw(net,vector_group,case):
+    b1 = pp.create_bus(net, 10, zone=vector_group, index=pp.get_free_id(net.bus))
+    b2 = pp.create_bus(net, 0.4, zone=vector_group)
+    b3 = pp.create_bus(net, 0.4, zone=vector_group)
     
-    pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=80, rx_min=0.20, rx_max=0.35)
-    net.ext_grid["r0x0_max"] = 0.4
+    pp.create_ext_grid(net, b1, s_sc_max_mva=10000, s_sc_min_mva=8000, rx_min=0.1, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
     net.ext_grid["x0x_max"] = 1.0
     
-    pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112,
-                        "c_nf_per_km": 304, "max_i_ka": 0.421,
-                        "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
-                        'shift_degree': 0,
-                        "x0_ohm_per_km": 0.336,
-                        "c0_nf_per_km": 2000}, "unsymmetric_line_type")
-    l1 = pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type",
-    			   index=pp.get_free_id(net.line)+1)
-    l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
-    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
+    pp.create_std_type(net, {"sn_mva": 1.6,
+                "vn_hv_kv": 10,
+                "vn_lv_kv": 0.4,
+                "vk_percent": 6,
+                "vkr_percent": 0.78125,
+                "pfe_kw": 2.7,
+                "i0_percent": 0.16875,
+                "shift_degree": 0,
+                "vector_group": "YNyn",
+                "tap_side": "hv",
+                "tap_neutral": 0,
+                "tap_min": -2,
+                "tap_max": 2,
+                "tap_step_degree": 0,
+                "tap_step_percent": 2.5,
+                "tap_phase_shifter": False,
+                "vk0_percent": 6, 
+                "vkr0_percent": 0.78125, 
+                "mag0_percent": 100,
+                "mag0_rx": 0.,
+                "si0_hv_partial": 0.9,}, vector_group, "trafo")
     
-    
-    transformer_type = copy.copy(pp.load_std_type(net, 
-                                                  "25 MVA 110/20 kV","trafo"))
-    transformer_type.update({"vk0_percent": 5, "vkr0_percent": 0.4, "mag0_percent": 10,
-    						 "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
-    						 "vector_group": vector_group,"i0_percent":0.071,
-                             "pfe_kw": 29,'vkr_percent': 0.282,
-                             'vk_percent': 11.2, })
-    pp.create_std_type(net, transformer_type, vector_group, "trafo")
-    t1 = pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2,
+    t1=pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=1,
     					  index=pp.get_free_id(net.trafo)+1)
-    pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
     
-    create_asymmetric_load(net, b4, p_A_mw=3, q_A_mvar=1, p_B_mw=3, q_B_mvar=2,
-                               p_C_mw=5, q_C_mvar=1)
-    pp.add_zero_impedance_parameters(net)    
+    
+    pp.create_std_type(net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991,
+                        "c_nf_per_km": 1160., "max_i_ka": 0.421,
+                        "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
+                        "x0_ohm_per_km": 0.2990796,
+                        "c0_nf_per_km":  496.2}, "unsymmetric_line_type")
+    
+            
+    pp.create_line(net, b2, b3, length_km=0.5, std_type="unsymmetric_line_type",
+    			   index=pp.get_free_id(net.line)+1)
+    
+    if case == 1:
+        ##Symmetric Load
+        pp.create_load(net,b3,0.08,0.012)
+    elif case == 2:
+        #Unsymmetric Light Load
+        create_asymmetric_load(net, b3, p_A_mw=0.0044, q_A_mvar=0.0013, p_B_mw=0.0044, q_B_mvar=0.0013,
+                               p_C_mw=0.0032, q_C_mvar=0.0013)
+    elif case == 3:
+        ##Unsymmetric Heavy Load
+        create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
+                               p_C_mw=0.027, q_C_mvar=0.0043)
+    
+    pp.add_zero_impedance_parameters(net) 
     return t1
 #@pytest.mark.xfail        
-def test_trafo_vg_loadflow():
+def test_trafo_Lowload_asym():
     
 # =============================================================================
 # TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
 # It has something to do with Y sh for these groups    
 # =============================================================================
     results = {
-#                "Yy": np.array([0.91674681492,0.71658248842,0.64796384061,0.55786826359
-##                        ,2.2871226069,-26.998030984,-29.283750575,-32.099272211
-#                        ,1.0750543749,1.4833773571,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245439,0.78950392465,0.66062186947
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                "Yy": np.array([0.999999741	,	1.16226356	,	1.154224842
+#                            ,	1.000000352	,	1.261592198	,	1.254583122
+#                            ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ] )
-#  Does not converge"Yyn":  [	0.999945441976376,1.22794573109855,1.00002125565888,1.4416173022977,1.00003330458372,0.464803132596897	]
-#                ,"Yd":  np.array([	
-#                        0.91674681491,0.71658248842,0.6479638406,0.55786826359
-##                        ,2.287122607,-26.998030985,-29.283750576,-32.099272212
-#                        ,1.0750543749,1.4833773572,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245438,0.78950392464,0.66062186946
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                "Yyn": np.array( [1.000000108	,	0.995841765	,	0.985104757
+#                                ,	0.999999879	,	1.003636017	,	0.994370887
+#                                ,	1.000000013	,	0.999760497	,	0.995218464
+#                            	])
+#                ,"Yd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
-#                "YNy":  np.array([	
-#                        0.91674681491,0.71658248842,0.6479638406,0.55786826359
-##                        ,2.287122607,-26.998030985,-29.283750576,-32.099272212
-#                        ,1.0750543749,1.4833773572,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245438,0.78950392464,0.66062186946
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                ,"YNy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
-                "YNyn":np.array([1.0286518989,1.0133550586,1.0119236548,1.0074556001
-#                        ,2.0854112641,0.93877142585,-0.90410029499,-3.3588532105
-                        ,1.0335271967,1.0266895042,0.97727878593,0.90027508742
-#                        ,-119.78984554,-121.43529396,-120.04590265,-117.75335277
-                        ,0.93941403116,0.91922528934,0.79866536031,0.63098130445
-#                        ,117.48497778,114.98777913,110.92015362,102.21378662	
+                "YNyn":np.array([	0.999999988	,	0.999735325	,	0.989000027  # Vm_A
+                                ,	0.999999986	,	0.999734718	,	0.990462676  # Vm_B
+                                ,	1.000000026	,	0.999752436	,	0.995206019  # Vm_C
                         ])
 
-#                ,"YNd": np.array([	
-#                        0.91674681491,0.71658248842,0.6479638406,0.55786826359
-##                        ,2.287122607,-26.998030985,-29.283750576,-32.099272212
-#                        ,1.0750543749,1.4833773572,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245438,0.78950392464,0.66062186946
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                ,"YNd": np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
-#                ,"Dy":  np.array([	
-#                        0.91674681491,0.71658248842,0.6479638406,0.55786826359
-##                        ,2.287122607,-26.998030985,-29.283750576,-32.099272212
-#                        ,1.0750543749,1.4833773572,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245438,0.78950392464,0.66062186946
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                ,"Dy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
-#                ,"Dyn": np.array([0.99826556471,0.98651681998,0.97927843252,0.96623671723
-##                        ,1.8283954036,0.56653208926,-0.948632334,-3.0283000041
-#                        ,1.0287999443,1.0196949284,0.96433996254,0.87902911825
-##                        ,-120.77877231,-122.2557482,-121.26646291,-119.54819866
-#                        ,0.97370171994,0.95611131677,0.85523948315,0.71303841202
-##                        ,118.94855313,116.63904145,112.98360251,105.80579564
+#                ,"Dyn": np.array([	1.000000107	,	0.999735094	,	0.988999796
+#                                ,	0.99999988	,	0.999734868	,	0.990462827
+#                                ,	1.000000013	,	0.999752516	,	0.995206099
 #                        ])
-#                ,"Dd":  np.array([	
-#                        0.91674681491,0.71658248842,0.6479638406,0.55786826359
-##                        ,2.287122607,-26.998030985,-29.283750576,-32.099272212
-#                        ,1.0750543749,1.4833773572,1.4563916897,1.3987075916
-##                        ,-117.09737165,-120.2433576,-120.70390519,-120.80435166
-#                        ,1.0144005062,0.87281245438,0.78950392464,0.66062186946
-##                        ,114.85180801,136.08400231,133.49894551,127.02589869
+#                ,"Dd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
 
                }
+
     net = pp.create_empty_network(sn_mva = 100) 
     for vc in results.keys():
         
-        make_nw(net, vc)
-        assert runpp_3ph(net)[3]["success"]
+        make_nw(net, vc,2)
+        assert runpp_3ph(net,tolerance_mva=1e-12)[3]["success"]
 #        print(net.res_bus_3ph)
 #        try:
 #             runpp_3ph(net)
@@ -659,11 +652,133 @@ def test_trafo_vg_loadflow():
     for vc, result in results.items():
         check_results(net, vc, result)
 
+def test_trafo_Highload_sym():
+    
+# =============================================================================
+# TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
+# It has something to do with Y sh for these groups    
+# =============================================================================
+    results = {
+#                "Yy": np.array([0.999999741	,	1.16226356	,	1.154224842
+#                            ,	1.000000352	,	1.261592198	,	1.254583122
+#                            ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ] )
+#                "Yyn": np.array( [1.000000108	,	0.995841765	,	0.985104757
+#                                ,	0.999999879	,	1.003636017	,	0.994370887
+#                                ,	1.000000013	,	0.999760497	,	0.995218464
+#                            	])
+#                ,"Yd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"YNy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+                "YNyn":np.array([			1	,	0.999016643	,	0.944619532
+                                        ,	1	,	0.999016643	,	0.944619532
+                                        ,	1	,	0.999016643	,	0.944619533
 
+                        ])
+
+#                ,"YNd": np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"Dy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"Dyn": np.array([	1.000000107	,	0.999735094	,	0.988999796
+#                                ,	0.99999988	,	0.999734868	,	0.990462827
+#                                ,	1.000000013	,	0.999752516	,	0.995206099
+#                        ])
+#                ,"Dd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+
+               }
+
+    net = pp.create_empty_network(sn_mva = 100) 
+    for vc in results.keys():
+        
+        make_nw(net, vc,1)
+        assert runpp_3ph(net,tolerance_mva=1e-12)[3]["success"]
+#        print(net.res_bus_3ph)
+#        try:
+#             runpp_3ph(net)
+#        except:
+#             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+    
+    for vc, result in results.items():
+        check_results(net, vc, result)
+#@pytest.mark.xfail 
+def test_trafo_Highload_asym():
+
+# =============================================================================
+# TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
+# It has something to do with Y sh for these groups    
+# =============================================================================
+    results = {
+#                "Yy": np.array([0.999999741	,	1.16226356	,	1.154224842
+#                            ,	1.000000352	,	1.261592198	,	1.254583122
+#                            ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ] )
+#                "Yyn": np.array( [1.000000108	,	0.995841765	,	0.985104757
+#                                ,	0.999999879	,	1.003636017	,	0.994370887
+#                                ,	1.000000013	,	0.999760497	,	0.995218464
+#                            	])
+#                ,"Yd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"YNy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+                "YNyn":np.array([	0.999999708	,	0.998846637	,	0.928690878
+                                ,	1.000000167	,	0.999011589	,	0.945238319
+                                ,	1.000000124	,	0.999000247	,	0.948843563
+                        ])
+
+#                ,"YNd": np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"Dy":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+#                ,"Dyn": np.array([	1.000000107	,	0.999735094	,	0.988999796
+#                                ,	0.99999988	,	0.999734868	,	0.990462827
+#                                ,	1.000000013	,	0.999752516	,	0.995206099
+#                        ])
+#                ,"Dd":  np.array([	0.999999741	,	1.16226356	,	1.154224842
+#                                ,	1.000000352	,	1.261592198	,	1.254583122
+#                                ,	0.999999907	,	0.656601912	,	0.646808381
+#                        ])
+
+               }
+
+    net = pp.create_empty_network(sn_mva = 100) 
+    for vc in results.keys():
+        
+        make_nw(net, vc,3)
+        assert runpp_3ph(net,tolerance_mva=1e-12)[3]["success"]
+#        print(net.res_bus_3ph)
+#        try:
+#             runpp_3ph(net)
+#        except:
+#             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+    
+    for vc, result in results.items():
+        check_results(net, vc, result)
+#@pytest.mark.xfail
 def test_2trafos():
     net = pp.create_empty_network() 
-    make_nw(net, "YNyn")
-    make_nw(net, "YNyn")
+    make_nw(net, "YNyn",1)
+    make_nw(net, "YNyn",1)
     assert runpp_3ph(net)[3]["success"]
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
     
