@@ -530,7 +530,65 @@ def check_results(net, vc, result):
             ,axis =0)
     if not np.allclose(result, res_vm_kv,atol=1e-4):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
-        
+def make_off_nom_nw(net,vector_group,case):
+    b1 = pp.create_bus(net, 11, zone=vector_group, index=pp.get_free_id(net.bus))
+    b2 = pp.create_bus(net, 0.4, zone=vector_group)
+    b3 = pp.create_bus(net, 0.4, zone=vector_group)
+    
+    pp.create_ext_grid(net, b1, s_sc_max_mva=10000, s_sc_min_mva=8000, rx_min=0.1, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+    
+    pp.create_std_type(net, {"sn_mva": 1.6,
+                "vn_hv_kv": 10,
+                "vn_lv_kv": 0.4,
+                "vk_percent": 6,
+                "vkr_percent": 0.78125,
+                "pfe_kw": 2.7,
+                "i0_percent": 0.16875,
+                "shift_degree": 0,
+                "vector_group": "YNyn",
+                "tap_side": "hv",
+                "tap_neutral": 0,
+                "tap_min": -2,
+                "tap_max": 2,
+                "tap_step_degree": 0,
+                "tap_step_percent": 2.5,
+                "tap_phase_shifter": False,
+                "vk0_percent": 6, 
+                "vkr0_percent": 0.78125, 
+                "mag0_percent": 100,
+                "mag0_rx": 0.,
+                "si0_hv_partial": 0.9,}, vector_group, "trafo")
+    
+    t1=pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=1,
+    					  index=pp.get_free_id(net.trafo)+1)
+    
+    
+    pp.create_std_type(net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991,
+                        "c_nf_per_km": 1160., "max_i_ka": 0.421,
+                        "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
+                        "x0_ohm_per_km": 0.2990796,
+                        "c0_nf_per_km":  496.2}, "unsymmetric_line_type")
+    
+            
+    pp.create_line(net, b2, b3, length_km=0.5, std_type="unsymmetric_line_type",
+    			   index=pp.get_free_id(net.line)+1)
+    
+    if case == 1:
+        ##Symmetric Load
+        pp.create_load(net,b3,0.08,0.012)
+    elif case == 2:
+        #Unsymmetric Light Load
+        create_asymmetric_load(net, b3, p_A_mw=0.0044, q_A_mvar=0.0013, p_B_mw=0.0044, q_B_mvar=0.0013,
+                               p_C_mw=0.0032, q_C_mvar=0.0013)
+    elif case == 3:
+        ##Unsymmetric Heavy Load
+        create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
+                               p_C_mw=0.027, q_C_mvar=0.0043)
+    
+    pp.add_zero_impedance_parameters(net) 
+    return t1        
 def make_nw(net,vector_group,case):
     b1 = pp.create_bus(net, 10, zone=vector_group, index=pp.get_free_id(net.bus))
     b2 = pp.create_bus(net, 0.4, zone=vector_group)
@@ -675,10 +733,9 @@ def test_trafo_Highload_sym():
 #                                ,	1.000000352	,	1.261592198	,	1.254583122
 #                                ,	0.999999907	,	0.656601912	,	0.646808381
 #                        ])
-                "YNyn":np.array([			1	,	0.999016643	,	0.944619532
-                                        ,	1	,	0.999016643	,	0.944619532
-                                        ,	1	,	0.999016643	,	0.944619533
-
+                "YNyn":np.array([	1	,	0.999016643	,	0.944619532 #VmA
+                                ,	1	,	0.999016643	,	0.944619532 
+                                ,	1	,	0.999016643	,	0.944619533
                         ])
 
 #                ,"YNd": np.array([	0.999999741	,	1.16226356	,	1.154224842
@@ -774,6 +831,16 @@ def test_trafo_Highload_asym():
     
     for vc, result in results.items():
         check_results(net, vc, result)
+
+def test_off_nominal_ratio_trafo():
+    net = pp.create_empty_network(sn_mva = 100) 
+    make_off_nom_nw(net, "YNyn",1)
+    assert runpp_3ph(net,tolerance_mva=1e-12)[3]["success"]
+    res_pf = np.array([		1	,	1.099111063	,	1.050190396
+                        ,	1	,	1.099111063	,	1.050190397
+                        ,	1	,	1.099111063	,	1.050190397
+                        ])
+    check_results(net, "YNyn", res_pf)
 #@pytest.mark.xfail
 def test_2trafos():
     net = pp.create_empty_network() 
