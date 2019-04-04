@@ -1430,10 +1430,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """ Convenience function for creating many lines at once. Parameters must have equal length or
-        be a single value, which will be set for all lines.
-        The line parameters are defined through the standard type library.
-        All lines must have the same standard type.
+    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values. In any case the line parameters are defined through a single standard
+        type, so all lines have the same standard type.
 
 
         INPUT:
@@ -1488,6 +1488,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     dtypes = net.line.dtypes
 
     dd = pd.DataFrame(index=index, columns=net.line.columns)
+
     # user defined params
     dd["from_bus"] = from_buses
     dd["to_bus"] = to_buses
@@ -1510,20 +1511,32 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     dd["parallel"] = parallel
     dd["in_service"] = in_service
 
-    if not isnan(max_loading_percent):
-        if "max_loading_percent" not in net.line.columns:
-            net.line.loc[:, "max_loading_percent"] = pd.Series()
-        net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
-
     # extend the lines by the frame we just created
     net["line"] = net["line"].append(dd, sort=False)
+
+    if hasattr(max_loading_percent, "__iter__"):
+        if "max_loading_percent" not in net.line.columns:
+            net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+        net.line.loc[index, "max_loading_percent"] = [0 if isnan(ml) else float(ml) for ml in max_loading_percent]
+    else:
+        if not isnan(max_loading_percent):
+            if "max_loading_percent" not in net.line.columns:
+                net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+            net.line.loc[index, "max_loading_percent"] = max_loading_percent
+
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        # works with a 2-tuple or a matching array
         dtypes = net.line_geodata.dtypes
         df = pd.DataFrame(index=index, columns=net.line_geodata.columns)
-        df["coords"] = geodata
+        # works with single or multiple lists of coordinates
+        if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
+            # geodata is a single list of coordinates
+            df["coords"] = [geodata] * len(index)
+        else:
+            # geodata is multiple lists of coordinates
+            df["coords"] = geodata
+
         net.line_geodata = net.line_geodata.append(df, sort=False)
         _preserve_dtypes(net.line_geodata, dtypes)
 
