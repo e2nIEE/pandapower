@@ -191,13 +191,14 @@ def find_basic_graph_characteristics(g, roots, characteristics):
     low = {root: 0 for root in roots}
     visited = set(roots)
     path = []
-    stack = [(root, root, iter(sorted(g[root]))) for root in roots]
+    stack = [(root, root, iter(g[root])) for root in roots]
     while stack:
         grandparent, parent, children = stack[-1]
         try:
             child = next(children)
             if stub_buses:
-                path.append(child)  # keep track of movement through the graph
+                if child not in visited:
+                    path.append(child)  # keep track of movement through the graph
             if grandparent == child:
                 continue
             if child in visited:
@@ -206,9 +207,10 @@ def find_basic_graph_characteristics(g, roots, characteristics):
             else:
                 low[child] = discovery[child] = len(discovery)
                 visited.add(child)
-                stack.append((parent, child, iter(sorted(g[child]))))
+                stack.append((parent, child, iter(g[child])))
         except StopIteration:
-            stack.pop()
+            back = stack.pop()
+            path.append(back[0])
             if low[parent] >= discovery[grandparent]:
                 # Articulation points and start of not n-1 safe buses
                 if grandparent not in roots:
@@ -223,14 +225,12 @@ def find_basic_graph_characteristics(g, roots, characteristics):
 
                     # Stub buses
                     if stub_buses:
-                        if path[-1] == grandparent:
-                            path.pop()
+                        stub = path.pop()
+                        if stub != grandparent:
+                            char_dict['stub_buses'].add(stub)
+                        while path and path[-1] != grandparent and path[-1] not in roots:
                             stub = path.pop()
                             char_dict['stub_buses'].add(stub)
-                        else:
-                            while path[-1] != grandparent:
-                                stub = path.pop()
-                                char_dict['stub_buses'].add(stub)
             low[grandparent] = min(low[parent], low[grandparent])
 
     if connected:
