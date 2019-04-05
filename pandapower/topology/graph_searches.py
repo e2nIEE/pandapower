@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import networkx as nx
 import pandas as pd
 from collections import deque
+from itertools import combinations
 
 from pandapower.topology.create_graph import create_nxgraph
 
@@ -190,7 +191,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
     low = {root: 0 for root in roots}
     visited = set(roots)
     path = []
-    stack = [(root, root, iter(g[root])) for root in roots]
+    stack = [(root, root, iter(sorted(g[root]))) for root in roots]
     while stack:
         grandparent, parent, children = stack[-1]
         try:
@@ -205,7 +206,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
             else:
                 low[child] = discovery[child] = len(discovery)
                 visited.add(child)
-                stack.append((parent, child, iter(g[child])))
+                stack.append((parent, child, iter(sorted(g[child]))))
         except StopIteration:
             stack.pop()
             if low[parent] >= discovery[grandparent]:
@@ -493,3 +494,24 @@ def estimate_voltage_vector(net):
                 res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
                 return res_bus
     return res_bus
+
+
+def get_end_points_of_continously_connected_lines(net, lines):
+    mg = nx.MultiGraph()
+    line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
+    mg.add_edges_from(line_buses)
+    switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
+    mg.add_edges_from(switch_buses)
+    
+    all_buses = set(line_buses.flatten())
+    longest_path = []
+    for b1, b2 in combinations(all_buses, 2):
+        try:
+            path = nx.shortest_path(mg, b1, b2)
+        except nx.NetworkXNoPath:
+            raise UserWarning("Lines not continously connected")
+        if len(path) > len(longest_path):
+            longest_path = path
+    if all_buses - set(longest_path):
+        raise UserWarning("Lines have branching points")
+    return longest_path[0], longest_path[-1]

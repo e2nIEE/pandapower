@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, zeros
+from packaging import version
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
@@ -86,7 +87,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                    ("et", dtype(object)),
                    ("type", dtype(object)),
                    ("closed", "bool"),
-                   ("name", dtype(object))],
+                   ("name", dtype(object)),
+                   ("z_ohm", "f8")],
         "shunt": [("bus", "u4"),
                   ("name", dtype(object)),
                   ("q_mvar", "f8"),
@@ -330,7 +332,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": float(__version__[:3]),
+        "version": __version__,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -1072,6 +1074,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
             net.gen.loc[:, "xdss_pu"] = pd.Series()
+        if "rdss_pu" not in net.gen.columns:
+            net.gen.loc[:, "rdss_pu"] = pd.Series()
         net.gen.loc[index, "xdss_pu"] = float(xdss_pu)
 
     if not isnan(rdss_pu):
@@ -1755,10 +1759,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    try:
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except TypeError:  # legacy for pandas <0.21
+    if version.parse(pd.__version__) < version.parse("0.21"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+    else:
+        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
@@ -1908,7 +1912,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0):
     """
     Adds a switch in the net["switch"] table.
 
@@ -1932,19 +1936,23 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
         bus and transformer, "b" = switch between two buses
 
+    OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
         **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
-    OPTIONAL:
+        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
+            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
+            0 a branch will be created for the switch which has also effects on the bus mapping
+
         **name** (string, default None) - The name for this switch
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS")
+        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
 
         create_switch(net, bus = 0, element = 1, et = 'l')
 
@@ -1987,8 +1995,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name"]] = \
-        [bus, element, et, closed, type, name]
+    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name", "z_ohm"]] = \
+        [bus, element, et, closed, type, name, z_ohm]
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)
@@ -2451,13 +2459,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"]
 
-        **data_points** - (numpy array) Numpy array containing data points and slopes (see example)
+        **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
+        **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -2466,12 +2473,13 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        The cost function is given by the x-values x1 and x2 with the slope m between those points. The constant part
-        b of a linear function y = m*x + b can be neglected for OPF purposes. If the PWL function contains more than 1
-        interval, the intervals are put together in a way, where the right point of the left interval equals the left
-        point of the right interval.
-
-        create_pwl_cost(net, 0, "load", [(x1, x2, m)])
+        The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continous (the
+        starting point of an interval has to be equal to th end point of the previous interval).
+       
+        To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
+        
+        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
 
     if index is None:

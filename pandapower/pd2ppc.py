@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,16 +8,12 @@ import copy
 
 import numpy as np
 
-from pandapower.idx_area import PRICE_REF_BUS
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_area import PRICE_REF_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 
-try:
-    from pypower.run_userfcn import run_userfcn
-except ImportError:
-    # ToDo: Error only for OPF functions if PYPOWER is not installed
-    pass
+from pandapower.pypower.run_userfcn import run_userfcn
 
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
@@ -147,7 +143,6 @@ def _init_ppc(net):
             , "Yt": np.array([], dtype=np.complex128)
             , "branch_is": np.array([], dtype=bool)
             , "gen_is": np.array([], dtype=bool)
-
             , "DLF": np.array([], dtype=np.complex128)
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }

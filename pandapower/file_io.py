@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,6 +9,7 @@ import json
 import os
 import pickle
 import sys
+from packaging import version
 from warnings import warn
 
 try:
@@ -26,7 +27,7 @@ import numpy
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandapower.toolbox import convert_format
+from pandapower.convert_format import convert_format
 from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
 
 
@@ -220,13 +221,12 @@ def from_pickle(filename, convert=True):
                     net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
                                             data=df_dict["data"])
             else:
-                # TODO: is this legacy code?
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    try:
-                        net[key] = net[key].reindex(item["columns"], axis=1)
-                    except TypeError:  # legacy for pandas <0.21
+                    if version.parse(pd.__version__) < version.parse("0.21"):
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                    else:
+                        net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -265,10 +265,10 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    pd_version = float(pd.__version__[:4])
-    if pd_version < 0.21:
+    pd_version = version.parse(pd.__version__)
+    if pd_version < version.parse("0.21"):
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    elif pd_version < 0.24:
+    elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
         xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
@@ -345,7 +345,7 @@ def from_json(filename, convert=True):
     return net
 
 
-def from_json_string(json_string, convert=True):
+def from_json_string(json_string, convert=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -394,11 +394,15 @@ def from_json_dict(json_dict):
     name = json_dict["name"] if "name" in json_dict else None
     f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50
     net = create_empty_network(name=name, f_hz=f_hz)
+    if "parameters" in json_dict:
+        for par, value in json_dict["parameters"]["parameter"].items():
+            net[par] = value
 
     for key in sorted(json_dict.keys()):
         if key == 'dtypes':
             continue
-        if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict):
+        if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict) \
+             or key == "piecewise_linear_cost" or key == "polynomial_cost":
             net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:

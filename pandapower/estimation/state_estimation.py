@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
@@ -13,10 +13,9 @@ from pandapower.topology import estimate_voltage_vector
 from time import time
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc,\
-    _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
+                                                  _init_ppc, _add_aux_elements_for_bb_switch, \
+                                                  _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-#from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
 
 try:
@@ -25,8 +24,10 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-ESTIMATOR_MAPPING = {'wls': WLSEstimator,
-                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints}
+ESTIMATOR_MAPPING = {
+    'wls': WLSEstimator,
+    'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints
+}
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -119,9 +120,6 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **rn_max_threshold** (float) - Identification threshold to determine
         if the largest normalized residual reflects a bad measurement
         (default value of 3.0)
-
-        **chi2_prob_false** (float) - probability of error / false alarms
-        (default value: 0.05)
 
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
@@ -458,9 +456,6 @@ class StateEstimation(object):
             **rn_max_threshold** (float) - Identification threshold to determine
             if the largest normalized residual reflects a bad measurement
             (standard value of 3.0)
-
-            **chi2_prob_false** (float) - probability of error / false alarms
-            (standard value: 0.05)
 
         OUTPUT:
             **successful** (boolean) - True if all bad data could be removed

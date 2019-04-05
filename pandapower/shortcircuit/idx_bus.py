@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 # define the indices
-from pandapower.idx_bus import bus_cols as start
+from pandapower.pypower.idx_bus import bus_cols as start
 
 R_EQUIV     = start + 0
 X_EQUIV     = start + 1

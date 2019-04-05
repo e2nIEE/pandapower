@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 
-from pandapower.idx_brch import branch_cols as start
+from pandapower.pypower.idx_brch import branch_cols as start
 
 IKSS_F    = start + 0
 IKSS_T    = start + 1

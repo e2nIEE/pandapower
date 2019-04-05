@@ -4,12 +4,12 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import zeros, array
-from pandapower.idx_cost import MODEL, NCOST, COST, PW_LINEAR, POLYNOMIAL
-from pandapower.idx_gen import PMIN, PMAX
+from pandapower.pypower.idx_cost import MODEL, NCOST, COST, PW_LINEAR, POLYNOMIAL
+from pandapower.pypower.idx_gen import PMIN, PMAX
 
 try:
     import pplog as logging

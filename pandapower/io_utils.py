@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -261,7 +261,6 @@ def pp_hook(d):
         class_name = d.pop('_class')
         module_name = d.pop('_module')
         obj = d.pop('_object')
-
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):

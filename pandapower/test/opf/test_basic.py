@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,7 +9,7 @@ import numpy as np
 
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection
-from pandapower.toolbox import convert_format
+from pandapower.convert_format import convert_format
 
 try:
     import pplog as logging
@@ -472,7 +472,7 @@ def test_opf_poly(simple_opf_test_net):
 def test_opf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    pp.create_pwl_cost(net, 0, "gen", [(0, 100, 100), (100, 200, 100)])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, init=init)
@@ -490,8 +490,8 @@ def test_opf_pwl(simple_opf_test_net):
 def test_dcopf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    pp.create_pwl_cost(net, 0, "gen"     , [(0, 100, 100), (100, 200, 100)])
-    pp.create_pwl_cost(net, 0, "ext_grid", [(0, 100, 0), (100, 200, 0)])
+    pp.create_pwl_cost(net, 0, "gen"     , [[0, 100, 100], [100, 200, 100]])
+    pp.create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
     # run OPF
     pp.rundcopp(net, )
     assert net["OPF_converged"]
@@ -828,4 +828,4 @@ def test_line_temperature():
 
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main([__file__, "-xs"])
