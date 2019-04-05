@@ -52,7 +52,7 @@ class BaseAlgebraTorch:
     def create_rx(self, v, delta):
         hx = self.create_hx(v, delta)
         return (self.z - hx).ravel()
-    
+
     def create_hx(self, v, delta):
         f_bus, t_bus = self.fb, self.tb
         V = v * np.exp(1j * delta)

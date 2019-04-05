@@ -11,6 +11,7 @@ from pandapower.estimation.algorithm.matrix_opt import \
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 DEFAULT_OPT_METHOD = "Newton-CG"
+#DEFAULT_OPT_METHOD = "BFGS"
 ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
                      'lav': LAVEstimatorOpt,
                      'qc': QCEstimatorOpt,
@@ -29,13 +30,13 @@ class OptAlgorithm(WLSAlgorithm):
         estm = ESTIMATOR_MAPPING[opt_vars['estimator']](ppci, non_nan_meas_mask, 
                                 z=z, sigma=r_cov, **opt_vars)
 
+        jac = estm.create_rx_jacobian if estm.jac_available else None
         res = minimize(estm.cost_function, x0=E, 
-                       method=opt_method, jac=estm.create_rx_jacobian, 
-                       tol=self.tolerance, options={'maxiter':100, 'disp': True})
+                       method=opt_method, jac=jac,
+                       options={'maxiter':100, 'disp': True})
 #        res = minimize(estm.cost_function, x0=E, 
-#                       method=opt_method, jac=estm.create_rx_jacobian, 
-#                       tol=self.tolerance, options={'disp': True})
-
+#                       method=opt_method, jac=estm.create_rx_jacobian, "gtol": 1e-7 * n
+#                       tol=self.tolerance, options={'maxiter':100, 'disp': True})
         self.successful = res.success
         if self.successful:
             E = res.x

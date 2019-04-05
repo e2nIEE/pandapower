@@ -32,19 +32,20 @@ def test_2bus():
     # 2. Do state estimation
     success = estimate(net, init='flat', algorithm="opt", estimator='lav')
     assert success
+    
 
 
-def test_four_bus():
-    net = nw.simple_four_bus_system()
-    pp.runpp(net)
-    add_virtual_meas_from_loadflow(net)
-    vm, va = net.res_bus.vm_pu, net.res_bus.va_degree
-
-    success = estimate(net, algorithm="opt", estimator="lav")
-    assert success
-
-    success = estimate(net, algorithm="opt", estimator="qc", a=1)
-    assert success
+#def test_four_bus():
+#    net = nw.simple_four_bus_system()
+#    pp.runpp(net)
+#    add_virtual_meas_from_loadflow(net)
+#    vm, va = net.res_bus.vm_pu, net.res_bus.va_degree
+#
+#    success = estimate(net, algorithm="opt", estimator="lav")
+#    assert success
+#    
+#    success = estimate(net, algorithm="opt", estimator="ql", a=20)
+#    assert success
 
 
 def test_case30_compare_classical_wls_opt_wls():
@@ -59,6 +60,20 @@ def test_case30_compare_classical_wls_opt_wls():
     estimate(net_wls)
     assert np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, rtol=0.1)
     assert np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, rtol=0.1)
+    
+def test_case118_compare_classical_wls_opt_wls():
+    net = nw.case118()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+
+    success = estimate(net, init='flat', algorithm="opt", estimator='wls')
+    assert success
+
+    net_wls = deepcopy(net)
+    estimate(net_wls)
+    assert np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, rtol=0.1)
+    assert np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, rtol=0.1)
+
 
 
 if __name__ == '__main__':

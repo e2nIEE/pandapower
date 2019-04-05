@@ -15,6 +15,7 @@ from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_swit
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
 from pandapower.estimation.algorithm.wls import WLSAlgorithm, WLSZeroInjectionConstraintsAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
+from pandapower.estimation.algorithm.torch_opt import TorchAlgorithm
 
 try:
     import pplog as logging
@@ -24,7 +25,8 @@ std_logger = logging.getLogger(__name__)
 
 SOLVER_MAPPING = {'wls': WLSAlgorithm,
                   'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
-                  'opt': OptAlgorithm}
+                  'opt': OptAlgorithm,
+                  'torch': TorchAlgorithm}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):

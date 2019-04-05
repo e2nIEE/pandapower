@@ -18,8 +18,11 @@ class BaseEstimatorOpt:
         self.z = z
         self.sigma = sigma
         self.jac_available = False
+        self.hess_available = False
 
     def cost_function(self, E):
+        # Minimize sum(cost(r))
+        # r = cost(z - h(x))
         # Must be implemented according to the estimator for the optimization
         pass
 
@@ -56,6 +59,7 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters):
         super(LAVEstimatorOpt, self).__init__(ppci, non_nan_meas_mask, z, sigma, **hyperparameters)
         self.jac_available = True
+        self.hess_available = True
 
     def cost_function(self, E):
         self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
@@ -74,6 +78,9 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
         hx_jac = self.base_algebra.create_hx_jacobian(self.v, self.delta)
         jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)
         return jac
+    
+    def create_rx_hessian(self, E, *arg):
+        return np.zeros(E.shape)
 
 
 class QCEstimatorOpt(BaseEstimatorOpt):
