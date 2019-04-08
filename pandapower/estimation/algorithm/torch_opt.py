@@ -63,13 +63,14 @@ class TorchEstimator(torch.nn.Module):
         self.non_nan_meas_mask = torch.tensor(non_nan_meas_mask.reshape(-1, 1).tolist()).type(torch.ByteTensor)
         self.vi_slack = torch.zeros(self.slack_bus.shape[0], 1, 
                                     requires_grad=False, dtype=torch.double)
-        self.vi_mapping = torch.from_numpy(np.r_[self.slack_bus, 
-                                                 self.non_slack_bus]).type(torch.LongTensor)
+        self.vi_mapping = torch.from_numpy(np.argsort(np.r_[self.slack_bus, 
+                                                            self.non_slack_bus])).type(torch.LongTensor)
+#        self.vi_mapping = torch.from_numpy(np.array([1,2,3,0,4])).type(torch.LongTensor)
 
     def forward(self, vr, vi_non_slack):
         vi = torch.cat((self.vi_slack,
                         vi_non_slack), 0)
-        vi = torch.index_select(vi, 0, self.vi_mapping)
+        vi = vi.index_select(0, self.vi_mapping)
 
         p_b = real_mul(vr, vi, real_matmul(self.ybr, self.ybi, vr, vi),
                                - imag_matmul(self.ybr, self.ybi, vr, vi))
@@ -99,29 +100,35 @@ class TorchEstimator(torch.nn.Module):
                                  self.non_nan_meas_mask)
         return hx
 
+
 @torch.jit.script
 def weighted_mse_loss(input, target, weight):
-    return torch.sum((input - target) ** 2)
+    return torch.sum((input - target)**2)
 
 
 def optimize(model, floss, vr, vi_non_slack):
-    optimizer = torch.optim.Adam([vr, vi_non_slack], lr=0.01)
-    for t in range(3000):
-        # Forward pass: Compute predicted y by passing x to the model
-        hx = model(vr, vi_non_slack)
-
-        # Compute and print loss
-        loss = floss(hx)
-
-        # Zero gradients, perform a backward pass, and update the weights.
-        optimizer.zero_grad()
-        loss.backward()
-        print(t, loss.data)
+    optimizer = torch.optim.LBFGS([vr, vi_non_slack], lr=1)
+#    optimizer = torch.optim.Adam([vr, vi_non_slack], lr=0.005)
+#    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    for t in range(80):
+        def closure():
+#            scheduler.step()
+            # Forward pass: Compute predicted y by passing x to the model
+            hx = model(vr, vi_non_slack)
+    
+            # Compute and print loss
+            loss = floss(hx)
+            print(t, loss.data)
+    
+            # Zero gradients, perform a backward pass, and update the weights.
+            optimizer.zero_grad()
+            loss.backward()
+            return loss
 #        print(t, torch.min(torch.abs(vr.grad.data)))
-        if (torch.abs(vr.grad.data) < 1e-5).all() and\
-            (torch.abs(vi_non_slack.grad.data) < 1e-5).all():
-            return vr, vi_non_slack
-        optimizer.step()
+#        if (torch.abs(vr.grad.data) < 1e-5).all() and\
+#            (torch.abs(vi_non_slack.grad.data) < 1e-5).all():
+#            return vr, vi_non_slack
+        optimizer.step(closure)
     return vr, vi_non_slack
 
 
@@ -132,12 +139,10 @@ class TorchAlgorithm(WLSAlgorithm):
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
             self.wls_preprocessing(ppci)
         
-
-        
         model = TorchEstimator(ppci, non_nan_meas_mask=non_nan_meas_mask)
         floss = partial(weighted_mse_loss, 
                         target=torch.tensor(z).type(torch.DoubleTensor), 
-                        weight=torch.tensor(1/r_cov).type(torch.DoubleTensor))
+                        weight=torch.tensor(1/r_cov/100).type(torch.DoubleTensor))
         vr = torch.tensor(E[len(non_slack_buses):].reshape(-1, 1), 
                             dtype=torch.double, requires_grad=True)
         vi_non_slack = torch.tensor(E[:len(non_slack_buses)].reshape(-1, 1), 
