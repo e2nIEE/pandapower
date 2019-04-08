@@ -29,7 +29,7 @@ def _get_cpus():
     return str(cpu_count() - 1) if cpu_count() > 1 else str(1)
 
 
-def run_all_tests(parallel=False, n_cpu=False):
+def run_all_tests(parallel=False, n_cpu=None):
     """ function executing all tests
 
     Inputs:
