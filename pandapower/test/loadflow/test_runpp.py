@@ -480,7 +480,7 @@ def test_bsfw_algorithm():
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
 
-
+@pytest.mark.slow
 def test_pypower_algorithms_iter():
     alg_to_test = ['fdbx', 'fdxb', 'gs']
     for alg in alg_to_test:
