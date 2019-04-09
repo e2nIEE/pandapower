@@ -30,6 +30,7 @@ class WLSAlgorithm:
         self.v = None
         self.delta = None
         self.E = None
+        self.pp_meas_indices = None
 
         # Parameters for Bad data detection
         self.R_inv = None
@@ -60,6 +61,7 @@ class WLSAlgorithm:
     def initialize(self, ppci):
         # check whether or not is the grid observed
         e_ppci = ExtendedPPCI(ppci)
+        self.pp_meas_indices = e_ppci.pp_meas_indices
         self.check_observability(e_ppci, e_ppci.z)
 
         # initialize voltage vector
@@ -82,7 +84,7 @@ class WLSAlgorithm:
 
         current_error, cur_it = 100., 0
         # invert covariance matrix
-        r_inv = csr_matrix((np.diagflat(1/e_ppci.r_cov) ** 2))
+        r_inv = csr_matrix(np.diagflat(1/self.e_ppci.r_cov) ** 2)
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))

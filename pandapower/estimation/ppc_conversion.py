@@ -13,7 +13,8 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.pypower.idx_brch import branch_cols
-from pandapower.pypower.idx_bus import bus_cols, BUS_TYPE, BASE_KV, VM, VA
+from pandapower.pypower.idx_bus import bus_cols
+import pandapower.pypower.idx_bus as idx_bus
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
@@ -549,12 +550,12 @@ class ExtendedPPCI(UserDict):
         
         # Base information
         self.baseMVA = ppci['baseMVA']
-        self.bus_baseKV = ppci['bus'][:, BASE_KV].real.astype(int)
+        self.bus_baseKV = ppci['bus'][:, idx_bus.BASE_KV].real.astype(int)
         self.bus = ppci['bus']
         self.branch = ppci['branch']
 
-        self.v_init = ppci["bus"][:, VM]
-        self.delta_init = np.radians(ppci["bus"][:, VA])
+        self.v_init = ppci["bus"][:, idx_bus.VM]
+        self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
 
         # Measurement relevant parameters
         self.z = None
@@ -564,8 +565,8 @@ class ExtendedPPCI(UserDict):
         self._initialize_meas(ppci)
 
         # check slack bus
-        self.non_slack_buses = np.argwhere(ppci["bus"][:, BUS_TYPE] != 3).ravel()
-        self.non_slack_bus_mask = (ppci['bus'][:, BUS_TYPE] != 3).ravel()
+        self.non_slack_buses = np.argwhere(ppci["bus"][:, idx_bus.BUS_TYPE] != 3).ravel()
+        self.non_slack_bus_mask = (ppci['bus'][:, idx_bus.BUS_TYPE] != 3).ravel()
         self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
         self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
                                       np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()

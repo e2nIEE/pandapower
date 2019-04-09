@@ -17,13 +17,12 @@ ESTIMATOR_MAPPING = {'wls': WLSEstimatorIRWLS,
 
 
 class IRWLSAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, estimator="wls", **kwargs):
+    def estimate(self, ppci, estimator="shgm", **kwargs):
         e_ppci = self.initialize(ppci)
 
-        sem = ESTIMATOR_MAPPING[estimator.lower()](e_ppci)
-
         # matrix calculation object
-        # sem = WLSEstimatorIRWLS(e_ppci)
+        wls_sem = WLSEstimatorIRWLS(e_ppci, **kwargs)
+        sem = ESTIMATOR_MAPPING[estimator.lower()](e_ppci, **kwargs)
 
         current_error, cur_it = 100., 0
         while current_error > self.tolerance and cur_it < self.max_iterations:
@@ -37,7 +36,10 @@ class IRWLSAlgorithm(WLSAlgorithm):
 
                 # gain matrix G_m
                 # G_m = H^t * Phi * H
-                phi = csr_matrix(sem.create_phi(self.E))
+                if current_error < 1e-5:
+                    phi = csr_matrix(sem.create_phi(self.E))
+                else:
+                    phi = csr_matrix(wls_sem.create_phi(self.E))
                 G_m = H.T * (phi * H)
 
                 # state vector difference d_E

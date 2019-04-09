@@ -266,7 +266,7 @@ class StateEstimation:
         ppci = _add_measurements_to_ppc(self.net, ppci, zero_injection)
 
         # Estimate voltage magnitude and angle with the given estimator
-        V = self.solver.estimate(ppci, opt_vars=opt_vars)
+        V = self.solver.estimate(ppci, **opt_vars)
 
         if self.solver.successful:
             # calculate the branch power flow and bus power injection based on the estimated voltage vector
