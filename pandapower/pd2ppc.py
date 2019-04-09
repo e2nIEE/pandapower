@@ -103,21 +103,19 @@ def _pd2ppc(net, sequence=None):
     _branches_with_oos_buses(net, ppc)
 
     if check_connectivity:
-        if sequence in [None, 1]:
+        if sequence in [None, 1,2]:
             # sets islands (multiple isolated nodes) out of service
             if "opf" in mode:
-                isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
+                 net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
             else:
-                isolated_nodes, _, _ = aux._check_connectivity(ppc)
-            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes,sequence)
-
+                 net["_isolated_buses"], _, _ = aux._check_connectivity(ppc)
+            net["_is_elements_final"] = aux._select_is_elements_numba(net,  net._isolated_buses,sequence)
         else:
-            isolated_nodes, _, _ = aux._check_connectivity(ppc)
-            ppc["bus"][isolated_nodes, 1] = NONE 
-            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes,sequence)                                                                                                                                                      
-    
+            ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE 
+        net["_is_elements"] = net["_is_elements_final"]                                                                                                                                                     
+    else:
     # sets buses out of service, which aren't connected to branches / REF buses  
-    aux._set_isolated_buses_out_of_service(net, ppc)
+        aux._set_isolated_buses_out_of_service(net, ppc)
 
     _build_gen_ppc(net, ppc)
 
