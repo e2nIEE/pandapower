@@ -8,6 +8,7 @@ from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 
 __all__ = ["WLSEstimatorOpt", "LAVEstimatorOpt", "QCEstimatorOpt", "QLEstimatorOpt"]
 
+
 class BaseEstimatorOpt:
     def __init__(self, ppci, non_nan_meas_mask, z, sigma, **hyperparameters):
         self.base_algebra = BaseAlgebra(ppci, non_nan_meas_mask, z)
@@ -26,7 +27,7 @@ class BaseEstimatorOpt:
         # Must be implemented according to the estimator for the optimization
         pass
 
-    def create_jac(self, E):
+    def create_rx_jacobian(self, E):
         pass
 
 
@@ -78,9 +79,6 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
         hx_jac = self.base_algebra.create_hx_jacobian(self.v, self.delta)
         jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)
         return jac
-    
-    def create_rx_hessian(self, E, *arg):
-        return np.zeros(E.shape)
 
 
 class QCEstimatorOpt(BaseEstimatorOpt):

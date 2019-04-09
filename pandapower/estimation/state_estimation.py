@@ -9,13 +9,14 @@ from scipy.stats import chi2
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.topology import estimate_voltage_vector
 
-from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, _init_ppc,\
+from pandapower.estimation.ppc_conversion import _add_measurements_to_ppc, _init_ppc,\
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_switch_impedance
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
 from pandapower.estimation.algorithm.wls import WLSAlgorithm, WLSZeroInjectionConstraintsAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
-from pandapower.estimation.algorithm.torch_opt import TorchAlgorithm
+from pandapower.estimation.algorithm.irwls import IRWLSAlgorithm
+
 
 try:
     import pplog as logging
@@ -26,7 +27,7 @@ std_logger = logging.getLogger(__name__)
 SOLVER_MAPPING = {'wls': WLSAlgorithm,
                   'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
                   'opt': OptAlgorithm,
-                  'torch': TorchAlgorithm}
+                  'irwls': IRWLSAlgorithm}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -175,7 +176,7 @@ class StateEstimation:
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
         self.net = net
-        self.solver = SOLVER_MAPPING[algorithm](self.net, tolerance,
+        self.solver = SOLVER_MAPPING[algorithm](tolerance,
                                                 maximum_iterations, self.logger)
 
         # variables for chi^2 / rn_max tests
@@ -324,7 +325,7 @@ class StateEstimation:
         m = len(self.net.measurement)
 
         # Number of state variables (the -1 is due to the reference bus)
-        n = len(self.solver.V) + len(self.solver.delta) - 1
+        n = len(self.solver.v) + len(self.solver.delta) - 1
 
         # Chi^2 test threshold
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
@@ -401,7 +402,7 @@ class StateEstimation:
                 # was removed which caused this issue
                 # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
                 # (S is the sensitivity matrix: r = S*e):
-                Omega = R - np.dot(self.solver.H, np.dot(np.linalg.inv(self.solver.Gm), self.solver.Ht))
+                Omega = R - np.dot(self.solver.H, np.dot(np.linalg.inv(self.solver.Gm), self.solver.H.T))
 
                 # Diagonalize \Omega:
                 Omega = np.diag(np.diag(Omega))

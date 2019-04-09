@@ -6,12 +6,14 @@
 
 import numpy as np
 import pandas as pd
+from collections import UserDict
+
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.pypower.idx_brch import branch_cols
-from pandapower.pypower.idx_bus import bus_cols
+from pandapower.pypower.idx_bus import bus_cols, BUS_TYPE, BASE_KV, VM, VA
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
@@ -540,3 +542,35 @@ def _build_measurement_vectors(ppci):
                                 i_line_f_not_nan,
                                 i_line_t_not_nan])
     return z, pp_meas_indices, r_cov, meas_mask
+
+class ExtendedPPCI(UserDict):
+    def __init__(self, ppci):
+        self.data = ppci
+        
+        # Base information
+        self.baseMVA = ppci['baseMVA']
+        self.bus_baseKV = ppci['bus'][:, BASE_KV].real.astype(int)
+        self.bus = ppci['bus']
+        self.branch = ppci['branch']
+
+        self.v_init = ppci["bus"][:, VM]
+        self.delta_init = np.radians(ppci["bus"][:, VA])
+
+        # Measurement relevant parameters
+        self.z = None
+        self.r_cov = None
+        self.pp_meas_indices = None 
+        self.non_nan_meas_mask = None 
+        self._initialize_meas(ppci)
+
+        # check slack bus
+        self.non_slack_buses = np.argwhere(ppci["bus"][:, BUS_TYPE] != 3).ravel()
+        self.non_slack_bus_mask = (ppci['bus'][:, BUS_TYPE] != 3).ravel()
+        self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
+        self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
+                                      np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
+
+    def _initialize_meas(self, ppci):
+        # calculate relevant vectors from ppci measurements
+        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask =\
+             _build_measurement_vectors(ppci)
