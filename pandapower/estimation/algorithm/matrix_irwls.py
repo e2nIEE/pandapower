@@ -80,3 +80,18 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
                      sm_not_null_mask=np.zeros(omega.shape[0]),
                      ps=np.zeros(omega.shape[0]))
         return ps
+    
+
+class QLEstimatorIRWLS(BaseEstimatorIRWLS):
+    def __init__(self, e_ppci: ExtendedPPCI, **hyperparameters):
+        super(QLEstimatorIRWLS, self).__init__(e_ppci, **hyperparameters)
+        assert 'a' in hyperparameters
+        self.a = hyperparameters.get('a')
+
+    def create_phi(self, E):
+        r = self.create_rx(E)
+
+        phi = 2/(self.sigma**2)
+        condition_mask = np.abs(r/(self.sigma))>self.a
+        phi[condition_mask] = (2 * self.a * self.sigma * np.sign(r)) [condition_mask]
+        return np.diagflat(phi)

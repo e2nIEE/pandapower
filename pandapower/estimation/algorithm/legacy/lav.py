@@ -8,16 +8,16 @@ from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM
-from pandapower.estimation.ppc_conversions import _build_measurement_vectors
+from pandapower.estimation.ppc_conversion import _build_measurement_vectors
 
-from pandapower.estimation.algorithm.wls import WLSEstimator
+from pandapower.estimation.algorithm.wls import WLSAlgorithm
 from pandapower.estimation.algorithm.matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
 #from pandapower.estimation.estimator.wls_matrix_ops_ori import WLSAlgebra
 #from scipy.optimize import minimize, linprog
 from cvxopt import solvers, matrix
 
 
-class LAVEstimator(WLSEstimator):
+class LAVAlgorithm(WLSAlgorithm):
     def estimate(self, ppci):
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
             self.wls_preprocessing(ppci)

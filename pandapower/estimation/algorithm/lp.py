@@ -6,47 +6,37 @@
 import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
+from scipy.optimize import linprog
 
 from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM, bus_cols
+
 from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
-from pandapower.estimation.algorithm.matrix_irwls import (WLSEstimatorIRWLS, 
-                                                          SHGMEstimatorIRWLS, QLEstimatorIRWLS)
+from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
-
-ESTIMATOR_MAPPING = {'wls': WLSEstimatorIRWLS,
-                     'shgm': SHGMEstimatorIRWLS,
-                     'ql': QLEstimatorIRWLS}
+#from cvxopt import solvers, matrix
 
 
-class IRWLSAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, estimator="shgm", **kwargs):
+class LPAlgorithm(WLSAlgorithm):
+    def estimate(self, ppci, **kwargs):
         e_ppci = self.initialize(ppci)
 
         # matrix calculation object
-        wls_sem = WLSEstimatorIRWLS(e_ppci, **kwargs)
-        sem = ESTIMATOR_MAPPING[estimator.lower()](e_ppci, **kwargs)
+        sem = BaseAlgebra(e_ppci)
 
         current_error, cur_it = 100., 0
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # residual r
-                r = csr_matrix(sem.create_rx(self.E)).T
+                r = sem.create_rx(self.E)
 
                 # jacobian matrix H
-                H = csr_matrix(sem.create_hx_jacobian(self.E))
-
-                # gain matrix G_m
-                # G_m = H^t * Phi * H
-                if current_error < 1e-2:
-                    phi = csr_matrix(sem.create_phi(self.E))
-                else:
-                    phi = csr_matrix(wls_sem.create_phi(self.E))
-                G_m = H.T * (phi * H)
+                H = sem.create_hx_jacobian(self.E)
 
                 # state vector difference d_E
-                d_E = spsolve(G_m, H.T * (phi * r))
-                self.E += d_E.ravel()
+                # d_E = G_m^-1 * (H' * R^-1 * r)
+                d_E = new_X(H, self.E, r)
+                self.E += d_E
 
                 # prepare next iteration
                 cur_it += 1
@@ -62,3 +52,27 @@ class IRWLSAlgorithm(WLSAlgorithm):
         # update V/delta
         self.update_v()
         return self.v * np.exp(1j * self.delta)
+    
+
+def new_X(H, x, r):
+    n, m = H.shape[1], H.shape[0]
+    zero_n = np.zeros((n, 1))
+    one_m = np.ones((m, 1))
+    Im = np.eye(m)
+    
+    c_T = np.r_[zero_n, zero_n, one_m, one_m] 
+    A = np.c_[H, -H, Im, -Im]
+    
+#    res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
+#                  method="interior-point", options={'tol': 1e-4, 'disp': True, 'maxiter':10000})
+    res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
+                  method="simplex", options={'tol': 1e-5, 'disp': True, 'maxiter':20000})
+#    res = solvers.lp(matrix(c_T.ravel()), G=matrix(-np.eye((n+m)*2)), h=matrix(np.zeros(((n+m)*2,1))), 
+#                     A=matrix(A), b=matrix(r))
+    if res.success:
+        d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2*n]).ravel()
+        return d_x
+    else:
+        raise np.linalg.linalg.LinAlgError 
+    
+    

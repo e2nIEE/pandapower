@@ -37,7 +37,7 @@ if __name__ == "__main__":
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
 
-    success = estimate(net, init='flat', algorithm="irwls", estimator='shgm', a=3.5, max_iterations=20)
+    success = estimate(net, init='flat', algorithm="irwls", estimator='ql', a=1, max_iterations=20, tolerance=1e-4)
     assert success
 
     net_wls = deepcopy(net)

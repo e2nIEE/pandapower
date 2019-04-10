@@ -7,42 +7,37 @@ import numpy as np
 from scipy.optimize import minimize
 
 from pandapower.estimation.algorithm.matrix_opt import \
-    (WLSEstimatorOpt, LAVEstimatorOpt, QCEstimatorOpt, QLEstimatorOpt)
+    (WLSEstimatorOpt, LAVEstimatorOpt,)
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
-DEFAULT_OPT_METHOD = "Newton-CG"
-#DEFAULT_OPT_METHOD = "BFGS"
+#DEFAULT_OPT_METHOD = "Newton-CG"
+DEFAULT_OPT_METHOD = "BFGS"
 ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
-                     'lav': LAVEstimatorOpt,
-                     'qc': QCEstimatorOpt,
-                     'ql': QLEstimatorOpt}
+                     'lav': LAVEstimatorOpt}
 
 
 class OptAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, opt_vars=None):
+    def estimate(self, ppci, **opt_vars):
         assert 'estimator' in opt_vars and opt_vars['estimator'] in ESTIMATOR_MAPPING
         opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in opt_vars else opt_vars['opt_method']
 
-        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
-            self.wls_preprocessing(ppci)
+        self.initialize(ppci)
 
         # matrix calculation object
-        estm = ESTIMATOR_MAPPING[opt_vars['estimator']](ppci, non_nan_meas_mask, 
-                                z=z, sigma=r_cov, **opt_vars)
+        estm = ESTIMATOR_MAPPING[opt_vars['estimator']](self.e_ppci, **opt_vars)
 
         jac = estm.create_rx_jacobian if estm.jac_available else None
-        res = minimize(estm.cost_function, x0=E, 
+        res = minimize(estm.cost_function, x0=self.E, 
                        method=opt_method, jac=jac,
-                       options={'maxiter':100, 'disp': True})
+                       options={'maxiter':1000, 'disp': True})
 #        res = minimize(estm.cost_function, x0=E, 
 #                       method=opt_method, jac=estm.create_rx_jacobian, "gtol": 1e-7 * n
 #                       tol=self.tolerance, options={'maxiter':100, 'disp': True})
         self.successful = res.success
         if self.successful:
-            E = res.x
-            delta[non_slack_buses] = E[:len(non_slack_buses)]
-            v_m = E[len(non_slack_buses):]
-            V = v_m * np.exp(1j * delta)
+            self.E = res.x
+            self.update_v()
+            V = self.v * np.exp(1j * self.delta)
             return V
         else:
             raise Exception("Optimiaztion failed! State Estimation not successful!")
