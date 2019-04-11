@@ -18,8 +18,6 @@ from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 class LPAlgorithm(WLSAlgorithm):
     def estimate(self, eppci, **kwargs):
-        self.initialize(eppci)
-
         # matrix calculation object
         sem = BaseAlgebra(eppci)
 

@@ -22,8 +22,6 @@ class OptAlgorithm(WLSAlgorithm):
         assert 'estimator' in opt_vars and opt_vars['estimator'] in ESTIMATOR_MAPPING
         opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in opt_vars else opt_vars['opt_method']
 
-        self.initialize(eppci)
-
         # matrix calculation object
         estm = ESTIMATOR_MAPPING[opt_vars['estimator']](eppci, **opt_vars)
 
