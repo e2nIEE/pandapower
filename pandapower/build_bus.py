@@ -266,7 +266,7 @@ def _build_bus_ppc(net, ppc):
         gen_is_mask = _is_elements['gen']
         bus_is_idx = _is_elements['bus_is_idx']
         bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
-                                       gen_is_mask, eg_is_mask, numba=True)
+                                       gen_is_mask, eg_is_mask, numba=numba)
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values

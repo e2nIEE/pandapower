@@ -104,15 +104,3 @@ def test_case30_compare_lav_opt_lav():
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
