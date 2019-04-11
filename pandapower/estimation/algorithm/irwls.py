@@ -19,34 +19,32 @@ ESTIMATOR_MAPPING = {'wls': WLSEstimatorIRWLS,
 
 
 class IRWLSAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, estimator="shgm", **kwargs):
-        e_ppci = self.initialize(ppci)
+    def estimate(self, eppci, estimator="wls", **kwargs):
+        self.initialize(eppci)
 
         # matrix calculation object
-        wls_sem = WLSEstimatorIRWLS(e_ppci, **kwargs)
-        sem = ESTIMATOR_MAPPING[estimator.lower()](e_ppci, **kwargs)
+        sem = ESTIMATOR_MAPPING[estimator.lower()](eppci, **kwargs)
 
         current_error, cur_it = 100., 0
+        E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # residual r
-                r = csr_matrix(sem.create_rx(self.E)).T
+                r = csr_matrix(sem.create_rx(E)).T
 
                 # jacobian matrix H
-                H = csr_matrix(sem.create_hx_jacobian(self.E))
+                H = csr_matrix(sem.create_hx_jacobian(E))
 
                 # gain matrix G_m
                 # G_m = H^t * Phi * H
-                if current_error < 1e-2:
-                    phi = csr_matrix(sem.create_phi(self.E))
-                else:
-                    phi = csr_matrix(wls_sem.create_phi(self.E))
+                phi = csr_matrix(sem.create_phi(E))
                 G_m = H.T * (phi * H)
 
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (phi * r))
-                self.E += d_E.ravel()
+                E += d_E.ravel()
+                eppci.update_E(E)
 
                 # prepare next iteration
                 cur_it += 1
@@ -60,5 +58,4 @@ class IRWLSAlgorithm(WLSAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         # update V/delta
-        self.update_v()
-        return self.v * np.exp(1j * self.delta)
+        return eppci

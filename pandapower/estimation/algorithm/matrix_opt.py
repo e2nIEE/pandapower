@@ -11,17 +11,17 @@ __all__ = ["WLSEstimatorOpt", "LAVEstimatorOpt",]
 
 
 class BaseEstimatorOpt:
-    def __init__(self, e_ppci, **hyperparameters):
-        self.base_algebra = BaseAlgebra(e_ppci)
+    def __init__(self, eppci, **hyperparameters):
+        self.base_algebra = BaseAlgebra(eppci)
 
-        self.num_non_slack_bus = e_ppci.num_non_slack_bus
-        self.non_slack_buses = e_ppci.non_slack_buses
+        self.num_non_slack_bus = eppci.num_non_slack_bus
+        self.non_slack_buses = eppci.non_slack_buses
 
-        self.v = e_ppci.v_init.copy()
-        self.delta = e_ppci.delta_init.copy()
+        self.v = eppci.v_init.copy()
+        self.delta = eppci.delta_init.copy()
         
-        self.z = e_ppci.z
-        self.sigma = e_ppci.r_cov
+        self.z = eppci.z
+        self.sigma = eppci.r_cov
         self.jac_available = False
         self.hess_available = False
 
@@ -36,14 +36,13 @@ class BaseEstimatorOpt:
 
 
 class WLSEstimatorOpt(BaseEstimatorOpt):
-    def __init__(self, e_ppci, **hyperparameters):
-        super(WLSEstimatorOpt, self).__init__(e_ppci, **hyperparameters)
+    def __init__(self, eppci, **hyperparameters):
+        super(WLSEstimatorOpt, self).__init__(eppci, **hyperparameters)
         self.jac_available = True
 
     def cost_function(self, E):
         rx = self.base_algebra.create_rx(E)
         cost = np.sum((1/self.sigma**2) * (rx**2))
-#        print(cost)
         return cost
 
     def create_rx_jacobian(self, E):
@@ -57,13 +56,11 @@ class WLSEstimatorOpt(BaseEstimatorOpt):
 
 
 class LAVEstimatorOpt(BaseEstimatorOpt):
-    def __init__(self, e_ppci,  **hyperparameters):
-        super(LAVEstimatorOpt, self).__init__(e_ppci, **hyperparameters)
+    def __init__(self, eppci,  **hyperparameters):
+        super(LAVEstimatorOpt, self).__init__(eppci, **hyperparameters)
         self.jac_available = True
-        self.hess_available = True
 
     def cost_function(self, E):
-        v, delta = self.base_algebra._e2v(E)
         rx = self.base_algebra.create_rx(E)
         cost = np.sum(np.abs(rx))
         return cost
@@ -79,8 +76,8 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
 
 
 #class QCEstimatorOpt(BaseEstimatorOpt):
-#    def __init__(self, e_ppci, **hyperparameters):
-#        super(QCEstimatorOpt, self).__init__(e_ppci, **hyperparameters)
+#    def __init__(self, eppci, **hyperparameters):
+#        super(QCEstimatorOpt, self).__init__(eppci, **hyperparameters)
 #        assert 'a' in hyperparameters
 #        self.a = hyperparameters['a']
 #        self.jac_available = True
@@ -112,8 +109,8 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
 #
 #
 #class QLEstimatorOpt(BaseEstimatorOpt):
-#    def __init__(self, e_ppci, **hyperparameters):
-#        super(QLEstimatorOpt, self).__init__(e_ppci, **hyperparameters)     
+#    def __init__(self, eppci, **hyperparameters):
+#        super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)     
 #        assert 'a' in hyperparameters
 #        self.a = hyperparameters['a']
 #        self.jac_available = True

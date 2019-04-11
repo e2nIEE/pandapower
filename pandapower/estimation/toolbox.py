@@ -10,22 +10,6 @@ import pandapower as pp
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp
 
-#def _get_bus_ppc_mapping(net):
-#    try:
-#        rundcpp(net)
-#    except:
-#        pass
-#
-#    bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
-#                    set(net.shunt.bus)).union(set(net.gen.bus)).union(
-#                    set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
-#                    set(net.xward.bus))
-#
-#    bus_ppc = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppc"])
-#    bus_ppc['bus_with_elements'] = bus_ppc.index.isin(bus_with_elements).astype(int)   
-#    ppc_bus_with_elements = bus_ppc.groupby('bus_ppc')['bus_with_elements'].sum()
-#    bus_ppc.loc[:, 'elements_in_cluster'] = ppc_bus_with_elements[bus_ppc['bus_ppc'].values].values 
-#    return bus_ppc
 
 def _get_bus_ppc_mapping(net, bus_to_be_fused):
     bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
@@ -34,7 +18,7 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
                     set(net.xward.bus))
 #        bus_with_pq_measurement = set(net.measurement[(net.measurement.measurement_type=='p')&(net.measurement.element_type=='bus')].element.values)
 #        bus_with_elements = bus_with_elements.union(bus_with_pq_measurement)
-    
+
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
     existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
@@ -112,7 +96,9 @@ def reset_bb_switch_impedance(net):
         net.switch.drop("z_ohm_ori", axis=1, inplace=True)
         
         
-def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_dev=0.03):
+def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_dev=0.03, seed=14):
+    np.random.seed(seed)
+    
     bus_meas_types = {'v': 'vm_pu', 'p': 'p_mw', 'q': 'q_mvar'}
     branch_meas_type = {'line':{'side': ('from', 'to'), 
                                 'meas_type': ('p_mw', 'q_mvar')},
@@ -142,7 +128,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
 
     add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev)
 
-                   
+
 def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev):
     assert not net.measurement.empty
     
@@ -156,20 +142,6 @@ def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev):
     net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev
     net.measurement.loc[q_meas_mask, 'std_dev'] = q_std_dev
     net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
-    net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev
-
-
-if __name__ == "__main__":
-    import pandapower.networks as pn
-    from pandapower.estimation.state_estimation import estimate
-    
-    net = pn.case9()
-    pp.runpp(net)
-    add_virtual_meas_from_loadflow(net)
-    estimate(net, algorithm="opt", estimator='wls')
-#    estimate(net)
-    
-    assert np.isclose(net.res_bus_est.va_degree, net.res_bus_power_flow.va_degree, atol=0.2).all()
-    
+    net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev  
     
     

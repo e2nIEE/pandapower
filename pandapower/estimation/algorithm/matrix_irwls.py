@@ -12,10 +12,10 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
 
 class BaseEstimatorIRWLS(BaseAlgebra):
-    def __init__(self, e_ppci: ExtendedPPCI, **hyperparameters):
+    def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
         # Initilize BaseAlgebra object for calculation of relevant matrix
-        super(BaseEstimatorIRWLS, self).__init__(e_ppci)
-        self.sigma = self.e_ppci.r_cov
+        super(BaseEstimatorIRWLS, self).__init__(eppci)
+        self.sigma = self.eppci.r_cov
 
     def create_phi(self, E):
         # Must be implemented!
@@ -29,8 +29,9 @@ class WLSEstimatorIRWLS(BaseEstimatorIRWLS):
 
 
 class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
-    def __init__(self, e_ppci: ExtendedPPCI, **hyperparameters):
-        super(SHGMEstimatorIRWLS, self).__init__(e_ppci, **hyperparameters)
+    # Still need test!
+    def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
+        super(SHGMEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
         assert 'a' in hyperparameters
         self.a = hyperparameters.get('a')
 
@@ -41,7 +42,6 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         condition_mask = np.abs(r/(self.sigma * w))>self.a
         phi[condition_mask] = ((self.a * w) * np.sign(r) / (r * self.sigma))[condition_mask] 
         return np.diagflat(phi)
-
 
     def weight(self, E):
         H = self.create_hx_jacobian(E)
@@ -58,7 +58,7 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         sm = np.zeros(omega.shape[0])
         lomed_ix = (omega.shape[0]) // 2
         lomed_ix_x = (omega.shape[0]-1) // 2
-        
+
         @jit
         def closure(omega, x, y, sm, lomed_ix, lomed_ix_x,sm_not_null_mask, ps):
             for k in range(omega.shape[0]):
@@ -69,22 +69,23 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
                             x[x_ix] = np.abs(omega[i, k]+omega[j, k])
                     y[i] = np.sort(x)[lomed_ix_x]
                 sm[k] = np.sort(y)[lomed_ix] * 1.1926
-            
+
             sm_not_null_mask = (sm != 0)
             for i in range(omega.shape[0]):
 #                ps[i] = np.max(np.abs(omega[i, :][sm_not_null_mask]/sm[sm_not_null_mask]))
                 ps[i] = np.max(omega[i, :][sm_not_null_mask]/sm[sm_not_null_mask])
             return ps
-        
+
         ps = closure(omega, x, y, sm, lomed_ix, lomed_ix_x, 
                      sm_not_null_mask=np.zeros(omega.shape[0]),
                      ps=np.zeros(omega.shape[0]))
         return ps
-    
+
 
 class QLEstimatorIRWLS(BaseEstimatorIRWLS):
-    def __init__(self, e_ppci: ExtendedPPCI, **hyperparameters):
-        super(QLEstimatorIRWLS, self).__init__(e_ppci, **hyperparameters)
+    # Still need test!
+    def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
+        super(QLEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
         assert 'a' in hyperparameters
         self.a = hyperparameters.get('a')
 
@@ -93,5 +94,5 @@ class QLEstimatorIRWLS(BaseEstimatorIRWLS):
 
         phi = 2/(self.sigma**2)
         condition_mask = np.abs(r/(self.sigma))>self.a
-        phi[condition_mask] = (2 * self.a * self.sigma * np.sign(r)) [condition_mask]
+        phi[condition_mask] = (2 * self.a * self.sigma * np.sign(r) / r) [condition_mask]
         return np.diagflat(phi)

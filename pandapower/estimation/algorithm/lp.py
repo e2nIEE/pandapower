@@ -17,26 +17,28 @@ from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 
 class LPAlgorithm(WLSAlgorithm):
-    def estimate(self, ppci, **kwargs):
-        e_ppci = self.initialize(ppci)
+    def estimate(self, eppci, **kwargs):
+        self.initialize(eppci)
 
         # matrix calculation object
-        sem = BaseAlgebra(e_ppci)
+        sem = BaseAlgebra(eppci)
 
         current_error, cur_it = 100., 0
+        E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # residual r
-                r = sem.create_rx(self.E)
+                r = sem.create_rx(E)
 
                 # jacobian matrix H
-                H = sem.create_hx_jacobian(self.E)
+                H = sem.create_hx_jacobian(E)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = new_X(H, self.E, r)
-                self.E += d_E
+                d_E = solve_lp(H, E, r)
+                E += d_E
+                eppci.update_E(E)
 
                 # prepare next iteration
                 cur_it += 1
@@ -49,12 +51,10 @@ class LPAlgorithm(WLSAlgorithm):
 
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
-        # update V/delta
-        self.update_v()
-        return self.v * np.exp(1j * self.delta)
+        return eppci
     
 
-def new_X(H, x, r):
+def solve_lp(H, x, r):
     n, m = H.shape[1], H.shape[0]
     zero_n = np.zeros((n, 1))
     one_m = np.ones((m, 1))
@@ -74,5 +74,3 @@ def new_X(H, x, r):
         return d_x
     else:
         raise np.linalg.linalg.LinAlgError 
-    
-    

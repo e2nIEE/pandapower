@@ -91,3 +91,12 @@ def _rename_results(net):
             net[res_name] = net[res_name_pf]
         else:
             del net[res_name]
+            
+def eppci2pp(net, ppc, eppci):
+    # calculate the branch power flow and bus power injection based on the estimated voltage vector
+    eppci = _calc_power_flow(eppci, eppci.V)
+
+    # extract the result from ppci to ppc and pandpower network
+    net = _extract_result_ppci_to_pp(net, ppc, eppci)
+    return net
+

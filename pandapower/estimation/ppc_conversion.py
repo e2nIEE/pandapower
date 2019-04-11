@@ -10,8 +10,6 @@ from collections import UserDict
 
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.estimation.idx_bus import *
-from pandapower.estimation.idx_brch import *
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.idx_bus import bus_cols
 import pandapower.pypower.idx_bus as idx_bus
@@ -19,6 +17,11 @@ from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
+from pandapower.topology import estimate_voltage_vector
+
+from pandapower.estimation.idx_bus import *
+from pandapower.estimation.idx_brch import *
+from pandapower.estimation.results import _copy_power_flow_results
 
 try:
     import pplog as logging
@@ -125,6 +128,20 @@ def _drop_aux_elements_for_bb_switch(net):
     net.line = net.line.loc[(net.line.name != AUX_LINE_NAME).values, :]
 
 
+def _initialize_voltage(net, init, calculate_voltage_angles):
+    v_start, delta_start = None, None
+    if init == 'results':
+        v_start, delta_start = 'results', 'results'
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return v_start, delta_start
+
+
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
@@ -146,7 +163,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     return ppc, ppci
 
 
-def _add_measurements_to_ppc(net, ppci, zero_injection):
+def _add_measurements_to_ppci(net, ppci, zero_injection):
     """
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
@@ -544,6 +561,20 @@ def _build_measurement_vectors(ppci):
                                 i_line_t_not_nan])
     return z, pp_meas_indices, r_cov, meas_mask
 
+
+def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus"):
+    # initialize result tables if not existent
+    _copy_power_flow_results(net)
+    
+    # initialize ppc
+    ppc, ppci = _init_ppc(net, v_start, delta_start, calculate_voltage_angles)
+
+    # add measurements to ppci structure
+    # Finished converting pandapower network to ppci
+    ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
+    return net, ppc, ExtendedPPCI(ppci)
+
+
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
         self.data = ppci
@@ -553,9 +584,6 @@ class ExtendedPPCI(UserDict):
         self.bus_baseKV = ppci['bus'][:, idx_bus.BASE_KV].real.astype(int)
         self.bus = ppci['bus']
         self.branch = ppci['branch']
-
-        self.v_init = ppci["bus"][:, idx_bus.VM]
-        self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
 
         # Measurement relevant parameters
         self.z = None
@@ -571,7 +599,27 @@ class ExtendedPPCI(UserDict):
         self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
                                       np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
 
+        self.v_init = ppci["bus"][:, idx_bus.VM]
+        self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
+        self.E_init = np.r_[self.delta_init[self.non_slack_bus_mask], self.v_init]
+        self.v = self.v_init.copy()
+        self.delta = self.delta_init.copy()
+        self.E = self.E_init.copy()
+
+
     def _initialize_meas(self, ppci):
         # calculate relevant vectors from ppci measurements
         self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask =\
              _build_measurement_vectors(ppci)
+             
+    @property
+    def V(self):
+        return self.v * np.exp(1j * self.delta)
+    
+    def reset(self):
+        self.v, self.delta, self.E = self.v_init.copy(), self.delta_init.copy(), self.E_init.copy()
+
+    def update_E(self, E):
+        self.E = E
+        self.v = E[self.num_non_slack_bus:]
+        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]

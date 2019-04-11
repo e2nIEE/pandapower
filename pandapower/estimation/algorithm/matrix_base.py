@@ -17,40 +17,40 @@ __all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
 
 
 class BaseAlgebra:
-    def __init__(self, e_ppci: ExtendedPPCI):
+    def __init__(self, eppci: ExtendedPPCI):
         np.seterr(divide='ignore', invalid='ignore')
-        self.e_ppci = e_ppci
+        self.eppci = eppci
 
-        self.fb = e_ppci.branch[:, F_BUS].real.astype(int)
-        self.tb = e_ppci.branch[:, T_BUS].real.astype(int)
-        self.n_bus = e_ppci.bus.shape[0]
-        self.n_branch = e_ppci.branch.shape[0]
-        self.baseMVA = e_ppci.baseMVA
-        self.bus_baseKV = e_ppci.bus_baseKV
-        self.num_non_slack_bus = e_ppci.num_non_slack_bus
-        self.non_slack_buses = e_ppci.non_slack_buses
-        self.delta_v_bus_mask = e_ppci.delta_v_bus_mask
+        self.fb = eppci.branch[:, F_BUS].real.astype(int)
+        self.tb = eppci.branch[:, T_BUS].real.astype(int)
+        self.n_bus = eppci.bus.shape[0]
+        self.n_branch = eppci.branch.shape[0]
+        self.baseMVA = eppci.baseMVA
+        self.bus_baseKV = eppci.bus_baseKV
+        self.num_non_slack_bus = eppci.num_non_slack_bus
+        self.non_slack_buses = eppci.non_slack_buses
+        self.delta_v_bus_mask = eppci.delta_v_bus_mask
 
-        self.z = e_ppci.z
-        self.r_cov = e_ppci.r_cov
-        self.non_nan_meas_mask = e_ppci.non_nan_meas_mask
+        self.z = eppci.z
+        self.r_cov = eppci.r_cov
+        self.non_nan_meas_mask = eppci.non_nan_meas_mask
 
         self.Ybus = None
         self.Yf = None
         self.Yt = None
         self.initialize_Y()
 
-        self.v = self.e_ppci.v_init.copy()
-        self.delta = self.e_ppci.delta_init.copy()
+        self.v = self.eppci.v_init.copy()
+        self.delta = self.eppci.delta_init.copy()
 
     # Function which builds a node admittance matrix out of the topology data
     # In addition, it provides the series admittances of lines as G_series and B_series
     def initialize_Y(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Ybus, Yf, Yt = makeYbus(self.e_ppci["baseMVA"], self.e_ppci["bus"], self.e_ppci["branch"])
-            self.e_ppci['internal']['Yf'], self.e_ppci['internal']['Yt'],\
-                self.e_ppci['internal']['Ybus'] = Yf, Yt, Ybus
+            Ybus, Yf, Yt = makeYbus(self.eppci["baseMVA"], self.eppci["bus"], self.eppci["branch"])
+            self.eppci['internal']['Yf'], self.eppci['internal']['Yt'],\
+                self.eppci['internal']['Ybus'] = Yf, Yt, Ybus
 
         # create relevant matrices
         self.Ybus, self.Yf, self.Yt = Ybus, Yf, Yt
