@@ -92,7 +92,7 @@ class QLEstimatorIRWLS(BaseEstimatorIRWLS):
     def create_phi(self, E):
         r = self.create_rx(E)
 
-        phi = 2/(self.sigma**2)
+        phi = 1/(self.sigma**2)
         condition_mask = np.abs(r/(self.sigma))>self.a
-        phi[condition_mask] = (2 * self.a * self.sigma * np.sign(r) / r) [condition_mask]
+        phi[condition_mask] = ((self.a * self.sigma * np.sign(r) / r) * 1/(self.sigma**2)) [condition_mask]
         return np.diagflat(phi)

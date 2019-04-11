@@ -171,7 +171,7 @@ class StateEstimation:
         self.bad_data_present = None
 
     def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
-                 zero_injection=None, fuse_buses_with_bb_switch='all', opt_vars=None):
+                 zero_injection=None, fuse_buses_with_bb_switch='all', **opt_vars):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -304,7 +304,7 @@ class StateEstimation:
         m = len(self.net.measurement)
 
         # Number of state variables (the -1 is due to the reference bus)
-        n = len(self.solver.v) + len(self.solver.delta) - 1
+        n = len(self.solver.eppci.v) + len(self.solver.eppci.delta) - 1
 
         # Chi^2 test threshold
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)

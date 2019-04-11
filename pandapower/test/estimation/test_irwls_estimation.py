@@ -30,4 +30,30 @@ def test_irwls_comp_wls():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+#    pytest.main([__file__, "-xs"])
+    from pandapower.estimation.algorithm.optimization import OptAlgorithm
+    from pandapower.estimation.algorithm.wls import WLSAlgorithm
+    from pandapower.estimation.algorithm.irwls import IRWLSAlgorithm
+    from pandapower.estimation.ppc_conversion import pp2eppci
+    from pandapower.estimation.results import eppci2pp
+
+    net = nw.case14()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+    
+    net_wls = deepcopy(net)
+    estimate(net_wls)
+    
+    net_lav = deepcopy(net)
+    estimate(net_lav, algorithm='lp')
+
+    net, ppc, eppci = pp2eppci(net)
+#    estimation_wls = WLSAlgorithm(1e-3, 3)
+    estimation_ir = IRWLSAlgorithm(1e-6, 15)
+
+#    eppci = estimation_wls.estimate(eppci)
+    eppci = estimation_ir.estimate(eppci, algorithm="irwls", estimator='ql', a=1)
+    assert estimation_ir.successful
+    net = eppci2pp(net, ppc, eppci)
+
+    

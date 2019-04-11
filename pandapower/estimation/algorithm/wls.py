@@ -32,6 +32,7 @@ class WLSAlgorithm:
         self.iterations = None
 
         # Parameters for estimate
+        self.eppci = None
         self.pp_meas_indices = None
 
         # Parameters for Bad data detection
@@ -62,6 +63,7 @@ class WLSAlgorithm:
 
     def initialize(self, eppci):
         # Check observability
+        self.eppci = eppci
         self.pp_meas_indices = eppci.pp_meas_indices
         self.check_observability(eppci, eppci.z)
 
@@ -131,15 +133,14 @@ class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
 
         num_bus = eppci.bus.shape[0]
 
-        # update the E matrix
-        E_ext = np.r_[eppci.E, new_states]
-
         # matrix calculation object
         sem = BaseAlgebraZeroInjConstraints(eppci)
 
         current_error, cur_it = 100., 0
         r_inv = csr_matrix((np.diagflat(1/eppci.r_cov) ** 2))
         E = eppci.E
+        # update the E matrix
+        E_ext = np.r_[eppci.E, new_states]
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
@@ -170,7 +171,8 @@ class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
                 # state vector difference d_E
                 d_E_ext = spsolve(M_tx, C_rhs)
                 E_ext += d_E_ext.ravel()
-                eppci.update_E(E_ext[:E.shape[0]])
+                E = E_ext[:E.shape[0]]
+                eppci.update_E(E)
 
                 # prepare next iteration
                 cur_it += 1
