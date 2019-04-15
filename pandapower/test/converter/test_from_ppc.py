@@ -71,7 +71,7 @@ def test_ppc_testgrids():
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
 
-
+@pytest.mark.slow
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',

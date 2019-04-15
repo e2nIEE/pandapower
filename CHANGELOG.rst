@@ -1,5 +1,7 @@
 Change Log
 =============
+- [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
+- [ADDED] Graph-Tool interface
 
 [2.0.1]- 2019-03-28
 ----------------------

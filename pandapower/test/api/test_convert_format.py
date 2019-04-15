@@ -14,6 +14,7 @@ folder = os.path.join(pp_dir, "test", "test_files", "old_versions")
 found_versions = [file.split("_")[1].split(".json")[0] for _, _, files 
                   in os.walk(folder) for file in files]
 
+@pytest.mark.slow
 @pytest.mark.parametrize("version", found_versions)
 def test_convert_format(version):
     filename = os.path.join(folder, "example_%s.json"%version)

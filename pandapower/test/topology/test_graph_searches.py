@@ -52,6 +52,17 @@ def meshed_network():
     pp.create_line(net, b[6], b[1], length_km=100., std_type="149-AL1/24-ST1A 110.0", name="line7")
     return net
 
+@pytest.fixture
+def mixed_network():
+    net = pp.create_empty_network()
+    pp.create_buses(net, nr_buses=5, vn_kv=20.)
+    connections = [(0, 1), (1, 2), (2, 3), (2, 4)]
+    for fb, tb in connections:
+        pp.create_line(net, fb, tb, length_km=1, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    for b in [1, 4, 3]:
+        pp.create_ext_grid(net, b)
+    return net
+
 
 def test_determine_stubs(feeder_network):
     net = feeder_network
@@ -63,7 +74,6 @@ def test_determine_stubs(feeder_network):
     assert net.bus.on_stub.at[sec_bus]
     assert net.line.is_stub.at[sec_line]
 
-
 def test_determine_stubs_meshed(meshed_network):
     net = meshed_network
     # root == LV side of trafo at ext_grid. Then ext_grid bus itself (0) == stub
@@ -71,6 +81,12 @@ def test_determine_stubs_meshed(meshed_network):
     assert len(stubs) == 1
     assert stubs.pop() == 0
 
+def test_determine_stubs_mixed(mixed_network):
+    net = mixed_network
+    stubs = top.determine_stubs(net, roots=[1, 4, 3])
+    assert stubs == {0}
+    stubs = top.determine_stubs(net, roots=[4, 3, 1])
+    assert stubs == {0}
 
 def test_distance(feeder_network):
     net = feeder_network
