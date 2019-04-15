@@ -40,8 +40,8 @@ def build_igraph_from_pp(net, respect_switches=False):
     nogolines = set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)]) \
                 if respect_switches else set()
     for lix in (ix for ix in net.line.index if ix not in nogolines):
-        l = net.line.ix[lix]
-        g.add_edge(pp_bus_mapping[l.from_bus], pp_bus_mapping[l.to_bus])
+        fb, tb = net.line.at[lix, "from_bus"], net.line.at[lix, "to_bus"]
+        g.add_edge(pp_bus_mapping[fb], pp_bus_mapping[tb])
     g.es["weight"] = net.line.length_km.values
 
     # add trafos
