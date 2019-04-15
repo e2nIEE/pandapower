@@ -74,7 +74,7 @@ class WLSAlgorithm:
 
         current_error, cur_it = 100., 0
         # invert covariance matrix
-        r_inv = csr_matrix(np.diagflat(1/eppci.r_cov) ** 2)
+        r_inv = csr_matrix(np.diagflat(1/eppci.r_cov ** 2))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
@@ -117,7 +117,6 @@ class WLSAlgorithm:
             # create h(x) for the current iteration
             self.hx = sem.create_hx(eppci.E)
         return eppci
-
 
 
 class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):

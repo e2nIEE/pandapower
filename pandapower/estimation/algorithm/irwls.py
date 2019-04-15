@@ -10,12 +10,15 @@ from scipy.sparse.linalg import spsolve
 from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM, bus_cols
 from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.algorithm.matrix_irwls import (WLSEstimatorIRWLS, 
-                                                          SHGMEstimatorIRWLS, QLEstimatorIRWLS)
+                                                          SHGMEstimatorIRWLS, 
+                                                          QLEstimatorIRWLS,
+                                                          QCEstimatorIRWLS)
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 ESTIMATOR_MAPPING = {'wls': WLSEstimatorIRWLS,
                      'shgm': SHGMEstimatorIRWLS,
-                     'ql': QLEstimatorIRWLS}
+                     'ql': QLEstimatorIRWLS,
+                     'qc': QCEstimatorIRWLS}
 
 
 class IRWLSAlgorithm(WLSAlgorithm):
@@ -27,6 +30,7 @@ class IRWLSAlgorithm(WLSAlgorithm):
 
         current_error, cur_it = 100., 0
         E = eppci.E
+#        phi = csr_matrix(sem.create_phi(E))
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:

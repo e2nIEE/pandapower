@@ -29,6 +29,10 @@ def test_irwls_comp_wls():
         assert np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, 1e-6)
 
 
+def test_irwls_shgm():
+    net = nw.case30()
+
+
 if __name__ == "__main__":
 #    pytest.main([__file__, "-xs"])
     from pandapower.estimation.algorithm.optimization import OptAlgorithm
@@ -42,18 +46,46 @@ if __name__ == "__main__":
     add_virtual_meas_from_loadflow(net)
     
     net_wls = deepcopy(net)
-    estimate(net_wls)
+    estimate(net_wls, tolerance=1e-8)
     
-    net_lav = deepcopy(net)
-    estimate(net_lav, algorithm='lp')
+#    net_lav = deepcopy(net)
+#    estimate(net_lav, algorithm='lp')
+
+#    net_shgm_lav = deepcopy(net)
+#    estimate(net_shgm_lav, algorithm="irwls", estimator="ql", a=1)
 
     net, ppc, eppci = pp2eppci(net)
-#    estimation_wls = WLSAlgorithm(1e-3, 3)
-    estimation_ir = IRWLSAlgorithm(1e-6, 15)
-
+#    estimation_wls = WLSAlgorithm(1e-6, 10)
+#    estimation_ir = IRWLSAlgorithm(1e-6, 50)
+#
 #    eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_ir.estimate(eppci, algorithm="irwls", estimator='ql', a=1)
-    assert estimation_ir.successful
-    net = eppci2pp(net, ppc, eppci)
+#    eppci = estimation_ir.estimate(eppci, algorithm="irwls", estimator='shgm', a=10)
+#    assert estimation_ir.successful
+#    net = eppci2pp(net, ppc, eppci)
+    
+    from scipy.io import loadmat
+    from pandapower.estimation.algorithm.matrix_irwls import SHGMEstimatorIRWLS 
+    shgm = SHGMEstimatorIRWLS(eppci, a=3)
+    test_H = loadmat("H.mat")["H"]
+    H =test_H
+#    H = np.array([[110, -100, 0], 
+#                  [100, -100, 0],
+#                  [10, 0, 0],
+#                  [0, 10, 0],
+#                  [0, -10, 20],
+#                  [0, -10, 10],
+#                  [0, 0, 10],
+#                  [-10, -10, -10],
+#                  [-10, 0, 0]])
+#    H = np.array([[10, -10],
+#                  [1, 0],
+#                  [-1, 0],
+#                  [0, -1],
+#                  [0, 1],
+#                  [11, -10],
+#                  [-1, -1]])
+
+    ps = shgm._ps(H)
+    
 
     

@@ -80,7 +80,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
     return se.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
-                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, opt_vars=opt_vars)
+                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
