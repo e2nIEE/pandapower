@@ -161,7 +161,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     buses_remove = set()
     if in_service_only:
         for bus in not_supplied:
-            if not net.bus.loc[bus, 'in_service']:
+            if not net.bus.at[bus, 'in_service']:
                 buses_remove.add(bus)
 
     not_supplied = not_supplied - buses_remove
