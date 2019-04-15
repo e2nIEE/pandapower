@@ -7,14 +7,16 @@ import numpy as np
 from scipy.optimize import minimize
 
 from pandapower.estimation.algorithm.matrix_opt import \
-    (WLSEstimatorOpt, LAVEstimatorOpt,)
+    (WLSEstimatorOpt, LAVEstimatorOpt, QCEstimatorOpt, QLEstimatorOpt)
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
 DEFAULT_OPT_METHOD = "Newton-CG"
 #DEFAULT_OPT_METHOD = "BFGS"
 #DEFAULT_OPT_METHOD = 'Nelder-Mead'
 ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
-                     'lav': LAVEstimatorOpt}
+                     'lav': LAVEstimatorOpt,
+                     'qc': QCEstimatorOpt,
+                     'ql': QLEstimatorOpt}
 
 
 class OptAlgorithm(WLSAlgorithm):
@@ -25,7 +27,7 @@ class OptAlgorithm(WLSAlgorithm):
         # matrix calculation object
         estm = ESTIMATOR_MAPPING[opt_vars['estimator']](eppci, **opt_vars)
 
-        jac = estm.create_rx_jacobian if estm.jac_available else None
+        jac = estm.create_rx_jacobian
         res = minimize(estm.cost_function, x0=eppci.E, 
                        method=opt_method, jac=jac, tol=self.tolerance,
                        options={'maxiter':1000, 'disp': True})

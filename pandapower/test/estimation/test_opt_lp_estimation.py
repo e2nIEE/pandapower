@@ -103,4 +103,18 @@ def test_case30_compare_lav_opt_lav():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+#    pytest.main([__file__, "-xs"])
+    
+    net = nw.case30()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+
+    # if failed give it a warm start
+    net, ppc, eppci = pp2eppci(net)
+    estimation_wls = WLSAlgorithm(1e-3, 10)
+    estimation_opt = OptAlgorithm(1e-6, 100)
+
+    eppci = estimation_wls.estimate(eppci)
+    eppci = estimation_opt.estimate(eppci, estimator="qc", a=2)
+    assert estimation_opt.successful
+    net = eppci2pp(net, ppc, eppci)

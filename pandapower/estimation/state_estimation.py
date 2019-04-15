@@ -31,8 +31,10 @@ SOLVER_MAPPING = {'wls': WLSAlgorithm,
                   'lp': LPAlgorithm}
 
 
-def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
+def estimate(net, algorithm='wls', estimator='wls',
+             init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True, 
+             zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
              **opt_vars):
     """
     Wrapper function for WLS state estimation.
@@ -79,8 +81,11 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
-    return se.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
-                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
+    return se.estimate(estimator=estimator,
+        v_start=v_start, delta_start=delta_start, 
+        calculate_voltage_angles=calculate_voltage_angles, 
+        zero_injection=zero_injection,
+        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -170,7 +175,8 @@ class StateEstimation:
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
+    def estimate(self, estimator="wls", 
+                 v_start='flat', delta_start='flat', calculate_voltage_angles=True,
                  zero_injection=None, fuse_buses_with_bb_switch='all', **opt_vars):
         """
         The function estimate is the main function of the module. It takes up to three input
@@ -247,7 +253,7 @@ class StateEstimation:
                               zero_injection=zero_injection)
 
         # Estimate voltage magnitude and angle with the given estimator
-        eppci = self.solver.estimate(eppci, **opt_vars)
+        eppci = self.solver.estimate(eppci, estimator="wls", **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, ppc, eppci)
