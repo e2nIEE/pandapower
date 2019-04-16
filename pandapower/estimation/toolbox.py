@@ -78,7 +78,8 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
     return bus_ppci
 
 
-def set_bb_switch_impedance(net, z_ohm=0.1, prevent_fusing_bus_with_elements = False):
+def set_bb_switch_impedance(net, bus_to_be_fused=None,
+                            z_ohm=0.1, prevent_fusing_bus_with_elements = False):
     """
      Assuming a substation with multiple buses connected to each other with bb switch
      if multiple of them have an element (load, sgen usw.) then it caused problem on 
@@ -106,7 +107,7 @@ def set_bb_switch_impedance(net, z_ohm=0.1, prevent_fusing_bus_with_elements = F
     if not prevent_fusing_bus_with_elements:
         net.switch.loc[:, 'z_ohm'] = z_ohm
     else:
-        lookup = _get_bus_ppc_mapping(net)
+        lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
         for _ in range(lookup.elements_in_cluster.max()-1):     
             bus_to_be_handled = lookup[((lookup['elements_in_cluster']>=2)&\
                                         lookup['bus_with_elements'])]

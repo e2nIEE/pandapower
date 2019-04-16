@@ -713,7 +713,6 @@ def test_net_with_bb_switch_fuse_one():
     assert np.allclose(net.res_bus.q_mvar.values[[0,3,4]],net.res_bus_est.q_mvar.values[[0,3,4]], 1e-1)
 
 
-@pytest.mark.xfail
 def test_net_with_bb_switch_fuse_one_identify_pq():
     net = create_net_with_bb_switch()
     estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=[1])

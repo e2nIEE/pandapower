@@ -6,11 +6,8 @@
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.estimation.ppc_conversion import (_add_aux_elements_for_bb_switch, 
-                                                  _drop_aux_elements_for_bb_switch,
-                                                  _initialize_voltage,
-                                                  pp2eppci)
 from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_switch_impedance
+from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
 from pandapower.estimation.results import eppci2pp
 from pandapower.estimation.algorithm.base import (WLSAlgorithm, 
                                                   WLSZeroInjectionConstraintsAlgorithm,
@@ -245,12 +242,12 @@ class StateEstimation:
             if isinstance(fuse_buses_with_bb_switch, str):
                 raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
             elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
-                bus_to_be_fused = fuse_buses_with_bb_switch      
-            _add_aux_elements_for_bb_switch(self.net, bus_to_be_fused)
+                bus_to_be_fused = fuse_buses_with_bb_switch    
+            set_bb_switch_impedance(self.net, bus_to_be_fused)
 
         self.net, ppc, eppci = pp2eppci(self.net, v_start=v_start, delta_start=delta_start, 
-                              calculate_voltage_angles=calculate_voltage_angles, 
-                              zero_injection=zero_injection)
+                                        calculate_voltage_angles=calculate_voltage_angles, 
+                                        zero_injection=zero_injection)
 
         # Estimate voltage magnitude and angle with the given estimator
         eppci = self.solver.estimate(eppci, **opt_vars)
@@ -262,7 +259,7 @@ class StateEstimation:
 
         # clear the aux elements and calculation results created for the substitution of bb switches
         if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
-            _drop_aux_elements_for_bb_switch(self.net)
+            reset_bb_switch_impedance(self.net)
 
         return self.solver.successful
 
