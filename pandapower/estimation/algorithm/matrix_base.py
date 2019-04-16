@@ -5,7 +5,8 @@
 
 import warnings
 import numpy as np
-from scipy.sparse import csr_matrix, vstack, hstack, diags
+from scipy.sparse import vstack, hstack, diags
+from scipy.sparse import csr_matrix as sparse_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
@@ -89,30 +90,30 @@ class BaseAlgebra:
         f_bus, t_bus = self.fb, self.tb
         V = v * np.exp(1j * delta)
         Vnorm = V / np.abs(V)
-        diagV, diagVnorm = diags(V).tocsr(), diags(Vnorm).tocsr()
+        diagV, diagVnorm = sparse_matrix(diags(V)), sparse_matrix(diags(Vnorm))
 
         dSbus_dth, dSbus_dv = self._dSbus_dv(V, diagV, diagVnorm)
         dSf_dth, dSt_dth, dSf_dv, dSt_dv = self._dSbr_dv(V, Vnorm, diagV, diagVnorm)
         dif_dth, dit_dth, dif_dv, dit_dv = self._dibr_dv(diagV, diagVnorm)
         dv_dth, dv_dv = self._dVbus_dv(V)
 
-        s_jac_th = vstack([np.real(dSbus_dth),
-                           np.real(dSf_dth),
-                           np.real(dSt_dth),
-                           np.imag(dSbus_dth),
-                           np.imag(dSf_dth),
-                           np.imag(dSt_dth)])
-        s_jac_v = vstack([np.real(dSbus_dv),
-                          np.real(dSf_dv),
-                          np.real(dSt_dv),
-                          np.imag(dSbus_dv),
-                          np.imag(dSf_dv),
-                          np.imag(dSt_dv)])
+        s_jac_th = vstack((dSbus_dth.real,
+                           dSf_dth.real,
+                           dSt_dth.real,
+                           dSbus_dth.imag,
+                           dSf_dth.imag,
+                           dSt_dth.imag))
+        s_jac_v = vstack((dSbus_dv.real,
+                          dSf_dv.real,
+                          dSt_dv.real,
+                          dSbus_dv.imag,
+                          dSf_dv.imag,
+                          dSt_dv.imag))
 
-        s_jac = hstack([s_jac_th, s_jac_v]).toarray() * self.baseMVA
+        s_jac = hstack((s_jac_th, s_jac_v)).toarray() * self.baseMVA
         v_jac = np.c_[dv_dth, dv_dv]
-        i_jac = vstack([hstack([dif_dth, dif_dv]),
-                        hstack([dit_dth, dit_dv])]).toarray() *\
+        i_jac = vstack((hstack((dif_dth, dif_dv)),
+                        hstack((dit_dth, dit_dv)))).toarray() *\
                         (self.baseMVA / np.r_[self.bus_baseKV[f_bus], 
                                               self.bus_baseKV[t_bus]]).reshape(-1, 1)
         return np.r_[s_jac,
@@ -120,7 +121,7 @@ class BaseAlgebra:
                      i_jac][self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
 
     def _dSbus_dv(self, V, diagV, diagVnorm):
-        diagIbus = csr_matrix((self.Ybus * V, (range(self.n_bus), range(self.n_bus))))
+        diagIbus = sparse_matrix((self.Ybus * V, (range(self.n_bus), range(self.n_bus))))
         dSbus_dth = 1j * diagV * np.conj(diagIbus - self.Ybus * diagV)
         dSbus_dv = diagV * np.conj(self.Ybus * diagVnorm) + np.conj(diagIbus) * diagVnorm
         return dSbus_dth, dSbus_dv
@@ -130,19 +131,19 @@ class BaseAlgebra:
         shape_diag_ft = (range(n_branch), range(n_branch))
         f_bus, t_bus = self.fb, self.tb
         If, It = self.Yf * V, self.Yt * V
-        diagIf, diagIt = (csr_matrix((If, shape_diag_ft)),
-                          csr_matrix((It, shape_diag_ft)))
-        diagVf, diagVt = (csr_matrix((V[f_bus], shape_diag_ft)),
-                          csr_matrix((V[t_bus], shape_diag_ft)))
+        diagIf, diagIt = (sparse_matrix((If, shape_diag_ft)),
+                          sparse_matrix((It, shape_diag_ft)))
+        diagVf, diagVt = (sparse_matrix((V[f_bus], shape_diag_ft)),
+                          sparse_matrix((V[t_bus], shape_diag_ft)))
 
-        dSf_dth = 1j * (np.conj(diagIf) * csr_matrix((V[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)) -
+        dSf_dth = 1j * (np.conj(diagIf) * sparse_matrix((V[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)) -
                         diagVf * np.conj(self.Yf * diagV))
-        dSt_dth = 1j * (np.conj(diagIt) * csr_matrix((V[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)) -
+        dSt_dth = 1j * (np.conj(diagIt) * sparse_matrix((V[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)) -
                         diagVt * np.conj(self.Yt * diagV))
         dSf_dv = (diagVf * np.conj(self.Yf * diagVnorm) + np.conj(diagIf) *
-                  csr_matrix((Vnorm[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)))
+                  sparse_matrix((Vnorm[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)))
         dSt_dv = (diagVt * np.conj(self.Yt * diagVnorm) + np.conj(diagIt) *
-                  csr_matrix((Vnorm[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)))
+                  sparse_matrix((Vnorm[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)))
         return dSf_dth, dSt_dth, dSf_dv, dSt_dv
 
     def _dVbus_dv(self, V):
@@ -169,7 +170,7 @@ class BaseAlgebraZeroInjConstraints(BaseAlgebra):
     def create_cx_jacobian(self, E, p_zero_inj, q_zero_inj):
         v, delta = self._e2v(E)
         V = v * np.exp(1j * delta)
-        diagV, diagVnorm = diags(V).tocsr(), diags(V/np.abs(V)).tocsr()
+        diagV, diagVnorm = sparse_matrix(diags(V)), sparse_matrix(diags(V/np.abs(V)))
         dSbus_dth, dSbus_dv = self._dSbus_dv(V, diagV, diagVnorm)
         c_jac_th = np.r_[np.real(dSbus_dth.todense())[p_zero_inj],
                          np.imag(dSbus_dth.todense())[q_zero_inj]]
