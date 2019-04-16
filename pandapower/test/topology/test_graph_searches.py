@@ -52,6 +52,24 @@ def meshed_network():
     pp.create_line(net, b[6], b[1], length_km=100., std_type="149-AL1/24-ST1A 110.0", name="line7")
     return net
 
+@pytest.fixture
+def mixed_network():
+    net = pp.create_empty_network()
+    pp.create_buses(net, nr_buses=5, vn_kv=20.)
+    connections = [(0, 1), (1, 2), (2, 3), (2, 4)]
+    for fb, tb in connections:
+        pp.create_line(net, fb, tb, length_km=1, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    for b in [1, 4, 3]:
+        pp.create_ext_grid(net, b)
+    return net
+
+def test_connected_components(feeder_network):
+    net = feeder_network
+    mg = top.create_nxgraph(net)
+    cc = top.connected_components(mg)
+    assert list(cc) == [{0, 1, 2, 3}]
+    cc_notrav = top.connected_components(mg, notravbuses={0,2})
+    assert list(cc_notrav) == [{0, 1, 2}, {0, 2, 3}]
 
 def test_determine_stubs(feeder_network):
     net = feeder_network
@@ -63,7 +81,6 @@ def test_determine_stubs(feeder_network):
     assert net.bus.on_stub.at[sec_bus]
     assert net.line.is_stub.at[sec_line]
 
-
 def test_determine_stubs_meshed(meshed_network):
     net = meshed_network
     # root == LV side of trafo at ext_grid. Then ext_grid bus itself (0) == stub
@@ -71,6 +88,12 @@ def test_determine_stubs_meshed(meshed_network):
     assert len(stubs) == 1
     assert stubs.pop() == 0
 
+def test_determine_stubs_mixed(mixed_network):
+    net = mixed_network
+    stubs = top.determine_stubs(net, roots=[1, 4, 3])
+    assert stubs == {0}
+    stubs = top.determine_stubs(net, roots=[4, 3, 1])
+    assert stubs == {0}
 
 def test_distance(feeder_network):
     net = feeder_network
@@ -89,17 +112,19 @@ def test_unsupplied_buses_with_in_service():
     # IS ext_grid --- open switch --- OOS bus --- open switch --- IS bus
     net = pp.create_empty_network()
 
-    bus_sl = pp.create_bus(net, 0.4)
-    pp.create_ext_grid(net, bus_sl)
+    slack_bus = pp.create_bus(net, 0.4)
+    pp.create_ext_grid(net, slack_bus)
 
     bus0 = pp.create_bus(net, 0.4, in_service=False)
-    pp.create_switch(net, bus_sl, bus0, 'b', False)
+    pp.create_switch(net, slack_bus, bus0, 'b', False)
 
     bus1 = pp.create_bus(net, 0.4, in_service=True)
     pp.create_switch(net, bus0, bus1, 'b', False)
 
     ub = top.unsupplied_buses(net)
     assert ub == {2}
+
+
 
     # OOS ext_grid --- closed switch --- IS bus
     net = pp.create_empty_network()
@@ -209,6 +234,9 @@ def test_elements_on_path():
         assert top.elements_on_path(mg, path, "trafo") == [0]
         assert top.elements_on_path(mg, path, "trafo3w") == []
         assert top.elements_on_path(mg, path, "switch") == [0, 1]
+        with pytest.raises(ValueError) as exception_info:
+            top.elements_on_path(mg, path, element="sgen")
+        assert str(exception_info.value) == "Invalid element type sgen"
 
 
 def test_end_points_of_continously_connected_lines():
@@ -241,11 +269,21 @@ def test_end_points_of_continously_connected_lines():
     f, t = top.get_end_points_of_continously_connected_lines(net, lines=[l3])
     assert {f, t} == {b5, b6}
 
-    with pytest.raises(UserWarning):
+    with pytest.raises(UserWarning) as exception_info:
         top.get_end_points_of_continously_connected_lines(net, lines=[l1, l2, l4])
+    assert str(exception_info.value) == "Lines not continously connected"
 
-    with pytest.raises(UserWarning):
+    with pytest.raises(UserWarning) as exception_info:
         top.get_end_points_of_continously_connected_lines(net, lines=[l1, l4])
+    assert str(exception_info.value) == "Lines not continously connected"
+
+    b8 = pp.create_bus(net, vn_kv=20.)
+    l5 = pp.create_line(net, 8, b8, length_km=1., std_type="34-AL1/6-ST1A 20.0")
+    with pytest.raises(UserWarning) as exception_info:
+        top.get_end_points_of_continously_connected_lines(net, lines=[l1, l2, l3, l4, l5])
+    assert str(exception_info.value) == "Lines have branching points"
+
+
 
 
 if __name__ == '__main__':
