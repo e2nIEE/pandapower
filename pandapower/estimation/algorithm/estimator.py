@@ -4,7 +4,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-from numba import jit
+try:
+    from numba import jit
+except ImportError:
+    from pandapower.pf.no_numba import jit
+
 from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra

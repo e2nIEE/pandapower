@@ -42,7 +42,6 @@ setup(
     install_requires=["pandas>=0.17",
                       "networkx",
                       "scipy",
-					  "numba",
                       "numpy>=0.11",
                       "packaging"],
     extras_require = {":python_version<'3.0'": ["future"],
