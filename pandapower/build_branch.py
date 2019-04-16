@@ -80,7 +80,7 @@ def _initialize_branch_lookup(net):
 def _calc_trafo3w_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
-    f,t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
+    f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
     hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
     lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
@@ -178,12 +178,12 @@ def _calc_trafo_parameter(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
     r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
-    branch[f:t,  BR_R] = r
-    branch[f:t,  BR_X] = x
-    branch[f:t,  BR_B] = y
-    branch[f:t,  TAP] = ratio
-    branch[f:t,  SHIFT] = shift
-    branch[f:t,  BR_STATUS] = trafo["in_service"].values
+    branch[f:t, BR_R] = r
+    branch[f:t, BR_X] = x
+    branch[f:t, BR_B] = y
+    branch[f:t, TAP] = ratio
+    branch[f:t, SHIFT] = shift
+    branch[f:t, BR_STATUS] = trafo["in_service"].values
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
@@ -191,8 +191,7 @@ def _calc_trafo_parameter(net, ppc):
         max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
         sn_mva = trafo.sn_mva.values
         df = trafo.df.values
-        branch[f:t,  RATE_A] = max_load / 100. * sn_mva * df * parallel
-    return temp_para
+        branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
 
 
 def get_trafo_values(trafo_df, par):
@@ -256,7 +255,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc):
     r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
     if mode == "sc":
         y = 0
-        if isinstance(trafo_df, pd.DataFrame): #2w trafo is dataframe, 3w trafo is dict
+        if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
@@ -316,7 +315,7 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
    
     vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else  vn_lv_kv **2
     b_real = pfe / vnl_squared * baseR
-    i0 =  get_trafo_values(trafo_df, "i0_percent")
+    i0 = get_trafo_values(trafo_df, "i0_percent")
     sn = get_trafo_values(trafo_df, "sn_mva")
     b_img = (i0 / 100. * sn) ** 2 - pfe ** 2
 
@@ -357,7 +356,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
     tap_pos = get_trafo_values(trafo_df, "tap_pos")
     tap_neutral = get_trafo_values(trafo_df, "tap_neutral")
-    tap_diff =  tap_pos - tap_neutral
+    tap_diff = tap_pos - tap_neutral
     tap_phase_shifter = get_trafo_values(trafo_df, "tap_phase_shifter")
     tap_side = get_trafo_values(trafo_df, "tap_side")
     tap_step_percent = get_trafo_values(trafo_df, "tap_step_percent")
@@ -370,7 +369,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
     for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
         phase_shifters = tap_phase_shifter & (tap_side == side)
         tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-                       ~phase_shifters
+                      ~phase_shifters
         if tap_complex.any():
             tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
             tap_angles = _replace_nan(tap_step_degree[tap_complex])
@@ -380,16 +379,16 @@ def _calc_tap_from_dataframe(net, trafo_df):
             trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
                                                 (u1 + du * cos(tap_angles))))
         if phase_shifters.any():
-            degree_is_set = _replace_nan(tap_step_degree[phase_shifters])!= 0
-            percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) !=0
+            degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
+            percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
             if (degree_is_set & percent_is_set).any():
                 raise UserWarning("Both tap_step_degree and tap_step_percent set for ideal phase shifter")
             trafo_shift[phase_shifters] += np.where(
                 (degree_is_set),
                 (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
                 (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                      tap_step_percent[phase_shifters]/100/2)))
-                )
+                                                      tap_step_percent[phase_shifters] / 100 / 2)))
+            )
     return vnh, vnl, trafo_shift
 
 
@@ -413,7 +412,7 @@ def _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
     r_sc = vkr_percent / 100. / sn_trafo_mva * tap_lv
     x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
-    return r_sc/parallel, x_sc/parallel
+    return r_sc / parallel, x_sc / parallel
 
 
 def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
@@ -454,6 +453,7 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
+
 def _calc_impedance_parameters_from_dataframe(net):
     impedance = net.impedance
     sn_impedance = impedance["sn_mva"].values
@@ -468,6 +468,7 @@ def _calc_impedance_parameters_from_dataframe(net):
     r_asym = (rji - rij) / sn_impedance * sn_net
     x_asym = (xji - xij) / sn_impedance * sn_net
     return r, x, r_asym, x_asym
+
 
 def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -503,12 +504,13 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
             offset = 0
         elif net["trafo3w"]["mv_bus"].at[branch_id] == bus:
             side = "mv"
-            offset = (t - f)/3
+            offset = (t - f) / 3
         elif net["trafo3w"]["lv_bus"].at[branch_id] == bus:
             side = "lv"
-            offset = (t - f)/3*2
+            offset = (t - f) / 3 * 2
         branch_idx = lookup["trafo3w"][0] + net["trafo3w"].index.get_loc(branch_id) + offset
         return side, int(bus), int(branch_idx)
+
 
 def _switch_branches(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
@@ -545,15 +547,15 @@ def _switch_branches(net, ppc):
         init_vm = net._options["init_vm_pu"]
         init_va = net._options["init_va_degree"]
         for location in np.unique(sw_sides):
-            mask = sw_sides==location
+            mask = sw_sides == location
             buses = new_indices[mask]
             side = F_BUS if location == "hv" or location == "from" else T_BUS
-            for init, col in [(init_vm, VM),  (init_va, VA)]:
+            for init, col in [(init_vm, VM), (init_va, VA)]:
                 if isinstance(init, str) and init == "results":
                     if col == VM:
-                        res_column = net["res_%s"%element]["vm_%s_pu"%location]
+                        res_column = net["res_%s" % element]["vm_%s_pu" % location]
                     else:
-                        res_column = net["res_%s"%element]["va_%s_degree"%location]
+                        res_column = net["res_%s" % element]["va_%s_degree" % location]
                     init_values = res_column.loc[switch_element].values[mask]
                 else:
                     if element == "line":
@@ -675,12 +677,9 @@ def _update_trafo_trafo3w_ppc(net, ppc):
     trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
 
     if trafo_end > line_end:
-        ppc["branch"][line_end:trafo_end,
-        [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A]] = \
-            _calc_trafo_parameter(net, ppc)
+        _calc_trafo_parameter(net, ppc)
     if trafo3w_end > trafo_end:
-        ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
-            _calc_trafo3w_parameter(net, ppc)
+        _calc_trafo3w_parameter(net, ppc)
 
 
 def _calc_switch_parameter(net, ppc):
@@ -696,8 +695,8 @@ def _calc_switch_parameter(net, ppc):
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     rx_ratio = net["_options"]["switch_rx_ratio"]
-    rz_ratio = rx_ratio / np.sqrt(1 + rx_ratio**2)
-    xz_ratio = 1 / np.sqrt(1 + rx_ratio**2)
+    rz_ratio = rx_ratio / np.sqrt(1 + rx_ratio ** 2)
+    xz_ratio = 1 / np.sqrt(1 + rx_ratio ** 2)
 
     f, t = net["_pd2ppc_lookups"]["branch"]["switch"]
     branch = ppc["branch"]
@@ -708,7 +707,7 @@ def _calc_switch_parameter(net, ppc):
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     branch[f:t, F_BUS] = fb
     branch[f:t, T_BUS] = tb
-    
+
     z_switch = switch['z_ohm'].values
     # x_switch will have the same value of r_switch to avoid zero dividence
     branch[f:t, BR_R] = z_switch / baseR * rz_ratio
@@ -822,7 +821,7 @@ def _trafo_df_from_trafo3w(net):
     trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
     trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
-    trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv"%side].values for side in sides}
+    trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
@@ -856,8 +855,8 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
 
 
 def z_br_to_bus_vector(z, sn):
-    return sn[0, :] * np.array([z[0,:] / sn[[0,1],:].min(axis=0), z[1,:] /
-                            sn[[1,2],:].min(axis=0), z[2,:] / sn[[0,2],:].min(axis=0)])
+    return sn[0, :] * np.array([z[0, :] / sn[[0, 1], :].min(axis=0), z[1, :] /
+                                sn[[1, 2], :].min(axis=0), z[2, :] / sn[[0, 2], :].min(axis=0)])
 
 
 def wye_delta(zbr_n, s):
@@ -868,8 +867,8 @@ def wye_delta(zbr_n, s):
 
 def wye_delta_vector(zbr_n, s):
     return .5 * s / s[0, :] * np.array([(zbr_n[0, :] + zbr_n[2, :] - zbr_n[1, :]),
-                                     (zbr_n[1, :] + zbr_n[0, :] - zbr_n[2, :]),
-                                     (zbr_n[2, :] + zbr_n[1, :] - zbr_n[0, :])])
+                                        (zbr_n[1, :] + zbr_n[0, :] - zbr_n[2, :]),
+                                        (zbr_n[2, :] + zbr_n[1, :] - zbr_n[0, :])])
 
 
 def _calculate_3w_tap_changers(t3, t2, sides):
@@ -880,7 +879,7 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     empty = np.zeros(nr_trafos)
     empty.fill(np.nan)
     tap_arrays = {var: {side: empty.copy() for side in sides} for var in tap_variables}
-    tap_arrays["tap_side"] = {side: np.array([None]*nr_trafos) for side in sides}
+    tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
     at_star_point = t3.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     for side in sides:
