@@ -13,17 +13,18 @@ from pandapower.estimation.ppc_conversion import _build_measurement_vectors, Ext
 
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra,\
     BaseAlgebraZeroInjConstraints
-    
+from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
+ 
 try:
     import pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-__all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm"]
+__all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
 
 
-class WLSAlgorithm:
+class BaseAlgorithm:
     def __init__(self, tolerance, maximum_iterations, logger=std_logger):
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
@@ -35,37 +36,46 @@ class WLSAlgorithm:
         self.eppci = None
         self.pp_meas_indices = None
 
+    def check_observability(self, eppci: ExtendedPPCI, z):
+        # Check if observability criterion is fulfilled and the state estimation is possible
+        if len(z) < 2 * eppci["bus"].shape[0] - 1:
+            self.logger.error("System is not observable (cancelling)")
+            self.logger.error("Measurements available: %d. Measurements required: %d" %
+                              (len(z), 2 * eppci["bus"].shape[0] - 1))
+            raise UserWarning("Measurements available: %d. Measurements required: %d" %
+                              (len(z), 2 * eppci["bus"].shape[0] - 1))
+
+    def check_result(self, current_error, cur_it):
+        # print output for results
+        if current_error <= self.tolerance:
+            self.successful = True
+            self.logger.debug("State Estimation successful ({:d} iterations)".format(cur_it))
+        else:
+            self.successful = False
+            self.logger.debug("State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
+                                                                                              self.max_iterations))
+
+    def initialize(self, eppci: ExtendedPPCI):
+        # Check observability
+        self.eppci = eppci
+        self.pp_meas_indices = eppci.pp_meas_indices
+        self.check_observability(eppci, eppci.z)
+
+    def estimate(self, ppci: ExtendedPPCI, **kwargs):
+        # Must be implemented individually!!
+        pass 
+
+
+class WLSAlgorithm(BaseAlgorithm):
+    def __init__(self, tolerance, maximum_iterations, logger=std_logger):
+        super(WLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+
         # Parameters for Bad data detection
         self.R_inv = None
         self.Gm = None
         self.r = None
         self.H = None
         self.hx = None
-
-    def check_observability(self, ppci, z):
-        # Check if observability criterion is fulfilled and the state estimation is possible
-        if len(z) < 2 * ppci["bus"].shape[0] - 1:
-            self.logger.error("System is not observable (cancelling)")
-            self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * ppci["bus"].shape[0] - 1))
-            raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * ppci["bus"].shape[0] - 1))
-
-    def check_result(self, current_error, cur_it):
-        # print output for results
-        if current_error <= self.tolerance:
-            self.successful = True
-            self.logger.debug("WLS State Estimation successful ({:d} iterations)".format(cur_it))
-        else:
-            self.successful = False
-            self.logger.debug("WLS State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
-                                                                                                  self.max_iterations))
-
-    def initialize(self, eppci):
-        # Check observability
-        self.eppci = eppci
-        self.pp_meas_indices = eppci.pp_meas_indices
-        self.check_observability(eppci, eppci.z)
 
     def estimate(self, eppci, **kwargs):
         self.initialize(eppci)
@@ -119,7 +129,7 @@ class WLSAlgorithm:
         return eppci
 
 
-class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
+class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
     def estimate(self, eppci, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
@@ -184,5 +194,48 @@ class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
 
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
+        return eppci
+    
+
+class IRWLSAlgorithm(BaseAlgorithm):
+    def estimate(self, eppci, estimator="wls", **kwargs):
+        self.initialize(eppci)
+
+        # matrix calculation object
+        sem = get_estimator(BaseEstimatorIRWLS, estimator)(eppci, **kwargs)
+
+        current_error, cur_it = 100., 0
+        E = eppci.E
+        while current_error > self.tolerance and cur_it < self.max_iterations:
+            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            try:
+                # residual r
+                r = csr_matrix(sem.create_rx(E)).T
+
+                # jacobian matrix H
+                H = csr_matrix(sem.create_hx_jacobian(E))
+
+                # gain matrix G_m
+                # G_m = H^t * Phi * H
+                phi = csr_matrix(sem.create_phi(E))
+                G_m = H.T * (phi * H)
+
+                # state vector difference d_E
+                d_E = spsolve(G_m, H.T * (phi * r))
+                E += d_E.ravel()
+                eppci.update_E(E)
+
+                # prepare next iteration
+                cur_it += 1
+                current_error = np.max(np.abs(d_E))
+                self.logger.debug("Current error: {:.7f}".format(current_error))
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
+
+        # check if the estimation is successfull
+        self.check_result(current_error, cur_it)
+        # update V/delta
         return eppci
 

@@ -30,18 +30,17 @@ class BaseAlgebra:
         self.num_non_slack_bus = eppci.num_non_slack_bus
         self.non_slack_buses = eppci.non_slack_buses
         self.delta_v_bus_mask = eppci.delta_v_bus_mask
-
-        self.z = eppci.z
-        self.r_cov = eppci.r_cov
         self.non_nan_meas_mask = eppci.non_nan_meas_mask
+        self.z = eppci.z
+        self.sigma = eppci.r_cov
 
         self.Ybus = None
         self.Yf = None
         self.Yt = None
         self.initialize_Y()
 
-        self.v = self.eppci.v_init.copy()
-        self.delta = self.eppci.delta_init.copy()
+        self.v = eppci.v_init.copy()
+        self.delta = eppci.delta_init.copy()
 
     # Function which builds a node admittance matrix out of the topology data
     # In addition, it provides the series admittances of lines as G_series and B_series

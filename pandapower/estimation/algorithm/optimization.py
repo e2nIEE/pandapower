@@ -3,29 +3,22 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
 from scipy.optimize import minimize
 
-from pandapower.estimation.algorithm.matrix_opt import \
-    (WLSEstimatorOpt, LAVEstimatorOpt, QCEstimatorOpt, QLEstimatorOpt)
-from pandapower.estimation.algorithm.wls import WLSAlgorithm
+from pandapower.estimation.algorithm.base import BaseAlgorithm
+from pandapower.estimation.algorithm.estimator import BaseEstimatorOpt, get_estimator
 
 DEFAULT_OPT_METHOD = "Newton-CG"
 #DEFAULT_OPT_METHOD = "BFGS"
 #DEFAULT_OPT_METHOD = 'Nelder-Mead'
-ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
-                     'lav': LAVEstimatorOpt,
-                     'qc': QCEstimatorOpt,
-                     'ql': QLEstimatorOpt}
 
 
-class OptAlgorithm(WLSAlgorithm):
-    def estimate(self, eppci, **opt_vars):
-        assert 'estimator' in opt_vars and opt_vars['estimator'] in ESTIMATOR_MAPPING
+class OptAlgorithm(BaseAlgorithm):
+    def estimate(self, eppci, estimator="wls", **opt_vars):
         opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in opt_vars else opt_vars['opt_method']
 
         # matrix calculation object
-        estm = ESTIMATOR_MAPPING[opt_vars['estimator']](eppci, **opt_vars)
+        estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **opt_vars)
 
         jac = estm.create_rx_jacobian
         res = minimize(estm.cost_function, x0=eppci.E, 

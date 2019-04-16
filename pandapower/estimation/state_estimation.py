@@ -7,14 +7,15 @@ import numpy as np
 from scipy.stats import chi2
 
 from pandapower.estimation.ppc_conversion import (_add_aux_elements_for_bb_switch, 
-                                                  _drop_aux_elements_for_bb_switch, 
+                                                  _drop_aux_elements_for_bb_switch,
                                                   _initialize_voltage,
                                                   pp2eppci)
 from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_switch_impedance
-from pandapower.estimation.results import _rename_results, eppci2pp
-from pandapower.estimation.algorithm.wls import WLSAlgorithm, WLSZeroInjectionConstraintsAlgorithm
+from pandapower.estimation.results import eppci2pp
+from pandapower.estimation.algorithm.base import (WLSAlgorithm, 
+                                                  WLSZeroInjectionConstraintsAlgorithm,
+                                                  IRWLSAlgorithm)
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
-from pandapower.estimation.algorithm.irwls import IRWLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 
 
@@ -24,14 +25,15 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-SOLVER_MAPPING = {'wls': WLSAlgorithm,
-                  'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
-                  'opt': OptAlgorithm,
-                  'irwls': IRWLSAlgorithm,
-                  'lp': LPAlgorithm}
+
+ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
+                     'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
+                     'opt': OptAlgorithm,
+                     'irwls': IRWLSAlgorithm,
+                     'lp': LPAlgorithm}
 
 
-def estimate(net, algorithm='wls', estimator='wls',
+def estimate(net, algorithm='wls',
              init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, 
              zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
@@ -76,16 +78,15 @@ def estimate(net, algorithm='wls', estimator='wls',
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    if algorithm not in SOLVER_MAPPING:
+    if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
-    return se.estimate(estimator=estimator,
-        v_start=v_start, delta_start=delta_start, 
-        calculate_voltage_angles=calculate_voltage_angles, 
-        zero_injection=zero_injection,
-        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
+    return se.estimate(v_start=v_start, delta_start=delta_start, 
+                       calculate_voltage_angles=calculate_voltage_angles, 
+                       zero_injection=zero_injection,
+                       fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -168,15 +169,14 @@ class StateEstimation:
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
         self.net = net
-        self.solver = SOLVER_MAPPING[algorithm](tolerance,
-                                                maximum_iterations, self.logger)
+        self.solver = ALGORITHM_MAPPING[algorithm](tolerance,
+                                                   maximum_iterations, self.logger)
 
         # variables for chi^2 / rn_max tests
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, estimator="wls", 
-                 v_start='flat', delta_start='flat', calculate_voltage_angles=True,
+    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
                  zero_injection=None, fuse_buses_with_bb_switch='all', **opt_vars):
         """
         The function estimate is the main function of the module. It takes up to three input
@@ -253,7 +253,7 @@ class StateEstimation:
                               zero_injection=zero_injection)
 
         # Estimate voltage magnitude and angle with the given estimator
-        eppci = self.solver.estimate(eppci, estimator="wls", **opt_vars)
+        eppci = self.solver.estimate(eppci, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, ppc, eppci)
