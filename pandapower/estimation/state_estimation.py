@@ -9,7 +9,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
-from pandapower.topology import estimate_voltage_vector
+from pandapower.estimation.helper import estimate_voltage_vector
 from time import time
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
