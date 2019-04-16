@@ -20,7 +20,7 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w,\
+from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.toolbox import nets_equal
@@ -197,8 +197,8 @@ def z_switch_net():
         pp.create_bus(net, vn_kv=.4)
         pp.create_load(net, i, p_mw=0.1)
     pp.create_ext_grid(net, 0, vm_pu=1.0)
-    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1/np.sqrt(2),
-                                   x_ohm_per_km=0.1/np.sqrt(2),
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2),
+                                   x_ohm_per_km=0.1 / np.sqrt(2),
                                    c_nf_per_km=0, max_i_ka=.2)
     pp.create_switch(net, 0, 2, et="b", z_ohm=0.1)
     return net
@@ -223,11 +223,11 @@ def z_switch_net_4bus_parallel():
         pp.create_bus(net, vn_kv=.4)
         pp.create_load(net, i, p_mw=0.1)
     pp.create_ext_grid(net, 0, vm_pu=1.0)
-    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1/np.sqrt(2),
-                                   x_ohm_per_km=0.1/np.sqrt(2),
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2),
+                                   x_ohm_per_km=0.1 / np.sqrt(2),
                                    c_nf_per_km=0, max_i_ka=.2)
-    pp.create_line_from_parameters(net, 1, 3, 1, r_ohm_per_km=0.1/np.sqrt(2),
-                                   x_ohm_per_km=0.1/np.sqrt(2),
+    pp.create_line_from_parameters(net, 1, 3, 1, r_ohm_per_km=0.1 / np.sqrt(2),
+                                   x_ohm_per_km=0.1 / np.sqrt(2),
                                    c_nf_per_km=0, max_i_ka=.2)
     pp.create_switch(net, 0, 2, et="b", z_ohm=0.1)
     pp.create_switch(net, 0, 2, et="b", z_ohm=0)
@@ -241,8 +241,8 @@ def z_switch_net_4bus():
         pp.create_bus(net, vn_kv=.4)
         pp.create_load(net, i, p_mw=0.01)
     pp.create_ext_grid(net, 0, vm_pu=1.0)
-    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1/np.sqrt(2),
-                                   x_ohm_per_km=0.1/np.sqrt(2),
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2),
+                                   x_ohm_per_km=0.1 / np.sqrt(2),
                                    c_nf_per_km=0, max_i_ka=.2)
     pp.create_switch(net, 1, 2, et="b", z_ohm=0.1)
     pp.create_switch(net, 2, 3, et="b", z_ohm=0)
@@ -262,7 +262,7 @@ def test_switch_fuse_z_ohm_0(z_switch_net_4bus_parallel, z_switch_net_4bus, numb
     assert net.res_bus.vm_pu[1] != net.res_bus.vm_pu[2]
 
 
-@pytest.mark.parametrize("numba", [True, False])    
+@pytest.mark.parametrize("numba", [True, False])
 def test_switch_z_ohm_different(z_switch_net_4bus_parallel, z_switch_net_4bus, numba):
     net = z_switch_net_4bus_parallel
     net.switch.at[1, 'z_ohm'] = 0.2
@@ -470,8 +470,8 @@ def test_bsfw_algorithm():
     net = example_simple()
 
     pp.runpp(net)
-    vm_nr = net.res_bus.vm_pu
-    va_nr = net.res_bus.va_degree
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
 
     pp.runpp(net, algorithm='bfsw')
     vm_alg = net.res_bus.vm_pu
@@ -481,6 +481,74 @@ def test_bsfw_algorithm():
     assert np.allclose(va_nr, va_alg)
 
 
+@pytest.mark.xfail(reason="unknown")
+def test_bsfw_algorithm_multi_net():
+    net = example_simple()
+    add_grid_connection(net, vn_kv=110., zone="second")
+
+    pp.runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    pp.runpp(net, algorithm='bfsw')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+def test_bsfw_algorithm_with_trafo_shift_and_voltage_angles():
+    net = example_simple()
+    net["trafo"].loc[:, "shift_degree"] = 180.
+
+    pp.runpp(net, calculate_voltage_angles=True)
+    vm_nr = net.res_bus.vm_pu
+    va_nr = net.res_bus.va_degree
+
+    pp.runpp(net, algorithm='bfsw', calculate_voltage_angles=True)
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+def test_bsfw_algorithm_with_enforce_q_lims():
+    net = example_simple()
+    net.ext_grid["max_q_mvar"] = [0.1]
+    net.ext_grid["min_q_mvar"] = [-0.1]
+    net.gen["max_q_mvar"] = [5.]
+    net.gen["min_q_mvar"] = [4.]
+
+    pp.runpp(net, enforce_q_lims=True)
+    vm_nr = net.res_bus.vm_pu
+    va_nr = net.res_bus.va_degree
+
+    pp.runpp(net, algorithm='bfsw', enforce_q_lims=True)
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+def test_bsfw_algorithm_with_branch_loops():
+    net = example_simple()
+    pp.create_line(net, 0, 6, length_km=2.5,
+                   std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line meshed")
+    net.switch.loc[:, "closed"] = True
+
+    pp.runpp(net)
+    vm_nr = net.res_bus.vm_pu
+    va_nr = net.res_bus.va_degree
+
+    pp.runpp(net, algorithm='bfsw')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.slow
 def test_pypower_algorithms_iter():
     alg_to_test = ['fdbx', 'fdxb', 'gs']
     for alg in alg_to_test:
@@ -915,19 +983,19 @@ def test_ext_grid_and_gen_at_one_bus():
     g2 = pp.create_gen(net, b1, vm_pu=1.01, p_mw=1)
     runpp_with_consistency_checks(net)
 
-    #all the reactive power previously provided by the ext_grid is now provided by the generators
+    # all the reactive power previously provided by the ext_grid is now provided by the generators
     assert np.isclose(net.res_ext_grid.q_mvar.values, 0)
     assert np.isclose(net.res_gen.q_mvar.sum(), q)
-    #since no Q-limits were set, reactive power is distributed equally to both generators
+    # since no Q-limits were set, reactive power is distributed equally to both generators
     assert np.isclose(net.res_gen.q_mvar.at[g1], net.res_gen.q_mvar.at[g2])
 
-    #set reactive power limits at the generators
+    # set reactive power limits at the generators
     net.gen["max_q_mvar"] = [0.1, 0.01]
     net.gen["min_q_mvar"] = [-0.1, -0.01]
     runpp_with_consistency_checks(net)
-    #g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
-    assert np.isclose(net.res_gen.q_mvar.at[g1], net.res_gen.q_mvar.at[g2]*10)
-    #all the reactive power is still provided by the generators, because Q-lims are not enforced
+    # g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
+    assert np.isclose(net.res_gen.q_mvar.at[g1], net.res_gen.q_mvar.at[g2] * 10)
+    # all the reactive power is still provided by the generators, because Q-lims are not enforced
     assert np.allclose(net.res_ext_grid.q_mvar.values, [0])
     assert np.isclose(net.res_gen.q_mvar.sum(), q)
 
@@ -1004,11 +1072,11 @@ def test_dc_with_ext_grid_at_one_bus():
     pp.create_dcline(net, from_bus=b1, to_bus=b2, p_mw=10,
                      loss_percent=0, loss_mw=0, vm_from_pu=1.01, vm_to_pu=1.01)
 
-    pp.create_sgen(net,b1,p_mw=10)
-    pp.create_load(net,b2,p_mw=10)
+    pp.create_sgen(net, b1, p_mw=10)
+    pp.create_load(net, b2, p_mw=10)
 
     runpp_with_consistency_checks(net)
-    assert np.allclose(net.res_ext_grid.p_mw.values, [0,0])
+    assert np.allclose(net.res_ext_grid.p_mw.values, [0, 0])
 
 
 def test_init_results_without_results():
@@ -1027,36 +1095,39 @@ def test_init_results_without_results():
     pp.runpp(net, init_va_degree="results", init_vm_pu="results")
     assert net.converged
 
+
 def test_init_results():
     net = pp.create_empty_network()
-    add_test_line(net) #line network with switch at to bus
+    add_test_line(net)  # line network with switch at to bus
     assert_init_results(net)
-    net.switch.at[0, "bus"] = 0 #switch at from bus
-    assert_init_results(net)
-
-    add_test_trafo(net) #trafo network with switch at lv bus
-    assert_init_results(net)
-    net.switch.at[0, "bus"] = 7 #switch at hv bus
+    net.switch.at[0, "bus"] = 0  # switch at from bus
     assert_init_results(net)
 
-    add_test_xward(net) #xward with internal node
+    add_test_trafo(net)  # trafo network with switch at lv bus
     assert_init_results(net)
-    add_test_trafo3w(net) #trafo3w with internal node
+    net.switch.at[0, "bus"] = 7  # switch at hv bus
+    assert_init_results(net)
+
+    add_test_xward(net)  # xward with internal node
+    assert_init_results(net)
+    add_test_trafo3w(net)  # trafo3w with internal node
     assert_init_results(net)
     t3idx = net.trafo3w.index[0]
     t3_switch = pp.create_switch(net, bus=net.trafo3w.hv_bus.at[t3idx],
-                                 element=t3idx, et="t3", closed=False) #trafo3w switch at hv side
+                                 element=t3idx, et="t3", closed=False)  # trafo3w switch at hv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.mv_bus.at[t3idx] #trafo3w switch at mv side
+    net.switch.bus.at[t3_switch] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.lv_bus.at[t3idx] #trafo3w switch at lv side
+    net.switch.bus.at[t3_switch] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
     assert_init_results(net)
+
 
 def assert_init_results(net):
     pp.runpp(net, init="auto")
     assert net._ppc["iterations"] > 0
     pp.runpp(net, init="results")
     assert net._ppc["iterations"] == 0
+
 
 def test_wye_delta():
     from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B
@@ -1076,12 +1147,12 @@ def test_wye_delta():
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-               np.array([ 0.0001640+0.j,  0.0047972+0.j, -0.0105000-0.014j]),
-                        rtol=1e-7)
+                       np.array([0.0001640 + 0.j, 0.0047972 + 0.j, -0.0105000 - 0.014j]),
+                       rtol=1e-7)
 
     pp.runpp(net, trafo_model="t")
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-               np.array([ 0.00016392+0.j, 0.00479726+0.j,-0.01050009-0.01399964j]))
+                       np.array([0.00016392 + 0.j, 0.00479726 + 0.j, -0.01050009 - 0.01399964j]))
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
 
 

@@ -1,5 +1,12 @@
 Change Log
 =============
+- [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
+- [ADDED] Graph-Tool interface
+
+[2.0.1]- 2019-03-28
+----------------------
+- [FIXED] bug in short-circuit impedance of gens
+- [ADDED] use estimation of rdss_pu defined in IEC 60909 of gens if not defined
 
 [2.0.0]- 2019-03-21
 ----------------------

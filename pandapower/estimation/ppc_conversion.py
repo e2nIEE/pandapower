@@ -17,8 +17,8 @@ from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
-from pandapower.topology import estimate_voltage_vector
 
+from pandapower.estimation.toolbox import estimate_voltage_vector
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.estimation.results import _copy_power_flow_results

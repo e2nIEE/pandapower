@@ -13,9 +13,11 @@ import numpy as np
 
 try:
     from julia import Main
+
     julia_installed = True
-except ImportError:
+except (ImportError, RuntimeError) as e:
     julia_installed = False
+    print(e)
 
 
 @pytest.fixture
@@ -58,6 +60,7 @@ def net_3w_trafo_opf():
     return net
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
     net = net_3w_trafo_opf
@@ -94,6 +97,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     np.allclose(va_bus, net.res_bus.va_degree.values)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_pwl():
     net = pp.create_empty_network()
@@ -153,6 +157,7 @@ def test_pwl():
                       net.res_gen.p_mw.at[g3] * 3)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_without_ext_grid():
     net = pp.create_empty_network()
@@ -215,6 +220,7 @@ def test_without_ext_grid():
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] * 1e3 + net.res_gen.p_mw.at[g2] * 2e3)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_multiple_ext_grids():
     net = pp.create_empty_network()
@@ -243,6 +249,8 @@ def test_multiple_ext_grids():
     pp.runpm_ac_opf(net)
     assert np.allclose(net.res_sgen.loc[0, "p_mw"], 60.)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_voltage_angles():
     net = pp.create_empty_network()
@@ -265,9 +273,6 @@ def test_voltage_angles():
     for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
         run(net)
         consistency_checks(net)
-        print(net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3])
-        print(net.res_bus.va_degree.at[b1])
-        print(net.res_bus.va_degree.at[b3])
         assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] <= 120
         assert 85 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 86
         assert 120 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4]) % 360 < 130

@@ -14,7 +14,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def ring_network():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=2.)
     b0 = pp.create_bus(net, 220)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)

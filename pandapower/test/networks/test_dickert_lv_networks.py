@@ -9,7 +9,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as pn
 
-
+@pytest.mark.slow
 def test_dickert_lv_networks():
     net_data = [('short', 'cable', 'single', 'good', 1),
                 ('short', 'cable', 'single', 'average', 1),
