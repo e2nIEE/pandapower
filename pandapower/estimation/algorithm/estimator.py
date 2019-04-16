@@ -94,7 +94,7 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         return chi2_res, np.min(np.c_[(chi2_res/ps)**2, np.ones(ps.shape)], axis=1)
 
     def _ps(self, H):
-        omega = H @ H.T
+        omega = np.dot(H, H.T)
 
         x = np.zeros(omega.shape[0]-1)
         y = np.zeros(omega.shape[0])
