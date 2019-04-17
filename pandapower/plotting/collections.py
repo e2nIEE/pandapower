@@ -995,7 +995,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     """
 
     if ax is None:
-        plt.figure(facecolor="white", figsize=figsize, frameon=False)
+        plt.figure(facecolor="white", figsize=figsize)
         plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
@@ -1012,8 +1012,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     if set_aspect:
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
-    ax.axis('off')
-    # ax.margins(.02)
+    ax.margins(.02)
     if draw:
         plt.draw()
     return ax
