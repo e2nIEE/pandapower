@@ -47,7 +47,7 @@ class BaseEstimatorOpt(BaseAlgebra):
         # Must be implemented according to the estimator for the optimization
         pass
 
-    def create_rx_jacobian(self, E): # pragma: no cover
+    def create_cost_jacobian(self, E): # pragma: no cover
         pass
 
 
@@ -60,13 +60,14 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
         cost = np.sum((1/self.sigma**2) * (rx**2))
         return cost
 
-    def create_rx_jacobian(self, E):
+    def create_cost_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
-        # 2 * rx * -(dhx/dE)
-        rx = self.create_rx(E)
+        # 2 * rx * (1/self)* -(dhx/dE)
+        rx = self.create_rx(E) 
         hx_jac = self.create_hx_jacobian(E)
-        jac = - np.sum(2 * rx.reshape((-1, 1)) * hx_jac, axis=0)
+        drho_dr = 2 * (rx * (1/self.sigma)**2)
+        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
         return jac
 
     def create_phi(self, E):
@@ -138,13 +139,14 @@ class LAVEstimator(BaseEstimatorOpt):
         cost = np.sum(np.abs(rx))
         return cost
 
-    def create_rx_jacobian(self, E):
+    def create_cost_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # sign(rx) * -(dhx/dE)
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)
+        drho_dr = np.sign(rx)
+        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
         return jac
 
 
@@ -157,22 +159,23 @@ class QCEstimatorOpt(BaseEstimatorOpt):
     def cost_function(self, E):
         rx = self.create_rx(E)
         cost = (1/self.sigma**2) * (rx**2)
-        if np.any(np.abs(rx/self.sigma) > self.a):
-            cost[np.abs(rx/self.sigma) > self.a] = (self.a**2 / self.sigma**2)[np.abs(rx/self.sigma) > self.a]
-#        print(np.sum(cost))
+        large_dev_mask = np.abs(rx/self.sigma) > self.a
+        if np.any(large_dev_mask):
+            cost[large_dev_mask] = (self.a**2)
         return np.sum(cost)
 
-    def create_rx_jacobian(self, E):
+    def create_cost_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # 2 * rx * -(dhx/dE) if np.abs(rx/sigma) < a
         # 0 else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho = 2 * rx.reshape((-1, 1))
-        if np.any(np.abs(rx/self.sigma) > self.a):
-            drho[np.abs(rx/self.sigma) > self.a] = 0
-        jac = - np.sum(drho * hx_jac, axis=0)
+        drho_dr = 2 * (rx * (1/self.sigma)**2)
+        large_dev_mask = (np.abs(rx/self.sigma) > self.a)
+        if np.any(large_dev_mask):
+            drho_dr[large_dev_mask] = 0
+        jac = - np.sum(drho_dr.reshape(-1, 1) * hx_jac, axis=0)
         return jac
 
 
@@ -185,23 +188,22 @@ class QLEstimatorOpt(BaseEstimatorOpt):
     def cost_function(self, E):
         rx = self.create_rx(E)
         cost = (1/self.sigma**2) * (rx**2)
-        if np.any(np.abs(rx/self.sigma) > self.a):
-            cost[np.abs(rx/self.sigma) > self.a] = (2*self.a*self.sigma*np.abs(rx) -\
-                self.a**2 * self.sigma**2)[np.abs(rx/self.sigma) > self.a]
-#        print(np.sum(cost))
+        large_dev_mask = (np.abs(rx/self.sigma) > self.a)
+        if np.any(large_dev_mask):
+            cost[large_dev_mask] = (np.abs(rx/self.sigma) - self.a +
+                self.a**2)[large_dev_mask]
         return np.sum(cost)
 
-    def create_rx_jacobian(self, E):
+    def create_cost_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # 2 * rx * -(dhx/dE) if np.abs(rx/sigma) < a
-        # 0 else
+        # 2 * drho/dr * -(dhx/dE) else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho = 2 * rx.reshape((-1, 1))
-        if np.any(np.abs(rx/self.sigma) > self.a):
-            drho[np.abs(rx/self.sigma) > self.a] =\
-                - np.sum((2*self.a*self.sigma*np.sign(rx)).reshape((-1, 1)) * hx_jac, 
-                         axis=0)[np.abs(rx/self.sigma) > self.a]
-        jac = - np.sum(drho * hx_jac, axis=0)  
+        drho_dr = 2 * (rx * (1/self.sigma)**2)
+        large_dev_mask = np.abs(rx/self.sigma) > self.a
+        if np.any(large_dev_mask):
+            drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask] 
+        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)  
         return jac

@@ -9,7 +9,7 @@ from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.estimator import BaseEstimatorOpt, get_estimator
 
 DEFAULT_OPT_METHOD = "Newton-CG"
-#DEFAULT_OPT_METHOD = "BFGS"
+#DEFAULT_OPT_METHOD = 'L-BFGS-B'
 #DEFAULT_OPT_METHOD = 'Nelder-Mead'
 
 
@@ -20,10 +20,11 @@ class OptAlgorithm(BaseAlgorithm):
         # matrix calculation object
         estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **opt_vars)
 
-        jac = estm.create_rx_jacobian
+        jac = estm.create_cost_jacobian
         res = minimize(estm.cost_function, x0=eppci.E, 
-                       method=opt_method, jac=jac, tol=self.tolerance,
-                       options={'maxiter':1000, 'disp': True})
+                       method=opt_method, jac=jac,
+                       options={'maxiter': self.max_iterations})
+#        print(res)
 
         self.successful = res.success
         if self.successful:
