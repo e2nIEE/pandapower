@@ -80,43 +80,43 @@ def test_case30_compare_lav_opt_lav():
     assert np.allclose(net_lp.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=5e-2)
     
 
-def test_case30_ql_qc():
-    net = nw.case30()
-    pp.runpp(net)
-    add_virtual_meas_from_loadflow(net)
-
-    try:
-        estimate(net, algorithm="opt", estimator="ql", a=5)
-    except:
-        # if failed give it a warm start
-        net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-3, 5)
-        estimation_opt = OptAlgorithm(1e-6, 100)
-
-        eppci = estimation_wls.estimate(eppci)
-        eppci = estimation_opt.estimate(eppci, estimator="ql", a=5)
-        assert estimation_opt.successful
-        net = eppci2pp(net, ppc, eppci)
-
-    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, 1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, 1e-2)
-
-    try:
-        estimate(net, algorithm="opt", estimator="qc", a=5)
-    except:
-        # if failed give it a warm start
-        net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-3, 5)
-        estimation_opt = OptAlgorithm(1e-6, 100)
-
-        eppci = estimation_wls.estimate(eppci)
-        eppci = estimation_opt.estimate(eppci, estimator="qc", a=5)
-        assert estimation_opt.successful
-        net = eppci2pp(net, ppc, eppci)
-    
-    pp.runpp(net)
-    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, 1e-1)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, 1e-1)
+#def test_case30_ql_qc():
+#    net = nw.case30()
+#    pp.runpp(net)
+#    add_virtual_meas_from_loadflow(net)
+#
+#    try:
+#        estimate(net, algorithm="opt", estimator="ql", a=5)
+#    except:
+#        # if failed give it a warm start
+#        net, ppc, eppci = pp2eppci(net)
+#        estimation_wls = WLSAlgorithm(1e-3, 5)
+#        estimation_opt = OptAlgorithm(1e-6, 100)
+#
+#        eppci = estimation_wls.estimate(eppci)
+#        eppci = estimation_opt.estimate(eppci, estimator="ql", a=5)
+#        assert estimation_opt.successful
+#        net = eppci2pp(net, ppc, eppci)
+#
+#    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, 1e-2)
+#    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, 1e-2)
+#
+#    try:
+#        estimate(net, algorithm="opt", estimator="qc", a=5)
+#    except:
+#        # if failed give it a warm start
+#        net, ppc, eppci = pp2eppci(net)
+#        estimation_wls = WLSAlgorithm(1e-3, 5)
+#        estimation_opt = OptAlgorithm(1e-6, 100)
+#
+#        eppci = estimation_wls.estimate(eppci)
+#        eppci = estimation_opt.estimate(eppci, estimator="qc", a=5)
+#        assert estimation_opt.successful
+#        net = eppci2pp(net, ppc, eppci)
+#    
+#    pp.runpp(net)
+#    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, 1e-1)
+#    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, 1e-1)
 
 
 if __name__ == '__main__':

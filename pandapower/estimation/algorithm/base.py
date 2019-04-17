@@ -103,7 +103,7 @@ class WLSAlgorithm(BaseAlgorithm):
                 # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
-                # Update E!! Important!!
+                # Update E with d_E
                 E += d_E.ravel()
                 eppci.update_E(E)
 
@@ -177,7 +177,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 rhs = H.T * (r_inv * r)  # original right hand side
                 C_rhs = vstack((rhs, -c_rxh))  # creating the righ hand side with new constraints
 
-                # state vector difference d_E
+                # state vector difference d_E and update E
                 d_E_ext = spsolve(M_tx, C_rhs)
                 E_ext += d_E_ext.ravel()
                 E = E_ext[:E.shape[0]]
@@ -220,7 +220,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 phi = csr_matrix(sem.create_phi(E))
                 G_m = H.T * (phi * H)
 
-                # state vector difference d_E
+                # state vector difference d_E and update E
                 d_E = spsolve(G_m, H.T * (phi * r))
                 E += d_E.ravel()
                 eppci.update_E(E)

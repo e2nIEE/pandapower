@@ -12,9 +12,9 @@ from pandapower.estimation.algorithm.base import BaseAlgorithm
 
 class LPAlgorithm(BaseAlgorithm):
     def estimate(self, eppci, **kwargs):
-        if "estimator" in kwargs and kwargs["estimator"].lower() != "lav":
+        if "estimator" in kwargs and kwargs["estimator"].lower() != "lav": # pragma: no cover
             self.logger.warning("LP Algorithm supports only LAV Estimator!! Set to LAV!!")
-        
+
         # matrix calculation object
         sem = BaseAlgebra(eppci)
 
@@ -57,12 +57,8 @@ class LPAlgorithm(BaseAlgorithm):
         c_T = np.r_[zero_n, zero_n, one_m, one_m] 
         A = np.c_[H, -H, Im, -Im]
 
-#        res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
-#                      method="interior-point", options={'tol': 1e-4, 'disp': True, 'maxiter':10000})
         res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
                       method="simplex", options={'tol': 1e-5, 'disp': True, 'maxiter':20000})
-#        res = solvers.lp(matrix(c_T.ravel()), G=matrix(-np.eye((n+m)*2)), h=matrix(np.zeros(((n+m)*2,1))), 
-#                         A=matrix(A), b=matrix(r))
         if res.success:
             d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2*n]).ravel()
             return d_x

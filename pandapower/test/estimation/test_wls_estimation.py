@@ -235,7 +235,7 @@ def test_3bus_with_transformer():
                           side=3, element=0)  # at hv side
 
     # 2. Do state estimation
-    success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10, calculate_voltage_angles=True)
+    success = estimate(net, init='slack', tolerance=1e-6, maximum_iterations=10, calculate_voltage_angles=True)
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -244,7 +244,7 @@ def test_3bus_with_transformer():
 
     assert success
     assert (np.nanmax(abs(diff_v)) < 6e-4)
-    assert (np.nanmax(abs(diff_delta)) < 1e-3)
+    assert (np.nanmax(abs(diff_delta)) < 8e-4)
 
     # Backwards check. Use state estimation results for power flow and check for equality
     net.load.drop(net.load.index, inplace=True)
