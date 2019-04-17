@@ -18,7 +18,7 @@ from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
 
-from pandapower.estimation.toolbox import estimate_voltage_vector
+from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.estimation.results import _copy_power_flow_results

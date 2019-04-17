@@ -9,7 +9,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.estimation import estimate
-from pandapower.estimation.toolbox import add_virtual_meas_from_loadflow
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.algorithm.base import WLSAlgorithm

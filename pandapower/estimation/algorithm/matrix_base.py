@@ -134,7 +134,7 @@ class BaseAlgebra:
         return dv_dth, dv_dv
 
     def _dibr_dv(self, V):
-        # for current measurement we only interested in current magnitud
+        # for current we only interest in the magnitude at the moment
         dif_dth, dif_dv, dit_dth, dit_dv, _, _ = map(np.abs, dIbr_dV(self.eppci.branch, self.Yf, self.Yt, V))
         return dif_dth, dif_dv, dit_dth, dit_dv
 

@@ -6,7 +6,7 @@
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.estimation.toolbox import set_bb_switch_impedance, reset_bb_switch_impedance
+from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
 from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
 from pandapower.estimation.results import eppci2pp
 from pandapower.estimation.algorithm.base import (WLSAlgorithm, 
