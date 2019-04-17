@@ -671,21 +671,21 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     """
     Adds one static generator in table net["sgen"].
 
-    Static generators are modelled as negative  PQ loads. This element is used to model generators
+    Static generators are modelled as positive and constant PQ power. This element is used to model generators
     with a constant active and reactive power feed-in. If you want to model a voltage controlled
     generator, use the generator element instead.
 
-    All elements in the grid are modelled in the consumer system, including generators!
-    If you want to model the generation of power, you have to assign a negative active power
+    gen, sgen and ext_grid in the grid are modelled in the generator system!
+    If you want to model the generation of power, you have to assign a positive active power
     to the generator. Please pay attention to the correct signing of the
-    reactive power as well.
+    reactive power as well (positive for injection and negative for consumption).
 
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (negative for generation!)
+        **p_mw** (float) - The real power of the static generator  (positive for generation!)
 
     OPTIONAL:
 
