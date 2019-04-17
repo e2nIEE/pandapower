@@ -901,4 +901,73 @@ def _compare_pf_and_se_results(net):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+#    pytest.main([__file__, "-xs"])
+    np.random.seed(12)
+
+    # 1. Create network
+    net = pp.create_empty_network()
+    pp.create_bus(net, name="bus1", vn_kv=10.)
+    pp.create_bus(net, name="bus2", vn_kv=10.)
+    pp.create_bus(net, name="bus3", vn_kv=10.)
+    pp.create_bus(net, name="bus4", vn_kv=110.)
+    pp.create_ext_grid(net, bus=3, vm_pu=1.01)
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
+                                   max_i_ka=1)
+    
+    pp.create_std_type(net, {"sn_mva": 25, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
+            "vkr_percent": 0.276, "pfe_kw": 28.51, "i0_percent": 0.073, "shift_degree": 150,
+            "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
+            "tap_step_percent": 1.5, "tap_phase_shifter": False},
+            "25 MVA 110/10 kV v1.4.3 and older", element="trafo")
+    pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV v1.4.3 and older")
+
+    pp.create_load(net, bus=1, p_mw=0.45, q_mvar=0.3)
+    pp.create_load(net, bus=2, p_mw=0.35, q_mvar=0.2)
+
+    pp.runpp(net, calculate_voltage_angles=True)
+
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[0], .004), .004, element=0)
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[1], .004), .004, element=1)
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[3], .004), .004, element=3)
+
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[1], .01), .01, element=1)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[1], .01), .01, element=1)
+
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[2], .01), .010, element=2)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[2], .01), .01, element=2)
+
+    pp.create_measurement(net, "p", "bus", 0., 0.001, element=0)
+    pp.create_measurement(net, "q", "bus", 0., 0.001, element=0)
+
+    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], .008), .008, 0, 0)
+    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[1], .008), .008, 1, 0)
+
+    pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .01), .01,
+                          side="hv", element=0)  # transformer meas.
+    pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .01), .01,
+                          side=3, element=0)  # at hv side
+
+    # 2. Do state estimation
+    success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10, calculate_voltage_angles=True)
+    v_result = net.res_bus_est.vm_pu.values
+    delta_result = net.res_bus_est.va_degree.values
+
+    diff_v = net.res_bus.vm_pu.values - v_result
+    diff_delta = net.res_bus.va_degree.values - delta_result
+
+    assert success
+    assert (np.nanmax(abs(diff_v)) < 6e-4)
+    assert (np.nanmax(abs(diff_delta)) < 1.4e-4)
+
+    # Backwards check. Use state estimation results for power flow and check for equality
+    net.load.drop(net.load.index, inplace=True)
+    net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[net.ext_grid.bus.iloc[0]]
+    pp.create_load(net, 0, net.res_bus_est.p_mw.iloc[0], net.res_bus_est.q_mvar.iloc[0])
+    pp.create_load(net, 1, net.res_bus_est.p_mw.iloc[1], net.res_bus_est.q_mvar.iloc[1])
+    pp.create_load(net, 2, net.res_bus_est.p_mw.iloc[2], net.res_bus_est.q_mvar.iloc[2])
+
+    _compare_pf_and_se_results(net)
