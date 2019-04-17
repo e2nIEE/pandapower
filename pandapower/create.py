@@ -822,9 +822,9 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
-    All elements including generators are modeled from a consumer point of view. Active power
-    will therefore always be negative, reactive power will be negative for inductive behaviour and
-    positive for capacitive behaviour.
+    gen, sgen, and ext_grid are modelled in the generator point of view. Active power
+    will therefore be postive por generation, and reactive power will be negative for consumption behaviour and
+    positive for generation behaviour.
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
