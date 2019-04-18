@@ -671,21 +671,21 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     """
     Adds one static generator in table net["sgen"].
 
-    Static generators are modelled as negative  PQ loads. This element is used to model generators
+    Static generators are modelled as positive and constant PQ power. This element is used to model generators
     with a constant active and reactive power feed-in. If you want to model a voltage controlled
     generator, use the generator element instead.
 
-    All elements in the grid are modelled in the consumer system, including generators!
-    If you want to model the generation of power, you have to assign a negative active power
+    gen, sgen and ext_grid in the grid are modelled in the generator system!
+    If you want to model the generation of power, you have to assign a positive active power
     to the generator. Please pay attention to the correct signing of the
-    reactive power as well.
+    reactive power as well (positive for injection and negative for consumption).
 
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (negative for generation!)
+        **p_mw** (float) - The real power of the static generator  (positive for generation!)
 
     OPTIONAL:
 
@@ -822,9 +822,9 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
-    All elements including generators are modeled from a consumer point of view. Active power
-    will therefore always be negative, reactive power will be negative for inductive behaviour and
-    positive for capacitive behaviour.
+    gen, sgen, and ext_grid are modelled in the generator point of view. Active power
+    will therefore be postive por generation, and reactive power will be negative for consumption behaviour and
+    positive for generation behaviour.
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
@@ -976,7 +976,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **bus** (int) - The bus id to which the generator is connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the generator (negative for generation!)
+        **p_mw** (float, default 0) - The real power of the generator (positive for generation!)
 
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
