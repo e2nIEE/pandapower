@@ -1009,6 +1009,9 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(axes_visible[0])
     ax.yaxis.set_visible(axes_visible[1])
+    if not any(axes_visible):
+        # removes bounding box of the plot also
+        ax.axis("off")
     if set_aspect:
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
