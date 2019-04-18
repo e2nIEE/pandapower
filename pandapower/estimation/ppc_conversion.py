@@ -129,7 +129,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.warning("P Measurement duplication will be automatically merged!")
+            std_logger.info("P Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, P] = p_meas_on_bus.value.sum()
@@ -145,7 +145,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.warning("Q Measurement duplication will be automatically merged!")
+            std_logger.info("Q Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, Q] = q_meas_on_bus.value.sum()

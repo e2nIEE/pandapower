@@ -56,13 +56,17 @@ def estimate_voltage_vector(net):
                 return res_bus
     return res_bus
 
+
 def _get_bus_ppc_mapping(net, bus_to_be_fused):
     bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
                     set(net.shunt.bus)).union(set(net.gen.bus)).union(
                     set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
                     set(net.xward.bus))
-#        bus_with_pq_measurement = set(net.measurement[(net.measurement.measurement_type=='p')&(net.measurement.element_type=='bus')].element.values)
-#        bus_with_elements = bus_with_elements.union(bus_with_pq_measurement)
+    # Run dc pp to get the ppc we need
+    try:
+        pp.rundcpp(net)
+    except:
+        pass
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
@@ -78,8 +82,7 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
     return bus_ppci
 
 
-def set_bb_switch_impedance(net, bus_to_be_fused=None,
-                            z_ohm=0.1, prevent_fusing_bus_with_elements = False):
+def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
     """
      Assuming a substation with multiple buses connected to each other with bb switch
      if multiple of them have an element (load, sgen usw.) then it caused problem on 
@@ -97,38 +100,34 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None,
      5. Iterate this process until all buses with elements are seperated to their own ppc bus, while no bus is 
        detached in order to get the voltage on bus right
     :param net: pandapower net
-    :param r_ohm: float r_ohm to be setted for the switch
-    :param prevent_fusing_bus_with_elements: Bool deactivate set switch impedance to all switches, actuvat
-        to set on the selected switch
+    :param z_ohm: float z_ohm to be setted for the switch
     :return: None
     """
     if 'z_ohm' in net.switch:
         net.switch['z_ohm_ori'] = net.switch['z_ohm']
-    if not prevent_fusing_bus_with_elements:
-        net.switch.loc[:, 'z_ohm'] = z_ohm
-    else:
-        lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
-        for _ in range(lookup.elements_in_cluster.max()-1):     
-            bus_to_be_handled = lookup[((lookup['elements_in_cluster']>=2)&\
-                                        lookup['bus_with_elements'])]
-            bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppc'].duplicated(keep='first')].index
-            imp_switch_sel = (net.switch.et=='b')&(net.switch.closed)&\
-                (net.switch.bus.isin(bus_to_be_handled)|net.switch.element.isin(bus_to_be_handled))
-            net.switch.loc[imp_switch_sel, 'z_ohm'] = z_ohm
 
-            #check if fused buses were isolated by the switching type change
-            lookup_discon = _get_bus_ppc_mapping(net)
-            imp_switch = net.switch.loc[imp_switch_sel, :]
-            detached_bus = lookup_discon.loc[lookup_discon.elements_in_cluster==0, :].index
-            # Find the cause of isolated bus, if caused by the 
-            switch_to_be_fused = (imp_switch.bus.isin(bus_to_be_handled)&imp_switch.element.isin(detached_bus))|\
-                                 (imp_switch.bus.isin(detached_bus)&imp_switch.element.isin(bus_to_be_handled))
-            if not switch_to_be_fused.values.any():
-                return
-            net.switch.loc[imp_switch[switch_to_be_fused].index, 'z_ohm'] = 0  
-            lookup = _get_bus_ppc_mapping(net)
-            if lookup.elements_in_cluster.max() == 1:
-                return
+    lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
+    for _ in range(lookup.elements_in_cluster.max().astype(int)-1):     
+        bus_to_be_handled = lookup[((lookup['elements_in_cluster']>=2)&\
+                                    lookup['bus_with_elements'])&(~lookup['bus_to_be_fused'])]
+        bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')].index
+        imp_switch_sel = (net.switch.et=='b')&(net.switch.closed)&\
+            (net.switch.bus.isin(bus_to_be_handled)|net.switch.element.isin(bus_to_be_handled))
+        net.switch.loc[imp_switch_sel, 'z_ohm'] = z_ohm
+
+        #check if fused buses were isolated by the switching type change
+        lookup_discon = _get_bus_ppc_mapping(net, bus_to_be_fused)
+        imp_switch = net.switch.loc[imp_switch_sel, :]
+        detached_bus = lookup_discon.loc[lookup_discon.elements_in_cluster==0, :].index
+        # Find the cause of isolated bus
+        switch_to_be_fused = (imp_switch.bus.isin(bus_to_be_handled)&imp_switch.element.isin(detached_bus))|\
+                             (imp_switch.bus.isin(detached_bus)&imp_switch.element.isin(bus_to_be_handled))
+        if not switch_to_be_fused.values.any():
+            return
+        net.switch.loc[imp_switch[switch_to_be_fused].index, 'z_ohm'] = 0  
+        lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
+        if lookup.elements_in_cluster.max() == 1:
+            return
 
 
 def reset_bb_switch_impedance(net):
@@ -140,11 +139,11 @@ def reset_bb_switch_impedance(net):
     if "z_ohm_ori" in net.switch:
         net.switch["z_ohm"] = net.switch["z_ohm_ori"] 
         net.switch.drop("z_ohm_ori", axis=1, inplace=True)
-        
-        
+
+
 def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_dev=0.03, seed=14):
     np.random.seed(seed)
-    
+
     bus_meas_types = {'v': 'vm_pu', 'p': 'p_mw', 'q': 'q_mvar'}
     branch_meas_type = {'line':{'side': ('from', 'to'), 
                                 'meas_type': ('p_mw', 'q_mvar')},
@@ -189,5 +188,3 @@ def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev):
     net.measurement.loc[q_meas_mask, 'std_dev'] = q_std_dev
     net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
     net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev  
-    
-    

@@ -19,7 +19,6 @@ def _calc_power_flow(ppci, V):
     ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
     
     # calculate bus power injections
-    # TODO: TEST!!
     Sbus = np.multiply(V, np.conj(Ybus * V))
     ppci["bus"][:, PD] = -Sbus.real  # saved in per unit, injection -> demand
     ppci["bus"][:, QD] = -Sbus.imag  # saved in per unit, injection -> demand

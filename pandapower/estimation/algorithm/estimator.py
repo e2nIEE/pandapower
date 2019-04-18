@@ -31,8 +31,8 @@ class BaseEstimatorIRWLS(BaseAlgebra):
         # Initilize BaseAlgebra object for calculation of relevant matrix
         super(BaseEstimatorIRWLS, self).__init__(eppci)
 
-    def create_phi(self, E): # pragma: no cover
-        # Must be implemented!
+    def create_phi(self, E):  # pragma: no cover
+        # Must be implemented for subclasses!
         pass
 
 
@@ -41,13 +41,13 @@ class BaseEstimatorOpt(BaseAlgebra):
         super(BaseEstimatorOpt, self).__init__(eppci)
         # Hyperparameters for estimator should be added here
 
-    def cost_function(self, E): # pragma: no cover
+    def cost_function(self, E):  # pragma: no cover
         # Minimize sum(cost(r))
         # r = cost(z - h(x))
         # Must be implemented according to the estimator for the optimization
         pass
 
-    def create_cost_jacobian(self, E): # pragma: no cover
+    def create_cost_jacobian(self, E):  # pragma: no cover
         pass
 
 
@@ -76,7 +76,6 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
 
 
 class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
-    # Still need test!
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
         super(SHGMEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
         assert 'a' in hyperparameters
@@ -107,7 +106,7 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         ps = np.zeros(omega.shape[0])
 
         @jit(nopython=True)
-        def calc_sm(omega, x, y, sm): # pragma: no cover
+        def calc_sm(omega, x, y, sm):  # pragma: no cover
             m = omega.shape[0]
             x_shape = x.shape[0]
             y_shape = y.shape[0]

@@ -81,37 +81,31 @@ def test_ql_qc():
     add_virtual_meas_from_loadflow(net)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
 
-    try:
-        estimate(net, algorithm="opt", estimator="ql", a=3)
-    except:
-        # if failed give it a warm start
-        net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-3, 5)
-        estimation_opt = OptAlgorithm(1e-6, 1000)
+    #  give it a warm start
+    net, ppc, eppci = pp2eppci(net)
+    estimation_wls = WLSAlgorithm(1e-4, 5)
+    estimation_opt = OptAlgorithm(1e-6, 3000)
 
-        eppci = estimation_wls.estimate(eppci)
-        eppci = estimation_opt.estimate(eppci, estimator="ql", a=3)
-        assert estimation_opt.successful
-        net = eppci2pp(net, ppc, eppci)
+    eppci = estimation_wls.estimate(eppci)
+    eppci = estimation_opt.estimate(eppci, estimator="ql", a=3)
+    assert estimation_opt.successful
+    net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=1e-2)
+    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
 
-    try:
-        estimate(net, algorithm="opt", estimator="qc", a=3)
-    except:
-        # if failed give it a warm start
-        net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-3, 5)
-        estimation_opt = OptAlgorithm(1e-6, 1000)
+    # give it a warm start
+    net, ppc, eppci = pp2eppci(net)
+    estimation_wls = WLSAlgorithm(1e-4, 5)
+    estimation_opt = OptAlgorithm(1e-6, 3000)
 
-        eppci = estimation_wls.estimate(eppci)
-        eppci = estimation_opt.estimate(eppci, estimator="qc", a=3)
-        assert estimation_opt.successful
-        net = eppci2pp(net, ppc, eppci)
+    eppci = estimation_wls.estimate(eppci)
+    eppci = estimation_opt.estimate(eppci, estimator="qc", a=3)
+    assert estimation_opt.successful
+    net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=1e-2)
+    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
 
 
 if __name__ == '__main__':
