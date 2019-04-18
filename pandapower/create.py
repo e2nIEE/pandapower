@@ -1512,7 +1512,12 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     dd["in_service"] = in_service
 
     # extend the lines by the frame we just created
-    net["line"] = net["line"].append(dd, sort=False)
+    try:
+        net["line"] = net["line"].append(dd, sort=False)
+    except TypeError:
+        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+        net["line"] = net["line"].append(dd)
+
 
     if hasattr(max_loading_percent, "__iter__"):
         if "max_loading_percent" not in net.line.columns:
@@ -1537,7 +1542,12 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             # geodata is multiple lists of coordinates
             df["coords"] = geodata
 
-        net.line_geodata = net.line_geodata.append(df, sort=False)
+        try:
+            net.line_geodata = net.line_geodata.append(df, sort=False)
+        except TypeError:
+            # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+            net.line_geodata = net.line_geodata.append(df)
+            
         _preserve_dtypes(net.line_geodata, dtypes)
 
     return index
