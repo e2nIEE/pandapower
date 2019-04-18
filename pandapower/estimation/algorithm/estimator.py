@@ -63,10 +63,10 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
     def create_cost_jacobian(self, E):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
-        # 2 * rx * (1/self)* -(dhx/dE)
+        # 2 * rx * (1/sigma**2)* -(dhx/dE)
         rx = self.create_rx(E) 
         hx_jac = self.create_hx_jacobian(E)
-        drho_dr = 2 * (rx * (1/self.sigma)**2)
+        drho_dr = 2 * (rx * (1/self.sigma**2))
         jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
         return jac
 
@@ -171,11 +171,11 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         # 0 else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho_dr = 2 * (rx * (1/self.sigma)**2)
+        drho_dr = 2 * (rx)
         large_dev_mask = (np.abs(rx/self.sigma) > self.a)
         if np.any(large_dev_mask):
-            drho_dr[large_dev_mask] = 0
-        jac = - np.sum(drho_dr.reshape(-1, 1) * hx_jac, axis=0)
+            drho_dr[large_dev_mask] = 0.001
+        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
         return jac
 
 
