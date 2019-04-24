@@ -1,0 +1,3 @@
+id;element1;element2;variable;subnet;voltLvl
+Messung 1;Bus 10;NULL;v;NULL;5
+Messung 2;Bus 2;OHL_1_2;p;NULL;5

@@ -1,0 +1,4 @@
+id;node;type;profile;calc_type;dspf;pPP;qPP;sR;pMin;pMax;qMin;qMax;subnet;voltLvl
+Gen1;Bus 4;coal1;Ppb;pvm;0;1.0;NULL;20.0;0.0;20.0;-3.5;6;NULL;5
+Gen2;Bus 5;NULL;Ppa;vavm;0.5;NULL;NULL;NULL;0.0;20.0;-3.5;6;NULL;5
+Gen3;Bus 6;coal1;Ppb;pq;0;1.0;0.5;NULL;NULL;NULL;-1;2;Subnet1;5
