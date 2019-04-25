@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pandapower as pp
 from pandapower.plotting import create_generic_coordinates
+from pandapower.converter import replace_branch_switches, create_branch_switches
 
 try:
     import pplog as logging
@@ -15,8 +16,6 @@ try:
     igraph_installed = True
 except ImportError:
     igraph_installed = False
-
-from converter import replace_branch_switches, create_branch_switches
 
 logger = logging.getLogger(__name__)
 
