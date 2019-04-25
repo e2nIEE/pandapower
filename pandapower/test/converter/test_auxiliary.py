@@ -5,7 +5,7 @@ from copy import deepcopy
 from packaging import version
 import pandapower as pp
 
-import converter as cv
+import pandapower.converter as cv
 
 __author__ = 'smeinecke'
 

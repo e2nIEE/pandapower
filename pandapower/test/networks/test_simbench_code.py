@@ -1,6 +1,6 @@
 import pytest
 
-import networks as nw
+import pandapower.networks as nw
 
 
 def _occurance_test(code_list, code_to_test):
