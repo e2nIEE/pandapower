@@ -166,10 +166,9 @@ def get_unique_duplicated_dict(df, subset=None, only_dupl_entries=False):
     if not only_dupl_entries:
         others = df.index[~is_dupl]
         uniq_empties = {o: [] for o in others}
-        try:
-            uniq_dupl_dict = {**uniq_dupl_dict, **uniq_empties}
-        except SyntaxError:  # lower than python 3.5
-            uniq_dupl_dict.update(uniq_empties)
+        # uniq_dupl_dict = {**uniq_dupl_dict, **uniq_empties}  # python 3.5+
+        for k, v in uniq_empties.items():
+            uniq_dupl_dict[k] = v
     return uniq_dupl_dict
 
 
