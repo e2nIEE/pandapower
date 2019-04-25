@@ -1,9 +1,13 @@
 import numpy as np
 import pandas as pd
-import pplog as logging
 from collections import OrderedDict
 
 from pandapower.converter import csv_tablenames, idx_in_2nd_array, merge_dataframes
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
 
 logger = logging.getLogger(__name__)
 
