@@ -834,7 +834,7 @@ def _copy_data(input_data, output_data):
                         output_name].columns)
             else:
                 output_data[output_name] = pd.concat([output_data[output_name], input_data[
-                    corr_str][cols_to_copy]], ignore_index=True).c(output_data[
+                    corr_str][cols_to_copy]], ignore_index=True).reindex_axis(output_data[
                         output_name].columns, axis=1)
             if "std_types" in corr_str and _is_pp_type(output_data):
                 output_data[output_name].index = input_data[corr_str]["std_type"]
