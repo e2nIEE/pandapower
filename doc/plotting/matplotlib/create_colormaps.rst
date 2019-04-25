@@ -9,3 +9,7 @@ Discrete
 Continous
 ==============================
 .. autofunction:: pandapower.plotting.cmap_continous
+
+Logarithmic
+==============================
+.. autofunction:: pandapower.plotting.cmap_logarithmic

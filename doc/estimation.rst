@@ -37,13 +37,13 @@ For a more in-depth explanation of the internals of the state estimation method,
 Defining Measurements
 ===========================
 
-Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative. Measurements for three winding transformers (trafo3w) can not yet be added. Please use a workaround of an artificial line or the like.  
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.
 
 **Types of Measurements**
 
  - *"v"* for voltage measurements (in per-unit)
  - *"p"* for active power measurements (in MW)
- - *"q"* for reactive power measurements (in kVar)
+ - *"q"* for reactive power measurements (in MVar)
  - *"i"* for electrical current measurements at a line (in A)
  
 
@@ -135,7 +135,7 @@ Now that the data is ready, the state_estimation can be initialized and run. We 
 
 
 The resulting variables now contain the voltage absolute values in *V*, the voltage angles in *delta*, an indication of success in *success*.
-The bus power injections can be accessed similarly with *net.res_bus_est.p_mw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
+The bus power injections can be accessed similarly with *net.res_bus_est.p_mw* and *net.res_bus_est.q_mvar*. Line data is also available in the same format as defined in *res_line*.
 
 
 If we like to check our data for fault measurements, and exclude them in in our state estimation, we use the following code:
