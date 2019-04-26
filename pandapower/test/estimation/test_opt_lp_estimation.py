@@ -87,8 +87,12 @@ def test_ql_qc():
     estimation_opt = OptAlgorithm(1e-6, 3000)
 
     eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_opt.estimate(eppci, estimator="ql", a=3)
-    assert estimation_opt.successful
+    try:
+        eppci = estimation_opt.estimate(eppci, estimator="ql", a=3)
+        assert estimation_opt.successful
+    except:
+        eppci = estimation_opt.estimate(eppci, estimator="ql", a=3, opt_method="Newton-CG")
+        assert estimation_opt.successful
     net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
@@ -100,8 +104,12 @@ def test_ql_qc():
     estimation_opt = OptAlgorithm(1e-6, 3000)
 
     eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_opt.estimate(eppci, estimator="qc", a=3)
-    assert estimation_opt.successful
+    try:
+        eppci = estimation_opt.estimate(eppci, estimator="qc", a=3)
+        assert estimation_opt.successful
+    except:
+        eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, opt_method="Newton-CG")
+        assert estimation_opt.successful
     net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)

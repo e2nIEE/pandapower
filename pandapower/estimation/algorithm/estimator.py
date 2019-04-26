@@ -170,7 +170,7 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         # 0 else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho_dr = 2 * (rx)
+        drho_dr = 2 * (rx * (1/self.sigma)**2)
         large_dev_mask = (np.abs(rx/self.sigma) > self.a)
         if np.any(large_dev_mask):
             drho_dr[large_dev_mask] = 0.001
