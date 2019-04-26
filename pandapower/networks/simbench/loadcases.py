@@ -24,8 +24,7 @@ def filter_loadcases_df(data, factors):
         vn_kvs = data["Node"].vmR.value_counts()
     lv_vn_kv = vn_kvs.loc[vn_kvs > 2].index.min()  # minimum vn_kv which occurs at more than 2 buses
     lv_level = get_voltlvl(lv_vn_kv)
-    factors = factors.loc[factors.voltLvl == lv_level].set_index("Study Case").drop(
-        columns=["voltLvl"])
+    factors = factors.loc[factors.voltLvl == lv_level].set_index("Study Case").drop(["voltLvl"], axis=1)
     return factors
 
 

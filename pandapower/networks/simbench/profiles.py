@@ -117,7 +117,7 @@ def filter_unapplied_profiles(csv_data):
         applied_profiles.append("time")
         unapplied_profiles = csv_data[prof_tab].columns.difference(applied_profiles)
         logger.debug("These %ss are dropped: " % prof_tab + str(unapplied_profiles))
-        csv_data[prof_tab].drop(columns=unapplied_profiles, inplace=True)
+        csv_data[prof_tab].drop(unapplied_profiles, axis=1, inplace=True)
 
 
 def get_absolute_profiles_from_relative_profiles(

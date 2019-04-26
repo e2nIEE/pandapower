@@ -6,16 +6,22 @@
 
 import numpy as np
 import pandas as pd
+from collections import UserDict
+
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.estimation.idx_bus import *
-from pandapower.estimation.idx_brch import *
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.idx_bus import bus_cols
+import pandapower.pypower.idx_bus as idx_bus
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
+
+from pandapower.estimation.util import estimate_voltage_vector
+from pandapower.estimation.idx_bus import *
+from pandapower.estimation.idx_brch import *
+from pandapower.estimation.results import _copy_power_flow_results
 
 try:
     import pplog as logging
@@ -23,103 +29,19 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-AUX_BUS_NAME, AUX_LINE_NAME, AUX_SWITCH_NAME =\
-    "aux_bus_se", "aux_line_se", "aux_bbswitch_se"
 
-def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
-    """
-    Add auxiliary elements (bus, bb switch, line) to the pandapower net to avoid
-    automatic fuse of buses connected with bb switch with elements on it
-    :param net: pandapower net
-    :return: None
-    """
-    def get_bus_branch_mapping(net, bus_to_be_fused):
-        bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
-                        set(net.shunt.bus)).union(set(net.gen.bus)).union(
-                        set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
-                        set(net.xward.bus))
-#        bus_with_pq_measurement = set(net.measurement[(net.measurement.measurement_type=='p')&(net.measurement.element_type=='bus')].element.values)
-#        bus_with_elements = bus_with_elements.union(bus_with_pq_measurement)
-        
-        bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
-        bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
-        existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
-        bus_ppci['vn_kv'] = net.bus.loc[existed_bus.index, 'vn_kv']
-        ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
-        bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values 
-        bus_ppci['bus_to_be_fused'] = False
-        if bus_to_be_fused is not None:
-            bus_ppci.loc[bus_to_be_fused, 'bus_to_be_fused'] = True
-            bus_cluster_to_be_fused_mask = bus_ppci.groupby('bus_ppci')['bus_to_be_fused'].any()
-            bus_ppci.loc[bus_cluster_to_be_fused_mask[bus_ppci['bus_ppci'].values].values, 'bus_to_be_fused'] = True    
-        return bus_ppci
-
-    # find the buses which was fused together in the pp2ppc conversion with elements on them
-    # the first one will be skipped
-    rundcpp(net)
-    bus_ppci_mapping = get_bus_branch_mapping(net, bus_to_be_fused)
-    bus_to_be_handled = bus_ppci_mapping[(bus_ppci_mapping ['elements_in_cluster']>=2)&\
-                                          bus_ppci_mapping ['bus_with_elements']&\
-                                          (~bus_ppci_mapping ['bus_to_be_fused'])]
-    bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')]
-
-    # create auxiliary buses for the buses need to be handled
-    aux_bus_index = create_buses(net, bus_to_be_handled.shape[0], bus_to_be_handled.vn_kv.values, 
-                                 name=AUX_BUS_NAME)
-    bus_aux_mapping = pd.Series(aux_bus_index, index=bus_to_be_handled.index.values)
-
-    # create auxiliary switched and disable original switches connected to the related buses
-    net.switch.loc[:, 'original_closed'] = net.switch.loc[:, 'closed']
-    switch_to_be_replaced_sel = ((net.switch.et == 'b') &
-                                 (net.switch.element.isin(bus_to_be_handled.index) | 
-                                  net.switch.bus.isin(bus_to_be_handled.index)))
-    net.switch.loc[switch_to_be_replaced_sel, 'closed'] = False
-
-    # create aux switches with selecting the existed switches
-    aux_switch = net.switch.loc[switch_to_be_replaced_sel, ['bus', 'closed', 'element', 
-                                                            'et', 'name', 'original_closed', 'z_ohm']]
-    aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
-    
-    # replace the original bus with the correspondent auxiliary bus
-    bus_to_be_replaced = aux_switch.loc[aux_switch.bus.isin(bus_to_be_handled.index), 'bus']
-    element_to_be_replaced = aux_switch.loc[aux_switch.element.isin(bus_to_be_handled.index), 'element']
-    aux_switch.loc[bus_to_be_replaced.index, 'bus'] =\
-        bus_aux_mapping[bus_to_be_replaced].values.astype(int)
-    aux_switch.loc[element_to_be_replaced.index, 'element'] =\
-        bus_aux_mapping[element_to_be_replaced].values.astype(int)
-    aux_switch['closed'] = aux_switch['original_closed']
-
-    net.switch = net.switch.append(aux_switch, ignore_index=True)
-    # PY34 compatibility
-#    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
-
-    # create auxiliary lines as small impedance
-    for bus_ori, bus_aux in bus_aux_mapping.iteritems():
-        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1, name=AUX_LINE_NAME,
-                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1)
-
-
-def _drop_aux_elements_for_bb_switch(net):
-    """
-    Remove auxiliary elements (bus, bb switch, line) added by
-    _add_aux_elements_for_bb_switch function
-    :param net: pandapower net
-    :return: None
-    """
-    # Remove auxiliary switches and restore switch status
-    net.switch = net.switch[net.switch.name!=AUX_SWITCH_NAME]
-    if 'original_closed' in net.switch.columns:
-        net.switch.loc[:, 'closed'] = net.switch.loc[:, 'original_closed']
-        net.switch.drop('original_closed', axis=1, inplace=True)
-    
-    # Remove auxiliary buses, lines in net and result
-    for key in net.keys():
-        if key.startswith('res_bus'):
-            net[key] = net[key].loc[(net.bus.name != AUX_BUS_NAME).values, :]
-        if key.startswith('res_line'):
-            net[key] = net[key].loc[(net.line.name != AUX_LINE_NAME).values, :]
-    net.bus = net.bus.loc[(net.bus.name != AUX_BUS_NAME).values, :]
-    net.line = net.line.loc[(net.line.name != AUX_LINE_NAME).values, :]
+def _initialize_voltage(net, init, calculate_voltage_angles):
+    v_start, delta_start = None, None
+    if init == 'results':
+        v_start, delta_start = 'results', 'results'
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return v_start, delta_start
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -143,7 +65,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     return ppc, ppci
 
 
-def _add_measurements_to_ppc(net, ppci, zero_injection):
+def _add_measurements_to_ppci(net, ppci, zero_injection):
     """
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
@@ -207,7 +129,7 @@ def _add_measurements_to_ppc(net, ppci, zero_injection):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.warning("P Measurement duplication will be automatically merged!")
+            std_logger.info("P Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, P] = p_meas_on_bus.value.sum()
@@ -223,7 +145,7 @@ def _add_measurements_to_ppc(net, ppci, zero_injection):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.warning("Q Measurement duplication will be automatically merged!")
+            std_logger.info("Q Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, Q] = q_meas_on_bus.value.sum()
@@ -530,4 +452,76 @@ def _build_measurement_vectors(ppci):
                             ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
                             ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
                             )).real.astype(np.float64)
-    return z, pp_meas_indices, r_cov
+    meas_mask = np.concatenate([p_bus_not_nan,
+                                p_line_f_not_nan,
+                                p_line_t_not_nan,
+                                q_bus_not_nan,
+                                q_line_f_not_nan,
+                                q_line_t_not_nan,
+                                v_bus_not_nan,
+                                i_line_f_not_nan,
+                                i_line_t_not_nan])
+    return z, pp_meas_indices, r_cov, meas_mask
+
+
+def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus"):
+    # initialize result tables if not existent
+    _copy_power_flow_results(net)
+    
+    # initialize ppc
+    ppc, ppci = _init_ppc(net, v_start, delta_start, calculate_voltage_angles)
+
+    # add measurements to ppci structure
+    # Finished converting pandapower network to ppci
+    ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
+    return net, ppc, ExtendedPPCI(ppci)
+
+
+class ExtendedPPCI(UserDict):
+    def __init__(self, ppci):
+        self.data = ppci
+        
+        # Base information
+        self.baseMVA = ppci['baseMVA']
+        self.bus_baseKV = ppci['bus'][:, idx_bus.BASE_KV].real.astype(int)
+        self.bus = ppci['bus']
+        self.branch = ppci['branch']
+
+        # Measurement relevant parameters
+        self.z = None
+        self.r_cov = None
+        self.pp_meas_indices = None 
+        self.non_nan_meas_mask = None 
+        self._initialize_meas(ppci)
+
+        # check slack bus
+        self.non_slack_buses = np.argwhere(ppci["bus"][:, idx_bus.BUS_TYPE] != 3).ravel()
+        self.non_slack_bus_mask = (ppci['bus'][:, idx_bus.BUS_TYPE] != 3).ravel()
+        self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
+        self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
+                                      np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
+
+        self.v_init = ppci["bus"][:, idx_bus.VM]
+        self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
+        self.E_init = np.r_[self.delta_init[self.non_slack_bus_mask], self.v_init]
+        self.v = self.v_init.copy()
+        self.delta = self.delta_init.copy()
+        self.E = self.E_init.copy()
+
+
+    def _initialize_meas(self, ppci):
+        # calculate relevant vectors from ppci measurements
+        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask =\
+             _build_measurement_vectors(ppci)
+             
+    @property
+    def V(self):
+        return self.v * np.exp(1j * self.delta)
+    
+    def reset(self):
+        self.v, self.delta, self.E = self.v_init.copy(), self.delta_init.copy(), self.E_init.copy()
+
+    def update_E(self, E):
+        self.E = E
+        self.v = E[self.num_non_slack_bus:]
+        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
