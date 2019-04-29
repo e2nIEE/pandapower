@@ -399,8 +399,6 @@ def _test_net_validity(net, sb_code_params, shortened, input_path=None):
     # --- check profiles and loadflow
     check_loadflow = sb_code_params[1] != "complete_data"
     check_loadflow &= sb_code_params[2] != "HVMVLV"
-    check_loadflow &= not ((sb_code_params[1] == "MV") & (sb_code_params[3] == "urban") &
-                           (sb_code_params[4] == "all") & (sb_code_params[5] != "0"))
     if check_loadflow:
         try:
             pp.runpp(net)

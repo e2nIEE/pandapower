@@ -25,11 +25,8 @@ def all_grids_csv_path(scenario, all_grids_path=None):
     """ Returns the path to all simbench grid csv files.
         scenario in [0, 1, 2]. """
     all_grids_path = all_grids_path if all_grids_path is not None else os.path.join(
-        simbench_networks_path, "all_grids_csv")
-    scenario = int(scenario)
-    if scenario in [1, 2]:
-        all_grids_path += "_scenario%i" % scenario
-    elif scenario != 0:
+        simbench_networks_path, "1-complete_data-mixed-all-%i-sw" % int(scenario))
+    if int(scenario) not in [0, 1, 2]:
         raise ValueError("'scenario' must be in [0, 1, 2], but is %s." % str(scenario))
     return all_grids_path
 
