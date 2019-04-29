@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 __author__ = 'smeinecke'
 
+
 def _net_to_test():
     # create test grid
     net = pp.create_empty_network()
@@ -54,6 +55,7 @@ def _net_to_test():
     create_generic_coordinates(net)
 
     return net
+
 
 @pytest.mark.skipif(igraph_installed==False, reason="requires igraph")
 def test_branch_switch_changes():

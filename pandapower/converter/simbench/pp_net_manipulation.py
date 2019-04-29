@@ -324,7 +324,7 @@ def _set_vm_setpoint_to_trafos(net, csv_data):
             if sum(autotap_trafos):
                 bus_type = net[elm].autoTapSide.loc[autotap_trafos].str.lower() + "_bus"
                 bus_type_col_idx = column_indices(net[elm], bus_type)
-                buses = net[elm].values[autotap_trafos, bus_type_col_idx]
+                buses = net[elm].values[autotap_trafos.index[autotap_trafos], bus_type_col_idx]
                 bus_names = net.bus.name.loc[buses]
                 idx_node = idx_in_2nd_array(bus_names.values, csv_data["Node*bus"].name.values)
                 net[elm].loc[autotap_trafos, "autoTapSetp"] = csv_data["Node*bus"].vmSetp[

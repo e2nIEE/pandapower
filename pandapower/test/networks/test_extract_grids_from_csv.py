@@ -155,7 +155,7 @@ def csv_data_to_test_extracting():
     csv_data["Switch"].loc[3] = csv_data["Switch"].loc[0]
     csv_data["Switch"].loc[3, ["id", "nodeA", "nodeB"]] = ["BusBus2", "Bus 2", "Bus 4"]
     csv_data["Switch"]["subnet"] = ["EHV1_HV1", "EHV1_HV1", "HV1_MV3.101", "HV1_MV3.101",
-        "EHV1_HV1"]
+                                    "EHV1_HV1"]
     csv_data["Coordinates"]["subnet"] = list(csv_data["Node"]["subnet"][1:12]) + ["MV3.101"]
     csv_data["Measurement"] = pd.concat([csv_data["Measurement"], csv_data["Measurement"],
                                         csv_data["Measurement"]], ignore_index=True)
@@ -412,8 +412,8 @@ def _test_net_validity(net, sb_code_params, shortened, input_path=None):
 
 @pytest.mark.slow
 def test_get_simbench_net(sb_codes=None, n=8, scenarios=None, input_path=None):
-    """ Test nets exctracted from csv (shortened) folder. 'shortened' and 'test' must be set properly
-        in extract_simbench_grids_from_csv.py
+    """ Test nets exctracted from csv (shortened) folder. 'shortened' and 'test' must be set
+        properly in extract_simbench_grids_from_csv.py
         If sb_codes is None, randomn simbench codes are tested in the number of n.
         If in input_path is None, no input_path will be given to get_simbench_net()
     """

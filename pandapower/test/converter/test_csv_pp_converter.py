@@ -22,11 +22,6 @@ try:
 except ImportError:
     igraph_installed = False
 
-from pandapower import pp_dir
-from pandapower.converter import csv2pp, csv_data2pp, pp2csv, pp2csv_data, \
-    convert_parallel_branches, read_csv_data, ensure_full_column_data_existence, \
-    avoid_duplicates_in_column, merge_busbar_coordinates
-
 logger = logging.getLogger(__name__)
 
 simbench_converter_test_path = os.path.join(pp_dir, "test", "converter")
@@ -75,7 +70,7 @@ def test_convert_parallel_branches():
     assert net1.switch.shape[0] == 5
 
 
-@pytest.mark.skipif(igraph_installed==False, reason="requires igraph")
+@pytest.mark.skipif(igraph_installed == False, reason="requires igraph")
 def test_test_network():
     net = csv2pp(test_network_path, no_generic_coord=True)
 
@@ -110,7 +105,7 @@ def test_test_network():
     assert all_eq
 
 
-@pytest.mark.skipif(igraph_installed==False, reason="requires igraph")
+@pytest.mark.skipif(igraph_installed == False, reason="requires igraph")
 def test_example_simple():
     net = nw.example_simple()
 

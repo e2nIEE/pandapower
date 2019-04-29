@@ -56,7 +56,6 @@ def test_column_indices():
     assert all(pp.compare_arrays(col_idx, np.array([0, 3, 4, 5, 1, 2, 1, 2, 4])))
 
 
-@pytest.mark.xfail(reason="to do python 3.4")
 def test_get_unique_duplicated_dict():
     # --- with numeric data
     A = pd.DataFrame([[8.0, 2, 1, 2.0, 3],
@@ -245,4 +244,16 @@ def test_merge_dataframes():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_auxiliary.py", "-xs"])
+    if 0:
+        pytest.main([__file__, "-xs"])
+    else:
+#        test_merge_dataframes()
+#        test_ensure_iterability()
+#        test_idx_in_2nd_array()
+#        test_column_indices()
+#        test_get_unique_duplicated_dict()
+#        test_reindex_dict_dataframes()
+#        test_avoid_duplicates_in_column()
+#        test_append_str_by_underline_count()
+
+        pass

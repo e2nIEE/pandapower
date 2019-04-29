@@ -165,10 +165,15 @@ def get_unique_duplicated_dict(df, subset=None, only_dupl_entries=False):
     uniq_dupl_dict = _get_unique_duplicated_dict(df[is_dupl], subset)
     if not only_dupl_entries:
         others = df.index[~is_dupl]
+
+        # python 3.5+
+        # uniq_dupl_dict = {**uniq_dupl_dict, **uniq_empties}
+
+        # python 3.4
         uniq_empties = {o: [] for o in others}
-        # uniq_dupl_dict = {**uniq_dupl_dict, **uniq_empties}  # python 3.5+
         for k, v in uniq_empties.items():
             uniq_dupl_dict[k] = v
+
     return uniq_dupl_dict
 
 
