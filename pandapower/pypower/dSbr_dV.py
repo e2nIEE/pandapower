@@ -62,8 +62,8 @@ def dSbr_dV(branch, Yf, Yt, V):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     ## define
-    f = branch[:, F_BUS].astype(int)       ## list of "from" buses
-    t = branch[:, T_BUS].astype(int)       ## list of "to" buses
+    f = branch[:, F_BUS].real.astype(int)       ## list of "from" buses
+    t = branch[:, T_BUS].real.astype(int)       ## list of "to" buses
     nl = len(f)
     nb = len(V)
     il = arange(nl)
