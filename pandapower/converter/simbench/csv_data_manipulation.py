@@ -72,18 +72,19 @@ def _ensure_single_switch_at_aux_node_and_copy_vm_setp(csv_data, new_type_name="
             idx_Y[idx_node_dupl]].values
 
 
-def _ensure_single_switch_at_aux_node(csv_data, new_type_name="node"):
-    """
-    This function set the Node type from 'auxiliary' to new_type_name for all nodes which are
-    connected to multiple switches, because 'auxiliary' Nodes will be removed in
-    create_branch_switches() while nodes with multiple switches are necessary for bus-bus switches.
-    """
-    sw_nodes = pd.concat([csv_data["Switch"].nodeA, csv_data["Switch"].nodeB],
-                         ignore_index=True)
-    dupl_sw_node = sw_nodes[sw_nodes.duplicated()]
-    dupl_node_ids = csv_data["Node"].id.isin(dupl_sw_node)
-    aux_node_ids = csv_data["Node"].type == "auxiliary"
-    csv_data["Node"].type.loc[dupl_node_ids & aux_node_ids] = new_type_name
+# former used function without without copying vmSetp from busbar to retyped node:
+#def _ensure_single_switch_at_aux_node(csv_data, new_type_name="node"):
+#    """
+#    This function set the Node type from 'auxiliary' to new_type_name for all nodes which are
+#    connected to multiple switches, because 'auxiliary' Nodes will be removed in
+#    create_branch_switches() while nodes with multiple switches are necessary for bus-bus switches.
+#    """
+#    sw_nodes = pd.concat([csv_data["Switch"].nodeA, csv_data["Switch"].nodeB],
+#                         ignore_index=True)
+#    dupl_sw_node = sw_nodes[sw_nodes.duplicated()]
+#    dupl_node_ids = csv_data["Node"].id.isin(dupl_sw_node)
+#    aux_node_ids = csv_data["Node"].type == "auxiliary"
+#    csv_data["Node"].type.loc[dupl_node_ids & aux_node_ids] = new_type_name
     # naive coding:
 #    aux_ids = csv_data["Node"].id[csv_data["Node"].type == "auxiliary"].values
 #    multi_sw_ids = [aux_id for aux_id in aux_ids if sum(

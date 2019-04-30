@@ -176,7 +176,6 @@ def get_absolute_profiles_from_relative_profiles(
     if "time" in relative_profiles:
         del relative_profiles["time"]
 
-
     # --- do profile_suffix assumptions if profile_suffix is None
     if profile_suffix is None:
         if element == "load":
@@ -187,7 +186,15 @@ def get_absolute_profiles_from_relative_profiles(
         profile_suffix = "" if profile_suffix is None else profile_suffix
 
     # --- get relative profiles with respect to each element index
-    applied_profiles = net[element][profile_column] + profile_suffix
+    if profile_column in net[element].columns:
+        applied_profiles = net[element][profile_column] + profile_suffix
+    else:  # missing profile column
+        logger.warning("In %s table, profile column '%s' is missing. Scalings of 1 are assumed." % (
+            element, profile_column))
+        missing_col_handling = "missing_col_handling"
+        applied_profiles = pd.Series([missing_col_handling]*net[element].shape[0],
+                                     index=net[element].index)
+        relative_profiles[missing_col_handling] = 1
 
     # nan profile handling
     if applied_profiles.isnull().any():
