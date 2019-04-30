@@ -1607,12 +1607,11 @@ def create_replacement_switch_for_branch(net, element, idx):
     return sid
 
 
-def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
-                                        zero_length=True, zero_impedance=True, in_service_only=True,
-                                        min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
-                                        min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0, drop_affected=False,
-                                        drop_affected_switches=False):
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
+                                        zero_impedance=True, in_service_only=True, min_length_km=0,
+                                        min_r_ohm_per_km=0, min_x_ohm_per_km=0, min_c_nf_per_km=0,
+                                        min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0, min_xtf_pu=0,
+                                        drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
