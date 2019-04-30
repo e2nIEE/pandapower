@@ -1667,15 +1667,12 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         replaced[elm] = net[elm].loc[affected_elements]
 
         if drop_affected:
-            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            if elm == 'line':
+                drop_lines(net, affected_elements)
+            else:
+                net[elm].drop(affected_elements, inplace=True)
+
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
-            if drop_affected_switches:
-                if elm == 'line':
-                    affected_switches = net.switch[net.switch.element.isin(affected_elements)
-                                                   & (net.switch.et == 'l')].index
-                    net.switch.drop(affected_switches, inplace=True)
-                    logger.info('dropped %d switches that were connected to replaced lines'
-                                % (len(affected_switches)))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
@@ -1753,4 +1750,4 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
                          in_service=line_.in_service)
         i += 1
-    net.line.drop(index, inplace=True)
+    drop_lines(net, index)
