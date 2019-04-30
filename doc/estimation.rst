@@ -151,7 +151,64 @@ If the test detects the possibility of fault data, the value of the added class 
 ::
 
     success_chi2 = chi2_analysis(net, init="flat")
-    
+
+Further Algorithms and Estimators
+=============================
+Since Pandapower 2.0.1 further algorithms and estimators (robust estimators) are available for the state estimation module, these include:
+
++-------------------------------------+----------------------+
+| Algorithm                           | Available Estimators |
++=====================================+======================+
+| wls (Newton-Gauss)                  |                      |
++-------------------------------------+----------------------+
+| wls with zero injection constraints |                      |
++-------------------------------------+----------------------+
+| lp                                  | lav                  |
++-------------------------------------+----------------------+
+| irwls                               | wls, shgm            |
++-------------------------------------+----------------------+
+| Scipy Optimization Tool             | wls, lav, ql, qc     |
++-------------------------------------+----------------------+
+
+Most of the algorithms and estimators are implemented as explained in the *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004. While the QC and QL estimators are adjusted mathematically for a better convergence of scipy optimization tool. 
+
+For SHGM: Please see *"Robust state estimation based on projection statistics," IEEE Trans. Power Syst, vol. 11, no. 2, pp. 1118--1127, 1996.* by L. Mili, M. Cheniae, N. Vichare, and P. Rousseeuw. The projection statistics was rewritten in Python based on the code published by original authors of the paper.  
+
+Example of using extra estimators:
+::
+
+	# Using shgm 
+	success = estimate(net, algorithm="irwls", estimator='shgm', a=5)
+
+	# Using lav
+	success = estimate(net, algorithm="lp")
+
+	# Using ql
+	success = estimate(net, algorithm="opt", estimator="ql", a=3)
+
+Note that:
+The state estimation with Scipy Optimization Tool could collapse in some cases with flat start, it's suggested to give the algorithm a warm start or try some other optimization's methods offered by scipy, which preserves the effects of the estimator while helps the convergence.
+
+Example for chained estimation (warm start for SciPy Optimization Tool):
+::
+
+	# Initialize eppci for the algorithm which contains pypower-grid,
+	# measurements and estimated grid state (initial value)
+	net, ppc, eppci = pp2eppci(net)
+
+	# Initialize algorithm
+	estimation_wls = WLSAlgorithm(1e-3, 5)
+    	estimation_opt = OptAlgorithm(1e-6, 1000)
+
+	# Start Estimation with specified estimator
+    	eppci = estimation_wls.estimate(eppci)
+	# for some estimators extra parameters must be specified
+    	eppci = estimation_opt.estimate(eppci, estimator="ql", a=3) 
+
+	# Update the pandapower network with estimated results
+    	net = eppci2pp(net, ppc, eppci)
+
+
 
 .. Class state_estimation
    ======================
