@@ -1608,12 +1608,11 @@ def create_replacement_switch_for_branch(net, element, idx):
     return sid
 
 
-def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
-                                        zero_length=True, zero_impedance=True, in_service_only=True,
-                                        min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
-                                        min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0, drop_affected=False,
-                                        drop_affected_switches=False):
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
+                                        zero_impedance=True, in_service_only=True, min_length_km=0,
+                                        min_r_ohm_per_km=0, min_x_ohm_per_km=0, min_c_nf_per_km=0,
+                                        min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0, min_xtf_pu=0,
+                                        drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -1668,7 +1667,11 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         replaced[elm] = net[elm].loc[affected_elements]
 
         if drop_affected:
-            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            if elm == 'line':
+                drop_lines(net, affected_elements)
+            else:
+                net[elm].drop(affected_elements, inplace=True)
+
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
             if drop_affected_switches:
                 if elm == 'line':
@@ -1754,4 +1757,4 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
                          in_service=line_.in_service)
         i += 1
-    net.line.drop(index, inplace=True)
+    drop_lines(net, index)
