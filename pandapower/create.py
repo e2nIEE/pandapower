@@ -1541,10 +1541,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         else:
             # geodata is multiple lists of coordinates
             df["coords"] = geodata
-
-        try:
-            net.line_geodata = net.line_geodata.append(df, sort=False)
-        except TypeError:
+        
+        if version.parse(pd.__version__) >= version.parse("0.23"):
+            net.line_geodata = net.line_geodata.append(df, sort=False) 
+        else:
             # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
             net.line_geodata = net.line_geodata.append(df)
             
