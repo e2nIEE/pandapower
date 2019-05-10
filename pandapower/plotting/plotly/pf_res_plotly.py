@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
-                  climits_volt = (0.9,1.1), climits_load = (0,100), cpos_volt = 1.0, cpos_load = 1.1,
+                  climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
                   filename="temp-plot.html"):
     """
     Plots a pandapower network in plotly
