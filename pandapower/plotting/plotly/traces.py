@@ -201,13 +201,14 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                                      color=cmap_vals, cmin=cmin, cmax=cmax,
                                      colorscale=cmap,
                                      colorbar=ColorBar(thickness=10,
-                                                       x=1.0,
-                                                       titleside='right'),
+                                                       x=1.0),
                                      symbol=patch_type
                                      )
 
         if cbar_title:
             bus_trace['marker']['colorbar']['title'] = cbar_title
+
+        bus_trace['marker']['colorbar']['title']['side'] = 'right'
 
     return [bus_trace]
 
@@ -376,11 +377,12 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                                             color='rgb(255,255,255)',
                                             colorscale=cbar_cmap_name,
                                             colorbar=ColorBar(thickness=10,
-                                                              x=1.1,
-                                                              titleside='right'),
+                                                              x=1.1),
                                             ))
             if cbar_title:
                 lines_cbar['marker']['colorbar']['title'] = cbar_title
+
+            lines_cbar['marker']['colorbar']['title']['side'] = 'right'
 
             line_traces.append(lines_cbar)
         except:
