@@ -122,7 +122,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
+def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -158,13 +158,6 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         if not set(cc) & slacks:
             not_supplied.update(set(cc))
 
-    buses_remove = set()
-    if in_service_only:
-        for bus in not_supplied:
-            if not net.bus.loc[bus, 'in_service']:
-                buses_remove.add(bus)
-
-    not_supplied = not_supplied - buses_remove
     return not_supplied
 
 
@@ -445,55 +438,11 @@ def elements_on_path(mg, path, element="line"):
     if element not in ["line", "switch", "trafo", "trafo3w"]:
         raise ValueError("Invalid element type %s"%element)
     if isinstance(mg, nx.MultiGraph):
-        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() 
+        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys()
                 if edge[0]==element]
     else:
         return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
                 if mg.get_edge_data(b1, b2)["key"][0]==element]
-
-
-def estimate_voltage_vector(net):
-    """
-    Function initializes the voltage vector of net with a rough estimation. All buses are set to the
-    slack bus voltage. Transformer differences in magnitude and phase shifting are accounted for.
-    :param net: pandapower network
-    :return: pandas dataframe with estimated vm_pu and va_degree
-    """
-    res_bus = pd.DataFrame(index=net.bus.index, columns=["vm_pu", "va_degree"])
-    net_graph = create_nxgraph(net, include_trafos=False)
-    for _, ext_grid in net.ext_grid.iterrows():
-        area = list(connected_component(net_graph, ext_grid.bus))
-        res_bus.vm_pu.loc[area] = ext_grid.vm_pu
-        res_bus.va_degree.loc[area] = ext_grid.va_degree
-    trafos = net.trafo[net.trafo.in_service == 1]
-    trafo_index = trafos.index.tolist()
-    while len(trafo_index):
-        for tix in trafo_index:
-            trafo = trafos.loc[tix]
-            if pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]) \
-                    and pd.isnull(res_bus.vm_pu.at[trafo.lv_bus]):
-                try:
-                    area = list(connected_component(net_graph, trafo.lv_bus))
-                    shift = trafo.shift_degree if "shift_degree" in trafo else 0
-                    ratio = (trafo.vn_hv_kv / trafo.vn_lv_kv) / (net.bus.vn_kv.at[trafo.hv_bus]
-                                                                 / net.bus.vn_kv.at[trafo.lv_bus])
-                    res_bus.vm_pu.loc[area] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
-                    res_bus.va_degree.loc[area] = res_bus.va_degree.at[trafo.hv_bus] - shift
-                except KeyError:
-                    raise UserWarning("An out-of-service bus is connected to an in-service "
-                                      "transformer. Please set the transformer out of service or"
-                                      "put the bus into service. Treat results with caution!")
-                trafo_index.remove(tix)
-            elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
-                # parallel transformer, lv buses are already set from previous transformer
-                trafo_index.remove(tix)
-            if len(trafo_index) == len(trafos):
-                # after the initial run we could not identify any areas correctly, it's probably a transmission grid
-                # with slack on the LV bus and multiple transformers/gens. do flat init and return
-                res_bus.vm_pu.loc[res_bus.vm_pu.isnull()] = 1.
-                res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
-                return res_bus
-    return res_bus
 
 
 def get_end_points_of_continously_connected_lines(net, lines):
@@ -502,7 +451,7 @@ def get_end_points_of_continously_connected_lines(net, lines):
     mg.add_edges_from(line_buses)
     switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
     mg.add_edges_from(switch_buses)
-    
+
     all_buses = set(line_buses.flatten())
     longest_path = []
     for b1, b2 in combinations(all_buses, 2):
