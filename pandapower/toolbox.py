@@ -220,11 +220,12 @@ def opf_task(net):  # pragma: no cover
                 constr[i] = np.nan
             if (constr.min_p_mw >= constr.max_p_mw).any():
                 logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
-                            variable_names[j] + ". " + "Please observe the pandapower " +
-                            "signing system.")
+                               variable_names[j] + ". " + "Please observe the pandapower " +
+                               "signing system.")
             if (constr.min_q_mvar >= constr.max_q_mvar).any():
                 logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
-                            variable_names[j] + ". Please observe the pandapower signing system.")
+                               variable_names[j] + ". Please observe the pandapower signing " +
+                               "system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
@@ -453,6 +454,7 @@ def compare_arrays(x, y):
         return np.equal(x, y) | ((x != x) & (y != y))
     else:
         raise ValueError("x and y needs to have the same shape.")
+
 
 # --- Simulation setup and preparations
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
@@ -797,9 +799,8 @@ def drop_buses(net, buses, drop_elements=True):
 
 
 def drop_switches_at_buses(net, buses):
-    i = net["switch"][(net["switch"]["bus"].isin(buses))
-                      | ((net["switch"]["element"].isin(buses))
-                         & (net["switch"]["et"] == "b"))].index
+    i = net["switch"][(net["switch"]["bus"].isin(buses)) |
+                      ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
     net["switch"].drop(i, inplace=True)
     logger.info("dropped %d switches" % len(i))
 
@@ -892,9 +893,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.loc[bus_meas.element.isin(b2)].index
+    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
     net.measurement.loc[bus_meas, "element"] = b1
-    net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)
@@ -1672,6 +1672,13 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
                 net[elm].drop(affected_elements, inplace=True)
 
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+            if drop_affected_switches:
+                if elm == 'line':
+                    affected_switches = net.switch[net.switch.element.isin(affected_elements) &
+                                                   (net.switch.et == 'l')].index
+                    net.switch.drop(affected_switches, inplace=True)
+                    logger.info('dropped %d switches that were connected to replaced lines'
+                                % (len(affected_switches)))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
