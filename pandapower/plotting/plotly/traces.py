@@ -119,7 +119,7 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
 
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,
-                     cbar_title=None, cmin=None, cmax=None, colormap_column="vm_pu"):
+                     cbar_title=None, cmin=None, cmax=None, cpos=1.0, colormap_column="vm_pu"):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -156,6 +156,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
         **cmin** (float, None) - colorbar range minimum
 
         **cmax** (float, None) - colorbar range maximum
+
+        **cpos** (float, 1.1) - position of the colorbar
 
         **colormap_column** (str, "vm_pu") - set color of bus according to this variable
 
@@ -201,13 +203,14 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                                      color=cmap_vals, cmin=cmin, cmax=cmax,
                                      colorscale=cmap,
                                      colorbar=ColorBar(thickness=10,
-                                                       x=1.0,
-                                                       titleside='right'),
+                                                       x=cpos),
                                      symbol=patch_type
                                      )
 
         if cbar_title:
             bus_trace['marker']['colorbar']['title'] = cbar_title
+
+        bus_trace['marker']['colorbar']['title']['side'] = 'right'
 
     return [bus_trace]
 
@@ -247,7 +250,7 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup=None,
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
-                      cmax=None):
+                      cmax=None, cpos=1.1):
     """
     Creates a plotly trace of pandapower lines.
 
@@ -284,6 +287,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         **cmin** (float, None) - colorbar range minimum
 
         **cmax** (float, None) - colorbar range maximum
+
+        **cpos** (float, 1.1) - position of the colorbar
 
         """
 
@@ -376,11 +381,12 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                                             color='rgb(255,255,255)',
                                             colorscale=cbar_cmap_name,
                                             colorbar=ColorBar(thickness=10,
-                                                              x=1.1,
-                                                              titleside='right'),
+                                                              x=cpos),
                                             ))
             if cbar_title:
                 lines_cbar['marker']['colorbar']['title'] = cbar_title
+
+            lines_cbar['marker']['colorbar']['title']['side'] = 'right'
 
             line_traces.append(lines_cbar)
         except:
