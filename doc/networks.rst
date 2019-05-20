@@ -13,7 +13,7 @@ and Lindner et. al. and Dickert et. al..
 
 If you like to test your algotihms with benchmark grids and corresponding full-year load, generation
 and storage profiles or want to publish your results, we recommend you to have look to SimBench
-(`Homepage <https://simbench.de/en/>`_, `GitHub Repo to use SimBench with pandapower <https://github.com/e2nIEE/simbench>`_).
+(`Homepage <https://simbench.de/en/>`_, `GitHub Repository to use SimBench with pandapower <https://github.com/e2nIEE/simbench>`_).
 
 You can find documentation for the individual network modules of pandapower here:
 
