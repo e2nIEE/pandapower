@@ -1788,6 +1788,130 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     return index
 
+def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None, geodata=None,
+                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values. In any case the line parameters are defined through a single standard
+        type, so all lines have the same standard type.
+
+
+        INPUT:
+            **net** - The net within this line should be created
+
+            **from_bus** (list of int) - ID of the bus on one side which the line will be connected with
+
+            **to_bus** (list of int) - ID of the bus on the other side which the line will be connected with
+
+            **length_km** (list of float) - The line length in km
+
+            **std_type** (string) - The linetype of the lines.
+
+        OPTIONAL:
+            **name** (list of string, None) - A custom name for this line
+
+            **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
+                higher than the highest already existing index is selected.
+
+            **geodata**
+            (list of arrays, default None, shape of arrays (,2L)) -
+            The linegeodata of the line. The first row should be the coordinates
+            of bus a and the last should be the coordinates of bus b. The points
+            in the middle represent the bending points of the line
+
+            **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+            **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current \
+                of line (from 0 to 1)
+
+            **parallel** (list of integer, 1) - number of parallel line systems
+
+            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+        OUTPUT:
+            **index** (list of int) - The unique ID of the created line
+
+        EXAMPLE:
+            create_line(net, "line1", from_bus = 0, to_bus = 1, length_km=0.1,  std_type="NAYY 4x50 SE")
+
+    """
+
+    nr_lines = len(from_buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.line.index:
+                raise UserWarning("A line with index %s already exists" % index)
+    else:
+        lid = get_free_id(net["line"])
+        index = arange(lid, lid + nr_lines, 1)
+
+    dtypes = net.line.dtypes
+
+    dd = pd.DataFrame(index=index, columns=net.line.columns)
+
+    # user defined params
+    dd["from_bus"] = from_buses
+    dd["to_bus"] = to_buses
+    dd["length_km"] = length_km
+    dd["std_type"] = std_type
+
+    # add std type data
+    lineparam = load_std_type(net, std_type, "line")
+    dd["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+    dd["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+    dd["c_nf_per_km"] = lineparam["c_nf_per_km"]
+    dd["max_i_ka"] = lineparam["max_i_ka"]
+    dd["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+    if "type" in lineparam:
+        dd["type"] = lineparam["type"]
+
+    # optional params
+    dd["name"] = name
+    dd["df"] = df
+    dd["parallel"] = parallel
+    dd["in_service"] = in_service
+
+    # extend the lines by the frame we just created
+    try:
+        net["line"] = net["line"].append(dd, sort=False)
+    except TypeError:
+        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+        net["line"] = net["line"].append(dd)
+
+
+    if hasattr(max_loading_percent, "__iter__"):
+        if "max_loading_percent" not in net.line.columns:
+            net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+        net.line.loc[index, "max_loading_percent"] = [0 if isnan(ml) else float(ml) for ml in max_loading_percent]
+    else:
+        if not isnan(max_loading_percent):
+            if "max_loading_percent" not in net.line.columns:
+                net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+            net.line.loc[index, "max_loading_percent"] = max_loading_percent
+
+    _preserve_dtypes(net.line, dtypes)
+
+    if geodata is not None:
+        dtypes = net.line_geodata.dtypes
+        df = pd.DataFrame(index=index, columns=net.line_geodata.columns)
+        # works with single or multiple lists of coordinates
+        if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
+            # geodata is a single list of coordinates
+            df["coords"] = [geodata] * len(index)
+        else:
+            # geodata is multiple lists of coordinates
+            df["coords"] = geodata
+        
+        if version.parse(pd.__version__) >= version.parse("0.23"):
+            net.line_geodata = net.line_geodata.append(df, sort=False) 
+        else:
+            # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+            net.line_geodata = net.line_geodata.append(df)
+            
+        _preserve_dtypes(net.line_geodata, dtypes)
+
+    return index
+
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.):
