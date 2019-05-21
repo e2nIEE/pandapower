@@ -529,6 +529,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
+    return gs,bs
 
 
 def _add_line_sc_impedance_zero(net, ppc):

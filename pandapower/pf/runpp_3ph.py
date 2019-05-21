@@ -20,7 +20,7 @@ except ImportError:
     import logging
 logger = logging.getLogger(__name__)
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
-from pandapower.pd2ppc import _pd2ppc
+from pandapower.pd2ppc import _pd2ppc,_add_ext_grid_sc_impedance_zero
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.idx_bus import GS, BS, PD , QD
@@ -235,7 +235,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     )
 
     Vabc_it = sequence_to_phase(V012_it)
-
+    
     # =============================================================================
     # Initialise iteration variables
     # =============================================================================
@@ -298,8 +298,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     
     # Todo: Add reference to paper to explain the following steps
     ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    ppci0["bus"][ref, GS] = 0
-    ppci0["bus"][ref, BS] = 0
+    gs_eg,bs_eg = _add_ext_grid_sc_impedance_zero(net, ppci0)
+    ppci0["bus"][ref, GS] -= gs_eg
+    ppci0["bus"][ref, BS] -= bs_eg
     # Y0_pu = Y0_pu.todense()
     Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
 
