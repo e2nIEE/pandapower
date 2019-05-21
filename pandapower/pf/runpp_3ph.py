@@ -20,7 +20,7 @@ except ImportError:
     import logging
 logger = logging.getLogger(__name__)
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
-from pandapower.pd2ppc import _pd2ppc,_add_ext_grid_sc_impedance_zero
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.idx_bus import GS, BS, PD , QD
@@ -211,7 +211,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     _, ppci1 = _pd2ppc(net, 1)
 
     _, ppci2 = _pd2ppc(net, 2)
-    _add_ext_grid_sc_impedance(net, ppci2)
+    gs_eg,bs_eg = _add_ext_grid_sc_impedance(net, ppci2)
 
     _, ppci0 = _pd2ppc(net, 0)
 
@@ -298,7 +298,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     
     # Todo: Add reference to paper to explain the following steps
     ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    gs_eg,bs_eg = _add_ext_grid_sc_impedance_zero(net, ppci0)
     ppci0["bus"][ref, GS] -= gs_eg
     ppci0["bus"][ref, BS] -= bs_eg
     # Y0_pu = Y0_pu.todense()
@@ -326,7 +325,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     ppci1["internal"]["Yt"] = Y1_t
     ppci2["internal"]["Yt"] = Y2_t
     
-    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new)
+    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new,gs_eg,bs_eg)
     I012_res = phase_to_sequence(I_abc_pu)
     S012_res = S_from_VI_elementwise(V012_new,I012_res) * ppci1["baseMVA"]
     
@@ -369,10 +368,10 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     return count, V012_it, I012_it, ppci0, Y0_pu, Y1_pu, Y2_pu
 
 
-def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu):
+def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu,gs_eg,bs_eg):
     ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    ppci0["bus"][ref, GS] = 0
-    ppci0["bus"][ref, BS] = 0
+    ppci0["bus"][ref, GS] -= gs_eg
+    ppci0["bus"][ref, BS] -= bs_eg
     # Y0_pu = Y0_pu.todense()
     Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
     I012_pu = combine_X012(I0_from_V012(V012_pu, Y0_pu),

@@ -521,6 +521,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
+    return gs,bs
 
 
 def _add_gen_sc_impedance(net, ppc):
