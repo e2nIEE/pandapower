@@ -1672,13 +1672,6 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
                 net[elm].drop(affected_elements, inplace=True)
 
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
-            if drop_affected_switches:
-                if elm == 'line':
-                    affected_switches = net.switch[net.switch.element.isin(affected_elements) &
-                                                   (net.switch.et == 'l')].index
-                    net.switch.drop(affected_switches, inplace=True)
-                    logger.info('dropped %d switches that were connected to replaced lines'
-                                % (len(affected_switches)))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
