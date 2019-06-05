@@ -36,7 +36,7 @@ def cmap_discrete(cmap_list):
     last_upper = None
     for (lower, upper), color in cmap_list:
         if last_upper is not None and lower != last_upper:
-            raise ValueError("Ranges for colormap must be continous")
+            raise ValueError("Ranges for colormap must be continuous")
         cmap_colors.append(color)
         boundaries.append(lower)
         last_upper = upper
@@ -46,9 +46,9 @@ def cmap_discrete(cmap_list):
     return cmap, norm
 
 
-def cmap_continous(cmap_list):
+def cmap_continuous(cmap_list):
     """
-    Can be used to create a continous colormap.
+    Can be used to create a continuous colormap.
 
     INPUT:
         - cmap_list (list) - list of tuples, where each tuple represents one color. Each tuple has
@@ -61,11 +61,11 @@ def cmap_continous(cmap_list):
         - norm - matplotlib norm object
 
     EXAMPLE:
-        >>> from pandapower.plotting import cmap_continous, create_bus_collection, draw_collections
+        >>> from pandapower.plotting import cmap_continuous, create_bus_collection, draw_collections
         >>> from pandapower.networks import mv_oberrhein
         >>> net = mv_oberrhein("generation")
         >>> cmap_list = [(0.97, "blue"), (1.0, "green"), (1.03, "red")]
-        >>> cmap, norm = cmap_continous(cmap_list)
+        >>> cmap, norm = cmap_continuous(cmap_list)
         >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
         >>> draw_collections([bc])
     """

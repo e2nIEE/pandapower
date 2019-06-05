@@ -2598,7 +2598,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
     EXAMPLE:
         The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
-        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continous (the
+        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continuous (the
         starting point of an interval has to be equal to th end point of the previous interval).
        
         To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
