@@ -51,10 +51,10 @@ A piecewise linear function with $n$ data points.
                                                           \end{cases} \\  \\
         f_{pwl}(q) = f_{1} +(q-q_{1}) \frac{f_{2}-f_{1}}{q_{2}-q_{1}}  
                                                         
-Piecewise linear cost functions can be specified using create_piecewise_linear_costs():
+Piecewise linear cost functions can be specified using create_pwl_costs():
 
 
-.. autofunction:: pandapower.create_piecewise_linear_cost
+.. autofunction:: pandapower.create_pwl_cost
 
 
 The other option is to formulate a n-polynomial cost function:
@@ -63,9 +63,9 @@ The other option is to formulate a n-polynomial cost function:
         f_{pol}(p) = c_n p^n + ... + c_1 p + c_0 \\
         f_{pol}(q) = c_2 q^2 + c_1 q + c_0
 
-Polynomial cost functions can be speciefied using create_polynomial_cost():
+Polynomial cost functions can be speciefied using create_poly_cost():
         
-.. autofunction:: pandapower.create_polynomial_cost 
+.. autofunction:: pandapower.create_poly_cost 
 
 .. note::
 	Please note, that polynomial costs for reactive power can only be quadratic, linear or constant.
@@ -83,12 +83,12 @@ The most common optimization goal is the minimization of the overall generator f
 
 .. code:: python
 	
-	pp.create_polynomial_cost(net, 0, 'sgen', np.array([-1, 0]))
-	pp.create_polynomial_cost(net, 0, 'gen', np.array([-1, 0]))
-	pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], 1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], 1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[-1e9, 1e9], [1e9, -1e9]]))
+	pp.create_poly_cost(net, 0, 'sgen', np.array([-1, 0]))
+	pp.create_poly_cost(net, 0, 'gen', np.array([-1, 0]))
+	pp.create_poly_cost(net, 0, 'ext_grid', np.array([-1, 0]))
+	pp.create_pwl_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], 1000], [0, 0]]))
+	pp.create_pwl_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], 1000], [0, 0]]))
+	pp.create_pwl_cost(net, 0, "ext_grid", np.array([[-1e9, 1e9], [1e9, -1e9]]))
 
 	
 	
@@ -106,11 +106,11 @@ This cost function may be used, when the curtailment of renewables should be min
 		
 .. code:: python
 	
-	pp.create_polynomial_cost(net, 0, 'sgen', np.array([1, 0]))
-	pp.create_polynomial_cost(net, 0, 'gen', np.array([1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], -1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], -1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[-1e9, -1e9], [1e9, 1e9]]))
+	pp.create_poly_cost(net, 0, 'sgen', np.array([1, 0]))
+	pp.create_poly_cost(net, 0, 'gen', np.array([1, 0]))
+	pp.create_pwl_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], -1000], [0, 0]]))
+	pp.create_pwl_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], -1000], [0, 0]]))
+	pp.create_pwl_cost(net, 0, "ext_grid", np.array([[-1e9, -1e9], [1e9, 1e9]]))
 
 	
 It is a straight with a positive slope, so that the cost is zero at p_min_mw and is at its maximum when the generation equals zero.
@@ -128,10 +128,10 @@ In case that the load should be maximized, the cost function could be defined li
 		
 .. code:: python
 	
-	pp.create_polynomial_cost(net, 0, 'load', np.array([-1, 0]))
-	pp.create_polynomial_cost(net, 0, 'storage', np.array([-1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], -1000]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], 1000], [net.storage.max_p_mw.at[0], -1000]]))
+	pp.create_poly_cost(net, 0, 'load', np.array([-1, 0]))
+	pp.create_poly_cost(net, 0, 'storage', np.array([-1, 0]))
+	pp.create_pwl_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], -1000]]))
+	pp.create_pwl_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], 1000], [net.storage.max_p_mw.at[0], -1000]]))
 
 	
 	
@@ -147,10 +147,10 @@ In case that the load should be minimized, the cost function could be defined li
 		
 .. code:: python
 	
-	pp.create_polynomial_cost(net, 0, 'load', np.array([1, 0]))
-	pp.create_polynomial_cost(net, 0, 'storage', np.array([1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], 1000]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], -1000], [net.storage.max_p_mw.at[0], 1000]]))
+	pp.create_poly_cost(net, 0, 'load', np.array([1, 0]))
+	pp.create_poly_cost(net, 0, 'storage', np.array([1, 0]))
+	pp.create_pwl_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], 1000]]))
+	pp.create_pwl_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], -1000], [net.storage.max_p_mw.at[0], 1000]]))
 
 
 .. image:: /pics/opf/minimizeload.png
