@@ -57,7 +57,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 def _check_plc_full_range(net, element_type):  # pragma: no cover
     """ This is an auxiliary function for check_opf_data to check full range of piecewise linear
     cost function """
-    plc = net.piecewise_linear_cost
+    plc = net.pwl_cost
     plc_el_p = plc.loc[(plc.element_type == element_type) & (plc.type == 'p')]
     plc_el_q = plc.loc[(plc.element_type == element_type) & (plc.type == 'q')]
     p_idx = []
@@ -107,8 +107,8 @@ def check_opf_data(net):  # pragma: no cover
 
     # --- Determine duplicated cost data
     raise NotImplementedError
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
     if duplicates.shape[0]:
         raise ValueError("There are elements with multiply costs.\nelement_types: %s\n"
@@ -167,12 +167,12 @@ def opf_task(net):  # pragma: no cover
     """
     check_opf_data(net)
 
-    plc = net.piecewise_linear_cost
-    pol = net.polynomial_cost
+    plc = net.pwl_cost
+    pol = net.poly_cost
 
     # --- store cost data to all_costs
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     all_costs['str'] = None
     for i, j in all_costs.iterrows():
         costs = plc.loc[(plc.element == j.element) & (plc.element_type == j.element_type) &
