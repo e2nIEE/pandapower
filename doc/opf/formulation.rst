@@ -90,8 +90,8 @@ The most common optimization goal is the minimization of the overall generator f
 
 	pp.create_poly_cost(net, 0, 'sgen', cp1_eur_per_mw=1)
 	pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=1)
-	pp.create_pwl_cost(net, 0, "sgen", [[net.sgen.min_p_mw.at[0], net.sgen.max_p_mw.at[0], net.sgen.max_p_mw.at[0]-net.sgen.min_p_mw.at[0]]])
-	pp.create_pwl_cost(net, 0, "gen", [[net.gen.min_p_mw.at[0], net.gen.max_p_mw.at[0], net.gen.max_p_mw.at[0]-net.gen.min_p_mw.at[0]]])
+	pp.create_pwl_cost(net, 0, "sgen", [[net.sgen.min_p_mw.at[0], net.sgen.max_p_mw.at[0], 1]])
+	pp.create_pwl_cost(net, 0, "gen", [[net.gen.min_p_mw.at[0], net.gen.max_p_mw.at[0], 1]])
 
 
 
@@ -111,8 +111,8 @@ This cost function may be used, when the curtailment of renewables should be min
 
 	pp.create_poly_cost(net, 0, 'sgen', cp1_eur_per_mw=-1)
 	pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=-1)
-	pp.create_pwl_cost(net, 0, "sgen", [[net.sgen.min_p_mw.at[0], net.sgen.max_p_mw.at[0], net.sgen.min_p_mw.at[0]-net.sgen.max_p_mw.at[0]]])
-	pp.create_pwl_cost(net, 0, "gen", [[net.gen.min_p_mw.at[0], net.gen.max_p_mw.at[0], net.gen.min_p_mw.at[0]-net.gen.max_p_mw.at[0]]])
+	pp.create_pwl_cost(net, 0, "sgen", [[net.sgen.min_p_mw.at[0], net.sgen.max_p_mw.at[0], -1]])
+	pp.create_pwl_cost(net, 0, "gen", [[net.gen.min_p_mw.at[0], net.gen.max_p_mw.at[0], -1]])
 
 
 It is a straight with a positive slope, so that the cost is zero at p_min_mw and is at its maximum when the generation equals zero.
@@ -132,8 +132,8 @@ In case that the load should be maximized, the cost function could be defined li
 
 	pp.create_poly_cost(net, 0, 'load', cp1_eur_per_mw=-1)
 	pp.create_poly_cost(net, 0, 'storage', cp1_eur_per_mw=-1)
-	pp.create_pwl_cost(net, 0, "load", [[net.load.min_p_mw.at[0], net.load.max_p_mw.at[0], net.load.min_p_mw.at[0]-net.load.max_p_mw.at[0]]])
-	pp.create_pwl_cost(net, 0, "storage", [[net.storage.min_p_mw.at[0], net.storage.max_p_mw.at[0], net.storage.min_p_mw.at[0]-net.storage.max_p_mw.at[0]]])
+	pp.create_pwl_cost(net, 0, "load", [[net.load.min_p_mw.at[0], net.load.max_p_mw.at[0], -1]])
+	pp.create_pwl_cost(net, 0, "storage", [[net.storage.min_p_mw.at[0], net.storage.max_p_mw.at[0], -1]])
 
 
 
@@ -151,8 +151,8 @@ In case that the load should be minimized, the cost function could be defined li
 
 	pp.create_poly_cost(net, 0, 'load', cp1_eur_per_mw=1)
 	pp.create_poly_cost(net, 0, 'storage', cp1_eur_per_mw=1)
-	pp.create_pwl_cost(net, 0, "load", [[net.load.min_p_mw.at[0], net.load.max_p_mw.at[0], net.load.max_p_mw.at[0]-net.load.min_p_mw.at[0]]])
-	pp.create_pwl_cost(net, 0, "storage", [[net.storage.min_p_mw.at[0], net.storage.max_p_mw.at[0], net.storage.max_p_mw.at[0]-net.storage.min_p_mw.at[0]]])
+	pp.create_pwl_cost(net, 0, "load", [[net.load.min_p_mw.at[0], net.load.max_p_mw.at[0], 1]])
+	pp.create_pwl_cost(net, 0, "storage", [[net.storage.min_p_mw.at[0], net.storage.max_p_mw.at[0], 1]])
 
 
 .. image:: /pics/opf/minimizeload.png

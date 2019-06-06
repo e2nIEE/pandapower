@@ -37,8 +37,8 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
     
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
+    Flexibilities can be defined in net.sgen / net.gen / net.load
+    net.sgen.controllable defines whether a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
         - net.sgen.min_p_mw / net.sgen.max_p_mw
@@ -53,7 +53,7 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+    DC lines are controllable per default.
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
@@ -61,15 +61,32 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+    How the costs are combined into one cost function depends on the cost_function parameter.
 
     INPUT:
         **net** - The pandapower format network
 
-    OPTIONAL:
         **julia_file** (str, None) - path to a custom julia optimization file
 
+    OPTIONAL:
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **calculate_voltage_angles** (bool, True) - consider voltage angles in loadflow calculation
+
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
+
+            - "t" - transformer is modeled as equivalent with the T-model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for valdiation with other software that uses the pi-model.
+
+        **delta** (float, 0) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
+        **check_connectivity** (bool, True) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are set out of service in the ppc
 
      """
     net._options = {}
@@ -91,7 +108,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
+    net.sgen.controllable defines whether a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
         - net.sgen.min_p_mw / net.sgen.max_p_mw
@@ -106,7 +123,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+    DC lines are controllable per default.
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
@@ -114,15 +131,30 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+    How the costs are combined into one cost function depends on the cost_function parameter.
 
     INPUT:
         **net** - The pandapower format network
 
     OPTIONAL:
-        **julia_file** (str, None) - path to a custom julia optimization file
-
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **calculate_voltage_angles** (bool, True) - consider voltage angles in loadflow calculation
+
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
+
+            - "t" - transformer is modeled as equivalent with the T-model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for valdiation with other software that uses the pi-model.
+
+        **delta** (float, 0) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
+        **check_connectivity** (bool, True) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are set out of service in the ppc
 
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_dc.jl')
@@ -146,7 +178,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
+    net.sgen.controllable defines whether a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
         - net.sgen.min_p_mw / net.sgen.max_p_mw
@@ -161,7 +193,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+    DC lines are controllable per default.
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
@@ -169,15 +201,32 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+    How the costs are combined into one cost function depends on the cost_function parameter.
 
     INPUT:
         **net** - The pandapower format network
 
-    OPTIONAL:
         **julia_file** (str, None) - path to a custom julia optimization file
 
+    OPTIONAL:
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **calculate_voltage_angles** (bool, True) - consider voltage angles in loadflow calculation
+
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
+
+            - "t" - transformer is modeled as equivalent with the T-model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for valdiation with other software that uses the pi-model.
+
+        **delta** (float, 0) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
+        **check_connectivity** (bool, True) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are set out of service in the ppc
 
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ac.jl')

@@ -248,6 +248,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
 
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
@@ -312,6 +314,10 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
 
+        **delta** (float, 1e-10) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
         **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
             line temperature. If True, net.line must contain a column "temperature_degree_celsius".
             The temperature dependency coefficient alpha must be provided in the net.line.alpha
@@ -368,6 +374,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             processed in pypower, ComplexWarnings are raised during the loadflow.
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
+
+        **delta** (float, 1e-10) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
     """
     if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
         logger.warning('Warning: Please specify sgen["controllable"]\n')
