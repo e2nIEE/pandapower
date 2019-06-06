@@ -782,7 +782,7 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     nit_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
     pass

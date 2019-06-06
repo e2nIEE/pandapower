@@ -602,7 +602,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
-                 ), )
+                 ))
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
 

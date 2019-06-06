@@ -263,7 +263,7 @@ def test_voltage_angles():
     pp.create_load(net, b3, p_mw=5, controllable=False)
     load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6,
                              max_q_mvar=1e6)
-    pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
+    pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=1000)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
@@ -273,8 +273,8 @@ def test_voltage_angles():
     for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
         run(net)
         consistency_checks(net)
-        assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] <= 120
-        assert 85 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 86
+        assert 19.9 < net.res_trafo3w.loading_percent.at[tidx] <= 20
+        assert 80 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 82
         assert 120 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4]) % 360 < 130
         assert np.isnan(net.res_bus.va_degree.at[b5])
 
