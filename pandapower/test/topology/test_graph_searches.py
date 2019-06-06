@@ -239,7 +239,7 @@ def test_elements_on_path():
         assert str(exception_info.value) == "Invalid element type sgen"
 
 
-def test_end_points_of_continously_connected_lines():
+def test_end_points_of_continuously_connected_lines():
     net = pp.create_empty_network()
     b0 = pp.create_bus(net, vn_kv=20.)
     b1 = pp.create_bus(net, vn_kv=20.)
@@ -260,27 +260,27 @@ def test_end_points_of_continously_connected_lines():
     l3 = pp.create_line(net, from_bus=b5, to_bus=b6, length_km=2., std_type="34-AL1/6-ST1A 20.0")
     l4 = pp.create_line(net, from_bus=b6, to_bus=b7, length_km=2., std_type="34-AL1/6-ST1A 20.0")
 
-    f, t = top.get_end_points_of_continously_connected_lines(net, lines=[l2, l1])
+    f, t = top.get_end_points_of_continuously_connected_lines(net, lines=[l2, l1])
     assert {f, t} == {b0, b2}
 
-    f, t = top.get_end_points_of_continously_connected_lines(net, lines=[l2, l1, l3])
+    f, t = top.get_end_points_of_continuously_connected_lines(net, lines=[l2, l1, l3])
     assert {f, t} == {b0, b6}
 
-    f, t = top.get_end_points_of_continously_connected_lines(net, lines=[l3])
+    f, t = top.get_end_points_of_continuously_connected_lines(net, lines=[l3])
     assert {f, t} == {b5, b6}
 
     with pytest.raises(UserWarning) as exception_info:
-        top.get_end_points_of_continously_connected_lines(net, lines=[l1, l2, l4])
-    assert str(exception_info.value) == "Lines not continously connected"
+        top.get_end_points_of_continuously_connected_lines(net, lines=[l1, l2, l4])
+    assert str(exception_info.value) == "Lines not continuously connected"
 
     with pytest.raises(UserWarning) as exception_info:
-        top.get_end_points_of_continously_connected_lines(net, lines=[l1, l4])
-    assert str(exception_info.value) == "Lines not continously connected"
+        top.get_end_points_of_continuously_connected_lines(net, lines=[l1, l4])
+    assert str(exception_info.value) == "Lines not continuously connected"
 
     b8 = pp.create_bus(net, vn_kv=20.)
     l5 = pp.create_line(net, 8, b8, length_km=1., std_type="34-AL1/6-ST1A 20.0")
     with pytest.raises(UserWarning) as exception_info:
-        top.get_end_points_of_continously_connected_lines(net, lines=[l1, l2, l3, l4, l5])
+        top.get_end_points_of_continuously_connected_lines(net, lines=[l1, l2, l3, l4, l5])
     assert str(exception_info.value) == "Lines have branching points"
 
 

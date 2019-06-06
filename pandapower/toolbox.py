@@ -630,7 +630,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     elements = pp_elements(res_elements=True)
 
-    # create continous bus index
+    # create continuous bus index
     create_continuous_bus_index(net, start=start)
     elements -= {"bus", "bus_geodata", "res_bus"}
 
