@@ -480,7 +480,7 @@ def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
-            "create_continous_bus_index()" % max_bus)
+            "create_continuous_bus_index()" % max_bus)
 
 
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
@@ -491,7 +491,7 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
         logger.warning(
             "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
             # " Try resetting the bus indices with the toolbox function "
-            # "create_continous_bus_index()"
+            # "create_continuous_bus_index()"
             % max_gen)
 
 
