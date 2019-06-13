@@ -4,17 +4,21 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
-import tempfile
+import json
 import math
 import os
-import json
+import tempfile
 
+import numpy as np
+
+from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
+from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
-from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
-from pandapower import pp_dir
+
+construction_cost = 23  # Construction cost defined by power models
+branch_cols = 24
 
 try:
     import pplog as logging
@@ -31,7 +35,7 @@ from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
+          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):  # pragma: no cover
     """
     Runs a power system optimization using PowerModels.jl. with a custom julia file.
     
@@ -84,7 +88,7 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
     
@@ -139,7 +143,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):  # pragma: no cover
     """
     Runs a non-linear power system optimization using PowerModels.jl.
 
@@ -193,12 +197,104 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net)
 
 
-def _runpm(net): #pragma: no cover
+def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+               trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):  # pragma: no cover
+    """
+    Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
+
+    see above
+
+     """
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
+
+    if "ne_line" not in net:
+        raise ValueError("ne_line DataFrame missing in net. Please define to run tnep")
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+    read_tnep_results(net)
+
+
+def read_tnep_results(net):
+    ne_branch = net._pm_result["solution"]["ne_branch"]
+    line_idx = net["res_ne_line"].index
+    for pm_branch_idx, branch_data in ne_branch.items():
+        # get pandapower index from power models index
+        pp_idx = line_idx[int(pm_branch_idx) - 1]
+        # built is a float, which is not exactly 1.0 or 0. sometimes
+        net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
+
+
+def _calc_line_parameter(net, ppc):
+    """
+    # Todo: remove copy and paste code from build_branch
+    calculates the ne_line parameter in per unit.
+    """
+
+    branch = ppc["ne_branch"]
+    mode = net["_options"]["mode"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    line = net["ne_line"]
+    from_bus = bus_lookup[line["from_bus"].values]
+    to_bus = bus_lookup[line["to_bus"].values]
+    length_km = line["length_km"].values
+    parallel = line["parallel"].values
+    base_kv = ppc["bus"][from_bus, BASE_KV]
+    baseR = np.square(base_kv) / net.sn_mva
+
+    branch[:, F_BUS] = from_bus
+    branch[:, T_BUS] = to_bus
+
+    branch[:, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
+    branch[:, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
+
+    # power models construction costs
+    branch[:, construction_cost] = line["construction_cost"]
+
+    if mode == "sc":
+        # temperature correction
+        if net["_options"]["case"] == "min":
+            branch[:, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
+    else:
+        # temperature correction
+        if net["_options"]["consider_line_temperature"]:
+            branch[:, BR_R] *= _end_temperature_correction_factor(net)
+
+        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
+        g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
+        branch[:, BR_B] = b - g * 1j
+    # in service of lines
+    branch[:, BR_STATUS] = line["in_service"].values
+    if net._options["mode"] == "opf":
+        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
+        vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
+        max_i_ka = line.max_i_ka.values
+        df = line.df.values
+        branch[:, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+
+
+def build_ne_branch(net, ppc):
+    if "ne_line" in net:
+        length = len(net["ne_line"])
+        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+        ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+        _calc_line_parameter(net, ppc)
+    return ppc
+
+
+def _runpm(net):  # pragma: no cover
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
     ppc, ppci = _pd2ppc(net)
+    ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     net._pm = pm
@@ -218,7 +314,7 @@ def _runpm(net): #pragma: no cover
         logger.warning("OPF did not converge!")
 
 
-def _call_powermodels(pm, julia_file): #pragma: no cover
+def _call_powermodels(pm, julia_file):  # pragma: no cover
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
     with open(buffer_file, 'w') as outfile:
@@ -243,8 +339,10 @@ def _call_powermodels(pm, julia_file): #pragma: no cover
     return result_pm
 
 
-def ppc_to_pm(net, ppc): #pragma: no cover
+def ppc_to_pm(net, ppc):  # pragma: no cover
+    # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
+          "ne_branch": dict(),
           "baseMVA": ppc["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
@@ -312,6 +410,30 @@ def ppc_to_pm(net, ppc): #pragma: no cover
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
+    if "ne_branch" in ppc:
+        for idx, row in enumerate(ppc["ne_branch"], start=1):
+            branch = dict()
+            branch["index"] = idx
+            branch["transformer"] = False
+            branch["br_r"] = row[BR_R].real
+            branch["br_x"] = row[BR_X].real
+            branch["g_fr"] = - row[BR_B].imag / 2.0
+            branch["g_to"] = - row[BR_B].imag / 2.0
+            branch["b_fr"] = row[BR_B].real / 2.0
+            branch["b_to"] = row[BR_B].real / 2.0
+            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["rate_b"] = row[RATE_B].real
+            branch["rate_c"] = row[RATE_C].real
+            branch["f_bus"] = int(row[F_BUS].real) + 1
+            branch["t_bus"] = int(row[T_BUS].real) + 1
+            branch["br_status"] = int(row[BR_STATUS].real)
+            branch["angmin"] = row[ANGMIN].real
+            branch["angmax"] = row[ANGMAX].real
+            branch["tap"] = row[TAP].real
+            branch["shift"] = math.radians(row[SHIFT].real)
+            branch["construction_cost"] = row[construction_cost].real
+            pm["ne_branch"][str(idx)] = branch
+
     if len(ppc["gencost"]) > len(ppc["gen"]):
         logger.warning("PowerModels.jl does not reactive power cost - costs are ignored")
         ppc["gencost"] = ppc["gencost"][:ppc["gen"].shape[0], :]
@@ -332,7 +454,7 @@ def ppc_to_pm(net, ppc): #pragma: no cover
     return pm
 
 
-def pm_results_to_ppc_results(net, ppc, ppci, result_pm): #pragma: no cover
+def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
     options = net._options
     sol = result_pm["solution"]
     for i, bus in sol["bus"].items():
@@ -352,7 +474,7 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm): #pragma: no cover
             ppci["branch"][int(i) - 1, QT] = branch["qt"]
 
     ppc["obj"] = result_pm["objective"]
-    ppci["success"] = result_pm["status"] == "LocalOptimal"
+    ppci["success"] = "LOCALLY_SOLVED" in str(result_pm["termination_status"])
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
     result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
