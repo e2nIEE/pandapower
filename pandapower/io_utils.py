@@ -10,6 +10,7 @@ from pandapower.auxiliary import pandapowerNet
 import numpy
 import numbers
 import json
+from json.encoder import encode_basestring_ascii, encode_basestring, INFINITY, _make_iterencode
 import copy
 import networkx
 from networkx.readwrite import json_graph
@@ -182,10 +183,6 @@ def restore_all_dtypes(net, dtypes):
             pass
 
 
-from json.encoder import _make_iterencode
-from json.encoder import *
-
-
 class PPJSONEncoder(json.JSONEncoder):
 
     def iterencode(self, o, _one_shot=False):
@@ -255,7 +252,6 @@ class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
 
-
 def pp_hook(d):
     if '_module' in d.keys() and '_class' in d.keys():
         class_name = d.pop('_class')
@@ -294,8 +290,12 @@ def pp_hook(d):
         elif module_name == "networkx":
             return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
+            from misc.json_io import JSONSerializableClass
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
+#            print(class_)
+            if issubclass(class_, JSONSerializableClass):
+                return d
             return class_(obj, **d)
     else:
         return d
