@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
@@ -10,6 +11,7 @@ import os
 import tempfile
 
 import numpy as np
+import pandas as pd
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
@@ -479,3 +481,28 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
     ppci["f"] = result_pm["objective"]
     result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result
+
+
+def init_ne_line(net, new_line_index, construction_costs=None):
+    """
+    init function for new line dataframe, which specifies the possible new lines being built by power models opt
+
+    Parameters
+    ----------
+    net - pp net
+    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
+    construction_costs (list, 0.) - costs of newly constructed lines
+
+    Returns
+    -------
+
+    """
+    # init dataframe
+    net["ne_line"] = net["line"].loc[new_line_index, :]
+    # add costs, if None -> init with zeros
+    construction_costs = np.zeros(len(new_line_index)) if construction_costs is None else construction_costs
+    net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
+    # set in service, but only in ne line dataframe
+    net["ne_line"].loc[new_line_index, "in_service"] = True
+    # init res_ne_line to save built status afterwards
+    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
