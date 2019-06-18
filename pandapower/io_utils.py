@@ -17,6 +17,7 @@ from networkx.readwrite import json_graph
 import importlib
 from numpy import ndarray
 from warnings import warn
+from inspect import isclass, signature
 
 try:
     from functools import singledispatch
@@ -253,10 +254,15 @@ class PPJSONDecoder(json.JSONDecoder):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
 
 def pp_hook(d):
-    if '_module' in d.keys() and '_class' in d.keys():
+    if '_module' in d and '_class' in d:
+        if "_object" in d:         
+            obj = d.pop('_object') 
+        elif "_init" in d: 
+            return d #backwards compatibility
+        else:
+            obj = {"_init": d, "_state": dict()} #backwards compatibility
         class_name = d.pop('_class')
         module_name = d.pop('_module')
-        obj = d.pop('_object')
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):
@@ -290,16 +296,84 @@ def pp_hook(d):
         elif module_name == "networkx":
             return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
-            from misc.json_io import JSONSerializableClass
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
-#            print(class_)
-            if issubclass(class_, JSONSerializableClass):
-                return d
-            return class_(obj, **d)
+            if isclass(class_) and issubclass(class_, JSONSerializableClass):
+                needs_net = "net" in signature(class_.__init__).parameters.keys()
+                if needs_net and not hasattr(pp_hook, "net"):
+                    return json.dumps({"_object": obj, "_class": class_name, "_module": module_name})
+                else:
+                    if isinstance(obj, str):
+                        obj = json.loads(obj, cls=PPJSONDecoder)
+                    if needs_net:
+                        obj["_init"]["net"] = pp_hook.net
+                    return class_.from_dict(obj)
+            else:
+                return class_(obj, **d)
     else:
         return d
 
+
+class JSONSerializableClass(object):
+    
+    json_excludes = ["net", "self", "__class__"]
+    
+    def __init__(self):
+        self._init = dict()
+        
+    def update_initialized(self, parameters):
+        """
+        Saves all parameters as object attributes
+        """
+        if "kwargs" in parameters:
+            self._init.update(parameters.pop("kwargs"))
+        for excluded in self.json_excludes:
+            if excluded in parameters:
+                del parameters[excluded]
+        self._init.update(parameters)
+                        
+    def to_json(self):
+        """
+        Each controller should have this method implemented. The resulting json string should be readable by
+        the controller's from_json function and by the function add_ctrl_from_json in control_handler.
+        """
+        return json.dumps(self.to_dict(), cls=PPJSONEncoder)
+
+    def to_dict(self):
+        init_parameters = signature(self.__init__).parameters.keys()
+        d = {'_module': self.__module__.__str__(), '_class': self.__class__.__name__}
+        d["_init"] = {key: val for key, val in self._init.items() if
+                      key in init_parameters and key not in self.json_excludes}
+        d["has_net"] = "net" in init_parameters
+        d["_state"] = {key: val for key, val in self.__dict__.items() if key not in 
+                       self.json_excludes and not callable(val)}
+        return d
+        
+    @classmethod
+    def from_dict(cls, d):
+        state = d["_state"]
+        init = d["_init"]
+        if "index" in state:
+            init["index"] = state["index"]
+        obj = cls(**init)
+        obj.__dict__.update(state)
+        return obj
+
+    @classmethod
+    def from_json(cls, json_string):
+        d = json.loads(json_string, cls=PPJSONDecoder)
+        return JSONSerializableClass.from_dict(d)
+
+def restore_jsoned_objects(net):
+    pp_hook.net = net
+    for element in ["controller", "loadcase"]:
+        if element in net:
+            for i, c in net.controller.controller.items():
+                try:
+                    pp_hook(c)
+                except:
+                    logger.warning("did not load %s with index %u"%(element, i))
+    del pp_hook.net
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
@@ -417,6 +491,11 @@ def json_networkx(obj):
     d = with_signature(obj, json_string, obj_module="networkx")
     return d
 
+@to_serializable.register(JSONSerializableClass)
+def controller_to_serializable(obj):
+    logger.debug('JSONSerializableClass')
+    d = with_signature(obj, obj.to_json())
+    return d
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)

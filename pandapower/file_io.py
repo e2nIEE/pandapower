@@ -28,7 +28,8 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
+from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder, \
+                                restore_jsoned_objects
 
 
 def to_pickle(net, filename):
@@ -326,6 +327,7 @@ def from_json(filename, convert=True):
     """
     if hasattr(filename, 'read'):
         net = json.load(filename, cls=PPJSONDecoder)
+        restore_jsoned_objects(net)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
