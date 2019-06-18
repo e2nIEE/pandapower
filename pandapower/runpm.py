@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
@@ -16,11 +15,10 @@ import pandas as pd
 from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
+from pandapower.build_branch import _calc_line_parameter
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_brch import branch_cols
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
-
-construction_cost = 23  # Construction cost defined by power models
-branch_cols = 24
 
 try:
     import pplog as logging
@@ -34,6 +32,9 @@ from pandapower.pypower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM
 from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
     ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
+
+# this is only used by pm tnep
+CONSTRUCTION_COST = 23
 
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -233,60 +234,16 @@ def read_tnep_results(net):
         net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
 
 
-def _calc_line_parameter(net, ppc):
-    """
-    # Todo: remove copy and paste code from build_branch
-    calculates the ne_line parameter in per unit.
-    """
-
-    branch = ppc["ne_branch"]
-    mode = net["_options"]["mode"]
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    line = net["ne_line"]
-    from_bus = bus_lookup[line["from_bus"].values]
-    to_bus = bus_lookup[line["to_bus"].values]
-    length_km = line["length_km"].values
-    parallel = line["parallel"].values
-    base_kv = ppc["bus"][from_bus, BASE_KV]
-    baseR = np.square(base_kv) / net.sn_mva
-
-    branch[:, F_BUS] = from_bus
-    branch[:, T_BUS] = to_bus
-
-    branch[:, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
-    branch[:, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
-
-    # power models construction costs
-    branch[:, construction_cost] = line["construction_cost"]
-
-    if mode == "sc":
-        # temperature correction
-        if net["_options"]["case"] == "min":
-            branch[:, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
-    else:
-        # temperature correction
-        if net["_options"]["consider_line_temperature"]:
-            branch[:, BR_R] *= _end_temperature_correction_factor(net)
-
-        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
-        g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
-        branch[:, BR_B] = b - g * 1j
-    # in service of lines
-    branch[:, BR_STATUS] = line["in_service"].values
-    if net._options["mode"] == "opf":
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
-        vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
-        max_i_ka = line.max_i_ka.values
-        df = line.df.values
-        branch[:, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
-
-
 def build_ne_branch(net, ppc):
     if "ne_line" in net:
         length = len(net["ne_line"])
-        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
         ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
-        _calc_line_parameter(net, ppc)
+        # create branch array ne_branch like the common branch array in the ppc
+        net._pd2ppc_lookups["ne_branch"] = dict()
+        net._pd2ppc_lookups["ne_branch"]["ne_line"] = (0, length)
+        _calc_line_parameter(net, ppc, "ne_line", "ne_branch")
+        ppc["ne_branch"][:, CONSTRUCTION_COST] = net["ne_line"].loc[:, "construction_cost"].values
     return ppc
 
 
@@ -433,7 +390,7 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
             branch["angmax"] = row[ANGMAX].real
             branch["tap"] = row[TAP].real
             branch["shift"] = math.radians(row[SHIFT].real)
-            branch["construction_cost"] = row[construction_cost].real
+            branch["construction_cost"] = row[CONSTRUCTION_COST].real
             pm["ne_branch"][str(idx)] = branch
 
     if len(ppc["gencost"]) > len(ppc["gen"]):
