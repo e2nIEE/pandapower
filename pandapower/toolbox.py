@@ -579,13 +579,25 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def create_continuous_bus_index(net, start=0):
+def create_continuous_bus_index(net, start=0, store_old_index=False):
     """
-    Creates a continuous bus index starting at zero and replaces all
+    Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
+
+    INPUT:
+      **net** - pandapower network
+
+    OPTIONAL:
+      **start** - index begins with "start"
+      **store_old_index** - if True, stores the old index in net.bus["old_index"]
+
+    OUTPUT:
+      **bus_lookup** - mapping of old to new index
     """
 
     net.bus.sort_index(inplace=True)
+    if store_old_index:
+        net.bus["old_index"] = net.bus.index.values
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -605,7 +617,7 @@ def create_continuous_bus_index(net, start=0):
     side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
     net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
                                                          bus_lookup)
-    return net
+    return bus_lookup
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
