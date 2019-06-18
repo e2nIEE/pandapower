@@ -5,8 +5,7 @@
 
 
 import pandas as pd
-from pandapower.create import create_empty_network
-from pandapower.auxiliary import pandapowerNet
+import pandapower as pp
 import numpy
 import numbers
 import json
@@ -14,9 +13,7 @@ import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
-from numpy import ndarray
 from warnings import warn
-import numpy as np
 
 try:
     from functools import singledispatch
@@ -49,23 +46,22 @@ logger = logging.getLogger(__name__)
 
 
 def coords_to_df(value, geotype="line"):
-    geo = pd.DataFrame()
+    geo = pd.DataFrame(index=value.index)
     if any(~value.coords.isnull()):
         k = max(len(v) for v in value.coords.values)
-        v = np.empty((len(value), k * 2))
-        v.fill(np.nan)
+        v = numpy.empty((len(value), k * 2))
+        v.fill(numpy.nan)
         for i, idx in enumerate(value.index):
             # get coords and convert them to x1, y1, x2, y2...
             coords = value.at[idx, 'coords']
             if coords is None:
                 continue
-            v[i, :len(coords) * 2] = np.array(coords).flatten()
-        geo = pd.DataFrame(v)
+            v[i, :len(coords) * 2] = numpy.array(coords).flatten()
+        geo = pd.DataFrame(v, index=value.index)
         geo.columns = ["%s%i" % (w, i) for i in range(k) for w in "xy"]
     if geotype == "bus":
         geo["x"] = value["x"].values
         geo["y"] = value["y"].values
-
     return geo
 
 
@@ -80,12 +76,15 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, exclude_
         elif item == "std_types":
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
                 dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+            continue
         elif item == "user_pf_options":
             if len(value) > 0:
                 dodfs["user_pf_options"] = pd.DataFrame(value, index=[0])
+            continue
         elif isinstance(value, (int, float, bool, str)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
             dodfs["parameters"][item] = net[item]
+            continue
         elif not isinstance(value, pd.DataFrame):
             logger.warning("Could not serialize net.%s" % item)
             continue
@@ -100,7 +99,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, exclude_
                 geo["geometry"] = [s.to_wkt() for s in net.bus_geodata.geometry.values]
             dodfs[item] = geo
         elif item == "line_geodata":
-            geo = coords_to_df(value)
+            geo = coords_to_df(value, geotype="line")
             if isinstance(value, geopandas.GeoDataFrame):
                 geo["geometry"] = [s.to_wkt() for s in net.line_geodata.geometry.values]
             dodfs[item] = geo
@@ -146,20 +145,17 @@ def df_to_coords(net, item, table):
                  if pd.notnull(coords["x%u" % nr])]
         if len(coord):
             net[item].loc[i, "coords"] = coord
-    return net
 
 
 def from_dict_of_dfs(dodfs):
-    net = create_empty_network()
+    net = pp.create_empty_network()
     for c in dodfs["parameters"].columns:
         net[c] = dodfs["parameters"].at[0, c]
     for item, table in dodfs.items():
         if item in ("parameters", "dtypes"):
             continue
-        elif item == "line_geodata":
-            net = df_to_coords(net, item, table)
-        elif item == "bus_geodata":
-            net = df_to_coords(net, item, table)
+        elif item in ["line_geodata", "bus_geodata"]:
+            df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
             continue  # don't go into try..except
@@ -181,13 +177,16 @@ def from_dict_of_dfs(dodfs):
 def restore_all_dtypes(net, dtypes):
     for _, v in dtypes.iterrows():
         try:
+            if v["dtype"] == "object":
+                c = net[v.element][v.column]
+                net[v.element][v.column] = numpy.where(c.isnull(), None, c)
+#                net[v.element][v.column] = net[v.element][v.column].fillna(value=None)
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             pass
 
 
-from json.encoder import _make_iterencode
-from json.encoder import *
+import json.encoder
 
 
 class PPJSONEncoder(json.JSONEncoder):
@@ -207,12 +206,13 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             markers = None
         if self.ensure_ascii:
-            _encoder = encode_basestring_ascii
+            _encoder = json.encoder.encode_basestring_ascii
         else:
-            _encoder = encode_basestring
+            _encoder = json.encoder.encode_basestring
 
         def floatstr(o, allow_nan=self.allow_nan,
-                     _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+                     _repr=float.__repr__, _inf=json.encoder.INFINITY,
+                     _neginf=-json.encoder.INFINITY):
             # Check for specials.  Note that this type of test is processor
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
@@ -233,7 +233,7 @@ class PPJSONEncoder(json.JSONEncoder):
 
             return text
 
-        _iterencode = _make_iterencode(
+        _iterencode = json.encoder._make_iterencode(
             markers, self.default, _encoder, self.indent, floatstr,
             self.key_separator, self.item_separator, self.sort_keys,
             self.skipkeys, _one_shot, isinstance=isinstance_partial)
@@ -250,7 +250,7 @@ class PPJSONEncoder(json.JSONEncoder):
 
 
 def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
+    if isinstance(obj, (pp.pandapowerNet, tuple)):
         return False
     return isinstance(obj, cls)
 
@@ -322,7 +322,7 @@ def to_serializable(obj):
     return str(obj)
 
 
-@to_serializable.register(pandapowerNet)
+@to_serializable.register(pp.pandapowerNet)
 def json_net(obj):
     from pandapower.file_io import to_json_string
     d = with_signature(obj, to_json_string(obj))
