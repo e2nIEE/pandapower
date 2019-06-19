@@ -28,7 +28,8 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
+from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder, \
+                                restore_jsoned_objects
 
 
 def to_pickle(net, filename):
@@ -91,7 +92,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = to_dict_of_dfs(net, include_results=include_results)
+    dict_net = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
@@ -326,11 +327,13 @@ def from_json(filename, convert=True):
     """
     if hasattr(filename, 'read'):
         net = json.load(filename, cls=PPJSONDecoder)
+        restore_jsoned_objects(net)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)
+            restore_jsoned_objects(net)
             # this can be removed in the future
             # now net is saved with "_module", "_class", "_object"..., so json.load already returns
             # pandapowerNet. Older files don't have it yet, and are loaded as dict.
