@@ -71,7 +71,7 @@ def coords_to_df(value, geotype="line"):
     return geo
 
 
-def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
+def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_empty_tables=True):
     dodfs = dict()
     dodfs["dtypes"] = collect_all_dtypes_df(net)
     dodfs["parameters"] = pd.DataFrame(columns=["parameter"])
@@ -98,7 +98,8 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
             geo = coords_to_df(value)
             dodfs[item] = geo
         else:
-            dodfs[item] = value
+            if include_empty_tables or len(value) > 0:
+                dodfs[item] = value
     return dodfs
 
 
@@ -368,11 +369,11 @@ def restore_jsoned_objects(net):
     pp_hook.net = net
     for element in ["controller", "loadcase"]:
         if element in net:
-            for i, c in net.controller.controller.items():
+            for i, c in net[element][element].items():
                 try:
                     pp_hook(c)
-                except:
-                    logger.warning("did not load %s with index %u"%(element, i))
+                except Exception as e:
+                    logger.warning("did not load %s with index %u: %s"%(element, i, e))
     del pp_hook.net
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

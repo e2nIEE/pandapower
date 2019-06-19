@@ -92,7 +92,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = to_dict_of_dfs(net, include_results=include_results)
+    dict_net = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
@@ -333,6 +333,7 @@ def from_json(filename, convert=True):
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)
+            restore_jsoned_objects(net)
             # this can be removed in the future
             # now net is saved with "_module", "_class", "_object"..., so json.load already returns
             # pandapowerNet. Older files don't have it yet, and are loaded as dict.
