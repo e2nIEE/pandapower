@@ -15,7 +15,7 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    if isinstance(net.version, str) and version.parse(__version__) < version.parse(__version__):
+    if isinstance(net.get("version"), str) and version.parse(__version__) < version.parse(__version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
