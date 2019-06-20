@@ -72,6 +72,7 @@ def test_ppc_testgrids():
         logger.debug('%s has been checked successfully.' % i)
 
 
+@pytest.mark.slow
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
@@ -114,11 +115,13 @@ def test_case9_conversion():
     pp.runopp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
+
 @pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)
     assert net.OPF_converged
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

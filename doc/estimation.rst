@@ -37,13 +37,13 @@ For a more in-depth explanation of the internals of the state estimation method,
 Defining Measurements
 ===========================
 
-Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative. Measurements for three winding transformers (trafo3w) can not yet be added. Please use a workaround of an artificial line or the like.  
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.
 
 **Types of Measurements**
 
  - *"v"* for voltage measurements (in per-unit)
  - *"p"* for active power measurements (in MW)
- - *"q"* for reactive power measurements (in kVar)
+ - *"q"* for reactive power measurements (in MVar)
  - *"i"* for electrical current measurements at a line (in A)
  
 
@@ -135,7 +135,7 @@ Now that the data is ready, the state_estimation can be initialized and run. We 
 
 
 The resulting variables now contain the voltage absolute values in *V*, the voltage angles in *delta*, an indication of success in *success*.
-The bus power injections can be accessed similarly with *net.res_bus_est.p_mw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
+The bus power injections can be accessed similarly with *net.res_bus_est.p_mw* and *net.res_bus_est.q_mvar*. Line data is also available in the same format as defined in *res_line*.
 
 
 If we like to check our data for fault measurements, and exclude them in in our state estimation, we use the following code:
@@ -151,7 +151,64 @@ If the test detects the possibility of fault data, the value of the added class 
 ::
 
     success_chi2 = chi2_analysis(net, init="flat")
-    
+
+Further Algorithms and Estimators
+=============================
+Since Pandapower 2.0.1 further algorithms and estimators (robust estimators) are available for the state estimation module, these include:
+
++-------------------------------------+----------------------+
+| Algorithm                           | Available Estimators |
++=====================================+======================+
+| wls (Newton-Gauss)                  |                      |
++-------------------------------------+----------------------+
+| wls with zero injection constraints |                      |
++-------------------------------------+----------------------+
+| lp                                  | lav                  |
++-------------------------------------+----------------------+
+| irwls                               | wls, shgm            |
++-------------------------------------+----------------------+
+| Scipy Optimization Tool             | wls, lav, ql, qc     |
++-------------------------------------+----------------------+
+
+Most of the algorithms and estimators are implemented as explained in the *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004. While the QC and QL estimators are adjusted mathematically for a better convergence of scipy optimization tool. 
+
+For SHGM: Please see *"Robust state estimation based on projection statistics," IEEE Trans. Power Syst, vol. 11, no. 2, pp. 1118--1127, 1996.* by L. Mili, M. Cheniae, N. Vichare, and P. Rousseeuw. The projection statistics was rewritten in Python based on the code published by original authors of the paper.  
+
+Example of using extra estimators:
+::
+
+	# Using shgm 
+	success = estimate(net, algorithm="irwls", estimator='shgm', a=5)
+
+	# Using lav
+	success = estimate(net, algorithm="lp")
+
+	# Using ql
+	success = estimate(net, algorithm="opt", estimator="ql", a=3)
+
+Note that:
+The state estimation with Scipy Optimization Tool could collapse in some cases with flat start, it's suggested to give the algorithm a warm start or try some other optimization's methods offered by scipy, which preserves the effects of the estimator while helps the convergence.
+
+Example for chained estimation (warm start for SciPy Optimization Tool):
+::
+
+	# Initialize eppci for the algorithm which contains pypower-grid,
+	# measurements and estimated grid state (initial value)
+	net, ppc, eppci = pp2eppci(net)
+
+	# Initialize algorithm
+	estimation_wls = WLSAlgorithm(1e-3, 5)
+    	estimation_opt = OptAlgorithm(1e-6, 1000)
+
+	# Start Estimation with specified estimator
+    	eppci = estimation_wls.estimate(eppci)
+	# for some estimators extra parameters must be specified
+    	eppci = estimation_opt.estimate(eppci, estimator="ql", a=3) 
+
+	# Update the pandapower network with estimated results
+    	net = eppci2pp(net, ppc, eppci)
+
+
 
 .. Class state_estimation
    ======================

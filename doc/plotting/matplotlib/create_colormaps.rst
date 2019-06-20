@@ -6,6 +6,10 @@ Discrete
 ==============================
 .. autofunction:: pandapower.plotting.cmap_discrete
 
-Continous
+Continuous
 ==============================
-.. autofunction:: pandapower.plotting.cmap_continous
+.. autofunction:: pandapower.plotting.cmap_continuous
+
+Logarithmic
+==============================
+.. autofunction:: pandapower.plotting.cmap_logarithmic

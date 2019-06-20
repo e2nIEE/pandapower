@@ -33,8 +33,8 @@ def test_add_lines_and_loads():
     # BUILD:
     pd_net = pp.create_empty_network()
     busnr1 = pp.create_bus(pd_net, name="startbus", vn_kv=.4)
-    n_lines_add = int(10.*rd.random() + 1)
-    l_per_line = 0.10*rd.random()
+    n_lines_add = int(10. * rd.random() + 1)
+    l_per_line = 0.10 * rd.random()
     # OPERATE:
     _add_lines_and_loads(pd_net, n_lines=n_lines_add, startbusnr=busnr1,
                          length_per_line=l_per_line, p_load_mw=2,
@@ -43,15 +43,15 @@ def test_add_lines_and_loads():
     assert len(pd_net.bus.index) == n_lines_add + 1
     assert len(pd_net.line.index) == n_lines_add
     assert len(pd_net.load.index) == n_lines_add
-    assert abs(pd_net.line.length_km.sum() - n_lines_add*l_per_line) < 0.0000001
+    assert abs(pd_net.line.length_km.sum() - n_lines_add * l_per_line) < 0.0000001
 
 
 def test_add_lines_with_branched_loads():
     # BUILD:
     pd_net = pp.create_empty_network()
     busnr1 = pp.create_bus(pd_net, name="startbus", vn_kv=.4)
-    n_lines_add = int(10.*rd.random() + 1)
-    l_per_line = 0.10*rd.random()
+    n_lines_add = int(10. * rd.random() + 1)
+    l_per_line = 0.10 * rd.random()
     l_branchout_line = 0.022
     # OPERATE:
     _add_lines_with_branched_loads(pd_net, n_lines_add, startbus=busnr1,
@@ -60,12 +60,13 @@ def test_add_lines_with_branched_loads():
                                    length_branchout_line_1=l_branchout_line,
                                    prob_branchout_line_1=0.5, branchnr=1)
 
-    assert len(pd_net.bus.index) == 2*n_lines_add + 1
-    assert len(pd_net.line.index) == 2*n_lines_add
+    assert len(pd_net.bus.index) == 2 * n_lines_add + 1
+    assert len(pd_net.line.index) == 2 * n_lines_add
     assert len(pd_net.load.index) == n_lines_add
-    assert abs(pd_net.line.length_km.sum() - n_lines_add*(l_per_line+l_branchout_line)) < 0.0000001
+    assert abs(pd_net.line.length_km.sum() - n_lines_add * (l_per_line + l_branchout_line)) < 0.0000001
 
 
+@pytest.mark.slow
 def test_kerber_landnetz_freileitung_1():
     pd_net = pn.create_kerber_landnetz_freileitung_1(p_load_mw=.002, q_load_mvar=0.001)
     assert abs(pd_net.line.length_km.sum() - 0.273) < 0.00000001
@@ -78,6 +79,7 @@ def test_kerber_landnetz_freileitung_1():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_kerber_landnetz_freileitung_2():
     pd_net = pn.create_kerber_landnetz_freileitung_2(p_load_mw=.002, q_load_mvar=.001)
     assert abs(pd_net.line.length_km.sum() - 0.390) < 0.00000001
@@ -90,6 +92,7 @@ def test_kerber_landnetz_freileitung_2():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_create_kerber_landnetz_kabel_1():
     pd_net = pn.create_kerber_landnetz_kabel_1(p_load_mw=.002, q_load_mvar=.001)
     assert abs(pd_net.line.length_km.sum() - 1.046) < 0.00000001
@@ -102,6 +105,7 @@ def test_create_kerber_landnetz_kabel_1():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_create_kerber_landnetz_kabel_2():
     pd_net = pn.create_kerber_landnetz_kabel_2(p_load_mw=.002, q_load_mvar=.001)
     assert abs(pd_net.line.length_km.sum() - 1.343) < 0.00000001
@@ -114,6 +118,7 @@ def test_create_kerber_landnetz_kabel_2():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_create_kerber_dorfnetz():
     pd_net = pn.create_kerber_dorfnetz(p_load_mw=.002, q_load_mvar=.001)
     assert abs(pd_net.line.length_km.sum() - 3.412) < 0.00000001
@@ -126,6 +131,7 @@ def test_create_kerber_dorfnetz():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_create_kerber_vorstadtnetz_kabel_1():
     pd_net = pn.create_kerber_vorstadtnetz_kabel_1(p_load_mw=.002, q_load_mvar=0.001)
     assert abs(pd_net.line.length_km.sum() - 4.476) < 0.00000001
@@ -138,6 +144,7 @@ def test_create_kerber_vorstadtnetz_kabel_1():
     assert pd_net.converged
 
 
+@pytest.mark.slow
 def test_create_kerber_vorstadtnetz_kabel_2():
     pd_net = pn.create_kerber_vorstadtnetz_kabel_2(p_load_mw=.002, q_load_mvar=.001)
     assert abs(pd_net.line.length_km.sum() - 4.689) < 0.00000001
@@ -148,6 +155,7 @@ def test_create_kerber_vorstadtnetz_kabel_2():
     assert len(pd_net.trafo.index) == 1
     pp.runpp(pd_net)
     assert pd_net.converged
+
 
 if __name__ == '__main__':
     pytest.main(['-x', __file__])
