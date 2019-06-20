@@ -122,7 +122,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
+def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -158,13 +158,6 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         if not set(cc) & slacks:
             not_supplied.update(set(cc))
 
-    buses_remove = set()
-    if in_service_only:
-        for bus in not_supplied:
-            if not net.bus.at[bus, 'in_service']:
-                buses_remove.add(bus)
-
-    not_supplied = not_supplied - buses_remove
     return not_supplied
 
 
@@ -445,27 +438,27 @@ def elements_on_path(mg, path, element="line"):
     if element not in ["line", "switch", "trafo", "trafo3w"]:
         raise ValueError("Invalid element type %s"%element)
     if isinstance(mg, nx.MultiGraph):
-        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() 
+        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys()
                 if edge[0]==element]
     else:
         return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
                 if mg.get_edge_data(b1, b2)["key"][0]==element]
 
 
-def get_end_points_of_continously_connected_lines(net, lines):
+def get_end_points_of_continuously_connected_lines(net, lines):
     mg = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
     switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
     mg.add_edges_from(switch_buses)
-    
+
     all_buses = set(line_buses.flatten())
     longest_path = []
     for b1, b2 in combinations(all_buses, 2):
         try:
             path = nx.shortest_path(mg, b1, b2)
         except nx.NetworkXNoPath:
-            raise UserWarning("Lines not continously connected")
+            raise UserWarning("Lines not continuously connected")
         if len(path) > len(longest_path):
             longest_path = path
     if all_buses - set(longest_path):

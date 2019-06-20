@@ -36,19 +36,19 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 
         **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
     """
-    logger.info("Max voltage")
+    logger.info("Max voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Min voltage")
+    logger.info("Min voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu").iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Max loading trafo")
+    logger.info("Max loading trafo in %:")
     if net.res_trafo is not None:
         for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[
                     :numi].iterrows():
             logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name,
                         net.trafo.name.at[r.name])
-    logger.info("Max loading line")
+    logger.info("Max loading line in %:")
     for _, r in net.res_line.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name,
                     net.line.name.at[r.name])
@@ -220,11 +220,12 @@ def opf_task(net):  # pragma: no cover
                 constr[i] = np.nan
             if (constr.min_p_mw >= constr.max_p_mw).any():
                 logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
-                            variable_names[j] + ". " + "Please observe the pandapower " +
-                            "signing system.")
+                               variable_names[j] + ". " + "Please observe the pandapower " +
+                               "signing system.")
             if (constr.min_q_mvar >= constr.max_q_mvar).any():
                 logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
-                            variable_names[j] + ". Please observe the pandapower signing system.")
+                               variable_names[j] + ". Please observe the pandapower signing " +
+                               "system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
@@ -454,6 +455,7 @@ def compare_arrays(x, y):
     else:
         raise ValueError("x and y needs to have the same shape.")
 
+
 # --- Simulation setup and preparations
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
                                      verbose=True):
@@ -628,7 +630,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     elements = pp_elements(res_elements=True)
 
-    # create continous bus index
+    # create continuous bus index
     create_continuous_bus_index(net, start=start)
     elements -= {"bus", "bus_geodata", "res_bus"}
 
@@ -797,9 +799,8 @@ def drop_buses(net, buses, drop_elements=True):
 
 
 def drop_switches_at_buses(net, buses):
-    i = net["switch"][(net["switch"]["bus"].isin(buses))
-                      | ((net["switch"]["element"].isin(buses))
-                         & (net["switch"]["et"] == "b"))].index
+    i = net["switch"][(net["switch"]["bus"].isin(buses)) |
+                      ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
     net["switch"].drop(i, inplace=True)
     logger.info("dropped %d switches" % len(i))
 
@@ -892,9 +893,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.loc[bus_meas.element.isin(b2)].index
+    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
     net.measurement.loc[bus_meas, "element"] = b1
-    net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)
@@ -1607,12 +1607,11 @@ def create_replacement_switch_for_branch(net, element, idx):
     return sid
 
 
-def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
-                                        zero_length=True, zero_impedance=True, in_service_only=True,
-                                        min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
-                                        min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0, drop_affected=False,
-                                        drop_affected_switches=False):
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
+                                        zero_impedance=True, in_service_only=True, min_length_km=0,
+                                        min_r_ohm_per_km=0, min_x_ohm_per_km=0, min_c_nf_per_km=0,
+                                        min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0, min_xtf_pu=0,
+                                        drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -1667,15 +1666,12 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         replaced[elm] = net[elm].loc[affected_elements]
 
         if drop_affected:
-            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            if elm == 'line':
+                drop_lines(net, affected_elements)
+            else:
+                net[elm].drop(affected_elements, inplace=True)
+
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
-            if drop_affected_switches:
-                if elm == 'line':
-                    affected_switches = net.switch[net.switch.element.isin(affected_elements)
-                                                   & (net.switch.et == 'l')].index
-                    net.switch.drop(affected_switches, inplace=True)
-                    logger.info('dropped %d switches that were connected to replaced lines'
-                                % (len(affected_switches)))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
@@ -1753,4 +1749,4 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
                          in_service=line_.in_service)
         i += 1
-    net.line.drop(index, inplace=True)
+    drop_lines(net, index)
