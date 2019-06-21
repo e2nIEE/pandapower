@@ -247,6 +247,12 @@ def test_nogo():
     assert set(mg.nodes()) == set(net.bus.index) - {0}
 
 
+def test_branch_impedance_unit():
+    net = pp.create_empty_network()
+    with pytest.raises(ValueError) as exception_info:
+        mg = create_nxgraph(net, branch_impedance_unit="p.u.")
+    assert str(exception_info.value) == "branch impedance unit can be either 'ohm' or 'pu'"
+
 @pytest.mark.xfail(reason="This test fails, since graph_tool bus indices must be a range(0, n_buses). "
                           "If a bus is removed, graph-tool is not working.")
 def test_nogo_graph_tool():
