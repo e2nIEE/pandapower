@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] PowerModels.jl TNEP Interface for transmission expansion optimization. See Jupyter Notebook
 - [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
 - [ADDED] Graph-Tool interface
 

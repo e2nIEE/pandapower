@@ -36,19 +36,19 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 
         **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
     """
-    logger.info("Max voltage")
+    logger.info("Max voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Min voltage")
+    logger.info("Min voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu").iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Max loading trafo")
+    logger.info("Max loading trafo in %:")
     if net.res_trafo is not None:
         for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[
                     :numi].iterrows():
             logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name,
                         net.trafo.name.at[r.name])
-    logger.info("Max loading line")
+    logger.info("Max loading line in %:")
     for _, r in net.res_line.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name,
                     net.line.name.at[r.name])
