@@ -278,15 +278,17 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         I1_from_V_it = I1_from_V012(V012_it, Y1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
         V1_pu_it = V1_from_ppc(ppci1)
-        V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
-        V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
         if net.trafo.vector_group.any():
             for vc in net.trafo.vector_group.values:
                 if vc not in ["Yyn","Dyn","YNyn"]:
                     V0_pu_it *= 0
-                    V0_pu_it[1:] = V_from_I(Y0_pu[1:,1:], I0_pu_it[1:])
-                    V2_pu_it *= 0
-                    V2_pu_it[1:] = V_from_I(Y2_pu.todense()[1:,1:], I2_pu_it[1:])
+#                    V0_pu_it[1:] = V_from_I(Y0_pu[1:,1:], I0_pu_it[1:])
+#                    V2_pu_it *= 0
+#                    V2_pu_it[1:] = V_from_I(Y2_pu.todense()[1:,1:], I2_pu_it[1:])
+                else:
+                    V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
+        else:
+            V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
         V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
         # =============================================================================
         #     This current is YV for the present iteration
