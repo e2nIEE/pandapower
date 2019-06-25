@@ -277,7 +277,7 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
 
     Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [sequence_to_phase(X012) for X012 in
                                       [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
-    Sabc_hv, Sabc_lv = [S_from_VI_elementwise(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in
+    Sabc_hv, Sabc_lv = [S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3) for Xabc_tup in
                       [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
     Pabc_hv_mw = Sabc_hv.real
@@ -297,7 +297,7 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
         trafo_df = net["trafo"]
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
         ld_trafo = np.maximum.reduce([np.asarray(Iabc_hv_ka) * vns[:, 0], np.asarray(Iabc_lv_ka) * vns[:, 1]])
-        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_mva"].values * 1000. * 100.
+        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_mva"].values * 100.
     elif trafo_loading == "power":
         ld_trafo = np.maximum.reduce([np.abs(Sabc_hv), np.abs(Sabc_lv)])
         ld_trafo = ld_trafo / net["trafo"]["sn_mva"].values[:, np.newaxis] * 3. * 100.
