@@ -445,7 +445,7 @@ def elements_on_path(mg, path, element="line"):
                 if mg.get_edge_data(b1, b2)["key"][0]==element]
 
 
-def get_end_points_of_continously_connected_lines(net, lines):
+def get_end_points_of_continuously_connected_lines(net, lines):
     mg = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
@@ -458,7 +458,7 @@ def get_end_points_of_continously_connected_lines(net, lines):
         try:
             path = nx.shortest_path(mg, b1, b2)
         except nx.NetworkXNoPath:
-            raise UserWarning("Lines not continously connected")
+            raise UserWarning("Lines not continuously connected")
         if len(path) > len(longest_path):
             longest_path = path
     if all_buses - set(longest_path):

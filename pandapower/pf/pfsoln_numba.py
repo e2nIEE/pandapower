@@ -91,7 +91,7 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, re
     return bus, gen, branch
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x):  # pragma: no cover
 
     Sx = zeros(dim_x, dtype=complex128)
