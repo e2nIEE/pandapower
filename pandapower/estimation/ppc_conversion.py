@@ -74,9 +74,9 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     """
     meas = net.measurement.copy(deep=False)
     meas["side"] = meas.apply(lambda row:
-                              net['line']["{}_bus".format(row["side"])].loc[row["element"]] if
+                              net['line'].at[row["element"], row["side"]+"_bus"] if
                               row["side"] in ("from", "to") else
-                              net[row["element_type"]][row["side"]+'_bus'].loc[row["element"]] if
+                              net[row["element_type"]].at[row["element"], row["side"]+'_bus'] if
                               row["side"] in ("hv", "mv", "lv") else row["side"], axis=1)
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
@@ -396,9 +396,9 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
-        bus_append[zero_inj_bus, P_STD] = 1
+        bus_append[zero_inj_bus, P_STD] = 0.01
         bus_append[zero_inj_bus, Q] = 0
-        bus_append[zero_inj_bus, Q_STD] = 1
+        bus_append[zero_inj_bus, Q_STD] = 0.01
     return bus_append
 
 

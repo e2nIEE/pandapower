@@ -2,6 +2,9 @@ Change Log
 =============
 - [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
 - [ADDED] Graph-Tool interface
+- [ADDED] Multiple new algorithms and robust estimators in state estimation
+- [ADDED] Support measurements for trafo3w in state estimation
+- [ADDED] Auto zero-injection bus handling in state estimation
 
 [2.0.1]- 2019-03-28
 ----------------------
