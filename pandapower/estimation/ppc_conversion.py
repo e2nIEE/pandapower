@@ -28,6 +28,7 @@ try:
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
+ZERO_INJECTION_STD_DEV = 0.001
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -396,9 +397,9 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
-        bus_append[zero_inj_bus, P_STD] = 0.01
+        bus_append[zero_inj_bus, P_STD] = ZERO_INJECTION_STD_DEV
         bus_append[zero_inj_bus, Q] = 0
-        bus_append[zero_inj_bus, Q_STD] = 0.01
+        bus_append[zero_inj_bus, Q_STD] = ZERO_INJECTION_STD_DEV
     return bus_append
 
 
