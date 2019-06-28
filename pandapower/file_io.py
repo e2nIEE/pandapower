@@ -143,7 +143,7 @@ def from_pickle(filename, convert=True):
         **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
         **convert** (bool) - If True, converts the format of the net loaded from pickle from the older version
-        of pandapower to the newer version format 
+        of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -296,7 +296,7 @@ def from_json(filename, convert=True):
         **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
         **convert** (bool) - If True, converts the format of the net loaded from json from the older version
-        of pandapower to the newer version format 
+        of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -339,7 +339,7 @@ def from_json_string(json_string, convert=False):
         **json_string** (string) - The json string representation of the network
 
         **convert** (bool) - If True, converts the format of the net loaded from json_string from the
-        older version of pandapower to the newer version format 
+        older version of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -365,9 +365,6 @@ def from_json_dict(json_dict):
 
     INPUT:
         **json_dict** (json) - The json object representation of the network
-
-        **convert** (bool) - If True, converts the format of the net loaded from json_dict from the
-        older version of pandapower to the newer version format 
 
     OUTPUT:
         **net** (dict) - The pandapower format network
