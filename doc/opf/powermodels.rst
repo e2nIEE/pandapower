@@ -11,7 +11,7 @@ Installation
     .. note::
         You need a version that is supported PowerModels, PyCall and pyjulia for the interface to work. Currently, the most recent version of Julia that supports all these packages is `Julia 0.64 <https://julialang.org/downloads/oldreleases.html>`_.
         
-    You don't necessarily need a Julia IDE if you are using PowerModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation.html>`_. 
+    You don't necessarily need a Julia IDE if you are using PowerModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation/>`_. 
 
 #. `Install PowerModels.jl <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`_
 
