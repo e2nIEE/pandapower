@@ -97,32 +97,6 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         table.to_excel(writer, sheet_name=item)
     writer.save()
 
-
-def to_json_string(net):
-    """
-        Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
-        be saved in ascending order. net elements which name begins with "_" (internal elements)
-        will not be saved. Std types will also not be saved.
-
-        INPUT:
-            **net** (dict) - The pandapower format network
-
-            **filename** (string) - The absolute or relative path to the input file.
-
-        EXAMPLE:
-
-             >>> json = pp.to_json_string(net)
-
-    """
-    json_string = "{"
-    for k in sorted(net.keys()):
-        if k[0] == "_":
-            continue
-        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder, indent=4))
-    json_string = json_string[:-1] + "}\n"
-    return json_string
-
-
 def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
@@ -139,11 +113,13 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
+    if filename is None:
+        return json.dumps(net, cls=PPJSONEncoder, indent=2)
     if hasattr(filename, 'write'):
-        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=4)
+        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=2)
     else:
         with open(filename, "w") as fp:
-            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=4)
+            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=2)
 
 
 def to_sql(net, con, include_results=True):
