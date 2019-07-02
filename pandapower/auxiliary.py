@@ -414,7 +414,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 #    mode = net["_options"]["mode"]
-    elements = ["load", "sgen","asymmetric_load", "asymmetric_sgen", "gen"\
+    elements = ["load", "sgen","asymmetric_load","impedance_load", "asymmetric_sgen", "gen"\
     , "ward", "xward", "shunt", "ext_grid", "storage"]   
     is_elements = dict()
     for element in elements:
@@ -693,7 +693,8 @@ def sequence_to_phase(X012):
 def phase_to_sequence(Xabc):
     return np.asarray(np.matmul(T012, Xabc))
 
-
+def Y_phase_to_sequence(Xabc):
+    return np.asarray(np.matmul(T012,Xabc,Tabc))
 # =============================================================================
 # Calculating Sequence Current from sequence Voltages
 # =============================================================================

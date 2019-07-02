@@ -23,10 +23,10 @@ from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.makeYbus import makeYbus
-from pandapower.pypower.idx_bus import GS, BS, PD , QD
+from pandapower.pypower.idx_bus import GS, BS, PD , QD,BASE_KV
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     _check_bus_index_and_print_warning_if_high, _check_gen_index_and_print_warning_if_high, \
-    _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, phase_to_sequence, X012_to_X0, X012_to_X2, \
+    _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, phase_to_sequence,Y_phase_to_sequence, X012_to_X0, X012_to_X2, \
     I1_from_V012, S_from_VI_elementwise, V1_from_ppc, V_from_I, combine_X012, I0_from_V012, I2_from_V012
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
@@ -74,8 +74,6 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 def load_mapping(net,ppci1):
     _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-
-    aranged_buses = np.arange(len(ppci1["bus"]))
     
     b = np.array([], dtype=int)
     b_ppc = np.array([], dtype=int)
@@ -90,6 +88,8 @@ def load_mapping(net,ppci1):
     p_b, PB = np.array([]), np.array([])
     q_c, QC = np.array([]), np.array([])
     p_c, PC = np.array([]), np.array([])
+    
+    y_a, y_b, y_c = np.array([]), np.array([]),np.array([])
     
     if (ppci1["bus"][:, PD] != 0).any() :
         b_ppc = np.where( ppci1["bus"][:, PD] != 0)[0]
@@ -121,6 +121,27 @@ def load_mapping(net,ppci1):
         q_c = np.hstack([q_c, l3["q_C_mvar"].values[l3_is] * vl])
         p_c = np.hstack([p_c, l3["p_C_mw"].values[l3_is] * vl])
         b = np.hstack([b, l3["bus"].values[l3_is]])
+    
+    z_l3 = net["impedance_load"]
+    z_l3_is = net["_is_elements"]["impedance_load"]
+    if len(z_l3) > 0 and z_l3_is.any():
+        vl = (_is_elements["impedance_load"] * z_l3["scaling"].values.T)[z_l3_is]
+        arange_load = np.arange(len(z_l3))
+        y_a = np.hstack([y_a, (1/(z_l3["r_A"].values+z_l3["x_A"].values * 1j))[z_l3_is] * vl])
+        y_b = np.hstack([y_b, (1/(z_l3["r_B"].values+z_l3["x_B"].values * 1j))[z_l3_is] * vl])
+        y_c = np.hstack([y_c, (1/(z_l3["r_C"].values+z_l3["x_C"].values * 1j))[z_l3_is] * vl])
+        # Mapping to buses
+        b_imp_load = np.hstack([b, z_l3["bus"].values[z_l3_is]])
+        # Null matrix, which will be filled from stacks created above
+        Y_abc =  {yph:np.zeros([3, 3],dtype=np.complex) for yph in b_imp_load}
+        Y012 = {ysq:np.zeros([3, 3],dtype=np.complex) for ysq in b_imp_load}
+        # Making a dictionary with bus number and Yabc-Y012 conversion
+        for b_imp_load, Y in Y_abc.items():
+            for load in arange_load:
+                Y_abc[b_imp_load][0,0] = y_a[load]
+                Y_abc[b_imp_load][1,1] = y_b[load]
+                Y_abc[b_imp_load][2,2] = y_c[load]
+                Y012[b_imp_load] = Y_phase_to_sequence(Y_abc[b_imp_load])
 
     sgen3 = net["asymmetric_sgen"]
     sgen3_is = net["_is_elements"]["asymmetric_sgen"]
@@ -147,7 +168,10 @@ def load_mapping(net,ppci1):
         bc, PC, QC = _sum_by_group(bc, p_c, q_c * 1j)
         
         SA[ba], SB[bb], SC[bc] = (PA + QA), (PB + QB), (PC + QC)
-    return np.vstack([SA, SB, SC])
+    if len(z_l3) > 0 and z_l3_is.any():
+        return np.vstack([SA, SB, SC]),Y012
+    else:
+        return np.vstack([SA, SB, SC]),{}
 
 
 # =============================================================================
@@ -157,6 +181,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
               tolerance_mva=1e-8, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
               numba=True, recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0,v_debug =False, **kwargs):
+    # =============================================================================
+    # pandapower settings
+    # =============================================================================
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
@@ -186,8 +213,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
 
-    # init options
-    # net.__internal_options = {}
+
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -195,18 +221,14 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
                      enforce_q_lims=enforce_q_lims, recycle=recycle, voltage_depend_loads=False, delta=delta_q)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,v_debug=v_debug)
-    # net.__internal_options.update(overrule_options)
+
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     reset_results(net, balanced=False)
     # =============================================================================
-    # Y Bus formation for Sequence Networks
+    # pd2ppc conversion
     # =============================================================================
-    #    net._options = {'calculate_voltage_angles': 'auto', 'check_connectivity': True, 'init': 'auto',
-    #        'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
-    #        'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
-    #        "tolerance_mva": 1e-5, "max_iteration": 10}
     net["_is_elements"] = None
     _, ppci1 = _pd2ppc(net, 1)
 
@@ -214,12 +236,46 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     gs_eg,bs_eg = _add_ext_grid_sc_impedance(net, ppci2)
 
     _, ppci0 = _pd2ppc(net, 0)
-
+    
     _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00, ref_gens = _get_pf_variables_from_ppci(ppci0)
     baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01, ref_gens = _get_pf_variables_from_ppci(ppci1)
     _,       bus2, gen2, branch2,      _,      _,      _, _, _, V02, ref_gens = _get_pf_variables_from_ppci(ppci2)
 
+    # =============================================================================
+    # Construct Sequence Frame Bus admittance matrices Ybus
+    # =============================================================================
+    Sabc,Y012 = load_mapping(net,ppci1)
+
     ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
+
+    Y0_pu= Y0_pu.todense()
+    Y2_pu= Y2_pu.todense()  
+    print("Y0,Y1,Y2 Before \n\n")
+    print(Y0_pu,"\n\n")
+    print(Y1_pu.todense(),"\n\n")
+    print(Y2_pu,"\n\n")
+    for bus,Y in Y012.items():
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        b= bus_lookup[bus]
+        baseY =  net.sn_mva/( np.square(ppci1["bus"][b, BASE_KV]) )
+        ppci1["bus"][b, GS] = Y[1,1].conjugate().real
+        ppci1["bus"][b, BS] = Y[1,1].conjugate().imag  # Y11 assigned to ppc1 load bus
+        Y0_pu[b,b]+=Y[0,0]/baseY
+        Y2_pu[b,b]+=Y[2,2]/baseY
+    ppci0, ppci1, ppci2, _, Y1_pu, _, _, Y1_f, _,_, Y1_t, _ = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
+
+    print("Y0,Y1,Y2 After\n\n")
+    print(Y0_pu,"\n\n")
+    print(Y1_pu.todense(),"\n\n")
+    print(Y2_pu,"\n\n")
+    # =============================================================================
+    #     Construct Y0 bus by eliminating hv side
+    # =============================================================================
+#    if net.trafo.vector_group.any() :
+#        for vc in net.trafo.vector_group.values:
+#            if vc not in ["Yyn","Dyn","YNyn"]:
+#                lv = bus_lookup[int(net.trafo.lv_bus.values)]
+#                Y0_pu = Y0_pu[lv:,lv:]
 
     # =============================================================================
     # Initial voltage values
@@ -238,19 +294,14 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     if net.trafo.vector_group.any() :
         for vc in net.trafo.vector_group.values:
             if vc not in ["Yyn","Dyn","YNyn"]:
-                Y0_pu = Y0_pu.todense()
-                Y0_pu[1,1] += Y0_pu[0,0]-Y1_pu.todense()[0,1]
                 V0_pu_it = X012_to_X0(V012_it)
-                V2_pu_it = X012_to_X2(V012_it) 
-    # =============================================================================
-    # Initialise iteration variables
-    # =============================================================================
-    count = 0
-    S_mismatch = np.array([[True], [True]], dtype=bool)
-    Sabc = load_mapping(net,ppci1)
+    
     # =============================================================================
     #             Iteration using Power mismatch criterion
     # =============================================================================
+
+    count = 0
+    S_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = time()
     while (S_mismatch > tolerance_mva).any() and count < 5*max_iteration :
         # =============================================================================
@@ -259,11 +310,29 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         Sabc_pu = -np.divide(Sabc, ppci1["baseMVA"])
         Iabc_it = (np.divide(Sabc_pu, Vabc_it)).conjugate()
         I012_it = phase_to_sequence(Iabc_it)
-
-        I0_pu_it = X012_to_X0(I012_it)
-        I2_pu_it = X012_to_X2(I012_it)
-
+        
         V1_for_S1 = V012_it[1, :]
+        I1_for_S1 = -I012_it[1, :]
+        
+        V0_pu_it = X012_to_X0(V012_it)
+        V2_pu_it = X012_to_X2(V012_it)
+        
+        I0_pu_it = X012_to_X0(I012_it)    
+        I2_pu_it = X012_to_X2(I012_it)
+        
+        
+        if net.impedance_load.r_A.any() :
+            for bus,Y in Y012.items():
+                bus_lookup = net["_pd2ppc_lookups"]["bus"]
+                b= bus_lookup[bus]
+                lv = bus_lookup[int(net.trafo.lv_bus.values)]
+                I0_pu_it[b] = Y[0,1] * V1_for_S1[b] + Y[0,2]*V2_pu_it[b]
+                I1_for_S1[b]= Y[1,0] * V0_pu_it[b] + Y[1,2]*V2_pu_it[b]
+                I2_pu_it[b] = Y[2,0] * V0_pu_it[b] + Y[2,1]*V1_for_S1[b]
+                
+        print("I012 after decoupling")
+        print(I0_pu_it,I012_it[1,:],I2_pu_it)
+        
         I1_for_S1 = -I012_it[1, :]
         S1 = np.multiply(V1_for_S1, I1_for_S1.conjugate())
         # =============================================================================
@@ -272,31 +341,41 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
         ppci1["bus"][pq_bus, PD] = np.real(S1[pq_bus]) * ppci1["baseMVA"]
         ppci1["bus"][pq_bus, QD] = np.imag(S1[pq_bus]) * ppci1["baseMVA"]
-
+        # =============================================================================
+        # Conduct Positive sequence power flow
+        # =============================================================================
         _run_newton_raphson_pf(ppci1, net._options)
-
+        # =============================================================================
+        # Conduct Negative and Zero sequence power flow
+        # =============================================================================
+        V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
+        V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
+        # =============================================================================
+        #    Evaluate Positive Sequence Power Mismatch     
+        # =============================================================================
         I1_from_V_it = I1_from_V012(V012_it, Y1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
         V1_pu_it = V1_from_ppc(ppci1)
+        
         if net.trafo.vector_group.any():
             for vc in net.trafo.vector_group.values:
                 if vc not in ["Yyn","Dyn","YNyn"]:
                     V0_pu_it *= 0
-#                    V0_pu_it[1:] = V_from_I(Y0_pu[1:,1:], I0_pu_it[1:])
-#                    V2_pu_it *= 0
-#                    V2_pu_it[1:] = V_from_I(Y2_pu.todense()[1:,1:], I2_pu_it[1:])
-                else:
-                    V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
-        else:
-            V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
-        V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
-        # =============================================================================
-        #     This current is YV for the present iteration
-        # =============================================================================
+##                    V0_pu_it[1:] = V_from_I(Y0_pu[1:,1:], I0_pu_it[1:])
+##                    V2_pu_it *= 0
+##                    V2_pu_it[1:] = V_from_I(Y2_pu.todense()[1:,1:], I2_pu_it[1:])
+##                else:
+##                    V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
+##        else:
+##            V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
+#        V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
+#        print(I2_pu_it)
+#        print(V2_pu_it)
+
         V012_new = combine_X012(V0_pu_it, V1_pu_it, V2_pu_it)
-
+#
         #        V_abc_new = sequence_to_phase(V012_new)
-
+#
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================

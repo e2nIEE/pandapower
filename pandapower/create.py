@@ -68,9 +68,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("q_B_mvar", "f8"),
                  ("p_C_mw", "f8"),
                  ("q_C_mvar", "f8"),
-                 ("const_z_percent", "f8"),
-                 ("const_i_percent", "f8"),
-                 ("sn_kva", "f8"),
+                 ("sn_mva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
@@ -87,7 +85,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
-                 ("current_source", "bool")],                                            
+                 ("current_source", "bool")],
+        "impedance_load": [("name", dtype(object)),
+                 ("bus", "u4"),
+                 ("r_A", "f8"),
+                 ("r_B", "f8"),
+                 ("r_C", "f8"),
+                 ("x_A", "f8"),
+                 ("x_B", "f8"),
+                 ("x_C", "f8"),                 
+                 ("sn_mva", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object))],                                            
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_mw", "f8"),
@@ -456,7 +466,14 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("p_B_mw", "f8"),
                             ("q_B_mvar", "f8"),
                             ("p_C_mw", "f8"),
-                            ("q_C_mvar", "f8")],                            
+                            ("q_C_mvar", "f8")],
+        "_empty_res_impedance_load_3ph": [("r_A", "f8"),
+                            ("r_B", "f8"),
+                            ("r_C", "f8"),
+                            ("x_A", "f8"),
+                            ("x_B", "f8"),
+                            ("x_C", "f8")
+                            ],  
 
         "_empty_res_sgen_3ph": [("p_A_mw", "f8"),
                             ("q_A_mvar", "f8"),
@@ -880,7 +897,7 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_asymmetric_load(net, bus=0, p_mw_a=10., q_mvar_a=2., p_kw_b=10., q_kvar_b=2,
+        create_asymmetric_load(net, bus=0, p_mw_a=10., q_mvar_a=2., p_mw_b=10., q_mvar_b=2,
          p_mw_c=10., q_mvar_c=2)
 
     """
@@ -896,7 +913,7 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
     dtypes = net.asymmetric_load.dtypes
 
     net.asymmetric_load.loc[index, ["name", "bus", "p_A_mw","p_B_mw","p_C_mw", "scaling",
-                         "q_A_mvar","q_B_mvar","q_C_mvar", "sn_kva", "in_service", "type"]] = \
+                         "q_A_mvar","q_B_mvar","q_C_mvar", "sn_mva", "in_service", "type"]] = \
         [name, bus, p_A_mw,p_B_mw,p_C_mw, scaling, 
          q_A_mvar,q_B_mvar,q_C_mvar, sn_mva, bool(in_service), type]
 
@@ -904,6 +921,60 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
     _preserve_dtypes(net.asymmetric_load, dtypes)
 
     return index
+
+def create_impedance_load(net, bus, r_A , r_B , r_C, x_A=0, x_B=0, x_C=0,
+                     sn_mva=nan, name=None, scaling=1.,
+                    index=None, in_service=True, type=None, 
+                    ):
+    """
+    Creates a constant impedance load element ABC.
+
+    INPUT:
+        **net** - The net within this constant impedance load should be created
+
+        **bus** (int) - The bus id to which the load is connected
+
+        **sn_mva** (float) - rated power of the load
+
+        **r_A** (float) - Resistance in Phase A
+        **r_B** (float) - Resistance in Phase B
+        **r_C** (float) - Resistance in Phase C
+        **x_A** (float) - Reactance in Phase A
+        **x_B** (float) - Reactance in Phase B
+        **x_C** (float) - Reactance in Phase C
+
+
+        **kwargs are passed on to the create_load function
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created load
+
+    All elements are modeled from a consumer point of view. Active power will therefore always be
+    positive, reactive power will be negative for inductive behaviour and positive for capacitive
+    behaviour.
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+    
+    if index is None:
+        index = get_free_id(net["asymmetric_load"])
+    if index in net["impedance_load"].index:
+        raise UserWarning("A 3 phase asymmetric_load with the id %s already exists" % index)
+    
+    # store dtypes
+    dtypes = net.impedance_load.dtypes
+    
+    net.impedance_load.loc[index, ["name", "bus", "r_A","r_B","r_C", "scaling",
+                      "x_A","x_B","x_C","sn_mva", "in_service", "type"]] = \
+    [name, bus, r_A,r_B,r_C, scaling, 
+      x_A,x_B,x_C,sn_mva, bool(in_service), type]
+    
+    # and preserve dtypes
+    _preserve_dtypes(net.impedance_load, dtypes)
+    
+    return index
+
+
 
 def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
