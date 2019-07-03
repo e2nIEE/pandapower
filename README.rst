@@ -32,7 +32,10 @@
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
    :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
    :alt: BSD
- 
+
+.. image:: https://pepy.tech/badge/pandapower
+   :target: https://pepy.tech/project/pandapower
+   :alt: pepy
  
 
  
