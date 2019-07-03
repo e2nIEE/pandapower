@@ -327,7 +327,7 @@ def from_json(filename, convert=True):
     if hasattr(filename, 'read'):
         net = json.load(filename, cls=PPJSONDecoder)
     elif not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
+        raise UserWarning("File {} does not exist!!".format(filename))
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)
