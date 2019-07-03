@@ -1,0 +1,17 @@
+id;type;vmSetp;vaSetp;vmR;vmMin;vmMax;substation;coordID;subnet;voltLvl
+Bus 1a;double busbar;1;0;20;;;Substation1;coord_0;;5
+Bus 1b;double busbar;1;;20;;;Substation1;coord_0;;5
+Bus 2;busbar;1;;20;;;;coord_2;;5
+Bus 3;busbar;;;20;;;;coord_3;;5
+Bus 4;busbar;1;;20;;;;coord_4;;5
+Bus 5;busbar;1;0;20;0.9;;;coord_5;;5
+Bus 6;busbar;;;20;;;;coord_6;Subnet1;5
+Bus 7;busbar;1;;20;;1.1;;coord_7;Subnet1;5
+Bus 8;busbar;1;0;20;;;;coord_8;;5
+Bus 9;busbar;1.005;;20;;;;coord_9;;5
+Bus 10;busbar;;;20;;;;coord_10;;5
+Bus 11;busbar;1.006;;110;;;;coord_1;;3
+Bus 12;busbar;;;110;;;;coord_1;;3
+Bus 13;busbar;1.02;;20;;;;coord_11;;5
+Bus 1x;auxiliary;;;20;;;Substation1;coord_0;;5
+Bus 1a_1;auxiliary;;;20;;;Substation1;coord_0;;5

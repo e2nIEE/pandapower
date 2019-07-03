@@ -1,0 +1,6 @@
+id;node;calc_type;dspf;pExtNet;qExtNet;pWardShunt;qWardShunt;rXWard;xXWard;vmXWard;subnet;voltLvl
+ExtGrid1;Bus 1a;vavm;1;NULL;NULL;NULL;NULL;NULL;NULL;NULL;NULL;5
+ExtGrid2;Bus 2;pvm;0;1.0;NULL;NULL;NULL;NULL;NULL;NULL;NULL;5
+ExtGrid3;Bus 3;pq;0;1.0;1.0;NULL;NULL;NULL;NULL;NULL;NULL;5
+Ward1;Bus 11;Ward;0;0.1;0.0;0.0;0.0;NULL;NULL;NULL;NULL;3
+xWard1;Bus 10;xWard;0;0.1;0.0;0.0;0.0;0.1;1.0;1.0;NULL;5

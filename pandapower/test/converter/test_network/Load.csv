@@ -1,0 +1,7 @@
+id;node;profile;pLoad;qLoad;sR;subnet;voltLvl
+Load1;Bus 3;G0_0;3;1;5;;5
+Load2;Bus 6;G0_1;3;1;4;Subnet1;5
+Load3;Bus 7;G0_0;3;1;2;Subnet1;5
+Load4;Bus 9;G0_1;3;1;5;;5
+Load5;Bus 12;G0_0;3;1;4;;3
+Load6;Bus 13;G0_1;3;1;5;;5

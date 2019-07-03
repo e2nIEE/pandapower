@@ -1,0 +1,2 @@
+id;node;type;profile;pStor;qStor;chargeLevel;sR;max_e_mwh;efficiency_percent;self-discharge_percent_per_day;pMin;pMax;qMin;qMax;subnet;voltLvl
+Storage1;Bus 3;Storage1_type;P1;0;0;0.7;0.1;0.15;0.95;0.13;-2;2;-2;2;;5

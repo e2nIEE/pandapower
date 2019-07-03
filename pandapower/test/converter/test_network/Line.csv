@@ -1,0 +1,12 @@
+id;nodeA;nodeB;type;length;loadingMax;subnet;voltLvl
+OHL_1_2;Bus 1a_1;Bus 2;HV OHL 1;0.225;100;;5
+OHL_2_3;Bus 2;Bus 3;MV OHL 1;0.075;;;5
+OHL_3_4;Bus 3;Bus 4;MV OHL 1;0.125;;;5
+OHL_4_5;Bus 4;Bus 5;MV OHL 1;0.125;90;;5
+OHL_5_6;Bus 5;Bus 6;MV OHL 1;0.125;;;5
+OHL_6_7;Bus 6;Bus 7;MV OHL 1;0.125;;Subnet1;5
+OHL_7_8;Bus 7;Bus 8;MV OHL 1;0.125;;;5
+OHL_8_9;Bus 8;Bus 9;MV OHL 1;0.125;;;5
+OHL_9_10;Bus 9;Bus 10;MV OHL 1;0.125;;;5
+OHL_8_13;Bus 8;Bus 13;MV OHL 1;0.25;;;5
+DCL1;Bus 9;Bus 13;DCLT1;5;100;;5

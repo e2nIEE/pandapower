@@ -1,3 +1,8 @@
+from pandapower.networks.simbench.__init__ import *
+from pandapower.networks.simbench.simbench_code import *
+from pandapower.networks.simbench.extract_simbench_grids_from_csv import *
+from pandapower.networks.simbench.profiles import *
+from pandapower.networks.simbench.loadcases import *
 from pandapower.networks.dickert_lv_networks import *
 from pandapower.networks.synthetic_voltage_control_lv_networks import *
 from pandapower.networks.cigre_networks import *
@@ -7,4 +12,3 @@ from pandapower.networks.kerber_networks import *
 from pandapower.networks.mv_oberrhein import *
 from pandapower.networks.power_system_test_cases import *
 from pandapower.networks.simple_pandapower_test_networks import *
-

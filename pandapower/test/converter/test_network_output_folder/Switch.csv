@@ -1,0 +1,6 @@
+id;nodeA;nodeB;type;cond;substation;subnet;voltLvl
+BusBus1;Bus 11;Bus 12;DS;1;NULL;NULL;3
+BusLine1;Bus 1a;Bus 1a_1;CB;1;Substation1;NULL;5
+BusTrafo1;Bus 1a;Bus 1x;DS;1;Substation1;NULL;5
+Bus1Bus1b;Bus 1a;Bus 1b;CB;1;Substation1;NULL;5
+BusTrafo2;Bus 1b;Bus 1x;CB;0;Substation1;NULL;5

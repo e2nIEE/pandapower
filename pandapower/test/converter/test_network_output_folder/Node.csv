@@ -1,0 +1,17 @@
+id;type;vmSetp;vaSetp;vmR;vmMin;vmMax;substation;coordID;subnet;voltLvl
+Bus 1a;double busbar;1.0;0.0;20;NULL;NULL;Substation1;coord_0;NULL;5
+Bus 1b;double busbar;1.0;NULL;20;NULL;NULL;Substation1;coord_0;NULL;5
+Bus 2;busbar;1.0;NULL;20;NULL;NULL;NULL;coord_2;NULL;5
+Bus 3;busbar;NULL;NULL;20;NULL;NULL;NULL;coord_3;NULL;5
+Bus 4;busbar;1.0;NULL;20;NULL;NULL;NULL;coord_4;NULL;5
+Bus 5;busbar;1.0;0.0;20;0.9;NULL;NULL;coord_5;NULL;5
+Bus 6;busbar;NULL;NULL;20;NULL;NULL;NULL;coord_6;Subnet1;5
+Bus 7;busbar;1.0;NULL;20;NULL;1.1;NULL;coord_7;Subnet1;5
+Bus 8;busbar;1.0;0.0;20;NULL;NULL;NULL;coord_8;NULL;5
+Bus 9;busbar;1.005;NULL;20;NULL;NULL;NULL;coord_9;NULL;5
+Bus 10;busbar;NULL;NULL;20;NULL;NULL;NULL;coord_10;NULL;5
+Bus 11;busbar;1.006;NULL;110;NULL;NULL;NULL;coord_1;NULL;3
+Bus 12;busbar;NULL;NULL;110;NULL;NULL;NULL;coord_1;NULL;3
+Bus 13;busbar;1.02;NULL;20;NULL;NULL;NULL;coord_11;NULL;5
+Bus 1x;auxiliary;NULL;NULL;20;NULL;NULL;Substation1;coord_0;NULL;5
+Bus 1a_1;auxiliary;NULL;NULL;20;NULL;NULL;Substation1;coord_0;NULL;5
