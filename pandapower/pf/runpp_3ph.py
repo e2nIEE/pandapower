@@ -250,10 +250,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
     Y0_pu= Y0_pu.todense()
     Y2_pu= Y2_pu.todense()  
-    print("Y0,Y1,Y2 Before \n\n")
-    print(Y0_pu,"\n\n")
-    print(Y1_pu.todense(),"\n\n")
-    print(Y2_pu,"\n\n")
+
     for bus,Y in Y012.items():
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b= bus_lookup[bus]
@@ -264,10 +261,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         Y2_pu[b,b]+=Y[2,2]/baseY
     ppci0, ppci1, ppci2, _, Y1_pu, _, _, Y1_f, _,_, Y1_t, _ = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
 
-    print("Y0,Y1,Y2 After\n\n")
-    print(Y0_pu,"\n\n")
-    print(Y1_pu.todense(),"\n\n")
-    print(Y2_pu,"\n\n")
     # =============================================================================
     #     Construct Y0 bus by eliminating hv side
     # =============================================================================
@@ -330,8 +323,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
                 I1_for_S1[b]= Y[1,0] * V0_pu_it[b] + Y[1,2]*V2_pu_it[b]
                 I2_pu_it[b] = Y[2,0] * V0_pu_it[b] + Y[2,1]*V1_for_S1[b]
                 
-        print("I012 after decoupling")
-        print(I0_pu_it,I012_it[1,:],I2_pu_it)
+
         
         I1_for_S1 = -I012_it[1, :]
         S1 = np.multiply(V1_for_S1, I1_for_S1.conjugate())
