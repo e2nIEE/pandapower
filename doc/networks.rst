@@ -12,7 +12,11 @@ networks, CIGRE test networks, IEEE case files and synthetic low voltage network
 and Lindner et. al. and Dickert et. al.. For the need of a benchmark grid dataset, we recommend the
 new `SimBench <https://simbench.de/en/>`_ grid data.
 
-You can find documentation for the individual modules here:
+If you like to test your algotihms with benchmark grids and corresponding full-year load, generation
+and storage profiles or want to publish your results, we recommend you to have look to SimBench
+(`Homepage <https://simbench.de/en/>`_, `GitHub Repository to use SimBench with pandapower <https://github.com/e2nIEE/simbench>`_).
+
+You can find documentation for the individual network modules of pandapower here:
 
 .. toctree::
     :maxdepth: 2
