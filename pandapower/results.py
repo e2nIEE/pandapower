@@ -19,7 +19,6 @@ from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
-
     _get_bus_v_results(net, ppc)
     bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
@@ -73,39 +72,45 @@ def verify_results(net):
             element = (
         "load" if element == "asymmetric_load" else
         "sgen" if element == "asymmetric_sgen" else
-        element)
-        res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
+        element)        
+        res_element, res_empty_element = get_result_tables(element,mode=mode)
+
         if len(net[element]) != len(net[res_element]):
             if element in elements_to_empty:
-                empty_res_element(net, res_element)
+                empty_res_element(net, element)
             else:
                 init_element(net, element,balanced=True)
                 if element == "bus":
                     net._options["init_vm_pu"] = "auto"
                     net._options["init_va_degree"] = "auto"
 
+def get_result_tables(element, suffix=None,mode="pf"):
+    res_empty_element = "_empty_res_" + element+"_3ph" if mode == "pf_3ph" else "empty_res_" + element
+    res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
+    if suffix is not None:
+        res_element += suffix
+    return res_element, res_empty_element
 
-def empty_res_element(net, res_element):
-    net[res_element] = copy.copy(net["_empty_" + res_element])
+
+def empty_res_element(net, element, suffix=None):
+    res_element, res_empty_element = get_result_tables(element, suffix)
+    net[res_element] = net[res_empty_element].copy()
 
 
-def init_element(net, element, balanced):
-    if balanced :
-        element = (
-        "load" if element == "asymmetric_load" else
-        "sgen" if element == "asymmetric_sgen" else
-        element)
+def init_element(net, element, suffix=None):
+    mode = net["_options"]["mode"]
+    res_element, res_empty_element = get_result_tables(element, suffix,mode)
+    index = net[element].index
+    if len(index):
 
-    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_"\
-    + element+"_3ph"
-    res_element = "res_" + element if balanced else "res_" + element+"_3ph"
-    indx = net[element].index
-    if len(indx):
         # init empty dataframe
         res_columns = net[res_empty_element].columns
-        net[res_element] = pd.DataFrame(np.nan, index=indx, columns=res_columns, dtype='float')
+        net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+
     else:
-        empty_res_element(net, res_element)
+
+        empty_res_element(net, element, suffix)
+
 
 
 def get_elements_to_empty(balanced=True):
@@ -117,23 +122,26 @@ def get_elements_to_empty(balanced=True):
 
 #def get_elements_to_init(balanced=True):
 def get_elements_to_init():
+
 #    if balanced:
     return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
            , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"\
-           ,"asymmetric_load","asymmetric_sgen"]
+           ,"asymmetric_load","asymmetric_sgen","impedance_load"]
 #    else:
 #        return ["ext_grid","load","sgen", "asymmetric_load"\
 #        , "asymmetric_sgen", "gen", "line", "trafo"]
 
 
-def reset_results(net, balanced=True):
-    elements_to_empty = get_elements_to_empty(balanced=balanced)
+
+def reset_results(net, suffix=None):
+    elements_to_empty = get_elements_to_empty()
     for element in elements_to_empty:
-        empty_res_element(net, "res_" + element)
+        empty_res_element(net, element, suffix)
 
     elements_to_init = get_elements_to_init()
     for element in elements_to_init:
-        init_element(net, element,balanced)
+
+        init_element(net, element, suffix)
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
@@ -169,8 +177,9 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus
 
-    if mode == "sc":
-        ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]
+
+#    if mode == "sc":
+#        ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]

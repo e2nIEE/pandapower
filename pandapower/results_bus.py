@@ -13,6 +13,7 @@ from pandapower.pypower.idx_gen import PG, QG
 
 
 def _set_buses_out_of_service(ppc):
+
     disco = np.where(ppc["bus"][:, 1] == NONE)[0]
     ppc["bus"][disco, VM] = np.nan
     ppc["bus"][disco, VA] = np.nan
@@ -86,6 +87,7 @@ def _get_bus_results(net, ppc, bus_pq):
 
     # update index in res bus bus
     net["res_bus"].index = net["bus"].index
+
 
 
 def _get_bus_results_3ph(net, bus_pq):
@@ -278,7 +280,8 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     ac = net["_options"]["ac"]
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
-        p, q, b = write_voltage_dependend_load_results(net, p, q, b)
+
+        p, q, b = write_voltage_dependent_load_results(net, p, q, b)
         elements = ["sgen", "storage", "ward", "xward"]
     else:
         elements = ["load", "sgen", "storage", "ward", "xward"]

@@ -21,7 +21,7 @@ except ImportError:
     from .pf.no_numba import jit
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_find(ar, bus):  # pragma: no cover
     while True:
         p = ar[bus]
@@ -31,7 +31,7 @@ def ds_find(ar, bus):  # pragma: no cover
     return p
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
@@ -43,7 +43,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
         ar[root2] = root1
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm,
               bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
@@ -55,7 +55,7 @@ def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z
             ds_union(ar, bus1, bus2, bus_is_pv)
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def fill_bus_lookup(ar, bus_lookup, bus_index):
     for i in range(len(bus_index)):
         bus_lookup[bus_index[i]] = i

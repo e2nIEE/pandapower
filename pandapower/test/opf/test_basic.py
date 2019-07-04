@@ -443,7 +443,7 @@ def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
-    pp.rundcopp(net, )
+    pp.rundcopp(net)
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -493,7 +493,7 @@ def test_dcopf_pwl(simple_opf_test_net):
     pp.create_pwl_cost(net, 0, "gen"     , [[0, 100, 100], [100, 200, 100]])
     pp.create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
     # run OPF
-    pp.rundcopp(net, )
+    pp.rundcopp(net)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -617,7 +617,7 @@ def test_storage_opf():
     net["sgen"].in_service.iloc[1] = True
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
     res_sgen_p_mw = net["res_sgen"].p_mw.iloc[1]
@@ -705,7 +705,7 @@ def test_in_service_controllables():
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
 
@@ -754,7 +754,7 @@ def test_no_controllables(simple_opf_test_net):
     # pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0, 2, 0]))
     # pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0, 2, 0]))
 
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
 def test_opf_no_controllables_vs_pf():
@@ -787,13 +787,13 @@ def test_opf_no_controllables_vs_pf():
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
 
     # do calculations
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
     res_opf_line_loading = net.res_line.loading_percent
     res_opf_bus_voltages = net.res_bus.vm_pu
 
-    pp.runpp(net, )
+    pp.runpp(net)
     assert net["converged"]
 
     res_pf_line_loading = net.res_line.loading_percent

@@ -18,6 +18,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 def _make_objective(ppci, net):
     is_quadratic, q_costs = _init_gencost(ppci, net)
     if len(net.pwl_cost):
@@ -40,12 +41,13 @@ def _make_objective(ppci, net):
         ppci["gencost"][:, COST] = 1
     return ppci
 
+
 def _get_gen_index(net, et, element):
     if et == "dcline":
         dc_idx = net.dcline.index.get_loc(element)
         element = len(net.gen.index) - 2*len(net.dcline) + dc_idx*2 + 1
         et = "gen"
-    lookup = "%s_controllable"%et if et in ["load", "sgen", "storage"] else et
+    lookup = "%s_controllable" % et if et in ["load", "sgen", "storage"] else et
     try:
         return int(net._pd2ppc_lookups[lookup][int(element)])
     except:
@@ -54,17 +56,18 @@ def _get_gen_index(net, et, element):
 
 def _map_costs_to_gen(net, cost):
     gens = array([_get_gen_index(net, et, element)
-              for et, element in zip(cost.et.values, cost.element.values)])
+                  for et, element in zip(cost.et.values, cost.element.values)])
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]
     gens = gens[cost_is].astype(int)
     signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
     return gens, cost, signs
 
+
 def _init_gencost(ppci, net):
     is_quadratic = net.poly_cost[["cp2_eur_per_mw2", "cq2_eur_per_mvar2"]].values.any()
     q_costs = net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any() or \
-              "q" in net.pwl_cost.power_type.values
+        "q" in net.pwl_cost.power_type.values
     rows = len(ppci["gen"])*2 if q_costs else len(ppci["gen"])
     if len(net.pwl_cost):
         nr_points = {len(p) for p in net.pwl_cost.points.values}
@@ -109,6 +112,7 @@ def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
             ppci["gencost"][gens_q, COST] = c1 * signs
             ppci["gencost"][gens_q, COST + 1] = c0 * signs
 
+
 def _fill_gencost_pwl(ppci, net):
     for power_mode, cost in net.pwl_cost.groupby("power_type"):
         gens, cost, signs = _map_costs_to_gen(net, cost)
@@ -118,6 +122,7 @@ def _fill_gencost_pwl(ppci, net):
             costs = costs_from_areas(points, sign)
             ppci["gencost"][gen, COST:COST+len(costs)] = costs
             ppci["gencost"][gen, NCOST] = len(costs) / 2
+
 
 def costs_from_areas(points, sign):
     costs = []
@@ -148,4 +153,3 @@ def _add_linear_costs_as_pwl_cost(ppci, net):
     ppci["gencost"][gens, COST + 1] = pmin * cost.cp1_eur_per_mw.values * signs
     ppci["gencost"][gens, COST + 2] = pmax
     ppci["gencost"][gens, COST + 3] = pmax * cost.cp1_eur_per_mw.values * signs
-
