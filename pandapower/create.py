@@ -852,7 +852,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
-def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0,
+def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0,
                      sn_mva=nan, name=None, scaling=1.,
                     index=None, in_service=True, type=None, 
                     ):
