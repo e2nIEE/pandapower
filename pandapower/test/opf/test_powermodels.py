@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
+import pandapower.networks as nw
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 
@@ -376,6 +377,18 @@ def test_pm_tnep():
     pp.runpp(net)
     # check max line loading results
     assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_storage_opt():
+    net = nw.case5()
+    pp.create_storage(net, 2, p_mw=10., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
+    pp.create_storage(net, 3, p_mw=10., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
+
+    # optimize for 24 time steps. At the end the SOC is 100%
+    storage_results = pp.runpm_storage_opf(net, n_timesteps=24)
+    assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.2)
+    assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.3)
 
 
 if __name__ == '__main__':
