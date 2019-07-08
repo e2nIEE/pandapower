@@ -718,20 +718,36 @@ def add_basic_std_types(net):
         # quad bundle conductor. The c values are estimated.
         "490-AL1/64-ST1A 220.0":
         {"c_nf_per_km": 10,
-            "r_ohm_per_km": 0.059,
-            "x_ohm_per_km": 0.285,
-            "max_i_ka": 0.96,
-            "type": "ol",
-            "q_mm2": 490,
-            "alpha": alpha_al},
+             "r_ohm_per_km": 0.059,
+             "x_ohm_per_km": 0.285,
+             "max_i_ka": 0.96,
+             "type": "ol",
+             "q_mm2": 490,
+             "alpha": alpha_al},
+        "679-AL1/86-ST1A 220.0":
+        {"c_nf_per_km": 11.7,
+             "r_ohm_per_km": 0.042,
+             "x_ohm_per_km": 0.275,
+             "max_i_ka": 0.1150,
+             "type": "ol",
+             "q_mm2": 679,
+             "alpha": alpha_al},
         "490-AL1/64-ST1A 380.0":
         {"c_nf_per_km": 11,
-            "r_ohm_per_km": 0.059,
-            "x_ohm_per_km": 0.253,
-            "max_i_ka": 0.96,
-            "type": "ol",
-            "q_mm2": 490,
-            "alpha": alpha_al}
+             "r_ohm_per_km": 0.059,
+             "x_ohm_per_km": 0.253,
+             "max_i_ka": 0.96,
+             "type": "ol",
+             "q_mm2": 490,
+             "alpha": alpha_al},
+        "679-AL1/86-ST1A 380.0":
+        {"c_nf_per_km": 14.6,
+             "r_ohm_per_km": 0.042,
+             "x_ohm_per_km": 0.25,
+             "max_i_ka": 0.1150,
+             "type": "ol",
+             "q_mm2": 679,
+             "alpha": alpha_al}
     }
     create_std_types(net, data=linetypes, element="line")
 
