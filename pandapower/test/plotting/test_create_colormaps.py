@@ -24,7 +24,7 @@ def test_cmap_discrete():
 
 def test_cmap_continuous():
     cmap_list = [(0.97, "blue"), (1.0, "green"), (1.03, "red")]
-    cmap, norm = plot.cmap_continous(cmap_list)
+    cmap, norm = plot.cmap_continuous(cmap_list)
 
     assert np.allclose(cmap(0.99), (0.984313725490196, 0.007873894655901603, 0.0, 1.0))
     assert np.allclose(cmap(1.02), (1.0, 0.0, 0.0, 1.0))

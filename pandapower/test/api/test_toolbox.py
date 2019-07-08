@@ -125,9 +125,9 @@ def test_continuos_bus_numbering():
     pp.create_shunt(net, bus0, 2, 1)
 
     bus0 = pp.create_bus(net, 0.4, index=5675)
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
 
     tb.create_continuous_bus_index(net)
 

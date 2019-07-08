@@ -18,7 +18,6 @@ from pandapower.results_gen import _get_gen_results
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
-
     _get_bus_v_results(net, ppc)
     bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
@@ -55,31 +54,36 @@ def verify_results(net):
     elements_to_init = get_elements_to_init()
 
     for element in elements_to_init + elements_to_empty:
-        res_element = "res_" + element
+        res_element, res_empty_element = get_result_tables(element)
         if len(net[element]) != len(net[res_element]):
             if element in elements_to_empty:
-                empty_res_element(net, res_element)
+                empty_res_element(net, element)
             else:
                 init_element(net, element)
                 if element == "bus":
                     net._options["init_vm_pu"] = "auto"
                     net._options["init_va_degree"] = "auto"
 
-
-def empty_res_element(net, res_element):
-    net[res_element] = copy.copy(net["_empty_" + res_element])
-
-
-def init_element(net, element):
+def get_result_tables(element, suffix=None):
     res_empty_element = "_empty_res_" + element
     res_element = "res_" + element
+    if suffix is not None:
+        res_element += suffix
+    return res_element, res_empty_element
+
+def empty_res_element(net, element, suffix=None):
+    res_element, res_empty_element = get_result_tables(element, suffix)
+    net[res_element] = net[res_empty_element].copy()
+
+def init_element(net, element, suffix=None):
+    res_element, res_empty_element = get_result_tables(element, suffix)
     index = net[element].index
     if len(index):
         # init empty dataframe
         res_columns = net[res_empty_element].columns
         net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
     else:
-        empty_res_element(net, res_element)
+        empty_res_element(net, element, suffix)
 
 
 def get_elements_to_empty():
@@ -90,14 +94,14 @@ def get_elements_to_init():
     return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
 
 
-def reset_results(net):
+def reset_results(net, suffix=None):
     elements_to_empty = get_elements_to_empty()
     for element in elements_to_empty:
-        empty_res_element(net, "res_" + element)
+        empty_res_element(net, element, suffix)
 
     elements_to_init = get_elements_to_init()
     for element in elements_to_init:
-        init_element(net, element)
+        init_element(net, element, suffix)
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
@@ -133,8 +137,8 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus
 
-    if mode == "sc":
-        ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]
+#    if mode == "sc":
+#        ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]

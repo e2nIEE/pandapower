@@ -57,7 +57,7 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"].index = net["bus"].index
 
 
-def write_voltage_dependend_load_results(net, p, q, b):
+def write_voltage_dependent_load_results(net, p, q, b):
     l = net["load"]
     _is_elements = net["_is_elements"]
 
@@ -163,7 +163,7 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     ac = net["_options"]["ac"]
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
-        p, q, b = write_voltage_dependend_load_results(net, p, q, b)
+        p, q, b = write_voltage_dependent_load_results(net, p, q, b)
         elements = ["sgen", "storage", "ward", "xward"]
     else:
         elements = ["load", "sgen", "storage", "ward", "xward"]

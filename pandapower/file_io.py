@@ -28,7 +28,8 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
+from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder, \
+                                restore_jsoned_objects
 
 
 def to_pickle(net, filename):
@@ -91,36 +92,10 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = to_dict_of_dfs(net, include_results=include_results)
+    dict_net = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
-
-
-def to_json_string(net):
-    """
-        Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
-        be saved in ascending order. net elements which name begins with "_" (internal elements)
-        will not be saved. Std types will also not be saved.
-
-        INPUT:
-            **net** (dict) - The pandapower format network
-
-            **filename** (string) - The absolute or relative path to the input file.
-
-        EXAMPLE:
-
-             >>> json = pp.to_json_string(net)
-
-    """
-    json_string = "{"
-    for k in sorted(net.keys()):
-        if k[0] == "_":
-            continue
-        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder, indent=4))
-    json_string = json_string[:-1] + "}\n"
-    return json_string
-
 
 def to_json(net, filename=None):
     """
@@ -138,11 +113,13 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
+    if filename is None:
+        return json.dumps(net, cls=PPJSONEncoder, indent=2)
     if hasattr(filename, 'write'):
-        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=4)
+        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=2)
     else:
         with open(filename, "w") as fp:
-            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=4)
+            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=2)
 
 
 def to_sql(net, con, include_results=True):
@@ -164,6 +141,9 @@ def from_pickle(filename, convert=True):
 
     INPUT:
         **filename** (string or file) - The absolute or relative path to the input file or file-like object
+
+        **convert** (bool, True) - If True, converts the format of the net loaded from pickle from the older
+            version of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -251,9 +231,10 @@ def from_excel(filename, convert=True):
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
 
-    OUTPUT:
-        **convert** (bool) - use the convert format function to
+        **convert** (bool, True) - If True, converts the format of the net loaded from excel from 
+            the older version of pandapower to the newer version format 
 
+    OUTPUT:
         **net** (dict) - The pandapower format network
 
     EXAMPLE:
@@ -314,9 +295,10 @@ def from_json(filename, convert=True):
     INPUT:
         **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
-    OUTPUT:
-        **convert** (bool) - use the convert format function to
+        **convert** (bool, True) - If True, converts the format of the net loaded from json from the older 
+            version of pandapower to the newer version format
 
+    OUTPUT:
         **net** (dict) - The pandapower format network
 
     EXAMPLE:
@@ -326,11 +308,13 @@ def from_json(filename, convert=True):
     """
     if hasattr(filename, 'read'):
         net = json.load(filename, cls=PPJSONDecoder)
+        restore_jsoned_objects(net)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)
+            restore_jsoned_objects(net)
             # this can be removed in the future
             # now net is saved with "_module", "_class", "_object"..., so json.load already returns
             # pandapowerNet. Older files don't have it yet, and are loaded as dict.
@@ -354,9 +338,10 @@ def from_json_string(json_string, convert=False):
     INPUT:
         **json_string** (string) - The json string representation of the network
 
-    OUTPUT:
-        **convert** (bool) - use the convert format function to
+        **convert** (bool, False) - If True, converts the format of the net loaded from json_string from the
+            older version of pandapower to the newer version format
 
+    OUTPUT:
         **net** (dict) - The pandapower format network
 
     EXAMPLE:
@@ -382,8 +367,6 @@ def from_json_dict(json_dict):
         **json_dict** (json) - The json object representation of the network
 
     OUTPUT:
-        **convert** (bool) - use the convert format function to
-
         **net** (dict) - The pandapower format network
 
     EXAMPLE:
