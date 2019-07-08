@@ -42,8 +42,12 @@ function run_powermodels(json_path)
     mn = PowerModels.replicate(pm, pm["n_time_steps"])
     mn["time_elapsed"] = pm["time_elapsed"]
     # set P, Q values of loads and generators from time series
-    time_series = read_time_series("/tmp/timeseries.json")
-    mn = set_pq_values_from_timeseries(mn, time_series)
+    if isfile("/tmp/timeseries.json")
+        time_series = read_time_series("/tmp/timeseries.json")
+        mn = set_pq_values_from_timeseries(mn, time_series)
+    else
+        print("Running storage without time series")
+    end
 
     ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer)
 

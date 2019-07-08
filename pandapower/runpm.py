@@ -364,7 +364,7 @@ def _add_storage_opf_settings(net, ppci, pm):
         }
 
 
-def _read_pm_storage_esults(net):
+def _read_pm_storage_results(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
     pm_result = net._pm_result
     # power model networks (each network represents the result of one time step)

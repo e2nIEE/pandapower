@@ -385,13 +385,17 @@ def test_pm_tnep():
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_storage_opt():
     net = nw.case5()
-    pp.create_storage(net, 2, p_mw=10., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
-    pp.create_storage(net, 3, p_mw=10., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
+    pp.create_storage(net, 2, p_mw=1., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
+    pp.create_storage(net, 3, p_mw=1., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
 
     # optimize for 24 time steps. At the end the SOC is 100%
     storage_results = pp.runpm_storage_opf(net, n_timesteps=24)
-    assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.2)
-    assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.3)
+
+    assert np.allclose(storage_results[0].loc[22, "soc_mwh"], 0.04)
+    assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.)
+    assert np.allclose(storage_results[1].loc[22, "soc_percent"], 2.725931)
+    assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.)
+
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
