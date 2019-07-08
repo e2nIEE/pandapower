@@ -43,10 +43,10 @@ def _get_single_bus_results(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_idx = _get_bus_idx(net)
     case = net._options["case"]
-    c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
+    c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
     net["res_bus"]["vm_pu"] = np.nan
-    net["res_bus_sc"]["vm_pu"] = c - ppc["bus"][bus_idx][:, VM]
-    net["res_bus_sc"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+    net["res_bus_sc"]["vm_pu"] = c - ppc["bus"][bus_idx, VM]
+    net["res_bus_sc"]["va_degree"] = ppc["bus"][bus_idx, VA]
 
 
 def _get_bus_results(net, ppc, ppc_0):

@@ -24,7 +24,7 @@ from pandapower.shortcircuit.results import _extract_results, _extract_single_re
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False):
+            branch_results=False, check_connectivity=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -110,7 +110,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                     check_connectivity=False, mode="sc", switch_rx_ratio=2, 
+                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2, 
                      init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
                      recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
@@ -126,7 +126,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
             raise NotImplementedError("Minimum 1ph short-circuits are not yet implemented")
         _calc_sc_1ph(net)
 
-def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10):
+def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10, check_connectivity=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -179,7 +179,7 @@ def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10):
                                 "circuit current')
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                     check_connectivity=False, mode="sc", switch_rx_ratio=2, 
+                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2, 
                      init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
                      recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=1.,
