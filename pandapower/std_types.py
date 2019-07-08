@@ -479,7 +479,7 @@ def add_basic_std_types(net):
 
         # Overhead Lines, all from S.742f, Heuck: Elektrische Energieversorgung -
         # Vierweg+Teubner 2013
-        # 679/86 from S. 362, Flosdorff, Hilgarth: Elektrische Energieverteilung - Teubner 2005
+        # 679/86 110 from S. 362, Flosdorff, Hilgarth: Elektrische Energieverteilung - Teubner 2005
 
         # Low Voltage
         "15-AL1/3-ST1A 0.4":
@@ -631,6 +631,14 @@ def add_basic_std_types(net):
 
         # High Voltage
         # c acd x values are estimated for 4 m conductor distance, single bundle and "Donaumast"
+        "48-AL1/8-ST1A 110.0":
+        {"c_nf_per_km": 8,
+            "r_ohm_per_km": 0.5939,
+            "x_ohm_per_km": 0.46,
+            "max_i_ka": 0.210,
+            "type": "ol",
+            "q_mm2": 48,
+            "alpha": alpha_al},
         "70-AL1/11-ST1A 110.0":
         {"c_nf_per_km": 8.4,
             "r_ohm_per_km": 0.4132,
