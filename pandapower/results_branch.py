@@ -14,15 +14,24 @@ from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     """
-    Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
+    Extract the branch results and writes it in the Dataframe net.res_line,  net.res_trafo, net.res_trafo3w...
 
     INPUT:
 
-        **results** - the result of runpf loadflow calculation
+        **net** - pandapower net
 
-        **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
+        **ppc** (np.array) - ppc structure
+
+        **bus_lookup_aranged** - consecutive aranged bus lookup
+
+        **pq_buses** - the PQ type buses in ppc
+
+    OPTIONAL:
+
+        **suffix** (str, None) - a suffix like "_sc" to write to res_line_sc for example (short circuit)
 
     """
+
     i_ft, s_ft = _get_branch_flows(ppc)
     _get_line_results(net, ppc, i_ft, suffix=suffix)
     _get_trafo_results(net, ppc, s_ft, i_ft, suffix=suffix)

@@ -1,6 +1,8 @@
 Change Log
 =============
-- [ADDED] PowerModels.jl TNEP Interface for transmission expansion optimization. See Jupyter Notebook
+- [ADDED] PowerModels.jl storage interface for time series based storage optimization.
+- [ADDED] PowerModels.jl OTS interface for optimize transmission switching optimization.
+- [ADDED] PowerModels.jl TNEP interface for transmission expansion optimization. See Jupyter Notebook
 - [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
 - [ADDED] Graph-Tool interface
 - [ADDED] Multiple new algorithms and robust estimators in state estimation
