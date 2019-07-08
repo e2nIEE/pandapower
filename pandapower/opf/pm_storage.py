@@ -22,24 +22,33 @@ def add_storage_opf_settings(net, ppci, pm):
                    net["storage"].at[idx, "min_e_mwh"])) / pm["baseMVA"]
         qs = net["storage"].at[idx, "q_mvar"].item() / pm["baseMVA"]
         ps = net["storage"].at[idx, "p_mw"].item() / pm["baseMVA"]
+        max_p_mw = ps
+        max_q_mvar, min_q_mvar = qs, -qs
+        if "max_p_mw" in net["storage"]:
+            max_p_mw = net["storage"].at[idx, "max_p_mw"].item() / pm["baseMVA"]
+        if "max_q_mvar" in net["storage"]:
+            max_q_mvar = net["storage"].at[idx, "max_q_mvar"].item() / pm["baseMVA"]
+        if "max_q_mvar" in net["storage"]:
+            min_q_mvar = net["storage"].at[idx, "min_q_mvar"].item() / pm["baseMVA"]
+
         pm_idx = int(idx) + 1
         pm["storage"][str(pm_idx)] = {
-            "energy_rating": 1.,
+            "energy_rating": net["storage"].at[idx, "max_e_mwh"],
             "standby_loss": 0.,
             "x": 0.,
             "energy": energy,
             "r": 0.0,
             "qs": qs,
-            "thermal_rating": 1.0,
+            "thermal_rating": net["storage"].at[idx, "max_e_mwh"],  # Todo: include in DataFrame?
             "status": int(net["storage"].at[idx, "in_service"]),
-            "discharge_rating": ps,
+            "discharge_rating": max_p_mw,
             "storage_bus": bus_lookup[net["storage"].at[idx, "bus"]].item(),
             "charge_efficiency": 1.,
             "index": pm_idx,
             "ps": ps,
-            "qmax": qs,
-            "qmin": -qs,
-            "charge_rating": ps,
+            "qmax": max_q_mvar,
+            "qmin": min_q_mvar,
+            "charge_rating": max_p_mw,
             "discharge_efficiency": 1.0
         }
 
