@@ -393,6 +393,16 @@ def test_storage_opt():
     assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.2)
     assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.3)
 
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_ost_opt():
+    net = nw.case5()
+    branch_status = net["line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]).astype(bool), branch_status.astype(bool))
+    pp.runpm_ots(net)
+    branch_status = net["res_line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 0, 1]).astype(bool), branch_status.astype(bool))
+
 
 if __name__ == '__main__':
     pytest.main([__file__])

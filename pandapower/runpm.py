@@ -221,6 +221,28 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _read_tnep_results(net)
 
 
+def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+              trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):  # pragma: no cover
+    """
+    Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
+
+    see above
+
+     """
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+    _read_ots_results(net)
+
+
 def _read_tnep_results(net):
     ne_branch = net._pm_result["solution"]["ne_branch"]
     line_idx = net["res_ne_line"].index
@@ -230,18 +252,39 @@ def _read_tnep_results(net):
         # built is a float, which is not exactly 1.0 or 0. sometimes
         net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
 
-def _read_ots_results(net):
-    ots_branch = net._pm_result["solution"]["branch"]
-    line_idx = net["res_line"].index
-    if "in_service" not in net["res_line"]:
-        # copy in service state from inputs
-        net["res_line"].loc[:, "in_service"] = net["line"].loc[:, "in_service"].values
 
-    for pm_branch_idx, branch_data in ots_branch.items():
-        # get pandapower index from power models index
-        pp_idx = line_idx[int(pm_branch_idx) - 1]
-        # the branch status from powermodels == in service status in pandapower
-        net["res_line"].loc[pp_idx, "in_service"] = branch_data["br_status"] > 0.5
+def _read_ots_results(net):
+    # branch_lookup = net._pd2ppc_lookups["branch"]
+    # ots_branch = net._pm_result["solution"]["branch"]
+    # line_idx = net["res_line"].index
+    # if "in_service" not in net["res_line"]:
+    #     # copy in service state from inputs
+    #     net["res_line"].loc[:, "in_service"] = net["line"].loc[:, "in_service"].values
+    # if "in_service" not in net["res_trafo"]:
+    #     # copy in service state from inputs
+    #     net["res_trafo"].loc[:, "in_service"] = net["trafo"].loc[:, "in_service"].values
+    #
+    #
+    # for pm_branch_idx, branch_data in ots_branch.items():
+    #     # get pandapower index from power models index
+    #     pp_idx = line_idx[int(pm_branch_idx) - 1]
+    #     # the branch status from powermodels == in service status in pandapower
+    #     net["res_line"].loc[pp_idx, "in_service"] = branch_data["br_status"] > 0.5
+
+    ppc = net._ppc
+    for element, (f, t) in net._pd2ppc_lookups["branch"].items():
+        # for trafo, line, trafo3w
+        res = "res_" + element
+        if "in_service" not in net[res]:
+            # copy in service state from inputs
+            net[res].loc[:, "in_service"] = None
+            net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
+        # f, t = net._pd2ppc_lookups["branch"][element]
+        branch_status = ppc["branch"][f:t, BR_STATUS].real
+
+        net[res]["in_service"].values[:] = branch_status
+
+
 
 
 def runpm_storage_opf(net, calculate_voltage_angles=True,
@@ -619,20 +662,28 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
         return ppc, multinetwork
 
     for i, bus in sol["bus"].items():
-        ppci["bus"][int(i) - 1, VM] = bus["vm"]
-        ppci["bus"][int(i) - 1, VA] = math.degrees(bus["va"])
+        bus_idx = int(i) - 1
+        ppci["bus"][bus_idx, VM] = bus["vm"]
+        ppci["bus"][bus_idx, VA] = math.degrees(bus["va"])
 
     for i, gen in sol["gen"].items():
-        ppci["gen"][int(i) - 1, PG] = gen["pg"]
-        ppci["gen"][int(i) - 1, QG] = gen["qg"]
+        gen_idx = int(i) - 1
+        ppci["gen"][gen_idx, PG] = gen["pg"]
+        ppci["gen"][gen_idx, QG] = gen["qg"]
 
+    # read Q from branch results (if not DC calculation)
     dc_results = np.isnan(sol["branch"]["1"]["qf"])
+    # read branch status results (OTS)
+    branch_status = "br_status" in sol["branch"]["1"]
     for i, branch in sol["branch"].items():
-        ppci["branch"][int(i) - 1, PF] = branch["pf"]
-        ppci["branch"][int(i) - 1, PT] = branch["pt"]
+        br_idx = int(i) - 1
+        ppci["branch"][br_idx, PF] = branch["pf"]
+        ppci["branch"][br_idx, PT] = branch["pt"]
         if not dc_results:
-            ppci["branch"][int(i) - 1, QF] = branch["qf"]
-            ppci["branch"][int(i) - 1, QT] = branch["qt"]
+            ppci["branch"][br_idx, QF] = branch["qf"]
+            ppci["branch"][br_idx, QT] = branch["qt"]
+        if branch_status:
+            ppci["branch"][br_idx, BR_STATUS] = branch["br_status"] > 0.5
 
     result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result, multinetwork
