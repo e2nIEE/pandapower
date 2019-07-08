@@ -390,10 +390,9 @@ def test_storage_opt():
 
     # optimize for 24 time steps. At the end the SOC is 100%
     storage_results = pp.runpm_storage_opf(net, n_timesteps=24)
-
-    assert np.allclose(storage_results[0].loc[22, "soc_mwh"], 0.04)
+    assert np.allclose(storage_results[0].loc[22, "soc_mwh"], 0.004960, rtol=1e-4, atol=1e-4)
     assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.)
-    assert np.allclose(storage_results[1].loc[22, "soc_percent"], 2.725931)
+    assert np.allclose(storage_results[1].loc[22, "soc_percent"], 29.998074, rtol=1e-4, atol=1e-4)
     assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.)
 
 
@@ -409,4 +408,5 @@ def test_ost_opt():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    # pytest.main([__file__])
+    test_storage_opt()
