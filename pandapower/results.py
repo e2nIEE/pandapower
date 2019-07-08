@@ -69,37 +69,47 @@ def verify_results(net):
     mode = net["_options"]["mode"]
     for element in elements_to_init + elements_to_empty:
         if mode != "pf_3ph" :
+            balanced=True
             element = (
         "load" if element == "asymmetric_load" else
         "sgen" if element == "asymmetric_sgen" else
-        element)        
-        res_element, res_empty_element = get_result_tables(element,mode=mode)
-
+        "load" if element == "impedance_load" else
+        element)
+        elif mode == "pf_3ph":
+            balanced= False
+            
+        res_element, res_empty_element = get_result_tables(element,suffix=None,balanced=balanced)
+        res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
         if len(net[element]) != len(net[res_element]):
             if element in elements_to_empty:
-                empty_res_element(net, element)
+                empty_res_element(net, element,balanced=balanced)
             else:
-                init_element(net, element,balanced=True)
+                init_element(net, element,balanced=balanced)
                 if element == "bus":
                     net._options["init_vm_pu"] = "auto"
                     net._options["init_va_degree"] = "auto"
 
-def get_result_tables(element, suffix=None,mode="pf"):
-    res_empty_element = "_empty_res_" + element+"_3ph" if mode == "pf_3ph" else "empty_res_" + element
-    res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
+def get_result_tables(element, suffix=None,balanced=True):
+    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_" + element+"_3ph"
+    res_element =  "res_" + element if balanced else "res_" + element+"_3ph"
     if suffix is not None:
         res_element += suffix
     return res_element, res_empty_element
 
 
-def empty_res_element(net, element, suffix=None):
-    res_element, res_empty_element = get_result_tables(element, suffix)
+def empty_res_element(net, element, suffix=None,balanced= True):
+    res_element, res_empty_element = get_result_tables(element, suffix,balanced)
     net[res_element] = net[res_empty_element].copy()
 
 
-def init_element(net, element, suffix=None):
-    mode = net["_options"]["mode"]
-    res_element, res_empty_element = get_result_tables(element, suffix,mode)
+def init_element(net, element, suffix=None,balanced=True):
+    if balanced :
+        element = (
+        "load" if element == "asymmetric_load" else
+        "sgen" if element == "asymmetric_sgen" else
+        "load" if element == "impedance_load" else
+        element)
+    res_element, res_empty_element = get_result_tables(element, suffix,balanced)
     index = net[element].index
     if len(index):
 
@@ -109,39 +119,36 @@ def init_element(net, element, suffix=None):
 
     else:
 
-        empty_res_element(net, element, suffix)
+        empty_res_element(net, element, suffix,balanced=balanced)
 
 
 
-def get_elements_to_empty(balanced=True):
-    if balanced:
-        return ["bus"]
-    else:
-        return ["bus_3ph"]
+def get_elements_to_empty():
+#    if balanced:
+    return ["bus"]
+#    else:
+#        return ["bus_3ph"]
 
 
 #def get_elements_to_init(balanced=True):
 def get_elements_to_init():
 
-#    if balanced:
+
     return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
            , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"\
            ,"asymmetric_load","asymmetric_sgen","impedance_load"]
-#    else:
-#        return ["ext_grid","load","sgen", "asymmetric_load"\
-#        , "asymmetric_sgen", "gen", "line", "trafo"]
 
 
 
-def reset_results(net, suffix=None):
+def reset_results(net, suffix=None,balanced= True):
     elements_to_empty = get_elements_to_empty()
     for element in elements_to_empty:
-        empty_res_element(net, element, suffix)
+        empty_res_element(net, element, suffix,balanced)
 
     elements_to_init = get_elements_to_init()
     for element in elements_to_init:
 
-        init_element(net, element, suffix)
+        init_element(net, element, suffix,balanced)
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
