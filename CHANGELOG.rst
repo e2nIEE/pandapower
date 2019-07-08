@@ -1,5 +1,13 @@
 Change Log
 =============
+
+[2.1.0]- 2019-07-08
+----------------------
+- [ADDED] calc_single_sc function to analyse a single fault instead of vectorized fault
+- [ADDED] convenience function for logarithmic colormaps in plotting
+- [CHANGED] corrected spelling 'continous' to 'continuous' in several functions
+- [ADDED] additional standard types for overhead lines
+- [CHANGED] make pp.to_json format closer to the JSON standard #406
 - [ADDED] PowerModels.jl storage interface for time series based storage optimization.
 - [ADDED] PowerModels.jl OTS interface for optimize transmission switching optimization.
 - [ADDED] PowerModels.jl TNEP interface for transmission expansion optimization. See Jupyter Notebook
