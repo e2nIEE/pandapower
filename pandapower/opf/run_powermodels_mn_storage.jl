@@ -3,19 +3,31 @@ using Ipopt
 using JuMP
 using .PP2PM
 
-function set_pq_values_from_timeseries(mn)
-    # Todo: The idea is that this function iterates over multinetwork entries and sets p, q values
-    # of loads and "sgens"
-    # The problem is that we have to get the time series as P, Q values (or even more for gens,
-    # slacks...) in ppc format.
-    # This requires to built the ppc from pandapower net first for each time step
+import JSON
+
+function read_time_series(json_path)
+    time_series = Dict()
+    open(json_path, "r") do f
+        time_series = JSON.parse(f)  # parse and transform data
+    end
+    return time_series
+end
+
+function set_pq_values_from_timeseries(mn, time_series)
+    # This function iterates over multinetwork entries and sets p, q values
+    # of loads and "sgens" (which are loads with negative P and Q values)
 
     # iterate over networks (which represent the time steps)
     for (t, network) in mn["nw"]
-        # iterate over all elements here for this network
+        t_j = string(parse(Int64,t) - 1)
+        # iterate over all loads for this network
         for (i, load) in network["load"]
             # update variables from time series here
-            load["pd"] = load["pd"] * 1.
+#             print("\nload before: ")
+#             print(load["pd"])
+            load["pd"] = time_series[t_j][parse(Int64,i)] / mn["baseMVA"]
+#             print("\nload after: ")
+#             print(load["pd"])
         end
     end
 
@@ -30,9 +42,10 @@ function run_powermodels(json_path)
     mn = PowerModels.replicate(pm, pm["n_time_steps"])
     mn["time_elapsed"] = pm["time_elapsed"]
     # set P, Q values of loads and generators from time series
-    mn = set_pq_values_from_timeseries(mn)
+    time_series = read_time_series("/tmp/timeseries.json")
+    mn = set_pq_values_from_timeseries(mn, time_series)
 
-    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level=0)
+    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer)
 
     # run multinetwork storage opf
     result = PowerModels._run_mn_strg_opf(mn, PowerModels.ACPPowerModel, ipopt_solver)

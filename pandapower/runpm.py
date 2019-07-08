@@ -230,6 +230,19 @@ def _read_tnep_results(net):
         # built is a float, which is not exactly 1.0 or 0. sometimes
         net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
 
+def _read_ots_results(net):
+    ots_branch = net._pm_result["solution"]["branch"]
+    line_idx = net["res_line"].index
+    if "in_service" not in net["res_line"]:
+        # copy in service state from inputs
+        net["res_line"].loc[:, "in_service"] = net["line"].loc[:, "in_service"].values
+
+    for pm_branch_idx, branch_data in ots_branch.items():
+        # get pandapower index from power models index
+        pp_idx = line_idx[int(pm_branch_idx) - 1]
+        # the branch status from powermodels == in service status in pandapower
+        net["res_line"].loc[pp_idx, "in_service"] = branch_data["br_status"] > 0.5
+
 
 def runpm_storage_opf(net, calculate_voltage_angles=True,
                       trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
@@ -285,6 +298,7 @@ def _add_storage_opf_settings(net, ppci, pm):
                   (net["storage"].at[idx, "max_e_mwh"] -
                    net["storage"].at[idx, "min_e_mwh"])) / pm["baseMVA"]
         qs = net["storage"].at[idx, "q_mvar"].item() / pm["baseMVA"]
+        ps = net["storage"].at[idx, "p_mw"].item() / pm["baseMVA"]
         pm_idx = int(idx) + 1
         pm["storage"][str(pm_idx)] = {
             "energy_rating": 1.,
@@ -295,19 +309,19 @@ def _add_storage_opf_settings(net, ppci, pm):
             "qs": qs,
             "thermal_rating": 1.0,
             "status": int(net["storage"].at[idx, "in_service"]),
-            "discharge_rating": 1.0,
+            "discharge_rating": ps,
             "storage_bus": bus_lookup[net["storage"].at[idx, "bus"]].item(),
             "charge_efficiency": 1.,
             "index": pm_idx,
-            "ps": net["storage"].at[idx, "p_mw"].item() / pm["baseMVA"],
+            "ps": ps,
             "qmax": qs,
             "qmin": -qs,
-            "charge_rating": 1.0,
+            "charge_rating": ps,
             "discharge_efficiency": 1.0
         }
 
 
-def _read_pm_storage_results(net):
+def _read_pm_storage_esults(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
     pm_result = net._pm_result
     # power model networks (each network represents the result of one time step)
@@ -411,6 +425,43 @@ def _call_powermodels(pm, julia_file):  # pragma: no cover
     return result_pm
 
 
+def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+
+    for idx in net[element].index:
+        if "controllable" in net[element] and net[element].at[idx, "controllable"]:
+            continue
+
+        pp_bus = net[element].at[idx, "bus"]
+        pm_bus = bus_lookup[pp_bus] + 1
+
+        scaling = net[element].at[idx, "scaling"]
+        if element == "sgen":
+            pd = -net[element].at[idx, "p_mw"] * scaling
+            qd = -net[element].at[idx, "q_mvar"] * scaling
+        else:
+            pd = net[element].at[idx, "p_mw"] * scaling
+            qd = net[element].at[idx, "q_mvar"] * scaling
+        in_service = net[element].at[idx, "in_service"]
+
+        pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
+                                     "status": int(in_service), "index": load_idx}
+        # print("Added load {} to pm".format(load_idx))
+        # print(pm["load"][str(load_idx)])
+        # print("PP element:")
+        # print(net[element].loc[idx, ["bus", "p_mw"]])
+        # print("\n")
+        if pm_bus not in pd_bus:
+            pd_bus[pm_bus] = pd
+            qd_bus[pm_bus] = qd
+        else:
+            pd_bus[pm_bus] += pd
+            qd_bus[pm_bus] += qd
+
+        load_idx += 1
+    return load_idx
+
+
 def ppc_to_pm(net, ppc):  # pragma: no cover
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
@@ -419,6 +470,14 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
     shunt_idx = 1
+    # PowerModels has a load model -> add loads and sgens to pm["load"]
+
+    # temp dicts which hold the sum of p, q of loads + sgens
+    pd_bus = dict()
+    qd_bus = dict()
+    load_idx = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
+    load_idx = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
+
     for row in ppc["bus"]:
         bus = dict()
         idx = int(row[BUS_I]) + 1
@@ -431,15 +490,25 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
         bus["va"] = row[VA]
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
+
         pd = row[PD]
         qd = row[QD]
-        if pd != 0 or qd != 0:
+
+        # pd and qd are the PQ values in the ppci, if they are equal to the sum in load data is consistent
+        if idx in pd_bus:
+            pd -= pd_bus[idx]
+            qd -= qd_bus[idx]
+        # if not we have to add more loads wit the remaining value
+        pq_mismatch = not np.allclose(pd, 0.) or not np.allclose(qd, 0.)
+        if pq_mismatch:
+            # Todo: This will be called if ppc PQ != sum at bus. -> Storages are within sum (which must be excluded I think in storage_optimization)
+            print("PQ mismatch. Adding another load at idx {}".format(load_idx))
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
                                          "status": True, "index": load_idx}
             load_idx += 1
         bs = row[BS]
         gs = row[GS]
-        if pd != 0 or qd != 0:
+        if pq_mismatch:
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
                                            "status": True, "index": shunt_idx}
             shunt_idx += 1
@@ -523,6 +592,11 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
                 logger.info(costs)
                 raise ValueError("Maximum quadratic cost function allowed")
             gen["cost"][-len(costs):] = costs
+
+    # for key, val in pm["load"].items():
+    #     print("load {}".format(key))
+    #     print(val)
+    #     print("\n")
     return pm
 
 
