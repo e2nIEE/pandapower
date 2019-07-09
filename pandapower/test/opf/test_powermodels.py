@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
+import pandapower.networks as nw
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 
@@ -380,6 +381,32 @@ def test_pm_tnep():
     assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
 
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_storage_opt():
+    net = nw.case5()
+    pp.create_storage(net, 2, p_mw=1., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
+    pp.create_storage(net, 3, p_mw=1., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
+
+    # optimize for 24 time steps. At the end the SOC is 100%
+    storage_results = pp.runpm_storage_opf(net, n_timesteps=24)
+    assert np.allclose(storage_results[0].loc[22, "soc_mwh"], 0.004960, rtol=1e-4, atol=1e-4)
+    assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.)
+    assert np.allclose(storage_results[1].loc[22, "soc_percent"], 29.998074, rtol=1e-4, atol=1e-4)
+    assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.)
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_ost_opt():
+    net = nw.case5()
+    branch_status = net["line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]).astype(bool), branch_status.astype(bool))
+    pp.runpm_ots(net)
+    branch_status = net["res_line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 0, 1]).astype(bool), branch_status.astype(bool))
+
+
 if __name__ == '__main__':
-#    pytest.main([__file__])
-    pass
+    # pytest.main([__file__])
+    test_storage_opt()
