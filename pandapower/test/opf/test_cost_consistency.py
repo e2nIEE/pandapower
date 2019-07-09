@@ -155,7 +155,7 @@ def test_contingency_gen(base_net):
     net.pwl_cost.drop(0, inplace=True)
 
     # first using a positive slope as in the case above
-#    pp.create_polynomial_cost(net, 0, "gen", array([1, 0]))
+#    pp.create_pwl_cost(net, 0, "gen", array([1, 0]))
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
     pp.runopp(net)
     assert isclose(net.res_cost, net.res_gen.p_mw.at[0], atol=1e-3)

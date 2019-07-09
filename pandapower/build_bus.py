@@ -20,7 +20,7 @@ except ImportError:
     from .pf.no_numba import jit
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_find(ar, bus):  # pragma: no cover
     while True:
         p = ar[bus]
@@ -30,7 +30,7 @@ def ds_find(ar, bus):  # pragma: no cover
     return p
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
@@ -42,7 +42,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
         ar[root2] = root1
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm,
               bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
@@ -54,7 +54,7 @@ def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z
             ds_union(ar, bus1, bus2, bus_is_pv)
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def fill_bus_lookup(ar, bus_lookup, bus_index):
     for i in range(len(bus_index)):
         bus_lookup[bus_index[i]] = i
@@ -294,7 +294,7 @@ def _build_bus_ppc(net, ppc):
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
     if mode != "nx":
-        set_reference_buses(net, ppc, bus_lookup)
+        set_reference_buses(net, ppc, bus_lookup, mode)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
@@ -341,10 +341,15 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
-def set_reference_buses(net, ppc, bus_lookup):
+def set_reference_buses(net, ppc, bus_lookup, mode):
+    if mode == "nx":
+        return
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
-    gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
+    if mode == "sc":
+        gen_slacks = net._is_elements["gen"] #generators are slacks for short-circuit calculation
+    else:
+        gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
     if gen_slacks.any():
         slack_buses = net.gen["bus"].values[gen_slacks]
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF

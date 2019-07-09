@@ -16,15 +16,15 @@ from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_single_bus_sc
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.results import _extract_results
+from pandapower.shortcircuit.results import _extract_results, _extract_single_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False):
+            branch_results=False, check_connectivity=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -110,7 +110,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                     check_connectivity=False, mode="sc", switch_rx_ratio=2, 
+                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2, 
                      init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
                      recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
@@ -125,6 +125,89 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         if case == "min":
             raise NotImplementedError("Minimum 1ph short-circuits are not yet implemented")
         _calc_sc_1ph(net)
+
+def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10, check_connectivity=True):
+    """
+    Calculates minimal or maximal symmetrical short-circuit currents.
+    The calculation is based on the method of the equivalent voltage source
+    according to DIN/IEC EN 60909.
+    The initial short-circuit alternating current *ikss* is the basis of the short-circuit
+    calculation and is therefore always calculated.
+    Other short-circuit currents can be calculated from *ikss* with the conversion factors defined
+    in DIN/IEC EN 60909.
+
+    The output is stored in the net.res_bus_sc table as a short_circuit current
+    for each bus.
+
+    INPUT:
+        **net** (pandapowerNet) pandapower Network
+
+        ***fault** (str, 3ph) type of fault
+
+            - "3ph" for three-phase
+
+            - "2ph" for two-phase short-circuits
+
+        **case** (str, "max")
+
+            - "max" for maximal current calculation
+
+            - "min" for minimal current calculation
+
+        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
+
+            - 6 for 6% voltage tolerance
+
+            - 10 for 10% voltage olerance
+
+        **r_fault_ohm** (float, 0) fault resistance in Ohm
+
+        **x_fault_ohm** (float, 0) fault reactance in Ohm
+
+    OUTPUT:
+
+    EXAMPLE:
+        calc_sc(net)
+
+        print(net.res_bus_sc)
+    """
+    if fault not in ["3ph", "2ph"]:
+        raise NotImplementedError("Only 3ph and 2ph short-circuit currents implemented")
+
+    if case not in ['max', 'min']:
+        raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
+                                "circuit current')
+    net["_options"] = {}
+    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
+                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2, 
+                     init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
+                     recycle=None)
+    _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=1.,
+                    topology="auto", r_fault_ohm=0., kappa_method="C",
+                    x_fault_ohm=0., kappa=False, ip=False, ith=False,
+                    branch_results=True)
+    if fault == "3ph" or fault == "2ph":
+        _calc_sc_single(net, bus)
+    elif fault == "1ph":
+        raise NotImplementedError("1ph short-circuits are not yet implemented")
+    else:
+        raise ValueError("Invalid fault %s"%fault)
+
+def _calc_sc_single(net, bus):
+    _add_auxiliary_elements(net)
+    ppc, ppci = _pd2ppc(net)
+    _calc_ybus(ppci)
+    try:
+        _calc_zbus(ppci)
+    except Exception as e:
+        _clean_up(net, res=False)
+        raise(e)
+    _calc_rx(net, ppci)
+    _calc_ikss(net, ppci)
+    _calc_single_bus_sc(net, ppci, bus)
+    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
+    _extract_single_results(net, ppc)
+    _clean_up(net)    
 
 
 def _calc_sc(net):

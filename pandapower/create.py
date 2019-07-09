@@ -1541,13 +1541,13 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         else:
             # geodata is multiple lists of coordinates
             df["coords"] = geodata
-        
+
         if version.parse(pd.__version__) >= version.parse("0.23"):
-            net.line_geodata = net.line_geodata.append(df, sort=False) 
+            net.line_geodata = net.line_geodata.append(df, sort=False)
         else:
             # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
             net.line_geodata = net.line_geodata.append(df)
-            
+
         _preserve_dtypes(net.line_geodata, dtypes)
 
     return index
@@ -2573,7 +2573,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
-     - Generator{}
+     - Generator
      - External Grid
      - Static Generator
      - Load
@@ -2600,9 +2600,9 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
         b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continuous (the
         starting point of an interval has to be equal to th end point of the previous interval).
-       
+
         To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
-        
+
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
 
@@ -2621,7 +2621,7 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
                            cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are
-     - Generator{}
+     - Generator
      - External Grid
      - Static Generator
      - Load

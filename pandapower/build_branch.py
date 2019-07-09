@@ -103,7 +103,7 @@ def _calc_trafo3w_parameter(net, ppc):
             branch[f:t, RATE_A] = np.nan
 
 
-def _calc_line_parameter(net, ppc):
+def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     """
     calculates the line parameter in per unit.
 
@@ -112,16 +112,21 @@ def _calc_line_parameter(net, ppc):
 
         **ppc** - the ppc array
 
+    **OPTIONAL**:
+        **elm** - The pandapower element (normally "line")
+
+        **ppc_elm** - The ppc element (normally "branch")
+
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128
                 Nunmpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
-    f, t = net._pd2ppc_lookups["branch"]["line"]
-    branch = ppc["branch"]
+    f, t = net._pd2ppc_lookups[ppc_elm][elm]
+    branch = ppc[ppc_elm]
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    line = net["line"]
+    line = net[elm]
     from_bus = bus_lookup[line["from_bus"].values]
     to_bus = bus_lookup[line["to_bus"].values]
     length_km = line["length_km"].values
