@@ -282,7 +282,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         )
         , axis=0
     )
-
+    V_T=np.matrix([[1,-1,0],
+                   [0,1,-1],
+                   [-1,0,1]]) 
+    I_T=np.matrix([[1,0,-1],
+                   [-1,1,0],
+                   [0,-1,1]]) 
     Vabc_it = sequence_to_phase(V012_it)
     if net.trafo.vector_group.any() :
         for vc in net.trafo.vector_group.values:
@@ -300,14 +305,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # =============================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
-        V_T=np.matrix([[1,-1,0],
-                       [0,1,-1],
-                       [-1,0,1]]) 
-        I_T=np.matrix([[1,0,-1],
-                       [-1,1,0],
-                       [0,-1,1]]) 
         Sabc_pu = -np.divide(Sabc, ppci1["baseMVA"])
-        Iabc_it = np.matmul(I_T,(np.divide(Sabc_pu, np.matmul(V_T,Vabc_it))).conjugate())
+        Iabc_it = (np.divide(Sabc_pu, Vabc_it)).conjugate()
+        if net.trafo.vector_group.any():
+            for vc in net.trafo.vector_group.values:
+                if vc not in ["Yyn","Dyn","YNyn"]:
+                    Iabc_it = np.matmul(I_T,(np.divide(Sabc_pu, np.matmul(V_T,Vabc_it))).conjugate())
 #        Yabc_it = Iabc_it/Vabc_it
         I012_it = phase_to_sequence(Iabc_it)
         
