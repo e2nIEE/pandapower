@@ -12,7 +12,7 @@ function run_powermodels(json_path)
 
     cbc_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = 1)
     juniper_solver = JuMP.with_optimizer(Juniper.Optimizer,
-    nl_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-6, print_level = 1),
+    nl_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-6, print_level = 0),
                                     mip_solver = cbc_solver, log_levels = [])
 
     result = run_tnep(pm, ACPPowerModel, juniper_solver,
