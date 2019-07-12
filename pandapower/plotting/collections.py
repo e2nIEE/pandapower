@@ -550,7 +550,8 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
 
     # the busbar is just a line collection with coords from net.bus_geodata
     return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None, norm=norm,
-                                  infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim, **kwargs)
+                                  cmap=cmap, infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim,
+                                  **kwargs)
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
