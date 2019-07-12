@@ -180,7 +180,7 @@ def load_mapping(net,ppci1):
 def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="auto",
               tolerance_mva=1e-8, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
               numba=True, recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
-              delta_q=0,v_debug =False, **kwargs):
+              delta_q=0,v_debug =False,zero_seq_to_zero= False,phase_to_line_current= False, **kwargs):
     # =============================================================================
     # pandapower settings
     # =============================================================================
@@ -247,28 +247,21 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     Sabc,Y012 = load_mapping(net,ppci1)
 
     ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
-
-    Y0_pu= Y0_pu.todense()
-    Y2_pu= Y2_pu.todense()  
-
-    for bus,Y in Y012.items():
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
-        b= bus_lookup[bus]
-        baseY =  net.sn_mva/( np.square(ppci1["bus"][b, BASE_KV]) )
-        ppci1["bus"][b, GS] = Y[1,1].conjugate().real
-        ppci1["bus"][b, BS] = Y[1,1].conjugate().imag  # Y11 assigned to ppc1 load bus
-        Y0_pu[b,b]+=Y[0,0]/baseY
-        Y2_pu[b,b]+=Y[2,2]/baseY
+ 
+    if net.impedance_load.r_A.any() : 
+        Y0_pu= Y0_pu.todense()
+        Y2_pu= Y2_pu.todense()
+        for bus,Y in Y012.items(): 
+            bus_lookup = net["_pd2ppc_lookups"]["bus"]
+            b= bus_lookup[bus]
+            baseY =  net.sn_mva/( np.square(ppci1["bus"][b, BASE_KV]) )
+            ppci1["bus"][b, GS] = Y[1,1].conjugate().real
+            ppci1["bus"][b, BS] = Y[1,1].conjugate().imag  # Y11 assigned to ppc1 load bus
+            Y0_pu[b,b]+=Y[0,0]/baseY
+            Y2_pu[b,b]+=Y[2,2]/baseY
     ppci0, ppci1, ppci2, _, Y1_pu, _, _, Y1_f, _,_, Y1_t, _ = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
 
-    # =============================================================================
-    #     Construct Y0 bus by eliminating hv side
-    # =============================================================================
-#    if net.trafo.vector_group.any() :
-#        for vc in net.trafo.vector_group.values:
-#            if vc not in ["Yyn","Dyn","YNyn"]:
-#                lv = bus_lookup[int(net.trafo.lv_bus.values)]
-#                Y0_pu = Y0_pu[lv:,lv:]
+
 
     # =============================================================================
     # Initial voltage values
@@ -289,10 +282,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
                    [-1,1,0],
                    [0,-1,1]]) 
     Vabc_it = sequence_to_phase(V012_it)
-    if net.trafo.vector_group.any() :
-        for vc in net.trafo.vector_group.values:
-            if vc not in ["Yyn","Dyn","YNyn"]:
-                V0_pu_it = X012_to_X0(V012_it)
     
     # =============================================================================
     #             Iteration using Power mismatch criterion
@@ -306,18 +295,15 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
         Sabc_pu = -np.divide(Sabc, ppci1["baseMVA"])
-        Iabc_it = (np.divide(Sabc_pu, Vabc_it)).conjugate()
-        if net.trafo.vector_group.any():
-            for vc in net.trafo.vector_group.values:
-                if vc not in ["Yyn","Dyn","YNyn"]:
-                    Iabc_it = np.matmul(I_T,(np.divide(Sabc_pu, np.matmul(V_T,Vabc_it))).conjugate())
-#        Yabc_it = Iabc_it/Vabc_it
-        I012_it = phase_to_sequence(Iabc_it)
         
+        Iabc_it = (np.divide(Sabc_pu, Vabc_it)).conjugate()
+        if phase_to_line_current:
+            Iabc_it = np.matmul(I_T,(np.divide(Sabc_pu, np.matmul(V_T,Vabc_it))).conjugate())
+
+        I012_it = phase_to_sequence(Iabc_it)
         V1_for_S1 = V012_it[1, :]
         I1_for_S1 = -I012_it[1, :]
-        
-        V0_pu_it = X012_to_X0(V012_it)
+        V0_pu_it = X012_to_X0(V012_it)  
         V2_pu_it = X012_to_X2(V012_it)
         
         I0_pu_it = X012_to_X0(I012_it)    
@@ -351,6 +337,8 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # Conduct Negative and Zero sequence power flow
         # =============================================================================
         V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
+        if zero_seq_to_zero:
+            V0_pu_it*=0
         V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
         # =============================================================================
         #    Evaluate Positive Sequence Power Mismatch     
@@ -358,26 +346,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         I1_from_V_it = I1_from_V012(V012_it, Y1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
         V1_pu_it = V1_from_ppc(ppci1)
-        
-#        if net.trafo.vector_group.any():
-#            for vc in net.trafo.vector_group.values:
-#                if vc not in ["Yyn","Dyn","YNyn"]:
-#                    V0_pu_it *= 0
-##                    V0_pu_it[1:] = V_from_I(Y0_pu[1:,1:], I0_pu_it[1:])
-##                    V2_pu_it *= 0
-##                    V2_pu_it[1:] = V_from_I(Y2_pu.todense()[1:,1:], I2_pu_it[1:])
-##                else:
-##                    V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
-##        else:
-##            V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
-#        V2_pu_it = V_from_I(Y2_pu, I2_pu_it)
-#        print(I2_pu_it)
-#        print(V2_pu_it)
 
         V012_new = combine_X012(V0_pu_it, V1_pu_it, V2_pu_it)
-#
-        #        V_abc_new = sequence_to_phase(V012_new)
-#
+
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
