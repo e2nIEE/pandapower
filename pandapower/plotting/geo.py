@@ -70,7 +70,6 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0,
 
 
 def convert_epgs_bus_geodata(net, epsg_in=4326, epsg_out=31467):
-
     """
     Converts bus geodata in net from epsg_in to epsg_out
 
