@@ -70,7 +70,6 @@ def coords_to_df(value, geotype="line"):
             raise ValueError("coords unkown format")
     return geo
 
-
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_empty_tables=True):
     dodfs = dict()
     dodfs["dtypes"] = collect_all_dtypes_df(net)
@@ -503,6 +502,12 @@ def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
     d = with_signature(obj, obj.to_json())
     return d
+
+def mkdirs_if_not_existent(dir):
+    if os.path.isdir(dir) == False:
+        os.makedirs(dir)
+        return True
+    return False
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)

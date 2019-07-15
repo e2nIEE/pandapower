@@ -8,7 +8,7 @@ import pandapower as pp
 from pandapower.control.run_control import run_control, ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow
 from pandapower.control.util.diagnostic import control_diagnostic
-from control.util.controller_io import dump_controller
+from pandapower.control.util.controller_io import dump_controller
 from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -20,10 +20,10 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
-# try:
-from timeseries.ts_runpp import TimeSeriesRunpp
-# except:
-#     logger.debug("Only open source timeseries available")
+try:
+    from timeseries.ts_runpp import TimeSeriesRunpp
+except:
+    logger.debug("Only open source timeseries available")
 
 
 

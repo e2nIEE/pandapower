@@ -5,8 +5,12 @@
 from copy import deepcopy
 
 from pandapower.control.util.auxiliary import get_controller_index, check_controller_frame
-from control.controller.trafo_control import TrafoController
-import pplog
+from pandapower.control.controller.trafo_control import TrafoController
+
+try:
+    import pplog
+except:
+    import logging as pplog
 
 logger = pplog.getLogger(__name__)
 

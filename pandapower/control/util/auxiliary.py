@@ -14,7 +14,10 @@ import pandas as pd
 from pandas import Int64Index
 
 # import control as ct
-import pplog
+try:
+    import pplog
+except:
+    import logging as pplog
 
 logger = pplog.getLogger(__name__)
 

@@ -5,7 +5,12 @@
 from __future__ import print_function, absolute_import
 
 import pandapower as pp
-import pplog
+
+try:
+    import pplog
+except:
+    import logging as pplog
+    
 from pandapower import ppException, LoadflowNotConverged, OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
 

@@ -3,7 +3,11 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pplog
+try:
+    import pplog
+except:
+    import logging as pplog
+    
 import datetime
 from pandapower.io_utils import JSONSerializableClass
 

@@ -9,8 +9,12 @@ from time import time
 
 import numpy as np
 import pandas as pd
-import pplog
-from misc.utility_functions import mkdirs_if_not_existent
+try:
+    import pplog
+except:
+    import logging as pplog
+
+from pandapower.io_utils import mkdirs_if_not_existent
 from pandas import DataFrame, isnull
 
 logger = pplog.getLogger(__name__)
