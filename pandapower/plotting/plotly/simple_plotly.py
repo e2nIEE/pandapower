@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -19,45 +19,46 @@ logger = logging.getLogger(__name__)
 
 
 def get_hoverinfo(net, element, precision=3, sub_index=None):
+    hover_index = net[element].index
     if element == "bus":
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            load_str.append("load: {:.0f} kW<br />".format(ln) if ln != 0. else "")
+            load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append("static generation: {:.0f} kW<br />".format(s) if s != 0. else "")
+            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
         hoverinfo = (
-                "index = " + net.bus.index.astype(str) + '<br />' +
-                "name = " + net.bus['name'].astype(str) + '<br />' +
-                'v_n = ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                load_str + sgen_str).tolist()
+                "Index: " + net.bus.index.astype(str) + '<br />' +
+                "Name: " + net.bus['name'].astype(str) + '<br />' +
+                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str)\
+            .tolist()
     elif element == "line":
         hoverinfo = (
-                "index = " + net.line.index.astype(str) + '<br />' +
-                "name = " + net.line['name'].astype(str) + '<br />' +
-                'length = ' + net.line['length_km'].round(precision).astype(str) + ' km' + '<br />' +
-                'R = ' + (net.line['length_km'] * net.line['r_ohm_per_km']).round(precision).astype(str)
+                "Index: " + net.line.index.astype(str) + '<br />' +
+                "Name: " + net.line['name'].astype(str) + '<br />' +
+                'Length: ' + net.line['length_km'].round(precision).astype(str) + ' km' + '<br />' +
+                'R: ' + (net.line['length_km'] * net.line['r_ohm_per_km']).round(precision).astype(str)
                 + ' Ohm' + '<br />'
-                + 'X = ' + (net.line['length_km'] * net.line['x_ohm_per_km']).round(precision).astype(str)
+                + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km']).round(precision).astype(str)
                 + ' Ohm' + '<br />').tolist()
     elif element == "trafo":
         hoverinfo = (
-                "index = " + net.trafo.index.astype(str) + '<br />' +
-                "name = " + net.trafo['name'].astype(str) + '<br />' +
-                'v_n hv = ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'v_n lv = ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'tap = ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
+                "Index: " + net.trafo.index.astype(str) + '<br />' +
+                "Name: " + net.trafo['name'].astype(str) + '<br />' +
+                'V_n HV: ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
+                'V_n LV: ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
+                'Tap pos.: ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
     elif element == "ext_grid":
         hoverinfo = (
-                "index = " + net.ext_grid.index.astype(str) + '<br />' +
-                "name = " + net.ext_grid['name'].astype(str) + '<br />' +
-                'v_m = ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
-                'v_a = ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
+                "Index: " + net.ext_grid.index.astype(str) + '<br />' +
+                "Name: " + net.ext_grid['name'].astype(str) + '<br />' +
+                'V_m: ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
+                'V_a: ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
+        hover_index = net.ext_grid.bus.tolist()
     else:
         return None
+    hoverinfo = pd.Series(index=hover_index, data=hoverinfo)
     if sub_index is not None:
-        sub_index = list(sub_index)
-        # pick out sub_index from 0-based hoverinfo
-        hoverinfo = [hoverinfo[idx] for idx in range(len(net[element])) if net[element].index[idx] in sub_index]
+        hoverinfo = hoverinfo.loc[list(sub_index)]
     return hoverinfo
 
 

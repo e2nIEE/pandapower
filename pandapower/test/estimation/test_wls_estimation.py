@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -235,7 +235,7 @@ def test_3bus_with_transformer():
                           side=3, element=0)  # at hv side
 
     # 2. Do state estimation
-    success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10, calculate_voltage_angles=True)
+    success = estimate(net, init='slack', tolerance=1e-6, maximum_iterations=10, calculate_voltage_angles=True)
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -244,7 +244,7 @@ def test_3bus_with_transformer():
 
     assert success
     assert (np.nanmax(abs(diff_v)) < 6e-4)
-    assert (np.nanmax(abs(diff_delta)) < 1.4e-4)
+    assert (np.nanmax(abs(diff_delta)) < 8e-4)
 
     # Backwards check. Use state estimation results for power flow and check for equality
     net.load.drop(net.load.index, inplace=True)
@@ -740,7 +740,7 @@ def test_net_with_zero_injection():
     b3 = pp.create_bus(net, name="Bus 3", vn_kv=220, index=3)
     b4 = pp.create_bus(net, name="Bus 4", vn_kv=220, index=4)
     
-    pp.create_ext_grid(net, 1)  # set the slack bus to bus 1
+    pp.create_ext_grid(net, b1)  # set the slack bus to bus 1
     factor = 48.4 * 2 * np.pi * 50 * 1e-9  # capacity factor
 
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.0221*48.4,
@@ -766,8 +766,8 @@ def test_net_with_zero_injection():
 
     success = estimate(net, tolerance=1e-10, zero_injection='auto', algorithm='wls_with_zero_constraint')
     assert success
-    assert np.abs(net.res_bus_est.at[1, 'p_mw']) < 1e-8
-    assert np.abs(net.res_bus_est.at[1, 'q_mvar']) < 1e-8
+    assert np.abs(net.res_bus_est.at[b2, 'p_mw']) < 1e-8
+    assert np.abs(net.res_bus_est.at[b2, 'q_mvar']) < 1e-8
 
     net_given_bus = deepcopy(net)
     success = estimate(net, tolerance=1e-6, zero_injection="auto")
@@ -888,7 +888,7 @@ def r2(base, v):
 
 
 def _compare_pf_and_se_results(net):
-    pp.runpp(net, calculate_voltage_angles=True)
+    pp.runpp(net, calculate_voltage_angles=True, trafo_model="pi")
     assert (np.allclose(net.res_bus_est.p_mw.values, net.res_bus.p_mw.values, 1e-6))
     assert (np.allclose(net.res_bus_est.q_mvar.values, net.res_bus.q_mvar.values, 1e-6))
     assert (np.allclose(net.res_line_est.p_from_mw.values, net.res_line.p_from_mw.values, 1e-6))

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -37,9 +37,9 @@ def test_cost_piecewise_linear_gen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "gen", [(0, 75, 1.5), (75, 150, 1.5)])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 75, 1.5], [75, 150, 1.5]])
 
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values * 1.5, atol=1e-3)
@@ -65,9 +65,9 @@ def test_cost_piecewise_linear_eg():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "ext_grid", [(0, 50, -10)])
+    pp.create_pwl_cost(net, 0, "ext_grid", [[0, 50, -10]])
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, -10*net.res_ext_grid.p_mw.values)
@@ -93,9 +93,9 @@ def test_get_costs():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "gen", [(0, 150, 2)])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 150, 2]])
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert net.res_gen.p_mw.values[0] - net.gen.min_p_mw.values[0] < 1e-2
@@ -123,9 +123,9 @@ def test_cost_piecewise_linear_sgen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "sgen", [(-150, -75, 1.5), (-75, 0, -1.5)])
+    pp.create_pwl_cost(net, 0, "sgen", [[-150, -75, 1.5], [-75, 0, -1.5]])
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert net.res_cost - net.res_sgen.p_mw.values / 1.5 < 1e-3
@@ -150,9 +150,9 @@ def test_cost_piecewise_linear_load():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "load", [(0, 75, 1.5), (75, 150, 1.5)])
+    pp.create_pwl_cost(net, 0, "load", [[0, 75, 1.5], [75, 150, 1.5]])
 
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert abs(net.res_cost - net.res_load.p_mw.values * 1.5) < 1e-3
@@ -177,10 +177,9 @@ def test_cost_piecewise_linear_sgen_uneven_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_pwl_cost(net, 0, "sgen", [(0, 75, 1.5), (75, 150, 1.5)])
-#    pp.create_pwl_cost(net, 0, "sgen", np.array([[0, 0], [75, 50], [150, 200]]))
+    pp.create_pwl_cost(net, 0, "sgen", [[0, 75, 1.5], [75, 150, 1.5]])
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert net.res_cost - net.res_sgen.p_mw.values * 1.5 < 1e-3
@@ -207,12 +206,12 @@ def test_cost_piecewise_linear_load_uneven_slopes():
 
     pp.create_pwl_cost(net, 0, "ext_grid", [(0, 0.075, 1), (0.075, 150, 2)])
 
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_ext_grid.p_mw.values[0])
 
     net.load.p_mw = 0.1
-    pp.runopp(net, )
+    pp.runopp(net)
     assert np.isclose(net.res_cost, (0.075 + 2*(net.res_ext_grid.p_mw.values[0] - 0.075)), rtol=1e-2)
 
 def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
@@ -235,10 +234,9 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-#    pp.create_pwl_cost(net, 0, "sgen", np.array([[0,2], [750,1 ], [1500, 2]]))
-    pp.create_pwl_cost(net, 0, "sgen", [(0, 0.75, -1), (0.75, 1500, 2)])
+    pp.create_pwl_cost(net, 0, "sgen", [[0, 0.75, -1], [0.75, 1500, 2]])
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_sgen.p_mw.values[0], .75, rtol=1e-2)

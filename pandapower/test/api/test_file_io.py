@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -32,7 +32,8 @@ def test_excel(net_in, tempdir):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
 
-    pp.set_user_pf_options(net_in, tolerance_kva=1e3)
+    # test in user_pf_options are equal
+    pp.set_user_pf_options(net_in, tolerance_mva=1e3)
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -62,14 +63,11 @@ def test_json(net_in, tempdir):
         import geopandas as gpd
 
         for tab in ('bus_geodata', 'line_geodata'):
-            net_geo[tab]['geometry'] = None
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry='geometry', crs=from_epsg(4326))
-
-        for idx, row in net_geo.bus_geodata.iterrows():
-            net_geo.bus_geodata.at[idx, 'geometry'] = Point(row.x, row.y)
-
-        for idx, row in net_geo.line_geodata.iterrows():
-            net_geo.line_geodata.at[idx, 'geometry'] = LineString(row.coords)
+            if tab == 'bus_geodata':
+                geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
+            else:
+                geometry = net_geo[tab].coords.apply(LineString)
+            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=from_epsg(4326))
 
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)

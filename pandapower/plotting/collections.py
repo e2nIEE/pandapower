@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -550,7 +550,8 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
 
     # the busbar is just a line collection with coords from net.bus_geodata
     return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None, norm=norm,
-                                  infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim, **kwargs)
+                                  cmap=cmap, infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim,
+                                  **kwargs)
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
@@ -1009,6 +1010,9 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(axes_visible[0])
     ax.yaxis.set_visible(axes_visible[1])
+    if not any(axes_visible):
+        # removes bounding box of the plot also
+        ax.axis("off")
     if set_aspect:
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)

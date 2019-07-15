@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,11 +9,11 @@ import pytest
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
-
+import numpy as np
 
 @pytest.fixture
 def one_line_one_generator():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=2)
     b1 = pp.create_bus(net, vn_kv=10.)
     b2 = pp.create_bus(net, vn_kv=10.)
     b3 = pp.create_bus(net, vn_kv=10.)
@@ -49,6 +49,34 @@ def test_max_gen_fault_impedance(one_line_one_generator):
     assert abs(net.res_bus_sc.ikss_ka.at[1] - 0.4418823) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 0.4450868) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+
+
+def test_rdss_estimations():
+    net = pp.create_empty_network(sn_mva=1)
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    g1 = pp.create_gen(net, b1, vn_kv=0.4, xdss_pu=0.1, cos_phi=0.8, p_mw=0.1, sn_mva=0.1)
+    b2 = pp.create_bus(net, vn_kv=20.)
+    g2 = pp.create_gen(net, b2, vn_kv=21., xdss_pu=0.2, cos_phi=0.85, p_mw=0.1, sn_mva=2.5)
+    b3 = pp.create_bus(net, vn_kv=20.)
+    g3 = pp.create_gen(net, b3, vn_kv=30., xdss_pu=0.25, cos_phi=0.9, p_mw=0.1, sn_mva=150)
+    
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b1], 1.5130509845)
+    net.gen.rdss_pu.at[g1] = net.gen.xdss_pu.at[g1] * 0.15
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b1], 1.5130509845)
+    
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b2], 0.37894052506)
+    net.gen.rdss_pu.at[g2] = net.gen.xdss_pu.at[g2] * 0.07
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b2], 0.37894052506)
+    
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b3], 12.789334853)
+    net.gen.rdss_pu.at[g3] = net.gen.xdss_pu.at[g3] * 0.05
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[b3], 12.789334853)
 
 if __name__ == '__main__':
     pytest.main(['test_gen.py'])

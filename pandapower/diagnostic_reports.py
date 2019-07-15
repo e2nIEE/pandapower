@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -17,8 +17,12 @@ from pandapower.toolbox import get_connected_buses_at_element
 log_message_sep = ("\n --------\n")
 
 
-def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report):
+def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report, warnings_only):
     diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report)
+    if warnings_only:
+        logger.setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.INFO)
 
     report_methods = {
         "missing_bus_indices": diag_report.report_missing_bus_indices,
@@ -39,8 +43,9 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
 
     logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
     for key in report_methods:
-        report_methods[key]()
-        logger.warning(log_message_sep)
+        if (key in diag_results) or not warnings_only:
+            report_methods[key]()
+            logger.warning(log_message_sep)
 
     logger.warning("_____________ END OF PANDAPOWER DIAGNOSTIC _____________ ")
 
@@ -76,10 +81,10 @@ class DiagnosticReports:
                         element_counter += len(disc_section[key])
                         logger.warning("%s: %s" % (key, disc_section[key]))
 
-                # message summary
-                if not self.compact_report:
-                    logger.warning("")
-                    logger.warning("SUMMARY: %s disconnected element(s) found." % (element_counter))
+            # message summary
+            if not self.compact_report:
+                logger.warning("")
+                logger.warning("SUMMARY: %s disconnected element(s) found." % (element_counter))
         elif "disconnected_elements" in self.diag_errors:
             logger.warning("Check for disconnected elements failed due to the following error:")
             logger.warning(self.diag_errors["disconnected_elements"])
@@ -474,60 +479,6 @@ class DiagnosticReports:
 
             # message body
             diag_result = self.diag_results["wrong_reference_system"]
-            for element_type in diag_result:
-                if element_type is "loads":
-                    if self.compact_report:
-                        logger.warning("loads %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for load in diag_result[element_type]:
-                            logger.warning("Found load %s: '%s' with p_mw = %s. In load reference "
-                                           "system p_mw should be positive."
-                                           % (load, self.net.load.name.at[load],
-                                             self.net.load.p_mw.at[load]))
-
-                elif element_type is "gens":
-                    if self.compact_report:
-                        logger.warning("gens %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for gen in diag_result[element_type]:
-                            logger.warning("Found gen %s: '%s' with p_mw = %s. In load reference "
-                            "system p_mw should be negative."
-                            % (gen, self.net.gen.name.at[gen], self.net.gen.p_mw.at[gen]))
-
-                elif element_type is "sgens":
-                    if self.compact_report:
-                        logger.warning("sgens %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for sgen in diag_result[element_type]:
-                            logger.warning("Found sgen %s: '%s' with p_mw = %s. In load reference "
-                            "system p_mw should be negative."
-                            % (sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_mw.at[sgen]))
-
-            # message summary
-                if not self.compact_report:
-                    logger.warning("")
-                    if 'loads' in diag_result:
-                        logger.warning("SUMMARY: Found %s load(s) with negative p_mw. In load "
-                                       "reference system, p_mw should be positive. If the intention "
-                                       "was to model a constant generation, please use an sgen instead."
-                                       % (len(diag_result['loads'])))
-                    if 'gens' in diag_result:
-                        logger.warning("SUMMARY: Found %s gen(s) with positive p_mw. In load "
-                                       "reference system, p_mw should be negative. If the intention "
-                                       "was to model a load, please use a load instead."
-                                       % (len(diag_result['gens'])))
-                    if 'sgens' in diag_result:
-                        logger.warning("SUMMARY: Found %s sgen(s) with positive p_mw. In load "
-                                       "reference system, p_mw should be negative. If the intention "
-                                       "was to model a load, please use a load instead."
-                                       % (len(diag_result['sgens'])))
-
-                else:
-                    logger.info("PASSED: power flow converges. No overload found.")
-
             for element_type in diag_result:
                 if element_type is "loads":
                     if self.compact_report:

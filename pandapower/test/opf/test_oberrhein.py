@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -32,7 +32,7 @@ def test_opf_oberrhein():
     net.sgen["controllable"] = 1
     net.load["controllable"] = 0
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
 if __name__ == "__main__":

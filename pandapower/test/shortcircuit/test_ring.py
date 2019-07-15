@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def ring_network():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=2.)
     b0 = pp.create_bus(net, 220)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)

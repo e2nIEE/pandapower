@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from numba import jit
 from numpy import conj, zeros, complex128
 from scipy.sparse import issparse, csr_matrix as sparse
-from pandapower.pf.dSbus_dV_pypower import dSbus_dV_dense
+from pandapower.pypower.dSbus_dV import dSbus_dV_dense
 
 
-# @jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=True)
-@jit(nopython=True, cache=True)
+# @jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=False)
+@jit(nopython=True, cache=False)
 def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus): # pragma: no cover
     """Computes partial derivatives of power injection w.r.t. voltage.
 

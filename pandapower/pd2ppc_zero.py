@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import math
@@ -11,8 +11,8 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _ppc2ppci
-from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
-from pandapower.idx_bus import BASE_KV, BS, GS
+from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
+from pandapower.pypower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 

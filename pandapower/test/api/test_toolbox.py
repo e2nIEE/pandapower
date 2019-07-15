@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -125,9 +125,9 @@ def test_continuos_bus_numbering():
     pp.create_shunt(net, bus0, 2, 1)
 
     bus0 = pp.create_bus(net, 0.4, index=5675)
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
-    pp.create_ward(net, bus0, 2, 1, 1, 2, )
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
+    pp.create_ward(net, bus0, 2, 1, 1, 2)
 
     tb.create_continuous_bus_index(net)
 
@@ -196,16 +196,16 @@ def test_drop_inactive_elements():
         tb.drop_inactive_elements(net)
 
         sum_of_elements = 0
-        for element in net.keys():
+        for element, table in net.items():
             # skip this one since we expect items here
-            if element == "std_types" or element.startswith("_"):
+            if element.startswith("_") or not isinstance(table, pd.DataFrame):
                 continue
             try:
                 if service and (element == 'ext_grid' or (element == 'bus' and len(net.bus) == 1)):
                     # if service==True, the 1 ext_grid and its bus are not dropped
                     continue
-                sum_of_elements += len(net[element])
-                if len(net[element]) > 0:
+                if len(table) > 0:
+                    sum_of_elements += len(table)
                     print(element)
             except TypeError:
                 # _ppc is initialized with None and clashes when checking

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,6 +8,10 @@ import numpy as np
 import pandapower as pp
 import pytest
 
+import pandas as pd
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
 
 def test_convenience_create_functions():
     net = pp.create_empty_network()
@@ -158,16 +162,96 @@ def test_create_buses():
         pp.create_buses(net, 2, 110, geodata=geodata)
 
 
-if __name__ == '__main__':
-    expected_default = False
+def test_create_lines():
+    # standard
     net = pp.create_empty_network()
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 20)
-    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tap_phase_shifter" in data:
-        del data["tap_phase_shifter"]
-    pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
-    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
-    pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_phase_shifter == expected_default).all()
-#    pytest.main(["test_create.py"])
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines(net, [b1, b1], [b2, b2], 4, std_type="48-AL1/8-ST1A 10.0")
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 0
+    assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 2
+    assert len(set(net.line.r_ohm_per_km)) == 1
+
+    # with geodata
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines(net, [b1, b1], [b2, b2], [1.5, 3], std_type="48-AL1/8-ST1A 10.0",
+                         geodata=[[(1,1),(2,2),(3,3)], [(1,1),(1,2)]])
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line_geodata.at[l[0], "coords"] == [(1,1),(2,2),(3,3)]
+    assert net.line_geodata.at[l[1], "coords"] == [(1,1),(1,2)]
+
+    # setting params as single value
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines(net, [b1, b1], [b2, b2], length_km=5, df=0.8, in_service=False,
+                        geodata=[(10, 10), (20, 20)], parallel=1, max_loading_percent=90,
+                        name="test", std_type="48-AL1/8-ST1A 10.0")
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line.length_km.at[l[0]] == 5
+    assert net.line.length_km.at[l[1]] == 5
+    assert net.line.at[l[0], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
+    assert net.line_geodata.at[l[1], "coords"] == [(10,10), (20,20)]
+    assert net.line.at[l[0], "name"] == "test"
+    assert net.line.at[l[1], "name"] == "test"
+    assert net.line.at[l[0], "max_loading_percent"] == 90
+    assert net.line.at[l[1], "max_loading_percent"] == 90
+    assert net.line.at[l[0], "parallel"] == 1
+    assert net.line.at[l[1], "parallel"] == 1
+
+    # setting params as array
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines(net, [b1, b1], [b2, b2], length_km=[1, 5], df=[0.8, 0.7],
+                        in_service=[True, False],
+                        geodata=[[(10, 10), (20, 20)], [(100, 10), (200, 20)]], parallel=[2, 1],
+                        max_loading_percent=[80, 90], name=["test1", "test2"],
+                        std_type="48-AL1/8-ST1A 10.0")
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line.at[l[0], "length_km"] == 1
+    assert net.line.at[l[1], "length_km"] == 5
+    assert net.line.at[l[0], "in_service"] == True  # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
+    assert net.line_geodata.at[l[1], "coords"] == [(100,10), (200,20)]
+    assert net.line.at[l[0], "name"] == "test1"
+    assert net.line.at[l[1], "name"] == "test2"
+    assert net.line.at[l[0], "max_loading_percent"] == 80
+    assert net.line.at[l[1], "max_loading_percent"] == 90
+    assert net.line.at[l[0], "parallel"] == 2
+    assert net.line.at[l[1], "parallel"] == 1
+
+
+def test_create_line_alpha_temperature():
+    net=pp.create_empty_network()
+    b = pp.create_buses(net, 5, 110)
+
+    l1=pp.create_line(net,0,1, 10, "48-AL1/8-ST1A 10.0")
+    l2=pp.create_line(net,1,2, 10, "48-AL1/8-ST1A 10.0", alpha=4.03e-3, temperature_degree_celsius=80)
+    l3=pp.create_line(net,2,3, 10, "48-AL1/8-ST1A 10.0")
+    l4=pp.create_line_from_parameters(net, 3,4,10, 1,1,1,100)
+    l5=pp.create_line_from_parameters(net, 3,4,10, 1,1,1,100, alpha=4.03e-3)
+
+    assert 'alpha' in net.line.columns
+    assert all(net.line.loc[[l2,l3,l5], 'alpha'] == 4.03e-3)
+    assert all(net.line.loc[[l1,l4], 'alpha'].isnull())
+    assert net.line.loc[l2, 'temperature_degree_celsius'] == 80
+    assert all(net.line.loc[[l1,l3,l4,l5], 'temperature_degree_celsius'].isnull())
+
+
+
+if __name__ == '__main__':
+    test_create_lines()
+    # pytest.main(["test_create.py"])

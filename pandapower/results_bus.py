@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
-from pandapower.idx_gen import PG, QG
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from pandapower.pypower.idx_gen import PG, QG
 
 
 def _set_buses_out_of_service(ppc):
@@ -57,7 +57,7 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"].index = net["bus"].index
 
 
-def write_voltage_dependend_load_results(net, p, q, b):
+def write_voltage_dependent_load_results(net, p, q, b):
     l = net["load"]
     _is_elements = net["_is_elements"]
 
@@ -163,7 +163,7 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     ac = net["_options"]["ac"]
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
-        p, q, b = write_voltage_dependend_load_results(net, p, q, b)
+        p, q, b = write_voltage_dependent_load_results(net, p, q, b)
         elements = ["sgen", "storage", "ward", "xward"]
     else:
         elements = ["load", "sgen", "storage", "ward", "xward"]

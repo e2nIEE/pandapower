@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, zeros
+from packaging import version
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
@@ -86,7 +87,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                    ("et", dtype(object)),
                    ("type", dtype(object)),
                    ("closed", "bool"),
-                   ("name", dtype(object))],
+                   ("name", dtype(object)),
+                   ("z_ohm", "f8")],
         "shunt": [("bus", "u4"),
                   ("name", dtype(object)),
                   ("q_mvar", "f8"),
@@ -330,7 +332,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": float(__version__[:3]),
+        "version": __version__,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -669,21 +671,21 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     """
     Adds one static generator in table net["sgen"].
 
-    Static generators are modelled as negative  PQ loads. This element is used to model generators
+    Static generators are modelled as positive and constant PQ power. This element is used to model generators
     with a constant active and reactive power feed-in. If you want to model a voltage controlled
     generator, use the generator element instead.
 
-    All elements in the grid are modelled in the consumer system, including generators!
-    If you want to model the generation of power, you have to assign a negative active power
+    gen, sgen and ext_grid in the grid are modelled in the generator system!
+    If you want to model the generation of power, you have to assign a positive active power
     to the generator. Please pay attention to the correct signing of the
-    reactive power as well.
+    reactive power as well (positive for injection and negative for consumption).
 
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (negative for generation!)
+        **p_mw** (float) - The real power of the static generator  (positive for generation!)
 
     OPTIONAL:
 
@@ -820,9 +822,9 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
-    All elements including generators are modeled from a consumer point of view. Active power
-    will therefore always be negative, reactive power will be negative for inductive behaviour and
-    positive for capacitive behaviour.
+    gen, sgen, and ext_grid are modelled in the generator point of view. Active power
+    will therefore be postive por generation, and reactive power will be negative for consumption behaviour and
+    positive for generation behaviour.
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
@@ -974,7 +976,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **bus** (int) - The bus id to which the generator is connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the generator (negative for generation!)
+        **p_mw** (float, default 0) - The real power of the generator (positive for generation!)
 
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
@@ -1072,6 +1074,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
             net.gen.loc[:, "xdss_pu"] = pd.Series()
+        if "rdss_pu" not in net.gen.columns:
+            net.gen.loc[:, "rdss_pu"] = pd.Series()
         net.gen.loc[index, "xdss_pu"] = float(xdss_pu)
 
     if not isnan(rdss_pu):
@@ -1205,7 +1209,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+                df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=None,
+                temperature_degree_celsius=None):
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -1280,6 +1285,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "type" in lineparam:
         v["type"] = lineparam["type"]
 
+    # if net.line column already has alpha, add it from std_type
+    if "alpha" in net.line.columns and "alpha" in lineparam:
+        v["alpha"] = lineparam["alpha"]
+
     # store dtypes
     dtypes = net.line.dtypes
 
@@ -1297,13 +1306,24 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
     return index
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                max_loading_percent=nan, **kwargs):
+                                max_loading_percent=nan, alpha=None,
+                                temperature_degree_celsius=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1395,6 +1415,140 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
+    return index
+
+def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None, geodata=None,
+                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values. In any case the line parameters are defined through a single standard
+        type, so all lines have the same standard type.
+
+
+        INPUT:
+            **net** - The net within this line should be created
+
+            **from_bus** (list of int) - ID of the bus on one side which the line will be connected with
+
+            **to_bus** (list of int) - ID of the bus on the other side which the line will be connected with
+
+            **length_km** (list of float) - The line length in km
+
+            **std_type** (string) - The linetype of the lines.
+
+        OPTIONAL:
+            **name** (list of string, None) - A custom name for this line
+
+            **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
+                higher than the highest already existing index is selected.
+
+            **geodata**
+            (list of arrays, default None, shape of arrays (,2L)) -
+            The linegeodata of the line. The first row should be the coordinates
+            of bus a and the last should be the coordinates of bus b. The points
+            in the middle represent the bending points of the line
+
+            **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+            **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current \
+                of line (from 0 to 1)
+
+            **parallel** (list of integer, 1) - number of parallel line systems
+
+            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+        OUTPUT:
+            **index** (list of int) - The unique ID of the created line
+
+        EXAMPLE:
+            create_line(net, "line1", from_bus = 0, to_bus = 1, length_km=0.1,  std_type="NAYY 4x50 SE")
+
+    """
+
+    nr_lines = len(from_buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.line.index:
+                raise UserWarning("A line with index %s already exists" % index)
+    else:
+        lid = get_free_id(net["line"])
+        index = arange(lid, lid + nr_lines, 1)
+
+    dtypes = net.line.dtypes
+
+    dd = pd.DataFrame(index=index, columns=net.line.columns)
+
+    # user defined params
+    dd["from_bus"] = from_buses
+    dd["to_bus"] = to_buses
+    dd["length_km"] = length_km
+    dd["std_type"] = std_type
+
+    # add std type data
+    lineparam = load_std_type(net, std_type, "line")
+    dd["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+    dd["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+    dd["c_nf_per_km"] = lineparam["c_nf_per_km"]
+    dd["max_i_ka"] = lineparam["max_i_ka"]
+    dd["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+    if "type" in lineparam:
+        dd["type"] = lineparam["type"]
+
+    # optional params
+    dd["name"] = name
+    dd["df"] = df
+    dd["parallel"] = parallel
+    dd["in_service"] = in_service
+
+    # extend the lines by the frame we just created
+    try:
+        net["line"] = net["line"].append(dd, sort=False)
+    except TypeError:
+        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+        net["line"] = net["line"].append(dd)
+
+
+    if hasattr(max_loading_percent, "__iter__"):
+        if "max_loading_percent" not in net.line.columns:
+            net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+        net.line.loc[index, "max_loading_percent"] = [0 if isnan(ml) else float(ml) for ml in max_loading_percent]
+    else:
+        if not isnan(max_loading_percent):
+            if "max_loading_percent" not in net.line.columns:
+                net.line["max_loading_percent"] = pd.Series(index=net.line.index)
+            net.line.loc[index, "max_loading_percent"] = max_loading_percent
+
+    _preserve_dtypes(net.line, dtypes)
+
+    if geodata is not None:
+        dtypes = net.line_geodata.dtypes
+        df = pd.DataFrame(index=index, columns=net.line_geodata.columns)
+        # works with single or multiple lists of coordinates
+        if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
+            # geodata is a single list of coordinates
+            df["coords"] = [geodata] * len(index)
+        else:
+            # geodata is multiple lists of coordinates
+            df["coords"] = geodata
+
+        if version.parse(pd.__version__) >= version.parse("0.23"):
+            net.line_geodata = net.line_geodata.append(df, sort=False)
+        else:
+            # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+            net.line_geodata = net.line_geodata.append(df)
+
+        _preserve_dtypes(net.line_geodata, dtypes)
 
     return index
 
@@ -1729,10 +1883,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    try:
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except TypeError:  # legacy for pandas <0.21
+    if version.parse(pd.__version__) < version.parse("0.21"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+    else:
+        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
@@ -1882,7 +2036,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0):
     """
     Adds a switch in the net["switch"] table.
 
@@ -1906,19 +2060,23 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
         bus and transformer, "b" = switch between two buses
 
+    OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
         **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
-    OPTIONAL:
+        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
+            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
+            0 a branch will be created for the switch which has also effects on the bus mapping
+
         **name** (string, default None) - The name for this switch
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS")
+        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
 
         create_switch(net, bus = 0, element = 1, et = 'l')
 
@@ -1961,8 +2119,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name"]] = \
-        [bus, element, et, closed, type, name]
+    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name", "z_ohm"]] = \
+        [bus, element, et, closed, type, name, z_ohm]
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)
@@ -2415,7 +2573,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
-     - Generator{}
+     - Generator
      - External Grid
      - Static Generator
      - Load
@@ -2425,13 +2583,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"]
 
-        **data_points** - (numpy array) Numpy array containing n data points (see example)
+        **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
+        **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -2440,12 +2597,13 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
+        The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continuous (the
+        starting point of an interval has to be equal to th end point of the previous interval).
 
-    NOTE:
-      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
-          supported.
-      - costs for storages are positive per definition (similar to sgen costs)
+        To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
+
+        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
 
     if index is None:
@@ -2461,6 +2619,48 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
                            cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+    """
+    Creates an entry for polynimoal costs for an element. The currently supported elements are
+     - Generator
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+            are possible
+
+        **cp1_eur_per_mw** (float) - Linear costs per MW
+
+        **cp0_eur=0** (float) - Offset active power costs in euro
+
+        **cq1_eur_per_mvar=0** (float) - Linear costs per Mvar
+
+        **cq0_eur=0** (float) - Offset reactive power costs in euro
+
+        **cp2_eur_per_mw2=0** (float) - Quadratic costs per MW
+
+        **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
+
+    OPTIONAL:
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The polynomial cost function is given by the linear and quadratic cost coefficients.
+
+        create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
+    """
+
     if index is None:
         index = get_free_id(net["poly_cost"])
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
