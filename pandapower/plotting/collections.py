@@ -102,7 +102,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
+    coords = zip(bus_geodata.loc[buses, "x"].values,
+                 bus_geodata.loc[buses, "y"].values)
 
     infos = []
 
@@ -118,12 +119,15 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
             angle = kwargs['angle'] if 'angle' in kwargs else 0
             fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            fig = Rectangle([x - kwargs['width'] / 2, y - kwargs['height'] / 2], **kwargs)
+            fig = Rectangle([x - kwargs['width'] / 2, y -
+                             kwargs['height'] / 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
-            fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+            fig = RegularPolygon(
+                [x, y], numVertices=edges, radius=size, **kwargs)
         else:
-            logger.error("Wrong patchtype. Please choose a correct patch type.")
+            logger.error(
+                "Wrong patchtype. Please choose a correct patch type.")
             raise ValueError("Wrong patchtype")
         if infofunc:
             infos.append(infofunc(buses[i]))
@@ -226,11 +230,13 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                            % lines_without_geo)
     else:
         data = []
-        coords_dict = line_geodata.coords.to_dict() # transforming to dict to make access faster
+        # transforming to dict to make access faster
+        coords_dict = line_geodata.coords.to_dict()
         for line in lines:
             if line in line_geodata.index:
                 lines_with_geo.append(line)
-                data.append((coords_dict[line], infofunc(line) if infofunc else []))
+                data.append(
+                    (coords_dict[line], infofunc(line) if infofunc else []))
 
         lines_without_geo = set(lines) - set(lines_with_geo)
         if len(lines_without_geo) > 0:
@@ -297,7 +303,8 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     tg = list(zip(hv_geo, lv_geo))
 
-    info = [infofunc(tr) if infofunc is not None else [] for tr in trafos.index.values]
+    info = [infofunc(tr) if infofunc is not None else []
+            for tr in trafos.index.values]
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
     lc.info = info
@@ -422,7 +429,8 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
             infos.append(infofunc(i))
     if len(circles) == 0:
         return None, None
-    lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidths, **kwargs)
+    lc = LineCollection((lines), color=color, picker=picker,
+                        linewidths=linewidths, **kwargs)
     lc.info = infos
     pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths,
                          **kwargs)
@@ -495,9 +503,11 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
             infos.append(infofunc(i))
     if len(circles) == 0:
         return None, None
-    lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidth, **kwargs)
+    lc = LineCollection((lines), color=color, picker=picker,
+                        linewidths=linewidth, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidth, **kwargs)
+    pc = PatchCollection(circles, match_original=True,
+                         picker=picker, linewidth=linewidth, **kwargs)
     pc.info = infos
     return lc, pc
 
@@ -550,8 +560,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
 
     # the busbar is just a line collection with coords from net.bus_geodata
     return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None, norm=norm,
-                                  cmap=cmap, infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim,
-                                  **kwargs)
+                                  infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim, **kwargs)
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
@@ -581,13 +590,16 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     polys = []
     infos = []
     off = 2.
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.load.shape[0]
+    ang = orientation if hasattr(orientation, '__iter__') else [
+        orientation] * net.load.shape[0]
     color = kwargs.pop("color", "k")
-    for i, load in load_table.iterrows():
+    for i in range(len(load_table)):
+        load = load_table.iloc[i]
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
         p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
+        polys.append(RegularPolygon(p2, numVertices=3,
+                                    radius=size, orientation=-ang[i]))
         lines.append((p1, p3))
         if infofunc is not None:
             infos.append(infofunc(i))
@@ -621,7 +633,8 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
     polys = []
     infos = []
     off = 1.7
-    for i, gen in net.gen.iterrows():
+    for i in range(len(net.gen)):
+        gen = net.gen.iloc[i]
         p1 = net.bus_geodata[["x", "y"]].loc[gen.bus]
         p2 = p1 - np.array([0, size * off])
         polys.append(Circle(p2, size))
@@ -667,21 +680,31 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     infos = []
     off = 1.7
     r_triangle = size * 0.4
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.sgen.shape[0]
+    ang = orientation if hasattr(orientation, '__iter__') else [
+        orientation] * net.sgen.shape[0]
     color = kwargs.pop("color", "k")
-    for i, sgen in sgen_table.iterrows():
+    for i in range(len(sgen_table)):
+        sgen = sgen_table.iloc[i]
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
-        mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
-        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
-        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), ang[i])
-        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), ang[i])
+        # mp means midpoint
+        mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])
+        circ_edge = bus_geo + \
+            _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
+        mp_tri1 = mp_circ + \
+            _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), ang[i])
+        mp_tri2 = mp_circ + \
+            _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), ang[i])
         perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]),
                                             ang[i])  # dropped perpendicular foot of triangle1
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), ang[i])
-        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), ang[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), ang[i])
+        line_end1 = perp_foot1 + + \
+            _rotate_dim2(np.array([-2.5 * r_triangle, 0]), ang[i])
+        perp_foot2 = mp_tri2 + \
+            _rotate_dim2(np.array([0, r_triangle / 2]), ang[i])
+        line_end2 = perp_foot2 + + \
+            _rotate_dim2(np.array([2.5 * r_triangle, 0]), ang[i])
         polys.append(Circle(mp_circ, size))
-        polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_triangle, orientation=-ang[i]))
+        polys.append(RegularPolygon(mp_tri1, numVertices=3,
+                                    radius=r_triangle, orientation=-ang[i]))
         polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_triangle,
                                     orientation=np.pi - ang[i]))
         lines.append((bus_geo, circ_edge))
@@ -736,8 +759,10 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     for ext_grid_idx, bus_idx in zip(ext_grids, ext_grid_buses):
         p1 = net.bus_geodata[["x", "y"]].loc[bus_idx].values
         p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
-        polys.append(Rectangle([p2[0] - size / 2, p2[1] - size / 2], size, size))
-        lines.append((p1, p2 - _rotate_dim2(np.array([0, size / 2]), orientation)))
+        polys.append(
+            Rectangle([p2[0] - size / 2, p2[1] - size / 2], size, size))
+        lines.append(
+            (p1, p2 - _rotate_dim2(np.array([0, size / 2]), orientation)))
         if infofunc is not None:
             infos.append(infofunc(ext_grid_idx))
     ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
@@ -823,6 +848,7 @@ def onBusbar(net, bus, line_coords):
 
     return intersection
 
+
 def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
@@ -859,7 +885,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         target_bus = list(line_buses - set([sb]))[0]
 
         if sb not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
-            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            logger.warning(
+                "Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
 
         # switch bus and target coordinates
@@ -872,15 +899,18 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
                 # check, which end of the line is nearer to the switch bus
-                intersection = onBusbar(net,target_bus,line_coords=line_coords)
+                intersection = onBusbar(
+                    net, target_bus, line_coords=line_coords)
                 if intersection is not None:
-                    pos_sb=intersection
+                    pos_sb = intersection
                 if len(line_coords) >= 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
                             abs(line_coords[0][1] - pos_sb[1]) < 0.01:
-                        pos_tb = np.array([line_coords[1][0], line_coords[1][1]])
+                        pos_tb = np.array(
+                            [line_coords[1][0], line_coords[1][1]])
                     else:
-                        pos_tb = np.array([line_coords[-2][0], line_coords[-2][1]])
+                        pos_tb = np.array(
+                            [line_coords[-2][0], line_coords[-2][1]])
                 else:
                     use_bus_geodata = True
             else:
@@ -902,7 +932,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2),
+                          size, size, facecolor=col, edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
 
@@ -944,21 +975,26 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         switch_bus = net.switch.bus.loc[switch]
         target_bus = net.switch.element.loc[switch]
         if switch_bus not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
-            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            logger.warning(
+                "Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
         # switch bus and target coordinates
-        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values.astype(np.float64)
-        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values.astype(np.float64)
+        pos_sb = net.bus_geodata.loc[switch_bus,
+                                     ["x", "y"]].values.astype(np.float64)
+        pos_tb = net.bus_geodata.loc[target_bus,
+                                     ["x", "y"]].values.astype(np.float64)
         # position of switch symbol
         vec = pos_tb - pos_sb
-        pos_sw = pos_sb + vec * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
+        pos_sw = pos_sb + vec * \
+            0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
         # rotation of switch symbol
         angle = np.arctan2(vec[1], vec[0])
         rotation = Affine2D().rotate_around(pos_sw[0], pos_sw[1], angle)
         # color switch by state
         col = color if net.switch.closed.loc[switch] else "white"
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2),
+                          size, size, facecolor=col, edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
         # add to collection lists
@@ -1042,7 +1078,8 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
             # if c is a tuple or a list of collections
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:
-            logger.warning("{} in collections is of unknown type. Skipping".format(c))
+            logger.warning(
+                "{} in collections is of unknown type. Skipping".format(c))
 
 
 if __name__ == "__main__":
@@ -1064,7 +1101,8 @@ if __name__ == "__main__":
         pp.create_transformer(net, b3, b4, std_type="0.63 MVA 10/0.4 kV")
 
         bc = create_bus_collection(net, size=0.2, color="k")
-        lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
+        lc = create_line_collection(
+            net, use_line_geodata=False, color="k", linewidth=3.)
         lt, bt = create_trafo_collection(net, size=2, linewidth=3.)
         load1, load2 = create_load_collection(net, linewidth=2.,
                                               infofunc=lambda x: ("load", x))
