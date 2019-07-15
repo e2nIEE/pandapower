@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.import csv
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+import csv
 import random
 from functools import reduce
 from pandapower.auxiliary import ADict
@@ -12,7 +13,7 @@ import pandas
 import pandas as pd
 from pandas import Int64Index
 
-import control as ct
+# import control as ct
 import pplog
 
 logger = pplog.getLogger(__name__)
