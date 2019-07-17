@@ -1,10 +1,5 @@
-import pandapower.control.util.auxiliary
-
 import copy
-
-import numpy as np
 import pytest
-
 import pandapower.control as ct
 import pandapower.networks as networks
 import pandapower as pp
@@ -132,22 +127,4 @@ def test_multiple_levels(net):
 
 
 if __name__ == '__main__':
-    # ch.logger.setLevel(10)
      pytest.main(['-s', __file__])
-# test_multiple_levels(net())
-# test_no_difference_if_element_oos(net())
-# test_ctrl_unconverged(net())
-#    test_add_get_controller(net())
-# test_control_service(net())
-# test_ctrl_unconverged(net())
-# test_difference_in_out_service(net())
-# test_lf_unconverged(net())
-# test_multiple_levels(net())
-# test_level_list(net())
-# test_new_init()
-# test_no_difference_if_element_oos(net())
-# test_conflicting_controllers(net())
-# test_order(net())
-# test_order_level(net())
-# test_level(net())
-# test_level_unspec(net())

@@ -1,6 +1,6 @@
 __author__ = 'lthurner'
 
-from control.controller.trafo_control import TrafoController
+from pandapower.control.controller.trafo_control import TrafoController
 import json
 
 class DiscreteTapControl(TrafoController):

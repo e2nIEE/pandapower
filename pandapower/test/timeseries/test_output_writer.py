@@ -7,18 +7,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import control as ct
+import pandapower.control as ct
 import pandapower as pp
-import pplog
-from control import ConstControl
-from tests.timeseries.test_timeseries import create_data_source, simple_test_net
+import logging
+from pandapower.control import ConstControl
+from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
 from pandapower.timeseries import DFData, OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
-logger = pplog.getLogger(__name__)
-ow_logger = pplog.getLogger("hp.control.output_writer")
-logger.setLevel(pplog.ERROR)
-ow_logger.setLevel(pplog.CRITICAL)
+logger = logging.getLogger(__name__)
+ow_logger = logging.getLogger("hp.control.output_writer")
+logger.setLevel(logging.ERROR)
+ow_logger.setLevel(logging.CRITICAL)
 
 
 def test_output_writer_log():
@@ -201,53 +201,6 @@ def test_output_writer_multiple_index_definition():
                        ow.output["res_bus.vm_pu"].loc[:, net.bus.index], atol=0, rtol=0)
 
 
-@pytest.mark.xfail(reason="not yet implemented")
-def test_output_writer_eval_partial():
-    net = simple_test_net()
-
-    def upper3(array):
-        sortarray = copy.deepcopy(array)
-        sortarray.sort
-        log_val = sortarray[:3]
-        return log_val
-
-    n_timesteps = 1
-    profiles, ds = create_data_source(n_timesteps)
-    # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
-
-    time_steps = range(0, n_timesteps)
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_bus', 'vm_pu', eval_function=upper3, eval_name="res_bus.vm_pu.upper3")
-    run_timeseries(net, time_steps, output_writer=ow)
-    assert len(ow.output["res_bus.vm_pu.upper3"]) == n_timesteps
-    assert False  # todo: asserten, dass es drei werte sind
-
-
-@pytest.mark.xfail(reason="not yet implemented")
-def test_output_writer_eval_supergeneric():
-    net = simple_test_net()
-    pp.runpp(
-        net)  # for the moment this powerflow is necessary to initalize the np arrays ... todo dass das ohne geht!?
-
-    def load_sn_kva_max(net):
-        log_val = max(np.sqrt(net.res_load.q_mvar ** 2 + net.res_load.p_mw ** 2))
-        return np.array([log_val])
-
-    n_timesteps = 1
-    profiles, ds = create_data_source(n_timesteps)
-    # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
-
-    time_steps = range(0, n_timesteps)
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_function(eval_function=load_sn_kva_max, eval_name="load_sn_kva_max")
-    run_timeseries(net, time_steps, output_writer=ow)
-    assert False
 
 
 if __name__ == '__main__':

@@ -1,5 +1,4 @@
 import copy
-import logging
 import os
 import tempfile
 
@@ -7,21 +6,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import analysis
 import pandapower.control.util.diagnostic
 import pandapower as pp
 import pandapower.toolbox as tb
-import pplog
-from control import DiscreteTapControl, ContinuousTapControl, ConstControl, MetaControl, \
-    TrafoPQControl
-from misc.utility_functions import walk_up_from_path
+import logging
+from pandapower.control import DiscreteTapControl, ContinuousTapControl, ConstControl
+
 from pandapower import networks as nw
-from timeseries import DFData, CsvData
-from timeseries import OutputWriter
+from pandapower.timeseries import DFData
+from pandapower.timeseries import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries, control_diagnostic
 
-logger = pplog.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 
 def simple_test_net():
     net = pp.create_empty_network()
@@ -138,71 +134,6 @@ def test_false_alarm_trafos():
     del s
 
 
-@pytest.mark.xfail(reason="roman needs to rework his controller into new framework")
-def test_meta_control():
-    net = simple_test_net()
-    profiles, ds = create_data_source()
-    time_steps = range(0, 10)
-    ow = setup_output_writer(net, time_steps)
-
-    tol = 1e-6
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
-    c = ContinuousTapControl(net, 0, u_set=1.01, tol=tol)
-    MetaControl(net, controller_index=c.index, variable='u_set', data_source=ds,
-                profile_name='trafo_v')
-
-    run_timeseries(net, time_steps, output_writer=ow)
-
-    assert np.alltrue(profiles['load1'].values == ow.output['load.p_mw']['0'].values)
-    assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu']['2'].values, rtol=tol,
-                       atol=0)
-
-
-@pytest.mark.xfail(reason="roman needs to rework his controller into new framework")
-def test_trafo_pq_meta():
-    net = simple_test_net()
-    profiles, ds = create_data_source()
-    time_steps = range(0, 9)
-    ow = setup_output_writer(net, time_steps)
-
-    tol = 1e-6
-    # MV side load P profile
-    ConstControl(net, 'load', 'p_mw', element_index=1, data_source=ds, profile_name='load2_mv_p')
-    # Trafo voltage controller
-    c = ContinuousTapControl(net, tid=0, u_set=1.01, tol=tol, trafotype='3W', side='mv')
-    # Configure the transformer to follow the voltage profile
-    MetaControl(net, controller_index=c.index, variable='u_set', data_source=ds,
-                profile_name='trafo_v')
-
-    # Configure the load on LV side to 'Slack' the power needed to meet the measurement at HV side
-    ct = TrafoPQControl(net, element='load', element_index=2, trafo_index=0, target_side='hv',
-                        target_p_mw=0, target_q_mvar=0, trafo_table='trafo3w', tol=tol)
-
-    # set profile for P at HV side
-    MetaControl(net, controller_index=ct.index, variable='target_p_mw', data_source=ds,
-                profile_name='load3_hv_p')
-    # set profile for Q at HV side
-    MetaControl(net, controller_index=ct.index, variable='target_q_mvar', data_source=ds,
-                profile_name='load3_hv_q')
-
-    run_timeseries(net, time_steps, output_writer=ow)
-
-    # check load profile of the MV load
-    assert np.alltrue(profiles['load2_mv_p'].values == ow.output['load.p_mw']['1'].values)
-
-    # check MetaControl of Voltage Setpoint for the ContinuousTapControl
-    assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu']['3'].values, rtol=tol,
-                       atol=0)
-
-    # Check the P at HV side of the Trafo
-    assert np.allclose(profiles['load3_hv_p'].values,
-                       ow.output['res_trafo3w.p_hv_mw']['0'].values, rtol=0, atol=tol)
-
-    # Check the Q at HV side of the Trafo
-    assert np.allclose(profiles['load3_hv_q'].values,
-                       ow.output['res_trafo3w.q_hv_mvar']['0'].values, rtol=0, atol=tol)
-
-
 def test_timeseries_results():
     # This test compares output writer results with input
     # test net
@@ -281,49 +212,7 @@ def test_timeseries_var_func():
         time_steps[-1], "mv_bus_min"]
 
 
-def test_timeseries_recycle():
-    # test net
-    net = simple_test_net()
-    # randdom datasource --> will be memmaps
 
-    n_timesteps = 10
-    profiles, ds = create_data_source(n_timesteps)
-
-    # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=0.5, recycle=True)
-
-    # DiscreteTapControl(net, tid=0, side='lv', u_lower=0.97, u_upper=0.99, recycle=True)
-    net.trafo.tap_pos = 0
-
-    # test out of service line
-    pp.create_line(net, 0, 1, 10, "149-AL1/24-ST1A 110.0", in_service=False)
-
-    time_steps = range(0, n_timesteps)
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
-    ow.log_variable('res_load', 'p_mw')
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_line', 'loading_percent')
-    ow.log_variable('res_trafo', 'loading_percent')
-    ow.log_variable('res_line', 'i_ka')
-
-    net.trafo.tap_pos = 0
-    run_timeseries(net, time_steps, output_writer=ow, recycle=False)
-    res_normal = copy.copy(ow.output)
-
-    net.trafo.tap_pos = 0
-    run_timeseries(net, time_steps, output_writer=ow, recycle=True)
-    res_recycle = copy.copy(ow.output)
-
-    for key, val in res_normal.items():
-        val_recycle = res_recycle[key]
-        if key == "Parameters":
-            # Parameters is complex datatype compared to others
-            np.testing.assert_array_equal(val_recycle.values, val.values)
-        else:
-            mask = ~(np.isnan(val)).values
-            assert np.allclose(val_recycle.values[mask], val.values[mask])
 
 
 @pytest.mark.xfail(reason="@author: please rework this test in cooporation with steffen, after publication of simbench within pandapower")
@@ -383,37 +272,6 @@ def test_timeseries_recycle_simbench():
             mask = ~(np.isnan(val)).values
             assert np.allclose(val_recycle.values[mask], val.values[mask])
 
-
-def test_load_case():
-    # test loadcases with time series
-
-    # test net
-    net = simple_test_net()
-
-    n_timesteps = 10
-    profiles, ds = create_data_source(n_timesteps)
-    recycle = True
-    # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=1.0, recycle=recycle)
-    time_steps = range(0, n_timesteps)
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
-    ow.log_variable('res_load', 'p_mw')
-
-    lc = analysis.LoadCase(net, name="test")
-    ts = 0
-    net.controller.loc[0].controller.time_step(ts)
-    lc.analyse()
-    assert np.allclose(profiles.loc[ts, ["load1", "load2_mv_p", "load3_hv_p"]].sum(),
-                       net.res_load.p_mw.sum())
-    ts = 3
-    net.controller.loc[0].controller.time_step(ts)
-    lc.runpp()
-    assert np.allclose(profiles.loc[ts, ["load1", "load2_mv_p", "load3_hv_p"]].sum(),
-                       net.res_load.p_mw.sum())
-
-
 def test_time_steps():
     net = simple_test_net()
     n_timesteps = 11
@@ -455,51 +313,6 @@ def test_output_dump_after_time():
     run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
     # ToDo: read partially dumped results and compare with all stored results
 
-
-def test_out_of_service_recycle():
-    # Todo: Test speedup functions with out of service elements
-    pass
-
-
-def test_timeseries_recycle_rieke_failure():
-    net = nw.mv_oberrhein()
-    net.sgen.profile_name = "P_PV_1"
-    net.sgen.scaling = .5
-
-    csv_path = os.path.join(walk_up_from_path(__file__, num_levels=3), "tests", "control",
-                            "testfiles", "data_statcurt.csv")
-    ds_p = CsvData(path=csv_path, sep=";")
-
-    ConstControl(net, element='sgen', variable='p_mw', element_index=net.sgen.index,
-                 data_source=ds_p, profile_name=net.sgen.profile_name, recycle=True, scale_factor=-1e-3)
-
-    ow = OutputWriter(net)
-
-    ow.log_variable("res_sgen", "p_mw")
-    ow.log_variable("res_sgen", "q_mvar")
-    ow.log_variable("res_line", "loading_percent")
-    ow.log_variable("res_bus", "vm_pu")
-    ow.log_variable("res_ext_grid", "p_mw")
-    ow.log_variable("res_ext_grid", "q_mvar")
-
-    time_steps = range(0, 5)
-
-    run_timeseries(net, time_steps, output_writer=ow, recycle=True)
-    res_recycle = copy.copy(ow.output)
-
-    run_timeseries(net, time_steps, output_writer=ow, recycle=False)
-    res_normal = copy.copy(ow.output)
-
-    for key, val in res_normal.items():
-        val_recycle = res_recycle[key]
-        if key == "Parameters":
-            # Parameters is complex datatype compared to others
-            np.testing.assert_array_equal(val_recycle.values, val.values)
-        else:
-            try:
-                assert np.allclose(val_recycle, val)
-            except AssertionError:
-                raise AssertionError("results for %s are not equal with and without recycle" % key)
 
 
 if __name__ == '__main__':

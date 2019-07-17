@@ -18,6 +18,7 @@ import importlib
 from numpy import ndarray
 from warnings import warn
 from inspect import isclass, signature
+import os
 
 try:
     from functools import singledispatch
