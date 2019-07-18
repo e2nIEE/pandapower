@@ -423,16 +423,32 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         r0_trafo_mag = r_m / parallel
         x0_trafo_mag = x_m / parallel
         z0_mag = r0_trafo_mag + x0_trafo_mag * 1j
-
+# =============================================================================
+#         Star - Delta conversion ( T model to Pi Model)
+# =============================================================================
+        z1 = si0_hv_partial * z0_k
+        z2 = (1 - si0_hv_partial) * z0_k
+        z3 = z0_mag
+        z_temp = z1*z2 + z2*z3 + z1*z3
+        za = z_temp / z2
+        zb = z_temp / z1
+        zc = z_temp / z3
+        YAB = 1 / zc
+        YAN = 1 / za
+        YBN = 1 / zb
+#        YAN = (1.1547)*((1 / z3) )
+#        YBN = (1.1547)*((1 / z3) )
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service* int(ppc["baseMVA"])])
+            y= (YAB+YAN+YBN)* int(ppc["baseMVA"])
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
 
         elif vector_group == "YNd":
+            y= (YAB+YAN+YBN)* int(ppc["baseMVA"])
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service* int(ppc["baseMVA"])])
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
@@ -442,34 +458,30 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
-            # convert the t model to pi model
-            z1 = si0_hv_partial * z0_k
-            z2 = (1 - si0_hv_partial) * z0_k
-            z3 = z0_mag
-
-            z_temp = z1*z2 + z2*z3 + z1*z3
-            za = z_temp / z2
-            zb = z_temp / z1
-            zc = z_temp / z3
-            ya = 1/za
-            yb = 1/zb                
+            
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
 
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, ya.real * in_service * int(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, ya.imag * in_service * int(ppc["baseMVA"])])
+            gs_all = np.hstack([gs_all, YAN.real * in_service * int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, YAN.imag * in_service * int(ppc["baseMVA"])])
             
                                        
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, yb.real * in_service * int(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, yb.imag * in_service * int(ppc["baseMVA"])])
+            gs_all = np.hstack([gs_all, YBN.real * in_service * int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, YBN.imag * in_service * int(ppc["baseMVA"])])
 
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            y = 1 / (z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])
+            y =  (YAB+YAN+YBN).astype(complex)* int(ppc["baseMVA"])
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
+        
+        elif vector_group == "Yzn":           
+            buses_all = np.hstack([buses_all, lv_buses_ppc])
+            gs_all = np.hstack([gs_all,(1.1547)*( YAB+YAN+YBN).real * in_service * int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, (1.1547)*( YAB+YAN+YBN).imag * in_service * int(ppc["baseMVA"])])
+
         elif vector_group[-1].isdigit():
             raise ValueError("Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree"%vector_group)
         else:
