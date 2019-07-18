@@ -78,5 +78,39 @@ def test_rdss_estimations():
     sc.calc_sc(net, case="max")
     assert np.isclose(net.res_bus_sc.ikss_ka.at[b3], 12.789334853)
 
+
+def test_close_to_gen_simple():
+    # WIP
+    net = pp.create_empty_network()
+    b1, b2, b3, b4, b5 = pp.create_buses(net, 5, 110)
+    # skss = np.sqrt(3) * 400 * 40  # we assume 40 kA sc current in the 400-kV EHV grid
+    # pp.create_ext_grid(net, b1, s_sc_max_mva=skss, s_sc_min_mva=0.8 * skss, rx_min=0.2, rx_max=0.4)
+    pp.create_gen(net, b3, vn_kv=110, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=100, sn_mva=110)
+    pp.create_gen(net, b4, vn_kv=110, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=200, sn_mva=220)
+
+    pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    pp.create_line(net, b2, b3, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    pp.create_line(net, b3, b4, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    pp.create_line(net, b1, b5, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    # sc.calc_single_sc(net, b5)
+    sc.calc_sc(net)
+
+
+def test_close_to_gen_simple2():
+    # WIP
+    net = pp.create_empty_network()
+    b1, b2, b3 = pp.create_buses(net, 3, 110)
+    # skss = np.sqrt(3) * 400 * 40  # we assume 40 kA sc current in the 400-kV EHV grid
+    # pp.create_ext_grid(net, b1, s_sc_max_mva=skss, s_sc_min_mva=0.8 * skss, rx_min=0.2, rx_max=0.4)
+    pp.create_gen(net, b3, vn_kv=110, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=100, sn_mva=110)
+    pp.create_gen(net, b3, vn_kv=110, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=50, sn_mva=60)
+
+    pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    pp.create_line(net, b2, b3, std_type="305-AL1/39-ST1A 110.0", length_km=10)
+    # sc.calc_single_sc(net, b2)
+    sc.calc_sc(net, tk_s=5e-2)
+
+
+
 if __name__ == '__main__':
     pytest.main(['test_gen.py'])

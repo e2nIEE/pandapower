@@ -5,7 +5,8 @@
 
 
 import numpy as np
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA, GS, BS
+from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
@@ -136,6 +137,47 @@ def _calc_branch_currents(net, ppc):
         ith_all_t = ikss_all_t * np.sqrt(m + n)
         ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+
+
+def _calc_ik_generator(net, ppci):
+    Zbus = ppci["internal"]["Zbus"]
+    baseI = ppci["internal"]["baseI"]
+    tk_s = net._options['tk_s']
+
+    # calculate voltage source branch current
+    I_ikss = ppci["bus"][:, IKSS1]
+    V_ikss = (I_ikss * baseI) * Zbus
+
+    gen_buses_ppc, gen_sn_mva, _ = _sum_by_group(ppci['gen'][:, GEN_BUS].astype(np.int64),
+                                                 ppci['gen'][:, MBASE], ppci['gen'][:, MBASE])
+
+    # shunt admittance of generator buses and generator short circuit current
+    YS = ppci["bus"][gen_buses_ppc, GS] + ppci["bus"][gen_buses_ppc, BS] * 1j
+    I_kG = abs(V_ikss.T[:, gen_buses_ppc] * YS / baseI[gen_buses_ppc])
+
+    I_kG_contribution = I_kG.sum(axis=1)
+    ratio_SG_ikss = I_kG_contribution / I_ikss
+    close_to_SG = ratio_SG_ikss > 5e-2
+
+    # rated current of generators
+    I_rG = gen_sn_mva / (np.sqrt(3) * ppci["bus"][gen_buses_ppc, BASE_KV])
+
+    if tk_s == 2e-2:
+        mu = 0.84 + 0.26 * np.exp(-0.26 * I_kG / I_rG)
+    elif tk_s == 5e-2:
+        mu = 0.71 + 0.51 * np.exp(-0.3 * I_kG / I_rG)
+    elif tk_s == 10e-2:
+        mu = 0.62 + 0.72 * np.exp(-0.32 * I_kG / I_rG)
+    elif tk_s >= 25e-2:
+        mu = 0.56 + 0.94 * np.exp(-0.38 * I_kG / I_rG)
+    else:
+        raise UserWarning('not implemented for other tk_s than 20ms, 50ms, 100ms and >=250ms')
+
+    I_ikss_G = I_ikss.copy()
+    I_ikss_G[close_to_SG] -= np.sum(I_kG[close_to_SG] * (1 - mu), axis=1)
+
+    return I_ikss_G
+
         
 def _calc_single_bus_sc(net, ppc, bus):
     case = net._options["case"]
