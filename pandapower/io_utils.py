@@ -259,7 +259,7 @@ def isinstance_partial(obj, cls):
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
+        super().__init__(object_hook=pp_hook, *args, **kwargs)
 
 def pp_hook(d):
     if '_module' in d and '_class' in d:
@@ -271,6 +271,7 @@ def pp_hook(d):
             obj = {"_init": d, "_state": dict()} #backwards compatibility
         class_name = d.pop('_class')
         module_name = d.pop('_module')
+#        print(class_name, module_name)
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):
@@ -299,8 +300,13 @@ def pp_hook(d):
         elif SHAPELY_INSTALLED and module_name == "shapely":
             return shapely.geometry.shape(obj)
         elif class_name == "pandapowerNet":
-            from pandapower import from_json_string
-            return from_json_string(obj)
+            if isinstance(obj, str): #backwards compatibility
+                from pandapower import from_json_string
+                return from_json_string(obj)
+            else:
+                net = create_empty_network()
+                net.update(obj)
+                return net
         elif module_name == "networkx":
             return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
@@ -402,8 +408,8 @@ def to_serializable(obj):
 
 @to_serializable.register(pp.pandapowerNet)
 def json_net(obj):
-    from pandapower.file_io import to_json_string
-    d = with_signature(obj, to_json_string(obj))
+    net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
+    d = with_signature(obj, net_dict)
     return d
 
 

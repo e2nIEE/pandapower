@@ -3,13 +3,17 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import os
 from functools import partial
+
+import numpy as np
+import pandas as pd
+import pytest
+
 import pandapower as pp
+import pandapower.networks as nw
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
-import numpy as np
 
 try:
     from julia import Main
@@ -263,21 +267,146 @@ def test_voltage_angles():
     pp.create_load(net, b3, p_mw=5, controllable=False)
     load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6,
                              max_q_mvar=1e6)
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
     custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
                                "test_files", "run_powermodels_custom.jl")
-    # TODO: pp.runpm_dc gives does not seem to consider the voltage angles. Is this intended behaviour?
+    # TODO: pp.runpm_dc does not consider the voltage angles shift of the transformer - only
+    # the loadflow voltage angles. Is this intended behaviour?
     for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
         run(net)
         consistency_checks(net)
         assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] <= 120
-        assert 85 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 86
+        assert 85 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 90
         assert 120 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4]) % 360 < 130
         assert np.isnan(net.res_bus.va_degree.at[b5])
 
 
+def init_ne_line(net, new_line_index, construction_costs=None):
+    """
+    init function for new line dataframe, which specifies the possible new lines being built by power models opt
+
+    Parameters
+    ----------
+    net - pp net
+    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
+    construction_costs (list, 0.) - costs of newly constructed lines
+
+    Returns
+    -------
+
+    """
+    # init dataframe
+    net["ne_line"] = net["line"].loc[new_line_index, :]
+    # add costs, if None -> init with zeros
+    construction_costs = np.zeros(len(new_line_index)) if construction_costs is None else construction_costs
+    net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
+    # set in service, but only in ne line dataframe
+    net["ne_line"].loc[new_line_index, "in_service"] = True
+    # init res_ne_line to save built status afterwards
+    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
+
+
+def tnep_grid():
+    net = pp.create_empty_network()
+
+    min_vm_pu = 0.95
+    max_vm_pu = 1.05
+
+    # create buses
+    bus1 = pp.create_bus(net, vn_kv=110., geodata=(5, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus2 = pp.create_bus(net, vn_kv=110., geodata=(6, 10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus3 = pp.create_bus(net, vn_kv=110., geodata=(10, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus4 = pp.create_bus(net, vn_kv=110., geodata=(8, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+
+    # create 110 kV lines
+    pp.create_line(net, bus1, bus2, length_km=70., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus1, bus3, length_km=50., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus1, bus4, length_km=100., std_type='149-AL1/24-ST1A 110.0')
+
+    # create loads
+    pp.create_load(net, bus2, p_mw=60)
+    pp.create_load(net, bus3, p_mw=70)
+    pp.create_load(net, bus4, p_mw=50)
+
+    # create generators
+    g1 = pp.create_gen(net, bus1, p_mw=9.513270, min_p_mw=0, max_p_mw=200, vm_pu=1.01, slack=True)
+    pp.create_poly_cost(net, g1, 'gen', cp1_eur_per_mw=1)
+
+    g2 = pp.create_gen(net, bus2, p_mw=78.403291, min_p_mw=0, max_p_mw=200, vm_pu=1.01)
+    pp.create_poly_cost(net, g2, 'gen', cp1_eur_per_mw=3)
+
+    g3 = pp.create_gen(net, bus3, p_mw=92.375601, min_p_mw=0, max_p_mw=200, vm_pu=1.01)
+    pp.create_poly_cost(net, g3, 'gen', cp1_eur_per_mw=3)
+
+    net.line["max_loading_percent"] = 20
+
+    # possible new lines (set out of service in line DataFrame)
+    l1 = pp.create_line(net, bus1, bus4, 10., std_type="305-AL1/39-ST1A 110.0", name="new_line1",
+                        max_loading_percent=20., in_service=False)
+    l2 = pp.create_line(net, bus2, bus4, 20., std_type="149-AL1/24-ST1A 110.0", name="new_line2",
+                        max_loading_percent=20., in_service=False)
+    l3 = pp.create_line(net, bus3, bus4, 30., std_type='149-AL1/24-ST1A 110.0', name="new_line3",
+                        max_loading_percent=20., in_service=False)
+    l4 = pp.create_line(net, bus3, bus4, 40., std_type='149-AL1/24-ST1A 110.0', name="new_line4",
+                        max_loading_percent=20., in_service=False)
+
+    new_line_index = [l1, l2, l3, l4]
+    construction_costs = [10., 20., 30., 45.]
+    # create new line dataframe
+    init_ne_line(net, new_line_index, construction_costs)
+
+    return net
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_tnep():
+    net = tnep_grid()
+    # check if max line loading percent is violated (should be)
+    pp.runpp(net)
+    assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+
+    # run power models tnep optimization
+    pp.runpm_tnep(net)
+    # set lines to be built in service
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    net["line"].loc[lines_to_built, "in_service"] = True
+    # run a power flow calculation again and check if max_loading percent is still violated
+    pp.runpp(net)
+    # check max line loading results
+    assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_storage_opt():
+    net = nw.case5()
+    pp.create_storage(net, 2, p_mw=1., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
+    pp.create_storage(net, 3, p_mw=1., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
+
+    # optimize for 24 time steps. At the end the SOC is 100%
+    storage_results = pp.runpm_storage_opf(net, n_timesteps=24)
+    assert np.allclose(storage_results[0].loc[22, "soc_mwh"], 0.004960, rtol=1e-4, atol=1e-4)
+    assert np.allclose(storage_results[0].loc[23, "soc_mwh"], 0.)
+    assert np.allclose(storage_results[1].loc[22, "soc_percent"], 29.998074, rtol=1e-4, atol=1e-4)
+    assert np.allclose(storage_results[1].loc[23, "soc_mwh"], 0.)
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_ost_opt():
+    net = nw.case5()
+    branch_status = net["line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]).astype(bool), branch_status.astype(bool))
+    pp.runpm_ots(net)
+    branch_status = net["res_line"].loc[:, "in_service"].values
+    assert np.array_equal(np.array([1, 1, 1, 1, 0, 1]).astype(bool), branch_status.astype(bool))
+
+
 if __name__ == '__main__':
-    pytest.main([__file__])
+    # pytest.main([__file__])
+    test_storage_opt()
