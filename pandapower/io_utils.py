@@ -48,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 
 def coords_to_df(value, geotype="line"):
-    geo = pd.DataFrame(index=value.index)
+    columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
+    geo = pd.DataFrame(columns=columns, index=value.index)
     if any(~value.coords.isnull()):
         k = max(len(v) for v in value.coords.values)
         v = numpy.empty((len(value), k * 2))
