@@ -1,4 +1,8 @@
-__author__ = 'fmeier'
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import copy
 import tempfile
@@ -41,10 +45,7 @@ def test_output_writer_log():
 
     # Run timeseries
     run_timeseries(net, time_steps=range(2), output_writer=ow)
-    # logger.debug(ow.output["Parameters"])
 
-    # with all elements
-    # with specified tale index
 
     # --- double logged variables handling
     ow2 = copy.deepcopy(ow)

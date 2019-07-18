@@ -1,10 +1,11 @@
-__author__ = 'jdollichon'
+# -*- coding: utf-8 -*-
 
-try:
-    import pplog
-except:
-    import logging as pplog
-    logger=pplog.getLogger(__name__)
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
+import logging as pplog
+logger=pplog.getLogger(__name__)
 
 try:
     import jsonpickle
