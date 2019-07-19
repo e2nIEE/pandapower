@@ -305,7 +305,7 @@ def pp_hook(d):
                 from pandapower import from_json_string
                 return from_json_string(obj)
             else:
-                net = create_empty_network()
+                net = pp.create_empty_network()
                 net.update(obj)
                 return net
         elif module_name == "networkx":
