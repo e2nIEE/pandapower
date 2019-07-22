@@ -15,7 +15,7 @@ import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
-from numpy import ndarray
+from numpy import ndarray, generic, equal
 from warnings import warn
 from inspect import isclass, signature
 
@@ -314,6 +314,8 @@ def pp_hook(d):
                         obj = json.loads(obj, cls=PPJSONDecoder)
                     if needs_net:
                         obj["_init"]["net"] = pp_hook.net
+                    if "add_to_net" in obj["_init"]:
+                        obj["_init"]["add_to_net"] = False
                     return class_.from_dict(obj)
             else:
                 return class_(obj, **d)
@@ -325,7 +327,7 @@ class JSONSerializableClass(object):
     
     json_excludes = ["net", "self", "__class__"]
     
-    def __init__(self):
+    def __init__(self, table=None, overwrite=True):
         self._init = dict()
         
     def update_initialized(self, parameters):
@@ -355,6 +357,67 @@ class JSONSerializableClass(object):
         d["_state"] = {key: val for key, val in self.__dict__.items() if key not in 
                        self.json_excludes and not callable(val)}
         return d
+
+    def add_to_net(self, table, index, column="object", overwrite=True):
+        if table not in self.net:
+            self.net[table] = pd.DataFrame(columns=[column])
+        if index in self.net[table].index:
+            obj = self.net[table].object.at[index]
+            obj_is_dict = isinstance(obj, dict)
+            if not obj_is_dict:
+                if overwrite:
+                    logger.info("Updating %s with index %s" %(table, index))
+                else:
+                    raise UserWarning("%s with index %s already exists" %(table, index))
+        self.net[table].at[index, column] = self
+
+    def __eq__(self, other):
+
+        class UnequalityFound(Exception):
+            pass
+
+        def check_equality(obj1, obj2):
+            if isinstance(obj1, (ndarray, generic)) or isinstance(obj2, (ndarray, generic)):
+                if not equal(obj1, obj2):
+                    raise UnequalityFound                    
+            elif not isinstance(obj2, type(obj1)):
+                raise UnequalityFound
+            elif isinstance(obj1, pandapowerNet):
+                pass               
+            elif isinstance(obj1, pd.DataFrame) or isinstance(obj1, pd.Series):
+                check_pandas_equality(obj1, obj2)
+            elif isinstance(obj1, dict):
+                check_dictionary_equality(obj1, obj2)
+            elif obj1 != obj1 and obj2 != obj2:
+                pass
+            elif callable(obj1):
+                check_callable_equality(obj1, obj2)
+            elif obj1 != obj2:
+                raise UnequalityFound            
+        
+        def check_pandas_equality(obj1, obj2):
+            if not obj1.equals(obj2):
+                raise UnequalityFound
+    
+        def check_dictionary_equality(obj1, obj2):
+            if set(obj1.keys()) != set(obj2.keys()):
+                raise UnequalityFound
+            for key in obj1.keys():
+                if key != "_init":
+                    check_equality(obj1[key], obj2[key])
+
+        def check_callable_equality(obj1, obj2):
+            if str(obj1) != str(obj2):
+                raise UnequalityFound
+                
+        if isinstance(other, self.__class__):
+                try:
+                    check_equality(self.__dict__, other.__dict__)
+                    return True
+                except UnequalityFound:
+                    return False
+        else:
+            return False
         
     @classmethod
     def from_dict(cls, d):
@@ -373,13 +436,17 @@ class JSONSerializableClass(object):
 
 def restore_jsoned_objects(net):
     pp_hook.net = net
-    for element in ["controller", "loadcase"]:
-        if element in net:
-            for i, c in net[element][element].items():
-                try:
-                    pp_hook(c)
-                except Exception as e:
-                    logger.warning("did not load %s with index %u: %s"%(element, i, e))
+    restore_columns = [(element, "object") for element, table in net.items() \
+                       if isinstance(table, pd.DataFrame) and "object" in table.columns]
+    if "controller" in net and "controller" in net.controller:
+        restore_columns.append(("controller", "controller"))
+    for element, column in restore_columns:
+        for i, c in zip(net[element].index, net[element][column].values):
+            try:
+                logger.debug("loading %s with index %s"%(element, str(i)))
+                net[element][column].at[i] = pp_hook(c)
+            except Exception as e:
+                logger.warning("did not load %s with index %s: %s"%(element, str(i), e))
     del pp_hook.net
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

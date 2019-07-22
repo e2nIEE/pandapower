@@ -223,6 +223,8 @@ def _set_data_type_of_columns(net):
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
+                if col == "tap_pos":
+                    continue
                 if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
                         if version.parse(pd.__version__) < version.parse("0.21"):
