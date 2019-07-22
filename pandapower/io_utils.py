@@ -5,6 +5,7 @@
 
 
 import pandas as pd
+from pandas.util.testing import assert_series_equal, assert_frame_equal
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import pandapowerNet
 import numpy
@@ -379,13 +380,23 @@ class JSONSerializableClass(object):
         def check_equality(obj1, obj2):
             if isinstance(obj1, (ndarray, generic)) or isinstance(obj2, (ndarray, generic)):
                 if not equal(obj1, obj2):
-                    raise UnequalityFound                    
+                    raise UnequalityFound              
             elif not isinstance(obj2, type(obj1)):
                 raise UnequalityFound
             elif isinstance(obj1, pandapowerNet):
                 pass               
-            elif isinstance(obj1, pd.DataFrame) or isinstance(obj1, pd.Series):
-                check_pandas_equality(obj1, obj2)
+            elif isinstance(obj1, pd.DataFrame):
+                if len(obj1) > 0:
+                    try: 
+                        assert_frame_equal(obj1, obj2)
+                    except:
+                        raise UnequalityFound
+            elif isinstance(obj2, pd.Series):
+                if len(obj1) > 0:
+                    try: 
+                        assert_series_equal(obj1, obj2)
+                    except:
+                        raise UnequalityFound
             elif isinstance(obj1, dict):
                 check_dictionary_equality(obj1, obj2)
             elif obj1 != obj1 and obj2 != obj2:
@@ -394,10 +405,6 @@ class JSONSerializableClass(object):
                 check_callable_equality(obj1, obj2)
             elif obj1 != obj2:
                 raise UnequalityFound            
-        
-        def check_pandas_equality(obj1, obj2):
-            if not obj1.equals(obj2):
-                raise UnequalityFound
     
         def check_dictionary_equality(obj1, obj2):
             if set(obj1.keys()) != set(obj2.keys()):
