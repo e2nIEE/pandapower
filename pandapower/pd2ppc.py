@@ -352,7 +352,7 @@ def _build_branch_ppc_zero(net, ppc):
     _add_line_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc)
     if "trafo3w" in lookup:
-        raise NotImplemented("Three winding transformers are not implemented for unbalanced calculations")
+        raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
 
 
 def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
@@ -432,27 +432,35 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         z_temp = z1*z2 + z2*z3 + z1*z3
         za = z_temp / z2
         zb = z_temp / z1
-        zc = z_temp / z3
-        YAB = 1 / zc
-        YAN = 1 / za
-        YBN = 1 / zb
-#        YAN = (1.1547)*((1 / z3) )
-#        YBN = (1.1547)*((1 / z3) )
+        zc = z_temp / z3   # This  is Zab  Transfer impedance
+        YAB = 1 / zc.astype(complex)
+        YAN = 1 / za.astype(complex)
+        YBN = 1 / zb.astype(complex)
+        YAB_AN = 1/(zc+za).astype(complex) # Series conn YAB and YAN
+        YAB_BN = 1/(zc+zb).astype(complex) # Series conn YAB and YBN
+        
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            y= (YAB+YAN+YBN)* int(ppc["baseMVA"])
+            
+            y = (YAB + YBN).astype(complex)* int(ppc["baseMVA"])#pi model
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
         elif vector_group == "YNd":
-            y= (YAB+YAN+YBN)* int(ppc["baseMVA"])
             buses_all = np.hstack([buses_all, hv_buses_ppc])
+
+#            gs_all = np.hstack([gs_all, y0_k.real*in_service])#T model
+#            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
+            
+            y = (YAB_BN + YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])
+#            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
+            
+            y= (YAB_AN + YBN).astype(complex)* int(ppc["baseMVA"]) #pi model
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
@@ -473,19 +481,26 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            y =  (YAB+YAN+YBN).astype(complex)* int(ppc["baseMVA"])
+#            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
+#            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
+           
+            y = (YAB_BN+YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
         
         elif vector_group == "Yzn":           
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all,(1.1547)*( YAB+YAN+YBN).real * in_service * int(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, (1.1547)*( YAB+YAN+YBN).imag * in_service * int(ppc["baseMVA"])])
+#            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
+#            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
+            
+            y = (YAB_AN + YBN).astype(complex)* int(ppc["baseMVA"]) #pi model
+            gs_all = np.hstack([gs_all,(1.1547)*y.real * in_service * int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, (1.1547)*y.imag * in_service * int(ppc["baseMVA"])])
 
         elif vector_group[-1].isdigit():
             raise ValueError("Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree"%vector_group)
         else:
-            raise ValueError("Transformer vector group %s is unknown / not implemented"%vector_group)
+            raise ValueError("Transformer vector group %s is unknown / not implemented for three phase load flow"%vector_group)
 
     buses, gs, bs = aux._sum_by_group(buses_all, gs_all, bs_all)
     ppc["bus"][buses, GS] += gs
