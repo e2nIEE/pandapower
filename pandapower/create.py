@@ -71,7 +71,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", dtype(object))],
+                 ("type", dtype(object)),
+                 ("tech", dtype(object))],
 
         "asymmetric_sgen": [("name", dtype(object)),
                  ("bus", "i8"),
@@ -852,13 +853,13 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
-def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0,
-                     sn_mva=nan, name=None, scaling=1.,
-                    index=None, in_service=True, type=None, 
-                    ):
+def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0,q_A_mvar=0,\
+                q_B_mvar=0, q_C_mvar=0, sn_mva=nan, name=None, scaling=1.,\
+                    index=None, in_service=True, type=None, tech="3ph-e"):
+
     """create_asymmetric_load(net, bus, p_A_mw, q_A_mvar=0 , p_B_mw, q_B_mvar=0 , p_C_mw, q_C_mvar=0,
     const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
-    in_service=True, type=None)
+    in_service=True, type=None, tech = "3ph-e")
     
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -879,18 +880,19 @@ def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0, q_A_mvar=0,
 
         **q_A_mvar, q_B_mvar, q_C_mvar** (float, default 0) - The reactive power of the load
 
-        **sn_kva** (float, default None) - Nominal power of the load
+        **sn_kva** (float, default: None) - Nominal power of the load
 
-        **name** (string, default None) - The name for this load
+        **name** (string, default: None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the load
+        **type** (string,default: None) -  type variable to classify the load
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+        **index** (int,default: None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
+        **tech - (String, default: 3ph-E) Load model for 3 phase Load ) 
 
 
     OUTPUT:
@@ -913,9 +915,9 @@ def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0, q_A_mvar=0,
     dtypes = net.asymmetric_load.dtypes
 
     net.asymmetric_load.loc[index, ["name", "bus", "p_A_mw","p_B_mw","p_C_mw", "scaling",
-                         "q_A_mvar","q_B_mvar","q_C_mvar", "sn_mva", "in_service", "type"]] = \
+                         "q_A_mvar","q_B_mvar","q_C_mvar", "sn_mva", "in_service", "type","tech"]] = \
         [name, bus, p_A_mw,p_B_mw,p_C_mw, scaling, 
-         q_A_mvar,q_B_mvar,q_C_mvar, sn_mva, bool(in_service), type]
+         q_A_mvar,q_B_mvar,q_C_mvar, sn_mva, bool(in_service), type,tech]
 
     # and preserve dtypes
     _preserve_dtypes(net.asymmetric_load, dtypes)
