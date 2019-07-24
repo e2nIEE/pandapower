@@ -80,12 +80,13 @@ def load_mapping(net,ppci1):
     delta_load_bus=np.array([], dtype=int)
     ba,bb,bc = np.array([], dtype=int),np.array([], dtype=int),np.array([], dtype=int)
     ba_delta,bb_delta,bc_delta = np.array([], dtype=int),np.array([], dtype=int),np.array([], dtype=int)
+    
     SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
     SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
     SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    SA_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    SB_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    SC_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SA_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
+    SB_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
+    SC_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
     
     q_a, QA = np.array([]), np.array([])
     p_a, PA = np.array([]), np.array([])
@@ -126,26 +127,28 @@ def load_mapping(net,ppci1):
         
     l3 = net["asymmetric_load"]
     l3_is = net["_is_elements"]["asymmetric_load"]
-    if len(l3) > 0 and l3_is.any():
-        vl = (_is_elements["asymmetric_load"] * l3["scaling"].values.T)[l3_is][np.where( l3["tech"] == "3ph-e")[0]]
-        q_a = np.hstack([q_a, l3["q_A_mvar"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        p_a = np.hstack([p_a, l3["p_A_mw"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        q_b = np.hstack([q_b, l3["q_B_mvar"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        p_b = np.hstack([p_b, l3["p_B_mw"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        q_c = np.hstack([q_c, l3["q_C_mvar"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        p_c = np.hstack([p_c, l3["p_C_mw"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]] * vl])
-        b = np.hstack([b, l3["bus"].values[l3_is][np.where( l3["tech"] == "3ph-e")[0]]])
-        
-        vl = (_is_elements["asymmetric_load"] * l3["scaling"].values.T)[l3_is][np.where( l3["tech"] == "delta")[0]]
-        q_a_delta = np.hstack([q_a_delta, l3["q_A_mvar"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        p_a_delta = np.hstack([p_a_delta, l3["p_A_mw"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        q_b_delta = np.hstack([q_b_delta, l3["q_B_mvar"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        p_b_delta = np.hstack([p_b_delta, l3["p_B_mw"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        q_c_delta = np.hstack([q_c_delta, l3["q_C_mvar"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        p_c_delta = np.hstack([p_c_delta, l3["p_C_mw"].values[l3_is][np.where( l3["tech"] == "delta")[0]] * vl])
-        
-        delta_load_bus = np.hstack([delta_load_bus, l3["bus"].values[l3_is][np.where( l3["tech"] == "delta")[0]]])
-        
+    l3["in_service"] = l3_is
+    l3 = l3[l3["in_service"] == True]
+    l3_del = l3[l3["type"] == "delta"]
+    l3_wye = l3[l3["type"] == "wye"]
+    if len(l3_wye) > 0 :
+        vl = (l3_wye["in_service"].values * l3_wye["scaling"].values.T)[l3_wye["in_service"].values]
+        q_a = np.hstack([q_a, l3_wye["q_A_mvar"].values * vl])
+        p_a = np.hstack([p_a, l3_wye["p_A_mw"].values * vl])
+        q_b = np.hstack([q_b, l3_wye["q_B_mvar"].values * vl])
+        p_b = np.hstack([p_b, l3_wye["p_B_mw"].values * vl])
+        q_c = np.hstack([q_c, l3_wye["q_C_mvar"].values * vl])
+        p_c = np.hstack([p_c, l3_wye["p_C_mw"].values * vl])
+        b = np.hstack([b, l3_wye["bus"].values])
+    if len(l3_del) > 0 :   
+        vl = (l3_del["in_service"].values * l3_del["scaling"].values.T)[l3_del["in_service"].values]
+        q_a_delta = np.hstack([q_a_delta, l3_del["q_A_mvar"].values * vl])
+        p_a_delta = np.hstack([p_a_delta, l3_del["p_A_mw"].values * vl])
+        q_b_delta = np.hstack([q_b_delta, l3_del["q_B_mvar"].values * vl])
+        p_b_delta = np.hstack([p_b_delta, l3_del["p_B_mw"].values * vl])
+        q_c_delta = np.hstack([q_c_delta, l3_del["q_C_mvar"].values * vl])
+        p_c_delta = np.hstack([p_c_delta, l3_del["p_C_mw"].values * vl])      
+        delta_load_bus = np.hstack([delta_load_bus, l3_del["bus"].values])
     
     z_l3 = net["impedance_load"]
     z_l3_is = net["_is_elements"]["impedance_load"]
@@ -279,7 +282,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =============================================================================
     Sabc_delta, Sabc, Y012 = load_mapping(net,ppci1)
-
     ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
  
     if net.impedance_load.r_A.any() : 
