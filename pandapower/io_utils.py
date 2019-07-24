@@ -98,12 +98,12 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
         
         if item == "bus_geodata":
             geo = coords_to_df(value, geotype="bus")
-            if isinstance(value, geopandas.GeoDataFrame):
+            if GEOPANDAS_INSTALLED and isinstance(value, geopandas.GeoDataFrame):
                 geo["geometry"] = [s.to_wkt() for s in net.bus_geodata.geometry.values]
             dodfs[item] = geo
         elif item == "line_geodata":
             geo = coords_to_df(value, geotype="line")
-            if isinstance(value, geopandas.GeoDataFrame):
+            if GEOPANDAS_INSTALLED and isinstance(value, geopandas.GeoDataFrame):
                 geo["geometry"] = [s.to_wkt() for s in net.line_geodata.geometry.values]
             dodfs[item] = geo
         else:
