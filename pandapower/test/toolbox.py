@@ -17,7 +17,7 @@ import pandapower as pp
 import pandapower.networks as networks
 
 
-@pytest.fixture(scope="module", params=[1])  # TODO
+@pytest.fixture(params=[1])  # TODO
 def net_in(request):
     if request.param == 1:
         net = create_test_network()
