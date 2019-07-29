@@ -1,6 +1,11 @@
-# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# -*- coding: utf-8 -*-
+
+# Copyright 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
+
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 """Builds the DC PTDF matrix for a given choice of slack.
 """
