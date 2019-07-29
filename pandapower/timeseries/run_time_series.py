@@ -22,11 +22,6 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
-try:
-    from timeseries.ts_runpp import TimeSeriesRunpp
-except:
-    logger.debug("Only open source timeseries available")
-
 
 def get_default_output_writer(net, timesteps):
     """
@@ -75,7 +70,7 @@ def init_outputwriter(net, time_steps, output_writer=None):
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar.
-    stolen from: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    the idea was mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     @params:
         iteration   - Required  : current iteration (Int)
         total       - Required  : total iterations (Int)
@@ -162,6 +157,7 @@ def get_run_function(net, output_writer, recycle, **kwargs):
     recycle = True if recycle and all_controllers_recycleable(net) else False
     recycle_class = None
     if recycle:
+        from timeseries.ts_runpp import TimeSeriesRunpp
         recycle_class = TimeSeriesRunpp(net, output_writer)
         run = recycle_class.ts_runpp
     elif "run" in kwargs:

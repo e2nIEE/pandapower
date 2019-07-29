@@ -24,6 +24,7 @@ from pandapower.timeseries.run_time_series import run_timeseries, control_diagno
 
 logger = logging.getLogger(__name__)
 
+
 def simple_test_net():
     net = pp.create_empty_network()
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
@@ -217,14 +218,12 @@ def test_timeseries_var_func():
         time_steps[-1], "mv_bus_min"]
 
 
-
-
-
-@pytest.mark.xfail(reason="@author: please rework this test in cooporation with steffen, after publication of simbench within pandapower")
+@pytest.mark.xfail(
+    reason="@author: please rework this test in cooporation with steffen, after publication of simbench within pandapower")
 def test_timeseries_recycle_simbench():
     # Todo: Get simbench net and test trafo controllers with recycle functions
     # test net
-#    net = sb.get_simbench_net("1-HV-mixed--0-sw")
+    #    net = sb.get_simbench_net("1-HV-mixed--0-sw")
     net = nw.create_cigre_network_hv()  # fixing the import error bug
     # random datasource --> will be memmaps
     tb.drop_inactive_elements(net)
@@ -277,6 +276,7 @@ def test_timeseries_recycle_simbench():
             mask = ~(np.isnan(val)).values
             assert np.allclose(val_recycle.values[mask], val.values[mask])
 
+
 def test_time_steps():
     net = simple_test_net()
     n_timesteps = 11
@@ -317,7 +317,6 @@ def test_output_dump_after_time():
     ow.log_variable('res_line', 'i_ka')
     run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
     # ToDo: read partially dumped results and compare with all stored results
-
 
 
 if __name__ == '__main__':
