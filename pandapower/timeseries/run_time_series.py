@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import tempfile
+
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 
 import pandapower as pp
+from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.control.run_control import run_control, ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow
-from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.control.util.controller_io import dump_controller
-from pandapower import LoadflowNotConverged, OPFNotConverged
+from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
@@ -26,7 +28,6 @@ except:
     logger.debug("Only open source timeseries available")
 
 
-
 def get_default_output_writer(net, timesteps):
     """
     creates a default output writer for the time series calculation
@@ -38,7 +39,7 @@ def get_default_output_writer(net, timesteps):
     RETURN:
         **outpuw_writer** - The default output_writer
     """
-    ow = OutputWriter(net, timesteps, output_path=r"./run_timeseries_output")
+    ow = OutputWriter(net, timesteps, output_path=tempfile.gettempdir())
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
@@ -63,6 +64,7 @@ def init_outputwriter(net, time_steps, output_writer=None):
     """
     if output_writer is None:
         output_writer = get_default_output_writer(net, time_steps)
+        logger.info("No output writer specified. Using default which writes to: {}".format(output_writer.output_path))
     else:
         # inits output writer before time series calculation
         output_writer.time_steps = time_steps
@@ -256,7 +258,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
             progress = kwargs["luigi_progress"]["progress"]
             len_timesteps = len(time_steps)
             message("Progress: %d / %d" % (i, len_timesteps))
-            progress_percentage = int(((i+1) / len_timesteps) * 100)
+            progress_percentage = int(((i + 1) / len_timesteps) * 100)
             progress(progress_percentage)
 
 

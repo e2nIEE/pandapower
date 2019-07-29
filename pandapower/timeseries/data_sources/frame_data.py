@@ -3,11 +3,12 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from pandapower.timeseries.data_source import DataSource
+
 try:
     import pplog
 except:
     import logging as pplog
-    from pandapower.timeseries.data_source import DataSource
 
 logger = pplog.getLogger(__name__)
 
