@@ -4,14 +4,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import functools
 import os
-from builtins import str, object
 from time import time
 
 import numpy as np
 import pandas as pd
+
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 from pandapower.io_utils import mkdirs_if_not_existent
@@ -22,7 +22,7 @@ logger = pplog.getLogger(__name__)
 __author__ = 'fschaefer'
 
 
-class OutputWriter(object):
+class OutputWriter:
     """
     This class supplies you with methods to store and format your output.
     The general idea is to have a python-dictionary *output* which provides
@@ -44,9 +44,11 @@ class OutputWriter(object):
 
     OPTIONAL:
 
-        **output_path** (string, None) - Path to the file or folder we want to write the output to. Allowed file extensions: *.xls, *.xlsx
+        **output_path** (string, None) - Path to the file or folder we want to write the output to.
+                                        Allowed file extensions: *.xls, *.xlsx
 
-        **output_file_type** (string, ".p") - output filetype to use if output_path is not a file. Allowed file extensions: *.xls, *.xlsx, *.csv, *.pickle, *.json
+        **output_file_type** (string, ".p") - output filetype to use if output_path is not a file.
+                                            Allowed file extensions: *.xls, *.xlsx, *.csv, *.pickle, *.json
 
         **csv_seperator** (string, ";") - The seperator used when writing to a csv file
 
@@ -226,6 +228,7 @@ class OutputWriter(object):
         Removes a single output from the output variable function stack
         """
         # ToDo: Implement this function
+        pass
 
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
@@ -376,392 +379,3 @@ class OutputWriter(object):
         if eval_function is not None:
             n_columns = 1
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
-
-# TODO
-# ALL OLD FUNCS:
-# =======
-#     def max_u_mv(self):
-#         mask = (self.net.bus.vn_kv > 1.0) & (self.net.bus.vn_kv < 70.0)
-#         mumv = np.amax(self.net.res_bus.loc[mask, "vm_pu"])
-#         self.save_under_funcname(mumv)
-#
-#     def min_u_mv(self):
-#         mask = (self.net.bus.vn_kv > 1.0) & (self.net.bus.vn_kv < 70.0)
-#         mumv = np.amin(self.net.res_bus.loc[mask, "vm_pu"])
-#         self.save_under_funcname(mumv)
-#
-#     def p_exchange(self):
-#         pe = np.sum(self.net.res_ext_grid["p_kw"])
-#         self.save_under_funcname(pe)
-#
-#     def q_exchange(self):
-#         qe = np.sum(self.net.res_ext_grid["q_kvar"])
-#         self.save_under_funcname(qe)
-#
-#     def max_u_node(self):
-#         mun = np.argmax(self.net.res_bus["vm_pu"], axis=0)
-#         self.save_under_funcname(mun)
-#
-#     def min_u_node(self):
-#         mun = np.argmin(self.net.res_bus["vm_pu"], axis=0)
-#         self.save_under_funcname(mun)
-#
-#     def max_u(self):
-#         mu = np.amax(self.net.res_bus["vm_pu"], axis=0)
-#         self.save_under_funcname(mu)
-#
-#     def min_u(self):
-#         mu = np.amin(self.net.res_bus["vm_pu"], axis=0)
-#         self.save_under_funcname(mu)
-#
-#     def tap_trafo2W(self):
-#         tap_trafo2w = self.net.trafo.tap_pos.at[0]
-#         self.save_under_funcname(tap_trafo2w)
-#
-#     def p_trafo3w_mv(self):
-#         p_trafo3w = -1 * (self.net.res_trafo3w.p_lv_kw.at[0] +
-#                           self.net.res_trafo3w.p_mv_kw.at[0])
-#         self.save_under_funcname(p_trafo3w)
-#
-#     def q_trafo3w_mv(self):
-#         q_trafo3w = -1 * (self.net.res_trafo3w.q_lv_kvar.at[0] +
-#                           self.net.res_trafo3w.q_mv_kvar.at[0])
-#         self.save_under_funcname(q_trafo3w)
-#
-#     def tap_trafo3w(self):
-#         tap_trafo3w = self.net.trafo3w.tap_pos.at[0]
-#         self.save_under_funcname(tap_trafo3w)
-#
-#     def u_mss_trafo3w(self):
-#         u_mss_trafo3w = self.net.res_bus.vm_pu.at[self.net.trafo3w.mv_bus.at[0]]
-#         self.save_under_funcname(u_mss_trafo3w)
-#
-#     def grid_losses(self):
-#         gl = -np.sum(self.net.res_bus["p_kw"])
-#         self.save_under_funcname(gl)
-#
-#     def tap_pos_usw(self):
-#         ti = self.net.trafo.query("100<vn_hv_kv<120").index
-#         self.save_under_funcname(self.net.trafo.loc[ti, "tap_pos"].values)
-#
-#     def tap_voltage_usw(self):
-#         ti = self.net.trafo.query("100<vn_hv_kv<120").index
-#         if self.net.trafo.loc[ti, "tap_side"].values == 'hv':
-#             self.save_under_funcname(self.net.res_trafo.loc[ti, "u_hv_pu"].values)
-#         elif self.net.trafo.loc[ti, "tap_side"].values == 'lv':
-#             self.save_under_funcname(self.net.res_trafo.loc[ti, "u_lv_pu"].values)
-#
-#     # TODO: rework
-#     # For a year simulation with 1000 Controllers one for loop like the following
-#     # increases the calculation time by 5 minutes. It scales approx linear with the number
-#     # of Controllers
-#
-#     def total_load_p(self):
-#         self.save_under_funcname(sum(self.net.load.p_kw))
-#
-#     def total_sgen_p(self):
-#         self.save_under_funcname(sum(self.net.sgen.p_kw))
-#
-#     def total_load_q(self):
-#         self.save_under_funcname(sum(self.net.load.q_kvar))
-#
-#     def total_sgen_q(self):
-#         self.save_under_funcname(sum(self.net.sgen.q_kvar))
-#
-#     def total_p_provision(self):
-#         plist = [ctrl.p_kw for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.PvControl) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(plist))
-#
-#     def total_q_provision(self):
-#         qlist = [ctrl.q_kvar for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.PvControl) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(qlist))
-#
-#     def total_p_curtailment(self):
-#         pcurt = [ctrl.p_curtailment for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.PvControl) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(pcurt))
-#
-#     def maxp_curtailment(self):
-#         pcurt = [ctrl.p_curtailment for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.MaxP_Central) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(sum(pcurt)))
-#
-#     def maxp_provision(self):
-#         pprov = self.net.sgen.p_kw
-#         self.save_under_funcname(sum(pprov))
-#
-#     def maxp_available(self):
-#         pav = [ctrl.max_p_kw for ctrl in
-#                ch.get_ctrl_by_type(self.net, control.MaxP_Central) +
-#                ch.get_ctrl_by_type(self.net, control.PvController) if
-#                self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(pav))
-#
-#     def maxp_curt_percent(self):
-#         for ctrl in ch.get_ctrl_by_type(self.net, control.MaxP_Central):
-#             if self.net.controller.in_service.at[ctrl.index] and sum(ctrl.p_available):
-#                 pcurtp = [-(-ctrl.net.sgen.p_kw / ctrl.p_available * 100)]
-#                 pcurtp = max(max(pcurtp))
-#             else:
-#                 pcurtp = -100
-#
-#                 #        if np.isnan(pcurtp):
-#                 #            pcurtp=-100
-#         self.save_under_funcname(100 + pcurtp)
-#
-#     def maxp_v_unctrld(self):
-#         max_v_unctrld = [ctrl.max_v_unctrld for ctrl in
-#                          ch.get_ctrl_by_type(self.net, control.MaxP_Central) if
-#                          self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(max_v_unctrld[0])
-#
-#     def all_sgen_p_kw(self):
-#         logger.error("Output functuion all_sgen_p_kw deprecated. Use log_variable instead")
-#         p_kw = self.net.res_sgen["p_kw"]
-#         for index, pval in enumerate(p_kw):
-#             self.save_under_name(pval, "P_PV_" + str(index))
-#
-#     def all_sgen_min_p_kw(self):
-#         logger.error("Output function all_sgen_min_p_kw deprecated. Use log_variable instead")
-#         min_p_kw = self.net.sgen["min_p_kw"]
-#         for index, pval in enumerate(min_p_kw):
-#             self.save_under_name(pval, "Pmin_PV_" + str(index))
-#
-#     def all_sgen_q_kvar(self):
-#         logger.error("Output functuion all_sgen_q_kvar deprecated. Use log_variable instead")
-#         q_kvar = self.net.res_sgen["q_kvar"]
-#         for index, qval in enumerate(q_kvar):
-#             self.save_under_name(qval, "Q_PV_" + str(index))
-#
-#     def all_load_p_kw(self):
-#         logger.error("Output functuion all_load_p_kw deprecated. Use log_variable instead")
-#         p_kw = self.net.res_load["p_kw"]
-#         for index, pval in enumerate(p_kw):
-#             self.save_under_name(pval, "P_load_" + str(index))
-#
-#     def all_load_q_kvar(self):
-#         logger.error("Output functuion all_load_q_kvar deprecated. Use log_variable instead")
-#         q_kvar = self.net.res_load["q_kvar"]
-#         for index, qval in enumerate(q_kvar):
-#             self.save_under_name(qval, "Q_load_" + str(index))
-#
-#     def all_controllers_cs_step(self):  # Only relevent for dis_MAS
-#         cs_steplist = [ctrl.controlsteplist for ctrl in
-#                        ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                        self.net.controller.in_service.at[ctrl.index]]
-#         for index_ctrl, cstep in enumerate(cs_steplist):
-#             for index_cs, value in enumerate(cstep):
-#                 self.save_under_name(value, "C_STEP" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def cs_plosses(self):  # Only relevent for dis_MAS
-#         cs_p = [ctrl.cs_ploss for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index]]
-#         for index_ctrl, pstep in enumerate(cs_p):
-#             for index_cs, value in enumerate(pstep):
-#                 self.save_under_name(value, "CS_PLOSS" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def ts_plosses(self):  # Only relevent for dis_MAS
-#         ts_p = [ctrl.ts_ploss for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index]]
-#         for index_ctrl, pstep in enumerate(ts_p):
-#             self.save_under_name(pstep, "TS_PLOSS" + "_CTRL_" + str(index_ctrl))
-#
-#     def cs_line_loading(self):  # Only relevent for dis_MAS
-#         cs_lilo = [ctrl.cs_line_loading for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index]][0]
-#         for index_ctrl, lilostep in enumerate(cs_lilo):
-#             for index_cs, value in enumerate(lilostep):
-#                 self.save_under_name(value,
-#                                      "CS_LINE_LOADING" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def ts_line_loading(self):  # Only relevent for dis_MAS
-#         ts_lilo = [ctrl.ts_line_loading for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index]][0]
-#         for index_ctrl, lilostep in enumerate(ts_lilo):
-#             self.save_under_name(lilostep, "TS_LINE_LOADING" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_cs_q(self):  # Only relevent for dis_MAS
-#         cs_q = [ctrl.cs_sgen_Q for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, qstep in enumerate(cs_q):
-#             for index_cs, value in enumerate(qstep):
-#                 self.save_under_name(value,
-#                                      "CS__SGEN_Q" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_cs_dfdQ(self):  # Only relevent for dis_MAS
-#         cs_dfdQ = [ctrl.cs_sgen_dfdQ for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, dfdQstep in enumerate(cs_dfdQ):
-#             for index_cs, value in enumerate(dfdQstep):
-#                 self.save_under_name(value, "CS_dfdQ" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_cs_sgen_u(self):  # Only relevent for dis_MAS
-#         cs_u = [ctrl.cs_sgen_u for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, ustep in enumerate(cs_u):
-#             for index_cs, value in enumerate(ustep):
-#                 self.save_under_name(value,
-#                                      "CS__SGEN_U" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_ts_q(self):  # Only relevent for dis_MAS
-#         ts_q = [ctrl.ts_sgen_Q for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, tstep in enumerate(ts_q):
-#             self.save_under_name(tstep, "TS__SGEN_Q" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_ts_dfdQ(self):  # Only relevent for dis_MAS
-#         ts_dfdQ = [ctrl.ts_sgen_dfdQ for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, tstep in enumerate(ts_dfdQ):
-#             self.save_under_name(tstep, "TS__SGEN_dfdQ" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_sgen_ts_sgen_u(self):  # Only relevent for dis_MAS
-#         ts_u = [ctrl.ts_sgen_u for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "Q"]
-#         for index_ctrl, tstep in enumerate(ts_u):
-#             self.save_under_name(tstep, "TS__SGEN_U" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_cs_Q(self):  # Only relevent for dis_MAS
-#         cs_q = [ctrl.cs_gen_Q for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, qstep in enumerate(cs_q):
-#             for index_cs, value in enumerate(qstep):
-#                 self.save_under_name(value,
-#                                      "CS__GEN_Q" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_cs_dfdV(self):  # Only relevent for dis_MAS
-#         cs_dfdV = [ctrl.cs_gen_dfdV for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, dfdVstep in enumerate(cs_dfdV):
-#             for index_cs, value in enumerate(dfdVstep):
-#                 self.save_under_name(value,
-#                                      "CS__GEN_dfdV" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_cs_u(self):  # Only relevent for dis_MAS
-#         cs_u = [ctrl.cs_gen_u for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, ustep in enumerate(cs_u):
-#             for index_cs, value in enumerate(ustep):
-#                 self.save_under_name(value,
-#                                      "CS__GEN_U" + str(index_cs) + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_ts_Q(self):  # Only relevent for dis_MAS
-#         ts_q = [ctrl.ts_gen_Q for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, tstep in enumerate(ts_q):
-#             self.save_under_name(tstep, "TS__GEN_Q" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_ts_dfdV(self):  # Only relevent for dis_MAS
-#         ts_dfdV = [ctrl.ts_gen_dfdV for ctrl in
-#                    ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                    self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, tstep in enumerate(ts_dfdV):
-#             self.save_under_name(tstep, "TS__GEN_dfdV" + "_CTRL_" + str(index_ctrl))
-#
-#     def all_gen_ts_u(self):  # Only relevent for dis_MAS
-#         ts_u = [ctrl.ts_gen_u for ctrl in
-#                 ch.get_ctrl_by_type(self.net, control.controller.dis_MAS.MAS_ctrl) if
-#                 self.net.controller.in_service.at[ctrl.index] and ctrl.gtype == "U"]
-#         for index_ctrl, tstep in enumerate(ts_u):
-#             self.save_under_name(tstep, "TS__GEN_U" + "_CTRL_" + str(index_ctrl))
-#
-#     def optimization_state(self):
-#         for ctrl in ch.get_ctrl_by_type(self.net, control.Dyn_Curt):
-#             self.save_under_funcname(ctrl.optimized)
-#
-#     def e_curt(self):
-#         elist = [ctrl.e_curt for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.StatCurtPv) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(elist))
-#
-#     def e_available(self):
-#         elist = [ctrl.e_available for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.StatCurtPv) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(elist))
-#
-#     def e_curt_DynCurt(self):
-#         e = [ctrl.e_curt for ctrl in
-#              ch.get_ctrl_by_type(self.net, control.Dyn_Curt) if
-#              self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(e[0]))
-#
-#     def e_available_DynCurt(self):
-#         e = [ctrl.e_available for ctrl in
-#              ch.get_ctrl_by_type(self.net, control.Dyn_Curt) if
-#              self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(e[0]))
-#
-#     def const_load_p(self):
-#         tot = 0
-#         for ctrl in ch.get_ctrl_by_type(self.net, control.ConstLoad):
-#             if self.net.controller.in_service.at[ctrl.index]:
-#                 tot += np.sum(self.net.load.loc[ctrl.profiles.index, "p_kw"] *
-#                               self.net.load.loc[ctrl.profiles.index, "scaling"])
-#         self.save_under_funcname(tot)
-#
-#     def pv_no_ctrl_p(self):
-#         plist = [ctrl.p_kw for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.NoCtrlPv) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(plist))
-#
-#     def pv_qofu_p(self):
-#         plist = [ctrl.p_kw for ctrl in ch.get_ctrl_by_type(self.net, control.QofuPv) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(plist))
-#
-#     def pv_qqqu_p(self):
-#         plist = [ctrl.p_kw for ctrl in ch.get_ctrl_by_type(self.net, control.QQQUPV) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(plist))
-#
-#     def pv_qqqu_q(self):
-#         qlist = [ctrl.q_kvar for ctrl in
-#                  ch.get_ctrl_by_type(self.net, control.QQQUPV) if
-#                  self.net.controller.in_service.at[ctrl.index]]
-#         self.save_under_funcname(sum(qlist))
-#
-#     def max_line_loading(self):
-#         mll = np.amax(self.net.res_line["loading_percent"])
-#         self.save_under_funcname(mll)
-#
-#     def max_loaded_line(self):
-#         mll = np.argmax(self.net.res_line["loading_percent"])
-#         self.save_under_funcname(mll)
-#
-#     def max_trafo_loading(self):
-#         mtl = np.amax(self.net.res_trafo["loading_percent"])
-#         self.save_under_funcname(mtl)
-#
-#     def max_loaded_trafo(self):
-#         mlt = np.argmax(self.net.res_trafo["loading_percent"])
-#         self.save_under_funcname(mlt)
-#
-#     def save_under_funcname(self, val):
-#         self.output["Parameters"].loc[self.time_step, inspect.stack()[1][3]] = val
-#
-#     def save_under_name(self, val, name):
-#         self.output["Parameters"].loc[self.time_step, name] = val
-# >>>>>>> develop

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import tempfile
-
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import tempfile
+
 import numpy as np
 
 import pandapower as pp
@@ -81,8 +81,8 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         fill        - Optional  : bar fill character (Str)
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
     # Print New Line on Complete
