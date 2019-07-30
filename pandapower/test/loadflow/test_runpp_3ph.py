@@ -340,93 +340,6 @@ def test_in_serv_load():
     assert abs(net.res_line_3ph.loading_percentC.values[0] - 23.71589) < 1e-2
     assert abs(net.res_line_3ph.loading_percent.values[0]  - 154.2452) < 1e-2
 
-# =============================================================================
-# Creating more loads in the same bus is tricky. Even in power factory some scenarios fail depending
-# on the values given
-# =============================================================================
-#    create_asymmetric_load(net, busk, p_A_mw=50000, q_A_mvar=10000, p_B_mw=10000, q_B_mvar=5000,
-#           p_C_mw=10000, q_C_mvar=5000, in_service=True)
-#    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
-#    
-#    V_abc_new,I_abc_new,Sabc_changed = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
-#    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
-#    load_mapping(net)
-#    
-#def test_transformer_3ph_diff_kvabase():
-#    hv_base = 20                     # 110kV Base Voltage
-#    lv_base = 0.4
-#    kVA_base = 1000                     # 100 MVA
-##    I_base = (kVA_base/V_base) * 1e-3           # in kA
-#    vector_group = "Yyn"
-##    hv_base_res = hv_base/np.sqrt(3)
-##    lv_base_res = lv_base/np.sqrt(3)
-#
-#    net = pp.create_empty_network(sn_mva = kVA_base )
-#    
-#    bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
-#    buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
-##    pp.create_bus(net, vn_kv=20., in_service=False)
-##    pp.create_bus(net, vn_kv=20., in_service=True)
-#    
-#    pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
-#    net.ext_grid["r0x0_max"] = 0.1
-#    net.ext_grid["x0x_max"] = 1.0
-#    
-#    transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
-#    transformer_type.update({"vk0_percent": 6, "vkr0_percent": 1.095238, "mag0_percent": 100,
-#                     "mag0_rx": 0., "vector_group": vector_group,"vscr_percent": 1.095238,
-#                     "shift_degree": 0 })
-#    pp.create_std_type(net, transformer_type, vector_group, "trafo")
-#    pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
-#                          index=pp.get_free_id(net.trafo)+1)
-##    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
-#    
-#    create_asymmetric_load(net, buslv, p_A_mw=300, q_A_mvar=20, p_B_mw=100, q_B_mvar=50,
-#                       p_C_mw=100, q_C_mvar=30)
-#    pp.add_zero_impedance_parameters(net)
-#    count,V012_it_1k,I012_it_1k,ppci0, Y0_pu_1k,Y1_pu_1k,Y2_pu_1k = runpp_3ph(net)
-#    
-#    net.sn_mva = 100000
-#    
-#    count,V012_it_100k,I012_it_100k,ppci0, Y0_pu_100k,Y1_pu_100k,Y2_pu_100k = runpp_3ph(net)
-#    
-#    print ('\n\n\nV',V012_it_1k/V012_it_100k,'\n\n\n I ',I012_it_1k/I012_it_100k,\
-#           '\n\n\nY0',Y0_pu_1k/Y0_pu_100k,'\n\n\nY1',Y1_pu_1k/Y1_pu_100k,'\n\n\nY2',\
-#           Y2_pu_1k/Y2_pu_100k)
-#    
-#    net.sn_mva = 1000
-#    vector_group = "YNyn"
-#    net = pp.create_empty_network(sn_mva = kVA_base )
-#    
-#    bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
-#    buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
-##    pp.create_bus(net, vn_kv=20., in_service=False)
-##    pp.create_bus(net, vn_kv=20., in_service=True)
-#    
-#    pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
-#    net.ext_grid["r0x0_max"] = 0.1
-#    net.ext_grid["x0x_max"] = 1.0
-#    
-#    transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
-#    transformer_type.update({"vk0_percent": 6, "vkr0_percent": 1.095238, "mag0_percent": 100,
-#                     "mag0_rx": 0., "vector_group": vector_group,"vscr_percent": 1.095238,
-#                     "shift_degree": 0, "si0_hv_partial": 0.9 })
-#    pp.create_std_type(net, transformer_type, vector_group, "trafo")
-#    pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
-#                          index=pp.get_free_id(net.trafo)+1)
-##    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
-#    
-#    create_asymmetric_load(net, buslv, p_A_mw=300, q_A_mvar=20, p_B_mw=100, q_B_mvar=50,
-#                       p_C_mw=100, q_C_mvar=30)
-#    pp.add_zero_impedance_parameters(net)
-#    count,V012_it_1k,I012_it_1k,ppci0, Y0_pu_1k,Y1_pu_1k,Y2_pu_1k = runpp_3ph(net)
-#    
-#    net.sn_mva = 100000
-#    vector_group = "YNyn"
-#    count,V012_it_100k,I012_it_100k,ppci0, Y0_pu_100k,Y1_pu_100k,Y2_pu_100k = runpp_3ph(net)
-#    print ('\n\n\n YNyn \n\n\nV',V012_it_1k/V012_it_100k,'\n\n\n I ',I012_it_1k/I012_it_100k,\
-#       '\n\n\nY0',Y0_pu_1k/Y0_pu_100k,'\n\n\nY1',Y1_pu_1k/Y1_pu_100k,'\n\n\nY2',\
-#       Y2_pu_1k/Y2_pu_100k)
 
 
 def test_3ph_bus_mapping_order():
@@ -530,8 +443,9 @@ def check_results(net, vc, result):
             ,axis =0)
     if not np.allclose(result, res_vm_kv,atol=1e-4):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
-def make_off_nom_nw(net,vector_group,case):
-    b1 = pp.create_bus(net, 11, zone=vector_group, index=pp.get_free_id(net.bus))
+        
+def make_nw(net,bushv,tap_ps,case,vector_group):
+    b1 = pp.create_bus(net, bushv, zone=vector_group, index=pp.get_free_id(net.bus))
     b2 = pp.create_bus(net, 0.4, zone=vector_group)
     b3 = pp.create_bus(net, 0.4, zone=vector_group)
     
@@ -548,7 +462,7 @@ def make_off_nom_nw(net,vector_group,case):
                 "i0_percent": 0.16875,
                 "shift_degree": 0,
                 "vector_group": vector_group,
-                "tap_side": "hv",
+                "tap_side": "lv",
                 "tap_neutral": 0,
                 "tap_min": -2,
                 "tap_max": 2,
@@ -561,7 +475,7 @@ def make_off_nom_nw(net,vector_group,case):
                 "mag0_rx": 0.,
                 "si0_hv_partial": 0.9,}, vector_group, "trafo")
     
-    t1=pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=1,
+    t1=pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=1,tap_pos=tap_ps,
     					  index=pp.get_free_id(net.trafo)+1)
     
     
@@ -575,284 +489,52 @@ def make_off_nom_nw(net,vector_group,case):
     pp.create_line(net, b2, b3, length_km=0.5, std_type="unsymmetric_line_type",
     			   index=pp.get_free_id(net.line)+1)
     
-    if case == 1:
+    if case == "bal_wye":
         ##Symmetric Load
-        pp.create_load(net,b3,0.08,0.012)
-    elif case == 2:
+        pp.create_load(net,b3,0.08,0.012,type='wye')
+    elif case == "delta_wye":
         #Unsymmetric Light Load
         create_asymmetric_load(net, b3, p_A_mw=0.0044, q_A_mvar=0.0013, p_B_mw=0.0044, q_B_mvar=0.0013,
-                               p_C_mw=0.0032, q_C_mvar=0.0013)
-    elif case == 3:
+                               p_C_mw=0.0032, q_C_mvar=0.0013,type='wye')
+        create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
+                       p_C_mw=0.027, q_C_mvar=0.0043, type ='delta')
+        
+    elif case == "wye":
         ##Unsymmetric Heavy Load
         create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
-                               p_C_mw=0.027, q_C_mvar=0.0043)
-    
-    pp.add_zero_impedance_parameters(net) 
-    return t1        
-def make_nw(net,vector_group,case):
-    b1 = pp.create_bus(net, 10, zone=vector_group, index=pp.get_free_id(net.bus))
-    b2 = pp.create_bus(net, 0.4, zone=vector_group)
-    b3 = pp.create_bus(net, 0.4, zone=vector_group)
-    
-    pp.create_ext_grid(net, b1, s_sc_max_mva=10000, s_sc_min_mva=8000, rx_min=0.1, rx_max=0.1)
-    net.ext_grid["r0x0_max"] = 0.1
-    net.ext_grid["x0x_max"] = 1.0
-    
-    pp.create_std_type(net, {"sn_mva": 1.6,
-                "vn_hv_kv": 10,
-                "vn_lv_kv": 0.4,
-                "vk_percent": 6,
-                "vkr_percent": 0.78125,
-                "pfe_kw": 2.7,
-                "i0_percent": 0.16875,
-                "shift_degree": 0,
-                "vector_group": vector_group,
-                "tap_side": "hv",
-                "tap_neutral": 0,
-                "tap_min": -2,
-                "tap_max": 2,
-                "tap_step_degree": 0,
-                "tap_step_percent": 2.5,
-                "tap_phase_shifter": False,
-                "vk0_percent": 6, 
-                "vkr0_percent": 0.78125, 
-                "mag0_percent": 100,
-                "mag0_rx": 0.,
-                "si0_hv_partial": 0.9,}, vector_group, "trafo")
-    
-    t1=pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=1,
-    					  index=pp.get_free_id(net.trafo)+1)
-    
-    
-    pp.create_std_type(net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991,
-                        "c_nf_per_km": 1160., "max_i_ka": 0.421,
-                        "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
-                        "x0_ohm_per_km": 0.2990796,
-                        "c0_nf_per_km":  496.2}, "unsymmetric_line_type")
-    
-            
-    pp.create_line(net, b2, b3, length_km=0.5, std_type="unsymmetric_line_type",
-    			   index=pp.get_free_id(net.line)+1)
-    
-    if case == 1:
-        ##Symmetric Load
-        pp.create_load(net,b3,0.08,0.012)
-    elif case == 2:
-        #Unsymmetric Light Load
-        create_asymmetric_load(net, b3, p_A_mw=0.0044, q_A_mvar=0.0013, p_B_mw=0.0044, q_B_mvar=0.0013,
-                               p_C_mw=0.0032, q_C_mvar=0.0013)
-    elif case == 3:
-        ##Unsymmetric Heavy Load
+                               p_C_mw=0.027, q_C_mvar=0.0043,type=case)
+    elif case == "delta":
         create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
-                               p_C_mw=0.027, q_C_mvar=0.0043)
+                       p_C_mw=0.027, q_C_mvar=0.0043,type=case)
     
     pp.add_zero_impedance_parameters(net) 
     return t1
-#@pytest.mark.xfail        
-def test_trafo_Lowload_asym():
+    
+def test_trafo_asym():
     
 # =============================================================================
 # TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
 # It has something to do with Y sh for these groups    
 # =============================================================================
-    results = {
-#                    "Yy": np.array([
-#                    0.999999741	,	1.16226356	,	1.154224842                         
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ] ),
-#                            "Yyn": np.array( [
-#                    1.000000108	,	0.995841765	,	0.985104757
-#                ,	0.999999879	,	1.003636017	,	0.994370887
-#                ,	1.000000013	,	0.999760497	,	0.995218464
-#                                        	]),
-#                            "Yd":  np.array([	
-#                    0.999999741	,	1.16226356	,	1.154224842
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ])
-#                            ,"YNy":  np.array([	
-#                    0.999999741	,	1.16226356	,	1.154224842
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ]),
-                        "YNyn":np.array([	
-                    0.999999988	,	0.999735325	,	0.989000027  # Vm_A
-                ,	0.999999986	,	0.999734718	,	0.990462676  # Vm_B
-                ,	1.000000026	,	0.999752436	,	0.995206019  # Vm_C
-                                ])
-        
-#                            ,"YNd": np.array([	
-#                    0.999999741	,	1.16226356	,	1.154224842
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ])
-#                            ,"Dy":  np.array([	
-#                    0.999999741	,	1.16226356	,	1.154224842
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ])
-                            ,"Dyn": np.array([
-                    1.000000107	,	0.999735094	,	0.988999796
-                ,	0.99999988	,	0.999734868	,	0.990462827
-                ,	1.000000013	,	0.999752516	,	0.995206099
-                                    ])
-#                            ,"Dd":  np.array([	
-#                    0.999999741	,	1.16226356	,	1.154224842
-#                ,	1.000000352	,	1.261592198	,	1.254583122
-#                ,	0.999999907	,	0.656601912	,	0.646808381
-#                                    ])
-               }
+    results = get_PowerFactory_Results()   # Results taken out from PF using a different script   
+    for bushv in [10,11]:
+        for tap_ps in [0,1]:
+            for loadtyp in ["delta","wye","delta_wye","bal_wye"]:
+                for vc in ["YNyn","Dyn","Yzn"]:#,"Yyn"]:
+                    net = pp.create_empty_network(sn_mva = 100) 
+                    make_nw(net,bushv,tap_ps,loadtyp,vc)
+                    assert runpp_3ph(net)[3]["success"]
+                    check_results(net,vc,results[bushv][tap_ps][loadtyp][vc])
 
-    net = pp.create_empty_network(sn_mva = 100) 
-    for vc in results.keys():
-        
-        make_nw(net, vc,2)
-        assert runpp_3ph(net)[3]["success"]
-        check_results(net, vc, results[vc])
 
-def test_trafo_Highload_sym():
-    
-# =============================================================================
-# TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
-# It has something to do with Y sh for these groups    
-# =============================================================================
-    results = {
-#                    "Yy": np.array([	
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ] )
-                            "Yyn": np.array( [	
-                    1	,	0.999016737	,	0.944619631
-                ,	1	,	0.999016737	,	0.944619632
-                ,	1	,	0.999016737	,	0.944619632
-                                        	])
-#                            ,"Yd":  np.array([		
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ])
-#                            ,"YNy":  np.array([		
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ])
-                       , "YNyn":np.array([		
-                    1	,	0.999016737	,	0.944619631
-                ,	1	,	0.999016737	,	0.944619632
-                ,	1	,	0.999016737	,	0.944619632
-                                ])
-        
-#                            ,"YNd": np.array([		
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ])
-#                            ,"Dy":  np.array([		
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ])
-                            ,"Dyn": np.array([
-                    1	,	0.999016737	,	0.944619631
-                ,	1	,	0.999016737	,	0.944619632
-                ,	1	,	0.999016737	,	0.944619632
-                                    ])
-#                            ,"Dd":  np.array([		
-#                    1	,	0.999016746	,	0.944619641
-#                ,	1	,	0.999016735	,	0.94461963
-#                ,	1	,	0.99901673	,	0.944619624
-#                                    ])
-               }
-
-    net = pp.create_empty_network(sn_mva = 100) 
-    for vc in results.keys():
-        
-        make_nw(net, vc,1)
-        assert runpp_3ph(net)[3]["success"]
-        check_results(net, vc, results[vc])
-#@pytest.mark.xfail 
-def test_trafo_Highload_asym():
-
-# =============================================================================
-# TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
-# It has something to do with Y sh for these groups    
-# =============================================================================
-    results = {
-#                            "Yy": np.array([	
-#                    0.999997995,	1.024819011	,	0.964757657
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ] ),
-#                            "Yyn": np.array( [	
-#                    0.999999802	,	0.991453171	,	0.92057776
-#                ,	0.999999779	,	1.014291187	,	0.961583055
-#                ,	1.000000419	,	0.991288803	,	0.940803171
-#                                        	]),
-#                            "Yd":  np.array([		
-#                    0.999997995	,	1.024819011	,	0.964757657
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ]),
-#                           "YNy":  np.array([	
-#                    0.999997995	,	1.024819011	,	0.964757657
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ]),
-                            "YNyn":np.array([
-                    0.999999708	,	0.998846637	,	0.928690878	#A
-                ,   1.000000167	,	0.999011589	,	0.945238319	#B
-                ,   1.000000124	,	0.999000247	,	0.948843563	#C
-                                    ])
-#                            ,"YNd": np.array([		
-#                    0.999997995	,	1.024819011	,	0.964757658
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ])
-#                            ,"Dy":  np.array([		
-#                    0.999997995	,	1.024819011	,	0.964757658
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ])
-                            ,"Dyn": np.array([		
-                    0.99999996	,	0.998846152	,	0.928690347
-                ,	0.999999734	,	0.999012417	,	0.945239211
-                ,	1.000000306	,	0.999000203	,	0.948843523
-                                    ])
-#                            ,"Dd":  np.array([		
-#                    0.999997995	,	1.024819011	,	0.964757657
-#                ,	1.000001378	,	1.168758861	,	1.12103191
-#                ,	1.000000627	,	0.831457237	,	0.762847255
-#                                    ])                     
-
-               }
-
-    net = pp.create_empty_network(sn_mva = 100) 
-    for vc in results.keys():
-        
-        make_nw(net, vc,3)
-        assert runpp_3ph(net)[3]["success"]
-        check_results(net, vc, results[vc])
-
-def test_off_nominal_ratio_trafo():
-    net = pp.create_empty_network(sn_mva = 100) 
-    make_off_nom_nw(net, "YNyn",1)
-    assert runpp_3ph(net,tolerance_mva=1e-12)[3]["success"]
-    res_pf = np.array([		1	,	1.099111063	,	1.050190396
-                        ,	1	,	1.099111063	,	1.050190397
-                        ,	1	,	1.099111063	,	1.050190397
-                        ])
-    check_results(net, "YNyn", res_pf)
-#@pytest.mark.xfail
 def test_2trafos():
     net = pp.create_empty_network() 
-    make_nw(net, "YNyn",1)
-    make_nw(net, "YNyn",1)
+    make_nw(net,10.,0.,"wye","YNyn")
+    make_nw(net,10.,0., "wye","YNyn")
     assert runpp_3ph(net)[3]["success"]
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
     
-#@pytest.mark.xfail
+
 def test_3ph_isolated_nodes():
     V_base = 110  # 110kV Base Voltage
     MVA_base = 100  # 100 MVA
@@ -898,43 +580,740 @@ def test_3ph_isolated_nodes():
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["p_A_mw", "q_A_mvar", "p_B_mw", "q_B_mvar",
                        "p_C_mw", "q_C_mvar"]], 0.0)
 
+def get_PowerFactory_Results():
+    results=\
+    { 
+    	10:
+    	{ 
+    
+    		0:
+    		{ 
+    
+    			'delta' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,0,deltaYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001787261197,					0.9990664471050634,					0.9408623912831601,
+    					0.9999997973033823,					0.9989329879720452,					0.9398981202882926,
+    					1.000000023970535,					0.9990124767159095,					0.9422153531204793,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,0,deltaYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001786899793,					0.9990638105447855,					0.9408586320432043,
+    					0.9999997971517767,					0.9989338020819162,					0.9398997093459485,
+    					1.000000024158281,					0.9990142941344189,					0.9422174830541402,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,0,deltaDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000178603741,					0.9990638106892,					0.9408586322473715,
+    					0.9999997971832201,					0.9989338020666364,					0.9398997093074486,
+    					1.000000024213076,					0.9990142940055439,					0.9422174828921106,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,0,deltaYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000178603741,					0.9990638106892,					0.9408586322473715,
+    					0.9999997971832201,					0.9989338020666364,					0.9398997093074486,
+    					1.000000024213076,					0.9990142940055439,					0.9422174828921106,
+    
+    					 ] )
+    ,
+    			},
+    			'wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,0,wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999998021362442,					0.9915031010358111,					0.9206318374527404,
+    					0.9999997791045989,					1.0143417780460269,					0.9616365638634155,
+    					1.000000418759289,					0.9913387390190033,					0.9408558778822637,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,0,wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999997083766274,					0.9988968962217385,					0.9287452455114519,
+    					1.0000001672319114,					0.999061839981782,					0.9452915718541725,
+    					1.0000001243918462,					0.9990504923797096,					0.9488965582258678,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,0,wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999599731432,					0.9988963012384348,					0.9287445940341739,
+    					0.999999734429128,					0.9990625733649781,					0.9452923634430362,
+    					1.000000305597812,					0.9990503538577492,					0.9488964199625295,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,0,wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999599731432,					0.9988963012384348,					0.9287445940341739,
+    					0.999999734429128,					0.9990625733649781,					0.9452923634430362,
+    					1.000000305597812,					0.9990503538577492,					0.9488964199625295,
+    
+    					 ] )
+    ,
+    			},
+    			'delta_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,0,delta_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000289039923,					0.9945259444558469,					0.9241479442057374,
+    					0.9999996598061066,					1.0028660964609941,					0.9332827547884484,
+    					1.0000000511540714,					0.9989227003917809,					0.9366758414321353,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,0,delta_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001633660651,					0.9988186334488024,					0.9284513283443013,
+    					0.9999997731436624,					0.9986857571039884,					0.9290168825920521,
+    					1.0000000634904662,					0.9987917974558278,					0.9366076053493121,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,0,delta_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002947774138,					0.9988183812973129,					0.928451074375663,
+    					0.9999996601592913,					0.9986859152711799,					0.9290170457925304,
+    					1.0000000450633972,					0.9987918914643369,					0.936607696605823,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,0,delta_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002947774138,					0.9988183812973129,					0.928451074375663,
+    					0.9999996601592913,					0.9986859152711799,					0.9290170457925304,
+    					1.0000000450633972,					0.9987918914643369,					0.936607696605823,
+    
+    					 ] )
+    ,
+    			},
+    			'bal_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,0,bal_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999879,					0.9990668908275987,					0.9446728357045939,
+    					0.9999999999999739,					0.9990668910254652,					0.9446728363197381,
+    					1.0000000000000384,					0.9990668908667012,					0.9446728362625954,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,0,bal_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999863,					0.9990668909016067,					0.9446728357836535,
+    					0.9999999999999772,					0.9990668908990621,					0.9446728361848189,
+    					1.0000000000000362,					0.9990668909190944,					0.9446728363184529,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,0,bal_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.999999999999989,					0.999066890901618,					0.9446728357836652,
+    					0.9999999999999737,					0.999066890899081,					0.9446728361848393,
+    					1.0000000000000375,					0.999066890919066,					0.9446728363184226,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,0,bal_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.999999999999989,					0.999066890901618,					0.9446728357836652,
+    					0.9999999999999737,					0.999066890899081,					0.9446728361848393,
+    					1.0000000000000375,					0.999066890919066,					0.9446728363184226,
+    
+    					 ] )
+    ,
+    			},
+    		},
+    		1:
+    		{ 
+    
+    			'delta' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,1,deltaYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001795040512,					1.0240495841864894,					0.9674397511496959,
+    					0.9999997971910463,					1.0239111614639989,					0.9664923222986317,
+    					1.0000000233049395,					1.0239935208058917,					0.9687543048259518,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,1,deltaYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001782704175,					1.0240459468337655,					0.9674352916726019,
+    					0.9999997977852046,					1.0239130527637306,					0.9664952324047731,
+    					1.0000000239444145,					1.023995255504894,					0.9687558295327158,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,1,deltaDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001782214243,					1.024045946940332,					0.967435291834159,
+    					0.9999997978066542,					1.0239130527420286,					0.9664952323430777,
+    					1.0000000239719584,					1.023995255420507,					0.9687558294364838,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,1,deltaYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001782214243,					1.024045946940332,					0.967435291834159,
+    					0.9999997978066542,					1.0239130527420286,					0.9664952323430777,
+    					1.0000000239719584,					1.023995255420507,					0.9687558294364838,
+    
+    					 ] )
+    ,
+    			},
+    			'wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,1,wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999998049723338,					1.0163471727161444,					0.9474851372085454,
+    					0.9999997835047069,					1.0396033478524176,					0.9883119194148919,
+    					1.0000004115230865,					1.016177862041642,					0.9670415224711911,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,1,wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999997111904564,					1.023876123903735,					0.9557104532156954,
+    					1.000000169840967,					1.024045000904823,					0.97172789408756,
+    					1.0000001189689527,					1.024030547850082,					0.9752090807560196,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,1,wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999610844935,					1.0238755180281829,					0.9557097928361534,
+    					0.9999997396431541,					1.0240457481759326,					0.9717286975282872,
+    					1.0000002992724317,					1.0240304063318828,					0.975208939465858,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,1,wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999610844935,					1.0238755180281829,					0.9557097928361534,
+    					0.9999997396431541,					1.0240457481759326,					0.9717286975282872,
+    					1.0000002992724317,					1.0240304063318828,					0.975208939465858,
+    
+    					 ] )
+    ,
+    			},
+    			'delta_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,1,delta_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002896605282,					1.0194026014413138,					0.9509830141499932,
+    					0.9999996606572187,					1.0279455302463374,					0.9603073239465667,
+    					1.0000000496823542,					1.0238970684816717,					0.9633884768515291,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,1,delta_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001631049464,					1.0237965435008547,					0.9553922424619002,
+    					0.9999997741736003,					1.0236607923322103,					0.9559358029296258,
+    					1.000000062721646,					1.0237688359303385,					0.9633200580357987,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,1,delta_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002940160242,					1.023796285978077,					0.9553919829548445,
+    					0.9999996614657936,					1.0236609541452617,					0.9559359697011912,
+    					1.000000044518284,					1.0237689316654306,					0.9633201512377196,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,1,delta_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002940160242,					1.023796285978077,					0.9553919829548445,
+    					0.9999996614657936,					1.0236609541452617,					0.9559359697011912,
+    					1.000000044518284,					1.0237689316654306,					0.9633201512377196,
+    
+    					 ] )
+    ,
+    			},
+    			'bal_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #10,1,bal_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.99999999999999,					1.02404859308445,					0.971134029249497,
+    					0.9999999999999845,					1.0240485931685195,					0.9711340295967834,
+    					1.0000000000000258,					1.0240485931044616,					0.9711340295607079,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #10,1,bal_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999892,					1.0240485931151249,					0.9711340292823146,
+    					0.9999999999999865,					1.024048593114567,					0.9711340295398108,
+    					1.0000000000000244,					1.0240485931277552,					0.9711340295848808,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #10,1,bal_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999902,					1.024048593115119,					0.9711340292823075,
+    					0.9999999999999848,					1.0240485931145844,					0.9711340295398292,
+    					1.0000000000000249,					1.024048593127728,					0.9711340295848522,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #10,1,bal_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999902,					1.024048593115119,					0.9711340292823075,
+    					0.9999999999999848,					1.0240485931145844,					0.9711340295398292,
+    					1.0000000000000249,					1.024048593127728,					0.9711340295848522,
+    
+    					 ] )
+    ,
+    			},
+    		},
+    	},
+    	11:
+    	{ 
+    
+    		0:
+    		{ 
+    
+    			'delta' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,0,deltaYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001770832512,					1.0991666419999009,					1.046863039382953,
+    					0.9999997998271506,					1.0990478952608114,					1.0459974904307656,
+    					1.0000000230896342,					1.0991196058562567,					1.0480820977965253,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,0,deltaYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000177064337,					1.0991653032170863,					1.0468611006390927,
+    					0.9999997997417357,					1.0990483460592901,					1.0459983357170173,
+    					1.0000000231939636,					1.0991204912844936,					1.0480831713683516,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,0,deltaDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001770170086,					1.099165303280019,					1.046861100729514,
+    					0.9999997997589116,					1.0990483460550085,					1.0459983357036897,
+    					1.0000000232241157,					1.0991204912259542,					1.0480831712929268,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,0,deltaYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001770170086,					1.099165303280019,					1.046861100729514,
+    					0.9999997997589116,					1.0990483460550085,					1.0459983357036897,
+    					1.0000000232241157,					1.0991204912259542,					1.0480831712929268,
+    
+    					 ] )
+    ,
+    			},
+    			'wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,0,wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999998409135958,					1.0924753274233265,					1.0291805067306592,
+    					0.9999997887228856,					1.112638254093763,					1.0649872145063082,
+    					1.0000003703636224,					1.0923417509837368,					1.0468846408299153,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,0,wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999997198861459,					1.0990179190476412,					1.0362148303868974,
+    					1.0000001764446427,					1.0991669773561135,					1.0507765134998273,
+    					1.0000001036695618,					1.0991473807202723,					1.0539233691792418,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,0,wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999645965844,					1.0990174387140366,					1.036214314982853,
+    					0.9999997540341666,					1.0991675482923782,					1.0507771199594842,
+    					1.0000002813693196,					1.0991472900387962,					1.0539232794875342,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,0,wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999645965844,					1.0990174387140366,					1.036214314982853,
+    					0.9999997540341666,					1.0991675482923782,					1.0507771199594842,
+    					1.0000002813693196,					1.0991472900387962,					1.0539232794875342,
+    
+    					 ] )
+    ,
+    			},
+    			'delta_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,0,delta_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002867915057,					1.09511471406464,					1.0320045668742739,
+    					0.9999996655448716,					1.102582851029247,					1.0401766570762196,
+    					1.0000000476637207,					1.0990187740288424,					1.0431968194073924,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,0,delta_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001623852481,					1.0989490480618516,					1.0358488170212126,
+    					0.9999997776678232,					1.098829878782537,					1.0363599386677118,
+    					1.0000000599471168,					1.0989238972185933,					1.0431472226133363,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,0,delta_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000291479138,					1.0989488469146447,					1.0358486145520418,
+    					0.9999996659434413,					1.0988300000349813,					1.0363600632236267,
+    					1.0000000425775202,					1.098923977128452,					1.0431473008280179,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,0,delta_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000291479138,					1.0989488469146447,					1.0358486145520418,
+    					0.9999996659434413,					1.0988300000349813,					1.0363600632236267,
+    					1.0000000425775202,					1.098923977128452,					1.0431473008280179,
+    
+    					 ] )
+    ,
+    			},
+    			'bal_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,0,bal_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.999999999999994,					1.0991663222840553,					1.0502483483014522,
+    					0.999999999999986,					1.0991663223629755,					1.0502483485683893,
+    					1.00000000000002,					1.0991663223022374,					1.0502483485566558,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,0,bal_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999934,					1.0991663223142185,					1.050248348333234,
+    					0.9999999999999878,					1.0991663223125718,					1.0502483485153113,
+    					1.000000000000019,					1.0991663223224817,					1.0502483485779557,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,0,bal_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999944,					1.099166322314217,					1.0502483483332314,
+    					0.999999999999986,					1.0991663223125883,					1.050248348515329,
+    					1.0000000000000195,					1.099166322322463,					1.0502483485779364,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,0,bal_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999944,					1.099166322314217,					1.0502483483332314,
+    					0.999999999999986,					1.0991663223125883,					1.050248348515329,
+    					1.0000000000000195,					1.099166322322463,					1.0502483485779364,
+    
+    					 ] )
+    ,
+    			},
+    		},
+    		1:
+    		{ 
+    
+    			'delta' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,1,deltaYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000177759738,					1.1266508599188314,					1.075749945733859,
+    					0.9999997996753168,					1.1265276819882335,					1.0748995015125222,
+    					1.0000000225649812,					1.1266018378562361,					1.076934372664356,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,1,deltaYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.000000176730594,					1.1266486259211201,					1.0757473443700512,
+    					0.9999998002521623,					1.1265290107226675,					1.0749013345769867,
+    					1.0000000230172796,					1.1266027366684568,					1.0769351304583261,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,1,deltaDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001767039686,					1.1266486259729462,					1.0757473444450258,
+    					0.9999998002646232,					1.1265290107113315,					1.0749013345478544,
+    					1.0000000230314439,					1.126602736628164,					1.0769351304141572,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,1,deltaYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001767039686,					1.1266486259729462,					1.0757473444450258,
+    					0.9999998002646232,					1.1265290107113315,					1.0749013345478544,
+    					1.0000000230314439,					1.126602736628164,					1.0769351304141572,
+    
+    					 ] )
+    ,
+    			},
+    			'wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,1,wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999998425139852,					1.1198215550651343,					1.0582701679876008,
+    					0.999999792808548,					1.1404037383383383,					1.0940119347447643,
+    					1.000000364677568,					1.119678656475928,					1.0754147798091545,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,1,wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999997220234313,					1.1264984365036237,					1.065423794124721,
+    					1.0000001785338588,					1.126651120595415,					1.0795452055229118,
+    					1.0000000994430542,					1.126629015453866,					1.0825891788506536,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,1,wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999654333293,					1.1264979466596041,					1.0654232703853377,
+    					0.9999997580954444,					1.1266517031402583,					1.079545822405393,
+    					1.0000002764712945,					1.1266289226736226,					1.0825890870214312,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,1,wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999654333293,					1.1264979466596041,					1.0654232703853377,
+    					0.9999997580954444,					1.1266517031402583,					1.079545822405393,
+    					1.0000002764712945,					1.1266289226736226,					1.0825890870214312,
+    
+    					 ] )
+    ,
+    			},
+    			'delta_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,1,delta_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002872593454,					1.122503013135439,					1.061107915739188,
+    					0.9999996662661563,					1.1301536319129346,					1.069448792307849,
+    					1.0000000464745962,					1.1264944198323028,					1.0721922685731713,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,1,delta_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000001621739123,					1.126428316031026,					1.0650458103409908,
+    					0.9999997785161929,					1.1263065012425137,					1.0655375147447366,
+    					1.0000000593100822,					1.12640238251751,					1.0721435619381965,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,1,delta_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002908474748,					1.1264281104824707,					1.0650456033928053,
+    					0.9999996670234566,					1.1263066253385652,					1.065537642082384,
+    					1.0000000421291677,					1.126402463985756,					1.0721436418376473,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,1,delta_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					1.0000002908474748,					1.1264281104824707,					1.0650456033928053,
+    					0.9999996670234566,					1.1263066253385652,					1.065537642082384,
+    					1.0000000421291677,					1.126402463985756,					1.0721436418376473,
+    
+    					 ] )
+    ,
+    			},
+    			'bal_wye' :
+    			{ 
+    
+    				'Yyn': np.array
+    				([ 
+    #11,1,bal_wyeYyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999946,					1.126649305937712,					1.0790357881145098,
+    					0.9999999999999919,					1.1266493059651883,					1.0790357882640247,
+    					1.0000000000000135,					1.1266493059449603,					1.0790357882526134,
+    
+    					 ] )
+    ,
+    				'YNyn': np.array
+    				([ 
+    #11,1,bal_wyeYNyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999944,					1.126649305947411,					1.079035788124742,
+    					0.9999999999999928,					1.126649305946962,					1.0790357882450081,
+    					1.000000000000013,					1.1266493059535365,					1.079035788261449,
+    
+    					 ] )
+    ,
+    				'Dyn': np.array
+    				([ 
+    #11,1,bal_wyeDyn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999944,					1.1266493059473897,					1.0790357881247188,
+    					0.9999999999999922,					1.1266493059469642,					1.079035788245011,
+    					1.0000000000000133,					1.1266493059535063,					1.0790357882614174,
+    
+    					 ] )
+    ,
+    				'Yzn': np.array
+    				([ 
+    #11,1,bal_wyeYzn
+    #BusTr_HV,Tr_LV,Load
+    					0.9999999999999944,					1.1266493059473897,					1.0790357881247188,
+    					0.9999999999999922,					1.1266493059469642,					1.079035788245011,
+    					1.0000000000000133,					1.1266493059535063,					1.0790357882614174,
+    
+    					 ] )
+    ,
+    			},
+    		},
+    	},
+    
+    }
 
-# def test_3bus_trafo_network():
-#     vector_groups = ["YNyn"]
-#     # Todo: Extend with other vector groups
-#
-#     for vector_group in vector_groups:
-#         net = pp.create_empty_network()
-#         hv_base = 20  # 110kV Base Voltage
-#         lv_base = 0.4
-#         bushv = pp.create_bus(net, vn_kv=hv_base, zone=vector_group, name="bushv")
-#         buslv = pp.create_bus(net, vn_kv=lv_base, zone=vector_group, name="buslv")
-#         busn = pp.create_bus(net, vn_kv=lv_base, zone=vector_group, name="busn")
-#
-#         pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
-#         net.ext_grid["r0x0_max"] = 0.1
-#         net.ext_grid["x0x_max"] = 1.0
-#
-#         transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV", "trafo"))
-#         transformer_type.update({"vk0_percent": 6, "vkr0_percent": 1.095238, "mag0_percent": 100,
-#                                  "mag0_rx": 0., "vector_group": vector_group, "vscr_percent": 1.095238,
-#                                  "shift_degree": 0, "si0_hv_partial": 0.9})
-#         pp.create_std_type(net, {"r_ohm_per_km": 0.1013, "x_ohm_per_km": 0.06911504,
-#                                  "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
-#                                  "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
-#                                  "x0_ohm_per_km": 0.2764602}, "N2XRY 3x185sm 0.6/1kV")
-#
-#         pp.create_std_type(net, transformer_type, vector_group, "trafo")
-#         pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
-#                                    index=pp.get_free_id(net.trafo) + 1)
-#         pp.create_line(net, from_bus=buslv, to_bus=busn, length_km=1, std_type="N2XRY 3x185sm 0.6/1kV")
-#
-#         create_asymmetric_load(net, busn, p_A_mw=-20, q_A_mvar=10, p_B_mw=20, q_B_mvar=-10, p_C_mw=15, q_C_mvar=5)
-#         pp.add_zero_impedance_parameters(net)
-#         runpp_3ph(net, trafo_loading="current")
-#
-#         if not np.allclose(net["res_trafo_3ph"][["iA_lv_ka", "iB_lv_ka", "iC_lv_ka"]], net["res_line_3ph"][["iA_from_ka", "iB_from_ka", "iC_from_ka"]], atol=1e-4):
-#             raise ValueError("Incorrect phase currents for vector group %s" % vector_group)
-
+    return results
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
