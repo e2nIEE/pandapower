@@ -76,14 +76,13 @@ def load_mapping(net,ppci1):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     
     b = np.array([], dtype=int)
-    b_ppc = np.array([], dtype=int)
     delta_load_bus=np.array([], dtype=int)
     ba,bb,bc = np.array([], dtype=int),np.array([], dtype=int),np.array([], dtype=int)
     ba_delta,bb_delta,bc_delta = np.array([], dtype=int),np.array([], dtype=int),np.array([], dtype=int)
     
-    SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
+    SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
+    SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
     SA_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
     SB_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
     SC_delta = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)*0
@@ -103,27 +102,30 @@ def load_mapping(net,ppci1):
     
     y_a, y_b, y_c = np.array([]), np.array([]),np.array([])
     
-    if (ppci1["bus"][:, PD] != 0).any() :
-        b_ppc = np.where( ppci1["bus"][:, PD] != 0)[0]
-        q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_b, PB = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        q_c, QC = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        
-        b = np.where(bus_lookup == b_ppc)[0]
-        
-    elif (ppci1["bus"][:, QD] != 0).any() :
-        b_ppc = np.where( ppci1["bus"][:, QD] != 0)[0]
-        q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_b, PB = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        q_c, QC = (ppci1["bus"][b_ppc, QD])/3, np.array([])
-        p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
-        
-        b = np.where(bus_lookup == b_ppc)[0]
+    l = net["load"]
+    l_is = net["_is_elements"]["load"]
+    l["in_service"] = l_is
+    l = l[l["in_service"] == True]
+    l_del = l[l["type"] == "delta"]
+    l_wye = l[l["type"] == "wye"]
+    if len(l_wye) > 0 :
+        vl = (l_wye["in_service"].values * l_wye["scaling"].values.T)[l_wye["in_service"].values]
+        q_a = np.hstack([q_a, l_wye["q_mvar"].values/3 * vl])
+        p_a = np.hstack([p_a, l_wye["p_mw"].values/3 * vl])
+        q_b = np.hstack([q_b, l_wye["q_mvar"].values/3 * vl])
+        p_b = np.hstack([p_b, l_wye["p_mw"].values/3 * vl])
+        q_c = np.hstack([q_c, l_wye["q_mvar"].values/3 * vl])
+        p_c = np.hstack([p_c, l_wye["p_mw"].values/3 * vl])
+        b = np.hstack([b, l_wye["bus"].values])
+    if len(l_del) > 0 :   
+        vl = (l_del["in_service"].values * l_del["scaling"].values.T)[l_del["in_service"].values]
+        q_a_delta = np.hstack([q_a_delta, l_del["q_mvar"].values/3 * vl])
+        p_a_delta = np.hstack([p_a_delta, l_del["p_mw"].values/3 * vl])
+        q_b_delta = np.hstack([q_b_delta, l_del["q_mvar"].values/3 * vl])
+        p_b_delta = np.hstack([p_b_delta, l_del["p_mw"].values/3 * vl])
+        q_c_delta = np.hstack([q_c_delta, l_del["q_mvar"].values/3 * vl])
+        p_c_delta = np.hstack([p_c_delta, l_del["p_mw"].values/3 * vl])      
+        delta_load_bus = np.hstack([delta_load_bus, l_del["bus"].values])
         
     l3 = net["asymmetric_load"]
     l3_is = net["_is_elements"]["asymmetric_load"]

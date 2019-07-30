@@ -735,7 +735,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
 def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
                 name=None, scaling=1., index=None,
-                in_service=True, type=None, max_p_mw=nan, min_p_mw=nan,
+                in_service=True, type='wye', max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
     """
     Adds one load in table net["load"].
