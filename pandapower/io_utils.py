@@ -199,7 +199,7 @@ def isinstance_partial(obj, cls):
 
 
 class PPJSONEncoder(json.JSONEncoder):
-    def __init__(self, *, isinstance_func=isinstance_partial, **kwargs):
+    def __init__(self, isinstance_func=isinstance_partial, **kwargs):
         super(PPJSONEncoder, self).__init__(**kwargs)
         self.isinstance_func = isinstance_func
 
@@ -260,8 +260,8 @@ class PPJSONEncoder(json.JSONEncoder):
 
 
 class PPJSONDecoder(json.JSONDecoder):
-    def __init__(self, *args, **kwargs):
-        super().__init__(object_hook=pp_hook, *args, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(object_hook=pp_hook, **kwargs)
 
 
 def pp_hook(d):
