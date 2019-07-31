@@ -10,7 +10,7 @@ try:
     import pplog
 except:
     import logging as pplog
-    
+
 from pandapower import ppException, LoadflowNotConverged, OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
 
@@ -186,48 +186,3 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
 
     # raises controller not converged
     check_final_convergence(net, run_count, max_iter)
-
-
-# def catch_loadflow_by_reducing_scaling(net, max_iter, time, recycle_bool, dump_controller,
-                                       # priority_order, level_order, **kwargs):
-    # """
-    # In some cases, load flow does not converge because of too high load. If controllers adapt the
-    # load, it can make sense to first reach a valid state of the network with lower loads, and then
-    # try again.
-    # Try control step with reducing the load scaling, running control step, then increasing the
-    # scaling back, and then running control step again.
-    # Pass this function as object (with no parentheses) to the function run_timeseries.
-    # """
-
-    # try_factor = 0.5
-    # intermediate_try_factor = 0.75
-
-    # # first, go with 0.5
-    # try:
-        # net.load.scaling *= try_factor
-        # run_loadflow(net, max_iter=max_iter, time=time, recycle_bool=recycle_bool,
-                     # dump_controller=dump_controller, priority_order=priority_order,
-                     # level_order=level_order, **kwargs)
-    # except:
-        # raise pp.LoadflowNotConverged
-    # finally:
-        # net.load.scaling /= try_factor
-
-    # # then try with 0.75
-    # try:
-        # net.load.scaling *= intermediate_try_factor
-        # run_loadflow(net, max_iter=max_iter, time=time, recycle_bool=recycle_bool,
-                     # dump_controller=dump_controller, priority_order=priority_order,
-                     # level_order=level_order, **kwargs)
-    # except:
-        # raise pp.LoadflowNotConverged
-    # finally:
-        # net.load.scaling /= intermediate_try_factor
-
-    # # finally, go with 100
-    # try:
-        # run_loadflow(net, max_iter=max_iter, time=time, recycle_bool=recycle_bool,
-                     # dump_controller=dump_controller, priority_order=priority_order,
-                     # level_order=level_order, **kwargs)
-    # except:
-        # raise pp.LoadflowNotConverged

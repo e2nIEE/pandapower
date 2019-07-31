@@ -2,14 +2,16 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import tempfile
+
 import numpy as np
 
 import pandapower as pp
+from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.control.run_control import run_control, ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow
-from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.control.util.controller_io import dump_controller
-from pandapower import LoadflowNotConverged, OPFNotConverged
+from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
@@ -19,13 +21,6 @@ except ImportError:
 
 logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
-
-# try:
-from timeseries.ts_runpp import TimeSeriesRunpp
-# except:
-#     logger.debug("Only open source timeseries available")
-
-
 
 def get_default_output_writer(net, timesteps):
     """
@@ -38,7 +33,7 @@ def get_default_output_writer(net, timesteps):
     RETURN:
         **outpuw_writer** - The default output_writer
     """
-    ow = OutputWriter(net, timesteps, output_path=r"./run_timeseries_output")
+    ow = OutputWriter(net, timesteps, output_path=tempfile.gettempdir())
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
@@ -63,6 +58,7 @@ def init_outputwriter(net, time_steps, output_writer=None):
     """
     if output_writer is None:
         output_writer = get_default_output_writer(net, time_steps)
+        logger.info("No output writer specified. Using default which writes to: {}".format(output_writer.output_path))
     else:
         # inits output writer before time series calculation
         output_writer.time_steps = time_steps
@@ -73,7 +69,7 @@ def init_outputwriter(net, time_steps, output_writer=None):
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar.
-    stolen from: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    the idea was mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     @params:
         iteration   - Required  : current iteration (Int)
         total       - Required  : total iterations (Int)
@@ -84,8 +80,8 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         fill        - Optional  : bar fill character (Str)
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
     # Print New Line on Complete
@@ -143,23 +139,36 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
 
 
 def all_controllers_recycleable(net):
+    # checks if controller are recycleable
     recycleable = np.alltrue(net["controller"]["recycle"].values)
     if not recycleable:
         logger.warning("recycle feature not supported by some controllers in net. I have to deactive recycle")
     return recycleable
 
 
-def get_run_function(net, output_writer, recycle, **kwargs):
+def get_run_function(net, output_writer, **kwargs):
     """
-    checks if faster runpp function for time series is possible and activated or if another function is specified
-    in **kwargs
-    @param kwargs:
-    @return:
+    checks if "run" is specified in kwargs and calls this function in time series loop.
+    if "recycle" is in kwargs we use the TimeSeriesRunpp class
+
+    INPUT:
+        **net** - The pandapower format network
+        **output_writer** - The outputwriter class which stores results
+
+    RETURN:
+        **run** - the run function to be called (default is pp.runpp())
+        **recycle_class** - class to recycle implementation
     """
 
-    recycle = True if recycle and all_controllers_recycleable(net) else False
+    recycle = False
     recycle_class = None
+
+    if "recycle" in kwargs:
+        recycle = kwargs.pop("recycle")
+        recycle = True if recycle and all_controllers_recycleable(net) else False
+
     if recycle:
+        from timeseries.ts_runpp import TimeSeriesRunpp
         recycle_class = TimeSeriesRunpp(net, output_writer)
         run = recycle_class.ts_runpp
     elif "run" in kwargs:
@@ -170,6 +179,7 @@ def get_run_function(net, output_writer, recycle, **kwargs):
 
 
 def init_time_steps(net, time_steps, **kwargs):
+    # initializes time steps if as a range
     if not (isinstance(time_steps, list) or isinstance(time_steps, range)):
         if time_steps is None and ("start_step" in kwargs and "stop_step" in kwargs):
             logger.warning("start_step and stop_step are depricated. "
@@ -185,7 +195,7 @@ def init_time_steps(net, time_steps, **kwargs):
     return time_steps
 
 
-def init_time_series(net, time_steps, output_writer=None, recycle=False, continue_on_divergence=False, verbose=True,
+def init_time_series(net, time_steps, output_writer=None, continue_on_divergence=False, verbose=True,
                      **kwargs):
     """
     inits the time series calculation
@@ -198,7 +208,6 @@ def init_time_series(net, time_steps, output_writer=None, recycle=False, continu
     OPTIONAL:
         **output_writer** - A predefined output writer. If None the a default one is created with
                             get_default_output_writer()
-        **recycle** (bool, False) - If True faster runpp is used (rather experimental, use with caution)
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
         **verbose** (bool, True) - prints progess bar or logger debug messages
     """
@@ -210,7 +219,7 @@ def init_time_series(net, time_steps, output_writer=None, recycle=False, continu
     output_writer = init_outputwriter(net, time_steps, output_writer)
     level, order = get_controller_order(net)
     # use faster runpp if timeseries possible
-    run, recycle_class = get_run_function(net, output_writer, recycle, **kwargs)
+    run, recycle_class = get_run_function(net, output_writer, **kwargs)
 
     # True at default. Initial power flow is calculated before each control step (some controllers need inits)
     ts_variables["initial_powerflow"] = check_for_initial_powerflow(order)
@@ -248,7 +257,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
     if logger.level == pplog.DEBUG and verbose:
         logger.debug("run time step %i" % time_step)
 
-    # print luigi progress
+    # print luigi pipeline progress
     if "luigi_progress" in kwargs:
         if i % 365 == 0:
             # print only every 365 time steps
@@ -256,16 +265,15 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
             progress = kwargs["luigi_progress"]["progress"]
             len_timesteps = len(time_steps)
             message("Progress: %d / %d" % (i, len_timesteps))
-            progress_percentage = int(((i+1) / len_timesteps) * 100)
+            progress_percentage = int(((i + 1) / len_timesteps) * 100)
             progress(progress_percentage)
 
 
-def run_timeseries(net, time_steps=None, output_writer=None, recycle=False,
-                   continue_on_divergence=False, verbose=True, **kwargs):
+def run_timeseries(net, time_steps=None, output_writer=None, continue_on_divergence=False, verbose=True, **kwargs):
     """
     Time Series main function
     Runs multiple PANDAPOWER AC power flows based on time series in controllers
-    Optionally other functions than the pp power flow can be called by setting the run function
+    Optionally other functions than the pp power flow can be called by setting the run function in kwargs
 
     INPUT:
         **net** - The pandapower format network
@@ -275,16 +283,14 @@ def run_timeseries(net, time_steps=None, output_writer=None, recycle=False,
                                                 if None, all time steps from provided data source are simulated
         **output_writer** - A predefined output writer. If None the a default one is created with
                             get_default_output_writer()
-        **recycle** (bool, False) - If True faster runpp is used (rather experimental, use with caution)
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
         **verbose** (bool, True) - prints progress bar or if logger.level == Debug it prints debug messages
         **kwargs** - Keyword arguments for run_control and runpp
     """
 
-    ts_variables = init_time_series(net, time_steps, output_writer, recycle, continue_on_divergence, verbose,
+    ts_variables = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose,
                                     **kwargs)
     control_diagnostic(net)
-
     for i, time_step in enumerate(ts_variables["time_steps"]):
         print_progress(i, time_step, ts_variables["time_steps"], verbose, **kwargs)
         run_time_step(net, time_step, ts_variables, **kwargs)

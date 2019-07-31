@@ -3,7 +3,6 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import copy
 import tempfile
 
 import numpy as np
@@ -12,16 +11,15 @@ import pytest
 
 import pandapower.control.util.diagnostic
 import pandapower as pp
-import pandapower.toolbox as tb
 import logging
-from pandapower.control import DiscreteTapControl, ContinuousTapControl, ConstControl
+from pandapower.control import ContinuousTapControl, ConstControl
 
-from pandapower import networks as nw
 from pandapower.timeseries import DFData
 from pandapower.timeseries import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries, control_diagnostic
 
 logger = logging.getLogger(__name__)
+
 
 def simple_test_net():
     net = pp.create_empty_network()
@@ -146,11 +144,11 @@ def test_timeseries_results():
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
-    recycle = False
+
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=0.5, recycle=recycle)
+                 scale_factor=0.5)
 
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
@@ -159,7 +157,7 @@ def test_timeseries_results():
 
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
+    run_timeseries(net, time_steps, output_writer=ow)
     assert np.allclose(ow.output['res_load.p_mw'].sum().values * 2,
                        profiles[["load1", "load2_mv_p", "load3_hv_p"]].sum().values)
 
@@ -167,10 +165,9 @@ def test_timeseries_results():
     # @Flo in / out of service testen ...
     ow.log_variable('res_load', 'p_mw')
     net.controller.in_service = False  # set the first controller out of service
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 recycle=recycle)
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
 
-    run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
+    run_timeseries(net, time_steps, output_writer=ow)
     assert np.allclose(ow.output['res_load.p_mw'][0].sum(), profiles["load1"].sum())
 
 
@@ -182,11 +179,11 @@ def test_timeseries_var_func():
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
-    recycle = False
+
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=0.5, recycle=recycle)
+                 scale_factor=0.5)
 
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
@@ -194,7 +191,7 @@ def test_timeseries_var_func():
     ow.log_variable('res_bus', 'vm_pu', eval_function=np.min)
     ow.log_variable('res_bus', 'q_mvar', eval_function=np.sum)
 
-    run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
+    run_timeseries(net, time_steps, output_writer=ow)
     # asserts if last value of output_writers output is the minimum value
     assert net["res_load"]["p_mw"].max() == ow.output["res_load.p_mw"].iloc[-1].values
     assert net["res_bus"]["vm_pu"].min() == ow.output["res_bus.vm_pu"].iloc[-1].values
@@ -209,72 +206,12 @@ def test_timeseries_var_func():
                     eval_name="hv_bus_min")
     ow.log_variable('res_bus', 'vm_pu', index=mv_busses_index, eval_function=np.min,
                     eval_name="mv_bus_min")
-    run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
+    run_timeseries(net, time_steps, output_writer=ow)
     assert net["res_bus"].loc[hv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
         time_steps[-1], "hv_bus_min"]
     assert net["res_bus"].loc[mv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
         time_steps[-1], "mv_bus_min"]
 
-
-
-
-
-@pytest.mark.xfail(reason="@author: please rework this test in cooporation with steffen, after publication of simbench within pandapower")
-def test_timeseries_recycle_simbench():
-    # Todo: Get simbench net and test trafo controllers with recycle functions
-    # test net
-#    net = sb.get_simbench_net("1-HV-mixed--0-sw")
-    net = nw.create_cigre_network_hv()  # fixing the import error bug
-    # random datasource --> will be memmaps
-    tb.drop_inactive_elements(net)
-    n_timesteps = 3
-    profiles = create_rand_data_source(net, n_timesteps)
-
-    # 1load
-    ds = DFData(profiles["load"])
-    ConstControl(net, element='load', variable='p_mw', element_index=net.load.index,
-                 data_source=ds, profile_name=profiles["load"].keys(),
-                 scale_factor=0.5, recycle=True)
-    # sgen
-    ds = DFData(profiles["sgen"])
-    ConstControl(net, element='sgen', variable='p_mw', element_index=net.sgen.index,
-                 data_source=ds, profile_name=profiles["sgen"].keys(),
-                 scale_factor=0.5, recycle=True)
-
-    # tc = ContinuousTapControl(net, tid=6, u_set=1.04, side='lv', tol=1e-6,  trafotype="3W", recycle=True)
-    # tc = ContinuousTapControl(net, tid=5, u_set=.98, side='lv', tol=1e-6, trafotype="3W", recycle=True)
-    tc = DiscreteTapControl(net, tid=0, u_lower=1.04, u_upper=1.044, side='lv', recycle=True)
-    tc = DiscreteTapControl(net, tid=1, u_lower=.98, u_upper=.984, side='lv', recycle=True)
-    # ds = DFData(profiles["trafo3w"])
-    # ConstControl(net, element='trafo3w', variable='tap_pos', element_index=net.trafo3w.index,
-    #              data_source=ds, profile_name=profiles["trafo3w"].keys(), scale_factor=1,  recycle=True)
-    net.trafo.loc[0, "tap_pos"] = -10
-    net.trafo.loc[1, "tap_pos"] = 2
-    time_steps = range(0, n_timesteps)
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
-    ow.log_variable('trafo', 'tap_pos')
-    ow.log_variable('res_load', 'p_mw')
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_line', 'loading_percent')
-    ow.log_variable('res_trafo', 'loading_percent')
-    ow.log_variable('res_line', 'i_ka')
-
-    run_timeseries(net, time_steps, output_writer=ow, recycle=False)
-    res_normal = copy.deepcopy(ow.output)
-
-    net.trafo.loc[0, "tap_pos"] = -10
-    net.trafo.loc[1, "tap_pos"] = 2
-    run_timeseries(net, time_steps, output_writer=ow, recycle=True)
-    res_recycle = copy.deepcopy(ow.output)
-
-    for key, val in res_normal.items():
-        val_recycle = res_recycle[key]
-        if key == "Parameters":
-            # Parameters is complex datatype compared to others
-            np.testing.assert_array_equal(val_recycle.values, val.values)
-        else:
-            mask = ~(np.isnan(val)).values
-            assert np.allclose(val_recycle.values[mask], val.values[mask])
 
 def test_time_steps():
     net = simple_test_net()
@@ -299,11 +236,10 @@ def test_output_dump_after_time():
 
     n_timesteps = 100
     profiles, ds = create_data_source(n_timesteps)
-    recycle = False
+
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 recycle=recycle)
+                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
     # write output after 0.1 minutes to disk
@@ -314,9 +250,8 @@ def test_output_dump_after_time():
 
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow, recycle=recycle)
+    run_timeseries(net, time_steps, output_writer=ow)
     # ToDo: read partially dumped results and compare with all stored results
-
 
 
 if __name__ == '__main__':

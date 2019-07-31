@@ -5,7 +5,6 @@
 
 import numpy as np
 from pandas import Index
-
 from pandapower.control.basic_controller import Controller
 
 

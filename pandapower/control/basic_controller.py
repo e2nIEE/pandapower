@@ -2,13 +2,13 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import copy
+from pandapower.auxiliary import get_free_id
 from pandapower.control.util.auxiliary import check_controller_frame, drop_same_type_existing_controllers, \
     log_same_type_existing_controllers
-from pandapower.auxiliary import get_free_id
-import copy
 from pandapower.io_utils import JSONSerializableClass
 from builtins import object
+
 
 try:
     import pplog
@@ -39,8 +39,8 @@ class Controller(JSONSerializableClass):
             index = get_free_id(self.net.controller)
         self.update_initialized(locals())
         self.index = self.add_controller_to_net(in_service=in_service, order=order,
-                                     level=level, index=index, recycle=recycle,
-                                     drop_same_existing_ctrl=drop_same_existing_ctrl, **kwargs)
+                                                level=level, index=index, recycle=recycle,
+                                                drop_same_existing_ctrl=drop_same_existing_ctrl, **kwargs)
 
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
@@ -80,7 +80,7 @@ class Controller(JSONSerializableClass):
 
         # Helper for instance creation without calling __init__
         # Took _deepcopy_inst in the copy module as reference.
-        class _EmptyClass(object):
+        class _EmptyClass:
             pass
 
         if hasattr(self, '__getinitargs__'):
@@ -101,6 +101,7 @@ class Controller(JSONSerializableClass):
 
     def add_controller_to_net(self, in_service, order, level, index, recycle,
                               drop_same_existing_ctrl, **kwargs):
+
         """
         adds the controller to net['controller'] dataframe.
 
@@ -238,6 +239,3 @@ class Controller(JSONSerializableClass):
         Sets the controller in or out of service
         """
         self.net.controller.loc[self.index, 'in_service'] = in_service
-
-
-
