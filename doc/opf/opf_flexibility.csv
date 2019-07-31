@@ -1,11 +1,11 @@
 **Constraint**;**Defined in**
 :math:`P_{min,i} \leq P_{g} \leq P_{max,g},\ g  \ \epsilon \ gen` ;net.gen.min_p_mw / net.gen.max_p_mw
-:math:`Q_{min,g} \leq Q_{g} \leq Q_{max,g},\ g  \ \epsilon \ gen` ;net.gen.min_q_kvar / net.gen.max_q_kvar
+:math:`Q_{min,g} \leq Q_{g} \leq Q_{max,g},\ g  \ \epsilon \ gen` ;net.gen.min_q_mvar / net.gen.max_q_mvar
 :math:`P_{min,sg} \leq P_{sg} \leq P_{max,sg},\ sg  \ \epsilon \ sgen` ;net.sgen.min_p_mw  / net.sgen.max_p_mw
-:math:`Q_{min,sg} \leq Q_{sg} \leq Q_{max,sg},\ sg  \ \epsilon \ sgen` ;net.sgen.min_q_kvar / net.sgen.max_q_kvar
+:math:`Q_{min,sg} \leq Q_{sg} \leq Q_{max,sg},\ sg  \ \epsilon \ sgen` ;net.sgen.min_q_mvar / net.sgen.max_q_mvar
 :math:`P_{max,g},\ g  \ \epsilon \ dcline` ;net.dcline.max_p_mw
-:math:`Q_{min,g} \leq Q_{g} \leq Q_{max,g},\ g  \ \epsilon \ dcline` ;net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar / net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar
+:math:`Q_{min,g} \leq Q_{g} \leq Q_{max,g},\ g  \ \epsilon \ dcline` ;net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar / net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar
 :math:`P_{min,eg} \leq P_{eg} \leq P_{max,eg},\ eg  \ \epsilon \ ext\_grid` ;net.ext_grid.min_p_mw  / net.ext_grid.max_p_mw
-:math:`Q_{min,eg} \leq Q_{eg} \leq Q_{max,eg},\ eg  \ \epsilon \ ext\_grid` ;net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
-:math:`P_{min,ld} \leq P_{ld} \leq P_{max,ld},\ ld \ \epsilon \ load` ;net.sgen.min_p_mw  / net.sgen.max_p_mw
-:math:`Q_{min,ld} \leq Q_{ld} \leq Q_{max,ld},\ ld  \ \epsilon \ load` ;net.sgen.min_q_kvar / net.sgen.max_q_kvar
+:math:`Q_{min,eg} \leq Q_{eg} \leq Q_{max,eg},\ eg  \ \epsilon \ ext\_grid` ;net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
+:math:`P_{min,ld} \leq P_{ld} \leq P_{max,ld},\ ld \ \epsilon \ load` ;net.load.min_p_mw  / net.load.max_p_mw
+:math:`Q_{min,ld} \leq Q_{ld} \leq Q_{max,ld},\ ld  \ \epsilon \ load` ;net.load.min_q_mvar / net.load.max_q_mvar
