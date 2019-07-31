@@ -20,10 +20,10 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
-try:
-    from timeseries.ts_runpp import TimeSeriesRunpp
-except:
-    logger.debug("Only open source timeseries available")
+# try:
+from timeseries.ts_runpp import TimeSeriesRunpp
+# except:
+#     logger.debug("Only open source timeseries available")
 
 
 

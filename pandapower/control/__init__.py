@@ -4,6 +4,7 @@ import pandapower.control.controller
 from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
+from pandapower.control.controller.trafo_control import TrafoController
 
 # --- Other ---
 from pandapower.control.run_control import *

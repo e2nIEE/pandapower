@@ -2,19 +2,18 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import copy
-from pandapower.io_utils import JSONSerializableClass
-from builtins import object
 
 from pandapower.control.util.auxiliary import check_controller_frame, drop_same_type_existing_controllers, \
     log_same_type_existing_controllers
 from pandapower.auxiliary import get_free_id
+import copy
+from pandapower.io_utils import JSONSerializableClass
+from builtins import object
 
 try:
     import pplog
 except:
     import logging as pplog
-
 
 logger = pplog.getLogger(__name__)
 
@@ -100,17 +99,19 @@ class Controller(JSONSerializableClass):
 
         return res
 
-    def add_controller_to_net(self, in_service, order, level, index, recycle, drop_same_existing_ctrl,
-                   **kwargs):
+    def add_controller_to_net(self, in_service, order, level, index, recycle,
+                              drop_same_existing_ctrl, **kwargs):
         """
-        adds the controller to net['controllor'] dataframe.
+        adds the controller to net['controller'] dataframe.
 
-        @param in_service: in service status (True/False)
-        @param order: order (int)
-        @param index: index
-        @param recycle: if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values.
-                        this is mostly needed for time series calculations (True/False)
-        @return:
+        INPUT:
+            **in_service** (bool) - in service status
+            **order** (int) - order
+            **index** (int) - index
+            **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used
+                                 with prestored values. This is mostly needed for time series
+                                 calculations
+
         """
         if index in self.net.controller.index.values:
             # check if controller is being recreated from json and just add the instance

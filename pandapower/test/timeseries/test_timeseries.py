@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-import os
 import tempfile
 
 import numpy as np
