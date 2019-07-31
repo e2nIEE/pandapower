@@ -192,7 +192,16 @@ def restore_all_dtypes(net, dtypes):
 import json.encoder
 
 
+def isinstance_partial(obj, cls):
+    if isinstance(obj, (pp.pandapowerNet, tuple)):
+        return False
+    return isinstance(obj, cls)
+
+
 class PPJSONEncoder(json.JSONEncoder):
+    def __init__(self, *, isinstance_func=isinstance_partial, **kwargs):
+        super(PPJSONEncoder, self).__init__(**kwargs)
+        self.isinstance_func = isinstance_func
 
     def iterencode(self, o, _one_shot=False):
         """Encode the given object and yield each string
@@ -213,8 +222,7 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             _encoder = json.encoder.encode_basestring
 
-        def floatstr(o, allow_nan=self.allow_nan,
-                     _repr=float.__repr__, _inf=json.encoder.INFINITY,
+        def floatstr(o, allow_nan=self.allow_nan, _repr=float.__repr__, _inf=json.encoder.INFINITY,
                      _neginf=-json.encoder.INFINITY):
             # Check for specials.  Note that this type of test is processor
             # and/or platform-specific, so do tests which don't depend on the
@@ -231,15 +239,14 @@ class PPJSONEncoder(json.JSONEncoder):
 
             if not allow_nan:
                 raise ValueError(
-                    "Out of range float values are not JSON compliant: " +
-                    repr(o))
+                    "Out of range float values are not JSON compliant: " + repr(o))
 
             return text
 
         _iterencode = json.encoder._make_iterencode(
             markers, self.default, _encoder, self.indent, floatstr,
             self.key_separator, self.item_separator, self.sort_keys,
-            self.skipkeys, _one_shot, isinstance=isinstance_partial)
+            self.skipkeys, _one_shot, isinstance=self.isinstance_func)
         return _iterencode(o, 0)
 
     def default(self, o):
@@ -252,27 +259,21 @@ class PPJSONEncoder(json.JSONEncoder):
             return s
 
 
-def isinstance_partial(obj, cls):
-    if isinstance(obj, (pp.pandapowerNet, tuple)):
-        return False
-    return isinstance(obj, cls)
-
-
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super().__init__(object_hook=pp_hook, *args, **kwargs)
+
 
 def pp_hook(d):
     if '_module' in d and '_class' in d:
         if "_object" in d:         
             obj = d.pop('_object') 
         elif "_init" in d: 
-            return d #backwards compatibility
+            return d  # backwards compatibility
         else:
-            obj = {"_init": d, "_state": dict()} #backwards compatibility
+            obj = {"_init": d, "_state": dict()}  # backwards compatibility
         class_name = d.pop('_class')
         module_name = d.pop('_module')
-#        print(class_name, module_name)
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):
@@ -301,7 +302,7 @@ def pp_hook(d):
         elif SHAPELY_INSTALLED and module_name == "shapely":
             return shapely.geometry.shape(obj)
         elif class_name == "pandapowerNet":
-            if isinstance(obj, str): #backwards compatibility
+            if isinstance(obj, str):  # backwards compatibility
                 from pandapower import from_json_string
                 return from_json_string(obj)
             else:
@@ -349,19 +350,20 @@ class JSONSerializableClass(object):
                         
     def to_json(self):
         """
-        Each controller should have this method implemented. The resulting json string should be readable by
-        the controller's from_json function and by the function add_ctrl_from_json in control_handler.
+        Each controller should have this method implemented. The resulting json string should be
+        readable by the controller's from_json function and by the function add_ctrl_from_json in
+        control_handler.
         """
         return json.dumps(self.to_dict(), cls=PPJSONEncoder)
 
     def to_dict(self):
         init_parameters = signature(self.__init__).parameters.keys()
-        d = {'_module': self.__module__.__str__(), '_class': self.__class__.__name__}
-        d["_init"] = {key: val for key, val in self._init.items() if
-                      key in init_parameters and key not in self.json_excludes}
-        d["has_net"] = "net" in init_parameters
-        d["_state"] = {key: val for key, val in self.__dict__.items() if key not in 
-                       self.json_excludes and not callable(val)}
+        d = {'_module': self.__module__.__str__(), '_class': self.__class__.__name__,
+             "_init": {key: val for key, val in self._init.items() if
+                       key in init_parameters and key not in self.json_excludes},
+             "has_net": "net" in init_parameters,
+             "_state": {key: val for key, val in self.__dict__.items() if key not in
+                        self.json_excludes and not callable(val)}}
         return d
         
     @classmethod
@@ -379,6 +381,7 @@ class JSONSerializableClass(object):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return JSONSerializableClass.from_dict(d)
 
+
 def restore_jsoned_objects(net):
     pp_hook.net = net
     for element in ["controller", "loadcase"]:
@@ -387,8 +390,9 @@ def restore_jsoned_objects(net):
                 try:
                     pp_hook(c)
                 except Exception as e:
-                    logger.warning("did not load %s with index %u: %s"%(element, i, e))
+                    logger.warning("did not load %s with index %u: %s" % (element, i, e))
     del pp_hook.net
+
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
@@ -506,11 +510,13 @@ def json_networkx(obj):
     d = with_signature(obj, json_string, obj_module="networkx")
     return d
 
+
 @to_serializable.register(JSONSerializableClass)
 def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
     d = with_signature(obj, obj.to_json())
     return d
+
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)
