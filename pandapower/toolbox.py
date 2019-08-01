@@ -57,7 +57,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 def _check_plc_full_range(net, element_type):  # pragma: no cover
     """ This is an auxiliary function for check_opf_data to check full range of piecewise linear
     cost function """
-    plc = net.piecewise_linear_cost
+    plc = net.pwl_cost
     plc_el_p = plc.loc[(plc.element_type == element_type) & (plc.type == 'p')]
     plc_el_q = plc.loc[(plc.element_type == element_type) & (plc.type == 'q')]
     p_idx = []
@@ -107,8 +107,8 @@ def check_opf_data(net):  # pragma: no cover
 
     # --- Determine duplicated cost data
     raise NotImplementedError
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
     if duplicates.shape[0]:
         raise ValueError("There are elements with multiply costs.\nelement_types: %s\n"
@@ -167,12 +167,12 @@ def opf_task(net):  # pragma: no cover
     """
     check_opf_data(net)
 
-    plc = net.piecewise_linear_cost
-    pol = net.polynomial_cost
+    plc = net.pwl_cost
+    pol = net.poly_cost
 
     # --- store cost data to all_costs
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     all_costs['str'] = None
     for i, j in all_costs.iterrows():
         costs = plc.loc[(plc.element == j.element) & (plc.element_type == j.element_type) &
@@ -579,13 +579,25 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def create_continuous_bus_index(net, start=0):
+def create_continuous_bus_index(net, start=0, store_old_index=False):
     """
-    Creates a continuous bus index starting at zero and replaces all
+    Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
+
+    INPUT:
+      **net** - pandapower network
+
+    OPTIONAL:
+      **start** - index begins with "start"
+      **store_old_index** - if True, stores the old index in net.bus["old_index"]
+
+    OUTPUT:
+      **bus_lookup** - mapping of old to new index
     """
 
     net.bus.sort_index(inplace=True)
+    if store_old_index:
+        net.bus["old_index"] = net.bus.index.values
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -605,7 +617,7 @@ def create_continuous_bus_index(net, start=0):
     side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
     net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
                                                          bus_lookup)
-    return net
+    return bus_lookup
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):

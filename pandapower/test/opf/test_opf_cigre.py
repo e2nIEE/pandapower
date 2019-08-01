@@ -41,7 +41,7 @@ def test_opf_cigre():
     net.sgen.in_service[net.sgen.bus == 9] = False
 
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
 
 
@@ -71,7 +71,7 @@ def test_some_sgens_not_controllable():
         net.poly_cost.cp1_eur_per_mw.at[cost_sgen] = 100
 
     # run OPF
-    pp.runopp(net, )
+    pp.runopp(net)
     assert net["OPF_converged"]
     # check if p_mw of non conrollable sgens are unchanged
     assert np.allclose(net.res_sgen.p_mw[net.sgen.controllable == False], net.sgen.p_mw[net.sgen.controllable == False])

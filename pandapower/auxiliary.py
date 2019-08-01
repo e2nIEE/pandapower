@@ -674,8 +674,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
-    init_from_results = init == "results" or (isinstance(init_vm_pu, str) and init_vm_pu=="results") \
-                                or (isinstance(init_va_degree, str) and init_va_degree=="results")
+    init_from_results = init == "results" or \
+        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -694,7 +695,6 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_vm_pu = init
         init_va_degree = init
 
-
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -710,6 +710,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                     v_debug=v_debug)
     net._options.update(overrule_options)
 
+
 def _init_nx_options(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
@@ -719,7 +720,8 @@ def _init_nx_options(net):
                      voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
 
 
-def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, switch_rx_ratio, trafo3w_losses):
+def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity,
+                          switch_rx_ratio, trafo3w_losses):
     ac = False
     numba = True
     mode = "pf"
@@ -737,14 +739,15 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
 
-def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta, init,
-                         numba, trafo3w_losses, consider_line_temperature=False):
+
+def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
+                         init, numba, trafo3w_losses, consider_line_temperature=False):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -757,8 +760,8 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
@@ -778,8 +781,8 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
     pass
