@@ -173,7 +173,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc.loc[buses]
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc.loc[buses] if isinstance(infofunc, pd.Series) else infofunc
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -353,7 +353,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         if cmap is not None:
             try:
                 line_color = cmap_lines[col_i]
-                line_info = line['name'] if infofunc is None else infofunc.loc[idx]
+                line_info = line['name'] if infofunc is None else infofunc.loc[idx] if isinstance(infofunc, pd.Series) else infofunc
             except IndexError:
                 logger.warning("No color and info for line {:d} (name: {}) available".format(idx, line['name']))
 
@@ -504,7 +504,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
         trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
                            hoverinfo='text', mode='lines', name=trace_name)
 
-        trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
+        trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx] if isinstance(infofunc, pd.Series) else infofunc
 
         from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
         to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
