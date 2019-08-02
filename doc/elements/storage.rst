@@ -2,6 +2,10 @@
 Storage
 ==================
 
+.. note::
+
+   Since storage power values are given in the consumer system, positive power models charging and negative power models discharging.
+
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
@@ -47,10 +51,6 @@ The PQ-Values are calculated from the parameter table values as:
     P_{storage} &= p\_mw \cdot scaling \\
     Q_{storage} &= q\_mvar \cdot scaling \\
     \end{align*}
-
-.. note::
-
-   Since all power values are given in the consumer system, negative power models charging and positive activee power models discharging.
 
 .. note::
 
