@@ -16,6 +16,7 @@ from networkx.readwrite import json_graph
 import importlib
 from warnings import warn
 from inspect import isclass, signature
+import os
 
 try:
     from functools import singledispatch
@@ -66,7 +67,6 @@ def coords_to_df(value, geotype="line"):
         geo["x"] = value["x"].values
         geo["y"] = value["y"].values
     return geo
-
 
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_empty_tables=True):
     dodfs = dict()
@@ -511,6 +511,12 @@ def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
     d = with_signature(obj, obj.to_json())
     return d
+
+def mkdirs_if_not_existent(dir):
+    if os.path.isdir(dir) == False:
+        os.makedirs(dir)
+        return True
+    return False
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)

@@ -1,5 +1,7 @@
 Change Log
 =============
+- [ADDED] jupyter notebook examples for time series
+- [ADDED] control and timeseries module
 - [ADDED] jupyter notebook for power storage optimization with PowerModels.jl
 
 [2.1.0]- 2019-07-08
