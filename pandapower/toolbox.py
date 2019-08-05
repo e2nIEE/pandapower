@@ -1063,7 +1063,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res") or element == "dtypes":
             continue
-        if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
+        if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
                 adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
                 adapt_element_idx_references(net1, element, "line")
@@ -1079,7 +1079,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             dtypes = net1[element].dtypes
             try:
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
-                                         sort=True)
+                                         sort=False)
             except:
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
