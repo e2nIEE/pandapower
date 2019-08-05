@@ -3,7 +3,7 @@
 Optimisation problem
 ======================
 
-The equation describes the basic formulation of the optimal power flow problem.
+The equation describes the basic formulation of the optimal power flow (OPF) problem.
 The pandapower optimal power flow can be constrained by either AC or DC loadflow equations.
 The branch constraints represent the maximum apparent power loading of transformers and the maximum line current loadings.
 The bus constraints can contain maximum and minimum voltage magnitude and angle.
@@ -19,7 +19,7 @@ The constraints are defined element wise in the respective element tables.
         & & operational \ power \ constraints \\
 
 
-**Generator Flexibilities / Operational power constraints**
+**Generator flexibilities / Operational power constraints**
 
 The active and reactive power generation of generators, loads, dc lines and static generators can be defined as a flexibility for the OPF.
 
@@ -29,9 +29,9 @@ The active and reactive power generation of generators, loads, dc lines and stat
    :delim: ;
 
 .. note::
-	Defining operational constraints is indispensable for the OPF, it will not start if contraints are not defined.
+	Defining operational constraints is indispensable for the OPF, it will not start if constraints are not defined.
 
-**Network Constraints**
+**Network constraints**
 
 The network constraints contain constraints for bus voltages and branch flows:
 
@@ -77,12 +77,12 @@ Polynomial cost functions can be specified using create_poly_cost():
 	Piecewise linear cost funcions for reactive power are not working at the moment with 2 segments or more.
 	Loads can only have 2 data points in their piecewise linear cost function for active power.
 
-Active and reactive power costs are calculted seperately. The costs of all types are summed up to determine the overall costs for a grid state.
+Active and reactive power costs are calculted separately. The costs of all types are summed up to determine the overall costs for a grid state.
 
 Visualization of cost functions
 --------------------------------
 
-**Minimizing Generation**
+**Minimizing generation**
 
 The most common optimization goal is the minimization of the overall generator feed in. The according cost function would be formulated like this:
 
