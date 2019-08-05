@@ -18,7 +18,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
 
     Neccessary assumptions, in addition to the paper above:
 
-    According to Lindner the household loads are 5.1 mw and the special loads are 7.9 kW. \
+    According to Lindner, the household loads are 5.1 kw and the special loads are 7.9 kW. \
     The user is suggested to assume load distribution and load profile generation. The line
     parameters according to the given types are received from pandapower standard types and
     literatur (as stated in the code). Transformer parameters, except the given 'vk_percent',
@@ -35,9 +35,9 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
 
     EXAMPLE:
 
-        import pandapower.networks as nw
+        import pandapower.networks as pn
 
-        net = nw.create_synthetic_voltage_control_lv_network()
+        net = pn.create_synthetic_voltage_control_lv_network()
     """
     # process network choosing input data
     if network_class not in ['rural_1', 'rural_2', 'village_1', 'village_2', 'suburb_1']:

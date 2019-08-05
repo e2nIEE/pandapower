@@ -226,7 +226,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                            % lines_without_geo)
     else:
         data = []
-        coords_dict = line_geodata.coords.to_dict() # transforming to dict to make access faster
+        coords_dict = line_geodata.coords.to_dict()  # transforming to dict to make access faster
         for line in lines:
             if line in line_geodata.index:
                 lines_with_geo.append(line)
@@ -397,9 +397,10 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     linewidths = kwargs.pop("linewidths", 2.)
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
-    for i, trafo in trafo_table.iterrows():
-        p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
-        p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
+
+    for i, idx in enumerate(trafo_table.index):
+        p1 = net.bus_geodata[["x", "y"]].loc[net.trafo.at[idx, "hv_bus"]].values
+        p2 = net.bus_geodata[["x", "y"]].loc[net.trafo.at[idx, "lv_bus"]].values
         if np.all(p1 == p2):
             continue
         d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
@@ -458,11 +459,11 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
     infos = []
     color = kwargs.pop("color", "k")
     linewidth = kwargs.pop("linewidths", 2.)
-    for i, trafo3w in trafo3w_table.iterrows():
+    for i, idx in enumerate(trafo3w_table.index):
         # get bus geodata
-        p1 = net.bus_geodata[["x", "y"]].loc[trafo3w.hv_bus].values
-        p2 = net.bus_geodata[["x", "y"]].loc[trafo3w.mv_bus].values
-        p3 = net.bus_geodata[["x", "y"]].loc[trafo3w.lv_bus].values
+        p1 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "hv_bus"]].values
+        p2 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "mv_bus"]].values
+        p3 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "lv_bus"]].values
         if np.all(p1 == p2) and np.all(p1 == p3):
             continue
         p = np.array([p1, p2, p3])
@@ -550,7 +551,8 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
 
     # the busbar is just a line collection with coords from net.bus_geodata
     return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None, norm=norm,
-                                  infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim, **kwargs)
+                                  cmap=cmap, infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim,
+                                  **kwargs)
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
@@ -582,8 +584,9 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     off = 2.
     ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.load.shape[0]
     color = kwargs.pop("color", "k")
-    for i, load in load_table.iterrows():
-        p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
+
+    for i, idx in enumerate(load_table.index):
+        p1 = net.bus_geodata[["x", "y"]].loc[net.load.at[idx, "bus"]]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
         p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
@@ -620,8 +623,8 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
     polys = []
     infos = []
     off = 1.7
-    for i, gen in net.gen.iterrows():
-        p1 = net.bus_geodata[["x", "y"]].loc[gen.bus]
+    for i, idx in enumerate(net.gen.index):
+        p1 = net.bus_geodata[["x", "y"]].loc[net.gen.at[idx, "bus"]]
         p2 = p1 - np.array([0, size * off])
         polys.append(Circle(p2, size))
         polys.append(
@@ -667,9 +670,9 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     off = 1.7
     r_triangle = size * 0.4
     ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.sgen.shape[0]
-    color = kwargs.pop("color", "k")
-    for i, sgen in sgen_table.iterrows():
-        bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
+
+    for i, idx in enumerate(sgen_table.index):
+        bus_geo = net.bus_geodata[["x", "y"]].loc[net.sgen.at[idx, "bus"]]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
         circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
         mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), ang[i])
@@ -770,25 +773,25 @@ def onBusbar(net, bus, line_coords):
     bus_coords = net.bus_geodata.loc[bus, "coords"]
     # Checking if bus has "coords" - if it is a busbar
     if bus_coords is not None and bus_coords is not np.NaN and line_coords is not None:
-        for i in range(len(bus_coords)-1):
+        for i in range(len(bus_coords) - 1):
             try:
                 # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError occures
-                m = (bus_coords[i+1][1]-bus_coords[i][1]) / \
-                    (bus_coords[i+1][0]-bus_coords[i][0])
+                m = (bus_coords[i + 1][1] - bus_coords[i][1]) / \
+                    (bus_coords[i + 1][0] - bus_coords[i][0])
                 # Clculating the off-set of the busbar-line
-                b = bus_coords[i][1]-bus_coords[i][0]*m
+                b = bus_coords[i][1] - bus_coords[i][0] * m
                 # Checking if the first end of the line is on the busbar-line
-                if 0 == m*line_coords[0][0]+b-line_coords[0][1]:
+                if 0 == m * line_coords[0][0] + b - line_coords[0][1]:
                     # Checking if the end of the line is in the Range of the busbar-line
-                    if (line_coords[0][0] <= bus_coords[i][0] and line_coords[0][0] >= bus_coords[i+1][0]) \
-                            or (line_coords[0][0] >= bus_coords[i][0] and line_coords[0][0] <= bus_coords[i+1][0]):
+                    if (line_coords[0][0] <= bus_coords[i][0] and line_coords[0][0] >= bus_coords[i + 1][0]) \
+                            or (line_coords[0][0] >= bus_coords[i][0] and line_coords[0][0] <= bus_coords[i + 1][0]):
                         # Intersection found. Breaking for-loop
                         intersection = line_coords[0]
                         break
                 # Checking if the second end of the line is on the busbar-line
-                elif 0 == m*line_coords[-1][0]+b-line_coords[-1][1]:
-                    if (line_coords[-1][0] <= bus_coords[i][0] and line_coords[-1][0] >= bus_coords[i+1][0]) \
-                            or (line_coords[-1][0] >= bus_coords[i][0] and line_coords[-1][0] <= bus_coords[i+1][0]):
+                elif 0 == m * line_coords[-1][0] + b - line_coords[-1][1]:
+                    if (line_coords[-1][0] <= bus_coords[i][0] and line_coords[-1][0] >= bus_coords[i + 1][0]) \
+                            or (line_coords[-1][0] >= bus_coords[i][0] and line_coords[-1][0] <= bus_coords[i + 1][0]):
                         # Intersection found. Breaking for-loop
                         intersection = line_coords[-1]
                         break
@@ -797,15 +800,15 @@ def onBusbar(net, bus, line_coords):
                 # Checking if the first line-end is at the same position
                 if bus_coords[i][0] == line_coords[0][0]:
                     # Checking if the first line-end is in the Range of the busbar-line
-                    if (line_coords[0][1] <= bus_coords[i][1] and line_coords[0][1] >= bus_coords[i+1][1]) \
-                            or (line_coords[0][1] >= bus_coords[i][1] and line_coords[0][1] <= bus_coords[i+1][1]):
+                    if (line_coords[0][1] <= bus_coords[i][1] and line_coords[0][1] >= bus_coords[i + 1][1]) \
+                            or (line_coords[0][1] >= bus_coords[i][1] and line_coords[0][1] <= bus_coords[i + 1][1]):
                         # Intersection found. Breaking for-loop
                         intersection = line_coords[0]
                         break
                 # Checking if the second line-end is at the same position
                 elif bus_coords[i][0] == line_coords[-1][0]:
-                    if (line_coords[-1][1] <= bus_coords[i][1] and line_coords[-1][1] >= bus_coords[i+1][1]) \
-                            or (line_coords[-1][1] >= bus_coords[i][1] and line_coords[-1][1] <= bus_coords[i+1][1]):
+                    if (line_coords[-1][1] <= bus_coords[i][1] and line_coords[-1][1] >= bus_coords[i + 1][1]) \
+                            or (line_coords[-1][1] >= bus_coords[i][1] and line_coords[-1][1] <= bus_coords[i + 1][1]):
                         # Intersection found. Breaking for-loop
                         intersection = line_coords[-1]
                         break
@@ -821,6 +824,7 @@ def onBusbar(net, bus, line_coords):
             intersection = line_coords[-1]
 
     return intersection
+
 
 def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
@@ -871,9 +875,9 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
                 # check, which end of the line is nearer to the switch bus
-                intersection = onBusbar(net,target_bus,line_coords=line_coords)
+                intersection = onBusbar(net, target_bus, line_coords=line_coords)
                 if intersection is not None:
-                    pos_sb=intersection
+                    pos_sb = intersection
                 if len(line_coords) >= 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
                             abs(line_coords[0][1] - pos_sb[1]) < 0.01:

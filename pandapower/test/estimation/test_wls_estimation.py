@@ -113,6 +113,9 @@ def test_3bus_with_bad_data():
     pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)  # u1
     pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
 
+    # 0. Do chi2-test for corret data
+    assert not chi2_analysis(net, init='flat')
+
     # 1. Create false voltage measurement for testing bad data detection (-> should be removed)
     pp.create_measurement(net, "v", "bus", 1.3, 0.01, 1)   # V at bus 2
 
@@ -833,7 +836,8 @@ def test_zero_injection_aux_bus():
     
     # in case zero injection was set to none, the results should be different
     assert ~np.allclose(net.res_bus_est.vm_pu.values,net_aux.res_bus_est.vm_pu.values, 1e-2, equal_nan=True)
-    
+
+
 @pytest.mark.xfail
 def test_net_unobserved_island():
     net = pp.create_empty_network()
