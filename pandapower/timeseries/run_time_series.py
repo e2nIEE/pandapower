@@ -239,7 +239,11 @@ def init_time_series(net, time_steps, output_writer=None, continue_on_divergence
     if logger.level is not 10 and verbose:
         # simple progress bar
         print_progress_bar(0, len(time_steps), prefix='Progress:', suffix='Complete', length=50)
-    return ts_variables
+
+    if "recycle" in kwargs:
+        kwargs.pop("recycle")
+
+    return ts_variables, kwargs
 
 
 def cleanup(ts_variables):
@@ -288,8 +292,9 @@ def run_timeseries(net, time_steps=None, output_writer=None, continue_on_diverge
         **kwargs** - Keyword arguments for run_control and runpp
     """
 
-    ts_variables = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose,
-                                    **kwargs)
+    ts_variables, kwargs = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose, **kwargs)
+
+
     control_diagnostic(net)
     for i, time_step in enumerate(ts_variables["time_steps"]):
         print_progress(i, time_step, ts_variables["time_steps"], verbose, **kwargs)

@@ -61,7 +61,7 @@ def makePTDF(baseMVA, bus, branch, slack=None):
 
     ## compute PTDF for single slack_bus
     Bbus, Bf, _, _ = makeBdc(bus, branch)
-    Bbus, Bf = np.abs(Bbus.todense()), np.abs(Bf.todense())
+    Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
     H = zeros((nbr, nb))
     H[:, noslack] = solve( Bbus[ix_(noslack, noref)].T, Bf[:, noref].T ).T
     #             = Bf[:, noref] * inv(Bbus[ix_(noslack, noref)])
