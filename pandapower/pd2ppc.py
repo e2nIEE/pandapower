@@ -377,8 +377,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         vk_percent = trafos["vk_percent"].values.astype(float)
         vkr_percent = trafos["vkr_percent"].values.astype(float)
         sn_mva = trafos["sn_mva"].values.astype(float)
-        vk0_percent = trafos["vk0_percent"].values.astype(float)
-        vkr0_percent = trafos["vkr0_percent"].values.astype(float)
+        vk0_percent = trafos["vk0_percent"].values.astype(float) if \
+        trafos["vk0_percent"].values.astype(float).all() != 0. else \
+        trafos["vk_percent"].values.astype(float)
+        vkr0_percent = trafos["vkr0_percent"].values.astype(float) if \
+        trafos["vkr0_percent"].values.astype(float).all() != 0. else \
+        trafos["vkr_percent"].values.astype(float)
         lv_buses = trafos["lv_bus"].values.astype(int)
         hv_buses = trafos["hv_bus"].values.astype(int)
         lv_buses_ppc = bus_lookup[lv_buses]
@@ -415,7 +419,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vk_percent, vkr_percent, sn_mva, cmax)
             z0_k *= kt
-        y0_k = 1 / z0_k
+#        y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance
         z_m = z_sc * mag0_ratio
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
@@ -577,7 +581,12 @@ def _add_line_sc_impedance_zero(net, ppc):
     # line zero sequence impedance
     ppc["branch"][f:t, F_BUS] = fb
     ppc["branch"][f:t, T_BUS] = tb
-    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
-    ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
-    ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
+    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * \
+    length / baseR / parallel if line["r0_ohm_per_km"].values.all() != 0 else\
+    line["r_ohm_per_km"].values *length / baseR / parallel
+    ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * \
+    length / baseR / parallel if line["x0_ohm_per_km"].values.all() != 0 else\
+    line["x_ohm_per_km"].values *length / baseR / parallel
+    ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * \
+       line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)

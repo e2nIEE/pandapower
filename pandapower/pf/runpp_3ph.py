@@ -73,8 +73,7 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
 def load_mapping(net,ppci1):
     _is_elements = net["_is_elements"]
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]    
     b = np.array([], dtype=int)
     delta_load_bus=np.array([], dtype=int)
     ba,bb,bc = np.array([], dtype=int),np.array([], dtype=int),np.array([], dtype=int)
