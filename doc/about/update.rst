@@ -9,14 +9,14 @@
 Update to pandapower 2.0
 ============================
 
-Some fundamental changes where made to make pandapower more easy to use and consistent with other tools with the release of pandapower 2.0. 
+Some fundamental changes were made to make pandapower more easy to use and consistent with other tools with the release of pandapower 2.0. 
 
 Most of these changes go back to the fact that pandapower was originally developed only for power flow calculations in low and medium voltage networks, but is today also widely
 used in transmission systems. The most significant changes are:
 
 - the power unit was changed from kW to MW
 - the signing system in gen, sgen and ext_grid was changed to a generator based system
-- some transformer parameters where renamed for better readability
+- some transformer parameters were renamed for better readability
 - the definition of constraints and costs was made easier and more intuitive
 
 These changes are not backwards compatible, which is why a major release was necessary. In the following you can find a description for how to update from pandapower 1.x to 2.x.
@@ -50,10 +50,10 @@ Transformer parameter naming
 
 Two major changes have been made to transformer parameters:
 
-    - the tap changer variables are clearer and easier to readability
+    - the tap changer variables were renamed for better readability
     - the naming for short-circuit voltage has been changed from 'vsc' to 'vk', which is consistent with international standards such as IEC 60909
 
-The meaning or value of these parameters has not changed, so that the code can be udpated by searching and replacing as follows:
+The meaning or value of these parameters has not changed, so that the code can be updated by searching and replacing as follows:
 
     - tp\_ -------> tap\_
     - _st_ ------> _step_
@@ -215,7 +215,7 @@ Measurements
 ===========================
 
 There have been changes in the measurement table of pandapower grids.
-*element* is set to the pandapower index of the measured element, *bus* is not a column amymore.
+*element* is set to the pandapower index of the measured element, *bus* is not a column anymore.
 The new column *side* defines the side of the element at which the measurement is placed.
 It can be "from" / "to" for lines, "hv" / "mv" / "lv" for trafo/trafo3w elements and is None for bus measurements.
 Explicitly setting a bus index for *side* is still possible.

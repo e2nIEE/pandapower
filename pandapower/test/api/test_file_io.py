@@ -12,7 +12,6 @@ import pandas as pd
 import pandapower as pp
 import pandapower.topology as top
 from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
-from pandapower.io_utils import collect_all_dtypes_df, restore_all_dtypes
 import pandapower.networks as nw
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
@@ -102,20 +101,6 @@ def test_convert_format():  # TODO what is this thing testing ?
     net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
-
-
-def test_restore_all_dtypes():
-    net = create_test_network()
-    pp.runpp(net)
-    net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
-    net['test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
-    net.line['test'] = 123
-    net.res_line['test'] = 123
-    net.bus['test'] = 123
-    net.res_bus['test'] = 123
-    net.res_load['test'] = 123
-    dtdf = collect_all_dtypes_df(net)
-    restore_all_dtypes(net, dtdf)
 
 
 def test_to_json_dtypes(tempdir):
