@@ -5,8 +5,7 @@
 
 
 import numpy as np
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA, GS, BS
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE, VG
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
@@ -137,78 +136,6 @@ def _calc_branch_currents(net, ppc):
         ith_all_t = ikss_all_t * np.sqrt(m + n)
         ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
-
-
-def _calc_ib_generator(net, ppci):
-    Zbus = ppci["internal"]["Zbus"]
-    baseI = ppci["internal"]["baseI"]
-    tk_s = net._options['tk_s']
-    c = 1.1
-
-    z_equiv = ppci["bus"][:, R_EQUIV] + ppci["bus"][:, X_EQUIV] * 1j
-    I_ikss = c / z_equiv / ppci["bus"][:, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
-    I_ikss = c * ppci["bus"][:, BASE_KV] / np.sqrt(3) / z_equiv
-
-    # calculate voltage source branch current
-    # I_ikss = ppci["bus"][:, IKSS1]
-    V_ikss = (I_ikss * baseI) * Zbus
-
-    gen = net["gen"][net._is_elements["gen"]]
-    gen_vn_kv = gen.vn_kv.values
-
-    gen_buses = ppci['gen'][:, GEN_BUS].astype(np.int64)
-    gen_mbase = ppci['gen'][:, MBASE]
-    gen_i_rg = gen_mbase / (np.sqrt(3) * gen_vn_kv)
-
-    gen_buses_ppc, gen_sn_mva, I_rG = _sum_by_group(gen_buses, gen_mbase, gen_i_rg)
-
-    # shunt admittance of generator buses and generator short circuit current
-    # YS = ppci["bus"][gen_buses_ppc, GS] + ppci["bus"][gen_buses_ppc, BS] * 1j
-    # I_kG = V_ikss.T[:, gen_buses_ppc] * YS / baseI[gen_buses_ppc]
-
-
-    xdss_pu = gen.xdss_pu.values
-    rdss_pu = gen.rdss_pu.values
-    cosphi = gen.cos_phi.values
-    X_dsss = xdss_pu * np.square(gen_vn_kv) / gen_mbase
-    R_dsss = rdss_pu * np.square(gen_vn_kv) / gen_mbase
-
-    K_G = ppci['bus'][gen_buses, BASE_KV] / gen_vn_kv * c/(1+xdss_pu*np.sin(np.arccos(cosphi)))
-    Z_G = (R_dsss+1j*X_dsss)
-
-    I_kG = c * ppci['bus'][gen_buses, BASE_KV] / np.sqrt(3) / (Z_G * K_G)
-
-    dV_G = 1j*X_dsss*K_G*I_kG
-    V_Is = c * ppci['bus'][gen_buses, BASE_KV] / np.sqrt(3)
-
-
-    # I_kG_contribution = I_kG.sum(axis=1)
-    # ratio_SG_ikss = I_kG_contribution / I_ikss
-    # close_to_SG = ratio_SG_ikss > 5e-2
-
-    close_to_SG = I_kG / I_rG > 2
-
-    if tk_s == 2e-2:
-        mu = 0.84 + 0.26 * np.exp(-0.26 * abs(I_kG) / I_rG)
-    elif tk_s == 5e-2:
-        mu = 0.71 + 0.51 * np.exp(-0.3 * abs(I_kG) / I_rG)
-    elif tk_s == 10e-2:
-        mu = 0.62 + 0.72 * np.exp(-0.32 * abs(I_kG) / I_rG)
-    elif tk_s >= 25e-2:
-        mu = 0.56 + 0.94 * np.exp(-0.38 * abs(I_kG) / I_rG)
-    else:
-        raise UserWarning('not implemented for other tk_s than 20ms, 50ms, 100ms and >=250ms')
-
-    mu = np.clip(mu, 0, 1)
-
-    I_ikss_G = abs(I_ikss - np.sum((1-mu) * I_kG, axis=1))
-
-    # I_ikss_G = I_ikss - np.sum(abs(V_ikss.T[:, gen_buses_ppc]) * (1-mu) * I_kG, axis=1)
-
-    I_ikss_G = abs(I_ikss - np.sum(dV_G/V_Is * (1-mu) * I_kG, axis=1))
-
-    return I_ikss_G
-
         
 def _calc_single_bus_sc(net, ppc, bus):
     case = net._options["case"]
@@ -230,6 +157,7 @@ def _calc_single_bus_sc(net, ppc, bus):
     # add current source branch current if there is one
 #    ppc["branch"][:, IKSS_F] = abs(ikss_all_f[:, bus_idx] / baseI[fb])
 #    ppc["branch"][:, IKSS_T] = abs(ikss_all_t[:, bus_idx] / baseI[tb])
+
     calc_branch_results(net, ppc, V)
     
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
