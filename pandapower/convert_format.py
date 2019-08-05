@@ -10,6 +10,7 @@ from packaging import version
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower import __version__
+from pandapower.toolbox import set_data_type_of_columns_to_default
 
 
 def convert_format(net):
@@ -29,7 +30,8 @@ def convert_format(net):
         _convert_to_mw(net)
         _update_trafo_parameter_names(net)
         reset_results(net)
-    _set_data_type_of_columns(net)
+    if isinstance(net.version, float) and net.version < 1.6:
+        set_data_type_of_columns_to_default(net)
     net.version = __version__
     return net
 
@@ -224,25 +226,6 @@ def _update_column(column):
     column = column.replace("_mid", "_neutral")
     column = column.replace("vsc", "vk")
     return column
-
-
-def _set_data_type_of_columns(net):
-    new_net = create_empty_network()
-    for key, item in net.items():
-        if isinstance(item, pd.DataFrame):
-            for col in item.columns:
-                if key in new_net and col in new_net[key].columns:
-                    if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
 
 
 def _convert_to_mw(net):
