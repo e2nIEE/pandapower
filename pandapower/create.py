@@ -1513,7 +1513,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     # extend the lines by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net["line"] = net["line"].append(dd, sort=True)
+        net["line"] = net["line"].append(dd, sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net["line"] = net["line"].append(dd)
