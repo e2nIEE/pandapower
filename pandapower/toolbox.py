@@ -655,10 +655,10 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
         if elm == "line":
             line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-
         elif elm == "trafo":
             trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-
+        elif elm == "trafo3w":
+            trafo3w_lookup  = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
         elif elm == "line_geodata" and "line_geodata" in net:
             line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
             net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
@@ -672,6 +672,15 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     trafo_switches = net.switch[net.switch.et == "t"]
     net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element,
                                                                   trafo_lookup)
+
+    line_meas = net.measurement[net.measurement.element_type == "line"]
+    net.measurement.loc[line_meas.index, "element"] = get_indices(line_meas.element, line_lookup)
+
+    trafo_meas = net.measurement[net.measurement.element_type == "trafo"]
+    net.measurement.loc[trafo_meas.index, "element"] = get_indices(trafo_meas.element, trafo_lookup)
+
+    trafo3w_meas = net.measurement[net.measurement.element_type == "trafo3w"]
+    net.measurement.loc[trafo3w_meas.index, "element"] = get_indices(trafo3w_meas.element, trafo3w_lookup)
 
     return net
 
