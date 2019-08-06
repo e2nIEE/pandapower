@@ -72,6 +72,7 @@ def check_controller_frame(net):
         net.controller.in_service.astype(bool)
         net.controller.recycle.astype(bool)
 
+
 def mute_control(net):
     """
     Use this function to set all controllers in net out of service, e. g. when you want to use the

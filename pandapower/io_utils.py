@@ -9,6 +9,7 @@ import pandapower as pp
 import numpy
 import numbers
 import json
+import json.encoder
 from json.encoder import encode_basestring_ascii, encode_basestring, INFINITY, _make_iterencode
 import copy
 import networkx
@@ -32,13 +33,12 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
-
 try:
     import shapely.geometry
+
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
-    
 
 try:
     import pplog as logging
@@ -68,10 +68,11 @@ def coords_to_df(value, geotype="line"):
         geo["y"] = value["y"].values
     return geo
 
+
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_empty_tables=True):
     dodfs = dict()
     dtypes = []
-    dodfs["parameters"] = dict() #pd.DataFrame(columns=["parameter"])
+    dodfs["parameters"] = dict()  # pd.DataFrame(columns=["parameter"])
     for item, value in net.items():
         # dont save internal variables and results (if not explicitely specified)
         if item.startswith("_") or (item.startswith("res") and not include_results):
@@ -95,7 +96,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
         # value is pandas DataFrame
         if include_empty_tables and value.empty:
             continue
-        
+
         if item == "bus_geodata":
             geo = coords_to_df(value, geotype="bus")
             if GEOPANDAS_INSTALLED and isinstance(value, geopandas.GeoDataFrame):
@@ -183,13 +184,10 @@ def restore_all_dtypes(net, dtypes):
             if v["dtype"] == "object":
                 c = net[v.element][v.column]
                 net[v.element][v.column] = numpy.where(c.isnull(), None, c)
-#                net[v.element][v.column] = net[v.element][v.column].fillna(value=None)
+                # net[v.element][v.column] = net[v.element][v.column].fillna(value=None)
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             pass
-
-
-import json.encoder
 
 
 class PPJSONEncoder(json.JSONEncoder):
@@ -262,17 +260,19 @@ class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super().__init__(object_hook=pp_hook, *args, **kwargs)
 
+
 def pp_hook(d):
     if '_module' in d and '_class' in d:
-        if "_object" in d:         
-            obj = d.pop('_object') 
-        elif "_init" in d: 
-            return d #backwards compatibility
+        if "_object" in d:
+            obj = d.pop('_object')
+        elif "_init" in d:
+            return d  # backwards compatibility
         else:
-            obj = {"_init": d, "_state": dict()} #backwards compatibility
+            obj = {"_init": d, "_state": dict()}  # backwards compatibility
+
         class_name = d.pop('_class')
         module_name = d.pop('_module')
-#        print(class_name, module_name)
+        # print(class_name, module_name)
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):
@@ -301,7 +301,7 @@ def pp_hook(d):
         elif SHAPELY_INSTALLED and module_name == "shapely":
             return shapely.geometry.shape(obj)
         elif class_name == "pandapowerNet":
-            if isinstance(obj, str): #backwards compatibility
+            if isinstance(obj, str):  # backwards compatibility
                 from pandapower import from_json_string
                 return from_json_string(obj)
             else:
@@ -316,7 +316,8 @@ def pp_hook(d):
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
                 needs_net = "net" in signature(class_.__init__).parameters.keys()
                 if needs_net and not hasattr(pp_hook, "net"):
-                    return json.dumps({"_object": obj, "_class": class_name, "_module": module_name})
+                    return json.dumps(
+                        {"_object": obj, "_class": class_name, "_module": module_name})
                 else:
                     if isinstance(obj, str):
                         obj = json.loads(obj, cls=PPJSONDecoder)
@@ -330,12 +331,11 @@ def pp_hook(d):
 
 
 class JSONSerializableClass(object):
-    
     json_excludes = ["net", "self", "__class__"]
-    
+
     def __init__(self):
         self._init = dict()
-        
+
     def update_initialized(self, parameters):
         """
         Saves all parameters as object attributes
@@ -346,7 +346,7 @@ class JSONSerializableClass(object):
             if excluded in parameters:
                 del parameters[excluded]
         self._init.update(parameters)
-                        
+
     def to_json(self):
         """
         Each controller should have this method implemented. The resulting json string should be readable by
@@ -360,10 +360,10 @@ class JSONSerializableClass(object):
         d["_init"] = {key: val for key, val in self._init.items() if
                       key in init_parameters and key not in self.json_excludes}
         d["has_net"] = "net" in init_parameters
-        d["_state"] = {key: val for key, val in self.__dict__.items() if key not in 
+        d["_state"] = {key: val for key, val in self.__dict__.items() if key not in
                        self.json_excludes and not callable(val)}
         return d
-        
+
     @classmethod
     def from_dict(cls, d):
         state = d["_state"]
@@ -379,6 +379,7 @@ class JSONSerializableClass(object):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return JSONSerializableClass.from_dict(d)
 
+
 def restore_jsoned_objects(net):
     pp_hook.net = net
     for element in ["controller", "loadcase"]:
@@ -387,8 +388,9 @@ def restore_jsoned_objects(net):
                 try:
                     pp_hook(c)
                 except Exception as e:
-                    logger.warning("did not load %s with index %u: %s"%(element, i, e))
+                    logger.warning("did not load %s with index %u: %s" % (element, i, e))
     del pp_hook.net
+
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
@@ -506,17 +508,20 @@ def json_networkx(obj):
     d = with_signature(obj, json_string, obj_module="networkx")
     return d
 
+
 @to_serializable.register(JSONSerializableClass)
 def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
     d = with_signature(obj, obj.to_json())
     return d
 
+
 def mkdirs_if_not_existent(dir):
     if os.path.isdir(dir) == False:
         os.makedirs(dir)
         return True
     return False
+
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)
@@ -525,13 +530,15 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
-    
+
+
     @to_serializable.register(shapely.geometry.Point)
     def json_point(obj):
         logger.debug("shapely Point")
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
+
 
     @to_serializable.register(shapely.geometry.Polygon)
     def json_polygon(obj):
