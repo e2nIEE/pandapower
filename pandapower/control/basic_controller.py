@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
-from pandapower.auxiliary import get_free_id
+from pandapower.auxiliary import get_free_id, _preserve_dtypes
 from pandapower.control.util.auxiliary import check_controller_frame, \
     drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
@@ -125,9 +125,10 @@ class Controller(JSONSerializableClass):
         else:
             log_same_type_existing_controllers(self.net, type(self), index=index, **kwargs)
 
-        self.net.controller.loc[
-            index, ['controller', 'in_service', 'order', 'level', 'recycle']] = \
-            self, in_service, order, level, recycle
+        dtypes = self.net.controller.dtypes
+        columns = ['controller', 'in_service', 'order', 'level', 'recycle']
+        self.net.controller.loc[index, columns] = self, in_service, order, level, recycle
+        _preserve_dtypes(self.net.controller, dtypes)
         return index
 
     def time_step(self, time):
