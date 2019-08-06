@@ -67,9 +67,10 @@ def check_controller_frame(net):
     Purpose: to define at 1 place
     """
     if 'controller' not in net.keys():
-        columns = ['controller', 'in_service', 'order', 'level', 'recycle']
-        dtype = {'in_service': bool, 'recycle': bool}
-        net['controller'] = pd.DataFrame(columns=columns).astype(dtype=dtype)
+        net['controller'] = pd.DataFrame(
+           columns=['controller', 'in_service', 'order', 'level', 'recycle'])
+        net.controller.in_service.astype(bool)
+        net.controller.recycle.astype(bool)
 
 
 def mute_control(net):
