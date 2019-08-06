@@ -98,6 +98,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         table.to_excel(writer, sheet_name=item)
     writer.save()
 
+
 def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will

@@ -8,6 +8,7 @@ from collections import Iterable, defaultdict
 
 import numpy as np
 import pandas as pd
+from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
@@ -673,6 +674,38 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                                                                   trafo_lookup)
 
     return net
+
+
+def set_data_type_of_columns_to_default(net):
+    """
+    Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
+    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
+    done manually with this function.
+
+    INPUT:
+      **net** - pandapower network with unodered indices
+
+    OUTPUT:
+      No output; the net passed as input has pandapower-default dtypes of columns in element tables.
+
+    """
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        if version.parse(pd.__version__) < version.parse("0.21"):
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                        else:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    if version.parse(pd.__version__) < version.parse("0.20.0"):
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
