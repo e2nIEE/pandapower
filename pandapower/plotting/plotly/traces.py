@@ -9,6 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 from packaging import version
+from collections.abc import Iterable
 
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, MapboxTokenMissing
@@ -36,6 +37,7 @@ def version_check():
         raise UserWarning("Your plotly version {} is no longer supported.\r\n"
                           "Please upgrade your python-plotly installation, "
                           "e.g., via pip install --upgrade plotly".format(__version__))
+
 
 def _in_ipynb():
     """
@@ -173,7 +175,10 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc.loc[buses] if isinstance(infofunc, pd.Series) else infofunc
+    if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and len(infofunc) == len(net.bus):
+        infofunc = pd.Series(index=net.bus.index, data=infofunc)
+
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc.loc[buses]
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -300,6 +305,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         return []
 
     if infofunc is not None:
+        if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and len(infofunc) == len(net.line):
+            infofunc = pd.Series(index=net.line.index, data=infofunc)
         if len(infofunc) != len(lines) and len(infofunc) != len(net.line):
             raise UserWarning("Different amount of hover info than lines to plot")
         assert isinstance(infofunc, pd.Series), \
@@ -353,7 +360,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         if cmap is not None:
             try:
                 line_color = cmap_lines[col_i]
-                line_info = line['name'] if infofunc is None else infofunc.loc[idx] if isinstance(infofunc, pd.Series) else infofunc
+                line_info = line['name'] if infofunc is None else infofunc.loc[idx]
             except IndexError:
                 logger.warning("No color and info for line {:d} (name: {}) available".format(idx, line['name']))
 
@@ -405,7 +412,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_trace['line']['color'] = line_color
             try:
                 line_trace['text'] = infofunc.loc[idx]
-            except:
+            except (KeyError, IndexError):
                 line_trace["text"] = line['name']
 
             line_traces.append(line_trace)
@@ -415,6 +422,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     # sort infofunc so that it is the correct order lines_to_plot + no_go_lines_to_plot
     if infofunc is not None:
+        if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and len(infofunc) == len(net.line):
+            infofunc = pd.Series(index=net.line.index, data=infofunc)
         assert isinstance(infofunc, pd.Series), \
             "infofunc should be a pandas series with the net.line.index to the infofunc contents"
         sorted_idx = lines_to_plot.index.tolist()
@@ -475,6 +484,8 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     trafos_to_plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
     if infofunc is not None:
+        if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and len(infofunc) == len(net.trafo):
+            infofunc = pd.Series(index=net.trafo.index, data=infofunc)
         assert isinstance(infofunc, pd.Series), \
             "infofunc should be a pandas series with the net.trafo.index to the infofunc contents"
         infofunc = infofunc.loc[trafos_to_plot.index]
@@ -504,7 +515,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
         trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
                            hoverinfo='text', mode='lines', name=trace_name)
 
-        trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx] if isinstance(infofunc, pd.Series) else infofunc
+        trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
         from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
         to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
