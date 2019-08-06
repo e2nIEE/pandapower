@@ -658,7 +658,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
         elif elm == "trafo":
             trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
         elif elm == "trafo3w":
-            trafo3w_lookup  = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
+            trafo3w_lookup = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
         elif elm == "line_geodata" and "line_geodata" in net:
             line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
             net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
