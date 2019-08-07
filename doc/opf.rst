@@ -11,5 +11,5 @@ can identify problems using the pandapower diagnostic function.
     :maxdepth: 2
 
     opf/formulation
-    opf/pypower
+    opf/pypower_run
     opf/powermodels
