@@ -4,15 +4,21 @@ Networks
 .. _ppNetworks:
 
 
-Besides creating your own grids through the pandapower API, pandapower provides synthetic and Benchmark networks through the networks module.
+Besides creating your own grids using pandapower functions, pandapower provides synthetic and
+benchmark grids through the networks module.
 
-The pandapower networks modul contains example networks, simple test networks, randomly generated networks, CIGRE test networks, IEEE case files and synthetic low voltage networks from Georg Kerber and Lindner et. al. and Dickert et. al..
+The pandapower networks module contains example grids, simple test grids, randomly generated
+grids, CIGRE test grids, IEEE case files and synthetic low voltage grids from Georg Kerber, Lindner et. al. and Dickert et. al.
+If you want to evaluate your algotihms on benchmark grids with corresponding full-year load, generation, and storage profiles
+or want to publish your results in a reproducible manner, we recommend the new SimBench repository
+(`Homepage <https://simbench.de/en/>`_, `GitHub Repository to use SimBench with pandapower <https://github.com/e2nIEE/simbench>`_).
 
-You can find documentation for the individual modules here:
+You can find documentation for the individual network modules of pandapower here:
 
 .. toctree::
     :maxdepth: 2
 
+    networks/simbench
     networks/example
     networks/test
     networks/cigre

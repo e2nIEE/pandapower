@@ -28,6 +28,7 @@ try:
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
+ZERO_INJECTION_STD_DEV = 0.001
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -74,9 +75,9 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     """
     meas = net.measurement.copy(deep=False)
     meas["side"] = meas.apply(lambda row:
-                              net['line']["{}_bus".format(row["side"])].loc[row["element"]] if
+                              net['line'].at[row["element"], row["side"]+"_bus"] if
                               row["side"] in ("from", "to") else
-                              net[row["element_type"]][row["side"]+'_bus'].loc[row["element"]] if
+                              net[row["element_type"]].at[row["element"], row["side"]+'_bus'] if
                               row["side"] in ("hv", "mv", "lv") else row["side"], axis=1)
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
@@ -129,7 +130,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.info("P Measurement duplication will be automatically merged!")
+            std_logger.debug("P Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, P] = p_meas_on_bus.value.sum()
@@ -145,7 +146,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
         unique_bus_positions = np.unique(bus_positions)
         if len(unique_bus_positions) < len(bus_positions):
-            std_logger.info("Q Measurement duplication will be automatically merged!")
+            std_logger.debug("Q Measurement duplication will be automatically merged!")
             for bus in unique_bus_positions:
                 q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
                 bus_append[bus, Q] = q_meas_on_bus.value.sum()
@@ -396,9 +397,9 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
-        bus_append[zero_inj_bus, P_STD] = 1
+        bus_append[zero_inj_bus, P_STD] = ZERO_INJECTION_STD_DEV
         bus_append[zero_inj_bus, Q] = 0
-        bus_append[zero_inj_bus, Q_STD] = 1
+        bus_append[zero_inj_bus, Q_STD] = ZERO_INJECTION_STD_DEV
     return bus_append
 
 

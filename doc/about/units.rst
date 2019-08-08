@@ -45,7 +45,7 @@ The value should not be relevant in most applications since all power values are
 
 **Signing System**
 
-There are three elements that have power values based on the generator viewpoint (positive active power means power consumption), which are:
+There are three elements that have power values based on the generator viewpoint (positive active power means power generation), which are:
     - gen
     - sgen
     - ext_grid

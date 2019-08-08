@@ -7,8 +7,8 @@
 import inspect
 
 from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
-    _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, _init_rundcpp_options, \
-    _init_runopp_options
+    _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
+    _init_rundcpp_options, _init_runopp_options
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow
@@ -35,8 +35,8 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims', 'recycle',
-                           'voltage_depend_loads', 'consider_line_temperature', 'delta',
+                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
+                           'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree',  'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
                            'max_iteration', 'v_debug']
@@ -159,7 +159,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
             which leads to significant speed improvements.
 
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter 
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
@@ -246,7 +246,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
             If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter 
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
@@ -312,6 +314,10 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
 
+        **delta** (float, 1e-10) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
         **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
             line temperature. If True, net.line must contain a column "temperature_degree_celsius".
             The temperature dependency coefficient alpha must be provided in the net.line.alpha
@@ -337,8 +343,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, switch_rx_ratio=0.5,
-             delta=1e-10, trafo3w_losses="hv", **kwargs):
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True,
+             switch_rx_ratio=0.5, delta=1e-10, trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -368,6 +374,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             processed in pypower, ComplexWarnings are raised during the loadflow.
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
+
+        **delta** (float, 1e-10) - power tolerance
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
     """
     if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
         logger.warning('Warning: Please specify sgen["controllable"]\n')
@@ -375,8 +385,9 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     if (not net.load.empty) & ("controllable" not in net.load.columns):
         logger.warning('Warning: Please specify load["controllable"]\n')
 
-    _init_rundcopp_options(net, check_connectivity=check_connectivity, switch_rx_ratio=switch_rx_ratio,
-                           delta=delta, trafo3w_losses=trafo3w_losses)
+    _init_rundcopp_options(net, check_connectivity=check_connectivity,
+                           switch_rx_ratio=switch_rx_ratio, delta=delta,
+                           trafo3w_losses=trafo3w_losses)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

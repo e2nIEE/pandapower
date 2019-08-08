@@ -8,6 +8,7 @@ from collections import Iterable, defaultdict
 
 import numpy as np
 import pandas as pd
+from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
@@ -36,19 +37,19 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 
         **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
     """
-    logger.info("Max voltage")
+    logger.info("Max voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Min voltage")
+    logger.info("Min voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu").iloc[:numv].iterrows():
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
-    logger.info("Max loading trafo")
+    logger.info("Max loading trafo in %:")
     if net.res_trafo is not None:
         for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[
                     :numi].iterrows():
             logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name,
                         net.trafo.name.at[r.name])
-    logger.info("Max loading line")
+    logger.info("Max loading line in %:")
     for _, r in net.res_line.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name,
                     net.line.name.at[r.name])
@@ -57,7 +58,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
 def _check_plc_full_range(net, element_type):  # pragma: no cover
     """ This is an auxiliary function for check_opf_data to check full range of piecewise linear
     cost function """
-    plc = net.piecewise_linear_cost
+    plc = net.pwl_cost
     plc_el_p = plc.loc[(plc.element_type == element_type) & (plc.type == 'p')]
     plc_el_q = plc.loc[(plc.element_type == element_type) & (plc.type == 'q')]
     p_idx = []
@@ -107,8 +108,8 @@ def check_opf_data(net):  # pragma: no cover
 
     # --- Determine duplicated cost data
     raise NotImplementedError
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
     if duplicates.shape[0]:
         raise ValueError("There are elements with multiply costs.\nelement_types: %s\n"
@@ -167,12 +168,12 @@ def opf_task(net):  # pragma: no cover
     """
     check_opf_data(net)
 
-    plc = net.piecewise_linear_cost
-    pol = net.polynomial_cost
+    plc = net.pwl_cost
+    pol = net.poly_cost
 
     # --- store cost data to all_costs
-    all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
-        net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
+    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
+        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     all_costs['str'] = None
     for i, j in all_costs.iterrows():
         costs = plc.loc[(plc.element == j.element) & (plc.element_type == j.element_type) &
@@ -220,11 +221,12 @@ def opf_task(net):  # pragma: no cover
                 constr[i] = np.nan
             if (constr.min_p_mw >= constr.max_p_mw).any():
                 logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
-                            variable_names[j] + ". " + "Please observe the pandapower " +
-                            "signing system.")
+                               variable_names[j] + ". " + "Please observe the pandapower " +
+                               "signing system.")
             if (constr.min_q_mvar >= constr.max_q_mvar).any():
                 logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
-                            variable_names[j] + ". Please observe the pandapower signing system.")
+                               variable_names[j] + ". Please observe the pandapower signing " +
+                               "system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
@@ -454,6 +456,7 @@ def compare_arrays(x, y):
     else:
         raise ValueError("x and y needs to have the same shape.")
 
+
 # --- Simulation setup and preparations
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
                                      verbose=True):
@@ -577,13 +580,25 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def create_continuous_bus_index(net, start=0):
+def create_continuous_bus_index(net, start=0, store_old_index=False):
     """
-    Creates a continuous bus index starting at zero and replaces all
+    Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
+
+    INPUT:
+      **net** - pandapower network
+
+    OPTIONAL:
+      **start** - index begins with "start"
+      **store_old_index** - if True, stores the old index in net.bus["old_index"]
+
+    OUTPUT:
+      **bus_lookup** - mapping of old to new index
     """
 
     net.bus.sort_index(inplace=True)
+    if store_old_index:
+        net.bus["old_index"] = net.bus.index.values
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -603,7 +618,7 @@ def create_continuous_bus_index(net, start=0):
     side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
     net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
                                                          bus_lookup)
-    return net
+    return bus_lookup
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
@@ -628,7 +643,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     elements = pp_elements(res_elements=True)
 
-    # create continous bus index
+    # create continuous bus index
     create_continuous_bus_index(net, start=start)
     elements -= {"bus", "bus_geodata", "res_bus"}
 
@@ -640,10 +655,10 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
         if elm == "line":
             line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-
         elif elm == "trafo":
             trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-
+        elif elm == "trafo3w":
+            trafo3w_lookup = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
         elif elm == "line_geodata" and "line_geodata" in net:
             line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
             net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
@@ -658,7 +673,48 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element,
                                                                   trafo_lookup)
 
+    line_meas = net.measurement[net.measurement.element_type == "line"]
+    net.measurement.loc[line_meas.index, "element"] = get_indices(line_meas.element, line_lookup)
+
+    trafo_meas = net.measurement[net.measurement.element_type == "trafo"]
+    net.measurement.loc[trafo_meas.index, "element"] = get_indices(trafo_meas.element, trafo_lookup)
+
+    trafo3w_meas = net.measurement[net.measurement.element_type == "trafo3w"]
+    net.measurement.loc[trafo3w_meas.index, "element"] = get_indices(trafo3w_meas.element, trafo3w_lookup)
+
     return net
+
+
+def set_data_type_of_columns_to_default(net):
+    """
+    Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
+    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
+    done manually with this function.
+
+    INPUT:
+      **net** - pandapower network with unodered indices
+
+    OUTPUT:
+      No output; the net passed as input has pandapower-default dtypes of columns in element tables.
+
+    """
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        if version.parse(pd.__version__) < version.parse("0.21"):
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                        else:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    if version.parse(pd.__version__) < version.parse("0.20.0"):
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
@@ -797,9 +853,8 @@ def drop_buses(net, buses, drop_elements=True):
 
 
 def drop_switches_at_buses(net, buses):
-    i = net["switch"][(net["switch"]["bus"].isin(buses))
-                      | ((net["switch"]["element"].isin(buses))
-                         & (net["switch"]["et"] == "b"))].index
+    i = net["switch"][(net["switch"]["bus"].isin(buses)) |
+                      ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
     net["switch"].drop(i, inplace=True)
     logger.info("dropped %d switches" % len(i))
 
@@ -892,9 +947,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.loc[bus_meas.element.isin(b2)].index
+    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
     net.measurement.loc[bus_meas, "element"] = b1
-    net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)

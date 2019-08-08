@@ -38,7 +38,7 @@ def _check_necessary_opf_parameters(net, logger):
                         error = True
                     else:  # "ext_grid" -> no error due to missing columns at ext_grid
                         logger.debug("These missing columns in ext_grid are considered in OPF as " +
-                                    "+- 1000 TW.: " + str(missing_col))
+                                     "+- 1000 TW.: " + str(missing_col))
                 # determine missing values
                 for lim_col in set(columns) - set(missing_col):
                     if element_type in ['gen', 'sgen', 'load', 'storage']:
