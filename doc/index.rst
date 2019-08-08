@@ -49,9 +49,11 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     opf
     shortcircuit
     estimation
+    control
     topology
     networks
     plotting
     file_io
     converter
     toolbox
+	
