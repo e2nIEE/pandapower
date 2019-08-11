@@ -769,7 +769,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the load
+        **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -856,9 +856,7 @@ def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0,q_A_mvar=0,\
                 q_B_mvar=0, q_C_mvar=0, sn_mva=nan, name=None, scaling=1.,\
                     index=None, in_service=True, type="wye"):
 
-    """create_asymmetric_load(net, bus, p_A_mw, q_A_mvar=0 , p_B_mw, q_B_mvar=0 , p_C_mw, q_C_mvar=0,
-    const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
-    in_service=True, type=None, tech = "3ph-e")
+    """
     
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -872,12 +870,20 @@ def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0,q_A_mvar=0,\
         **bus** (int) - The bus id to which the load is connected
 
     OPTIONAL:
-        **p_A_mw, p_B_mw, p_C_mw** (float, default 0) - The real power of the load
+        **p_A_mw** (float, default 0) - The real power for Phase A load
+		
+		**p_B_mw** (float, default 0) - The real power for Phase B load
+		
+		**p_C_mw** (float, default 0) - The real power for Phase C load
 
         - postive value   -> load
         - negative value  -> generation
 
-        **q_A_mvar, q_B_mvar, q_C_mvar** (float, default 0) - The reactive power of the load
+        **q_A_mvar** float, default 0) - The reactive power for Phase A load
+		
+		**q_B_mvar** float, default 0) - The reactive power for Phase B load
+		
+		**q_C_mvar** (float, default 0) - The reactive power for Phase C load
 
         **sn_kva** (float, default: None) - Nominal power of the load
 
@@ -896,9 +902,9 @@ def create_asymmetric_load(net, bus, p_A_mw=0 , p_B_mw=0 , p_C_mw=0,q_A_mvar=0,\
     OUTPUT:
         **index** (int) - The unique ID of the created element
 
-    EXAMPLE:
-        create_asymmetric_load(net, bus=0, p_mw_a=10., q_mvar_a=2., p_mw_b=10., q_mvar_b=2,
-         p_mw_c=10., q_mvar_c=2)
+    EXAMPLE:        
+		**create_asymmetric_load(net, bus=0, p_C_mw = 9., q_C_mvar = 1.8)**
+        Creates a single phase wye type load
 
     """
     if bus not in net["bus"].index.values:
@@ -1152,10 +1158,11 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 def create_asymmetric_sgen(net, bus, p_A_mw,p_B_mw,p_C_mw, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0, sn_mva=nan, 
                     name=None, index=None, scaling=1., type=None, in_service=True, 
                      k=nan, rx=nan):
-    """create_sgen(net, bus, p_mw, q_mvar=0, sn_kva=nan, name=None, index=None, \
+    """create_asymmetric_sgen(net, bus, p_A_mw=0, q_A_mvar=0,p_B_mw=0, q_B_mvar=0,\
+				p_C_mw=0, q_C_mvar=0,sn_kva=nan, name=None, index=None, \
                 scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_kw=nan, \
                 max_q_mvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
-    Adds one static generator in table net["sgen"].
+    Adds one static generator in table net["asymmetric_sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
     with a constant active and reactive power feed-in. If you want to model a voltage controlled
@@ -1199,7 +1206,7 @@ def create_asymmetric_sgen(net, bus, p_A_mw,p_B_mw,p_C_mw, q_A_mvar=0, q_B_mvar=
         **index** (int) - The unique ID of the created sgen
 
     EXAMPLE:
-        create_sgen(net, 1, p_mw = -120)
+        create_asymmetric_sgen(net, 1, p_B_mw = -120)
 
     """
     if bus not in net["bus"].index.values:

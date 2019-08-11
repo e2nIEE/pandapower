@@ -517,8 +517,8 @@ def test_trafo_asym():
 # It has something to do with Y sh for these groups    
 # =============================================================================
     results = get_PowerFactory_Results()   # Results taken out from PF using a different script   
-    for bushv in [10,11]:
-        for tap_ps in [0,1]:
+    for bushv in [10]:
+        for tap_ps in [0]:
             for loadtyp in ["delta","wye","delta_wye","bal_wye"]:
                 for vc in ["YNyn","Dyn","Yzn"]:#,"Yyn"]:
                     net = pp.create_empty_network(sn_mva = 100) 

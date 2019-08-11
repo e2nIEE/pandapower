@@ -46,7 +46,7 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
     eg_end = len(net['ext_grid'])
-    gen_end = eg_end + len(net['gen'])
+    gen_end = eg_end + len(net['gen'][net['_is_elements']['gen']])
 
     b, pA, qA, pB, qB, pC, qC = _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2)
 
@@ -267,15 +267,15 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     # voltage magnitudes
     vA_pu, vB_pu, vC_pu = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_pu[gen_is_mask] = np.abs(VABC[0, :])
-    vB_pu[gen_is_mask] = np.abs(VABC[1, :])
-    vC_pu[gen_is_mask] = np.abs(VABC[2, :])
+    vA_pu[gen_idx_ppc] = np.abs(VABC[0, gen_idx_ppc])
+    vB_pu[gen_idx_ppc] = np.abs(VABC[1, gen_idx_ppc])
+    vC_pu[gen_idx_ppc] = np.abs(VABC[2, gen_idx_ppc])
 
     # voltage angles
     vA_a, vB_a, vC_a = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_a[gen_is_mask] = np.rad2deg(np.angle(VABC[0, :]))
-    vB_a[gen_is_mask] = np.rad2deg(np.angle(VABC[1, :]))
-    vC_a[gen_is_mask] = np.rad2deg(np.angle(VABC[2, :]))
+    vA_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[0, gen_idx_ppc]))
+    vB_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[1, gen_idx_ppc]))
+    vC_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[2, gen_idx_ppc]))
 
     net["res_gen_3ph"]["vmA_pu"] = vA_pu
     net["res_gen_3ph"]["vmB_pu"] = vB_pu
