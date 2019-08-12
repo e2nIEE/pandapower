@@ -153,7 +153,7 @@ If the test detects the possibility of fault data, the value of the added class 
     success_chi2 = chi2_analysis(net, init="flat")
 
 Further Algorithms and Estimators
-=============================
+==================================
 Since Pandapower 2.0.1 further algorithms and estimators (robust estimators) are available for the state estimation module, these include:
 
 +-------------------------------------+----------------------+
