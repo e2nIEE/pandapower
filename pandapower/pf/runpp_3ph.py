@@ -238,7 +238,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         **tolerance_mva** (float, 1e-8) - loadflow termination condition 
         referring to P / Q mismatch of node power in MVA
 
-        **(Not used in 3 Phase load flow)trafo_model** (str, "t")  - transformer equivalent circuit model
+        **trafo_model** (str, "t") ('pi' Yet to be implemented in 3 Phase load flow) - transformer equivalent circuit model
         pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modeled as equivalent with the T-model.
@@ -250,7 +250,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         But, for three phase analysis we have considered only T model, which 
         is internally converted to pi model
         
-        **(Not tested with 3 Phase load flow)trafo_loading** (str, "current") - mode of calculation for 
+        **trafo_loading** (str, "current") (Not tested with 3 Phase load flow) - mode of calculation for 
         transformer loading
 
             Transformer loading can be calculated relative to the rated 
@@ -265,7 +265,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - "power" - transformer loading is given as ratio of apparent 
             power flow to the rated apparent power of the transformer.
 
-        **(Not tested with 3 Phase load flow)enforce_q_lims** (bool, False) - respect generator reactive power 
+        **enforce_q_lims** (bool, False) (Not tested with 3 Phase load flow) - respect generator reactive power 
         limits
 
             If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar
@@ -284,12 +284,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             Sparse Graph Routines is perfomed. If check finds unsupplied buses,
             they are set out of service in the ppc
 
-        **(Not tested with 3 Phase load flow) voltage_depend_loads** (bool, True) - consideration of 
+        **voltage_depend_loads** (bool, True)(Not tested with 3 Phase load flow)  - consideration of 
         voltage-dependent loads. If False, net.load.const_z_percent and 
         net.load.const_i_percent are not considered, i.e. net.load.p_mw and 
         net.load.q_mvar are considered as constant-power loads.
 
-        **(Not tested with 3 Phase load flow)consider_line_temperature** (bool, False) - adjustment of line 
+        **consider_line_temperature** (bool, False) (Not tested with 3 Phase load flow) - adjustment of line 
         impedance based on provided line temperature. If True, net.line must 
         contain a column "temperature_degree_celsius". The temperature 
         dependency coefficient alpha must be provided in the net.line.alpha
@@ -305,23 +305,23 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             matrices for the powerflow, which leads to significant speed 
             improvements.
 
-        **(Not tested with 3 Phase load flow) switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. 
+        **switch_rx_ratio** (float, 2) (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches. 
         If impedance is zero, buses connected by a closed bus-bus switch 
         are fused to model an ideal bus. Otherwise, they are modelled 
         as branches with resistance defined as z_ohm column in switch 
         table and this parameter
 
-        **(Not tested with 3 Phase load flow) delta_q** - Reactive power tolerance for option "enforce_q_lims" 
+        **delta_q** (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims" 
         in kvar - helps convergence in some cases.
 
-        **(Not tested with 3 Phase load flow) trafo3w_losses** - defines where open loop losses of three-winding
+        **trafo3w_losses** (Not tested with 3 Phase load flow) - defines where open loop losses of three-winding
         transformers are considered. Valid options are "hv", "mv", "lv" 
         for HV/MV/LV side or "star" for the star point.
 
-        **(Not tested with 3 Phase load flow) v_debug** (bool, False) - if True, voltage values in each 
+        **v_debug** (bool, False) (Not tested with 3 Phase load flow) - if True, voltage values in each 
         newton-raphson iteration are logged in the ppc
 
-        **(Not tested with 3 Phase load flow) init_vm_pu** (string/float/array/Series, None) - Allows to define 
+        **init_vm_pu** (string/float/array/Series, None) (Not tested with 3 Phase load flow) - Allows to define 
         initialization specifically for voltage magnitudes. 
         Only works with init == "auto"!
 
@@ -335,7 +335,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - a pandas Series with a voltage magnitude value for each bus
             (indexes have to match the indexes in net.bus)
 
-        **(Not tested with 3 Phase load flow) init_va_degree** (string/float/array/Series, None) -
+         **init_va_degree** (string/float/array/Series, None) (Not tested with 3 Phase load flow)-
         Allows to define initialization specifically for voltage angles. 
         Only works with init == "auto"!
 
@@ -350,8 +350,8 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - a pandas Series with a voltage angle value for each bus (indexes 
             have to match the indexes in net.bus)
 
-        **(Not tested with 3 Phase load flow) recycle** (dict, none) - Reuse of internal powerflow variables for 
-        time series calculation
+        **recycle** (dict, none)(Not tested with 3 Phase load flow) - Reuse of internal powerflow variables for 
+        time series calculation(Not tested with 3 Phase load flow) 
 
             Contains a dict with the following parameters:
             _is_elements: If True in service elements are not filtered again
@@ -361,7 +361,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from 
             ppc["internal"] and not reconstructed
 
-        **(Not tested with 3 Phase load flow) neglect_open_switch_branches** (bool, False) - If True no auxiliary 
+        **neglect_open_switch_branches** (bool, False) (Not tested with 3 Phase load flow) - If True no auxiliary 
         buses are created for branches when switches are opened at the branch.
         Instead branches are set out of service
 
@@ -369,18 +369,22 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     -------------
     **count(int)** No of iterations taken to reach convergence
     
-    **V012_it(complex)** | V0... |
+    **V012_it(complex)**    
     
-                        | V1... |
-                        
-                        | V2... |
-                        
-                         _______
-    **I012_it(complex)** | I0... |
+    | V0... |
     
-                        | I1... |
+    | V1... |
                         
-                        | I2... |
+    | V2... |
+                        
+                         
+    **I012_it(complex)**    
+    
+    | I0... |
+    
+    | I1... |
+                        
+    | I2... |
     **ppci0**
     
     **Y0_pu** 
@@ -400,14 +404,16 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     
     >>> from pandapower.pf.runpp_3ph import runpp_3ph
     
-    >>> from pandapower.create import create_asymmetric_load
-    
     >>> net = pp.create_empty_network()
     
     ...create_bus
+    
     ...create_line
+    
     ...create_trafo
+    
     ...create_load
+    
     ...create_asymmetric_load
     
     >>> pp.add_zero_impedance_parameters(net)

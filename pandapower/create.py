@@ -1664,6 +1664,14 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **length_km** (float) - The line length in km
 
         **std_type** (string) - The linetype of a standard line pre-defined in standard_linetypes.
+        
+    **Zero sequence parameters** (Added through std_type For Three phase load flow) :
+
+        **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
+
+        **x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
+
+        **c0_nf_per_km** (float)  - zero sequence line capacitance in nano Farad per km  
 
     OPTIONAL:
         **name** (string, None) - A custom name for this line
@@ -2007,7 +2015,21 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
             connected to
 
         **std_type** -  The used standard type from the standard type library
-
+        
+    **Zero sequence parameters** (Added through std_type For Three phase load flow) :
+        
+        **vk0_percent** - zero sequence relative short-circuit voltage
+        
+        **vkr0_percent** - real part of zero sequence relative short-circuit voltage
+        
+        **mag0_percent** - ratio between magnetizing and short circuit impedance (zero sequence)
+        
+                            z_mag0 / z0
+        
+        **mag0_rx**  - zero sequence magnetizing r/x  ratio 
+        
+        **si0_hv_partial** - zero sequence short circuit impedance  distribution in hv side
+        
     OPTIONAL:
         **name** (string, None) - A custom name for this transformer
 

@@ -11,6 +11,12 @@ vkr_percent*;float;:math:`\geq`  0;"real component of
 short circuit voltage [%]"
 pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
 i0_percent*;float;:math:`\geq` 0;open loop losses in [%]
+vk0_percent***;float;:math:`\geq` 0;zero sequence relative short-circuit voltage
+vkr0_percent***;float;:math:`\geq` 0;real part of zero sequence relative short-circuit voltage
+mag0_percent***;float;:math:`\geq` 0;"z_mag0 / z0
+ratio between magnetizing and short circuit impedance (zero sequence)"
+mag0_rx***;float;;zero sequence magnetizing r/x  ratio 
+si0_hv_partial***;float;:math:`\geq` 0;zero sequence short circuit impedance  distribution in hv side
 shift_degree*;float;;transformer phase shift angle
 tap_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
 tap_neutral;integer;;rated tap position

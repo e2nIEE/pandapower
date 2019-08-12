@@ -34,8 +34,8 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
-
+\*necessary for executing a balanced power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter |br| \*\*\*\*
+necessary for executing a three phase power flow  / single phase short circuit 
 .. note::
 
     Defining a line with length zero leads to a division by zero in the power flow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the power flow

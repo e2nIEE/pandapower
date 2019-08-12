@@ -34,7 +34,7 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+\*necessary for executing a balanced power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*necessary for executing a three phase power flow / single phase short circuit
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
