@@ -71,6 +71,8 @@ def _ppc2mpc(ppc):
     mpc["branch"][np.where(mpc["branch"][:, 8] == 1), 8] = 0
     # version is a string
     mpc["version"] = str(mpc["version"])
+    # baseMVA has to be a float instead of int
+    mpc["baseMVA"] = mpc["baseMVA"] * 1.0
     return mpc
 
 
