@@ -1,0 +1,13 @@
+**Parameter**;**Datatype**;**Explanation**
+vm_A_pu;float;voltage magnitude:Phase A [p.u]
+va_A_degree;float;voltage angle:Phase A [degree]
+vm_B_pu;float;voltage magnitude:Phase B [p.u]
+va_B_degree;float;voltage angle:Phase B [degree]
+vm_C_pu;float;voltage magnitude:Phase C [p.u]
+va_C_degree;float;voltage angle:Phase C [degree]
+p_A_mw;float;resulting active power demand:Phase A [MW]
+q_A_mvar;float;resulting reactive power demand:Phase A [Mvar]
+p_B_mw;float;resulting active power demand:Phase B [MW]
+q_B_mvar;float;resulting reactive power demand:Phase B [Mvar]
+p_C_mw;float;resulting active power demand:Phase C [MW]
+q_C_mvar;float;resulting reactive power demand:Phase C [Mvar]

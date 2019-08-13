@@ -366,7 +366,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         Instead branches are set out of service
 
     Return values:
-    -------------
+    ---------------
     **count(int)** No of iterations taken to reach convergence
     
     **V012_it(complex)**    
@@ -394,7 +394,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     **Y2_pu**
 
     See Also:
-    --------
+    ----------
     pp.add_zero_impedance_parameters(net): 
     To add zero sequence parameters into ext_grids, lines and transformers
 
@@ -421,11 +421,11 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     >>> runpp_3ph(net)
 
     Notes:
-    -----
-    - Uses Sequence Frame for power flow solution. 
-    - Neutral has not been modelled yet
-    - 3PH PH-E load type is called as wye since Neutral and Earth are considered same
-    - Works only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups) 
+    --------
+    - Three phase load flow uses Sequence Frame for power flow solution. 
+    - Three phase system is modelled with earth return. 
+    - PH-E load type is called as wye since Neutral and Earth are considered same
+    - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups) 
     """
     # =============================================================================
     # pandapower settings
@@ -455,7 +455,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         init = "dc" if calculate_voltage_angles else "flat"
 
     
-    default_max_iteration = {"nr": 100, "bfsw": 10, "gs": 10000, "fdxb": 30,\
+    default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,\
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
@@ -623,25 +623,26 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
 
-    ppci0["et"] = time() - t0
-    ppci1["et"] = ppci0["et"]
-    ppci2["et"] = ppci0["et"]
-    ppci0["success"] = (count < 3 * max_iteration)
-    ppci1["success"] = ppci0["success"]
-    ppci2["success"] = ppci0["success"]
+    for ppc in [ppci0,ppci1,ppci2]:
+        ppc["et"] = time() - t0
+        ppc["success"] = (count < 3 * max_iteration)
     
-    # Todo: Add reference to paper to explain the following steps
-    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    ppci0["bus"][ref, GS] -= gs_eg
-    ppci0["bus"][ref, BS] -= bs_eg
-    # Y0_pu = Y0_pu.todense()
-    Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+    # TODO: Add reference to paper to explain the following steps
+# =============================================================================
+# #    No longer needed. Change in accuracy is not so much
+#    Can be added if required
+# =============================================================================
+#    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+#    ppci0["bus"][ref, GS] -= gs_eg
+#    ppci0["bus"][ref, BS] -= bs_eg
+#
+#    Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
 
     ## update data matrices with solution
-    # Todo: Add reference to paper to explain the choice of Y1 over Y2 in the negative sequence
+    # TODO: Add reference to paper to explain the choice of Y1 over Y2 in the negative sequence
     bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].flatten(), sl_bus, ref_gens)
     bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].flatten(), sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus, ref_gens)
+    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y2_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus, ref_gens)
 
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
@@ -659,7 +660,10 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     ppci1["internal"]["Yt"] = Y1_t
     ppci2["internal"]["Yt"] = Y2_t
     
-    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new,gs_eg,bs_eg)
+#    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new,gs_eg,bs_eg)
+    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(Y0_pu, Y1_pu,\
+                                                               Y2_pu,\
+                                                               V012_new)
     I012_res = phase_to_sequence(I_abc_pu)
     S012_res = S_from_VI_elementwise(V012_new,I012_res) * ppci1["baseMVA"]
     
@@ -686,7 +690,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     ppc1 = _copy_results_ppci_to_ppc(ppci1, ppc1, mode=mode)
     ppc2 = _copy_results_ppci_to_ppc(ppci2, ppc2, mode=mode)
 
-#    Raise error if PF was not successful. If DC -> success is always 1
+    _extract_results_3ph(net, ppc0, ppc1, ppc2)
+
+    #    Raise error if PF was not successful. If DC -> success is always 1
 
     if ppci0["success"] != True:
         net["converged"] = False
@@ -696,21 +702,21 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     else:
         net["converged"] = True
 
-    _extract_results_3ph(net, ppc0, ppc1, ppc2)
     _clean_up(net)
 
     return count, V012_it, I012_it, ppci0, Y0_pu, Y1_pu, Y2_pu
 
 
-def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu,gs_eg,bs_eg):
-    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    ppci0["bus"][ref, GS] -= gs_eg
-    ppci0["bus"][ref, BS] -= bs_eg
-    # Y0_pu = Y0_pu.todense()
-    Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+#def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu,gs_eg,bs_eg):
+def _phase_from_sequence_results(Y0_pu, Y1_pu,Y2_pu, V012_pu):
+#    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+#    ppci0["bus"][ref, GS] -= gs_eg
+#    ppci0["bus"][ref, BS] -= bs_eg
+#
+#    Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
     I012_pu = combine_X012(I0_from_V012(V012_pu, Y0_pu),
                             I1_from_V012(V012_pu, Y1_pu),
-                            I2_from_V012(V012_pu, Y1_pu))
+                            I2_from_V012(V012_pu, Y2_pu))
     I_abc_pu = sequence_to_phase(I012_pu)
     V_abc_pu = sequence_to_phase(V012_pu)
     Sabc_pu = S_from_VI_elementwise(V_abc_pu, I_abc_pu)

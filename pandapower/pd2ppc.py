@@ -398,7 +398,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc_idx = trafos["_ppc_idx"].values.astype(int)
         ppc["branch"][ppc_idx, BR_STATUS] = 0
 
-        if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
+        if vector_group in ["Yy", "Yd", "Dy", "Dd","YNd","YNy"]:
             continue
 
         vk_percent = trafos["vk_percent"].values.astype(float)

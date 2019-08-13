@@ -1663,15 +1663,13 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **length_km** (float) - The line length in km
 
-        **std_type** (string) - The linetype of a standard line pre-defined in standard_linetypes.
+        **std_type** (string) - Name of a standard linetype :
         
-    **Zero sequence parameters** (Added through std_type For Three phase load flow) :
-
-        **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
-
-        **x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
-
-        **c0_nf_per_km** (float)  - zero sequence line capacitance in nano Farad per km  
+                                - Pre-defined in standard_linetypes 
+                                
+                                **or**
+        
+                                - Customized std_type made using **create_std_type()** 
 
     OPTIONAL:
         **name** (string, None) - A custom name for this line
@@ -1766,8 +1764,11 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
-                                c_nf_per_km, max_i_ka, name=None, index=None, type=None,
-                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
+                                c_nf_per_km, max_i_ka,r0_ohm_per_km= nan,
+                                x0_ohm_per_km=nan,c0_nf_per_km=nan,
+                                name=None, index=None, type=None,
+                                geodata=None, in_service=True, df=1., 
+                                parallel=1, g_us_per_km=0.,g0_us_per_km=0,
                                 max_loading_percent=nan, alpha=None,
                                 temperature_degree_celsius=None, **kwargs):
     """
@@ -1788,6 +1789,12 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **c_nf_per_km** (float) - line capacitance in nano Farad per km
 
+        **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
+
+        **x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
+
+        **c0_nf_per_km** (float) - zero sequence line capacitance in nano Farad per km
+
         **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
@@ -1804,6 +1811,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
+        
+        **g0_us_per_km** (float, 0) - zero sequence dielectric conductance in micro Siemens per km
 
         **parallel** (integer, 1) - number of parallel line systems
 
@@ -1836,7 +1845,20 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     if index in net["line"].index:
         raise UserWarning("A line with index %s already exists" % index)
+    if not (isnan(r0_ohm_per_km) and isnan(x0_ohm_per_km) and isnan(c0_nf_per_km)):
+        if "r0_ohm_per_km" not in net.line.columns:
+            net.line.loc[:, "r0_ohm_per_km"] = pd.Series()
 
+        net.line.loc[index, "r0_ohm_per_km"] = float(r0_ohm_per_km)
+        if "x0_ohm_per_km" not in net.line.columns:
+            net.line.loc[:, "x0_ohm_per_km"] = pd.Series()
+
+        net.line.loc[index, "x0_ohm_per_km"] = float(x0_ohm_per_km)
+        if "c0_nf_per_km" not in net.line.columns:
+            net.line.loc[:, "c0_nf_per_km"] = pd.Series()
+
+        net.line.loc[index, "c0_nf_per_km"] = float(c0_nf_per_km)
+        
     v = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
@@ -1844,7 +1866,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
     }
-
     # store dtypes
     dtypes = net.line.dtypes
 
@@ -1852,6 +1873,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     # and preserve dtypes
     _preserve_dtypes(net.line, dtypes)
+    
+
+
 
     if geodata is not None:
         net["line_geodata"].loc[index, "coords"] = geodata
@@ -2121,7 +2145,10 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
                                        vkr_percent, vk_percent, pfe_kw, i0_percent,
-                                       shift_degree=0, tap_side=None, tap_neutral=nan, tap_max=nan,
+                                       vk0_percent=nan, vkr0_percent=nan, 
+                                       mag0_percent=nan,mag0_rx=nan,
+                                       si0_hv_partial=nan, shift_degree=0, 
+                                       tap_side=None, tap_neutral=nan, tap_max=nan,
                                        tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
                                        tap_pos=nan, tap_phase_shifter=False, in_service=True,
                                        name=None, index=None, max_loading_percent=nan, parallel=1,
@@ -2152,8 +2179,20 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **pfe_kw** (float)  - iron losses in kW
 
         **i0_percent** (float) - open loop losses in percent of rated current
+        
+        **vk0_percent** (float) - zero sequence relative short-circuit voltage
+        
+        **vkr0_percent** - real part of zero sequence relative short-circuit voltage
+        
+        **mag0_percent** - zero sequence magnetizing impedance/ vk0 
+        
+        **mag0_rx**  - zero sequence magnitizing R/X ratio
+        
+        **si0_hv_partial** - Distribution of zero sequence leakage impedances for HV side 
+
 
     OPTIONAL:
+        
         **in_service** (boolean) - True for in_service or False for out of service
 
         **parallel** (integer) - number of parallel transformers
@@ -2215,6 +2254,30 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     if tap_pos is nan:
         tap_pos = tap_neutral
+    
+    if not(isnan(vk0_percent) and isnan(vkr0_percent)and isnan(mag0_percent) \
+           and isnan(mag0_rx)and isnan(si0_hv_partial)):
+        if "vk0_percent" not in net.trafo.columns:
+            net.trafo.loc[:, "vk0_percent"] = pd.Series()
+
+        net.trafo.loc[index, "vk0_percent"] = float(vk0_percent)
+        if "vkr0_percent" not in net.trafo.columns:
+            net.trafo.loc[:, "vkr0_percent"] = pd.Series()
+
+        net.trafo.loc[index, "vkr0_percent"] = float(vkr0_percent)
+        if "mag0_percent" not in net.trafo.columns:
+            net.trafo.loc[:, "mag0_percent"] = pd.Series()
+
+        net.trafo.loc[index, "mag0_percent"] = float(mag0_percent)
+        if "mag0_rx" not in net.trafo.columns:
+            net.trafo.loc[:, "mag0_rx"] = pd.Series()
+
+        net.trafo.loc[index, "mag0_rx"] = float(mag0_rx)        
+        if "si0_hv_partial" not in net.trafo.columns:
+            net.trafo.loc[:, "si0_hv_partial"] = pd.Series()
+
+        net.trafo.loc[index, "si0_hv_partial"] = float(si0_hv_partial)         
+        
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
