@@ -187,7 +187,7 @@ class pandapowerNet(ADict):
         if isinstance(args[0], self.__class__):
             net = args[0]
             self.clear()
-            self.update(net.deepcopy())
+            self.update(**net.deepcopy())
 
     def deepcopy(self):
         return copy.deepcopy(self)
