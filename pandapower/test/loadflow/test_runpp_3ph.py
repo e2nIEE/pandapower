@@ -127,6 +127,7 @@ def test_4bus_network():
     busp =  pp.create_bus(net, vn_kv = V_base, name = "busp")
     pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000, 
                        rx_max=0.1,r0x0_max=0.1,x0x_max=1.0)    
+    
     pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":\
         230.6,   "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
                  "c_nf_per_km":  230}, "example_type1")

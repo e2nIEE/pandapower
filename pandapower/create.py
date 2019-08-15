@@ -1172,18 +1172,21 @@ def create_asymmetric_sgen(net, bus, p_A_mw,p_B_mw,p_C_mw, q_A_mvar=0, q_B_mvar=
     If you want to model the generation of power, you have to assign a negative active power
     to the generator. Please pay attention to the correct signing of the
     reactive power as well.
-
+    
+    ! **Haven't been tested as of now** !
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (negative for generation!)
-
+        **p_A_mw** (float) - The real power of the static generator : Phase A (negative for generation!)
+        **p_B_mw** (float) - The real power of the static generator : Phase B(negative for generation!)
+        **p_C_mw** (float) - The real power of the static generator : Phase C (negative for generation!)
     OPTIONAL:
 
-        **q_mvar** (float, default 0) - The reactive power of the sgen
-
+        **q_A_mvar** (float, default 0) - The reactive power of the sgen : Phase A
+        **q_B_mvar** (float, default 0) - The reactive power of the sgen : Phase B
+        **q_C_mvar** (float, default 0) - The reactive power of the sgen : Phase C
         **sn_kva** (float, default None) - Nominal power of the sgen
 
         **name** (string, default None) - The name for this sgen
