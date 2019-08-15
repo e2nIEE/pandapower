@@ -46,9 +46,10 @@ def test_convenience_create_functions():
     assert net.sgen.name.at[sg0] == "sgen"
 
     tol = 1e-6
+    base_z = 110 ** 2 / 100
     sind = pp.create_series_reactor_as_impedance(net, b1, b2, r_ohm=100, x_ohm=200, sn_mva=100)
-    assert net.impedance.at[sind, 'rft_pu'] - 8.264463e-04 < tol
-    assert net.impedance.at[sind, 'xft_pu'] - 0.001653 < tol
+    assert net.impedance.at[sind, 'rft_pu'] - 100 / base_z < tol
+    assert net.impedance.at[sind, 'xft_pu'] - 200 / base_z < tol
 
     tid = pp.create_transformer_from_parameters(net, hv_bus=b2, lv_bus=b3, sn_mva=0.1, vn_hv_kv=110,
                                                 vn_lv_kv=20, vkr_percent=5, vk_percent=20,
