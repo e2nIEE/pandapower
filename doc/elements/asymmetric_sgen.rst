@@ -1,6 +1,8 @@
-﻿==================
-Static Generator
-==================
+﻿.. _asymmetric_sgen:
+
+============================
+Asymmetric Static Generator
+============================
 
 .. note::
 
@@ -14,18 +16,17 @@ Static Generator
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_sgen
+.. autofunction:: pandapower.create_asymmetric_sgen
 
-.. autofunction:: pandapower.create_sgen_from_cosphi
 
 Input Parameters
 =====================
 
-*net.sgen*
+*net.asymmetric_sgen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 .. csv-table:: 
-   :file: sgen_par.csv
+   :file: asymmetric_sgen_par.csv
    :delim: ;
    :widths: 10, 10, 25, 40
 
@@ -63,11 +64,11 @@ The PQ-Values are calculated from the parameter table values as:
 
 Result Parameters
 ==========================
-*net.res_sgen*
+*net.asymmetric_sgen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
 .. csv-table:: 
-   :file: sgen_res.csv
+   :file: asymmetric_sgen_res.csv
    :delim: ;
    :widths: 10, 10, 50
 

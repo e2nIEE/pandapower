@@ -1,7 +1,0 @@
-**Parameter**;**Datatype**;**Explanation**
-p_A_mw;float;active power supply at the external grid : Phase A [MW]
-q_A_mvar;float;reactive power supply at the external grid : Phase A [MVar]
-p_B_mw;float;active power supply at the external grid : Phase B [MW]
-q_B_mvar;float;reactive power supply at the external grid : Phase B [MVar]
-p_C_mw;float;active power supply at the external grid : Phase C [MW]
-q_C_mvar;float;reactive power supply at the external grid : Phase C [MVar]
