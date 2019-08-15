@@ -28,6 +28,7 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
                      'opt': OptAlgorithm,
                      'irwls': IRWLSAlgorithm,
                      'lp': LPAlgorithm}
+ALLOWED_OPT_VAR = {"a", "opt_method"}
 
 
 def estimate(net, algorithm='wls',
@@ -232,6 +233,11 @@ class StateEstimation:
         EXAMPLE:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
         """
+        # check if all parameter are allowed
+        for key in opt_vars:
+            if key not in ALLOWED_OPT_VAR:
+                self.logger.warning("Caution! %s is not defined and will be ignored!" %key)
+        
         if self.net is None:
             raise UserWarning("SE Component was not initialized with a network.")
 
