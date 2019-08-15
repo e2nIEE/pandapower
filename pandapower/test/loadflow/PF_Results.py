@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_PowerFactory_Results():
+def get_PF_Results():
 	results=\
 	{ 
 		10:

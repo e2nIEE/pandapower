@@ -188,7 +188,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     """
  runpp_3ph: Performs Unbalanced/Asymmetric/Three Phase Load flow
  
-
     INPUT:
         **net** - The pandapower format network
 
@@ -369,55 +368,19 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     ---------------
     **count(int)** No of iterations taken to reach convergence
     
-    **V012_it(complex)**    
+    **V012_it(complex)**   - Sequence voltages                          
     
-    | V0... |
-    
-    | V1... |
-                        
-    | V2... |
-                        
-                         
-    **I012_it(complex)**    
-    
-    | I0... |
-    
-    | I1... |
-                        
-    | I2... |
-    **ppci0**
-    
-    **Y0_pu** 
-    
-    **Y1_pu** 
-    
-    **Y2_pu**
+    **I012_it(complex)**   - Sequence currents 
 
     See Also:
     ----------
     pp.add_zero_impedance_parameters(net): 
-    To add zero sequence parameters into ext_grids, lines and transformers
+    To add zero sequence parameters into network from the standard type
 
     Examples:
-    --------
-    >>> import pandapower as pp
-    
+    ----------
     >>> from pandapower.pf.runpp_3ph import runpp_3ph
-    
-    >>> net = pp.create_empty_network()
-    
-    ...create_bus
-    
-    ...create_line
-    
-    ...create_trafo
-    
-    ...create_load
-    
-    ...create_asymmetric_load
-    
-    >>> pp.add_zero_impedance_parameters(net)
-    
+
     >>> runpp_3ph(net)
 
     Notes:
@@ -452,15 +415,11 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
     if init == "auto":
-        init = "dc" if calculate_voltage_angles else "flat"
-
-    
+        init = "dc" if calculate_voltage_angles else "flat"   
     default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,\
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
-
-
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=\
@@ -471,7 +430,6 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=\
                     max_iteration,v_debug=v_debug)
-
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -537,6 +495,10 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         )
         , axis=0
     )
+    #For Delta transformation:
+    #Voltage changed from line-earth to line-line using V_T
+    #Sabc/Vabc will now give line-line currents. This is converted to line-earth 
+    #current using I-T
     V_T=np.matrix([[1,-1,0],
                    [0,1,-1],
                    [-1,0,1]]) 
@@ -615,17 +577,15 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
 
         V012_new = combine_X012(V0_pu_it, V1_pu_it, V2_pu_it)
 
-        # =============================================================================
-        #     Mismatch from Sabc to Vabc Needs to be done tomorrow
-        # =============================================================================
         S_mismatch = np.abs(np.abs(S1[pq_bus]) - np.abs(s_from_voltage[pq_bus]))
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
-
+    et = time() - t0
+    success = (count < 3 * max_iteration)
     for ppc in [ppci0,ppci1,ppci2]:
-        ppc["et"] = time() - t0
-        ppc["success"] = (count < 3 * max_iteration)
+        ppc["et"] = et
+        ppc["success"] = success
     
     # TODO: Add reference to paper to explain the following steps
 # =============================================================================
@@ -643,30 +603,20 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].flatten(), sl_bus, ref_gens)
     bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].flatten(), sl_bus, ref_gens)
     bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y2_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus, ref_gens)
-
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
-    ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
-    
+    ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)   
     ppci0["internal"]["Ybus"] = Y0_pu
     ppci1["internal"]["Ybus"] = Y1_pu
-    ppci2["internal"]["Ybus"] = Y2_pu
-    
+    ppci2["internal"]["Ybus"] = Y2_pu    
     ppci0["internal"]["Yf"] = Y0_f
     ppci1["internal"]["Yf"] = Y1_f
-    ppci2["internal"]["Yf"] = Y2_f
-    
+    ppci2["internal"]["Yf"] = Y2_f   
     ppci0["internal"]["Yt"] = Y0_t
     ppci1["internal"]["Yt"] = Y1_t
-    ppci2["internal"]["Yt"] = Y2_t
-    
-#    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(ppci0, Y1_pu, V012_new,gs_eg,bs_eg)
-    V_abc_pu, I_abc_pu, Sabc_pu = _phase_from_sequence_results(Y0_pu, Y1_pu,\
-                                                               Y2_pu,\
-                                                               V012_new)
-    I012_res = phase_to_sequence(I_abc_pu)
-    S012_res = S_from_VI_elementwise(V012_new,I012_res) * ppci1["baseMVA"]
-    
+    ppci2["internal"]["Yt"] = Y2_t    
+    I012_res = _current_from_voltage_results(Y0_pu, Y1_pu,Y2_pu,V012_new)
+    S012_res = S_from_VI_elementwise(V012_new,I012_res) * ppci1["baseMVA"]    
     eg_is_mask = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
@@ -704,11 +654,11 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
 
     _clean_up(net)
 
-    return count, V012_it, I012_it, ppci0, Y0_pu, Y1_pu, Y2_pu
+    return count, V012_it, I012_res
 
 
 #def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu,gs_eg,bs_eg):
-def _phase_from_sequence_results(Y0_pu, Y1_pu,Y2_pu, V012_pu):
+def _current_from_voltage_results(Y0_pu, Y1_pu,Y2_pu, V012_pu):
 #    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
 #    ppci0["bus"][ref, GS] -= gs_eg
 #    ppci0["bus"][ref, BS] -= bs_eg
@@ -716,11 +666,8 @@ def _phase_from_sequence_results(Y0_pu, Y1_pu,Y2_pu, V012_pu):
 #    Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
     I012_pu = combine_X012(I0_from_V012(V012_pu, Y0_pu),
                             I1_from_V012(V012_pu, Y1_pu),
-                            I2_from_V012(V012_pu, Y2_pu))
-    I_abc_pu = sequence_to_phase(I012_pu)
-    V_abc_pu = sequence_to_phase(V012_pu)
-    Sabc_pu = S_from_VI_elementwise(V_abc_pu, I_abc_pu)
-    return V_abc_pu, I_abc_pu, Sabc_pu
+                            I2_from_V012(V012_pu, Y2_pu)) # Change it to Y1 to remove ext_grid impedance
+    return I012_pu
 
 
 def _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus):

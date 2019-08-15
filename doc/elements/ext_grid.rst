@@ -30,7 +30,7 @@ Input Parameters
 
    <br />
    
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter |br| \*\*\*\*Single phase short circuit/Three Phase load flow calculation parameters
    
 Electric Model
 =================
@@ -70,4 +70,22 @@ Active and reactive power feed-in / consumption at the slack node is a result of
    \begin{align*}
     p\_mw &= P_{eg} \\
     q\_mvar &= Q_{eg}
+    \end{align*}
+
+*net.res_ext_grid_3ph*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|
+.. csv-table:: 
+   :file: ext_grid_res_3ph.csv
+   :delim: ;
+   :widths: 10, 10, 50
+
+Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
+   
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+    p\_mw_{phase} &= P_{eg_{phase}} \\
+    q\_mvar_{phase} &= Q_{eg_{phase}}
     \end{align*}

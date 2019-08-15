@@ -1532,7 +1532,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None, **kwargs):
+                    index=None,r0x0_max=nan,x0x_max=nan, **kwargs):
     """
     Creates an external grid connection.
 
@@ -1572,11 +1572,21 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **max_q_mvar** (float, NaN) - Maximum reactive power injection. Only respected for OPF
 
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
+        
+        **r0x0_max** (float, NaN) - maximal R/X-ratio to calculate Zero sequence 
+        internal impedance of ext_grid         
+        
+        **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence 
+        internal impedance of ext_grid
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
+        
+        For three phase load flow
+        
+        create_ext_grid(net, 1, voltage = 1.03,s_sc_max_mva= 1000, rx_max=0.1,r0x0_max=0.1,x0x_max= 1.0 )
     """
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
@@ -1640,7 +1650,16 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             net.ext_grid.loc[:, "max_q_mvar"] = pd.Series()
 
         net.ext_grid.loc[index, "max_q_mvar"] = float(max_q_mvar)
+    if not isnan(x0x_max):
+        if "x0x_max" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "x0x_max"] = pd.Series()
 
+        net.ext_grid.loc[index, "x0x_max"] = float(x0x_max)
+    if not isnan(r0x0_max):
+        if "r0x0_max" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "r0x0_max"] = pd.Series()
+
+        net.ext_grid.loc[index, "r0x0_max"] = float(r0x0_max)
         # and preserve dtypes
     _preserve_dtypes(net.ext_grid, dtypes)
     return index
@@ -1764,13 +1783,14 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
-                                c_nf_per_km, max_i_ka,r0_ohm_per_km= nan,
-                                x0_ohm_per_km=nan,c0_nf_per_km=nan,
+                                c_nf_per_km, max_i_ka,
                                 name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., 
-                                parallel=1, g_us_per_km=0.,g0_us_per_km=0,
+                                parallel=1, g_us_per_km=0.,
                                 max_loading_percent=nan, alpha=None,
-                                temperature_degree_celsius=None, **kwargs):
+                                temperature_degree_celsius=None,
+                                r0_ohm_per_km= nan, x0_ohm_per_km=nan,
+                                c0_nf_per_km=nan,g0_us_per_km=0, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1842,9 +1862,21 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     if index is None:
         index = get_free_id(net["line"])
-
     if index in net["line"].index:
         raise UserWarning("A line with index %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.line.dtypes
+    v = {
+        "name": name, "length_km": length_km, "from_bus": from_bus,
+        "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
+        "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
+        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
+        "g_us_per_km": g_us_per_km
+    }
+
+    net.line.loc[index, list(v.keys())] = list(v.values())    
+
     if not (isnan(r0_ohm_per_km) and isnan(x0_ohm_per_km) and isnan(c0_nf_per_km)):
         if "r0_ohm_per_km" not in net.line.columns:
             net.line.loc[:, "r0_ohm_per_km"] = pd.Series()
@@ -1858,18 +1890,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             net.line.loc[:, "c0_nf_per_km"] = pd.Series()
 
         net.line.loc[index, "c0_nf_per_km"] = float(c0_nf_per_km)
-        
-    v = {
-        "name": name, "length_km": length_km, "from_bus": from_bus,
-        "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
-        "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km
-    }
-    # store dtypes
-    dtypes = net.line.dtypes
-
-    net.line.loc[index, list(v.keys())] = list(v.values())
 
     # and preserve dtypes
     _preserve_dtypes(net.line, dtypes)
@@ -2145,14 +2165,15 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
                                        vkr_percent, vk_percent, pfe_kw, i0_percent,
-                                       vk0_percent=nan, vkr0_percent=nan, 
-                                       mag0_percent=nan,mag0_rx=nan,
-                                       si0_hv_partial=nan, shift_degree=0, 
+                                       shift_degree=0, 
                                        tap_side=None, tap_neutral=nan, tap_max=nan,
                                        tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
                                        tap_pos=nan, tap_phase_shifter=False, in_service=True,
-                                       name=None, index=None, max_loading_percent=nan, parallel=1,
-                                       df=1., **kwargs):
+                                       name=None, vector_group=nan,index=None,
+                                       max_loading_percent=nan, parallel=1,
+                                       df=1.,vk0_percent=nan, vkr0_percent=nan, 
+                                       mag0_percent=nan,mag0_rx=nan,
+                                       si0_hv_partial=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2179,6 +2200,11 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **pfe_kw** (float)  - iron losses in kW
 
         **i0_percent** (float) - open loop losses in percent of rated current
+        
+        **vector_group** (String) - Vector group of the transformer
+        
+            HV side is Uppercase letters
+            and LV side is lower case
         
         **vk0_percent** (float) - zero sequence relative short-circuit voltage
         
@@ -2254,9 +2280,29 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     if tap_pos is nan:
         tap_pos = tap_neutral
+        # store dtypes
+    dtypes = net.trafo.dtypes 
+        
+    v = {
+        "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
+        "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
+        "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent,"tap_neutral": tap_neutral,
+        "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
+    }
+
+    if ("tap_neutral" in v) and (tap_pos is nan):
+        v["tap_pos"] = v["tap_neutral"]
+    else:
+        v["tap_pos"] = tap_pos
+        if type(tap_pos) == float:
+            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
+    net.trafo.loc[index, list(v.keys())] = list(v.values())
     
     if not(isnan(vk0_percent) and isnan(vkr0_percent)and isnan(mag0_percent) \
-           and isnan(mag0_rx)and isnan(si0_hv_partial)):
+           and isnan(mag0_rx)and isnan(si0_hv_partial)and isnan(vector_group)):
         if "vk0_percent" not in net.trafo.columns:
             net.trafo.loc[:, "vk0_percent"] = pd.Series()
 
@@ -2276,38 +2322,18 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         if "si0_hv_partial" not in net.trafo.columns:
             net.trafo.loc[:, "si0_hv_partial"] = pd.Series()
 
-        net.trafo.loc[index, "si0_hv_partial"] = float(si0_hv_partial)         
-        
-    v = {
-        "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
-        "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
-        "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
-        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
-        "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
-        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
-    }
+        net.trafo.loc[index, "si0_hv_partial"] = float(si0_hv_partial)  
+        if "vector_group" not in net.trafo.columns:
+            net.trafo.loc[:, "vector_group"] = pd.Series()
 
-    if ("tap_neutral" in v) and (tap_pos is nan):
-        v["tap_pos"] = v["tap_neutral"]
-    else:
-        v["tap_pos"] = tap_pos
-        if type(tap_pos) == float:
-            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
-
-    # store dtypes
-    dtypes = net.trafo.dtypes
-
-    net.trafo.loc[index, list(v.keys())] = list(v.values())
-
-    # and preserve dtypes
-    _preserve_dtypes(net.trafo, dtypes)
-
+        net.trafo.loc[index, "vector_group"] = str(vector_group)    
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
+    # and preserve dtypes
+    _preserve_dtypes(net.trafo, dtypes)
 
     return index
 
