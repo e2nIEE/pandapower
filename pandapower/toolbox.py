@@ -595,17 +595,13 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     OUTPUT:
       **bus_lookup** - mapping of old to new index
     """
-
     net.bus.sort_index(inplace=True)
     if store_old_index:
         net.bus["old_index"] = net.bus.index.values
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
-    try:
-        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
-    except:
-        pass
+    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
 
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
@@ -632,15 +628,13 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     OPTIONAL:
       **start** - index begins with "start"
 
-      **add_df_to_reindex** - by default all useful pandapower elements for
-                              power flow will be selected. Additionally elements,
-                              like line_geodata and bus_geodata, also can be here
-                              considered.
+      **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
+          selected. Additionally elements, like line_geodata and bus_geodata, also can be
+          considered here.
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
 
     """
-
     elements = pp_elements(res_elements=True)
 
     # create continuous bus index
@@ -1288,6 +1282,9 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
+    elif element == "measurement":
+        connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
+                                                        (net.measurement.element_type == "bus")])
     elif element in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
         return {}
