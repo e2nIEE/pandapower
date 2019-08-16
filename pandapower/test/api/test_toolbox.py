@@ -155,6 +155,30 @@ def test_continuos_bus_numbering():
     assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
 
 
+def test_continuous_element_numbering():
+    from pandapower.estimation.util import add_virtual_meas_from_loadflow
+    net = nw.example_multivoltage()
+
+    # Add noises to index with some large number
+    net.line.rename(index={4: 280}, inplace=True)
+    net.trafo.rename(index={0: 300}, inplace=True)
+    net.trafo.rename(index={1: 400}, inplace=True)
+    net.trafo3w.rename(index={0: 540}, inplace=True)
+
+    net.switch.loc[(net.switch.et=="l")&(net.switch.element==4), "element"] = 280
+    net.switch.loc[(net.switch.et=="t")&(net.switch.element==0), "element"] = 300
+    net.switch.loc[(net.switch.et=="t")&(net.switch.element==1), "element"] = 400
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net)
+    assert net.measurement["element"].max() == 540
+
+    net = tb.create_continuous_elements_index(net)
+    assert net.line.index.max() == net.line.shape[0] - 1
+    assert net.trafo.index.max() == net.trafo.shape[0] - 1
+    assert net.trafo3w.index.max() == net.trafo3w.shape[0] - 1
+    assert net.measurement["element"].max() == net.bus.shape[0] - 1
+
+
 def test_scaling_by_type():
     net = pp.create_empty_network()
 

@@ -98,6 +98,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         table.to_excel(writer, sheet_name=item)
     writer.save()
 
+
 def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
@@ -311,7 +312,7 @@ def from_json(filename, convert=True):
         net = json.load(filename, cls=PPJSONDecoder)
         restore_jsoned_objects(net)
     elif not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
+        raise UserWarning("File {} does not exist!!".format(filename))
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)

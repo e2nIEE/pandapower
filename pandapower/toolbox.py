@@ -8,6 +8,7 @@ from collections import Iterable, defaultdict
 
 import numpy as np
 import pandas as pd
+from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
@@ -648,10 +649,10 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
         if elm == "line":
             line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-
         elif elm == "trafo":
             trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-
+        elif elm == "trafo3w":
+            trafo3w_lookup = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
         elif elm == "line_geodata" and "line_geodata" in net:
             line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
             net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
@@ -665,7 +666,49 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     trafo_switches = net.switch[net.switch.et == "t"]
     net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element,
                                                                   trafo_lookup)
+
+    line_meas = net.measurement[net.measurement.element_type == "line"]
+    net.measurement.loc[line_meas.index, "element"] = get_indices(line_meas.element, line_lookup)
+
+    trafo_meas = net.measurement[net.measurement.element_type == "trafo"]
+    net.measurement.loc[trafo_meas.index, "element"] = get_indices(trafo_meas.element, trafo_lookup)
+
+    trafo3w_meas = net.measurement[net.measurement.element_type == "trafo3w"]
+    net.measurement.loc[trafo3w_meas.index, "element"] = get_indices(trafo3w_meas.element, trafo3w_lookup)
+
     return net
+
+
+def set_data_type_of_columns_to_default(net):
+    """
+    Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
+    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
+    done manually with this function.
+
+    INPUT:
+      **net** - pandapower network with unodered indices
+
+    OUTPUT:
+      No output; the net passed as input has pandapower-default dtypes of columns in element tables.
+
+    """
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        if version.parse(pd.__version__) < version.parse("0.21"):
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                        else:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    if version.parse(pd.__version__) < version.parse("0.20.0"):
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
@@ -1056,7 +1099,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res") or element == "dtypes":
             continue
-        if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
+        if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
                 adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
                 adapt_element_idx_references(net1, element, "line")
@@ -1072,7 +1115,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             dtypes = net1[element].dtypes
             try:
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
-                                         sort=True)
+                                         sort=False)
             except:
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)

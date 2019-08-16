@@ -1512,9 +1512,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     dd["in_service"] = in_service
 
     # extend the lines by the frame we just created
-    try:
+    if version.parse(pd.__version__) >= version.parse("0.23"):
         net["line"] = net["line"].append(dd, sort=False)
-    except TypeError:
+    else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net["line"] = net["line"].append(dd)
 
@@ -2286,7 +2286,7 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
                           'to_bus %d (%.3f p.u.)' % (name, from_bus, net.bus.at[from_bus, 'vn_kv'],
                                                      to_bus, net.bus.at[to_bus, 'vn_kv']))
 
-    base_z_ohm = vn_kv ** 2 / (sn_mva * 1e-3)
+    base_z_ohm = vn_kv ** 2 / sn_mva
     rft_pu = r_ohm / base_z_ohm
     xft_pu = x_ohm / base_z_ohm
 
