@@ -27,6 +27,7 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 from collections import MutableMapping
+import copy
 
 import numpy as np
 import numpy.core.numeric as ncn
@@ -55,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 class ADict(dict, MutableMapping):
     def __init__(self, *args, **kwargs):
-        super(ADict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # to prevent overwrite of internal attributes by new keys
         # see _valid_name()
@@ -182,7 +183,14 @@ class ADict(dict, MutableMapping):
 
 class pandapowerNet(ADict):
     def __init__(self, *args, **kwargs):
-        super(pandapowerNet, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        if isinstance(args[0], self.__class__):
+            net = args[0]
+            self.clear()
+            self.update(**net.deepcopy())
+
+    def deepcopy(self):
+        return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
         r = "This pandapower network includes the following parameter tables:"
