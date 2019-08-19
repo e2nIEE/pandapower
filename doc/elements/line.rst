@@ -72,7 +72,12 @@ Lines are modelled with the :math:`\pi`-equivalent circuit:
 	:alt: alternate Text
 	:align: center
 
- 
+Three phase line model 
+
+.. image:: line_3ph.png
+	:width: 25em
+	:alt: alternate Text
+	:align: center
     
 The elements in the equivalent circuit are calculated from the parameters in the net.line dataframe as:
 

@@ -107,7 +107,7 @@ def init_element(net, element, suffix=None,balanced=True):
         element = (
         "load" if element == "asymmetric_load" else
         "sgen" if element == "asymmetric_sgen" else
-        "load" if element == "impedance_load" else
+#        "load" if element == "impedance_load" else
         element)
     res_element, res_empty_element = get_result_tables(element, suffix,balanced)
     index = net[element].index
@@ -136,7 +136,7 @@ def get_elements_to_init():
 
     return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
            , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"\
-           ,"asymmetric_load","asymmetric_sgen","impedance_load"]
+           ,"asymmetric_load","asymmetric_sgen"]#,"impedance_load"]
 
 
 

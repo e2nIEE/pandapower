@@ -50,6 +50,12 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 	:width: 30em
 	:align: center
 
+*sequence = 0:*
+
+.. image:: trafo_t_zero.png
+	:width: 50em
+	:align: center
+
 *trafo_model='pi':*
 
 .. image:: trafo_pi.png

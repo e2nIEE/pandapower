@@ -398,7 +398,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc_idx = trafos["_ppc_idx"].values.astype(int)
         ppc["branch"][ppc_idx, BR_STATUS] = 0
 
-        if vector_group in ["Yy", "Yd", "Dy", "Dd","YNd","YNy"]:
+        if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
             continue
 
         vk_percent = trafos["vk_percent"].values.astype(float)
@@ -469,9 +469,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         z0_mag = r0_trafo_mag + x0_trafo_mag * 1j
 # =============================================================================
 #         Star - Delta conversion ( T model to Pi Model)
-#      ----------- |__ZAB__|-----------------
+#      ----------- |__zc=ZAB__|-----------------
 #            _|                   _|
-#        ZAN|_|                  |_| ZBN
+#     za=ZAN|_|                  |_| zb=ZBN
 #            |                    |
 # =============================================================================
         z1 = si0_hv_partial * z0_k
@@ -494,15 +494,15 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
-#        elif vector_group == "YNd":
-#            buses_all = np.hstack([buses_all, hv_buses_ppc])
-#
-##            gs_all = np.hstack([gs_all, y0_k.real*in_service])#T model
-##            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
-#            
-#            y = (YAB_BN + YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
-#            gs_all = np.hstack([gs_all, y.real*in_service])
-#            bs_all = np.hstack([bs_all, y.imag*in_service])
+        elif vector_group == "YNd":
+            buses_all = np.hstack([buses_all, hv_buses_ppc])
+
+#            gs_all = np.hstack([gs_all, y0_k.real*in_service])#T model
+#            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
+            
+            y = (YAB_BN + YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
@@ -531,12 +531,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             bs_all = np.hstack([bs_all, YBN.imag * in_service \
                                 * int(ppc["baseMVA"])])
 
-#        elif vector_group == "YNy":
-#            buses_all = np.hstack([buses_all, hv_buses_ppc])
-##            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model         
-#            y = (YAB_BN+YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
-#            gs_all = np.hstack([gs_all, y.real*in_service])
-#            bs_all = np.hstack([bs_all, y.imag*in_service])
+        elif vector_group == "YNy":
+            buses_all = np.hstack([buses_all, hv_buses_ppc])
+#            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model         
+            y = (YAB_BN+YAN).astype(complex)* int(ppc["baseMVA"]) #pi model
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
         
         elif vector_group == "Yzn":           
             buses_all = np.hstack([buses_all, lv_buses_ppc])
