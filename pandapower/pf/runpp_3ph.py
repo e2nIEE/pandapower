@@ -90,6 +90,7 @@ def _load_mapping(net,ppci1):
     load_types = ['wye','delta']
     load_elements = ['load','asymmetric_load','sgen','asymmetric_sgen']
 #                    ,'impedance_load']
+    
 # =============================================================================
 #        Loop to initialize and feed Sabc wye and delta values 
 # =============================================================================
@@ -106,6 +107,7 @@ def _load_mapping(net,ppci1):
             params['Y012'+typ] = np.array([], dtype=np.complex)
             params['b_imp'+typ] = np.array([], dtype=int)
             for element in load_elements:
+                sign = -1 if element.endswith("sgen") else 1
                 elm = net[element]
                 elm_is = net["_is_elements"][element] 
                 elm["in_service"] = elm_is
@@ -114,20 +116,13 @@ def _load_mapping(net,ppci1):
                 if len(elm_typ) > 0 :
                     vl = (elm_typ["in_service"].values * elm_typ["scaling"]\
                          .values.T)[elm_typ["in_service"].values]
-                    if element =='load':
+                    if element =='load' or element == 'sgen':
                         params['p'+phase+typ] = np.hstack([params['p'+phase+typ]\
-                                            , elm_typ["p_mw"].values/3 * vl])
+                                            , elm_typ["p_mw"].values/3 * vl*sign])
                         params['q'+phase+typ] = np.hstack([params['q'+phase+typ]\
-                                            , elm_typ["q_mvar"].values/3 * vl])
+                                            , elm_typ["q_mvar"].values/3 * vl*sign])
                         params['b'+typ] = np.hstack([params['b'+typ], \
-                                              elm_typ["bus"].values])
-                    elif element == 'sgen':
-                        params['p'+phase+typ] = np.hstack([params['p'+phase+typ]\
-                                            , elm_typ["p_mw"].values/3 *(-1) *vl])
-                        params['q'+phase+typ] =np.hstack([params['q'+phase+typ]\
-                                            , elm_typ["q_mvar"].values/3 *(-1)* vl])
-                        params['b'+typ] = np.hstack([params['b'+typ], \
-                                              elm_typ["bus"].values])                       
+                                              elm_typ["bus"].values])                    
 # =============================================================================
 #TODO: Uncomment if constant impedance loads are required in the future:
 #    auxiliary,results and runpp_3ph
@@ -141,21 +136,13 @@ def _load_mapping(net,ppci1):
 #                         params['b_imp'+typ]= np.hstack([params['b_imp'+typ]\
 #                                                        , elm_typ["bus"].values])
 # =============================================================================
-                    elif element=='asymmetric_load':
+                    elif element.startswith('asymmetric'):
                         params['p'+phase+typ] =np.hstack([params['p'+phase+typ]\
-                                    , elm_typ['p_'+phase+'_mw'].values * vl])
+                                    , elm_typ['p_'+phase+'_mw'].values * vl*sign])
                         params['q'+phase+typ] =np.hstack([params['q'+phase+typ]\
-                                    , elm_typ['q_'+phase+'_mvar'].values * vl])
+                                    , elm_typ['q_'+phase+'_mvar'].values * vl*sign])
                         params['b'+typ] = np.hstack([params['b'+typ], \
-                                      elm_typ["bus"].values])           
-                    elif element=='asymmetric_sgen':
-                        params['p'+phase+typ] = np.hstack([params['p'+phase+typ]\
-                                    , elm_typ['p_'+phase+'_mw'].values*(-1) * vl])
-                        params['q'+phase+typ] = np.hstack([params['q'+phase+typ]\
-                                    , elm_typ['q_'+phase+'_mvar'].values *(-1)* vl])
-                        params['b'+typ] = np.hstack([params['b'+typ], \
-                                      elm_typ["bus"].values])           
-
+                                      elm_typ["bus"].values])
            # Mapping constant power loads to buses    
             if params['b'+typ].size:
                    params['b'+phase+typ] = bus_lookup[params['b'+typ]]
