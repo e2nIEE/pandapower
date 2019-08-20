@@ -1019,7 +1019,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
-                scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_mw=nan,
+                scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
                 current_source=True):
     """
@@ -1054,8 +1054,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the static generator (no impact on \
-            calculations)
+        **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -1162,7 +1161,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 # =============================================================================
     
 def create_asymmetric_sgen(net, bus, p_A_mw=0,p_B_mw=0,p_C_mw=0, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0, sn_mva=nan, 
-                    name=None, index=None, scaling=1., type=None, in_service=True, 
+                    name=None, index=None, scaling=1., type='wye', in_service=True, 
                      k=nan, rx=nan):
     """create_asymmetric_sgen(net, bus, p_A_mw=0, q_A_mvar=0,p_B_mw=0, q_B_mvar=0,\
 				p_C_mw=0, q_C_mvar=0,sn_kva=nan, name=None, index=None, \
@@ -1179,21 +1178,24 @@ def create_asymmetric_sgen(net, bus, p_A_mw=0,p_B_mw=0,p_C_mw=0, q_A_mvar=0, q_B
     to the generator. Please pay attention to the correct signing of the
     reactive power as well.
     
-    ! **Haven't been tested as of now** !
-    
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
         **p_A_mw** (float) - The real power of the static generator : Phase A (negative for generation!)
+        
         **p_B_mw** (float) - The real power of the static generator : Phase B(negative for generation!)
+        
         **p_C_mw** (float) - The real power of the static generator : Phase C (negative for generation!)
     OPTIONAL:
 
         **q_A_mvar** (float, default 0) - The reactive power of the sgen : Phase A
+        
         **q_B_mvar** (float, default 0) - The reactive power of the sgen : Phase B
+        
         **q_C_mvar** (float, default 0) - The reactive power of the sgen : Phase C
+        
         **sn_kva** (float, default None) - Nominal power of the sgen
 
         **name** (string, default None) - The name for this sgen
@@ -1203,7 +1205,7 @@ def create_asymmetric_sgen(net, bus, p_A_mw=0,p_B_mw=0,p_C_mw=0, q_A_mvar=0, q_B
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the static generator
+        **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
 
         **in_service** (boolean) - True for in_service or False for out of service
 

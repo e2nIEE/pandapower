@@ -22,6 +22,7 @@ information about the definition and interpretation of the parameters in the fol
     elements/load
     elements/asymmetric_load	
     elements/sgen
+    elements/asymmetric_sgen
     elements/ext_grid	
     elements/trafo
     elements/trafo3w	
