@@ -351,8 +351,8 @@ def from_json_string(json_string, convert=False):
         >>> net = pp.from_json_string(json_str)
 
     """
-    data = json.loads(json_string, cls=PPJSONDecoder)
-    net = from_json_dict(data)
+    net = json.loads(json_string, cls=PPJSONDecoder)
+    restore_jsoned_objects(net)
 
     if convert:
         convert_format(net)
