@@ -701,8 +701,8 @@ def sequence_to_phase(X012):
 def phase_to_sequence(Xabc):
     return np.asarray(np.matmul(T012, Xabc))
 
-def Y_phase_to_sequence(Xabc):
-    return np.asarray(np.matmul(T012,Xabc,Tabc))
+#def Y_phase_to_sequence(Xabc):
+#   return np.asarray(np.matmul(T012,Xabc,Tabc))
 # =============================================================================
 # Calculating Sequence Current from sequence Voltages
 # =============================================================================
