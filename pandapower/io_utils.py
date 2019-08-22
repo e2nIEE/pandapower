@@ -258,15 +258,11 @@ class PPJSONEncoder(json.JSONEncoder):
             return s
 
 
-def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
-        return False
-    return isinstance(obj, cls)
-
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        super().__init__(object_hook=pp_hook, **kwargs)
-
+        args = {"object_hook": pp_hook}
+        args.update(kwargs)
+        super().__init__(**args)
 
 
 def pp_hook(d):
@@ -456,8 +452,8 @@ class JSONSerializableClass(object):
         return JSONSerializableClass.from_dict(d)
 
 
-def restore_jsoned_objects(net):
-    pp_hook.net = net
+def restore_jsoned_objects(net, obj_hook=pp_hook):
+    obj_hook.net = net
     restore_columns = [(element, "object") for element, table in net.items() \
                        if isinstance(table, pd.DataFrame) and "object" in table.columns]
     if "controller" in net and "controller" in net.controller:
@@ -466,10 +462,10 @@ def restore_jsoned_objects(net):
         for i, c in zip(net[element].index, net[element][column].values):
             try:
                 logger.debug("loading %s with index %s"%(element, str(i)))
-                net[element][column].at[i] = pp_hook(c)
+                net[element][column].at[i] = obj_hook(c)
             except Exception as e:
                 logger.warning("did not load %s with index %s: %s"%(element, str(i), e))
-    del pp_hook.net
+    del obj_hook.net
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
