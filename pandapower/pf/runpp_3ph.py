@@ -333,7 +333,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     
     **v_012_it(complex)**   - Sequence voltages
     
-    **I012_it(complex)**   - Sequence currents 
+    **i012_it(complex)**   - Sequence currents 
 
     See Also:
     ----------
