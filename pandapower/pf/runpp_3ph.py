@@ -137,7 +137,7 @@ def _load_mapping(net, ppci1):
 
     # last return varaible left for constant impedance loads
     return np.vstack([params['S'+phase+'delta']] for phase in phases),\
-        np.vstack([params['S'+phase+'wye']] for phase in phases), {}
+        np.vstack([params['S'+phase+'wye']] for phase in phases)
 
 
 # =============================================================================
@@ -418,7 +418,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
 #     P Q values aggragated and summed up for each bus to make s_abc matrix
 #     s_abc for wye connections ; s_abc_delta for delta connection
 # =============================================================================
-    s_abc_delta, s_abc, _ = _load_mapping(net, ppci1)
+    s_abc_delta, s_abc = _load_mapping(net, ppci1)
     # =========================================================================
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =========================================================================
