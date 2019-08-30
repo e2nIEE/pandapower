@@ -266,10 +266,10 @@ def from_excel(filename, convert=True):
 
 
 def _from_excel_old(xls):
-    par = xls["parameters"]["parameters"]
+    par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
-
+    net.update(par)
     for item, table in xls.items():
         if item == "parameters":
             continue

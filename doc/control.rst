@@ -24,6 +24,7 @@ and save output data.
     
     control/control_loop
     control/building_a_controller
+    control/controller
     control/cascade_control
     control/timeseries
     control/tutorials
