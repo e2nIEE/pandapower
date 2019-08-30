@@ -238,6 +238,11 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if use_bus_geodata is False and net.line_geodata.empty:
+        # if bus geodata is available, but no line geodata
+        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is empty.")
+        use_bus_geodata = True
+
     if use_bus_geodata:
         linetab = net.line if lines is None else net.line.loc[lines]
     lines = net.line.index.tolist() if lines is None else list(lines)
