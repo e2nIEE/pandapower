@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
+import pandapower.networks as nw
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 
