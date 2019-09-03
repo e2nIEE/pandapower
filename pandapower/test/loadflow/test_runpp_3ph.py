@@ -27,23 +27,23 @@ def net():
                        "example_type")
     pp.create_line(net, from_bus=1, to_bus=5, length_km=50.0, std_type="example_type")
 
-    pp.create_asymmetric_load(net, 5, p_A_mw=50, q_A_mvar=50, p_B_mw=10, q_B_mvar=15,
-                              p_C_mw=10, q_C_mvar=5)
+    pp.create_asymmetric_load(net, 5, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+                              p_c_mw=10, q_c_mvar=5)
     return net
 
 
 def check_it(net):
-    bus_pp = np.abs(net.res_bus_3ph[['vmA_pu', 'vmB_pu', 'vmC_pu']]
-                    [~np.isnan(net.res_bus_3ph.vmA_pu)].values)
+    bus_pp = np.abs(net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']]
+                    [~np.isnan(net.res_bus_3ph.vm_a_pu)].values)
     bus_pf = np.abs(np.array([[0.96742893, 1.01302766, 1.019784],
                              [0.74957533, 1.09137945, 1.05124282]]))
     assert np.max(np.abs(bus_pp - bus_pf)) < 1.1e-6
-    line_pp = np.abs(net.res_line_3ph[~np.isnan(net.res_line_3ph.iA_from_ka)]
-                     [['iA_from_ka', 'iA_to_ka', 'iB_from_ka', 'iB_to_ka',
-                       'iC_from_ka', 'iC_to_ka',
-                       'p_A_from_mw', 'p_A_to_mw', 'q_A_from_mvar', 'q_A_to_mvar',
-                       'p_B_from_mw', 'p_B_to_mw', 'q_B_from_mvar', 'q_B_to_mvar',
-                       'p_C_from_mw', 'p_C_to_mw', 'q_C_from_mvar', 'q_C_to_mvar',
+    line_pp = np.abs(net.res_line_3ph[~np.isnan(net.res_line_3ph.i_a_from_ka)]
+                     [['i_a_from_ka', 'i_a_to_ka', 'i_b_from_ka', 'i_b_to_ka',
+                       'i_c_from_ka', 'i_c_to_ka',
+                       'p_a_from_mw', 'p_a_to_mw', 'q_a_from_mvar', 'q_a_to_mvar',
+                       'p_b_from_mw', 'p_b_to_mw', 'q_b_from_mvar', 'q_b_to_mvar',
+                       'p_c_from_mw', 'p_c_to_mw', 'q_c_from_mvar', 'q_c_to_mvar',
                        'loading_percentA', 'loading_percentB', 'loading_percentC',
                        'loading_percent'
                        ]].values)
@@ -81,8 +81,8 @@ def test_2bus_network_isolated_net_part(net):
     b1 = pp.create_bus(net, vn_kv=110)
     b2 = pp.create_bus(net, vn_kv=110)
     pp.create_line(net, from_bus=b1, to_bus=b2, length_km=50.0, std_type="example_type")
-    pp.create_asymmetric_load(net, b2, p_A_mw=50, q_A_mvar=50, p_B_mw=10, q_B_mvar=15,
-                              p_C_mw=10, q_C_mvar=5)
+    pp.create_asymmetric_load(net, b2, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+                              p_c_mw=10, q_c_mvar=5)
     pp.add_zero_impedance_parameters(net)
     runpp_3ph(net)
     assert net['converged']
@@ -94,8 +94,8 @@ def test_2bus_network_singel_oos_bus(net):
     b1 = pp.create_bus(net, vn_kv=110)
     net.bus.loc[5, "in_service"] = False
     pp.create_line(net, from_bus=5, to_bus=b1, length_km=10.0, std_type="example_type")
-    pp.create_asymmetric_load(net, b1, p_A_mw=-5, q_A_mvar=5, p_B_mw=-1, q_B_mvar=1.5,
-                              p_C_mw=-1, q_C_mvar=.5)
+    pp.create_asymmetric_load(net, b1, p_a_mw=-5, q_a_mvar=5, p_b_mw=-1, q_b_mvar=1.5,
+                              p_c_mw=-1, q_c_mvar=.5)
     pp.add_zero_impedance_parameters(net)
     runpp_3ph(net)
     assert net['converged']
@@ -107,8 +107,8 @@ def test_out_serv_load(net):
     runpp_3ph(net)
     assert net['converged']
     check_it(net)
-    pp.create_asymmetric_load(net, 5, p_A_mw=50, q_A_mvar=100, p_B_mw=29, q_B_mvar=38,
-                              p_C_mw=10, q_C_mvar=5, in_service=False)
+    pp.create_asymmetric_load(net, 5, p_a_mw=50, q_a_mvar=100, p_b_mw=29, q_b_mvar=38,
+                              p_c_mw=10, q_c_mvar=5, in_service=False)
     runpp_3ph(net)
     assert net['converged']
     check_it(net)
@@ -144,17 +144,17 @@ def test_4bus_network():
                                    r_ohm_per_km=.0762, x_ohm_per_km=0.1507964, c_nf_per_km=140)
     pp.add_zero_impedance_parameters(net)
     
-    pp.create_asymmetric_load(net, busk, p_A_mw=50, q_A_mvar=20, p_B_mw=80, q_B_mvar=60,
-                              p_C_mw=20, q_C_mvar=5)
-    pp.create_asymmetric_load(net, busm, p_A_mw=50, q_A_mvar=50, p_B_mw=10, q_B_mvar=15,
-                              p_C_mw=10, q_C_mvar=5)
-    pp.create_asymmetric_load(net, busp, p_A_mw=50, q_A_mvar=20, p_B_mw=60, q_B_mvar=20,
-                              p_C_mw=10, q_C_mvar=5)
+    pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=20, p_b_mw=80, q_b_mvar=60,
+                              p_c_mw=20, q_c_mvar=5)
+    pp.create_asymmetric_load(net, busm, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+                              p_c_mw=10, q_c_mvar=5)
+    pp.create_asymmetric_load(net, busp, p_a_mw=50, q_a_mvar=20, p_b_mw=60, q_b_mvar=20,
+                              p_c_mw=10, q_c_mvar=5)
     runpp_3ph(net)
     assert net['converged']
     
-    bus_pp = np.abs(net.res_bus_3ph[['vmA_pu', 'vmB_pu', 'vmC_pu']]
-                    [~np.isnan(net.res_bus_3ph.vmA_pu)].values)
+    bus_pp = np.abs(net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']]
+                    [~np.isnan(net.res_bus_3ph.vm_a_pu)].values)
     bus_pf = np.abs(np.array([[0.98085729, 0.97711997, 1.04353786],
                              [0.97828577, 0.97534651, 1.04470864],
                              [0.97774307, 0.97648197, 1.04421233],
@@ -162,12 +162,12 @@ def test_4bus_network():
     assert np.max(np.abs(bus_pp - bus_pf)) < 1e-8
     
     line_pp = np.abs(net.res_line_3ph[
-            ['iA_from_ka',  'iB_from_ka', 'iC_from_ka',
-             'iA_to_ka', 'iB_to_ka', 'iC_to_ka',
-             'p_A_from_mw', 'p_B_from_mw', 'p_C_from_mw',
-             'q_A_from_mvar', 'q_B_from_mvar', 'q_C_from_mvar',
-             'p_A_to_mw', 'p_B_to_mw', 'p_C_to_mw',
-             'q_A_to_mvar', 'q_B_to_mvar', 'q_C_to_mvar',
+            ['i_a_from_ka',  'i_b_from_ka', 'i_c_from_ka',
+             'i_a_to_ka', 'i_b_to_ka', 'i_c_to_ka',
+             'p_a_from_mw', 'p_b_from_mw', 'p_c_from_mw',
+             'q_a_from_mvar', 'q_b_from_mvar', 'q_c_from_mvar',
+             'p_a_to_mw', 'p_b_to_mw', 'p_c_to_mw',
+             'q_a_to_mvar', 'q_b_to_mvar', 'q_c_to_mvar',
              'loading_percentA', 'loading_percentB', 'loading_percentC',
              'loading_percent']].values)
     line_pf = np.abs(np.array(
@@ -237,13 +237,13 @@ def test_3ph_bus_mapping_order():
     runpp_3ph(net)
     assert net['converged']
     
-    assert np.allclose(net.res_bus_3ph.vmA_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
+    assert np.allclose(net.res_bus_3ph.vm_a_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
     assert net.res_bus_3ph.index.tolist() == net.res_bus.index.tolist()
     
     assert net.res_line_3ph.index.tolist() == net.res_line.index.tolist()
-    assert np.allclose(net.res_line.p_from_mw, net.res_line_3ph.p_A_from_mw +
-                       net.res_line_3ph.p_B_from_mw +
-                       net.res_line_3ph.p_C_from_mw)
+    assert np.allclose(net.res_line.p_from_mw, net.res_line_3ph.p_a_from_mw +
+                       net.res_line_3ph.p_b_from_mw +
+                       net.res_line_3ph.p_c_from_mw)
     assert np.allclose(net.res_line.loading_percent, net.res_line_3ph.loading_percentA)  
 
     
@@ -264,25 +264,25 @@ def test_3ph_two_bus_line_powerfactory():
     pp.create_line(net, b1, b2, 0.4, std_type="N2XRY 3x185sm 0.6/1kV")
     pp.add_zero_impedance_parameters(net)
     pp.create_load(net, b2, p_mw=0.010, q_mvar=0.010)
-    pp.create_asymmetric_load(net, b2, p_A_mw=0.020, q_A_mvar=0.010, p_B_mw=0.015, q_B_mvar=0.005, p_C_mw=0.025,
-                              q_C_mvar=0.010)
+    pp.create_asymmetric_load(net, b2, p_a_mw=0.020, q_a_mvar=0.010, p_b_mw=0.015, q_b_mvar=0.005, p_c_mw=0.025,
+                              q_c_mvar=0.010)
     
     runpp_3ph(net)
     assert net['converged']
     
-    bus_pp = np.abs(net.res_bus_3ph[['vmA_pu', 'vmB_pu', 'vmC_pu']].values)
+    bus_pp = np.abs(net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']].values)
     bus_pf = np.abs(np.array([[0.99939853552, 1.0013885141, 0.99921580141],
                              [0.97401782343, 0.98945593737, 0.96329605983]]))
                        
     assert np.max(np.abs(bus_pp-bus_pf)) < 4e-6
     
     line_pp = np.abs(net.res_line_3ph[
-            ['iA_from_ka', 'iB_from_ka', 'iC_from_ka',
-             'iA_to_ka', 'iB_to_ka', 'iC_to_ka',
-             'p_A_from_mw', 'p_B_from_mw', 'p_C_from_mw',
-             'q_A_from_mvar', 'q_B_from_mvar', 'q_C_from_mvar',
-             'p_A_to_mw', 'p_B_to_mw', 'p_C_to_mw',
-             'q_A_to_mvar', 'q_B_to_mvar', 'q_C_to_mvar']].values)
+            ['i_a_from_ka', 'i_b_from_ka', 'i_c_from_ka',
+             'i_a_to_ka', 'i_b_to_ka', 'i_c_to_ka',
+             'p_a_from_mw', 'p_b_from_mw', 'p_c_from_mw',
+             'q_a_from_mvar', 'q_b_from_mvar', 'q_c_from_mvar',
+             'p_a_to_mw', 'p_b_to_mw', 'p_c_to_mw',
+             'q_a_to_mvar', 'q_b_to_mvar', 'q_c_to_mvar']].values)
     line_pf = np.abs(np.array(
             [[0.11946088987	,	0.08812337783	,	0.14074226065	,	
              0.1194708224	,	0.088131567331	,	0.14075063601	,	
@@ -304,9 +304,9 @@ def test_3ph_two_bus_line_powerfactory():
 def check_results(net, vc, result):
     res_vm_kv = np.concatenate(
             (
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vmA_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vmB_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vmC_pu
+             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_a_pu,
+             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_b_pu,
+             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_c_pu
             ), axis=0)
     assert np.allclose(result, res_vm_kv, atol=1e-4)
     if not np.allclose(result, res_vm_kv, atol=1e-4):
@@ -345,18 +345,18 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
         pp.create_load(net, b3, 0.08, 0.012, type='wye')
     elif case == "delta_wye":
         # Unsymmetric Light Load
-        pp.create_asymmetric_load(net, b3, p_A_mw=0.0044, q_A_mvar=0.0013, p_B_mw=0.0044, q_B_mvar=0.0013,
-                                  p_C_mw=0.0032, q_C_mvar=0.0013, type='wye')
-        pp.create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
-                                  p_C_mw=0.027, q_C_mvar=0.0043, type='delta')
+        pp.create_asymmetric_load(net, b3, p_a_mw=0.0044, q_a_mvar=0.0013, p_b_mw=0.0044, q_b_mvar=0.0013,
+                                  p_c_mw=0.0032, q_c_mvar=0.0013, type='wye')
+        pp.create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
+                                  p_c_mw=0.027, q_c_mvar=0.0043, type='delta')
         
     elif case == "wye":
         # Unsymmetric Heavy Load
-        pp.create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
-                                  p_C_mw=0.027, q_C_mvar=0.0043, type=case)
+        pp.create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
+                                  p_c_mw=0.027, q_c_mvar=0.0043, type=case)
     elif case == "delta":
-        pp.create_asymmetric_load(net, b3, p_A_mw=0.0300, q_A_mvar=0.0048, p_B_mw=0.0280, q_B_mvar=0.0036,
-                                  p_C_mw=0.027, q_C_mvar=0.0043, type=case)
+        pp.create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
+                                  p_c_mw=0.027, q_c_mvar=0.0043, type=case)
     
 #    pp.add_zero_impedance_parameters(net) Not required here since added through parameters
 
@@ -404,8 +404,8 @@ def test_3ph_isolated_nodes():
                              "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
                              "c_nf_per_km": 230}, "example_type")
     # Loads on supplied buses
-    pp.create_asymmetric_load(net, busk, p_A_mw=50, q_A_mvar=50, p_B_mw=10, q_B_mvar=15,
-                    p_C_mw=10, q_C_mvar=5)
+    pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+                    p_c_mw=10, q_c_mvar=5)
     pp.create_load(net, bus=busl, p_mw=7, q_mvar=0.070, name="Load 1")
     # Loads on unsupplied buses
     pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
@@ -415,10 +415,10 @@ def test_3ph_isolated_nodes():
     pp.add_zero_impedance_parameters(net)
     runpp_3ph(net)
     assert net['converged']
-    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu",
-                       "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
-    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["p_A_mw", "q_A_mvar", "p_B_mw", "q_B_mvar",
-                       "p_C_mw", "q_C_mvar"]], 0.0)
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vm_a_pu", "va_a_degree", "vm_b_pu",
+                       "va_b_degree", "vm_c_pu", "va_c_degree"]], np.nan, equal_nan=True)
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["p_a_mw", "q_a_mvar", "p_b_mw", "q_b_mvar",
+                       "p_c_mw", "q_c_mvar"]], 0.0)
 
 
 if __name__ == "__main__":

@@ -138,12 +138,12 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
     # store result in net['res']
-    net["res_ext_grid_3ph"]["p_A_mw"] = pA
-    net["res_ext_grid_3ph"]["p_B_mw"] = pB
-    net["res_ext_grid_3ph"]["p_C_mw"] = pC
-    net["res_ext_grid_3ph"]["q_A_mvar"] = qA
-    net["res_ext_grid_3ph"]["q_B_mvar"] = qB
-    net["res_ext_grid_3ph"]["q_C_mvar"] = qC
+    net["res_ext_grid_3ph"]["p_a_mw"] = pA
+    net["res_ext_grid_3ph"]["p_b_mw"] = pB
+    net["res_ext_grid_3ph"]["p_c_mw"] = pC
+    net["res_ext_grid_3ph"]["q_a_mvar"] = qA
+    net["res_ext_grid_3ph"]["q_b_mvar"] = qB
+    net["res_ext_grid_3ph"]["q_c_mvar"] = qC
 
     # get bus values for pq_bus
     b = net['ext_grid'].bus.values
@@ -211,12 +211,12 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
-    net["res_gen_3ph"]["p_A_mw"] = pA
-    net["res_gen_3ph"]["p_B_mw"] = pB
-    net["res_gen_3ph"]["p_C_mw"] = pC
-    net["res_gen_3ph"]["q_A_mvar"] = qA
-    net["res_gen_3ph"]["q_B_mvar"] = qB
-    net["res_gen_3ph"]["q_C_mvar"] = qC
+    net["res_gen_3ph"]["p_a_mw"] = pA
+    net["res_gen_3ph"]["p_b_mw"] = pB
+    net["res_gen_3ph"]["p_c_mw"] = pC
+    net["res_gen_3ph"]["q_a_mvar"] = qA
+    net["res_gen_3ph"]["q_b_mvar"] = qB
+    net["res_gen_3ph"]["q_c_mvar"] = qC
 
     return pA, qA, pB, qB, pC, qC
 

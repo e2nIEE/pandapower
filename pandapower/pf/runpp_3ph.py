@@ -84,7 +84,7 @@ def _load_mapping(net, ppci1):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]    
     params = dict()
-    phases = ['A', 'B', 'C']
+    phases = ['a', 'b', 'c']
     load_types = ['wye', 'delta']
     load_elements = ['load', 'asymmetric_load', 'sgen', 'asymmetric_sgen']
 # =============================================================================

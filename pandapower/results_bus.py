@@ -42,13 +42,13 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc_pu = sequence_to_phase(V012_pu)
 
     if ac:
-        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0, :].flatten())
-        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1, :].flatten())
-        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2, :].flatten())
+        net["res_bus_3ph"]["vm_a_pu"] = abs(Vabc_pu[0, :].flatten())
+        net["res_bus_3ph"]["vm_b_pu"] = abs(Vabc_pu[1, :].flatten())
+        net["res_bus_3ph"]["vm_c_pu"] = abs(Vabc_pu[2, :].flatten())
     # voltage angles
-    net["res_bus_3ph"]["vaA_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["vaB_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["vaC_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["va_a_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["va_b_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["va_c_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
     net["res_bus_3ph"].index = net["bus"].index
 
 
@@ -95,13 +95,13 @@ def _get_bus_results_3ph(net, bus_pq):
     mode = net["_options"]["mode"]
 
     # write sum of p and q values to bus
-    net["res_bus_3ph"]["p_A_mw"] = bus_pq[:, 0]
-    net["res_bus_3ph"]["p_B_mw"] = bus_pq[:, 2]
-    net["res_bus_3ph"]["p_C_mw"] = bus_pq[:, 4]
+    net["res_bus_3ph"]["p_a_mw"] = bus_pq[:, 0]
+    net["res_bus_3ph"]["p_b_mw"] = bus_pq[:, 2]
+    net["res_bus_3ph"]["p_c_mw"] = bus_pq[:, 4]
     if ac:
-        net["res_bus_3ph"]["q_A_mvar"] = bus_pq[:, 1]
-        net["res_bus_3ph"]["q_B_mvar"] = bus_pq[:, 3]
-        net["res_bus_3ph"]["q_C_mvar"] = bus_pq[:, 5]
+        net["res_bus_3ph"]["q_a_mvar"] = bus_pq[:, 1]
+        net["res_bus_3ph"]["q_b_mvar"] = bus_pq[:, 3]
+        net["res_bus_3ph"]["q_c_mvar"] = bus_pq[:, 5]
 
     # Todo: OPF
 
@@ -220,30 +220,30 @@ def write_pq_results_to_element_3ph(net, element):
 
     element_in_service = _is_elements[element]
 
-    net[res_]["p_A_mw"] = pd.Series((el_data["p_mw"].values/3)\
+    net[res_]["p_a_mw"] = pd.Series((el_data["p_mw"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"] else\
-    pd.Series(el_data["p_A_mw"].values * scaling * element_in_service)
+    pd.Series(el_data["p_a_mw"].values * scaling * element_in_service)
     
-    net[res_]["p_B_mw"] = pd.Series((el_data["p_mw"].values/3) \
+    net[res_]["p_b_mw"] = pd.Series((el_data["p_mw"].values/3) \
     * scaling * element_in_service)if element in[ "load","sgen"]  else\
-    pd.Series(el_data["p_B_mw"].values * scaling * element_in_service)
+    pd.Series(el_data["p_b_mw"].values * scaling * element_in_service)
     
-    net[res_]["p_C_mw"] = pd.Series((el_data["p_mw"].values/3) \
+    net[res_]["p_c_mw"] = pd.Series((el_data["p_mw"].values/3) \
        * scaling * element_in_service) if element in[ "load","sgen"]  else\
-       pd.Series(el_data["p_C_mw"].values * scaling * element_in_service)
+       pd.Series(el_data["p_c_mw"].values * scaling * element_in_service)
     if ac:
         # Q result in kvar to element
-        net[res_]["q_A_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+        net[res_]["q_a_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
-    pd.Series(el_data["q_A_mvar"].values * scaling * element_in_service)
+    pd.Series(el_data["q_a_mvar"].values * scaling * element_in_service)
         
-        net[res_]["q_B_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+        net[res_]["q_b_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
-    pd.Series(el_data["q_B_mvar"].values * scaling * element_in_service)
+    pd.Series(el_data["q_b_mvar"].values * scaling * element_in_service)
         
-        net[res_]["q_C_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+        net[res_]["q_c_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
-    pd.Series(el_data["q_C_mvar"].values * scaling * element_in_service)
+    pd.Series(el_data["q_c_mvar"].values * scaling * element_in_service)
 
     # update index of result table
     net[res_].index = net[element].index
@@ -264,12 +264,12 @@ def get_p_q_b_3ph(net, element):
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
-    pA = net[res_]["p_A_mw"]
-    pB = net[res_]["p_B_mw"]
-    pC = net[res_]["p_C_mw"]
-    qA = net[res_]["q_A_mvar"] if ac else np.zeros_like(pA)
-    qB = net[res_]["q_B_mvar"] if ac else np.zeros_like(pB)
-    qC = net[res_]["q_C_mvar"] if ac else np.zeros_like(pC)
+    pA = net[res_]["p_a_mw"]
+    pB = net[res_]["p_b_mw"]
+    pC = net[res_]["p_c_mw"]
+    qA = net[res_]["q_a_mvar"] if ac else np.zeros_like(pA)
+    qB = net[res_]["q_b_mvar"] if ac else np.zeros_like(pB)
+    qC = net[res_]["q_c_mvar"] if ac else np.zeros_like(pC)
     return pA, qA, pB, qB, pC, qC, b
 
 
