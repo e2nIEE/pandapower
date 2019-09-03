@@ -106,8 +106,11 @@ class Controller(JSONSerializableClass):
 
         INPUT:
             **in_service** (bool) - in service status
+            
             **order** (int) - order
+            
             **index** (int) - index
+            
             **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used
                                  with prestored values. This is mostly needed for time series
                                  calculations
