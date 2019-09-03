@@ -2,6 +2,7 @@ import json
 import math
 import os
 import tempfile
+from math import pi
 
 import numpy as np
 
@@ -34,7 +35,9 @@ def _runpm(net):  # pragma: no cover
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
+    pm = add_pm_options(pm, net)
     net._pm = pm
+
     if net._options["pp_to_pm_callback"] is not None:
         net._options["pp_to_pm_callback"](net, ppci, pm)
     result_pm = _call_powermodels(pm, net._options["julia_file"])
@@ -53,8 +56,10 @@ def _runpm(net):  # pragma: no cover
 
 
 def _call_powermodels(pm, julia_file):  # pragma: no cover
-    buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
+    temp_name = next(tempfile._get_candidate_names())
+    buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
+
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     try:
@@ -98,11 +103,6 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
 
         pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
                                      "status": int(in_service), "index": load_idx}
-        # print("Added load {} to pm".format(load_idx))
-        # print(pm["load"][str(load_idx)])
-        # print("PP element:")
-        # print(net[element].loc[idx, ["bus", "p_mw"]])
-        # print("\n")
         if pm_bus not in pd_bus:
             pd_bus[pm_bus] = pd
             qd_bus[pm_bus] = qd
@@ -114,11 +114,29 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
     return load_idx
 
 
-def ppc_to_pm(net, ppc):  # pragma: no cover
+def get_branch_angles(row, correct_pm_network_data):
+    angmin = row[ANGMIN].real
+    angmax = row[ANGMAX].real
+    # check if angles are too small for PowerModels OPF (recommendation from Carleton Coffrin himself)
+    if correct_pm_network_data:
+        if angmin < -60.:
+            logger.debug("changed voltage angle minimum of branch {}, "
+                           "to -60 from {} degrees".format(int(row[0].real), angmin))
+            angmin = -60.
+        if angmax > 60.:
+            logger.debug("changed voltage angle maximum of branch {} to 60. "
+                           "from {} degrees".format(int(row[0].real), angmax))
+            angmax = 60.
+    angmin = (angmin / 180.) * pi  # convert to p.u. as well
+    angmax = (angmax / 180.) * pi  # convert to p.u. as well
+    return angmin, angmax
+
+
+def ppc_to_pm(net, ppci):  # pragma: no cover
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
-          "ne_branch": dict(),
-          "baseMVA": ppc["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
+          "ne_branch": dict(), "switch": dict(),
+          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
     shunt_idx = 1
@@ -130,8 +148,9 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
     load_idx = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
     load_idx = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
     load_idx = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
+    correct_pm_network_data = net._options["correct_pm_network_data"]
 
-    for row in ppc["bus"]:
+    for row in ppci["bus"]:
         bus = dict()
         idx = int(row[BUS_I]) + 1
         bus["index"] = idx
@@ -155,7 +174,7 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
         pq_mismatch = not np.allclose(pd, 0.) or not np.allclose(qd, 0.)
         if pq_mismatch:
             # This will be called if ppc PQ != sum at bus.
-            print("PQ mismatch. Adding another load at idx {}".format(load_idx))
+            logger.info("PQ mismatch. Adding another load at idx {}".format(load_idx))
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
                                          "status": True, "index": load_idx}
             load_idx += 1
@@ -168,7 +187,7 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
         pm["bus"][str(idx)] = bus
 
     n_lines = net._pd2ppc_lookups["branch"]["line"][1]
-    for idx, row in enumerate(ppc["branch"], start=1):
+    for idx, row in enumerate(ppci["branch"], start=1):
         branch = dict()
         branch["index"] = idx
         branch["transformer"] = idx > n_lines
@@ -184,13 +203,12 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
-        branch["angmin"] = row[ANGMIN].real
-        branch["angmax"] = row[ANGMAX].real
+        branch["angmin"], branch["angmax"] = get_branch_angles(row, correct_pm_network_data)
         branch["tap"] = row[TAP].real
         branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
-    for idx, row in enumerate(ppc["gen"], start=1):
+    for idx, row in enumerate(ppci["gen"], start=1):
         gen = dict()
         gen["pg"] = row[PG]
         gen["qg"] = row[QG]
@@ -204,8 +222,8 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
-    if "ne_branch" in ppc:
-        for idx, row in enumerate(ppc["ne_branch"], start=1):
+    if "ne_branch" in ppci:
+        for idx, row in enumerate(ppci["ne_branch"], start=1):
             branch = dict()
             branch["index"] = idx
             branch["transformer"] = False
@@ -221,35 +239,29 @@ def ppc_to_pm(net, ppc):  # pragma: no cover
             branch["f_bus"] = int(row[F_BUS].real) + 1
             branch["t_bus"] = int(row[T_BUS].real) + 1
             branch["br_status"] = int(row[BR_STATUS].real)
-            branch["angmin"] = row[ANGMIN].real
-            branch["angmax"] = row[ANGMAX].real
+            branch["angmin"], branch["angmax"] = get_branch_angles(row, correct_pm_network_data)
             branch["tap"] = row[TAP].real
             branch["shift"] = math.radians(row[SHIFT].real)
             branch["construction_cost"] = row[CONSTRUCTION_COST].real
             pm["ne_branch"][str(idx)] = branch
 
-    if len(ppc["gencost"]) > len(ppc["gen"]):
-        logger.warning("PowerModels.jl does not reactive power cost - costs are ignored")
-        ppc["gencost"] = ppc["gencost"][:ppc["gen"].shape[0], :]
-    for idx, row in enumerate(ppc["gencost"], start=1):
+    if len(ppci["gencost"]) > len(ppci["gen"]):
+        logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
+        ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
+    for idx, row in enumerate(ppci["gencost"], start=1):
         gen = pm["gen"][str(idx)]
         gen["model"] = int(row[MODEL])
         if gen["model"] == 1:
             gen["ncost"] = int(row[NCOST])
             gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
         elif gen["model"] == 2:
-            gen["ncost"] = 2
+            gen["ncost"] = 3
             gen["cost"] = [0] * 3
             costs = row[COST:]
             if len(costs) > 3:
                 logger.info(costs)
                 raise ValueError("Maximum quadratic cost function allowed")
             gen["cost"][-len(costs):] = costs
-
-    # for key, val in pm["load"].items():
-    #     print("load {}".format(key))
-    #     print(val)
-    #     print("\n")
     return pm
 
 
@@ -259,7 +271,8 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
     multinetwork = False
     sol = result_pm["solution"]
     ppci["obj"] = result_pm["objective"]
-    ppci["success"] = "LOCALLY_SOLVED" in str(result_pm["termination_status"])
+    termination_status = str(result_pm["termination_status"])
+    ppci["success"] = "LOCALLY_SOLVED" in termination_status or "OPTIMAL" in termination_status
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
@@ -297,3 +310,12 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
 
     result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result, multinetwork
+
+
+def add_pm_options(pm, net):
+    if "pm_solver" in net._options:
+        pm["pm_solver"] = net._options["pm_solver"]
+    if "pm_model" in net._options:
+        pm["pm_model"] = net._options["pm_model"]
+    pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
+    return pm

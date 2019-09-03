@@ -155,7 +155,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
     if net._options["mode"] == "opf":
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
+        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 100.
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
         max_i_ka = line.max_i_ka.values
         df = line.df.values

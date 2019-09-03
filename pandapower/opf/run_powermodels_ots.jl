@@ -12,7 +12,7 @@ function run_powermodels(json_path)
     juniper_solver = JuMP.with_optimizer(Juniper.Optimizer, nl_solver =
                                 JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-4, print_level = 0))
 
-    result = run_ots(pm, ACPPowerModel, juniper_solver,
+    result = run_ots(pm, DCPPowerModel, juniper_solver,
                         setting = Dict("output" => Dict("branch_flows" => true)))
     return result
 end

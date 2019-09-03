@@ -21,7 +21,7 @@ def build_ne_branch(net, ppc):
     if "ne_line" in net:
         length = len(net["ne_line"])
         ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
-        ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+        ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
         # create branch array ne_branch like the common branch array in the ppc
         net._pd2ppc_lookups["ne_branch"] = dict()
         net._pd2ppc_lookups["ne_branch"]["ne_line"] = (0, length)
