@@ -772,12 +772,18 @@ def drop_out_of_service_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[~net.line.in_service].index
     drop_lines(net, inactive_lines)
+    inactive_res_lines = net.res_line.index.intersection(inactive_lines)
+    net.res_line.drop(inactive_res_lines, inplace=True)
 
     inactive_trafos = net.trafo[~net.trafo.in_service].index
     drop_trafos(net, inactive_trafos, table='trafo')
+    inactive_res_trafos = net.res_trafo.index.intersection(inactive_trafos)
+    net.res_trafo.drop(inactive_res_trafos, inplace=True)
 
     inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
     drop_trafos(net, inactive_trafos3w, table='trafo3w')
+    inactive_res_trafos3w = net.res_trafo3w.index.intersection(inactive_trafos3w)
+    net.res_trafo3w.drop(inactive_res_trafos3w, inplace=True)
 
     do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
         set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
@@ -787,16 +793,22 @@ def drop_out_of_service_elements(net):
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
     drop_buses(net, inactive_buses, drop_elements=True)
+    inactive_res_buses = net.res_bus.index.intersection(inactive_buses)
+    net.res_bus.drop(inactive_res_buses, inplace=True)
 
-    # TODO: the following is not necessary anymore?
+    # removes inactive elements other than buses, trafos and lines
     for element in net.keys():
         if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
                 and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
             drop_idx = net[element].query("not in_service").index
             net[element].drop(drop_idx, inplace=True)
+            res_element = "res_" + element
+            if res_element in net.keys() and net[res_element].shape[0]:
+                res_drop_idx = net[res_element].index.intersection(drop_idx)
+                net[res_element].drop(res_drop_idx, inplace=True)
             if len(drop_idx) > 0:
-                logger.info("dropped %d %s elements!" % (len(drop_idx), element))
+                logger.debug("dropped %d %s elements!" % (len(drop_idx), element))
 
 
 def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):

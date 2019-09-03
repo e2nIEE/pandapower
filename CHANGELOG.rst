@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] res_element table drop in drop_out_of_service_elements()
 - [ADDED] jupyter notebook examples for time series
 - [ADDED] control and timeseries module
 - [ADDED] jupyter notebook for power storage optimization with PowerModels.jl
