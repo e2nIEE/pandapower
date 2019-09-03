@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] reindex_buses() toolbox function
 - [ADDED] res_element table drop in drop_out_of_service_elements()
 - [ADDED] jupyter notebook examples for time series
 - [ADDED] control and timeseries module
