@@ -1,7 +1,7 @@
 **Parameter**;**Datatype**;**Explanation**
-p_A_mw;float;resulting Phase A active power demand after scaling and after considering voltage dependence [MW]
-q_A_mvar;float;resulting Phase A reactive power demand after scaling and after considering voltage dependence [MVar]
-p_B_mw;float;resulting Phase B active power demand after scaling and after considering voltage dependence [MW]
-q_B_mvar;float;resulting Phase B reactive power demand after scaling and after considering voltage dependence [MVar]
-p_C_mw;float;resulting Phase C active power demand after scaling and after considering voltage dependence [MW]
-q_C_mvar;float;resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]
+p_a_mw;float;resulting Phase A active power demand after scaling and after considering voltage dependence [MW]
+q_a_mvar;float;resulting Phase A reactive power demand after scaling and after considering voltage dependence [MVar]
+p_b_mw;float;resulting Phase B active power demand after scaling and after considering voltage dependence [MW]
+q_b_mvar;float;resulting Phase B reactive power demand after scaling and after considering voltage dependence [MVar]
+p_c_mw;float;resulting Phase C active power demand after scaling and after considering voltage dependence [MW]
+q_c_mvar;float;resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]

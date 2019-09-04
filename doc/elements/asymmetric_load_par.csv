@@ -1,12 +1,12 @@
 **Parameter**;**Datatype**;**Value Range**;**Explanation**
 name;string;;name of the load
 bus *;integer;;index of connected bus
-p_A_mw*;float;:math:`\geq 0`;Phase A active power of the load [MW]
-p_B_mw*;float;:math:`\geq 0`;Phase B active power of the load [MW]
-p_C_mw*;float;:math:`\geq 0`;Phase C active power of the load [MW]
-q_A_mvar*;float;;Phase A reactive power of the load [MVar]
-q_B_mvar*;float;;Phase B reactive power of the load [MVar]
-q_C_mvar*;float;;Phase C reactive power of the load [MVar]
+p_a_mw*;float;:math:`\geq 0`;Phase A active power of the load [MW]
+p_b_mw*;float;:math:`\geq 0`;Phase B active power of the load [MW]
+p_c_mw*;float;:math:`\geq 0`;Phase C active power of the load [MW]
+q_a_mvar*;float;;Phase A reactive power of the load [MVar]
+q_b_mvar*;float;;Phase B reactive power of the load [MVar]
+q_c_mvar*;float;;Phase C reactive power of the load [MVar]
 const_z_percent*;float;:math:`[0,100]`;percentage of p_mw and q_mvar that is associated to constant impedance load at rated voltage [:math:`\%`]
 const_i_percent*;float;:math:`[0,100]`;percentage of p_mw and q_mvar that is associated to constant current load at rated voltage [:math:`\%`]
 sn_mva;float;:math:`>0`;rated power of the load [kVA]

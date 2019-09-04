@@ -404,14 +404,14 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     if len(l_3ph) > 0 and mode == "pf":
             # TODO: Voltage dependent loads
         vl = _is_elements["asymmetric_load"] * l_3ph["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, np.sum(l_3ph[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values, axis=1) * vl])
-        p = np.hstack([p, np.sum(l_3ph[["p_A_mw", "p_B_mw", "p_C_mw"]].values, axis=1) * vl])
+        q = np.hstack([q, np.sum(l_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(l_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
         b = np.hstack([b, l_3ph["bus"].values])
     sgen_3ph = net["asymmetric_sgen"]
     if len(sgen_3ph) > 0 and mode == "pf":
         vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, np.sum(sgen_3ph[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values, axis=1) * vl])
-        p = np.hstack([p, np.sum(sgen_3ph[["p_A_mw", "p_B_mw", "p_C_mw"]].values, axis=1) * vl])
+        q = np.hstack([q, np.sum(sgen_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(sgen_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
         b = np.hstack([b, sgen_3ph["bus"].values])
 
     # sum up p & q of bus elements
