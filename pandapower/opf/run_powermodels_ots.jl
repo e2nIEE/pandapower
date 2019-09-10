@@ -4,15 +4,14 @@ using .PP2PM
 import Ipopt
 import Juniper
 import JuMP
+import Gurobi
 
 function run_powermodels(json_path)
     # function to run optimal transmission switching (OTS) optimization from powermodels.jl
     pm = PP2PM.load_pm_from_json(json_path)
-
-    juniper_solver = JuMP.with_optimizer(Juniper.Optimizer, nl_solver =
-                                JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-4, print_level = 0))
-
-    result = run_ots(pm, DCPPowerModel, juniper_solver,
+    model = PP2PM.get_model(pm["pm_model"])
+    solver = get_solver(pm["pm_solver"], "ipopt", "cbc")
+    result = run_ots(pm, model, solver,
                         setting = Dict("output" => Dict("branch_flows" => true)))
     return result
 end

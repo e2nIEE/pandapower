@@ -35,7 +35,7 @@ function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
     # import gurobi by default, if that's not possible -> get ipopt'
     try
         if optimizer == "gurobi"
-            solver = JuMP.with_optimizer(Gurobi.Optimizer)
+            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
         end
     catch e
         if isa(e, LoadError)

@@ -1,6 +1,4 @@
 using PowerModels
-using Ipopt
-using JuMP
 using .PP2PM
 
 function run_powermodels(json_path)

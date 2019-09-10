@@ -234,10 +234,7 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
     if pm_solver is None:
-        if pm_model == "DCPPowerModel":
-            pm_solver = "gurobi"
-        else:
-            pm_solver = "juniper"
+        pm_solver = "juniper"
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
