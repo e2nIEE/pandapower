@@ -456,7 +456,7 @@ def restore_jsoned_objects(net, obj_hook=pp_hook):
     obj_hook.net = net
     restore_columns = [(element, "object") for element, table in net.items() \
                        if isinstance(table, pd.DataFrame) and "object" in table.columns]
-    if "controller" in net and "controller" in net.controller:
+    if "controller" in net and "controller" in net["controller"]:
         restore_columns.append(("controller", "controller"))
     for element, column in restore_columns:
         for i, c in zip(net[element].index, net[element][column].values):
