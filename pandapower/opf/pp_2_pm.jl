@@ -10,11 +10,28 @@ import Ipopt
 import Juniper
 import JuMP
 
+
 try
     import Gurobi
 catch e
     if isa(e, LoadError)
         println("Cannot import Gurobi. That's fine if you do not plan to use it")
+    end
+end
+
+try
+    import KNITRO
+catch e
+    if isa(e, LoadError)
+        println("Cannot import KNITRO. That's fine if you do not plan to use it")
+    end
+end
+
+try
+    import SCIP
+catch e
+    if isa(e, LoadError)
+        println("Cannot import SCIP. That's fine if you do not plan to use it")
     end
 end
 
@@ -33,15 +50,8 @@ end
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
     log_level::Int=0)
     # import gurobi by default, if that's not possible -> get ipopt'
-    try
-        if optimizer == "gurobi"
+    if optimizer == "gurobi"
             solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
-        end
-    catch e
-        if isa(e, LoadError)
-            print("could not load gurobi. using ipopt instead")
-            optimizer = "ipopt"
-        end
     end
 
     if optimizer == "ipopt"
@@ -56,6 +66,15 @@ function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
                      mip_solver = mip_solver,
                      log_levels = [])
     end
+
+    if optimizer == "knitro"
+        solver = JuMP.with_optimizer(KNITRO.Optimizer)
+    end
+
+    if optimizer == "scip"
+        solver = JuMP.with_optimizer(SCIP.Optimizer)
+    end
+
     return solver
 
 end
