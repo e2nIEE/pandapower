@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
 import os
 from functools import partial
 
@@ -412,7 +413,7 @@ def test_storage_opt():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-def test_ost_opt():
+def test_ots_opt():
     net = nw.case5()
     branch_status = net["line"].loc[:, "in_service"].values
     assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]).astype(bool), branch_status.astype(bool))
@@ -427,6 +428,29 @@ def test_ost_opt():
     assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
+def assert_pf(net):
+    custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
+                               "test_files", "run_powermodels_powerflow.jl")
+    pp.runpm(net, julia_file=custom_file, pm_model="ACPPowerModel")
+    va_pm = copy.copy(net.res_bus.va_degree)
+    vm_pm = copy.copy(net.res_bus.vm_pu)
+
+    pp.runpp(net)
+    va_pp = copy.copy(net.res_bus.va_degree)
+    vm_pp = copy.copy(net.res_bus.vm_pu)
+
+    assert np.allclose(va_pm, va_pp)
+    assert np.allclose(vm_pm, vm_pp)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_ac_powerflow_simple():
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0.
+    assert_pf(net)
+    # net.trafo.loc[0, "shift_degree"] = 30.
+    # assert_pf(net)
+
+
 if __name__ == '__main__':
     pytest.main([__file__])
-    # test_voltage_angles()

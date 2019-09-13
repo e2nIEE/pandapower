@@ -16,7 +16,7 @@ from pandapower.opf.pm_tnep import read_tnep_results
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
-          correct_pm_network_data=True):  # pragma: no cover
+          correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt"):  # pragma: no cover
     """
     Runs a power system optimization using PowerModels.jl. with a custom julia file.
     
@@ -66,14 +66,14 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data)
     _runpm(net)
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
-                 pm_model="DCPPowerModel", pm_solver="ipopt", correct_pm_network_data=True):  # pragma: no cover
+                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt"):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
     
@@ -126,8 +126,8 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
+                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver)
     _runpm(net)
 
 
