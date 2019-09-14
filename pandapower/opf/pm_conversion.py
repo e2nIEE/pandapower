@@ -315,6 +315,10 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
 def add_pm_options(pm, net):
     if "pm_solver" in net._options:
         pm["pm_solver"] = net._options["pm_solver"]
+    if "pm_mip_solver" in net._options:
+        pm["pm_mip_solver"] = net._options["pm_mip_solver"]
+    if "pm_nl_solver" in net._options:
+        pm["pm_nl_solver"] = net._options["pm_nl_solver"]
     if "pm_model" in net._options:
         pm["pm_model"] = net._options["pm_model"]
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]

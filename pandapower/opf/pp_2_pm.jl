@@ -67,8 +67,21 @@ function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
                      log_levels = [])
     end
 
+    if optimizer == "juniper" && nl == "gurobi" && mip == "cbc"
+        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = log_level)
+        nl_solver = JuMP.with_optimizer(Gurobi.Optimizer)
+        solver = JuMP.with_optimizer(Juniper.Optimizer,
+                     nl_solver = nl_solver,
+                     mip_solver = mip_solver,
+                     log_levels = [])
+    end
+
     if optimizer == "knitro"
         solver = JuMP.with_optimizer(KNITRO.Optimizer)
+    end
+
+    if optimizer == "cbc"
+        solver = JuMP.with_optimizer(Cbc.Optimizer)
     end
 
     if optimizer == "scip"
