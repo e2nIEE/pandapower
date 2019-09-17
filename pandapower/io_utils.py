@@ -449,7 +449,7 @@ class JSONSerializableClass(object):
     @classmethod
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
-        return JSONSerializableClass.from_dict(d)
+        return cls.from_dict(d)
 
 
 def restore_jsoned_objects(net, obj_hook=pp_hook):
