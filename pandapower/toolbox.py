@@ -580,6 +580,33 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
+def reindex_buses(net, bus_lookup):
+    """
+    Changes the index of net.bus and considers the new bus indices in all other pandapower element
+    tables.
+
+    INPUT:
+      **net** - pandapower network
+
+      **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
+    """
+    net.bus.index = get_indices(net.bus.index, bus_lookup)
+    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+
+    for element, value in element_bus_tuples():
+        net[element][value] = get_indices(net[element][value], bus_lookup)
+    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
+    bb_switches = net.switch[net.switch.et == "b"]
+    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    bus_meas = net.measurement.element_type == "bus"
+    net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"],
+                                                           bus_lookup)
+    side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
+    net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
+                                                         bus_lookup)
+    return bus_lookup
+
+
 def create_continuous_bus_index(net, start=0, store_old_index=False):
     """
     Creates a continuous bus index starting at 'start' and replaces all
@@ -600,20 +627,7 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
         net.bus["old_index"] = net.bus.index.values
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
-    net.bus.index = new_bus_idxs
-    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
-
-    for element, value in element_bus_tuples():
-        net[element][value] = get_indices(net[element][value], bus_lookup)
-    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
-    bb_switches = net.switch[net.switch.et == "b"]
-    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
-    bus_meas = net.measurement.element_type == "bus"
-    net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"],
-                                                           bus_lookup)
-    side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
-    net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
-                                                         bus_lookup)
+    reindex_buses(net, bus_lookup)
     return bus_lookup
 
 
@@ -772,12 +786,18 @@ def drop_out_of_service_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[~net.line.in_service].index
     drop_lines(net, inactive_lines)
+    inactive_res_lines = net.res_line.index.intersection(inactive_lines)
+    net.res_line.drop(inactive_res_lines, inplace=True)
 
     inactive_trafos = net.trafo[~net.trafo.in_service].index
     drop_trafos(net, inactive_trafos, table='trafo')
+    inactive_res_trafos = net.res_trafo.index.intersection(inactive_trafos)
+    net.res_trafo.drop(inactive_res_trafos, inplace=True)
 
     inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
     drop_trafos(net, inactive_trafos3w, table='trafo3w')
+    inactive_res_trafos3w = net.res_trafo3w.index.intersection(inactive_trafos3w)
+    net.res_trafo3w.drop(inactive_res_trafos3w, inplace=True)
 
     do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
         set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
@@ -787,8 +807,10 @@ def drop_out_of_service_elements(net):
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
     drop_buses(net, inactive_buses, drop_elements=True)
+    inactive_res_buses = net.res_bus.index.intersection(inactive_buses)
+    net.res_bus.drop(inactive_res_buses, inplace=True)
 
-    # TODO: the following is not necessary anymore?
+    # removes inactive elements other than buses, trafos and lines
     for element in net.keys():
         if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
                 and isinstance(net[element], pd.DataFrame) \
@@ -803,7 +825,7 @@ def drop_out_of_service_elements(net):
                 net[res_element].drop(drop_res_idx, inplace=True)
             
             if len(drop_idx) > 0:
-                logger.info("dropped %d %s elements!" % (len(drop_idx), element))
+                logger.debug("dropped %d %s elements!" % (len(drop_idx), element))
 
 
 def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):

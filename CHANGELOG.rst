@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] reindex_buses() toolbox function
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters
 - [ADDED] consideration of result tables in toolbox functions drop...
 - [ADDED] jupyter notebook examples for time series
