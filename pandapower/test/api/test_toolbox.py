@@ -105,6 +105,28 @@ def test_add_column_from_element_to_elements():
     assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
 
 
+def test_reindex_buses():
+    net_orig = nw.example_simple()
+    net = nw.example_simple()
+
+    to_add = np.random.randint(0, 1000)
+    new_bus_idxs = np.array(list(net.bus.index)) + to_add
+    bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
+    # a more complexe bus_lookup of course should also work, but this one is easy to check
+    pp.reindex_buses(net, bus_lookup)
+
+    for elm in net.keys():
+        if isinstance(net[elm], pd.DataFrame) and net[elm].shape[0]:
+            cols = pd.Series(net[elm].columns)
+            bus_cols = cols.loc[cols.str.contains("bus")]
+            if len(bus_cols):
+                for bus_col in bus_cols:
+                    assert all(net[elm][bus_col] == net_orig[elm][bus_col] + to_add)
+            if elm == "bus":
+                assert all(np.array(list(net[elm].index)) == np.array(list(
+                    net_orig[elm].index)) + to_add)
+
+
 def test_continuos_bus_numbering():
     net = pp.create_empty_network()
 
