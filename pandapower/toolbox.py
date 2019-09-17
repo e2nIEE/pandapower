@@ -1022,6 +1022,11 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     p2 = create_empty_network()
 
+    net_parameters  = ["name", "f_hz"]
+    for net_parameter in net_parameters:
+        if net_parameter in net.keys():
+            p2[net_parameter] = net[net_parameter]
+
     p2.bus = net.bus.loc[buses]
     for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
                            other_elements=False, res_elements=False):
@@ -1042,6 +1047,18 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
+
+    def select_cost_df(net, p2, cost_type):
+        selected_idx = []
+        for idx in net[cost_type].index:
+            et = net[cost_type]["et"].loc[idx]
+            element = net[cost_type]["element"].loc[at]
+            if element in net[et].index:
+                selected_idx.append(idx)
+        p2[cost_type] = net[cost_type].loc[selected_idx]
+
+    select_cost_df(net, p2, "poly_cost")
+    select_cost_df(net, p2, "pwl_cost")
 
     if include_results:
         for table in net.keys():
