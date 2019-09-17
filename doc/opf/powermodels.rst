@@ -8,7 +8,7 @@ Installation
 
 If you are not yet using Julia, install it. Note that you need a version that is supported PowerModels, PyCall and pyjulia for the interface to work. Currently, `Julia 1.1 <https://julialang.org/downloads/>`_ is the most recent version of Julia that supports all these packages.
 
-.. note:: You don't necessarily need a Julia IDE if you are using PowerModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation.html>`_. Also, PyCharm has a Julia Plugin.
+.. note:: You don't necessarily need a Julia IDE if you are using PowerModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation>`_. Also, PyCharm has a Julia Plugin.
 
 1. Add the Julia binary folder (e.g. /Julia-1.1.0/bin) to the `system variable PATH <https://www.computerhope.com/issues/ch000549.htm>`_. Providing the path is correct, you can now enter the julia prompt by executing :code:`julia` in your shell.
 
@@ -23,7 +23,7 @@ If you are not yet using Julia, install it. Note that you need a version that is
 
 5. To call Julia from Python, install the pyjulia package with :code:`pip install julia`. Afterwards, test if everything works by importing PowerModels from Python with: :code:`from julia.PowerModels import run_ac_opf`. This takes some time, since Python starts a julia instance in the background, but it if the import completes without error everything is configured correctly and you can now use PowerModels to optimize pandapower networks.
 
-.. warning:: **Windows 10 only:** A bug currently makes it necessary to modify a file of the pyjulia package. The exact line which needs to be modified depends on how you installed pyjulia. To find the exact line, have a look at your traceback after you execute the command :code:`from julia import Main`, e.g. in Pycharm (Corresponding `Github Issue <https://github.com/JuliaPy/pyjulia/issues/67#issuecomment-508407747>`_):
+.. warning:: A bug currently makes it necessary to modify a file of the pyjulia package. The exact line which needs to be modified depends on how you installed pyjulia. To find the exact line, have a look at your traceback after you execute the command :code:`from julia import Main`, e.g. in Pycharm (Corresponding `Github Issue <https://github.com/JuliaPy/pyjulia/issues/67#issuecomment-508407747>`_):
 
     .. code-block::
 
