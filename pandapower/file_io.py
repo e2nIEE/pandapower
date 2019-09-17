@@ -352,6 +352,8 @@ def from_json_string(json_string, convert=False):
 
     """
     net = json.loads(json_string, cls=PPJSONDecoder)
+#    if isinstance(net, dict):
+#        net = pandapowerNet(net)
     restore_jsoned_objects(net)
 
     if convert:
