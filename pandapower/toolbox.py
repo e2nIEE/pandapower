@@ -1092,7 +1092,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         selected_idx = []
         for idx in net[cost_type].index:
             et = net[cost_type]["et"].loc[idx]
-            element = net[cost_type]["element"].loc[at]
+            element = net[cost_type]["element"].at[idx]
             if element in net[et].index:
                 selected_idx.append(idx)
         p2[cost_type] = net[cost_type].loc[selected_idx]
