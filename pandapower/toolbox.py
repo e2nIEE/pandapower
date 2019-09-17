@@ -795,6 +795,13 @@ def drop_out_of_service_elements(net):
                 and "in_service" in net[element].columns:
             drop_idx = net[element].query("not in_service").index
             net[element].drop(drop_idx, inplace=True)
+            
+            # res_element
+            res_element = "res_" + element
+            if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
+                drop_res_idx = net[res_element].index.intersection(drop_idx)
+                net[res_element].drop(drop_res_idx, inplace=True)
+            
             if len(drop_idx) > 0:
                 logger.info("dropped %d %s elements!" % (len(drop_idx), element))
 
@@ -842,6 +849,8 @@ def drop_buses(net, buses, drop_elements=True):
     """
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+    res_buses = net.res_line.index.intersection(buses)
+    net["res_bus"].drop(res_buses, inplace=True)
     if drop_elements:
         drop_elements_at_buses(net, buses)
 
@@ -870,6 +879,11 @@ def drop_elements_at_buses(net, buses):
             else:
                 n_el = net[element].shape[0]
                 net[element].drop(eid, inplace=True)
+                # res_element
+                res_element = "res_" + element
+                if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
+                    res_eid = net[res_element].index.intersection(eid)
+                    net[res_element].drop(res_eid, inplace=True)
                 if net[element].shape[0] < n_el:
                     logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
 
@@ -891,6 +905,8 @@ def drop_trafos(net, trafos, table="trafo"):
 
     # drop the trafos
     net[table].drop(trafos, inplace=True)
+    res_trafos = net["res_" + table].index.intersection(trafos)
+    net["res_" + table].drop(res_trafos, inplace=True)
     logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
 
 
@@ -906,6 +922,8 @@ def drop_lines(net, lines):
     # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
+    res_lines = net.res_line.index.intersection(lines)
+    net["res_line"].drop(res_lines, inplace=True)
     logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
 
 

@@ -1,5 +1,7 @@
 Change Log
 =============
+- [ADDED] toolbox function select_subnet now also copies cost data and net parameters
+- [ADDED] consideration of result tables in toolbox functions drop...
 - [ADDED] jupyter notebook examples for time series
 - [ADDED] control and timeseries module
 - [ADDED] jupyter notebook for power storage optimization with PowerModels.jl
