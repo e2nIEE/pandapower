@@ -355,6 +355,15 @@ def from_json_string(json_string, convert=False):
 #    if isinstance(net, dict):
 #        net = pandapowerNet(net)
     restore_jsoned_objects(net)
+    # this can be removed in the future
+    # now net is saved with "_module", "_class", "_object"..., so json.load already returns
+    # pandapowerNet. Older files don't have it yet, and are loaded as dict.
+    # After some time, this part can be removed.
+    if not isinstance(net, pandapowerNet):
+        warn("This net is saved in older format, which will not be supported in future.\r\n"
+             "Please resave your grid using the current pandapower version.",
+             DeprecationWarning)
+        net = from_json_dict(net)
 
     if convert:
         convert_format(net)
