@@ -318,28 +318,30 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
     # Todo: Voltage dependent loads
     elements = ["storage", "ward", "xward"]
     elements_3ph = ["load", "sgen", "asymmetric_load", "asymmetric_sgen"]
-
+    sign = -1  # Load/Consumption is considered negative power after pandapower 2.0 changes
     for element in elements:
         if len(net[element]):
             write_pq_results_to_element(net,net._ppc1, element)
             p_el, q_el, bus_el = get_p_q_b(net, element)
-            pA = np.hstack([pA, p_el/3])
-            pB = np.hstack([pB, p_el/3])
-            pC = np.hstack([pC, p_el/3])
-            qA = np.hstack([qA, q_el/3 if ac else np.zeros(len(p_el))])
-            qB = np.hstack([qB, q_el/3 if ac else np.zeros(len(p_el))])
-            qC = np.hstack([qC, q_el/3 if ac else np.zeros(len(p_el))])
+            pA = np.hstack([pA, sign * p_el/3])
+            pB = np.hstack([pB, sign * p_el/3])
+            pC = np.hstack([pC, sign * p_el/3])
+            qA = np.hstack([qA, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
+            qB = np.hstack([qB, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
+            qC = np.hstack([qC, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
             b = np.hstack([b, bus_el])
     for element in elements_3ph:
         if len(net[element]):
+            if element in ['sgen','asymmetric_sgen']:
+                sign = 1
             write_pq_results_to_element_3ph(net, element)
             p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(net, element)
-            pA = np.hstack([pA, p_el_A])
-            pB = np.hstack([pB, p_el_B])
-            pC = np.hstack([pC, p_el_C])
-            qA = np.hstack([qA, q_el_A if ac else np.zeros(len(p_el_A))])
-            qB = np.hstack([qB, q_el_B if ac else np.zeros(len(p_el_B))])
-            qC = np.hstack([qC, q_el_C if ac else np.zeros(len(p_el_C))])
+            pA = np.hstack([pA, sign * p_el_A])
+            pB = np.hstack([pB, sign * p_el_B])
+            pC = np.hstack([pC, sign * p_el_C])
+            qA = np.hstack([qA, sign * q_el_A if ac else np.zeros(len(p_el_A))])
+            qB = np.hstack([qB, sign * q_el_B if ac else np.zeros(len(p_el_B))])
+            qC = np.hstack([qC, sign * q_el_C if ac else np.zeros(len(p_el_C))])
             b = np.hstack([b, bus_el])
 
     # sum pq results from every element to be written to net['bus'] later on

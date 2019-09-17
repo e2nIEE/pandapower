@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-@author: sghosh (Intern : Feb 2018-July 2018)
+@author: Shankho Ghosh (sghosh) (started Feb 2018)
 @author: Alexander Prostejovsky (alepros), Technical University of Denmark
 """
 from time import time
@@ -13,7 +13,7 @@ from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.makeYbus import makeYbus
-from pandapower.pypower.idx_bus import PD, QD
+from pandapower.pypower.idx_bus import GS, BS, PD , QD
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed,\
     _check_bus_index_and_print_warning_if_high,\
     _check_gen_index_and_print_warning_if_high, \
@@ -41,7 +41,11 @@ class LoadflowNotConverged(ppException):
     Exception being raised in case loadflow did not converge.
     """
     pass
-
+class Not_implemented(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
 
 def _get_pf_variables_from_ppci(ppci):
     """
@@ -50,21 +54,15 @@ def _get_pf_variables_from_ppci(ppci):
     # default arguments
     if ppci is None:
         ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
-
     # get data for calc
     base_mva, bus, gen, branch = \
         ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-
     # get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
-
     # generator info
     on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
     gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
-
     # initial state
-    # V0    = ones(bus.shape[0])            # flat start
     v0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
     v0[gbus] = gen[on, VG] / abs(v0[gbus]) * v0[gbus]
     ref_gens = ppci["internal"]["ref_gens"]
@@ -100,7 +98,6 @@ def _load_mapping(net, ppci1):
             params['Q'+phase+typ] = np.array([])  # Aggregated reactive Power
             params['b'+phase+typ] = np.array([], dtype=int)  # bus map for phases
             params['b'+typ] = np.array([], dtype=int)  # aggregated bus map(s_abc)
-            params['b_imp'+typ] = np.array([], dtype=int)
             for element in load_elements:
                 sign = -1 if element.endswith("sgen") else 1
                 elm = net[element]
@@ -144,7 +141,7 @@ def _load_mapping(net, ppci1):
 # 3 phase algorithm function
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", 
-              max_iteration="auto", tolerance_mva=1e-8, trafo_model="t", 
+              max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
               trafo_loading="current", enforce_q_lims=False, numba=True, 
               recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0, v_debug=False, **kwargs):
@@ -200,19 +197,15 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         **tolerance_mva** (float, 1e-8) - loadflow termination condition 
         referring to P / Q mismatch of node power in MVA
 
-        **trafo_model** (str, "t") ('pi' Yet to be implemented in 3 Phase load flow) - transformer equivalent model
-        pandapower provides two equivalent circuit models for the transformer:
+        **trafo_model**
+        - transformer equivalent models
 
             - "t" - transformer is modeled as equivalent with the T-model.
-            - "pi" - transformer is modeled as equivalent PI-model. This is 
-            not recommended, since it is less exact than the T-model. 
-            It is only recommended for valdiation with other software 
-            that uses the pi-model.
+            - "pi" - This is not recommended, since it is less exact than the T-model. 
+             So, for three phase load flow, its not
+            implemented
         
-        But, for three phase analysis we have considered only T model, which 
-        is internally converted to pi model
-        
-        **trafo_loading** (str, "current") (Not tested with 3 Phase load flow) - mode of calculation for 
+        **trafo_loading** (str, "current") - mode of calculation for 
         transformer loading
 
             Transformer loading can be calculated relative to the rated 
@@ -227,7 +220,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - "power" - transformer loading is given as ratio of apparent 
             power flow to the rated apparent power of the transformer.
 
-        **enforce_q_lims** (bool, False) (Not tested with 3 Phase load flow) - respect generator reactive power 
+        **enforce_q_lims** (bool, False) 
+        
+        (Not tested with 3 Phase load flow) - respect generator reactive power 
         limits
 
             If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar
@@ -246,12 +241,16 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             Sparse Graph Routines is perfomed. If check finds unsupplied buses,
             they are set out of service in the ppc
 
-        **voltage_depend_loads** (bool, True)(Not tested with 3 Phase load flow)  - consideration of 
+        **voltage_depend_loads** (bool, True)
+        
+        (Not tested with 3 Phase load flow)  - consideration of 
         voltage-dependent loads. If False, net.load.const_z_percent and 
         net.load.const_i_percent are not considered, i.e. net.load.p_mw and 
         net.load.q_mvar are considered as constant-power loads.
 
-        **consider_line_temperature** (bool, False) (Not tested with 3 Phase load flow) - adjustment of line 
+        **consider_line_temperature** (bool, False) 
+        
+        (Not tested with 3 Phase load flow) - adjustment of line 
         impedance based on provided line temperature. If True, net.line must 
         contain a column "temperature_degree_celsius". The temperature 
         dependency coefficient alpha must be provided in the net.line.alpha
@@ -267,23 +266,33 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             matrices for the powerflow, which leads to significant speed 
             improvements.
 
-        **switch_rx_ratio** (float, 2) (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches. 
+        **switch_rx_ratio** (float, 2) 
+        
+        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches. 
         If impedance is zero, buses connected by a closed bus-bus switch 
         are fused to model an ideal bus. Otherwise, they are modelled 
         as branches with resistance defined as z_ohm column in switch 
         table and this parameter
 
-        **delta_q** (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims" 
+        **delta_q** 
+        
+        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims" 
         in kvar - helps convergence in some cases.
 
-        **trafo3w_losses** (Not tested with 3 Phase load flow) - defines where open loop losses of three-winding
+        **trafo3w_losses** 
+        
+        (Not tested with 3 Phase load flow) - defines where open loop losses of three-winding
         transformers are considered. Valid options are "hv", "mv", "lv" 
         for HV/MV/LV side or "star" for the star point.
 
-        **v_debug** (bool, False) (Not tested with 3 Phase load flow) - if True, voltage values in each 
+        **v_debug** (bool, False) 
+        
+        (Not tested with 3 Phase load flow) - if True, voltage values in each 
         newton-raphson iteration are logged in the ppc
 
-        **init_vm_pu** (string/float/array/Series, None) (Not tested with 3 Phase load flow) - Allows to define 
+        **init_vm_pu** (string/float/array/Series, None) 
+        
+        (Not tested with 3 Phase load flow) - Allows to define 
         initialization specifically for voltage magnitudes. 
         Only works with init == "auto"!
 
@@ -297,7 +306,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - a pandas Series with a voltage magnitude value for each bus
             (indexes have to match the indexes in net.bus)
 
-         **init_va_degree** (string/float/array/Series, None) (Not tested with 3 Phase load flow)-
+         **init_va_degree** (string/float/array/Series, None) 
+         
+         (Not tested with 3 Phase load flow)-
         Allows to define initialization specifically for voltage angles. 
         Only works with init == "auto"!
 
@@ -312,8 +323,10 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             - a pandas Series with a voltage angle value for each bus (indexes 
             have to match the indexes in net.bus)
 
-        **recycle** (dict, none)(Not tested with 3 Phase load flow) - Reuse of internal powerflow variables for 
-        time series calculation(Not tested with 3 Phase load flow) 
+        **recycle** (dict, none)
+        
+        (Not tested with 3 Phase load flow) - Reuse of internal powerflow variables for 
+        time series calculation
 
             Contains a dict with the following parameters:
             _is_elements: If True in service elements are not filtered again
@@ -323,7 +336,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from 
             ppc["internal"] and not reconstructed
 
-        **neglect_open_switch_branches** (bool, False) (Not tested with 3 Phase load flow) - If True no auxiliary 
+        **neglect_open_switch_branches** (bool, False) 
+        
+        (Not tested with 3 Phase load flow) - If True no auxiliary 
         buses are created for branches when switches are opened at the branch.
         Instead branches are set out of service
 
@@ -368,6 +383,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
 #    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
+    if trafo_model == 'pi':
+        raise Not_implemented("Three phase Power Flow doesnot support pi model\
+                                because of lack of accuracy")
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
         hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
@@ -511,11 +529,19 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
+    # TODO: Add reference to paper to explain the following steps
+    # This is required since the ext_grid power results are not correct if its
+    # not done
+    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+    ppci0["bus"][ref, GS] -= gs_eg
+    ppci0["bus"][ref, BS] -= bs_eg
+    y_0_pu, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+    # Bus, Branch, and Gen  power values
     bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, y_0_pu, y_0_f, y_0_t, v_012_it[0, :].flatten(),
                                  sl_bus, ref_gens)
     bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, y_1_pu, y_1_f, y_1_t, v_012_it[1, :].flatten(),
                                  sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, y_2_pu, y_1_f, y_1_t, v_012_it[2, :].flatten(),
+    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, y_1_pu, y_1_f, y_1_t, v_012_it[2, :].flatten(),
                                  sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
@@ -529,7 +555,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     ppci0["internal"]["Yt"] = y_0_t
     ppci1["internal"]["Yt"] = y_1_t
     ppci2["internal"]["Yt"] = y_2_t
-    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_it)
+    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, v_012_it)
     s_012_res = S_from_VI_elementwise(v_012_it, i_012_res) * ppci1["baseMVA"]
     eg_is_mask = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
@@ -570,13 +596,11 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
 
     return count, v_012_it, i_012_res
 
-
-def _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_pu):
-    i012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),
-                           I1_from_V012(v_012_pu, y_1_pu),
-                           I2_from_V012(v_012_pu, y_2_pu))  # Change it to y_1 to remove ext_grid impedance
-    return i012_pu
-
+def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
+    I012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),
+                            I1_from_V012(v_012_pu, y_1_pu),
+                            I2_from_V012(v_012_pu, y_1_pu))
+    return I012_pu
 
 def _get_y_bus(ppci0, ppci1, ppci2, recycle):
     if recycle is not None and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \

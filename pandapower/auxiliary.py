@@ -646,6 +646,7 @@ def _check_if_numba_is_installed(numba):
 # Convert to three decoupled sequence networks
 # =============================================================================
 
+
 def X012_to_X0(X012):
     return np.transpose(X012[0, :])
 
@@ -712,7 +713,7 @@ def I0_from_V012(V012, Y):
     if type(Y)in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix] :
         return np.asarray(np.matmul(Y.todense(), V0))
     else:
-        return np.asarray(np.matmul(Y.todense(), V0))
+        return np.asarray(np.matmul(Y, V0))
 
 
 def I1_from_V012(V012, Y):
@@ -755,11 +756,14 @@ def I_from_V(Y, V):
 # =============================================================================
 # Calculating Power
 # =============================================================================
+
 def S_from_VI_elementwise(V, I):
     return np.multiply(V, I.conjugate())
 
+
 def I_from_SV_elementwise(S, V):
     return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero
+
 
 def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
     if n_res is None:
@@ -772,6 +776,7 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
     Iabc = sequence_to_phase(I012[:, idx])
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
+
 def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)

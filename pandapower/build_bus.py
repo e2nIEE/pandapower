@@ -528,7 +528,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     # 1,0 pu vm  --> Power Consumed/ext_grid vm
     ppc["bus"][buses, GS] = gs * net.sn_mva/eg.vm_pu  # Shunt is in MW at 1 pu voltage 
     ppc["bus"][buses, BS] = bs * net.sn_mva/eg.vm_pu  # Shunt is in MVar at 1 pu voltage
-    return gs,bs
+    return gs * net.sn_mva/eg.vm_pu,bs * net.sn_mva/eg.vm_pu
 
 
 def _add_gen_sc_impedance(net, ppc):

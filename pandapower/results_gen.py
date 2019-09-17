@@ -6,7 +6,7 @@
 
 import numpy as np
 from numpy import complex128
-from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_bus import VM, VA,BASE_KV
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
@@ -125,14 +125,16 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
-    V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM]
+    V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
-
+    
     S012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
-    S012[:, eg_idx_ppc] = np.array([(ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
+    S012[:, eg_idx_ppc] = np.array([(ppc["gen"][eg_idx_ppc, PG] + 1j \
+                                   * ppc["gen"][eg_idx_ppc, QG]) \
+                                    for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, Vabc = SVabc_from_SV012(S012, V012/ np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))

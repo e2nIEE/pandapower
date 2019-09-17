@@ -81,13 +81,13 @@ def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
     V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
                          np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
     S012_f = np.array([((ppc["branch"][:, PF].real +
-                    1j * ppc["branch"][:, QF].real) * 1e3)
+                    1j * ppc["branch"][:, QF].real) )
                     for ppc in [ppc0, ppc1, ppc2]])
     S012_t = np.array([((ppc["branch"][:, PT].real +
-                    1j * ppc["branch"][:, QT].real) * 1e3)
+                    1j * ppc["branch"][:, QT].real) )
                     for ppc in [ppc0, ppc1, ppc2]])
-    I012_f = I_from_SV_elementwise(S012_f * 1e-3, V012_f / np.sqrt(3))
-    I012_t = I_from_SV_elementwise(S012_t * 1e-3, V012_t / np.sqrt(3))
+    I012_f = I_from_SV_elementwise(S012_f , V012_f / np.sqrt(3))
+    I012_t = I_from_SV_elementwise(S012_t , V012_t / np.sqrt(3))
 
     return I012_f, S012_f, V012_f, I012_t, S012_t, V012_t
 
