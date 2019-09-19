@@ -7,9 +7,8 @@ Tests 3 phase power flow algorithm
 import pandapower as pp
 import numpy as np
 import pytest
-from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.test.consistency_checks import runpp_with_consistency_checks,runpp_3ph_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks
 
 @pytest.fixture
 def net():
@@ -61,7 +60,6 @@ def check_it(net):
 def test_2bus_network(net):
     # -o---o
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     check_it(net)    
@@ -72,7 +70,6 @@ def test_2bus_network_single_isolated_busses(net):
     pp.create_bus(net, vn_kv=110)
     pp.create_bus(net, vn_kv=110, in_service=False)
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     check_it(net)    
@@ -86,7 +83,6 @@ def test_2bus_network_isolated_net_part(net):
     pp.create_asymmetric_load(net, b2, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
                               p_c_mw=10, q_c_mvar=5)
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     check_it(net)
@@ -100,7 +96,6 @@ def test_2bus_network_singel_oos_bus(net):
     pp.create_asymmetric_load(net, b1, p_a_mw=-5, q_a_mvar=5, p_b_mw=-1, q_b_mvar=1.5,
                               p_c_mw=-1, q_c_mvar=.5)
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
 
@@ -108,13 +103,11 @@ def test_2bus_network_singel_oos_bus(net):
 def test_out_serv_load(net):  
     # <-x--o------o
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     check_it(net)
     pp.create_asymmetric_load(net, 5, p_a_mw=50, q_a_mvar=100, p_b_mw=29, q_b_mvar=38,
                               p_c_mw=10, q_c_mvar=5, in_service=False)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     check_it(net)
@@ -156,7 +149,6 @@ def test_4bus_network():
                               p_c_mw=10, q_c_mvar=5)
     pp.create_asymmetric_load(net, busp, p_a_mw=50, q_a_mvar=20, p_b_mw=60, q_b_mvar=20,
                               p_c_mw=10, q_c_mvar=5)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     
@@ -241,7 +233,7 @@ def test_3ph_bus_mapping_order():
     pp.add_zero_impedance_parameters(net)
     pp.create_load(net, b2, p_mw=0.030, q_mvar=0.030)
     pp.runpp(net)
-    runpp_3ph(net)
+    pp.runpp_3ph(net)
     assert net['converged']
     
     assert np.allclose(net.res_bus_3ph.vm_a_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
@@ -273,8 +265,6 @@ def test_3ph_two_bus_line_powerfactory():
     pp.create_load(net, b2, p_mw=0.010, q_mvar=0.010)
     pp.create_asymmetric_load(net, b2, p_a_mw=0.020, q_a_mvar=0.010, p_b_mw=0.015, q_b_mvar=0.005, p_c_mw=0.025,
                               q_c_mvar=0.010)
-    
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     
@@ -377,7 +367,6 @@ def test_trafo_asym():
                 for vc in ["YNyn", "Dyn", "Yzn"]:  # ,"Yyn"]:
                     net = pp.create_empty_network(sn_mva=100)
                     make_nw(net, bushv, tap_ps, loadtyp, vc)
-#                    runpp_3ph(net)
                     runpp_3ph_with_consistency_checks(net)
                     assert net['converged']
                     check_results(net, vc, results[bushv][tap_ps][loadtyp][vc])
@@ -387,7 +376,6 @@ def test_2trafos():
     net = pp.create_empty_network() 
     make_nw(net, 10., 0., "wye", "YNyn")
     make_nw(net, 10., 0., "wye", "YNyn")
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
@@ -421,9 +409,7 @@ def test_3ph_isolated_nodes():
     pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
     pp.create_line(net, from_bus=busn, to_bus=busk, length_km=50.0, std_type="example_type")
     pp.create_line(net, from_bus=busl, to_bus=busk, length_km=50.0, std_type="example_type")
-
     pp.add_zero_impedance_parameters(net)
-#    runpp_3ph(net)
     runpp_3ph_with_consistency_checks(net)
     assert net['converged']
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vm_a_pu", "va_a_degree", "vm_b_pu",
