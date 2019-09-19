@@ -48,5 +48,4 @@ def ieee_european_lv_asymmetric(scenario="on_mid"):
     else:
         raise ValueError("Unknown scenario %s - chose 'on_mid' or 'off_start' or 'off_start'" % scenario)
 
-    runpp_3ph(net)
     return net

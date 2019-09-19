@@ -9,6 +9,7 @@
 from time import time
 import numpy as np
 from numpy import flatnonzero as find, pi, exp
+from pandapower import LoadflowNotConverged
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.pd2ppc import _pd2ppc
@@ -36,11 +37,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 class Not_implemented(ppException):
     """
     Exception being raised in case loadflow did not converge.
@@ -473,7 +469,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = time()
-    while (s_mismatch > tolerance_mva).any() and count < 3*max_iteration:
+    while (s_mismatch > tolerance_mva).any() and count < 30*max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
@@ -525,7 +521,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = time() - t0
-    success = (count < 3 * max_iteration)
+    success = (count < 30 * max_iteration)
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
@@ -588,7 +584,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto",
         net["converged"] = False
         _clean_up(net, res=False)
         raise LoadflowNotConverged("Power Flow {0} did not converge after\
-                                {1} iterations!".format("nr", 3*max_iteration))
+                                {1} iterations!".format("nr", count))
     else:
         net["converged"] = True
 

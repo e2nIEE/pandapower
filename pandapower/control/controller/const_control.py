@@ -53,7 +53,7 @@ class ConstControl(Controller):
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=False, order=0, level=0,
-                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, **kwargs):
+                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, set_q_from_cosphi_3ph=False, **kwargs):
         # just calling init of the parent
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -74,6 +74,7 @@ class ConstControl(Controller):
         self.profile_name = profile_name
         self.scale_factor = scale_factor
         self.set_q_from_cosphi = set_q_from_cosphi
+        self.set_q_from_cosphi_3ph = set_q_from_cosphi_3ph
         self.applied = False
         self.initial_powerflow = False
         # write functions faster, depending on type of self.element_index
@@ -95,7 +96,17 @@ class ConstControl(Controller):
             self.net[self.element].loc[self.element_index, "q_mvar"] = \
                 self.net[self.element].loc[self.element_index, "p_mw"].values * np.tan(
                     np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
-
+        if self.set_q_from_cosphi_3ph:
+            self.net[self.element].loc[self.element_index, "q_a_mvar"] = \
+                self.net[self.element].loc[self.element_index, "p_a_mw"].values * np.tan(
+                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
+            self.net[self.element].loc[self.element_index, "q_b_mvar"] = \
+                self.net[self.element].loc[self.element_index, "p_b_mw"].values * np.tan(
+                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))        
+            self.net[self.element].loc[self.element_index, "q_c_mvar"] = \
+                self.net[self.element].loc[self.element_index, "p_c_mw"].values * np.tan(
+                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
+                
     def time_step(self, time):
         # get profiles from data source
         # copies value directly from datasource

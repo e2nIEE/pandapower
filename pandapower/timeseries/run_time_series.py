@@ -294,7 +294,6 @@ def run_timeseries(net, time_steps=None, output_writer=None, continue_on_diverge
 
     ts_variables, kwargs = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose, **kwargs)
 
-
     control_diagnostic(net)
     for i, time_step in enumerate(ts_variables["time_steps"]):
         print_progress(i, time_step, ts_variables["time_steps"], verbose, **kwargs)
