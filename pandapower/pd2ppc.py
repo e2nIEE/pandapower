@@ -609,8 +609,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     # ext_grid vm  --> Power consumed
     # 1,0 pu vm  --> Power Consumed/ext_grid vm    
-    ppc["bus"][buses, GS] = gs * net.sn_mva/eg.vm_pu
-    ppc["bus"][buses, BS] = bs * net.sn_mva/eg.vm_pu
+    ppc["bus"][buses, GS] = (gs * net.sn_mva) / eg.vm_pu
+    ppc["bus"][buses, BS] = (bs * net.sn_mva) / eg.vm_pu
 
 
 def _add_line_sc_impedance_zero(net, ppc):
