@@ -11,7 +11,7 @@ from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower import pp_dir
 
 
-def ieee_european_lv_asymmetric(scenario="on_mid"):
+def ieee_european_lv_asymmetric(scenario="thru_PF_on_mid"):
     """
     Loads the IEEE European LV network, a generic 0.416 kV network serviced by one 0.8 MVA MV/LV transformer
     station. The network supplies 906 LV buses and 55 1-PH loads
@@ -39,12 +39,20 @@ def ieee_european_lv_asymmetric(scenario="on_mid"):
     import pandapower.networks
     net = pandapower.networks.ieee_european_lv_asymmetric("off_start")
     """
-    if scenario == "on_mid":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_On_Peak_mid.json"))
-    elif scenario == "off_start":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_start.json"))
-    elif scenario == "off_end":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_end.json")) 
+    if scenario == "from_csv_on_mid":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "from_csv_IEEE_European_LV_On_Peak_mid.json"))
+    elif scenario == "thru_PF_on_mid":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "thru_PF_IEEE_European_LV_On_Peak_mid.json"))
+
+    elif scenario == "from_csv_off_start":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "from_csv_IEEE_European_LV_Off_Peak_start.json"))
+    elif scenario == "thru_PF_off_start":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "from_csv_IEEE_European_LV_Off_Peak_start.json"))
+        
+    elif scenario == "from_csv_off_end":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "from_csv_IEEE_European_LV_Off_Peak_end.json"))
+    elif scenario == "thru_PF_off_end":
+        net = pp.from_json(os.path.join(pp_dir, "networks", "from_csv_IEEE_European_LV_Off_Peak_end.json"))        
     else:
         raise ValueError("Unknown scenario %s - chose 'on_mid' or 'off_start' or 'off_start'" % scenario)
 

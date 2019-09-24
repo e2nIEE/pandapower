@@ -584,15 +584,15 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva\
                          needs to be specified for " % case + "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values/net.sn_mva
+    s_sc = eg["s_sc_%s_mva" % case].values
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified\
                          for external grid" % case)
     rx = eg["rx_%s" % case].values
-    
-    z_grid = c * (eg.vm_pu ** 2) / s_sc   # Correction: u**2/mva gives ohm
+
+    z_grid = c / s_sc
     if mode == 'pf_3ph':
-        z_grid = c * (eg.vm_pu ** 2)/ (s_sc / 3)  # Voltage remains same but 3 phase power divided to get 1 ph power
+        z_grid = c / (s_sc / 3)
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -607,10 +607,10 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid * 1j)
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
-    # ext_grid vm  --> Power consumed
-    # 1,0 pu vm  --> Power Consumed/ext_grid vm    
-    ppc["bus"][buses, GS] = (gs * net.sn_mva) / eg.vm_pu
-    ppc["bus"][buses, BS] = (bs * net.sn_mva) / eg.vm_pu
+    ppc["bus"][buses, GS] = gs
+    ppc["bus"][buses, BS] = bs    
+#    ppc["bus"][buses, GS] = (gs * net.sn_mva) / eg.vm_pu
+#    ppc["bus"][buses, BS] = (bs * net.sn_mva) / eg.vm_pu
 
 
 def _add_line_sc_impedance_zero(net, ppc):
