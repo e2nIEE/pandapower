@@ -1102,7 +1102,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if include_results:
         for table in net.keys():
-            if net[table] is None:
+            if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
+                                      net[table].shape[0]):
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
