@@ -1,5 +1,6 @@
 Change Log
 =============
+- [FIXDED] dtype at element parameter in cost tables
 - [ADDED] reindex_buses() toolbox function
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters
 - [ADDED] consideration of result tables in toolbox functions drop...
@@ -137,7 +138,7 @@ Change Log
 ----------------------
 
 - [ADDED] possibility to save networks to an sql database
-- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [CHANGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
 - [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
 - [FIXED] state estimation bug with phase shift transformers
 - [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception
