@@ -1,5 +1,6 @@
 Change Log
 =============
+- [CHANGED] OPF documentation and _check_necessary_opf_parameters()
 - [FIXDED] dtype at element parameter in cost tables
 - [ADDED] reindex_buses() toolbox function
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters

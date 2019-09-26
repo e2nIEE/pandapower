@@ -268,19 +268,22 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
+    Flexibilities can be defined in net.sgen / net.gen /net.load / net.storage
     net.sgen.controllable if a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
-        - net.sgen.min_p_mw / net.sgen.max_p_mw
-        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
-        - net.load.min_p_mw / net.load.max_p_mw
-        - net.load.min_q_mvar / net.load.max_q_mvar
         - net.gen.min_p_mw / net.gen.max_p_mw
         - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.dcline.max_p_mw
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
         - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
         - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
-        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.storage.min_p_mw / net.storage.max_p_mw
+        - net.storage.min_q_mvar / net.storage.max_q_mvar
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
