@@ -10,7 +10,6 @@ import logging as log
 import numpy as np
 
 logger = log.getLogger(__name__)
-from pandapower.control.run_control import run_control
 from pandapower.control import ContinuousTapControl
 
 def test_continuous_tap_control_lv():
@@ -37,7 +36,7 @@ def test_continuous_tap_control_lv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
@@ -56,7 +55,7 @@ def test_continuous_tap_control_lv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
@@ -74,7 +73,7 @@ def test_continuous_tap_control_lv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
@@ -104,7 +103,7 @@ def test_continuous_tap_control_hv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
@@ -124,7 +123,7 @@ def test_continuous_tap_control_hv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
@@ -142,7 +141,7 @@ def test_continuous_tap_control_hv():
                 % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"

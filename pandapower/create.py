@@ -229,6 +229,13 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq1_eur_per_mvar", dtype("f8")),
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
+        'controller': [
+                       ('controller', dtype(object)),
+                       ('in_service', "bool"),
+                       ('order', "float64"),
+                       ('level', dtype(object)),
+                       ("recycle", "bool"),
+                       ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
@@ -2670,3 +2677,4 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     net.poly_cost.loc[index, columns] = variables
     return index
 
+net = create_empty_network()

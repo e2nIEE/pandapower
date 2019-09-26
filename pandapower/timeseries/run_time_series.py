@@ -8,7 +8,7 @@ import numpy as np
 
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
-from pandapower.control.run_control import run_control, ControllerNotConverged, get_controller_order, \
+from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow
 from pandapower.control.util.controller_io import dump_controller
 from pandapower.control.util.diagnostic import control_diagnostic
@@ -124,7 +124,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control(net, ctrl_variables=ts_variables, **kwargs)
+        pp.runpp(net, run_control=True, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
