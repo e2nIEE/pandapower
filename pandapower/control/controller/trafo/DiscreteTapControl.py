@@ -63,7 +63,7 @@ class DiscreteTapControl(TrafoController):
         self.net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
     def is_converged(self):
-        if not self.tid in self.net[self.trafotable] or \
+        if not self.tid in self.net[self.trafotable].index or \
            not self.net[self.trafotable].at[self.tid, 'in_service']:
             return True
         u = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
