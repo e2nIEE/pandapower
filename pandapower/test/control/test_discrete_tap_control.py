@@ -7,7 +7,7 @@ import pandapower as pp
 from pandapower.control import DiscreteTapControl
 from pandapower.control.run_control import run_control
 import pytest
-import networks as nw
+import pandapower.networks as nw
 import logging as log
 
 logger = log.getLogger(__name__)
