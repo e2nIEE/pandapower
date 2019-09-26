@@ -12,7 +12,6 @@ import pandas as pd
 import pytest
 
 import pandapower.control as ct
-import pandapower as pp
 import logging
 from pandapower.control import ConstControl
 from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net

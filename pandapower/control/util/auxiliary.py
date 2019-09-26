@@ -61,18 +61,6 @@ def asarray(val, dtype=np.float64):
     return np_val
 
 
-def check_controller_frame(net):
-    """
-    check if net has controller DataFrame and if not, add it.
-    Purpose: to define at 1 place
-    """
-    if 'controller' not in net.keys():
-        columns = ['controller', 'in_service', 'order', 'level', 'recycle']
-        dtype = {'controller': object, 'in_service': bool, 'order': np.float64, 'level': object,
-                 'recycle': bool}
-        net['controller'] = pd.DataFrame(columns=columns).astype(dtype=dtype)
-
-
 def mute_control(net):
     """
     Use this function to set all controllers in net out of service, e. g. when you want to use the
@@ -80,7 +68,6 @@ def mute_control(net):
     :param net: pandapowerNet
     :return:
     """
-    check_controller_frame(net)
     net.controller['in_service'] = False
 
 
@@ -101,7 +88,6 @@ def get_controller_index_by_type(net, ctrl_type, idx=[]):
     """
     Returns controller indices of a given type as list.
     """
-    check_controller_frame(net)
     idx = idx if len(idx) else net.controller.index
     return [i for i in idx if isinstance(net.controller.controller.loc[i], ctrl_type)]
 
@@ -110,7 +96,6 @@ def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False
     """
     Returns controller indices of a given name of type as list.
     """
-    check_controller_frame(net)
     idx = idx if len(idx) else net.controller.index
     if case_sensitive:
         return [i for i in idx if str(net.controller.controller.loc[i]).split(" ")[0] == typename]
@@ -158,7 +143,6 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
             matches given ctrl_type or parameters
     """
     #    logger.debug(ctrl_type, parameters, idx)
-    check_controller_frame(net)
     idx = idx if len(idx) else net.controller.index
     if ctrl_type is not None:
         if isinstance(ctrl_type, str):
