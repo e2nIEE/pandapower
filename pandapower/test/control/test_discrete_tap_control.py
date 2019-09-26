@@ -8,9 +8,9 @@ from pandapower.control import DiscreteTapControl
 from pandapower.control.run_control import run_control
 import pytest
 import networks as nw
-import pplog
+import logging as log
 
-logger = pplog.getLogger(__name__)
+logger = log.getLogger(__name__)
 
 
 def test_discrete_tap_control_lv():

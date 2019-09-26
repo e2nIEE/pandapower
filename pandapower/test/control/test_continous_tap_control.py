@@ -5,11 +5,11 @@
 
 import pandapower as pp
 import pytest
-import networks as nw
-import pplog
+import pandapower.networks as nw
+import logging as log
 import numpy as np
 
-logger = pplog.getLogger(__name__)
+logger = log.getLogger(__name__)
 from pandapower.control.run_control import run_control
 from pandapower.control import ContinuousTapControl
 
