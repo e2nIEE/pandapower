@@ -103,7 +103,9 @@ class TrafoController(Controller):
                 raise ValueError("Trafo tap side (in net.%s) has to be either hv, mv or lv, "
                                  "but received %s for trafo %s" % (self.trafotable, tap_side,
                                                                    self.tid))
-
+        if self.net[self.trafotable].at[self.tid, "tap_step_percent"] < 0:
+            self.tap_side_coeff *= -1
+            
     def timestep(self):
         self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
 
