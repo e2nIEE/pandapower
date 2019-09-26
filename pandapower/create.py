@@ -415,7 +415,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
     if geodata is not None:
         if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tupel")
+            raise UserWarning("geodata must be given as (x, y) tuple")
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
     if coords is not None:
