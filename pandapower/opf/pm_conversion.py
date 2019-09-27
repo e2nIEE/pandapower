@@ -26,7 +26,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _runpm(net):  # pragma: no cover
+def convert_to_pm_structure(net):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -37,10 +37,20 @@ def _runpm(net):  # pragma: no cover
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     net._pm = pm
+    return net, pm, ppc, ppci
 
+
+def _runpm(net):  # pragma: no cover
+    # convert pandapower to power models file -> this is done in python
+    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    # call optinal callback function
     if net._options["pp_to_pm_callback"] is not None:
         net._options["pp_to_pm_callback"](net, ppci, pm)
-    result_pm = _call_powermodels(pm, net._options["julia_file"])
+    # writes pm json to disk, which is loaded afterwards in julia
+    buffer_file = dump_pm_json(pm)
+    # run power models optimization in julia
+    result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
+    # read results and write back to net
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net._pm_result = result_pm
     success = ppc["success"]
@@ -55,13 +65,21 @@ def _runpm(net):  # pragma: no cover
         logger.warning("OPF did not converge!")
 
 
-def _call_powermodels(pm, julia_file):  # pragma: no cover
-    temp_name = next(tempfile._get_candidate_names())
-    buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
+def dump_pm_json(pm, buffer_file=None):
+    # dump pm dict to buffer_file (*.json)
+    if buffer_file is None:
+        # if no buffer file is provided a random file name is generated
+        temp_name = next(tempfile._get_candidate_names())
+        buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
 
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
+    return buffer_file
+
+
+def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
+    # checks if julia works, otherwise raises an error
     try:
         import julia
         from julia import Main
@@ -73,6 +91,7 @@ def _call_powermodels(pm, julia_file):  # pragma: no cover
         raise UserWarning(
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
+    # import two julia scripts and runs powermodels julia_file
     Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
         run_powermodels = Main.include(julia_file)
@@ -121,11 +140,11 @@ def get_branch_angles(row, correct_pm_network_data):
     if correct_pm_network_data:
         if angmin < -60.:
             logger.debug("changed voltage angle minimum of branch {}, "
-                           "to -60 from {} degrees".format(int(row[0].real), angmin))
+                         "to -60 from {} degrees".format(int(row[0].real), angmin))
             angmin = -60.
         if angmax > 60.:
             logger.debug("changed voltage angle maximum of branch {} to 60. "
-                           "from {} degrees".format(int(row[0].real), angmax))
+                         "from {} degrees".format(int(row[0].real), angmax))
             angmax = 60.
     angmin = (angmin / 180.) * pi  # convert to p.u. as well
     angmax = (angmax / 180.) * pi  # convert to p.u. as well
