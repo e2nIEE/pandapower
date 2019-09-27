@@ -155,8 +155,9 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
     if net._options["mode"] == "opf":
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 100.
-        vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
+        # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
+        vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
         max_i_ka = line.max_i_ka.values
         df = line.df.values
         branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
