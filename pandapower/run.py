@@ -200,7 +200,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
-    if run_control and net.controller.controller.any():
+    if run_control and net.controller.in_service.any():
         from pandapower.control import run_control
         parameters = {**locals(), **kwargs}
         #disable run control for inner loop to avoid infinite loop
