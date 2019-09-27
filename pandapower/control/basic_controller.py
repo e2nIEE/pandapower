@@ -4,10 +4,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 from pandapower.auxiliary import get_free_id, _preserve_dtypes
-from pandapower.control.util.auxiliary import check_controller_frame, \
-    drop_same_type_existing_controllers, log_same_type_existing_controllers
+from pandapower.control.util.auxiliary import \
+        drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
-from builtins import object
 
 try:
     import pplog
@@ -33,7 +32,6 @@ class Controller(JSONSerializableClass):
         self.recycle = recycle
         self.initial_powerflow = initial_powerflow
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
-        check_controller_frame(self.net)
         if index is None:
             index = get_free_id(self.net.controller)
         self.update_initialized(locals())

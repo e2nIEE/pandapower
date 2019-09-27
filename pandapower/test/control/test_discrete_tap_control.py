@@ -5,7 +5,6 @@
 
 import pandapower as pp
 from pandapower.control import DiscreteTapControl
-from pandapower.control.run_control import run_control
 import pytest
 import pandapower.networks as nw
 import logging as log
@@ -34,7 +33,7 @@ def test_discrete_tap_control_lv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -51,7 +50,7 @@ def test_discrete_tap_control_lv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -67,7 +66,7 @@ def test_discrete_tap_control_lv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -95,7 +94,7 @@ def test_discrete_tap_control_hv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -111,7 +110,7 @@ def test_discrete_tap_control_hv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -127,7 +126,7 @@ def test_discrete_tap_control_hv():
                 % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
 
     # run control
-    run_control(net)
+    pp.runpp(net, run_control=True)
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
@@ -135,6 +134,5 @@ def test_discrete_tap_control_hv():
 
 
 if __name__ == '__main__':
-#     test_discrete_tap_control_lv()
     # test_discrete_tap_control_hv()
     pytest.main(['-xs', __file__])
