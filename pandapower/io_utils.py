@@ -153,7 +153,12 @@ def df_to_coords(net, item, table):
 
 
 def from_dict_of_dfs(dodfs):
-    net = create_empty_network()
+    sheets = ('line_std_types', 'trafo_std_types', 'trafo3w_std_types')
+    types = ('line', 'trafo', 'trafo3w')
+    # creates each std_types independently
+    add_stdtypes = tuple(t for sh, t in zip(sheets, types) if sh in dodfs.keys())
+
+    net = create_empty_network(add_stdtypes=add_stdtypes)
     for c in dodfs["parameters"].columns:
         net[c] = dodfs["parameters"].at[0, c]
     for item, table in dodfs.items():

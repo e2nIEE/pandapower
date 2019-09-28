@@ -25,7 +25,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
 
         **sn_mva** (float, 1e3) - reference apparent power for per unit system
 
-        **add_stdtypes** (boolean, True) - Includes standard types to net
+        **add_stdtypes** (boolean/tuple, True) - If True, includes standard types to creation
+                                  net. Otherwise a tuple of string must be specified. Accepted
+                                  values are 'line', 'trafo' and 'trafo3w'.
+                                                 
 
     OUTPUT:
         **net** (attrdict) - PANDAPOWER attrdict with empty tables:
@@ -349,7 +352,20 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     if add_stdtypes:
-        add_basic_std_types(net)
+        if isinstance(add_stdtypes, bool):
+            add_basic_std_types(net)
+        elif isinstance(add_stdtypes, (str, int, float)):
+            raise UserWarning("add_stdtypes must be a tuple!")
+        else:
+            for typ_name in add_stdtypes:
+                if isinstance(typ_name, (bool, int, float)):
+                    raise UserWarning("add_stdtypes tuple values must be strings!")
+                if typ_name == 'line':
+                    add_basic_std_types(net, add_trafo=False, add_trafo3w=False)
+                elif typ_name == 'trafo':
+                    add_basic_std_types(net, add_lines=False, add_trafo3w=False)
+                elif typ_name == 'trafo3w':
+                    add_basic_std_types(net, add_lines=False, add_trafo=False)
     else:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
     reset_results(net)

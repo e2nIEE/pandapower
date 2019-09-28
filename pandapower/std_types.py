@@ -308,7 +308,23 @@ def add_temperature_coefficient(net, fill=None):
     parameter_from_std_type(net, "alpha", fill=fill)
 
 
-def add_basic_std_types(net):
+def add_basic_std_types(net, add_lines=True, add_trafo=True, add_trafo3w=True):
+    """
+    Add standard types to net and return them as requested.
+
+    INPUT:
+        **add_lines** (bool, True) - If True add and return linetypes.
+
+        **add_trafo** (bool, True) - If True add and return trafotypes.
+
+        **add_trafo3w** (bool, True) - If True add and return trafo3wtypes.
+
+    OUTPUT:
+        **req_stdtypes** (tuple) - Requested standard types as a tuple in the
+                                   order (linetypes,trafotypes,trafo3wtypes)
+                                   by default.
+    """
+    return_list = list()
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
 
@@ -749,7 +765,9 @@ def add_basic_std_types(net):
              "q_mm2": 679,
              "alpha": alpha_al}
     }
-    create_std_types(net, data=linetypes, element="line")
+    if add_lines:
+        create_std_types(net, data=linetypes, element="line")
+        return_list.append(linetypes)
 
     trafotypes = {
         # derived from Oswald - Transformatoren - Vorlesungsskript Elektrische Energieversorgung I
@@ -1002,7 +1020,9 @@ def add_basic_std_types(net):
             "tap_step_percent": 2.5,
             "tap_phase_shifter": False},
     }
-    create_std_types(net, data=trafotypes, element="trafo")
+    if add_trafo:
+        create_std_types(net, data=trafotypes, element="trafo")
+        return_list.append(trafotypes)
 
     trafo3wtypes = {
         # generic trafo3w
@@ -1053,5 +1073,7 @@ def add_basic_std_types(net):
             "tap_max": 10,
             "tap_step_percent": 1.2}
     }
-    create_std_types(net, data=trafo3wtypes, element="trafo3w")
-    return linetypes, trafotypes, trafo3wtypes
+    if add_trafo3w:
+        create_std_types(net, data=trafo3wtypes, element="trafo3w")
+        return_list.append(trafo3wtypes)
+    return tuple(return_list)
