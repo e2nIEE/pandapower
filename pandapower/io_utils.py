@@ -80,7 +80,8 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
         elif item == "std_types":
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
-                dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+                if net.std_types[t]:  # to avoid empty excel sheets
+                    dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
             continue
         elif item == "user_pf_options":
             if len(value) > 0:
