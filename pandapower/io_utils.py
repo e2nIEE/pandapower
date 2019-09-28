@@ -95,7 +95,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
 
         # value is pandas DataFrame
-        if include_empty_tables and value.empty:
+        if not include_empty_tables and value.empty:
             continue
 
         if item == "bus_geodata":
