@@ -464,7 +464,6 @@ def test_opf_poly(simple_opf_test_net):
     for init in ["pf", "flat"]:
         pp.runopp(net, init=init)
         assert net["OPF_converged"]
-
     # check and assert result
     logger.debug("test_simplest_voltage")
     logger.debug("res_gen:\n%s" % net.res_gen)
@@ -714,49 +713,18 @@ def test_no_controllables(simple_opf_test_net):
     # was ist das problwem an diesem fall und wie fange ich es ab?
     net = simple_opf_test_net
     net.gen.controllable = False
-    # pp.runopp(net)
-    # net.gen = net.gen.drop(index=0)
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-2)
     pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=1)
+    try:
+        pp.runopp(net)
+    except pp.OPFNotConverged:
+        # opf will fail if not bus limits are set and vm_pu is the default value of 1.0 (it is enforced)
+        assert True
+    net.gen.loc[:, "vm_pu"] = 1.062  # vm_pu setpoint is mandatory if controllable=False
+    net.gen.loc[:, "p_mw"] = 0.149
     pp.runopp(net)
-
-    # def test_controllables_default():
-    #     """ Testing sgens/gens/loads with no defined controllable parameter  """
-    #     # boundaries
-    #     vm_max = 1.1
-    #     #todo
-    #     vm_min = 0.9
-    #     max_line_loading_percent = 100
-    # 9
-    #     # create network
-    #     net = pp.create_empty_network()
-    #     b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    #     b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    #
-    #     pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
-    #                    max_loading_percent=max_line_loading_percent)
-    #
-    #     # test elements static
-    #     pp.create_ext_grid(net, b2)
-    #     pp.create_load(net, b1, p_mw=7.5, max_p_mw=10, min_p_mw=0,
-    #                    max_q_mvar=2.5, min_q_mvar=-2.5)
-    #     net.load["controllable"] = False
-    #     # load should default to controllable =False
-    #     # pp.create_sgen(net, b1, p_mw=-25, max_p_mw=-10, min_p_mw=-0.025,
-    #     #                max_q_mvar=0.025, min_q_mvar=-0.025)
-    #     # # sgen should default to controllable =True
-    #     # pp.create_gen(net, b1, p_mw=-25, max_p_mw=-10, min_p_mw=-0.025,
-    #     #                max_q_mvar=0.025, min_q_mvar=-0.025)
-    #     # # gen should default to controllable =True
-    #
-    #     # costs
-    #     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0,-3, 0]))
-    #     pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=0, 1, 0]))
-    # pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0, 2, 0]))
-    # pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0, 2, 0]))
-
-    pp.runopp(net)
-    assert net["OPF_converged"]
+    assert np.allclose(net.res_gen.at[0, "vm_pu"], 1.062)
+    assert np.allclose(net.res_gen.at[0, "p_mw"], 0.149)
 
 
 def test_opf_no_controllables_vs_pf():
@@ -829,12 +797,18 @@ def test_line_temperature():
     assert "r_ohm_per_km" not in net.res_line.columns
 
 
-def test_three_slacks_vm_setpoint():
-    # tests a net with three slacks in one area. Two of them will be converted to gens, since only one is allowed per
-    # area. The others should have vmin / vmax set as their vm_pu setpoint
+@pytest.fixture
+def four_bus_net():
     net = simple_four_bus_system()
     net.sgen.drop(index=1, inplace=True)
     net.load.drop(index=1, inplace=True)
+    return net
+
+
+def test_three_slacks_vm_setpoint(four_bus_net):
+    # tests a net with three slacks in one area. Two of them will be converted to gens, since only one is allowed per
+    # area. The others should have vmin / vmax set as their vm_pu setpoint
+    net = four_bus_net
     # create two additional slacks with different voltage setpoints
     pp.create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
     pp.create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
@@ -843,6 +817,93 @@ def test_three_slacks_vm_setpoint():
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
     pp.runopp(net)
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
+
+
+def test_only_gen_slack_vm_setpoint(four_bus_net):
+    # tests a net with only gens of which one of them is a a slack
+    # The  vmin / vmax vm_pu setpoint should be correct
+    net = four_bus_net
+    net.ext_grid.drop(index=net.ext_grid.index, inplace=True)
+    net.bus.loc[:, "min_vm_pu"] = 0.9
+    net.bus.loc[:, "max_vm_pu"] = 1.1
+    # create two additional slacks with different voltage setpoints
+    pp.create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True)
+    g1 = pp.create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+                       controllable=False)  # controllable == False -> vm_pu enforced
+    g3 = pp.create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
+                       min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between bus voltages
+    pp.runpp(net)
+    # assert if voltage limits are correct in result in pf an opf
+    assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
+    pp.runopp(net)
+
+    # controllable == True is more important than  slack == True -> vm_pu is between bus limits
+    assert not np.allclose(net.res_bus.at[0, "vm_pu"], 1.)
+    # controllable == True is less important than  slack == True -> see
+    # https://github.com/e2nIEE/pandapower/issues/511#issuecomment-536593128
+
+    # assert value of controllable == False gen
+    assert np.allclose(net.res_bus.at[1, "vm_pu"], 1.01)
+    assert np.allclose(net.res_bus.at[1, "p_mw"], -0.02)
+    # assert limit of controllable == True gen
+    assert 0.9 < net.res_bus.at[3, "vm_pu"] < 1.1
+    assert not net.res_bus.at[3, "vm_pu"] == 1.02
+
+
+def test_gen_p_vm_fixed(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    min_vm_pu, max_vm_pu = .95, 1.05
+    min_p_mw, max_p_mw = 0., 1.
+    p_mw, vm_pu = 0.02, 1.01
+    bus = 1
+
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    pp.create_gen(net, bus, p_mw=p_mw, vm_pu=vm_pu, controllable=False,
+                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert np.allclose(net.res_bus.at[bus, "vm_pu"], vm_pu)
+    assert np.allclose(net.res_bus.at[bus, "p_mw"], -p_mw)
+
+
+def test_gen_p_vm_limits(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    net.bus.loc[:, "min_vm_pu"] = 0.9
+    net.bus.loc[:, "max_vm_pu"] = 1.1
+    min_vm_pu, max_vm_pu = .99, 1.005
+    min_p_mw, max_p_mw = 0., 1.
+    bus = 1
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
+    assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
+    assert min_p_mw <= -net.res_bus.at[bus, "p_mw"] < max_p_mw
+
+
+def test_gen_violated_p_vm_limits(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    min_vm_pu, max_vm_pu = .98, 1.007  # gen limits are out of bus limits
+    net.bus.loc[:, "min_vm_pu"] = min_vm_pu
+    net.bus.loc[:, "max_vm_pu"] = max_vm_pu
+
+    min_p_mw, max_p_mw = 0., 1.
+    bus = 1
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    g = pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+                      min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
+    assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
+    assert min_p_mw <= -net.res_bus.at[bus, "p_mw"] < max_p_mw
+    net.gen.at[g, "vm_pu"] = 0.9  # lower bus vm_pu limit violation
+    pp.runopp(net)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
 
 
 if __name__ == "__main__":

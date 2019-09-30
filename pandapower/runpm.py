@@ -15,7 +15,7 @@ from pandapower.opf.pm_tnep import read_tnep_results
 
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+          trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
           pm_mip_solver="cbc", pm_nl_solver="ipopt"):  # pragma: no cover
     """
@@ -74,7 +74,7 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt"):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
@@ -134,7 +134,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True):  # pragma: no cover
     """
     Runs a non-linear power system optimization using PowerModels.jl.
@@ -195,7 +195,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-               trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
@@ -226,7 +226,7 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-              trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+              trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
     """
     Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
@@ -252,7 +252,7 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_storage_opf(net, calculate_voltage_angles=True,
-                      trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True,
+                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True):  # pragma: no cover
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.

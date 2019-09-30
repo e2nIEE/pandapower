@@ -230,12 +230,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
         'controller': [
-                       ('controller', dtype(object)),
-                       ('in_service', "bool"),
-                       ('order', "float64"),
-                       ('level', dtype(object)),
-                       ("recycle", "bool"),
-                       ],
+            ('controller', dtype(object)),
+            ('in_service', "bool"),
+            ('order', "float64"),
+            ('level', dtype(object)),
+            ("recycle", "bool"),
+        ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
@@ -840,7 +840,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
-                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable = nan):
+                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
     """
     Adds a storage to the network.
 
@@ -967,9 +967,20 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
+def _create_column_and_set_value(net, index, variable, column, element):
+    # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element (e.g. "gen") table
+    # create this column and write the value of variable to the index of this element
+    if not isnan(variable):
+        if column not in net[element].columns:
+            net[element].loc[:, column] = pd.Series()
+        net[element].at[index, column] = float(variable)
+    return net
+
+
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
-               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, scaling=1., type=None, slack=False,
-               controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
+               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
+               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
+               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
     """
     Adds a generator to the network.
 
@@ -998,7 +1009,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **type** (string, None) - type variable to classify generators
 
-        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
+        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
+                                        False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
+                                        defaults to True if "controllable" column exists in DataFrame
         powerflow
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
@@ -1018,6 +1031,12 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **max_q_mvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
 
         **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
+
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage limit is taken.
+                                           - necessary for OPF.
+
+        **max_vm_pur** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage limit is taken.
+                                            - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -1039,61 +1058,46 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     dtypes = net.gen.dtypes
 
     columns = ["name", "bus", "p_mw", "vm_pu", "sn_mva", "type", "slack", "in_service",
-                        "scaling"]
+               "scaling"]
     variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling]
     net.gen.loc[index, columns] = variables
 
     # and preserve dtypes
     _preserve_dtypes(net.gen, dtypes)
 
-    if not isnan(min_p_mw):
-        if "min_p_mw" not in net.gen.columns:
-            net.gen.loc[:, "min_p_mw"] = pd.Series()
-        net.gen.loc[index, "min_p_mw"] = float(min_p_mw)
-
-    if not isnan(max_p_mw):
-        if "max_p_mw" not in net.gen.columns:
-            net.gen.loc[:, "max_p_mw"] = pd.Series()
-        net.gen.loc[index, "max_p_mw"] = float(max_p_mw)
-
-    if not isnan(min_q_mvar):
-        if "min_q_mvar" not in net.gen.columns:
-            net.gen.loc[:, "min_q_mvar"] = pd.Series()
-        net.gen.loc[index, "min_q_mvar"] = float(min_q_mvar)
-
-    if not isnan(max_q_mvar):
-        if "max_q_mvar" not in net.gen.columns:
-            net.gen.loc[:, "max_q_mvar"] = pd.Series()
-        net.gen.loc[index, "max_q_mvar"] = float(max_q_mvar)
-
+    # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = pd.Series(False)
-        net.gen.loc[index, "controllable"] = bool(controllable)
+            net.gen.loc[:, "controllable"] = pd.Series(True)
+        net.gen.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
-        net.gen.loc[index, "controllable"] = False
+        net.gen.at[index, "controllable"] = True
+    # P limits for OPF if controllable == True
+    net = _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "gen")
+    net = _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "gen")
+    # Q limits for OPF if controllable == True
+    net = _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "gen")
+    net = _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "gen")
+    # V limits for OPF if controllable == True
+    net = _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen")
+    net = _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen")
 
-    if not isnan(vn_kv):
-        if "vn_kv" not in net.gen.columns:
-            net.gen.loc[:, "vn_kv"] = pd.Series()
-        net.gen.loc[index, "vn_kv"] = float(vn_kv)
+
+    # Short circuit calculation limits
+    net = _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
+    net = _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
+
+
 
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
             net.gen.loc[:, "xdss_pu"] = pd.Series()
         if "rdss_pu" not in net.gen.columns:
             net.gen.loc[:, "rdss_pu"] = pd.Series()
-        net.gen.loc[index, "xdss_pu"] = float(xdss_pu)
+        net.gen.at[index, "xdss_pu"] = float(xdss_pu)
 
-    if not isnan(rdss_pu):
-        if "rdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "rdss_pu"] = pd.Series()
-        net.gen.loc[index, "rdss_pu"] = float(rdss_pu)
+    net = _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
 
-    if not isnan(cos_phi):
-        if "cos_phi" not in net.gen.columns:
-            net.gen.loc[:, "cos_phi"] = pd.Series()
-        net.gen.loc[index, "cos_phi"] = float(cos_phi)
 
     return index
 
@@ -1435,8 +1439,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     return index
 
+
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -1524,7 +1529,6 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net["line"] = net["line"].append(dd)
-
 
     if hasattr(max_loading_percent, "__iter__"):
         if "max_loading_percent" not in net.line.columns:
@@ -1635,7 +1639,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
         "tap_phase_shifter": ti["tap_phase_shifter"] if "tap_phase_shifter" in ti
-                            and pd.notnull(ti["tap_phase_shifter"]) else False
+                                                        and pd.notnull(ti["tap_phase_shifter"]) else False
     })
     for tp in ("tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree"):
         if tp in ti:
@@ -2023,7 +2027,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
                             "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min", "in_service",
-                            "name", "std_type", "tap_at_star_point" ]] = \
+                            "name", "std_type", "tap_at_star_point"]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, vk_mv_percent,
          vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent,
@@ -2571,7 +2575,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     dtypes = net.measurement.dtypes
     columns = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
-    net.measurement.loc[index, columns] =\
+    net.measurement.loc[index, columns] = \
         [name, meas_type.lower(), element_type, element, value, std_dev, side]
     _preserve_dtypes(net.measurement, dtypes)
     return index
@@ -2624,8 +2628,9 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     net.pwl_cost.points.loc[index] = points
     return index
 
+
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                           cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are
      - Generator
@@ -2676,5 +2681,6 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
                  cp2_eur_per_mw2, cq2_eur_per_mvar2]
     net.poly_cost.loc[index, columns] = variables
     return index
+
 
 net = create_empty_network()
