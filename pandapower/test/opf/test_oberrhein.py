@@ -29,8 +29,8 @@ def test_opf_oberrhein():
     net.sgen["max_p_mw"] = 0
     net.sgen["max_q_mvar"] = 1
     net.sgen["min_q_mvar"] = -1
-    net.sgen["controllable"] = 1
-    net.load["controllable"] = 0
+    net.sgen["controllable"] = True
+    net.load["controllable"] = False
     # run OPF
     pp.runopp(net)
     assert net["OPF_converged"]

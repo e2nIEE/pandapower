@@ -25,7 +25,8 @@ def _check_necessary_opf_parameters(net, logger):
                         net[element_type].controllable.fillna(True, inplace=True)
                     else:  # 'sgen', 'load', 'storage'
                         net[element_type].controllable.fillna(False, inplace=True)
-                    controllables = net[element_type].index[net[element_type].controllable]
+                    controllables = net[element_type].index[net[element_type].controllable.astype(
+                        bool)]
                 else:
                     controllables = net[element_type].index if element_type == 'gen' else []
 
