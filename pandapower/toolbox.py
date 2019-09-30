@@ -240,10 +240,11 @@ def _determine_costs_dict(net, opf_task_overview):
 #                "index"] for idx in idxs}
 
         for cost_df in cost_dfs:
-            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element])
+            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
             if len(idx_with_cost - idx_without_cost):
-                logger.error("These " + flex_element + "s have costs in poly_cost and pwl_cost " +
-                             "or are not flexible: " + str(idx_with_cost - idx_without_cost))
+                logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
+                               " have both, poly_cost and pwl_cost: " +
+                               str(idx_with_cost - idx_without_cost))
             idx_without_cost -= idx_with_cost
 
         if len(idx_without_cost):
@@ -319,7 +320,7 @@ def _log_opf_task_overview(opf_task_overview):
             assert isinstance(data, dict)
         heading_logged = False
         all_keys = sorted(data.keys())
-        elms = ["".join(c for c in key if c.islower()) for key in all_keys]
+        elms = ["".join(c for c in key if not c.isupper()) for key in all_keys]
         elms = sorted(set(elms))
         for elm in elms:
             for key in all_keys:
