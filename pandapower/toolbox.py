@@ -244,7 +244,7 @@ def _determine_costs_dict(net, opf_task_overview):
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
-                               sorted(str(idx_with_cost - idx_without_cost)))
+                               str(sorted(idx_with_cost - idx_without_cost)))
             idx_without_cost -= idx_with_cost
 
         if len(idx_without_cost):
