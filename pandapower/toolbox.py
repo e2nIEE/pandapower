@@ -266,23 +266,30 @@ def _cluster_same_floats(df, subset=None, **kwargs):
     OUTPUT:
         **cluster_df** (DataFrame) - table of clustered values and corresponding lists of indices
     """
+    if df.index.duplicated().any():
+        logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
+                     "ambiguous.")
     subset = subset if subset is not None else df.select_dtypes(include=[
         np.number]).columns.tolist()
-    uniq = df.index[~df.duplicated(subset=subset)]
+    uniq = ~df.duplicated(subset=subset).values
 
     # prepare cluster_df
-    cluster_df = pd.DataFrame(np.empty((len(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
     cluster_df["index"] = cluster_df["index"].astype(object)
     cluster_df[subset] = df.loc[uniq, subset].values
 
-    if len(uniq) == df.shape[0]:  # fast return if df has no duplicates
-        for i1, uni in enumerate(uniq):
-            cluster_df.at[i1, "index"] = [uni]
+    if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
+        for i1 in range(df.shape[0]):
+            cluster_df.at[i1, "index"] = [i1]
     else:  # determine index clusters
+        i2 = 0
         for i1, uni in enumerate(uniq):
-            cluster_df.at[i1, "index"] = list(df.index[np.isclose(
-                df[subset].values.astype(float),
-                df.loc[uni, subset].values.astype(float), equal_nan=True, **kwargs).all(axis=1)])
+            if uni:
+                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
+                    df[subset].values.astype(float),
+                    df[subset].iloc[[i1]].values.astype(float),
+                    equal_nan=True, **kwargs).all(axis=1)])
+                i2 += 1
 
     return cluster_df
 
