@@ -244,7 +244,7 @@ def _determine_costs_dict(net, opf_task_overview):
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
-                               str(idx_with_cost - idx_without_cost))
+                               sorted(str(idx_with_cost - idx_without_cost)))
             idx_without_cost -= idx_with_cost
 
         if len(idx_without_cost):
@@ -1117,7 +1117,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         for idx in net[cost_type].index:
             et = net[cost_type]["et"].loc[idx]
             element = net[cost_type]["element"].at[idx]
-            if element in net[et].index:
+            if element in p2[et].index:
                 selected_idx.append(idx)
         p2[cost_type] = net[cost_type].loc[selected_idx]
 
