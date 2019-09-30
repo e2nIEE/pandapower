@@ -42,13 +42,14 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc_pu = sequence_to_phase(V012_pu)
 
     if ac:
-        net["res_bus_3ph"]["vm_a_pu"] = abs(Vabc_pu[0, :].flatten())
-        net["res_bus_3ph"]["vm_b_pu"] = abs(Vabc_pu[1, :].flatten())
-        net["res_bus_3ph"]["vm_c_pu"] = abs(Vabc_pu[2, :].flatten())
+        net["res_bus_3ph"]["vm_a_pu"] = np.abs(Vabc_pu[0, :].flatten())
+        net["res_bus_3ph"]["vm_b_pu"] = np.abs(Vabc_pu[1, :].flatten())
+        net["res_bus_3ph"]["vm_c_pu"] = np.abs(Vabc_pu[2, :].flatten())
     # voltage angles
     net["res_bus_3ph"]["va_a_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
     net["res_bus_3ph"]["va_b_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
     net["res_bus_3ph"]["va_c_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["voltage_unbalance_percent"] = np.abs(V012_pu[2, :]/V012_pu[1, :])*100
     net["res_bus_3ph"].index = net["bus"].index
 
 
