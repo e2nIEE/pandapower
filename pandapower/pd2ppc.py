@@ -584,7 +584,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva\
                          needs to be specified for " % case + "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
+    s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified\
                          for external grid" % case)
@@ -606,12 +606,9 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid * 1j)
-    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs    
-#    ppc["bus"][buses, GS] = (gs * net.sn_mva) / eg.vm_pu
-#    ppc["bus"][buses, BS] = (bs * net.sn_mva) / eg.vm_pu
-
+    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, np.real(y0_grid.to_numpy()), np.imag(y0_grid.to_numpy()))
+    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
+    ppc["bus"][buses, BS] = bs * ppc['baseMVA']   
 
 def _add_line_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]

@@ -127,17 +127,17 @@ def _load_mapping(net, ppci1):
                                                           params['q'+phase+typ] * 1j)
                 params['S'+phase+typ][params['b'+phase+typ]] = \
                     (params['P'+phase+typ] + params['Q'+phase+typ])
-
+    Sabc_del = np.vstack((params['Sadelta'],params['Sbdelta'],params['Scdelta']))
+    Sabc_wye = np.vstack((params['Sawye'],params['Sbwye'],params['Scwye']))
     # last return varaible left for constant impedance loads
-    return np.vstack([params['S'+phase+'delta']] for phase in phases),\
-        np.vstack([params['S'+phase+'wye']] for phase in phases)
+    return Sabc_del, Sabc_wye
 
 
 # =============================================================================
 # 3 phase algorithm function
 # =============================================================================
-def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", 
-              max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
+def runpp_3ph(net, calculate_voltage_angles=True, init="auto", 
+              max_iteration="auto", tolerance_mva=1e-7, trafo_model='t',
               trafo_loading="current", enforce_q_lims=False, numba=True, 
               recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0, v_debug=False, **kwargs):
