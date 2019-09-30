@@ -204,6 +204,9 @@ class pandapowerNet(ADict):
                 r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         return r
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.iteritems()):
