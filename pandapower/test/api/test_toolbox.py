@@ -14,6 +14,68 @@ import pandapower.networks as nw
 import pandapower.toolbox as tb
 
 
+def test_opf_task():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
+                    min_vm_pu=[0.9, 0.9, 0.88, 0.9, np.nan, np.nan])
+    pp.create_ext_grid(net, 0, max_q_mvar=80, min_p_mw=0)
+    pp.create_gen(net, 1, 10, min_q_mvar=-50, max_q_mvar=-10, min_p_mw=0, max_p_mw=60)
+    pp.create_gen(net, 2, 8)
+    pp.create_gen(net, 3, 5)
+    pp.create_load(net, 3, 120, max_p_mw=8)
+    pp.create_sgen(net, 1, 8, min_q_mvar=-50, max_q_mvar=-10, controllable=False)
+    pp.create_sgen(net, 2, 8)
+    pp.create_storage(net, 3, 2, 100, min_q_mvar=-10, max_q_mvar=-50, min_p_mw=0, max_p_mw=60,
+                      controllable=True)
+    pp.create_dcline(net, 4, 5, 0.3, 1e-4, 1e-2, 1.01, 1.02, min_q_from_mvar=-10,
+                     min_q_to_mvar=-10)
+    pp.create_line(net, 3, 4, 5, "122-AL1/20-ST1A 10.0", max_loading_percent=50)
+    pp.create_transformer(net, 2, 3, "0.25 MVA 10/0.4 kV")
+
+    # --- run and check opf_task()
+    out1 = pp.opf_task(net, keep=True)
+    assert out1["flexibilities_without_costs"] == "all"
+    assert sorted(out1["flexibilities"].keys()) == [i1+i2 for i1 in ["P", "Q"] for i2 in [
+        "dcline", "ext_grid", "gen", "storage"]]
+    for key, df in out1["flexibilities"].items():
+        assert df.shape[0]
+        if "gen" in key:
+            assert df.shape[0] > 1
+    assert np.isnan(out1["flexibilities"]["Pext_grid"].loc[0, "max"])
+    assert out1["flexibilities"]["Pext_grid"].loc[0, "min"] == 0
+    assert np.isnan(out1["flexibilities"]["Qext_grid"].loc[0, "min"])
+    assert out1["flexibilities"]["Qext_grid"].loc[0, "max"] == 80
+    assert sorted(out1["network_constraints"].keys()) == ["LOADINGline", "VMbus"]
+    assert out1["network_constraints"]["VMbus"].shape[0] == 3
+
+    # check delta_pq
+    net.gen.loc[0, "min_p_mw"] = net.gen.loc[0, "max_p_mw"] - 1e-5
+    out2 = pp.opf_task(net, delta_pq=1e-3, keep=True)
+    assert out2["flexibilities"]["Pgen"].shape[0] == 1
+
+    net.gen.loc[0, "min_p_mw"] = net.gen.loc[0, "max_p_mw"] - 1e-1
+    out1["flexibilities"]["Pgen"].loc[0, "min"] = out1["flexibilities"]["Pgen"].loc[
+        0, "max"] - 1e-1
+    out3 = pp.opf_task(net, delta_pq=1e-3, keep=True)
+    for key in out3["flexibilities"]:
+        assert pp.dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
+
+    # check costs
+    pp.create_poly_cost(net, 0, "ext_grid", 2)
+    pp.create_poly_cost(net, 1, "gen", 1.7)
+    pp.create_poly_cost(net, 0, "dcline", 2, type="q")
+    pp.create_pwl_cost(net, 2, "gen", [[-1e9, 1, 3.1], [1, 1e9, 0.5]], power_type="q")
+    out4 = pp.opf_task(net)
+    for dict_key in ["flexibilities", "network_constraints"]:
+        for key in out4[dict_key]:
+            assert pp.dataframes_equal(out4[dict_key][key], out1[dict_key][key])
+    assert isinstance(out4["flexibilities_without_costs"], dict)
+    expected_elm_without_cost = ["gen", "storage"]
+    assert sorted(out4["flexibilities_without_costs"].keys()) == expected_elm_without_cost
+    for elm in expected_elm_without_cost:
+        assert len(out4["flexibilities_without_costs"][elm]) == 1
+
+
 def test_nets_equal():
     tb.logger.setLevel(40)
     original = nw.create_cigre_network_lv()
@@ -103,6 +165,28 @@ def test_add_column_from_element_to_elements():
     pp.add_column_from_element_to_elements(net, "name", True)
     assert all(pp.compare_arrays(net.measurement.name.values, expected_measurement_names))
     assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
+
+
+def test_reindex_buses():
+    net_orig = nw.example_simple()
+    net = nw.example_simple()
+
+    to_add = np.random.randint(0, 1000)
+    new_bus_idxs = np.array(list(net.bus.index)) + to_add
+    bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
+    # a more complexe bus_lookup of course should also work, but this one is easy to check
+    pp.reindex_buses(net, bus_lookup)
+
+    for elm in net.keys():
+        if isinstance(net[elm], pd.DataFrame) and net[elm].shape[0]:
+            cols = pd.Series(net[elm].columns)
+            bus_cols = cols.loc[cols.str.contains("bus")]
+            if len(bus_cols):
+                for bus_col in bus_cols:
+                    assert all(net[elm][bus_col] == net_orig[elm][bus_col] + to_add)
+            if elm == "bus":
+                assert all(np.array(list(net[elm].index)) == np.array(list(
+                    net_orig[elm].index)) + to_add)
 
 
 def test_continuos_bus_numbering():

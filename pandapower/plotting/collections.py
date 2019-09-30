@@ -10,6 +10,7 @@ from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection, Collection
+from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
@@ -31,6 +32,43 @@ def _rotate_dim2(arr, ang):
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
 
+class CustomTextPath(TextPath):
+    """
+    Create a path from the text. This class provides functionality for deepcopy, which is not
+    implemented for TextPath.
+    """
+
+    def __init__(self, xy, s, size=None, prop=None, _interpolation_steps=1, usetex=False, *kl,
+                 **kwargs):
+        """
+        Create a path from the text. No support for TeX yet. Note that
+        it simply is a path, not an artist. You need to use the
+        PathPatch (or other artists) to draw this path onto the
+        canvas.
+
+        xy : position of the text.
+        s : text
+        size : font size
+        prop : font property
+        """
+        if prop is None:
+            prop = FontProperties()
+        TextPath.__init__(self, xy, s, size=size, prop=prop,
+                          _interpolation_steps=_interpolation_steps, usetex=usetex)
+        self.s = s
+        self.usetex = usetex
+        self.prop = prop
+
+    def __deepcopy__(self, memo=None):
+        """
+        Returns a deepcopy of the `CustomTextPath`, which is not implemented for TextPath
+        """
+        return self.__class__(copy.deepcopy(self._xy), copy.deepcopy(self.s), size=self.get_size(),
+                              prop=copy.deepcopy(self.prop),
+                              _interpolation_steps=self._interpolation_steps, usetex=self.usetex)
+
+
+
 def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     """
     Creates PatchCollection of Texts shown at the given coordinates
@@ -46,8 +84,12 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     """
     tp = []
     # we convert TextPaths to PathPatches to create a PatchCollection
-    for t, c in zip(texts, coords):
-        tp.append(PathPatch(TextPath(c, t, size=size, prop=prop)))
+    if hasattr(size, "__iter__"):
+        for i, t in enumerate(texts):
+            tp.append(PathPatch(CustomTextPath(coords[i], t, size=size[i], prop=prop)))
+    else:
+        for t, c in zip(texts, coords):
+            tp.append(PathPatch(CustomTextPath(c, t, size=size, prop=prop)))
 
     return PatchCollection(tp, **kwargs)
 
@@ -196,6 +238,11 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if use_bus_geodata is False and net.line_geodata.empty:
+        # if bus geodata is available, but no line geodata
+        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is empty.")
+        use_bus_geodata = True
+
     if use_bus_geodata:
         linetab = net.line if lines is None else net.line.loc[lines]
     lines = net.line.index.tolist() if lines is None else list(lines)

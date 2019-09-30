@@ -15,7 +15,7 @@ import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
-from numpy import ndarray, generic, equal
+from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from warnings import warn
 from inspect import isclass, signature
 import os
@@ -258,15 +258,11 @@ class PPJSONEncoder(json.JSONEncoder):
             return s
 
 
-def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
-        return False
-    return isinstance(obj, cls)
-
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        super().__init__(object_hook=pp_hook, **kwargs)
-
+        args = {"object_hook": pp_hook}
+        args.update(kwargs)
+        super().__init__(**args)
 
 
 def pp_hook(d):
@@ -381,9 +377,9 @@ class JSONSerializableClass(object):
             obj_is_dict = isinstance(obj, dict)
             if not obj_is_dict:
                 if overwrite:
-                    logger.info("Updating %s with index %s" %(table, index))
+                    logger.info("Updating %s with index %s" % (table, index))
                 else:
-                    raise UserWarning("%s with index %s already exists" %(table, index))
+                    raise UserWarning("%s with index %s already exists" % (table, index))
         self.net[table].at[index, column] = self
 
     def __eq__(self, other):
@@ -393,8 +389,14 @@ class JSONSerializableClass(object):
 
         def check_equality(obj1, obj2):
             if isinstance(obj1, (ndarray, generic)) or isinstance(obj2, (ndarray, generic)):
-                if not equal(obj1, obj2):
-                    raise UnequalityFound              
+                unequal = True
+                if equal(obj1, obj2):
+                    unequal = False
+                elif anynp(isnan(obj1)):
+                    if allclose(obj1, obj2, atol=0, rtol=0, equal_nan=True):
+                        unequal = False
+                if unequal:
+                    raise UnequalityFound
             elif not isinstance(obj2, type(obj1)):
                 raise UnequalityFound
             elif isinstance(obj1, pandapowerNet):
@@ -418,7 +420,11 @@ class JSONSerializableClass(object):
             elif callable(obj1):
                 check_callable_equality(obj1, obj2)
             elif obj1 != obj2:
-                raise UnequalityFound            
+                try:
+                    if not (isnan(obj1) and isnan(obj2)):
+                        raise UnequalityFound
+                except:
+                    raise UnequalityFound
     
         def check_dictionary_equality(obj1, obj2):
             if set(obj1.keys()) != set(obj2.keys()):
@@ -453,23 +459,23 @@ class JSONSerializableClass(object):
     @classmethod
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
-        return JSONSerializableClass.from_dict(d)
+        return cls.from_dict(d)
 
 
-def restore_jsoned_objects(net):
-    pp_hook.net = net
+def restore_jsoned_objects(net, obj_hook=pp_hook):
+    obj_hook.net = net
     restore_columns = [(element, "object") for element, table in net.items() \
                        if isinstance(table, pd.DataFrame) and "object" in table.columns]
-    if "controller" in net and "controller" in net.controller:
+    if "controller" in net and "controller" in net["controller"]:
         restore_columns.append(("controller", "controller"))
     for element, column in restore_columns:
         for i, c in zip(net[element].index, net[element][column].values):
             try:
                 logger.debug("loading %s with index %s"%(element, str(i)))
-                net[element][column].at[i] = pp_hook(c)
+                net[element][column].at[i] = obj_hook(c)
             except Exception as e:
                 logger.warning("did not load %s with index %s: %s"%(element, str(i), e))
-    del pp_hook.net
+    del obj_hook.net
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

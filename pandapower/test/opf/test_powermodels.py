@@ -157,7 +157,7 @@ def test_pwl():
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g1], 2)
     assert np.isclose(net.res_gen.p_mw.at[g2], 3)
-    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2 + \
+    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2 +
                       net.res_gen.p_mw.at[g3] * 3)
 
 
@@ -302,7 +302,8 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     # init dataframe
     net["ne_line"] = net["line"].loc[new_line_index, :]
     # add costs, if None -> init with zeros
-    construction_costs = np.zeros(len(new_line_index)) if construction_costs is None else construction_costs
+    construction_costs = np.zeros(
+        len(new_line_index)) if construction_costs is None else construction_costs
     net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
     # set in service, but only in ne line dataframe
     net["ne_line"].loc[new_line_index, "in_service"] = True
@@ -368,7 +369,8 @@ def test_pm_tnep():
     net = tnep_grid()
     # check if max line loading percent is violated (should be)
     pp.runpp(net)
-    assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+    assert np.any(net["res_line"].loc[:, "loading_percent"] >
+                  net["line"].loc[:, "max_loading_percent"])
 
     # run power models tnep optimization
     pp.runpm_tnep(net)
@@ -378,7 +380,8 @@ def test_pm_tnep():
     # run a power flow calculation again and check if max_loading percent is still violated
     pp.runpp(net)
     # check max line loading results
-    assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+    assert not np.any(net["res_line"].loc[:, "loading_percent"] >
+                      net["line"].loc[:, "max_loading_percent"])
 
 
 @pytest.mark.slow
@@ -407,6 +410,6 @@ def test_ost_opt():
     assert np.array_equal(np.array([1, 1, 1, 1, 0, 1]).astype(bool), branch_status.astype(bool))
 
 
+
 if __name__ == '__main__':
-    # pytest.main([__file__])
-    test_storage_opt()
+    pytest.main([__file__])
