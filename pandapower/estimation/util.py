@@ -107,7 +107,7 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
         net.switch['z_ohm_ori'] = net.switch['z_ohm']
 
     lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
-    for _ in range(lookup.elements_in_cluster.max().astype(int)-1):     
+    for _ in range(int(lookup.elements_in_cluster.max())-1):     
         bus_to_be_handled = lookup[((lookup['elements_in_cluster']>=2)&\
                                     lookup['bus_with_elements'])&(~lookup['bus_to_be_fused'])]
         bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')].index

@@ -61,7 +61,8 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-          voltage_depend_loads=True, consider_line_temperature=False, **kwargs):
+          voltage_depend_loads=True, consider_line_temperature=False,
+          run_control=False, **kwargs):
     """
     Runs a power flow
 
@@ -199,6 +200,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
+    if run_control and net.controller.in_service.any():
+        from pandapower.control import run_control
+        parameters = {**locals(), **kwargs}
+        #disable run control for inner loop to avoid infinite loop
+        parameters["run_control"] = False
+        run_control(**parameters)
     passed_parameters = _passed_runpp_parameters(locals())
     _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
                         init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,

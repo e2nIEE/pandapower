@@ -8,9 +8,8 @@ import numpy as np
 
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
-from pandapower.control.run_control import run_control, ControllerNotConverged, get_controller_order, \
+from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow
-from pandapower.control.util.controller_io import dump_controller
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -91,7 +90,6 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
 
 def controller_not_converged(net, time_step, ts_variables):
     logger.error('ControllerNotConverged at time step %s' % time_step)
-    dump_controller(net, time_step)
     if not ts_variables["continue_on_divergence"]:
         raise ControllerNotConverged
 
@@ -124,7 +122,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control(net, ctrl_variables=ts_variables, **kwargs)
+        pp.runpp(net, run_control=True, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
