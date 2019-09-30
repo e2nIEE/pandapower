@@ -115,9 +115,10 @@ class BaseAlgebra:
         v_jac = np.c_[dv_dth, dv_dv]
         i_jac = vstack((hstack((dif_dth, dif_dv)),
                         hstack((dit_dth, dit_dv)))).toarray()
-        return np.r_[s_jac,
-                     v_jac,
-                     i_jac][self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
+        jac = np.r_[s_jac,
+                    v_jac,
+                    i_jac]
+        return jac[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
 
     def _dSbus_dv(self, V):
         dSbus_dv, dSbus_dth = dSbus_dV(self.Ybus, V)
@@ -135,6 +136,44 @@ class BaseAlgebra:
         # for current we only interest in the magnitude at the moment
         dif_dth, dif_dv, dit_dth, dit_dv, _, _ = map(np.abs, dIbr_dV(self.eppci.branch, self.Yf, self.Yt, V))
         return dif_dth, dif_dv, dit_dth, dit_dv
+
+
+class BaseAlgebraDecoupled(BaseAlgebra):
+    
+    
+    def create_hx_jacobian(self, E):
+        # Using sparse matrix in creation sub-jacobian matrix
+        v, delta = self._e2v(E)
+        V = v * np.exp(1j * delta)
+
+        dSbus_dth, dSbus_dv = map(lambda m: m.toarray(), self._dSbus_dv(V))
+        dSf_dth, dSf_dv, dSt_dth, dSt_dv = map(lambda m: m.toarray(), self._dSbr_dv(V))
+        dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), self._dibr_dv(V))
+        dv_dth, dv_dv = self._dVbus_dv(V)
+
+#        zeros_dSbus_dth = map(lambda mat: mat.data[:]=0, [])
+        s_jac_th = np.r_[np.real(dSbus_dth),
+                         np.real(dSf_dth),
+                         np.real(dSt_dth),
+                         np.zeros_like(dSbus_dth),
+                         np.zeros_like(dSf_dth),
+                         np.zeros_like(dSt_dth)]
+        s_jac_v = np.r_[np.zeros_like(dSbus_dv),
+                        np.zeros_like(dSf_dv),
+                        np.zeros_like(dSt_dv),
+                        np.imag(dSbus_dv),
+                        np.imag(dSf_dv),
+                        np.imag(dSt_dv),]
+
+        s_jac = np.c_[s_jac_th, s_jac_v]
+        v_jac = np.c_[dv_dth, dv_dv]
+        i_jac = np.r_[np.c_[dif_dth, dif_dv],
+                      np.c_[dit_dth, dit_dv]]
+#        jac_th = np.
+        return np.r_[s_jac,
+                     v_jac,
+                     i_jac][self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
+        
 
 
 class BaseAlgebraZeroInjConstraints(BaseAlgebra):
