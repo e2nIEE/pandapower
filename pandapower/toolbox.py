@@ -604,7 +604,7 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def reindex_buses(net, bus_lookup):
+def reindex_buses(net, bus_lookup, partial_lookup=False):
     """
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
@@ -613,7 +613,15 @@ def reindex_buses(net, bus_lookup):
       **net** - pandapower network
 
       **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
+
+    OPTIONAL:
+      **partial_lookup** (bool, default False) - flag if bus_lookup is only part of the bus indices
     """
+    if partial_lookup:
+        full_bus_lookup = copy.deepcopy(bus_lookup)
+        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup})
+        bus_lookup = full_bus_lookup
+
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
 
