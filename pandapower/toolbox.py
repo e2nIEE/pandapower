@@ -244,7 +244,7 @@ def _determine_costs_dict(net, opf_task_overview):
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
-                               str(idx_with_cost - idx_without_cost))
+                               str(sorted(idx_with_cost - idx_without_cost)))
             idx_without_cost -= idx_with_cost
 
         if len(idx_without_cost):
@@ -266,23 +266,30 @@ def _cluster_same_floats(df, subset=None, **kwargs):
     OUTPUT:
         **cluster_df** (DataFrame) - table of clustered values and corresponding lists of indices
     """
+    if df.index.duplicated().any():
+        logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
+                     "ambiguous.")
     subset = subset if subset is not None else df.select_dtypes(include=[
         np.number]).columns.tolist()
-    uniq = df.index[~df.duplicated(subset=subset)]
+    uniq = ~df.duplicated(subset=subset).values
 
     # prepare cluster_df
-    cluster_df = pd.DataFrame(np.empty((len(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
     cluster_df["index"] = cluster_df["index"].astype(object)
     cluster_df[subset] = df.loc[uniq, subset].values
 
-    if len(uniq) == df.shape[0]:  # fast return if df has no duplicates
-        for i1, uni in enumerate(uniq):
-            cluster_df.at[i1, "index"] = [uni]
+    if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
+        for i1 in range(df.shape[0]):
+            cluster_df.at[i1, "index"] = [i1]
     else:  # determine index clusters
+        i2 = 0
         for i1, uni in enumerate(uniq):
-            cluster_df.at[i1, "index"] = list(df.index[np.isclose(
-                df[subset].values.astype(float),
-                df.loc[uni, subset].values.astype(float), equal_nan=True, **kwargs).all(axis=1)])
+            if uni:
+                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
+                    df[subset].values.astype(float),
+                    df[subset].iloc[[i1]].values.astype(float),
+                    equal_nan=True, **kwargs).all(axis=1)])
+                i2 += 1
 
     return cluster_df
 
@@ -619,7 +626,7 @@ def reindex_buses(net, bus_lookup, partial_lookup=False):
     """
     if partial_lookup:
         full_bus_lookup = copy.deepcopy(bus_lookup)
-        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup})
+        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup.keys()})
         bus_lookup = full_bus_lookup
 
     net.bus.index = get_indices(net.bus.index, bus_lookup)
@@ -649,6 +656,7 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
 
     OPTIONAL:
       **start** - index begins with "start"
+
       **store_old_index** - if True, stores the old index in net.bus["old_index"]
 
     OUTPUT:
@@ -663,6 +671,59 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
+def reindex_elements(net, element, new_indices, old_indices=None):
+    """
+    Changes the index of net[element].
+
+    INPUT:
+      **net** - pandapower network
+
+      **element** (str) - name of the element table
+
+      **new_indices** (iterable) - list of new indices
+
+    OPTIONAL:
+      **old_indices** (iterable) - list of old/previous indices which will be replaced.
+          If None, all indices are considered.
+    """
+    old_indices = old_indices if old_indices is not None else net[element].index
+    if not len(new_indices) or not net[element].shape[0]:
+        return
+    assert len(new_indices) == len(old_indices)
+    lookup = dict(zip(old_indices, new_indices))
+    
+    if element == "bus":
+        partial = len(new_indices) < net[element].shape[0]
+        reindex_buses(net, lookup, partial_lookup=partial)
+        return
+    
+    # --- reindex
+    net[element]["index"] = net[element].index
+    net[element].loc[old_indices, "index"] = get_indices(old_indices, lookup)
+    net[element].set_index("index", inplace=True)
+
+    # --- adapt measurement link
+    if element in ["line", "trafo", "trafo3w"]:
+        affected = net.measurement[(net.measurement.element_type == element) &
+                                   (net.measurement.element.isin(old_indices))]
+        if len(affected):
+            net.measurement.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+        
+    # --- adapt switch link
+    if element in ["line", "trafo"]:
+        affected = net.switch[(net.switch.et == element[0]) &
+                              (net.switch.element.isin(old_indices))]
+        if len(affected):
+            net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+    
+    
+    # --- adapt line_geodata index
+    if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
+        net["line_geodata"]["index"] = net["line_geodata"].index
+        net["line_geodata"].loc[old_indices, "index"] = get_indices(old_indices, lookup)
+        net["line_geodata"].set_index("index", inplace=True)
+
+
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references
@@ -675,8 +736,8 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
       **start** - index begins with "start"
 
       **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
-          selected. Additionally elements, like line_geodata and bus_geodata, also can be
-          considered here.
+          selected. Customized DataFrames can also be considered here.
+         
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
 
@@ -689,38 +750,19 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     elements |= add_df_to_reindex
 
+    # run reindex_elements() for all elements
     for elm in list(elements):
         net[elm].sort_index(inplace=True)
         new_index = list(np.arange(start, len(net[elm]) + start))
 
-        if elm == "line":
-            line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-        elif elm == "trafo":
-            trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-        elif elm == "trafo3w":
-            trafo3w_lookup = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
-        elif elm == "line_geodata" and "line_geodata" in net:
-            line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
-            net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
-                                          inplace=True)
-
-        net[elm].index = new_index
-
-    line_switches = net.switch[net.switch.et == "l"]
-    net.switch.loc[line_switches.index, "element"] = get_indices(line_switches.element, line_lookup)
-
-    trafo_switches = net.switch[net.switch.et == "t"]
-    net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element,
-                                                                  trafo_lookup)
-
-    line_meas = net.measurement[net.measurement.element_type == "line"]
-    net.measurement.loc[line_meas.index, "element"] = get_indices(line_meas.element, line_lookup)
-
-    trafo_meas = net.measurement[net.measurement.element_type == "trafo"]
-    net.measurement.loc[trafo_meas.index, "element"] = get_indices(trafo_meas.element, trafo_lookup)
-
-    trafo3w_meas = net.measurement[net.measurement.element_type == "trafo3w"]
-    net.measurement.loc[trafo3w_meas.index, "element"] = get_indices(trafo3w_meas.element, trafo3w_lookup)
+        if elm in net and isinstance(net[elm], pd.DataFrame):
+            if elm in ["bus_geodata", "line_geodata"]:
+                logger.info(elm + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                            "already included by elm=='" + elm.split("_")[0] + "'.")
+            else:
+                reindex_elements(net, elm, new_index)
+        else:
+            logger.debug("No indices could be changed for element '%s'." % elm)
 
     return net
 
@@ -1125,7 +1167,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         for idx in net[cost_type].index:
             et = net[cost_type]["et"].loc[idx]
             element = net[cost_type]["element"].at[idx]
-            if element in net[et].index:
+            if element in p2[et].index:
                 selected_idx.append(idx)
         p2[cost_type] = net[cost_type].loc[selected_idx]
 

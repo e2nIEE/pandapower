@@ -239,6 +239,32 @@ def test_continuos_bus_numbering():
     assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
 
 
+def test_reindex_elements():
+    net = nw.example_simple()
+    
+    new_sw_idx = np.random.randint(0, 1000, size=net.switch.shape[0])
+    pp.reindex_elements(net, "switch", new_sw_idx)
+    assert np.allclose(net.switch.index.values, new_sw_idx)
+    
+    previous_idx = new_sw_idx[:3]
+    new_sw_idx = [2, 3, 4]
+    pp.reindex_elements(net, "switch", new_sw_idx, previous_idx)
+    assert np.allclose(net.switch.index.values[:3], new_sw_idx)
+    
+    pp.reindex_elements(net, "line", [77, 22], [2, 0])
+    assert np.allclose(net.line.index.values, [22, 1, 77, 3])
+    assert np.allclose(net.switch.element.iloc[[4, 5]], [77, 77])
+    
+    old_idx = copy.deepcopy(net.bus.index.values)
+    pp.reindex_elements(net, "bus", old_idx+2)
+    assert np.allclose(net.bus.index.values, old_idx+2)
+    
+    pp.reindex_elements(net, "bus", [400, 600], [4, 6])
+    assert 400 in net.bus.index
+    assert 600 in net.bus.index
+    
+
+
 def test_continuous_element_numbering():
     from pandapower.estimation.util import add_virtual_meas_from_loadflow
     net = nw.example_multivoltage()
