@@ -40,17 +40,11 @@ def convert_to_pm_structure(net):
     return net, pm, ppc, ppci
 
 
-def _runpm(net):  # pragma: no cover
-    # convert pandapower to power models file -> this is done in python
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
-    # call optinal callback function
-    if net._options["pp_to_pm_callback"] is not None:
-        net._options["pp_to_pm_callback"](net, ppci, pm)
-    # writes pm json to disk, which is loaded afterwards in julia
-    buffer_file = dump_pm_json(pm)
-    # run power models optimization in julia
-    result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
-    # read results and write back to net
+def _read_results_to_net(net, ppc, ppci, result_pm):
+    """
+    reads power models results from result_pm to ppc / ppci and then to pandapower net
+    """
+    # read power models results from result_pm to result (== ppc with results)
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net._pm_result = result_pm
     success = ppc["success"]
@@ -63,6 +57,20 @@ def _runpm(net):  # pragma: no cover
     else:
         _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
+
+
+def _runpm(net):  # pragma: no cover
+    # convert pandapower to power models file -> this is done in python
+    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    # call optinal callback function
+    if net._options["pp_to_pm_callback"] is not None:
+        net._options["pp_to_pm_callback"](net, ppci, pm)
+    # writes pm json to disk, which is loaded afterwards in julia
+    buffer_file = dump_pm_json(pm)
+    # run power models optimization in julia
+    result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
+    # read results and write back to net
+    _read_results_to_net(net, ppc, ppci, result_pm)
 
 
 def dump_pm_json(pm, buffer_file=None):
@@ -314,7 +322,7 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
         ppci["gen"][gen_idx, QG] = gen["qg"]
 
     # read Q from branch results (if not DC calculation)
-    dc_results = np.isnan(sol["branch"]["1"]["qf"])
+    dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(sol["branch"]["1"]["qf"])
     # read branch status results (OTS)
     branch_status = "br_status" in sol["branch"]["1"]
     for i, branch in sol["branch"].items():

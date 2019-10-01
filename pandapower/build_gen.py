@@ -110,8 +110,6 @@ def _build_pp_ext_grid(net, ppc, f, t):
         add_p_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
         ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
         ppc["bus"][eg_buses, VMIN] = net["ext_grid"]["vm_pu"].values[eg_is] - delta
-        # ppc["bus"][eg_buses, VMAX] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
-        # ppc["bus"][eg_buses, VMIN] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
     else:
         ppc["gen"][f:t, QMIN] = 0
         ppc["gen"][f:t, QMAX] = 0
