@@ -626,7 +626,7 @@ def reindex_buses(net, bus_lookup, partial_lookup=False):
     """
     if partial_lookup:
         full_bus_lookup = copy.deepcopy(bus_lookup)
-        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup})
+        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup.keys()})
         bus_lookup = full_bus_lookup
 
     net.bus.index = get_indices(net.bus.index, bus_lookup)
@@ -693,7 +693,8 @@ def reindex_elements(net, element, new_indices, old_indices=None):
     lookup = dict(zip(old_indices, new_indices))
     
     if element == "bus":
-        reindex_buses(net, lookup)
+        partial = len(new_indices) < net[element].shape[0]
+        reindex_buses(net, lookup, partial_lookup=partial)
         return
     
     # --- reindex

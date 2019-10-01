@@ -254,6 +254,15 @@ def test_reindex_elements():
     pp.reindex_elements(net, "line", [77, 22], [2, 0])
     assert np.allclose(net.line.index.values, [22, 1, 77, 3])
     assert np.allclose(net.switch.element.iloc[[4, 5]], [77, 77])
+    
+    old_idx = copy.deepcopy(net.bus.index.values)
+    pp.reindex_elements(net, "bus", old_idx+2)
+    assert np.allclose(net.bus.index.values, old_idx+2)
+    
+    pp.reindex_elements(net, "bus", [400, 600], [4, 6])
+    assert 400 in net.bus.index
+    assert 600 in net.bus.index
+    
 
 
 def test_continuous_element_numbering():
