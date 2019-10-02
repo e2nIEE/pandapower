@@ -217,10 +217,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                         ("std_dev", "float64"),
                         ("side", dtype(object))],
         "pwl_cost": [("power_type", dtype(object)),
-                     ("element", dtype(object)),
+                     ("element", "u4"),
                      ("et", dtype(object)),
                      ("points", dtype(object))],
-        "poly_cost": [("element", dtype(object)),
+        "poly_cost": [("element", "u4"),
                       ("et", dtype(object)),
                       ("cp0_eur", dtype("f8")),
                       ("cp1_eur_per_mw", dtype("f8")),
@@ -507,17 +507,23 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                                                               columns=net.bus_geodata.columns))
         net["bus_geodata"].loc[index, "coords"] = coords
 
-    if not isnan(min_vm_pu):
+    min_vm_pu = min_vm_pu if hasattr(min_vm_pu, "__iter__") else [min_vm_pu]*nr_buses
+    min_vm_pu = pd.Series(min_vm_pu, dtype=float)
+
+    if not min_vm_pu.isnull().all():
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
 
-        net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
+        net.bus.loc[index, "min_vm_pu"] = min_vm_pu
 
-    if not isnan(max_vm_pu):
+    max_vm_pu = max_vm_pu if hasattr(max_vm_pu, "__iter__") else [max_vm_pu]*nr_buses
+    max_vm_pu = pd.Series(max_vm_pu, dtype=float)
+
+    if not max_vm_pu.isnull().all():
         if "max_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "max_vm_pu"] = pd.Series()
 
-        net.bus.loc[index, "max_vm_pu"] = float(max_vm_pu)
+        net.bus.loc[index, "max_vm_pu"] = max_vm_pu
 
     return index
 
@@ -2619,9 +2625,11 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     if index in net["pwl_cost"].index:
         raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
 
+    dtypes = net.pwl_cost.dtypes
     net.pwl_cost.loc[index, ["power_type", "element", "et"]] = \
         [power_type, element, et]
     net.pwl_cost.points.loc[index] = points
+    _preserve_dtypes(net.pwl_cost, dtypes)
     return index
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
@@ -2674,7 +2682,9 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
                "cp2_eur_per_mw2", "cq2_eur_per_mvar2"]
     variables = [element, et, cp0_eur, cp1_eur_per_mw, cq0_eur, cq1_eur_per_mvar,
                  cp2_eur_per_mw2, cq2_eur_per_mvar2]
+    dtypes = net.poly_cost.dtypes
     net.poly_cost.loc[index, columns] = variables
+    _preserve_dtypes(net.poly_cost, dtypes)
     return index
 
 net = create_empty_network()
