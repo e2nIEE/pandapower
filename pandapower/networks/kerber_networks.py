@@ -199,7 +199,7 @@ def create_kerber_landnetz_freileitung_2(n_branch_1=6, n_branch_2=2,
                                          l_lines_2_in_km=0.081,
                                          std_type="NFA2X 4x70",
                                          trafotype="0.1 MVA 10/0.4 kV",
-                                         p_load_mw=0.08, q_load_mvar=0,
+                                         p_load_mw=0.008, q_load_mvar=0,
                                          v_os=10.):
     num_lines = [n_branch_1, n_branch_2]
     len_lines = [l_lines_1_in_km, l_lines_2_in_km]
@@ -212,7 +212,7 @@ def create_kerber_landnetz_freileitung_2(n_branch_1=6, n_branch_2=2,
 def create_kerber_landnetz_kabel_1(n_branch_1=6, n_branch_2=2, l_lines_1_in_km=0.082,
                                    l_lines_2_in_km=0.175, std_type="NAYY 4x150",
                                    std_type_branchout_line="NAYY 4x50",
-                                   trafotype="0.1 MVA 10/0.4 kV", p_load_mw=0.08,
+                                   trafotype="0.1 MVA 10/0.4 kV", p_load_mw=0.008,
                                    q_load_mvar=0., length_branchout_line_1=0.018,
                                    length_branchout_line_2=0.033, v_os=10.):
     """
