@@ -137,7 +137,7 @@ def _load_mapping(net, ppci1):
 # 3 phase algorithm function
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles=True, init="auto", 
-              max_iteration="auto", tolerance_mva=1e-7, trafo_model='t',
+              max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
               trafo_loading="current", enforce_q_lims=False, numba=True, 
               recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0, v_debug=False, **kwargs):
@@ -397,6 +397,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
+    
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -465,11 +466,11 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # =========================================================================
     #             Iteration using Power mismatch criterion
     # =========================================================================
-
+    outer_tolerance_mva = 3e-8
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = time()
-    while (s_mismatch > tolerance_mva).any() and count < 30*max_iteration:
+    while (s_mismatch > outer_tolerance_mva).any() and count < 30*max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
