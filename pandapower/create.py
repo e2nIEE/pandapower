@@ -421,17 +421,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     if coords is not None:
         net["bus_geodata"].loc[index, "coords"] = coords
 
-    if not isnan(min_vm_pu):
-        if "min_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "min_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
-
-    if not isnan(max_vm_pu):
-        if "max_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "max_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "max_vm_pu"] = float(max_vm_pu)
+    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
+    _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
+    _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
 
     return index
 
@@ -967,12 +959,12 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
-def _create_column_and_set_value(net, index, variable, column, element):
+def _create_column_and_set_value(net, index, variable, column, element, default_val=None):
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     if not isnan(variable):
         if column not in net[element].columns:
-            net[element].loc[:, column] = pd.Series()
+            net[element].loc[:, column] = pd.Series(default_val)
         net[element].at[index, column] = float(variable)
     return net
 
@@ -1079,15 +1071,12 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     net = _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "gen")
     net = _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    net = _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen")
-    net = _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen")
-
+    net = _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
+    net = _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
 
     # Short circuit calculation limits
     net = _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
     net = _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
-
-
 
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
@@ -1097,7 +1086,6 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         net.gen.at[index, "xdss_pu"] = float(xdss_pu)
 
     net = _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
-
 
     return index
 

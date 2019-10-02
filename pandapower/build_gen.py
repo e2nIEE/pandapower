@@ -159,7 +159,9 @@ def _check_gen_vm_limits(net, ppc, gen_buses, gen_is):
 def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     delta = net["_options"]["delta"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    not_controllable = ~net["gen"]["controllable"].values[gen_is]
+    controllable = net["gen"]["controllable"].values[gen_is]
+    not_controllable = ~controllable.astype(bool)
+
     # if there are some non controllable gens -> set vm_pu and p_mw fixed
     if np.any(not_controllable):
         bus = net["gen"]["bus"].values[not_controllable]
