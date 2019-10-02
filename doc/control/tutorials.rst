@@ -24,7 +24,7 @@ For introduction purposes an easy example will be described.
 The task at hand would be to simulate a Trafo Controller with local continous tap changer voltage control.
 First we load a network and define it as ``net`` (if you dont know how, have a look at
 :ref:`Pandapower Pro Networks <hpNetworks>`). Next we need one object: an instance of
-of a ``ContinuousTapControl``, for example StatCurtPv. We want the transformer with ID 114 to be controlled by this controller, hence we pass ``tid=114``.
+of a ``ContinuousTapControl``. We want the transformer with ID 114 to be controlled by this controller, hence we pass ``tid=114``.
 
 .. note::
     Have a look at all transformer IDs by typing ``net.trafo.index`` and chose the ones to be controlled.
@@ -41,9 +41,7 @@ of a ``ContinuousTapControl``, for example StatCurtPv. We want the transformer w
     # initialising controller
     tol = 1e-6
     trafo_controller = control.ContinuousTapControl(net=net, tid=114, u_set=0.98, tol=tol)
-    
-    # running a control-loop
-    control.run_control(net)
+
 
 We imported **pandapower** and the **control** module and created the object of a controller we need. You can look up which
 parameters are mandatory and which are optional in the constructor of the class you are creating
@@ -61,7 +59,14 @@ Now we look at our network that contains our controller. ::
     
 The output in the console shows, that the controller is active and has the default values for order and level (we'll look at 
 these in more detail shortly). 
-Now we run a loadflow-simulation with our controlling unit using the ``control.run_control(net)`` method. 
+Now we run a loadflow-simulation with our controlling unit using the ``pp.runpp(net, run_control=True)`` method. 
+
+::
+
+    # running a control-loop
+    pp.runpp(net, run_control=True)
+
+
 Have a look at ``net.res_trafo`` to check the results of the transformers. You can compare them with results of a normal loadflow-simulation
 by running ``pp.runpp(net)`` and checking ``net.res_trafo`` again. Check the results at the buses and lines in the network aswell for further informations.
 
@@ -125,9 +130,9 @@ the simulation are being stored in a pandas dataframe called ``output`` in the `
 
 Jupyter Notebook Tutorials
 ==========================
-There are a few interactive tutorials to internalize this section:
+There are some interactive tutorials to internalize this section:
 
-
+- `Running a control-loop <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/control_loop.ipynb>`_
 - `Running a TimeSeries-Simulation <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/time_series.ipynb>`_
 - `Running an advanced TS-Simulation <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/time_series_advanced_output.ipynb>`_
 
