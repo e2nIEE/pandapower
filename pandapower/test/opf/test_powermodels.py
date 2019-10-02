@@ -69,10 +69,15 @@ def net_3w_trafo_opf():
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
     net = net_3w_trafo_opf
+    net.ext_grid.loc[:, "min_p_mw"] = -999.
+    net.ext_grid.loc[:, "max_p_mw"] = 999.
+    net.ext_grid.loc[:, "max_q_mvar"] = 999.
+    net.ext_grid.loc[:, "min_q_mvar"] = -999.
     pp.create_pwl_cost(net, 0, 'ext_grid', [[0, 1, 1]])
     pp.create_pwl_cost(net, 0, 'gen', [[0, 30, 3], [30, 80, 3]])
-    pp.create_pwl_cost(net, 1, 'gen', [[0, 100, 2]])
-
+    pp.create_pwl_cost(net, 1, 'gen', [[0, 80, 2]])
+    net.bus.loc[:, "max_vm_pu"] = 1.1
+    net.bus.loc[:, "min_vm_pu"] = .9
     pp.runpm_ac_opf(net)
     consistency_checks(net)
 
@@ -87,6 +92,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=3)
     pp.create_poly_cost(net, 1, 'gen', cp1_eur_per_mw=2)
 
+    # pp.runopp(net)
     pp.runpm_ac_opf(net, correct_pm_network_data=False)
     consistency_checks(net)
 
@@ -95,6 +101,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     np.allclose(vm_bus, net.res_bus.vm_pu.values)
     np.allclose(va_bus, net.res_bus.va_degree.values)
 
+    # pp.rundcopp(net)
     pp.runpm_dc_opf(net, correct_pm_network_data=False)
     consistency_checks(net, test_q=False)
 
@@ -426,7 +433,7 @@ def test_ots_opt():
     pp.runpp(net)
     net.line.loc[:, "in_service"] = branch_status.astype(bool)
     pp.runpp(net)
-    assert np.array_equal(np.array([1, 1, 1, 1, 0, 0]).astype(bool), branch_status.astype(bool))
+    assert np.array_equal(np.array([1, 1, 1, 0, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
 def assert_pf(net):
