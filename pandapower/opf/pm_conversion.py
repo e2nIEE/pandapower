@@ -59,7 +59,7 @@ def _read_results_to_net(net, ppc, ppci, result_pm):
         logger.warning("OPF did not converge!")
 
 
-def _runpm(net):  # pragma: no cover
+def _runpm(net, delete_buffer_file=True):  # pragma: no cover
     # convert pandapower to power models file -> this is done in python
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     # call optinal callback function
@@ -71,6 +71,10 @@ def _runpm(net):  # pragma: no cover
     result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
     # read results and write back to net
     _read_results_to_net(net, ppc, ppci, result_pm)
+    if delete_buffer_file:
+        # delete buffer file after calculation
+        os.remove(buffer_file)
+
 
 
 def dump_pm_json(pm, buffer_file=None):
