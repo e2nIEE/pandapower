@@ -88,7 +88,6 @@ def test_dcline_dispatch2(dcline_net):
     # pp.runopp(net, delta=get_delta_try_except(net))
     pp.runopp(net)
     consistency_checks(net, rtol=1e-3)
-    consistency_checks(net, rtol=1e-3)
     rel_loss_expect = (net.res_dcline.pl_mw - net.dcline.loss_mw) / \
                       (net.res_dcline.p_from_mw - net.res_dcline.pl_mw) * 100
     assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values)

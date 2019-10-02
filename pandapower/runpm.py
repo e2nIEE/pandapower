@@ -16,7 +16,7 @@ from pandapower.opf.pm_tnep import read_tnep_results
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-          correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
+          correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="cbc", pm_nl_solver="ipopt"):  # pragma: no cover
     """
     Runs a power system optimization using PowerModels.jl. with a custom julia file.
