@@ -9,3 +9,5 @@
 :math:`Q_{min,eg} \leq Q_{eg} \leq Q_{max,eg},\ eg  \ \epsilon \ ext\_grid` ;net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
 :math:`P_{min,ld} \leq P_{ld} \leq P_{max,ld},\ ld \ \epsilon \ load` ;net.load.min_p_mw  / net.load.max_p_mw
 :math:`Q_{min,ld} \leq Q_{ld} \leq Q_{max,ld},\ ld  \ \epsilon \ load` ;net.load.min_q_mvar / net.load.max_q_mvar
+:math:`P_{min,st} \leq P_{st} \leq P_{max,st},\ st \ \epsilon \ storage` ;net.storage.min_p_mw  / net.storage.max_p_mw
+:math:`Q_{min,st} \leq Q_{st} \leq Q_{max,st},\ st  \ \epsilon \ storage` ;net.storage.min_q_mvar / net.storage.max_q_mvar
