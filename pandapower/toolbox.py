@@ -211,7 +211,9 @@ def _determine_network_constraints_dict(net, data, **kwargs):
 
 def _determine_costs_dict(net, opf_task_overview):
     """
-    Determines which flexibilities do not have costs in the net.
+    Determines which flexibilities do not have costs in the net. Each element is considered as one,
+    i.e. if ext_grid 0, for instance,  is flexible in both, P and Q, and has one cost entry for P,
+    it is not considered as 'flexibilities_without_costs'.
 
     INPUT:
         **net** - panpdapower net
@@ -230,8 +232,8 @@ def _determine_costs_dict(net, opf_task_overview):
     for flex_element in flex_elements:
 
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
-        keys = pd.Series(list(opf_task_overview["flexibilities"].keys()))
-        keys = keys.loc[keys.str.endswith(flex_element)]
+        keys = [power_type + flex_element for power_type in ["P", "Q"] if (
+                    power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
 
         # determine indices of all flexibles
         idx_without_cost = set()
@@ -328,11 +330,8 @@ def _log_opf_task_overview(opf_task_overview):
         else:
             assert isinstance(data, dict)
         heading_logged = False
-        all_keys = list(data.keys())
-        elms = ["".join(c for c in key if not c.isupper()) for key in all_keys]
-        all_keys = list(np.array(all_keys)[np.argsort(elms)])
-        elms = sorted(elms)
-        for key, elm in zip(all_keys, elms):
+        keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
+        for key, elm in zip(keys, elms):
             assert elm in key
             df = data[key]
 
@@ -344,15 +343,15 @@ def _log_opf_task_overview(opf_task_overview):
                     heading_logged = True
 
                 # --- logging information
+                len_idx = len(list(chain(*df["index"])))
                 if df.shape[0] > 1:
-                    len_idx = len(list(chain(*df["index"])))
                     s += "\n    %ix %s" % (len_idx, key)
                 else:
                     if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
-                        s += "\n    %g <= all %s <= %g" % (
-                            df.loc[0, "min"], key, df.loc[0, "max"])
+                        s += "\n    %g <= %ix %s (all) <= %g" % (
+                            df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
                     else:
-                        s += "\n    all %s with these constraints:" % key
+                        s += "\n    %ix %s (all) with these constraints:" % (len_idx, key)
                         for col in set(df.columns) - {"index"}:
                             s += " %s=%g" % (col, df.loc[0, col])
             elif dict_key == "flexibilities_without_costs":
@@ -363,6 +362,14 @@ def _log_opf_task_overview(opf_task_overview):
             else:
                 raise NotImplementedError("Key %s is unknown to this code." % dict_key)
     logger.info(s + "\n")
+
+
+def _get_keys_and_elements_from_opf_task_dict(dict_):
+    keys = list(dict_.keys())
+    elms = ["".join(c for c in key if not c.isupper()) for key in keys]
+    keys = list(np.array(keys)[np.argsort(elms)])
+    elms = sorted(elms)
+    return keys, elms
 
 
 def switch_info(net, sidx):  # pragma: no cover
