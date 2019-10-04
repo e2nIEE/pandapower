@@ -107,25 +107,27 @@ def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
                                      "min_q_to_mvar", "max_q_to_mvar"]}[power_type]
 
             # determine indices of controllable elements, continue if no controllable element exists
-            if "controllable" in net[elm].columns:
+            if elm in ["ext_grid", "dcline"]:
+                controllables = net[elm].index
+            elif "controllable" in net[elm].columns:
                 controllables = net[elm].index[net[elm].controllable]
-                if not len(controllables):
-                    continue
             elif controllable_default and net[elm].shape[0]:
                 controllables = net[elm].index
             else:
+                continue
+            if not len(controllables):
                 continue
 
             # consider delta_pq
             if len(constraints) >= 2 and pd.Series(constraints[:2]).isin(net[elm].columns).all():
                 controllables = _find_idx_without_numerical_difference(
                     net[elm], constraints[0], constraints[1], delta_pq, idx=controllables,
-                    equal_nan=True)
+                    equal_nan=False)
             if elm == "dcline" and power_type == "Q" and len(controllables) and \
                pd.Series(constraints[2:4]).isin(net[elm].columns).all():
                 controllables = _find_idx_without_numerical_difference(
                     net[elm], constraints[2], constraints[3], delta_pq, idx=controllables,
-                    equal_nan=True)
+                    equal_nan=False)
 
             # add missing constraint columns
             for col_to_add in set(constraints) - set(net[elm].columns):
@@ -139,7 +141,7 @@ def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
 
 def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None, equal_nan=False):
     """
-    Returns indices which have bigger numerical difference than delta.
+    Returns indices where comlumn1 and column2 have a numerical difference bigger than delta.
 
     INPUT:
         **df** (DataFrame)
@@ -155,8 +157,8 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
     OPTIONAL:
         **idx** (iterable, None) - list of indices which should be considered only
 
-        **equal_nan** (bool, False) - if True, indices are included where at least value in
-            df[column1] or df[column2] is NaN
+        **equal_nan** (bool, False) - if False, indices are included where at least one value in
+            df[column1] and df[column2] is NaN
 
     OUTPUT:
         **index** (pandas.Index) - index within idx where df[column1] and df[column2] deviates by
@@ -170,9 +172,9 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
         df.loc[idx_without_null, column2]).abs().values <= delta]
 
     if equal_nan:
-        return idx.difference(idx_no_delta)
-    else:
         return idx_without_null.difference(idx_no_delta)
+    else:
+        return idx.difference(idx_no_delta)
 
 
 def _determine_network_constraints_dict(net, data, **kwargs):
@@ -209,7 +211,9 @@ def _determine_network_constraints_dict(net, data, **kwargs):
 
 def _determine_costs_dict(net, opf_task_overview):
     """
-    Determines which flexibilities do not have costs in the net.
+    Determines which flexibilities do not have costs in the net. Each element is considered as one,
+    i.e. if ext_grid 0, for instance,  is flexible in both, P and Q, and has one cost entry for P,
+    it is not considered as 'flexibilities_without_costs'.
 
     INPUT:
         **net** - panpdapower net
@@ -228,8 +232,8 @@ def _determine_costs_dict(net, opf_task_overview):
     for flex_element in flex_elements:
 
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
-        keys = pd.Series(list(opf_task_overview["flexibilities"].keys()))
-        keys = keys.loc[keys.str.endswith(flex_element)]
+        keys = [power_type + flex_element for power_type in ["P", "Q"] if (
+                    power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
 
         # determine indices of all flexibles
         idx_without_cost = set()
@@ -279,8 +283,8 @@ def _cluster_same_floats(df, subset=None, **kwargs):
     cluster_df[subset] = df.loc[uniq, subset].values
 
     if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
-        for i1 in range(df.shape[0]):
-            cluster_df.at[i1, "index"] = [i1]
+        for i1, idx in enumerate(df.index):
+            cluster_df.at[i1, "index"] = [idx]
     else:  # determine index clusters
         i2 = 0
         for i1, uni in enumerate(uniq):
@@ -326,42 +330,46 @@ def _log_opf_task_overview(opf_task_overview):
         else:
             assert isinstance(data, dict)
         heading_logged = False
-        all_keys = sorted(data.keys())
-        elms = ["".join(c for c in key if not c.isupper()) for key in all_keys]
-        elms = sorted(set(elms))
-        for elm in elms:
-            for key in all_keys:
-                if elm not in key:
+        keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
+        for key, elm in zip(keys, elms):
+            assert elm in key
+            df = data[key]
+
+            if dict_key in ["flexibilities", "network_constraints"]:
+                if not df.shape[0]:
                     continue
-                df = data[key]
+                if not heading_logged:
+                    s += "\n\n%s:" % dict_key
+                    heading_logged = True
 
-                if dict_key in ["flexibilities", "network_constraints"]:
-                    if not df.shape[0]:
-                        continue
-                    if not heading_logged:
-                        s += "\n\n%s:" % dict_key
-                        heading_logged = True
-
-                    # --- logging information
-                    if df.shape[0] > 1:
-                        len_idx = len(list(chain(*df["index"])))
-                        s += "\n    %ix %s" % (len_idx, key)
-                    else:
-                        if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
-                            s += "\n    %g <= all %s <= %g" % (
-                                df.loc[0, "min"], key, df.loc[0, "max"])
-                        else:
-                            s += "\n    all %s with these constraints:" % key
-                            for col in set(df.columns) - {"index"}:
-                                s += " %s=%g" % (col, df.loc[0, col])
-                elif dict_key == "flexibilities_without_costs":
-                    if not heading_logged:
-                        s += "\n\n%s:" % dict_key
-                        heading_logged = True
-                    s += "\n%ix %s" % (len(df), key)
+                # --- logging information
+                len_idx = len(list(chain(*df["index"])))
+                if df.shape[0] > 1:
+                    s += "\n    %ix %s" % (len_idx, key)
                 else:
-                    raise NotImplementedError("Key %s is unknown to this code." % dict_key)
+                    if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
+                        s += "\n    %g <= %ix %s (all) <= %g" % (
+                            df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
+                    else:
+                        s += "\n    %ix %s (all) with these constraints:" % (len_idx, key)
+                        for col in set(df.columns) - {"index"}:
+                            s += " %s=%g" % (col, df.loc[0, col])
+            elif dict_key == "flexibilities_without_costs":
+                if not heading_logged:
+                    s += "\n\n%s:" % dict_key
+                    heading_logged = True
+                s += "\n%ix %s" % (len(df), key)
+            else:
+                raise NotImplementedError("Key %s is unknown to this code." % dict_key)
     logger.info(s + "\n")
+
+
+def _get_keys_and_elements_from_opf_task_dict(dict_):
+    keys = list(dict_.keys())
+    elms = ["".join(c for c in key if not c.isupper()) for key in keys]
+    keys = list(np.array(keys)[np.argsort(elms)])
+    elms = sorted(elms)
+    return keys, elms
 
 
 def switch_info(net, sidx):  # pragma: no cover
@@ -691,12 +699,12 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         return
     assert len(new_indices) == len(old_indices)
     lookup = dict(zip(old_indices, new_indices))
-    
+
     if element == "bus":
         partial = len(new_indices) < net[element].shape[0]
         reindex_buses(net, lookup, partial_lookup=partial)
         return
-    
+
     # --- reindex
     net[element]["index"] = net[element].index
     net[element].loc[old_indices, "index"] = get_indices(old_indices, lookup)
@@ -708,15 +716,15 @@ def reindex_elements(net, element, new_indices, old_indices=None):
                                    (net.measurement.element.isin(old_indices))]
         if len(affected):
             net.measurement.loc[affected.index, "element"] = get_indices(affected.element, lookup)
-        
+
     # --- adapt switch link
     if element in ["line", "trafo"]:
         affected = net.switch[(net.switch.et == element[0]) &
                               (net.switch.element.isin(old_indices))]
         if len(affected):
             net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
-    
-    
+
+
     # --- adapt line_geodata index
     if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
         net["line_geodata"]["index"] = net["line_geodata"].index
@@ -737,7 +745,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
       **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
           selected. Customized DataFrames can also be considered here.
-         
+
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
 
