@@ -111,11 +111,11 @@ def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
                 controllables = net[elm].index
             elif "controllable" in net[elm].columns:
                 controllables = net[elm].index[net[elm].controllable]
-                if not len(controllables):
-                    continue
             elif controllable_default and net[elm].shape[0]:
                 controllables = net[elm].index
             else:
+                continue
+            if not len(controllables):
                 continue
 
             # consider delta_pq
