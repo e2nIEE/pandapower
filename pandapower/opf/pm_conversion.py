@@ -163,7 +163,7 @@ def get_branch_angles(row, correct_pm_network_data):
     return angmin, angmax
 
 
-def ppc_to_pm(net, ppci):  # pragma: no cover
+def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
           "ne_branch": dict(), "switch": dict(),
@@ -296,7 +296,7 @@ def ppc_to_pm(net, ppci):  # pragma: no cover
     return pm
 
 
-def pm_results_to_ppc_results(net, ppc, ppci, result_pm):  # pragma: no cover
+def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     options = net._options
     # status if result is from multiple grids
     multinetwork = False
