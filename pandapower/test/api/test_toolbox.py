@@ -18,7 +18,8 @@ def test_opf_task():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
                     min_vm_pu=[0.9, 0.9, 0.88, 0.9, np.nan, np.nan])
-    pp.create_ext_grid(net, 0, max_q_mvar=80, min_p_mw=0)
+    idx_ext_grid = 1
+    pp.create_ext_grid(net, 0, max_q_mvar=80, min_p_mw=0, index=idx_ext_grid)
     pp.create_gen(net, 1, 10, min_q_mvar=-50, max_q_mvar=-10, min_p_mw=0, max_p_mw=60)
     pp.create_gen(net, 2, 8)
     pp.create_gen(net, 3, 5)
@@ -41,6 +42,7 @@ def test_opf_task():
         assert df.shape[0]
         if "gen" in key:
             assert df.shape[0] > 1
+    assert out1["flexibilities"]["Pext_grid"].loc[0, "index"] == [1]
     assert np.isnan(out1["flexibilities"]["Pext_grid"].loc[0, "max"])
     assert out1["flexibilities"]["Pext_grid"].loc[0, "min"] == 0
     assert np.isnan(out1["flexibilities"]["Qext_grid"].loc[0, "min"])
@@ -61,7 +63,7 @@ def test_opf_task():
         assert pp.dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
 
     # check costs
-    pp.create_poly_cost(net, 0, "ext_grid", 2)
+    pp.create_poly_cost(net, idx_ext_grid, "ext_grid", 2)
     pp.create_poly_cost(net, 1, "gen", 1.7)
     pp.create_poly_cost(net, 0, "dcline", 2, type="q")
     pp.create_pwl_cost(net, 2, "gen", [[-1e9, 1, 3.1], [1, 1e9, 0.5]], power_type="q")
@@ -241,28 +243,28 @@ def test_continuos_bus_numbering():
 
 def test_reindex_elements():
     net = nw.example_simple()
-    
+
     new_sw_idx = np.random.randint(0, 1000, size=net.switch.shape[0])
     pp.reindex_elements(net, "switch", new_sw_idx)
     assert np.allclose(net.switch.index.values, new_sw_idx)
-    
+
     previous_idx = new_sw_idx[:3]
     new_sw_idx = [2, 3, 4]
     pp.reindex_elements(net, "switch", new_sw_idx, previous_idx)
     assert np.allclose(net.switch.index.values[:3], new_sw_idx)
-    
+
     pp.reindex_elements(net, "line", [77, 22], [2, 0])
     assert np.allclose(net.line.index.values, [22, 1, 77, 3])
     assert np.allclose(net.switch.element.iloc[[4, 5]], [77, 77])
-    
+
     old_idx = copy.deepcopy(net.bus.index.values)
     pp.reindex_elements(net, "bus", old_idx+2)
     assert np.allclose(net.bus.index.values, old_idx+2)
-    
+
     pp.reindex_elements(net, "bus", [400, 600], [4, 6])
     assert 400 in net.bus.index
     assert 600 in net.bus.index
-    
+
 
 
 def test_continuous_element_numbering():
