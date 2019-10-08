@@ -209,9 +209,10 @@ def ppc_to_pm(net, ppci):
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
                                          "status": True, "index": load_idx}
             load_idx += 1
+        # if bs or gs != 0. -> shunt element at this bus
         bs = row[BS]
         gs = row[GS]
-        if pq_mismatch:
+        if not np.allclose(bs, 0.) or not np.allclose(gs, 0.):
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
                                            "status": True, "index": shunt_idx}
             shunt_idx += 1

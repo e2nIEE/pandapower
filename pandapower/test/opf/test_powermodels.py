@@ -4,21 +4,22 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import json
 import os
 from functools import partial
 
 import numpy as np
 import pandas as pd
 import pytest
-from pandapower.pd2ppc import _pd2ppc
+
 import pandapower as pp
 import pandapower.networks as nw
+from pandapower.opf.pm_conversion import _read_results_to_net
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.toolbox import convert_pp_to_pm
-from pandapower.opf.pm_conversion import _read_results_to_net
 from pandapower.test.opf.test_basic import simple_opf_test_net
-import json
 
 try:
     from julia import Main
@@ -451,8 +452,8 @@ def assert_pf(net):
     va_pp = copy.copy(net.res_bus.va_degree)
     vm_pp = copy.copy(net.res_bus.vm_pu)
 
-    assert np.allclose(va_pm, va_pp)
     assert np.allclose(vm_pm, vm_pp)
+    assert np.allclose(va_pm, va_pp)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -463,6 +464,13 @@ def test_pm_ac_powerflow_simple():
     # net.trafo.loc[0, "shift_degree"] = 30.
     # assert_pf(net)
 
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_ac_powerflow_shunt():
+    net = nw.simple_four_bus_system()
+    pp.create_shunt(net, 2, q_mvar=-0.5)
+    net.trafo.loc[0, "shift_degree"] = 0.
+    assert_pf(net)
 
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
