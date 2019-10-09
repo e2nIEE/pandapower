@@ -15,6 +15,7 @@ from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 
 try:
     import pypower.case24_ieee_rts as c24
+
     pypower_installed = True
 except ImportError:
     pypower_installed = False
@@ -111,12 +112,12 @@ def test_case9_conversion():
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
     # compare optimal powerflow results
-    pp.runopp(net)
-    pp.runopp(net2)
+    pp.runopp(net, delta=1e-16)
+    pp.runopp(net2, delta=1e-16)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
 
-@pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
+@pytest.mark.skipif(pypower_installed == False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)

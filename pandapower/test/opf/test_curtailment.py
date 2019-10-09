@@ -5,8 +5,7 @@
 
 
 import pytest
-from numpy import array, allclose
-
+from numpy import array, allclose, all
 import pandapower as pp
 
 try:
@@ -41,30 +40,31 @@ def test_minimize_active_power_curtailment():
 
     # create generators
     pp.create_ext_grid(net, bus1)
-    pp.create_gen(net, bus3, p_mw=80, max_p_mw=80, min_p_mw=0, vm_pu=1.01,
-                  controllable=True)
-    pp.create_gen(net, bus4, p_mw=0.1, max_p_mw=100, min_p_mw=0, vm_pu=1.01,
-                  controllable=True)
+    pp.create_gen(net, bus3, p_mw=80., max_p_mw=80., min_p_mw=0., vm_pu=1.01, controllable=True)
+    pp.create_gen(net, bus4, p_mw=0.1, max_p_mw=100., min_p_mw=0., vm_pu=1.01, controllable=True)
 
-    net.trafo["max_loading_percent"] = 50
-    net.line["max_loading_percent"] = 50
+    net.trafo["max_loading_percent"] = 50.
+    net.line["max_loading_percent"] = 50.
 
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-0.01)
-    pp.create_poly_cost(net, 1, "gen", cp1_eur_per_mw=-0.01)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0)
-
-
-
+    # use cheapest gen first, avoid ext_grid as much as possible (until vm_pu max is reached for gens)
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.02)
+    pp.create_poly_cost(net, 1, "gen", cp1_eur_per_mw=0.0)
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0.3)
     pp.runopp(net, calculate_voltage_angles=True)
     assert net["OPF_converged"]
-    assert allclose(net.res_bus.vm_pu.values, array([1., 1.00000149,  1.01998544,  1.01999628]),
-                    atol=1e-5)
-    assert allclose(net.res_bus.va_degree.values, array([0., -0.7055226, 0.85974768, 2.24584537]),
-                    atol=1e-3)
+    # checks limits in general
+    assert all(net.res_line.loading_percent < 50.01)
+    assert all(net.res_bus.vm_pu < 1.02)
+    assert all(net.res_bus.vm_pu > 1.0)
+    # checks if the cheaper gen is rather used then the more expensive one to cover the load
+    assert net.res_gen.at[1, "p_mw"] > net.res_gen.at[0, "p_mw"]
+    # check if they use their maximum voltage
+    assert allclose(net.res_gen.loc[:, "vm_pu"], 1.02)
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    # pytest.main([__file__, "-xs"])
+    test_minimize_active_power_curtailment()

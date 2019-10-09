@@ -1,8 +1,96 @@
 
 module PP2PM
-export load_pm_from_json
+export load_pm_from_json, get_model, get_solver
 
 import JSON
+using PowerModels
+
+import Cbc
+import Ipopt
+import Juniper
+import JuMP
+
+
+try
+    import Gurobi
+catch e
+    if isa(e, LoadError)
+        println("Cannot import Gurobi. That's fine if you do not plan to use it")
+    end
+end
+
+try
+    import KNITRO
+catch e
+    if isa(e, LoadError)
+        println("Cannot import KNITRO. That's fine if you do not plan to use it")
+    end
+end
+
+try
+    import SCIP
+catch e
+    if isa(e, LoadError)
+        println("Cannot import SCIP. That's fine if you do not plan to use it")
+    end
+end
+
+function get_model(model_type)
+    """
+    gets the model function
+    model_type (str) - examples: "ACPPowerModel", "DCPPowerModel", "SOCWRPowerModel"...
+    see: https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/
+    """
+
+    s = Symbol(model_type)
+    return getfield(Main, s)
+    return f
+end
+
+function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
+    log_level::Int=0)
+    # import gurobi by default, if that's not possible -> get ipopt'
+    if optimizer == "gurobi"
+            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
+    end
+
+    if optimizer == "ipopt"
+                solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level=0)
+    end
+
+    if optimizer == "juniper" && nl == "ipopt" && mip == "cbc"
+        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = log_level)
+        nl_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-6, print_level = log_level)
+        solver = JuMP.with_optimizer(Juniper.Optimizer,
+                     nl_solver = nl_solver,
+                     mip_solver = mip_solver,
+                     log_levels = [])
+    end
+
+    if optimizer == "juniper" && nl == "gurobi" && mip == "cbc"
+        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = log_level)
+        nl_solver = JuMP.with_optimizer(Gurobi.Optimizer)
+        solver = JuMP.with_optimizer(Juniper.Optimizer,
+                     nl_solver = nl_solver,
+                     mip_solver = mip_solver,
+                     log_levels = [])
+    end
+
+    if optimizer == "knitro"
+        solver = JuMP.with_optimizer(KNITRO.Optimizer)
+    end
+
+    if optimizer == "cbc"
+        solver = JuMP.with_optimizer(Cbc.Optimizer)
+    end
+
+    if optimizer == "scip"
+        solver = JuMP.with_optimizer(SCIP.Optimizer)
+    end
+
+    return solver
+
+end
 
 function load_pm_from_json(json_path)
     pm = Dict()
@@ -14,6 +102,9 @@ function load_pm_from_json(json_path)
         if gen["model"] == 1
             pm["gen"][idx]["cost"] = convert(Array{Float64,1}, gen["cost"])
         end
+    end
+    if pm["correct_pm_network_data"]
+        correct_network_data!(pm)
     end
     return pm
 end
