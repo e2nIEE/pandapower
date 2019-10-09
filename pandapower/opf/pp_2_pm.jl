@@ -36,15 +36,15 @@ catch e
 end
 
 function get_model(model_type)
-    if model_type == "DCPPowerModel"
-        return DCPPowerModel
-    elseif model_type == "ACPPowerModel"
-        return ACPPowerModel
-    elseif model_type == "SOCWRPowerModel"
-        return SOCWRPowerModel
-    else
-        error("model_type unknown: ", model_type)
-    end
+    """
+    gets the model function
+    model_type (str) - examples: "ACPPowerModel", "DCPPowerModel", "SOCWRPowerModel"...
+    see: https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/
+    """
+
+    s = Symbol(model_type)
+    return getfield(Main, s)
+    return f
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
