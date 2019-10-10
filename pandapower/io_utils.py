@@ -604,10 +604,9 @@ def controller_to_serializable(obj):
 
 
 def mkdirs_if_not_existent(dir):
-    if os.path.isdir(dir) == False:
-        os.makedirs(dir)
-        return True
-    return False
+    already_exist = os.path.isdir(dir)
+    os.makedirs(dir, exist_ok=True)
+    return ~already_exist
 
 
 if SHAPELY_INSTALLED:
