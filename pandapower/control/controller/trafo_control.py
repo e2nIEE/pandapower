@@ -4,10 +4,10 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 
 try:
-    import pplog
-except:
-    import logging as pplog
-logger = pplog.getLogger(__name__)
+    import pplog as logging
+except ImportError:
+    import logging
+logger = logging.getLogger(__name__)
 
 
 class TrafoController(Controller):
