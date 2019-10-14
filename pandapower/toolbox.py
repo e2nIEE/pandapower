@@ -56,7 +56,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
                     net.line.name.at[r.name])
 
 
-def opf_task(net, delta_pq=1e-3, keep=False):
+def opf_task(net, delta_pq=1e-3, keep=False, log=True):
     """
     Collects some basic inforamtion of the optimal powerflow task und prints them.
     """
@@ -72,7 +72,8 @@ def opf_task(net, delta_pq=1e-3, keep=False):
     _determine_costs_dict(net, opf_task_overview)
 
     _check_overlapping_constraints(opf_task_overview)
-    _log_opf_task_overview(opf_task_overview)
+    if log:
+        _log_opf_task_overview(opf_task_overview)
 
     return opf_task_overview
 
