@@ -1,30 +1,18 @@
 ##################################
-Control Loop Simulation
+Controller Simulation
 ##################################
 
-Within the directory **control** you will find the ``TrafoController``, which simulates a tap-changer-transformer and
-the ``ConstControl``, which updates timeseries for a specific element or multiple elements of the same type. 
-For example the active power *P* of static generators. The parent class is called ``Controller``. 
-The control module is closely interlinked with the **timeseries** module, which  includes the simulation of time 
-base operations. The implemented classes ``DataSource`` and ``OutputWriter`` enable the possibilities to run timeseries
-and save output data.
+The control module allows to simulate elements that are controlled based on power flows in power systems. Prominent examples are tap changer controllers that adapt the 
+tap changer of a transformer depending on a measured bus voltage, or droop controllers in PV plants that adapt the reactive power depending on the bus voltage.
 
-.. note::
-	These abstractions are implemented object-orientated. If you are not familiar
-	with this concept we recommend a quick look at:
-
-	* http://www.python-course.eu/object_oriented_programming.php (english)
-
-	* http://www.python-kurs.eu/klassen.php (german)
-
-**Structure of this chapter:**
+The control module allows you to simulate these control strategies by either using a predefined controller element that comes with pandapower or building your own 
+controller in an object oriented framework. The controller module is closely integrated with the timeseries module, which allows you to run quasi-static timeseries
+simulations with controlled elements.
 
 .. toctree:: 
     :maxdepth: 2
     
     control/control_loop
-    control/building_a_controller
+    control/run
     control/controller
-    control/cascade_control
-    control/timeseries
     control/tutorials
