@@ -13,6 +13,10 @@ method ``run_timeseries()``. Following picture describes the dependence of both 
 Basic control loop
 ====================
 
+.. image:: /pics/control/run_control_control_theory.svg
+    :width: 400 px
+    :align: center
+
 
 Time Series
 =================
