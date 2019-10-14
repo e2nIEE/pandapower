@@ -13,7 +13,6 @@ import pandas
 import pandas as pd
 from pandas import Int64Index
 
-# import control as ct
 try:
     import pplog
 except:
