@@ -80,7 +80,8 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
         elif item == "std_types":
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
-                dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+                if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
+                    dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
             continue
         elif item == "user_pf_options":
             if len(value) > 0:
@@ -95,7 +96,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
 
         # value is pandas DataFrame
-        if include_empty_tables and value.empty:
+        if not include_empty_tables and value.empty:
             continue
 
         if item == "bus_geodata":
@@ -603,10 +604,9 @@ def controller_to_serializable(obj):
 
 
 def mkdirs_if_not_existent(dir):
-    if os.path.isdir(dir) == False:
-        os.makedirs(dir)
-        return True
-    return False
+    already_exist = os.path.isdir(dir)
+    os.makedirs(dir, exist_ok=True)
+    return ~already_exist
 
 
 if SHAPELY_INSTALLED:

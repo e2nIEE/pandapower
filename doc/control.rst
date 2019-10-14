@@ -1,5 +1,5 @@
 ##################################
-Control and Timeseries Simulation
+Control Loop Simulation
 ##################################
 
 Within the directory **control** you will find the ``TrafoController``, which simulates a tap-changer-transformer and

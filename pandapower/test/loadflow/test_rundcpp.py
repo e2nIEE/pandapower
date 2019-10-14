@@ -10,6 +10,7 @@ import pytest
 import pandapower as pp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 
@@ -43,14 +44,14 @@ def test_rundcpp_init_auxiliary_buses():
 
 
 # ToDo: Bugs because of float datatypes -> Check Travis on linux machines...
-# def test_result_iter():
-#     for net in result_test_network_generator_dcpp():
-#         try:
-#             rundcpp_with_consistency_checks(net)
-#         except (AssertionError):
-#             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-#         except(LoadflowNotConverged):
-#             raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+def test_result_iter():
+    for net in result_test_network_generator_dcpp():
+        try:
+            rundcpp_with_consistency_checks(net)
+        except (AssertionError):
+            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+        except(pp.LoadflowNotConverged):
+            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
 def test_two_open_switches():
@@ -97,6 +98,7 @@ def test_single_bus_network():
 
     pp.rundcpp(net)
     assert net.converged
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
