@@ -441,19 +441,32 @@ def test_ots_opt():
     assert np.array_equal(np.array([1, 1, 1, 0, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
-def assert_pf(net):
+def assert_pf(net, dc=False):
     custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
                                "test_files", "run_powermodels_powerflow.jl")
-    pp.runpm(net, julia_file=custom_file, pm_model="ACPPowerModel")
+    if dc:
+        pp.runpm(net, julia_file=custom_file, pm_model="DCPPowerModel")
+    else:
+        pp.runpm(net, julia_file=custom_file, pm_model="ACPPowerModel")
+
     va_pm = copy.copy(net.res_bus.va_degree)
     vm_pm = copy.copy(net.res_bus.vm_pu)
 
-    pp.runpp(net)
+    if dc:
+        pp.rundcpp(net, calculate_voltage_angles=True)
+    else:
+        pp.runpp(net, calculate_voltage_angles=True)
     va_pp = copy.copy(net.res_bus.va_degree)
     vm_pp = copy.copy(net.res_bus.vm_pu)
 
-    assert np.allclose(vm_pm, vm_pp)
-    assert np.allclose(va_pm, va_pp)
+    try:
+        assert np.allclose(va_pm, va_pp)
+    except AssertionError as e:
+        print("Differences (pm - pp):")
+        print(va_pm - va_pp)
+        raise AssertionError(e)
+    if not dc:
+        assert np.allclose(vm_pm, vm_pp)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -461,8 +474,13 @@ def test_pm_ac_powerflow_simple():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net)
-    # net.trafo.loc[0, "shift_degree"] = 30.
-    # assert_pf(net)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_dc_powerflow_simple():
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0.
+    assert_pf(net, dc=True)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -471,6 +489,38 @@ def test_pm_ac_powerflow_shunt():
     pp.create_shunt(net, 2, q_mvar=-0.5)
     net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_dc_powerflow_shunt():
+    net = nw.simple_four_bus_system()
+    pp.create_shunt(net, 2, q_mvar=-0.5)
+    net.trafo.loc[0, "shift_degree"] = 0.
+    assert_pf(net, dc=True)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_ac_powerflow_tap():
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0.
+    net.trafo.loc[0, "tap_pos"] = -10.
+    assert_pf(net)
+    net.trafo.loc[0, "tap_pos"] = 10.
+    assert_pf(net)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.mark.xfail(reason="Tap pos is not considered in power models DC model!")
+def test_pm_dc_powerflow_tap():
+    # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0.
+    assert_pf(net, dc=True)
+    # these tests fail since tap pos is not considered in PowerModels DC power flow
+    net.trafo.loc[0, "tap_pos"] = -10.
+    assert_pf(net, dc=True)
+    net.trafo.loc[0, "tap_pos"] = 10.
+    assert_pf(net, dc=True)
 
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):

@@ -76,7 +76,6 @@ def _runpm(net, delete_buffer_file=True):  # pragma: no cover
         os.remove(buffer_file)
 
 
-
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -158,8 +157,9 @@ def get_branch_angles(row, correct_pm_network_data):
             logger.debug("changed voltage angle maximum of branch {} to 60. "
                          "from {} degrees".format(int(row[0].real), angmax))
             angmax = 60.
-    angmin = (angmin / 180.) * pi  # convert to p.u. as well
-    angmax = (angmax / 180.) * pi  # convert to p.u. as well
+    # convert to rad
+    angmin = math.radians(angmin)
+    angmax = math.radians(angmax)
     return angmin, angmax
 
 
@@ -319,7 +319,8 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     for i, bus in sol["bus"].items():
         bus_idx = int(i) - 1
         ppci["bus"][bus_idx, VM] = bus["vm"]
-        ppci["bus"][bus_idx, VA] = math.degrees(bus["va"])
+        # replace nans with 0.(in case of SOCWR model for example
+        ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
 
     for i, gen in sol["gen"].items():
         gen_idx = int(i) - 1
