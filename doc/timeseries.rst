@@ -20,5 +20,5 @@ Refer to :ref:`time series overview <timeseriesloop>` for details and to :ref:`e
 Jupyter Notebooks
 =================
 
-- `Running a TimeSeries-Simulation <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/time_series.ipynb>`_
-- `Running an advanced TS-Simulation <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/time_series_advanced_output.ipynb>`_
+- `Running a TimeSeries-Simulation <https://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/time_series.ipynb>`_
+- `Running an advanced TS-Simulation <https://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/time_series_advanced_output.ipynb>`_
