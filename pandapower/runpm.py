@@ -59,6 +59,14 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
 
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "ipopt") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+
      """
     net._options = {}
     ac = True if "DC" not in pm_model else False
@@ -76,7 +84,8 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt"):  # pragma: no cover
+                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
+                 pm_mip_solver="cbc", pm_nl_solver="ipopt"):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
     
@@ -116,7 +125,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
 
-        **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
+        **pm_solver** (str, "ipopt") - The "main" power models solver
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
      """
@@ -199,11 +208,25 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
+               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True,
+               pm_nl_solver="ipopt", pm_mip_solver="cbc"):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
 
-    see above
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "juniper") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
 
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
@@ -224,18 +247,34 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     correct_pm_network_data=correct_pm_network_data, pm_nl_solver=pm_nl_solver,
+                     pm_mip_solver=pm_mip_solver)
     _runpm(net)
     read_tnep_results(net)
 
 
 def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-              pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
+              pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt", pm_mip_solver="cbc",
+              correct_pm_network_data=True):  # pragma: no cover
     """
     Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
 
-    see above
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "juniper") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+
 
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
@@ -251,7 +290,8 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
+                     pm_nl_solver=pm_nl_solver)
     _runpm(net)
     read_ots_results(net)
 

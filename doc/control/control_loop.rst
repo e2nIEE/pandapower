@@ -8,7 +8,11 @@ the used network ``net.controller``. When a simulation is being invoked through 
 calls the controlling-method ``control_step()`` on each initialized controller until all of them are converged. The possibility to operate
 different controllers in a specific sequence is given by the variables ``net.controller.order`` and ``net.controller.level``, which 
 we will go into later. This ``control_step()`` can be calculated for a single point in time as well as a simulation of discrete consecutive points in time using the **timeseries** module 
-method ``run_timeseries()``. Following picture describes the dependence of both methods.
+method ``run_timeseries()``. The following picture describes the dependence of both methods.
+
+.. seealso::
+
+    :ref:`time series module  <timeseriesmodule>`
 
 Basic control loop
 ====================
@@ -17,13 +21,6 @@ Basic control loop
     :width: 400 px
     :align: center
 
-
-Time Series
-=================
-
-.. image:: /pics/control/run_timeseries_reglerstrecke.svg
-    :width: 400 px
-    :align: center
 
 Cascade control
 =================
