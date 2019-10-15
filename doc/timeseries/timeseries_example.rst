@@ -4,7 +4,7 @@
 Timeseries Example
 #############################
 
-A Common Use Case
+Common Use Case
 =================
 A common use case is to add two :ref:`const controller <ConstControl>` to the grid to update the P values of loads and static generators.
 The p_mw values for each time step are stored in a data source, which is defined by the class ``DataSource``. This class
