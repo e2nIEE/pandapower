@@ -1,3 +1,5 @@
+.. _controller:
+
 ###################################################
 Predefined Controllers
 ###################################################
@@ -13,7 +15,7 @@ The basic controller is the base controller class that should be subclassed when
 	
 ConstControl
 ==============
-
+.. _ConstControl:
 This controller is made for the use with the time series module to read data from a DataSource and write it to the net.
 
 .. autoclass:: pandapower.control.controller.const_control.ConstControl

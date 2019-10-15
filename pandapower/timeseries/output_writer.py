@@ -9,58 +9,66 @@ from time import time
 import numpy as np
 import pandas as pd
 
+from pandapower.io_utils import mkdirs_if_not_existent
+
 try:
     import pplog
 except ImportError:
     import logging as pplog
-
-from pandapower.io_utils import mkdirs_if_not_existent
-from pandas import DataFrame, isnull
-
 logger = pplog.getLogger(__name__)
-
-__author__ = 'fschaefer'
 
 
 class OutputWriter:
     """
-    This class supplies you with methods to store and format your output.
-    The general idea is to have a python-dictionary *output* which provides
-    a container for arbitrary information you would like to store. By default
-    a pandas DataFrame is initialized for the key *Parameters*.
+    The OutputWriter class is used to store and format specific outputs from a time series calculation.
 
-    For each value you want to store you may add a function to the *output_list*
-    of the OutputWriter, which contains calculations and return a value to store.
-    These values are then stored in the DataFrame mentioned above in a column
-    named after the function you implemented.
+    It contains a python-dictionary *output* which is a container for result DataFrames or arbitrary information you
+    would like to store. By default a pandas DataFrame is initialized for the key *Parameters*, which has the columns
+    "time_step", "controller_unstable", "powerflow_failed".
 
-    A lot of function are already implemented (for full list, see sourcecode).
-    If there are any interesting output values missing, feel free to
-    add them.
+    To simple log outputs during a time series simulation use **ow.log_variable(table, column)** where table is the name
+    of the (result) table, e.g. "res_bus", and column the name of the column, e.g. "vm_pu".
+
+    More sophisticated outputs can be added as well since for each value to be stored a function is
+    added to the *output_list* which is called at the end of each time step.
+    The function reads the calculation results and returns the desired values to store.
+    These values are then stored in the *output* DataFrame in a column named after the function you implemented.
+    Such a function can be used to store only some information of the power flow results, like the highest values
+    of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
+    for an example.
 
     INPUT:
         **net** - The pandapower format network
-        **time_steps** (list) - time_steps to calculate as list
+
+        **time_steps** (list) - time_steps to calculate as a list (or range)
 
     OPTIONAL:
 
-        **output_path** (string, None) - Path to the file or folder we want to write the output to.
-                                        Allowed file extensions: *.xls, *.xlsx
+        **output_path** (string, None) - Path to a folder where the output is written to.
 
-        **output_file_type** (string, ".p") - output filetype to use if output_path is not a file.
-                                            Allowed file extensions: *.xls, *.xlsx, *.csv, *.pickle, *.json
-
-        **csv_seperator** (string, ";") - The seperator used when writing to a csv file
-
-        **write_time** (int, None) - Time to save periodically to disk in minutes. Deactivated by default (=None)
-
+        **output_file_type** (string, ".p") - output filetype to use.
+        Allowed file extensions: [*.xls, *.xlsx, *.csv, *.p, *.json]
         Note: XLS has a maximum number of 256 rows.
+
+        **csv_separator** (string, ";") - The separator used when writing to a csv file
+
+        **write_time** (int, None) - Time to save periodically to disk in minutes. Deactivated by default
+
+
+    EXAMPLE:
+        >>> from pandapower.timeseries.output_writer import OutputWriter
+        >>> from pandapower.networks as nw
+        >>> net = nw.simple_four_bus_system()
+        >>> ow = OutputWriter(net) # create an OutputWriter
+        >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
+        >>> ow.log_variable('res_line', 'loading_percent') # add logging for line loadings in percent
+
     """
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
-                 csv_seperator=";"):
+                 csv_separator=";"):
         self.net = net
-        self.csv_seperator = csv_seperator
+        self.csv_separator = csv_separator
         self.output_path = output_path
         self.output_file_type = output_file_type
 
@@ -98,9 +106,9 @@ class OutputWriter:
     def _init_output(self):
         self.output = dict()
         # init parameters
-        self.output["Parameters"] = DataFrame(False, index=self.time_steps,
-                                              columns=["time_step", "controller_unstable",
-                                                       "powerflow_failed"])
+        self.output["Parameters"] = pd.DataFrame(False, index=self.time_steps,
+                                                 columns=["time_step", "controller_unstable",
+                                                          "powerflow_failed"])
         self.output["Parameters"].loc[:, "time_step"] = self.time_steps
 
     def _init_np_results(self):
@@ -113,7 +121,8 @@ class OutputWriter:
     def _save_to_memmap(self, append):
         raise NotImplementedError("Sorry not implemented yet")
 
-    def _save_seperate(self, append, file_extension):
+    def _save_separate(self, append):
+
         for partial in self.output_list:
             table = partial.args[0]
             variable = partial.args[1]
@@ -121,50 +130,48 @@ class OutputWriter:
                 file_path = os.path.join(self.output_path, table)
                 mkdirs_if_not_existent(file_path)
                 if append:
-                    file_name = str(variable) + "_" + str(self.cur_realtime) + file_extension
+                    file_name = str(variable) + "_" + str(self.cur_realtime) + self.output_file_type
                 else:
-                    file_name = str(variable) + file_extension
+                    file_name = str(variable) + self.output_file_type
                 file_path = os.path.join(file_path, file_name)
                 data = self.output[self._get_output_name(table, variable)]
-                # Todo: this can be done without this if else here, but I don't know how to call function by string. Please somebody help me
-                if file_extension == ".json":
+                if self.output_file_type == ".json":
                     data.to_json(file_path)
-                elif file_extension == ".p":
+                elif self.output_file_type == ".p":
                     data.to_pickle(file_path)
-                elif file_extension == ".xls" or file_extension == ".xlsx":
+                elif self.output_file_type in [".xls", ".xlsx"]:
                     try:
                         data.to_excel(file_path)
                     except ValueError as e:
                         if data.shape[1] > 255:
-                            raise ValueError("pandas.to_excel() is not capable to handle big data" +
+                            raise ValueError("pandas.to_excel() is not capable to handle large data" +
                                              "with more than 255 columns. Please use other " +
                                              "file_extensions instead, e.g. 'json'.")
                         else:
                             raise ValueError(e)
-                elif file_extension == ".csv":
-                    data.to_csv(file_path, sep=self.csv_seperator)
+                elif self.output_file_type == ".csv":
+                    data.to_csv(file_path, sep=self.csv_separator)
 
     def dump_to_file(self, append=False):
         """
-        Save the output matrix to a specific filetype (determined by basename)
+        Save the output to separate files in output_path with the file_type output_file_type. This is called after
+        the time series simulation by default.
 
            **append** (bool, False) - Option for appending instead of overwriting the file
         """
-        file_extension = self.output_file_type
         save_single = False
         self._np_to_pd()
         if self.output_path is not None:
             try:
-                if save_single and (file_extension == ".xls" or file_extension == ".xlsx"):
+                if save_single and self.output_file_type in [".xls", ".xlsx"]:
                     self._save_single_xls_sheet(append)
-                elif file_extension in [".csv", ".xls", ".xlsx", ".json", ".p"]:
-                    self._save_seperate(append, file_extension)
-                elif file_extension == ".dat":
+                elif self.output_file_type in [".csv", ".xls", ".xlsx", ".json", ".p"]:
+                    self._save_separate(append)
+                elif self.output_file_type == ".dat":
                     self._save_to_memmap(append)
                 else:
                     raise UserWarning(
                         "Specify output file with .csv, .xls, .xlsx, .p, .json or .dat ending")
-
                 if append:
                     self._init_output()
 
@@ -177,10 +184,9 @@ class OutputWriter:
         self.cur_realtime = time()  # reset real time counter for next period
 
     def save_results(self, time_step, pf_converged, ctrl_converged):
-        """
-        Saves the results of the current time step to a matrix,
-        using the output functions in the self.output_list
-        """
+        #Saves the results of the current time step to a matrix,
+        # using the output functions in the self.output_list
+
         # remember the last time step
         self.time_step = time_step
 
@@ -201,10 +207,9 @@ class OutputWriter:
             self.dump()
 
     def save_to_parameters(self):
-        """
-        Saves the results of the current time step to Parameters table,
-        using the output functions in the self.output_list
-        """
+        # Saves the results of the current time step to self.output,
+        # using the output functions in the self.output_list
+
         for of in self.output_list:
             try:
                 of()
@@ -216,39 +221,45 @@ class OutputWriter:
                 self.save_nans_to_parameters()
 
     def save_nans_to_parameters(self):
-        """
-        Saves NaNs to for the given time step.
-        """
+        # Saves NaNs to for the given time step.
         time_step_idx = self.time_step_lookup[self.time_step]
         for of in self.output_list:
             self.output["Parameters"].loc[time_step_idx, of.__name__] = np.NaN
 
     def remove_output_variable(self, table, variable):
-        """
-        Removes a single output from the output variable function stack
-        """
         # ToDo: Implement this function
         pass
 
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
-        Adds a variable to log during simulation.
-            - table: table where the variable islocated as a string (i.e. "res_bus")
-            - variable: variable that should be logged as string (i.e. "p_kw")
-            - index: can be either one index or a list of indeces, or a numpy array of indices,
-                or a pandas Index, or a pandas Series (e.g. net.load.bus) for which
-                the variable will be logged. If no index is given, the variable
-                will be logged for all elements in the table
-            - eval_function: A function to be applied on the table / variable / index combination.
-                For example: pd.min oder pd.max
-            - eval_name: the name for an applied function.
-                For example: "grid_losses"
+        Adds a variable to log during simulation and appends it to output_list.
+        INPUT:
 
-        Note: Variable will be written to an extra sheet when writing to Excel
-        or to an extra file when writing to csv.
+        **table** (str) - The DataFrame table where the variable is located as a string (e.g. "res_bus")
+
+        **variable** (str) -  variable that should be logged as string (e.g. "p_mw")
+
+        OPTIONAL:
+
+        **index** (iterable, None) - Can be either one index or a list of indices, or a numpy array of indices,
+        or a pandas Index, or a pandas Series (e.g. net.load.bus) for which
+        the variable will be logged. If no index is given, the variable will be logged for all elements in the table
+
+        **eval_function** (function, None) - A function to be applied on the table / variable / index combination.
+        example: pd.min or pd.mean
+
+        **eval_name** (str, None) - The name for an applied function. If None the name consists of the table, variable,
+        index and eval function
+        example: "Sir_Lancelot"
+
+        EXAMPLE:
+            >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
+            >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
+            >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
+
         """
 
-        if np.any(isnull(index)):
+        if np.any(pd.isnull(index)):
             # check how many elements there are in net
             index = self.net[table.split("res_")[-1]].index
         if not hasattr(index, '__iter__'):
@@ -298,14 +309,6 @@ class OutputWriter:
         if self.time_steps is not None:
             self._init_np_array(partial_func)
 
-    def add_output(self, output):
-        """
-        Adds a single output to the list
-        """
-        logger.warning(
-            "Your outputwriter contains deprecated functions, check if the output is right!")
-        self.output_list.append(output)
-
     def _log(self, table, variable, index, eval_function=None, eval_name=None):
         try:
             # ToDo: Create a mask for the numpy array in the beginning and use this one for getting the values. Faster
@@ -339,7 +342,7 @@ class OutputWriter:
             columns = index
             if eval_name is not None:
                 columns = [eval_name]
-            res_df = DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
+            res_df = pd.DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
             if res_name in self.output and eval_name is not None:
                 try:
                     self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1,
