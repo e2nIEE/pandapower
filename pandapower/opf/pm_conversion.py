@@ -218,11 +218,11 @@ def ppc_to_pm(net, ppci):
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
-    n_lines = net._pd2ppc_lookups["branch"]["line"][1]
+    n_lines = net.line.in_service.sum()
     for idx, row in enumerate(ppci["branch"], start=1):
         branch = dict()
         branch["index"] = idx
-        branch["transformer"] = idx > n_lines
+        branch["transformer"] = int(idx > n_lines)
         branch["br_r"] = row[BR_R].real
         branch["br_x"] = row[BR_X].real
         branch["g_fr"] = - row[BR_B].imag / 2.0
