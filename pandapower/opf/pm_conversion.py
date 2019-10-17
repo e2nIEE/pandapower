@@ -346,13 +346,18 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
 
 
 def add_pm_options(pm, net):
-    if "pm_solver" in net._options:
-        pm["pm_solver"] = net._options["pm_solver"]
-    if "pm_mip_solver" in net._options:
-        pm["pm_mip_solver"] = net._options["pm_mip_solver"]
-    if "pm_nl_solver" in net._options:
-        pm["pm_nl_solver"] = net._options["pm_nl_solver"]
-    if "pm_model" in net._options:
-        pm["pm_model"] = net._options["pm_model"]
+    # read values from net_options if present else use default values
+    pm["pm_solver"] = net._options["pm_solver"] if "pm_solver" in net._options else "ipopt"
+    pm["pm_mip_solver"] = net._options["pm_mip_solver"] if "pm_mip_solver" in net._options else "cbc"
+    pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
+    pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
+    pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
+
+    if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
+        # write time limits to power models data structure
+        for key, val in net._options["pm_time_limits"].items():
+            pm[key] = val
+    else:
+        pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"] = np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     return pm
