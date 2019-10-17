@@ -44,36 +44,38 @@ function get_model(model_type)
 
     s = Symbol(model_type)
     return getfield(Main, s)
-    return f
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
-    log_level::Int=0)
-    # import gurobi by default, if that's not possible -> get ipopt'
+    log_level::Int=0, time_limit::Float64=Inf, nl_time_limit::Float64=Inf, 
+    mip_time_limit::Float64=Inf)
+    
     if optimizer == "gurobi"
-            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
+            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=time_limit)
     end
 
     if optimizer == "ipopt"
-                solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level=0)
+                solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level=log_level, max_cpu_time=time_limit)
     end
 
     if optimizer == "juniper" && nl == "ipopt" && mip == "cbc"
-        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = log_level)
-        nl_solver = JuMP.with_optimizer(Ipopt.Optimizer, tol = 1e-6, print_level = log_level)
+        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel=log_level, seconds=mip_time_limit)
+        nl_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level=log_level, max_cpu_time=nl_time_limit)
         solver = JuMP.with_optimizer(Juniper.Optimizer,
                      nl_solver = nl_solver,
                      mip_solver = mip_solver,
-                     log_levels = [])
+                     log_levels = [],
+                     time_limit = time_limit)
     end
 
     if optimizer == "juniper" && nl == "gurobi" && mip == "cbc"
-        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel = log_level)
-        nl_solver = JuMP.with_optimizer(Gurobi.Optimizer)
+        mip_solver = JuMP.with_optimizer(Cbc.Optimizer, logLevel=log_level, seconds=mip_time_limit)
+        nl_solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=nl_time_limit)
         solver = JuMP.with_optimizer(Juniper.Optimizer,
                      nl_solver = nl_solver,
                      mip_solver = mip_solver,
-                     log_levels = [])
+                     log_levels = [],
+                     time_limit = time_limit)
     end
 
     if optimizer == "knitro"
@@ -81,7 +83,7 @@ function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
     end
 
     if optimizer == "cbc"
-        solver = JuMP.with_optimizer(Cbc.Optimizer)
+        solver = JuMP.with_optimizer(Cbc.Optimizer, seconds=time_limit)
     end
 
     if optimizer == "scip"
