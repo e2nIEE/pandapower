@@ -222,7 +222,7 @@ def ppc_to_pm(net, ppci):
     for idx, row in enumerate(ppci["branch"], start=1):
         branch = dict()
         branch["index"] = idx
-        branch["transformer"] = int(idx > n_lines)
+        branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real
         branch["br_x"] = row[BR_X].real
         branch["g_fr"] = - row[BR_B].imag / 2.0
