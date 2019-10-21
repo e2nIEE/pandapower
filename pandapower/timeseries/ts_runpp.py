@@ -34,23 +34,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_default_output_writer(net):
-    """
-    creates a default output writer to get the outputlist in the TimeSeriesRunpp class
-    """
-    logger.info("Beware! Only these results will be read after powerflow:")
-    ow = OutputWriter(net)
-    log_variables = [('res_bus', 'vm_pu'),
-                     ('res_bus', 'va_degree'),
-                     ('res_line', 'loading_percent'),
-                     ('res_line', 'i_ka'),
-                     ('res_trafo', 'loading_percent')]
-    for table, var in log_variables:
-        logger.info("{} {}".format(table, var))
-        ow.log_variable(table, var)
-    return ow
-
-
 class TimeSeriesRunpp:
     """
     Class for time series runpp.
@@ -60,11 +43,9 @@ class TimeSeriesRunpp:
     are calculated. Therefore this class must be initiliazed with an output writer
     """
 
-    def __init__(self, net, output_writer=None):
+    def __init__(self, net):
         self.net = net
-        if output_writer is None:
-            output_writer = get_default_output_writer(net)
-        self.output_writer = output_writer
+        self.output_writer = net.output_writer.iat[0, 0]
 
         # update functions
         self.update_pq = False

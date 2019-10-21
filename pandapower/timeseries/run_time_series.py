@@ -22,50 +22,31 @@ logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
 
-def get_default_output_writer(net, timesteps):
-    """
-    creates a default output writer for the time series calculation
-
-    INPUT:
-        **net** - The pandapower format network
-
-        **time_steps** (list) - time_steps to calculate as list
-
-    RETURN:
-        **output_writer** - The default output_writer
-
-    """
-    ow = OutputWriter(net, timesteps, output_path=tempfile.gettempdir())
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_line', 'loading_percent')
-    ow.log_variable('res_line', 'i_ka')
-    ow.log_variable('res_bus', 'p_mw')
-    ow.log_variable('res_bus', 'q_mvar')
-    return ow
-
-
-def init_outputwriter(net, time_steps, output_writer=None):
+def init_outputwriter(net, time_steps, **kwargs):
     """
     Initializes the output writer. If output_writer is None, default output_writer is created
 
     INPUT:
         **net** - The pandapower format network
 
-    OPTIONAL:
-        **output_writer** - An output_writer of class OutputWriter
+        **time_steps** (list) - time steps to be calculated
 
-
-    RETURN:
-        **output_writer** - The initialized output_writer
     """
-    if output_writer is None:
-        output_writer = get_default_output_writer(net, time_steps)
-        logger.info("No output writer specified. Using default which writes to: {}".format(output_writer.output_path))
+    output_writer = kwargs["output_writer"] if "output_writer" in kwargs else None
+    if output_writer is not None:
+        logger.warning("deprecated: output_writer should not be given to run_timeseries(). "
+                       "This overwrites the stored one in net.output_writer.")
+        net.output_writer.iat[0, 0] = output_writer
+    if "output_writer" not in net and output_writer is None:
+        # create a default output writer
+        ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
+        logger.info("No output writer specified. Using default:")
+        logger.info(ow)
     else:
         # inits output writer before time series calculation
+        output_writer = net.output_writer.iat[0, 0]
         output_writer.time_steps = time_steps
         output_writer.init_all()
-    return output_writer
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
@@ -109,7 +90,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     """
     ctrl_converged = True
     pf_converged = True
-    output_writer = ts_variables["output_writer"]
+    output_writer = net["output_writer"].iat[0, 0]
     # update time step for output writer
     output_writer.time_step = time_step
     # run time step function for each controller
@@ -141,15 +122,13 @@ def all_controllers_recycleable(net):
     return recycleable
 
 
-def get_run_function(net, output_writer, **kwargs):
+def get_run_function(net, **kwargs):
     """
     checks if "run" is specified in kwargs and calls this function in time series loop.
     if "recycle" is in kwargs we use the TimeSeriesRunpp class (not implemented yet)
 
     INPUT:
         **net** - The pandapower format network
-
-        **output_writer** - An output writer of class OutputWriter which stores results
 
     RETURN:
         **run** - the run function to be called (default is pp.runpp())
@@ -166,8 +145,8 @@ def get_run_function(net, output_writer, **kwargs):
 
     if recycle:
         # experimental
-        from timeseries.ts_runpp import TimeSeriesRunpp
-        recycle_class = TimeSeriesRunpp(net, output_writer)
+        from pandapower.timeseries.ts_runpp import TimeSeriesRunpp
+        recycle_class = TimeSeriesRunpp(net)
         run = recycle_class.ts_runpp
     elif "run" in kwargs:
         run = kwargs.pop("run")
@@ -193,7 +172,7 @@ def init_time_steps(net, time_steps, **kwargs):
     return time_steps
 
 
-def init_time_series(net, time_steps, output_writer=None, continue_on_divergence=False, verbose=True,
+def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True,
                      **kwargs):
     """
     inits the time series calculation
@@ -206,8 +185,6 @@ def init_time_series(net, time_steps, output_writer=None, continue_on_divergence
         if None, all time steps from provided data source are simulated
 
     OPTIONAL:
-        **output_writer** - A predefined output writer. If None the a default one is created with
-        get_default_output_writer()
 
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
 
@@ -218,10 +195,10 @@ def init_time_series(net, time_steps, output_writer=None, continue_on_divergence
 
     ts_variables = dict()
 
-    output_writer = init_outputwriter(net, time_steps, output_writer)
+    init_outputwriter(net, time_steps, **kwargs)
     level, order = get_controller_order(net)
     # use faster runpp if timeseries possible
-    run, recycle_class = get_run_function(net, output_writer, **kwargs)
+    run, recycle_class = get_run_function(net, **kwargs)
 
     # True at default. Initial power flow is calculated before each control step (some controllers need inits)
     ts_variables["initial_powerflow"] = check_for_initial_powerflow(order)
@@ -231,8 +208,6 @@ def init_time_series(net, time_steps, output_writer=None, continue_on_divergence
     ts_variables["run"] = run
     # recycle class function, which stores some NR variables. Only used if recycle == True
     ts_variables["recycle_class"] = recycle_class
-    # output writer, which logs information during the time series simulation
-    ts_variables["output_writer"] = output_writer
     # time steps to be calculated (list or range)
     ts_variables["time_steps"] = time_steps
     # If True, a diverged power flow is ignored and the next step is calculated
@@ -269,7 +244,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         func(i, time_step, time_steps, **kwargs)
 
 
-def run_timeseries(net, time_steps=None, output_writer=None, continue_on_divergence=False, verbose=True, **kwargs):
+def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, **kwargs):
     """
     Time Series main function
 
@@ -283,9 +258,6 @@ def run_timeseries(net, time_steps=None, output_writer=None, continue_on_diverge
         **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
         if None, all time steps from provided data source are simulated
 
-        **output_writer** - An output writer to use. If None a default one is created with
-        get_default_output_writer()
-
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
 
         **verbose** (bool, True) - prints progress bar or if logger.level == Debug it prints debug messages
@@ -294,7 +266,7 @@ def run_timeseries(net, time_steps=None, output_writer=None, continue_on_diverge
         is replaced by the function kwargs["run"]
     """
 
-    ts_variables, kwargs = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose, **kwargs)
+    ts_variables, kwargs = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
 
     control_diagnostic(net)
     for i, time_step in enumerate(ts_variables["time_steps"]):
