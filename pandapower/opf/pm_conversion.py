@@ -76,7 +76,6 @@ def _runpm(net, delete_buffer_file=True):  # pragma: no cover
         os.remove(buffer_file)
 
 
-
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -158,8 +157,9 @@ def get_branch_angles(row, correct_pm_network_data):
             logger.debug("changed voltage angle maximum of branch {} to 60. "
                          "from {} degrees".format(int(row[0].real), angmax))
             angmax = 60.
-    angmin = (angmin / 180.) * pi  # convert to p.u. as well
-    angmax = (angmax / 180.) * pi  # convert to p.u. as well
+    # convert to rad
+    angmin = math.radians(angmin)
+    angmax = math.radians(angmax)
     return angmin, angmax
 
 
@@ -218,11 +218,11 @@ def ppc_to_pm(net, ppci):
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
-    n_lines = net._pd2ppc_lookups["branch"]["line"][1]
+    n_lines = net.line.in_service.sum()
     for idx, row in enumerate(ppci["branch"], start=1):
         branch = dict()
         branch["index"] = idx
-        branch["transformer"] = idx > n_lines
+        branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real
         branch["br_x"] = row[BR_X].real
         branch["g_fr"] = - row[BR_B].imag / 2.0
@@ -319,7 +319,8 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     for i, bus in sol["bus"].items():
         bus_idx = int(i) - 1
         ppci["bus"][bus_idx, VM] = bus["vm"]
-        ppci["bus"][bus_idx, VA] = math.degrees(bus["va"])
+        # replace nans with 0.(in case of SOCWR model for example
+        ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
 
     for i, gen in sol["gen"].items():
         gen_idx = int(i) - 1
@@ -345,13 +346,18 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
 
 
 def add_pm_options(pm, net):
-    if "pm_solver" in net._options:
-        pm["pm_solver"] = net._options["pm_solver"]
-    if "pm_mip_solver" in net._options:
-        pm["pm_mip_solver"] = net._options["pm_mip_solver"]
-    if "pm_nl_solver" in net._options:
-        pm["pm_nl_solver"] = net._options["pm_nl_solver"]
-    if "pm_model" in net._options:
-        pm["pm_model"] = net._options["pm_model"]
+    # read values from net_options if present else use default values
+    pm["pm_solver"] = net._options["pm_solver"] if "pm_solver" in net._options else "ipopt"
+    pm["pm_mip_solver"] = net._options["pm_mip_solver"] if "pm_mip_solver" in net._options else "cbc"
+    pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
+    pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
+    pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
+
+    if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
+        # write time limits to power models data structure
+        for key, val in net._options["pm_time_limits"].items():
+            pm[key] = val
+    else:
+        pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"] = np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     return pm

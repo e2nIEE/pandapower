@@ -21,16 +21,19 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
+
 def get_default_output_writer(net, timesteps):
     """
     creates a default output writer for the time series calculation
 
     INPUT:
         **net** - The pandapower format network
+
         **time_steps** (list) - time_steps to calculate as list
 
     RETURN:
-        **outpuw_writer** - The default output_writer
+        **output_writer** - The default output_writer
+
     """
     ow = OutputWriter(net, timesteps, output_path=tempfile.gettempdir())
     ow.log_variable('res_bus', 'vm_pu')
@@ -43,13 +46,13 @@ def get_default_output_writer(net, timesteps):
 
 def init_outputwriter(net, time_steps, output_writer=None):
     """
-    Initilizes output writer. If output_writer is None, default output_writer is created
+    Initializes the output writer. If output_writer is None, default output_writer is created
 
     INPUT:
         **net** - The pandapower format network
 
     OPTIONAL:
-        **output_writer** - An output_writer
+        **output_writer** - An output_writer of class OutputWriter
 
 
     RETURN:
@@ -68,15 +71,7 @@ def init_outputwriter(net, time_steps, output_writer=None):
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar.
-    the idea was mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
+    the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filled_length = int(length * iteration // total)
@@ -88,7 +83,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         print("\n")
 
 
-def controller_not_converged(net, time_step, ts_variables):
+def controller_not_converged(time_step, ts_variables):
     logger.error('ControllerNotConverged at time step %s' % time_step)
     if not ts_variables["continue_on_divergence"]:
         raise ControllerNotConverged
@@ -103,11 +98,13 @@ def pf_not_converged(time_step, ts_variables):
 def run_time_step(net, time_step, ts_variables, **kwargs):
     """
     Time Series step function
-    Should be called to run the PANDAPOWER AC power flows based on time series in controllers (or other functions)
+    Is called to run the PANDAPOWER AC power flows with the timeseries module
 
     INPUT:
         **net** - The pandapower format network
+
         **time_step** (int) - time_step to be calculated
+
         **ts_variables** (dict) - contains settings for controller and time series simulation. See init_time_series()
     """
     ctrl_converged = True
@@ -126,7 +123,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
-        controller_not_converged(net, time_step, ts_variables)
+        controller_not_converged(time_step, ts_variables)
     except (LoadflowNotConverged, OPFNotConverged):
         # If power flow did not converge simulation aborts or continues if continue_on_divergence is True
         pf_converged = False
@@ -147,14 +144,16 @@ def all_controllers_recycleable(net):
 def get_run_function(net, output_writer, **kwargs):
     """
     checks if "run" is specified in kwargs and calls this function in time series loop.
-    if "recycle" is in kwargs we use the TimeSeriesRunpp class
+    if "recycle" is in kwargs we use the TimeSeriesRunpp class (not implemented yet)
 
     INPUT:
         **net** - The pandapower format network
-        **output_writer** - The outputwriter class which stores results
+
+        **output_writer** - An output writer of class OutputWriter which stores results
 
     RETURN:
         **run** - the run function to be called (default is pp.runpp())
+
         **recycle_class** - class to recycle implementation
     """
 
@@ -201,13 +200,17 @@ def init_time_series(net, time_steps, output_writer=None, continue_on_divergence
 
     INPUT:
         **net** - The pandapower format network
+
         **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
-                                                if None, all time steps from provided data source are simulated
+        if None, all time steps from provided data source are simulated
+
     OPTIONAL:
         **output_writer** - A predefined output writer. If None the a default one is created with
-                            get_default_output_writer()
+        get_default_output_writer()
+
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
-        **verbose** (bool, True) - prints progess bar or logger debug messages
+
+        **verbose** (bool, True) - prints progress bar or logger debug messages
     """
 
     time_steps = init_time_steps(net, time_steps, **kwargs)
@@ -259,39 +262,38 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
     if logger.level == pplog.DEBUG and verbose:
         logger.debug("run time step %i" % time_step)
 
-    # print luigi pipeline progress
-    if "luigi_progress" in kwargs:
-        if i % 365 == 0:
-            # print only every 365 time steps
-            message = kwargs["luigi_progress"]["message"]
-            progress = kwargs["luigi_progress"]["progress"]
-            len_timesteps = len(time_steps)
-            message("Progress: %d / %d" % (i, len_timesteps))
-            progress_percentage = int(((i + 1) / len_timesteps) * 100)
-            progress(progress_percentage)
+    # call a custom progress function
+    if "progress_function" in kwargs:
+        func = kwargs["progress_function"]
+        func(i, time_step, time_steps, **kwargs)
 
 
 def run_timeseries(net, time_steps=None, output_writer=None, continue_on_divergence=False, verbose=True, **kwargs):
     """
     Time Series main function
-    Runs multiple PANDAPOWER AC power flows based on time series in controllers
-    Optionally other functions than the pp power flow can be called by setting the run function in kwargs
+
+    Runs multiple PANDAPOWER AC power flows based on time series which are stored in a **DataSource** inside
+    **Controllers**. Optionally other functions than the pp power flow can be called by setting the run function in kwargs
 
     INPUT:
         **net** - The pandapower format network
 
     OPTIONAL:
         **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
-                                                if None, all time steps from provided data source are simulated
-        **output_writer** - A predefined output writer. If None the a default one is created with
-                            get_default_output_writer()
+        if None, all time steps from provided data source are simulated
+
+        **output_writer** - An output writer to use. If None a default one is created with
+        get_default_output_writer()
+
         **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
+
         **verbose** (bool, True) - prints progress bar or if logger.level == Debug it prints debug messages
-        **kwargs** - Keyword arguments for run_control and runpp
+
+        **kwargs** - Keyword arguments for run_control and runpp. If "run" is in kwargs the default call to runpp()
+        is replaced by the function kwargs["run"]
     """
 
     ts_variables, kwargs = init_time_series(net, time_steps, output_writer, continue_on_divergence, verbose, **kwargs)
-
 
     control_diagnostic(net)
     for i, time_step in enumerate(ts_variables["time_steps"]):

@@ -17,7 +17,7 @@ from pandapower.opf.pm_tnep import read_tnep_results
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-          pm_mip_solver="cbc", pm_nl_solver="ipopt"):  # pragma: no cover
+          pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a power system optimization using PowerModels.jl. with a custom julia file.
     
@@ -59,6 +59,19 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
 
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "ipopt") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+                                          
+        **pm_log_level** (int, 0) - solver log level in power models
+
      """
     net._options = {}
     ac = True if "DC" not in pm_model else False
@@ -70,16 +83,17 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver)
+                     pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
     _runpm(net)
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt"):  # pragma: no cover
+                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
+                 pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
-    
+
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -116,9 +130,14 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
 
-        **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
+        **pm_solver** (str, "ipopt") - The "main" power models solver
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300.}
+        
+        **pm_log_level** (int, 0) - solver log level in power models
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
     ac = True if "DC" not in pm_model else False
@@ -131,13 +150,15 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
-                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver)
+                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
+                     pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
     _runpm(net)
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True):  # pragma: no cover
+                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True,
+                 pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a non-linear power system optimization using PowerModels.jl.
 
@@ -181,6 +202,11 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300.}
+
+        **pm_log_level** (int, 0) - solver log level in power models                                        
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
     ac = True if "DC" not in pm_model else False
@@ -193,18 +219,37 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
+                     pm_log_level=pm_log_level)
     _runpm(net)
 
 
 def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
+               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True,
+               pm_nl_solver="ipopt", pm_mip_solver="cbc", pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
 
-    see above
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
 
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "juniper") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+
+        **pm_log_level** (int, 0) - solver log level in power models
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
     ac = True if "DC" not in pm_model else False
@@ -224,19 +269,38 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     correct_pm_network_data=correct_pm_network_data, pm_nl_solver=pm_nl_solver,
+                     pm_mip_solver=pm_mip_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
     _runpm(net)
     read_tnep_results(net)
 
 
 def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-              pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True):  # pragma: no cover
+              pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt", pm_mip_solver="cbc",
+              correct_pm_network_data=True, pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
 
-    see above
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
 
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+
+        **pm_solver** (str, "juniper") - The "main" power models solver
+
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+
+        **pm_log_level** (int, 0) - solver log level in power models
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
     ac = True if "DC" not in pm_model else False
@@ -251,7 +315,8 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
-                     correct_pm_network_data=correct_pm_network_data)
+                     correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
+                     pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
     _runpm(net)
     read_ots_results(net)
 
@@ -259,7 +324,7 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_storage_opf(net, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True,
-                      pm_model="ACPPowerModel"):  # pragma: no cover
+                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0):  # pragma: no cover
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.
 
@@ -272,6 +337,10 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
 
         **time_elapsed** (float, 1.0) - time elapsed between time steps (1.0 = 1 hour)
 
+        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                          {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+
+        **pm_log_level** (int, 0) - solver log level in power models
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_mn_storage.jl')
     ac = True if "DC" not in pm_model else False
@@ -283,7 +352,8 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=add_storage_opf_settings, julia_file=julia_file,
-                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model)
+                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_time_limits=pm_time_limits,
+                     pm_log_level=pm_log_level)
 
     net._options["n_time_steps"] = n_timesteps
     net._options["time_elapsed"] = time_elapsed
