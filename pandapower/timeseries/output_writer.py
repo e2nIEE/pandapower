@@ -67,6 +67,8 @@ class OutputWriter:
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
                  csv_separator=";"):
+        # Todo: Ableiten von JSon serializable class wie base controller, update locals
+        # TOdo: Add log_variable default mit vm_pu und loading percent
         self.net = net
         self.csv_separator = csv_separator
         self.output_path = output_path
@@ -92,6 +94,7 @@ class OutputWriter:
         return self.__class__.__name__
 
     def __repr__(self):
+        # todo: add log variables
         s = "%s with output to %s" % (self.__class__.__name__, self.output_path)
         return s
 

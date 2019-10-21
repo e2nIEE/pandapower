@@ -14,11 +14,11 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
-from pandapower.opf.pm_conversion import _read_results_to_net
+from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
-from pandapower.toolbox import convert_pp_to_pm
+from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net
 
 try:
@@ -545,7 +545,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
         result_pm = json.load(fp)
     net._options["correct_pm_network_data"] = True
     ppc, ppci = _pd2ppc(net)
-    _read_results_to_net(net, ppc, ppci, result_pm)
+    read_pm_results_to_net(net, ppc, ppci, result_pm)
     assert np.allclose(net.res_bus.vm_pu, vm_pu, atol=1e-4)
     assert np.allclose(net.res_bus.va_degree, va_degree, atol=1e-2, rtol=1e-2)
 

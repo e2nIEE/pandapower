@@ -4,22 +4,19 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from itertools import chain
 from collections import Iterable, defaultdict
+from itertools import chain
 
 import numpy as np
 import pandas as pd
 from packaging import version
 
-from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, _add_ppc_options, _add_opf_options
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network
-from pandapower.opf.pm_conversion import convert_to_pm_structure, dump_pm_json
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
-from os import remove
-from os.path import isfile
 
 try:
     import pplog as logging
@@ -236,15 +233,15 @@ def _determine_costs_dict(net, opf_task_overview):
 
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
         keys = [power_type + flex_element for power_type in ["P", "Q"] if (
-                    power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
+                power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
 
         # determine indices of all flexibles
         idx_without_cost = set()
         for key in keys:
             idx_without_cost |= set(chain(*opf_task_overview["flexibilities"][key]["index"]))
             # simple alternative without itertools.chain():
-#            idx_without_cost |= {idx for idxs in opf_task_overview["flexibilities"][key][
-#                "index"] for idx in idxs}
+        #            idx_without_cost |= {idx for idxs in opf_task_overview["flexibilities"][key][
+        #                "index"] for idx in idxs}
 
         for cost_df in cost_dfs:
             idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
@@ -726,7 +723,6 @@ def reindex_elements(net, element, new_indices, old_indices=None):
                               (net.switch.element.isin(old_indices))]
         if len(affected):
             net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
-
 
     # --- adapt line_geodata index
     if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
@@ -1944,57 +1940,3 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          in_service=line_.in_service)
         i += 1
     drop_lines(net, index)
-
-
-def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
-                     trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                     pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt"):
-    """
-    Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
-
-    INPUT:
-
-    **net** - pandapower net
-
-    OPTIONAL:
-    **pm_file_path** (str, None) - file path to *.json file to store pm data to
-
-    **correct_pm_network_data** (bool, True) - correct some input data (e.g. angles, p.u. conversion)
-
-    **delta** (float, 1e-8) - (small) offset to set for "hard" OPF limits.
-
-    **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
-    **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-
-    **pm_solver** (str, "ipopt") - default solver to use.
-
-    **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
-
-    **pm_mip_solver** (str, "cbc") - default mip solver to use.
-
-    **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
-    Returns
-    -------
-    **pm** (json str) - PowerModels.jl data structure
-    """
-
-    net._options = {}
-
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
-                     correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver)
-
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
-    buffer_file = dump_pm_json(pm, pm_file_path)
-    if pm_file_path is None and isfile(buffer_file):
-        remove(buffer_file)
-    return pm
