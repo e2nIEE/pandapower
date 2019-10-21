@@ -165,6 +165,7 @@ def get_run_function(net, output_writer, **kwargs):
         recycle = True if recycle and all_controllers_recycleable(net) else False
 
     if recycle:
+        # experimental
         from timeseries.ts_runpp import TimeSeriesRunpp
         recycle_class = TimeSeriesRunpp(net, output_writer)
         run = recycle_class.ts_runpp
