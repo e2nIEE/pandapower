@@ -70,6 +70,46 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
     return ppci
 
 
+def _get_elements(params,net,element,phase,typ):
+    sign = -1 if element.endswith("sgen") else 1
+    elm = net[element].values
+    in_service = net[element].columns.get_loc("in_service")
+    scaling = net[element].columns.get_loc("scaling")
+    typ_col = net[element].columns.get_loc("type")
+    active = (net["_is_elements"][element]) & (elm[:,typ_col] == typ)
+    bus = [net[element].columns.get_loc("bus")]
+    if len(elm):
+        if element == 'load' or element == 'sgen':          
+            vl = elm[active,scaling].ravel()
+            p_mw = [net[element].columns.get_loc("p_mw")]
+            q_mvar = [net[element].columns.get_loc("q_mvar")]
+            params['p'+phase+typ] = np.hstack([params['p'+phase+typ],
+                                               elm[active,p_mw]/3 * vl * sign])
+            params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
+                                               (elm[active,q_mvar]/3) * vl * sign])
+            params['b'+typ] = np.hstack([params['b'+typ],
+                                         elm[active,bus].astype(int)])
+
+        elif element.startswith('asymmetric'):
+            vl = elm[active,scaling].ravel()
+            p = {'a': net[element].columns.get_loc("p_a_mw")
+         ,'b': net[element].columns.get_loc("p_b_mw")
+         ,'c': net[element].columns.get_loc("p_c_mw")
+            }
+            q = {'a' : net[element].columns.get_loc("q_a_mvar")
+         ,'b' : net[element].columns.get_loc("q_b_mvar")
+         ,'c' : net[element].columns.get_loc("q_c_mvar")
+            }    
+
+            params['p'+phase+typ] = np.hstack([params['p'+phase+typ],
+                                             elm[active,p[phase]] * vl * sign])
+            params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
+                                             elm[active,q[phase]] * vl * sign])
+            params['b'+typ] = np.hstack([params['b'+typ],
+                                         elm[active,bus].astype(int)])
+    return params
+
+
 def _load_mapping(net, ppci1):
     """
     Takes three phase P, Q values from PQ elements
@@ -95,29 +135,7 @@ def _load_mapping(net, ppci1):
             params['b'+phase+typ] = np.array([], dtype=int)  # bus map for phases
             params['b'+typ] = np.array([], dtype=int)  # aggregated bus map(s_abc)
             for element in load_elements:
-                sign = -1 if element.endswith("sgen") else 1
-                elm = net[element]
-                elm_is = net["_is_elements"][element] 
-                elm["in_service"] = elm_is
-                elm = elm[elm["in_service"]]
-                elm_typ = elm[elm["type"] == typ]
-                if len(elm_typ) > 0:
-                    vl = (elm_typ["in_service"].values * elm_typ["scaling"].values.T)[elm_typ["in_service"].values]
-                    if element == 'load' or element == 'sgen':
-                        params['p'+phase+typ] = np.hstack([params['p'+phase+typ],
-                                                           elm_typ["p_mw"].values/3 * vl*sign])
-                        params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
-                                                           elm_typ["q_mvar"].values/3 * vl*sign])
-                        params['b'+typ] = np.hstack([params['b'+typ],
-                                                     elm_typ["bus"].values])
-
-                    elif element.startswith('asymmetric'):
-                        params['p'+phase+typ] = np.hstack([params['p'+phase+typ],
-                                                          elm_typ['p_'+phase+'_mw'].values * vl*sign])
-                        params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
-                                                          elm_typ['q_'+phase+'_mvar'].values * vl*sign])
-                        params['b'+typ] = np.hstack([params['b'+typ],
-                                                     elm_typ["bus"].values])
+                _get_elements(params,net,element,phase,typ)
             # Mapping constant power loads to buses
             if params['b'+typ].size:
                 params['b'+phase+typ] = bus_lookup[params['b'+typ]]
@@ -382,13 +400,13 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     if trafo_model == 'pi':
         raise Not_implemented("Three phase Power Flow doesnot support pi model\
                                 because of lack of accuracy")
-    if calculate_voltage_angles == "auto":
-        calculate_voltage_angles = False
-        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
-        if len(hv_buses) > 0:
-            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
-            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
-                calculate_voltage_angles = True
+#    if calculate_voltage_angles == "auto":
+#        calculate_voltage_angles = False
+#        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
+#        if len(hv_buses) > 0:
+#            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
+#            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+    calculate_voltage_angles = True
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
     if init == "auto":
