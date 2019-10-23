@@ -194,7 +194,7 @@ def test_timeseries_var_func():
     run_timeseries(net, time_steps, output_writer=ow)
     # asserts if last value of output_writers output is the minimum value
     assert net["res_load"]["p_mw"].max() == ow.output["res_load.p_mw"].iloc[-1].values
-    assert net["res_bus"]["vm_pu"].min() == ow.output["res_bus.vm_pu"].iloc[-1].values
+    assert net["res_bus"]["vm_pu"].min() == ow.output["res_bus.vm_pu"].iloc[-1, -1]
     assert net["res_bus"]["q_mvar"].sum() == ow.output["res_bus.q_mvar"].iloc[-1].values
 
     # get minimum voltage of all hv busses
