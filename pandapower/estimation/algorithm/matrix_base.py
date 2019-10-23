@@ -34,6 +34,10 @@ class BaseAlgebra:
         self.non_slack_buses = eppci.non_slack_buses
         self.delta_v_bus_mask = eppci.delta_v_bus_mask
         self.non_nan_meas_mask = eppci.non_nan_meas_mask
+        
+        self.any_i_meas = eppci.any_i_meas
+        self.delta_v_bus_selector = np.flatnonzero(eppci.delta_v_bus_mask)
+        self.non_nan_meas_selector = np.flatnonzero(eppci.non_nan_meas_mask)
         self.z = eppci.z
         self.sigma = eppci.r_cov
 
@@ -89,13 +93,10 @@ class BaseAlgebra:
     def create_hx_jacobian(self, E):
         # Using sparse matrix in creation sub-jacobian matrix
         v, delta = self._e2v(E)
-
-#        f_bus, t_bus = self.fb, self.tb
         V = v * np.exp(1j * delta)
 
         dSbus_dth, dSbus_dv = self._dSbus_dv(V)
         dSf_dth, dSf_dv, dSt_dth, dSt_dv = self._dSbr_dv(V)
-        dif_dth, dif_dv, dit_dth, dit_dv = self._dibr_dv(V)
         dv_dth, dv_dv = self._dVbus_dv(V)
 
         s_jac_th = vstack((dSbus_dth.real,
@@ -111,14 +112,21 @@ class BaseAlgebra:
                           dSf_dv.imag,
                           dSt_dv.imag))
 
-        s_jac = hstack((s_jac_th, s_jac_v)).toarray()
-        v_jac = np.c_[dv_dth, dv_dv]
-        i_jac = vstack((hstack((dif_dth, dif_dv)),
-                        hstack((dit_dth, dit_dv)))).toarray()
-        jac = np.r_[s_jac,
-                    v_jac,
-                    i_jac]
-        return jac[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
+        s_jac = hstack((s_jac_th, s_jac_v))
+        v_jac = hstack((dv_dth, dv_dv))
+        
+        if self.any_i_meas:
+            dif_dth, dif_dv, dit_dth, dit_dv = self._dibr_dv(V)
+            i_jac = vstack((hstack((dif_dth, dif_dv)),
+                        hstack((dit_dth, dit_dv))))
+            jac = vstack([s_jac,
+                          v_jac,
+                          i_jac], format="csr")
+        else:
+            jac = vstack([s_jac,
+                          v_jac], format="csr")
+
+        return jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
 
     def _dSbus_dv(self, V):
         dSbus_dv, dSbus_dth = dSbus_dV(self.Ybus, V)
@@ -129,18 +137,21 @@ class BaseAlgebra:
         return dSf_dth, dSf_dv, dSt_dth, dSt_dv
 
     def _dVbus_dv(self, V):
-        dv_dth, dv_dv = np.zeros((V.shape[0], V.shape[0])), np.eye(V.shape[0], V.shape[0])
+        dv_dth, dv_dv = sparse(np.zeros((V.shape[0], V.shape[0]))), sparse(np.eye(V.shape[0], V.shape[0]))
         return dv_dth, dv_dv
 
     def _dibr_dv(self, V):
         # for current we only interest in the magnitude at the moment
-        dif_dth, dif_dv, dit_dth, dit_dv, _, _ = map(np.abs, dIbr_dV(self.eppci.branch, self.Yf, self.Yt, V))
-        return dif_dth, dif_dv, dit_dth, dit_dv
+        dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci.branch, self.Yf, self.Yt, V)
+        dif_dth, dif_dv, dit_dth, dit_dv = dif_dth.toarray(), dif_dv.toarray(), dit_dth.toarray(), dit_dv.toarray()
+        dif_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        dif_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        dit_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        dit_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        return sparse(dif_dth), sparse(dif_dv), sparse(dit_dth), sparse(dit_dv)
 
 
 class BaseAlgebraDecoupled(BaseAlgebra):
-    
-    
     def create_hx_jacobian(self, E):
         # Using sparse matrix in creation sub-jacobian matrix
         v, delta = self._e2v(E)
@@ -173,7 +184,6 @@ class BaseAlgebraDecoupled(BaseAlgebra):
         return np.r_[s_jac,
                      v_jac,
                      i_jac][self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
-        
 
 
 class BaseAlgebraZeroInjConstraints(BaseAlgebra):

@@ -160,19 +160,22 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
                                       value=meas_value, std_dev=1)
             else:
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
-                                      value=meas_value, std_dev=1)
+                                      value=meas_value, std_dev=v_std_dev)
 
     for br_type in branch_meas_type.keys():
         if not net['res_'+br_type].empty:
             for br_ix, br_res in net['res_'+br_type].iterrows():
-                for side, meas_type in zip(branch_meas_type[br_type]['side'],
-                                           branch_meas_type[br_type]['meas_type']):
-                    pp.create_measurement(net, meas_type=meas_type[0], element_type=br_type, 
-                                          element=br_ix, side=side,
-                                          value=br_res[meas_type[0]+'_'+side+meas_type[1:]], std_dev=1)
+                for side in branch_meas_type[br_type]['side']:
+                    for meas_type in branch_meas_type[br_type]['meas_type']:
+                        pp.create_measurement(net, meas_type=meas_type[0], element_type=br_type, 
+                                              element=br_ix, side=side,
+                                              value=br_res[meas_type[0]+'_'+side+meas_type[1:]], std_dev=1)
 
     add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev)
 
+#br_type="line"
+#from itertools import combinations
+#list(combinations(branch_meas_type[br_type]['side'],branch_meas_type[br_type]['meas_type']))
 
 def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev):
     assert not net.measurement.empty

@@ -92,8 +92,8 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         meas_i_mask = (meas.measurement_type=='i')
         base_i_ka = ppci["baseMVA"] / net.bus.loc[(meas.side.fillna(meas.element))[meas_i_mask].values, 
                         "vn_kv"].values
-        meas.loc[meas_i_mask, "value"] /= 1000*base_i_ka
-        meas.loc[meas_i_mask, "std_dev"] /= 1000*base_i_ka
+        meas.loc[meas_i_mask, "value"] /= 1000*base_i_ka/np.sqrt(3)
+        meas.loc[meas_i_mask, "std_dev"] /= 1000*base_i_ka/np.sqrt(3)
     
     # Get elements mapping from pandapower to ppc
     map_bus = net["_pd2ppc_lookups"]["bus"]
@@ -471,7 +471,8 @@ def _build_measurement_vectors(ppci):
                                 v_bus_not_nan,
                                 i_line_f_not_nan,
                                 i_line_t_not_nan])
-    return z, pp_meas_indices, r_cov, meas_mask
+    any_i_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
+    return z, pp_meas_indices, r_cov, meas_mask, any_i_meas
 
 
 def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus"):
@@ -502,6 +503,7 @@ class ExtendedPPCI(UserDict):
         self.r_cov = None
         self.pp_meas_indices = None 
         self.non_nan_meas_mask = None 
+        self.any_i_meas = False
         self._initialize_meas(ppci)
 
         # check slack bus
@@ -521,7 +523,7 @@ class ExtendedPPCI(UserDict):
 
     def _initialize_meas(self, ppci):
         # calculate relevant vectors from ppci measurements
-        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask =\
+        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask, self.any_i_meas =\
              _build_measurement_vectors(ppci)
              
     @property

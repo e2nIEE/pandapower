@@ -28,7 +28,7 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
                      'opt': OptAlgorithm,
                      'irwls': IRWLSAlgorithm,
                      'lp': LPAlgorithm}
-ALLOWED_OPT_VAR = {"a", "opt_method"}
+ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
 def estimate(net, algorithm='wls',
