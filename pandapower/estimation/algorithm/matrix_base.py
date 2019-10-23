@@ -143,12 +143,12 @@ class BaseAlgebra:
     def _dibr_dv(self, V):
         # for current we only interest in the magnitude at the moment
         dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci.branch, self.Yf, self.Yt, V)
-        dif_dth, dif_dv, dit_dth, dit_dv = dif_dth.toarray(), dif_dv.toarray(), dit_dth.toarray(), dit_dv.toarray()
+        dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), (dif_dth, dif_dv, dit_dth, dit_dv))
         dif_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
         dif_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
         dit_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
         dit_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
-        return sparse(dif_dth), sparse(dif_dv), sparse(dit_dth), sparse(dit_dv)
+        return map(sparse, (dif_dth, dif_dv, dit_dth, dit_dv))
 
 
 class BaseAlgebraDecoupled(BaseAlgebra):

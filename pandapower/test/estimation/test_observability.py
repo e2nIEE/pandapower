@@ -58,7 +58,5 @@ def test_cigre_mv():
     assert np.allclose(net.res_bus_power_flow.va_degree, net.res_bus_est.va_degree, atol=5e-1)
 
 
-
-
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
