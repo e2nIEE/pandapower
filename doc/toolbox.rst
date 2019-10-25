@@ -113,6 +113,10 @@ Topology Modification
 
 .. autofunction:: pandapower.replace_line_by_impedance
 
+.. autofunction:: pandapower.replace_ext_grid_by_gen
+
+.. autofunction:: pandapower.replace_gen_by_ext_grid
+
 ====================================
 Item/Element Selection
 ====================================
@@ -130,3 +134,5 @@ Item/Element Selection
 .. autofunction:: pandapower.get_connected_buses_at_element
 
 .. autofunction:: pandapower.get_connected_switches
+
+.. autofunction:: pandapower.get_connected_elements_dict

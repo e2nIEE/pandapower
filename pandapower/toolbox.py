@@ -13,7 +13,7 @@ from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
-    create_impedance, create_empty_network
+    create_impedance, create_empty_network, create_gen, create_ext_grid
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
@@ -1608,6 +1608,110 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     drop_lines(net, index)
 
 
+def replace_ext_grid_by_gen(net, ext_grids=None):
+    """ Replaces external grids by generators.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **ext_grids** (iterable) - indices of external grids which should be replaced
+    """
+    # --- determine ext_grid index
+    if ext_grids is None:
+        ext_grids = net.ext_grid.index
+    else:
+        ext_grids = ensure_iterability(ext_grids)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.ext_grid.loc[ext_grids].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.gen
+    missing_non_default_col = existing_non_default_col.difference(net.gen.columns)
+    for col in missing_non_default_col:
+        net.gen[col] = np.nan
+
+    # --- create gens
+    new_idx = []
+    for ext_grid in net.ext_grid.loc[ext_grids].itertuples():
+        p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
+            ext_grid.Index, "p_mw"]
+        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
+                         in_service=ext_grid.in_service)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.gen[col].at[idx] = getattr(ext_grid, col)
+
+    # --- drop replaced ext_grids
+    net.ext_grid.drop(ext_grids, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "ext_grid") &
+                                         (net[table].element.isin(ext_grids))]
+            net[table].et.loc[to_change] = "gen"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_ext_grid.shape[0]:
+        to_add = net.res_ext_grid.loc[ext_grids]
+        to_add.index = new_idx
+        net.res_gen = pd.concat([net.res_gen, to_add])
+        net.res_ext_grid.drop(ext_grids, inplace=True)
+
+
+def replace_gen_by_ext_grid(net, gens=None):
+    """ Replaces generators by external grids.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **gens** (iterable) - indices of generators which should be replaced
+    """
+    # --- determine gen index
+    if gens is None:
+        gens = net.gen.index
+    else:
+        gens = ensure_iterability(gens)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.gen.loc[gens].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.ext_grid
+    missing_non_default_col = existing_non_default_col.difference(net.ext_grid.columns)
+    for col in missing_non_default_col:
+        net.ext_grid[col] = np.nan
+
+    # --- create ext_grids
+    new_idx = []
+    for gen in net.gen.loc[gens].itertuples():
+        va_degree = 0. if gen.bus not in net.res_bus.index else net.res_bus.va_degree.at[gen.bus]
+        idx = create_ext_grid(net, gen.bus, vm_pu=gen.vm_pu, va_degree=va_degree, name=gen.name,
+                              in_service=gen.in_service)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.ext_grid[col].at[idx] = getattr(gen, col)
+
+    # --- drop replaced gens
+    net.gen.drop(gens, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
+            net[table].et.loc[to_change] = "ext_grid"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_gen.shape[0]:
+        to_add = net.res_gen.loc[gens]
+        to_add.index = new_idx
+        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
+        net.res_gen.drop(gens, inplace=True)
+
+
 # --- item/element selections
 
 def get_element_index(net, element, name, exact_match=True):
@@ -1950,3 +2054,28 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                 net['switch']['et'] == 't') & switch_selection])
 
     return cs
+
+
+def get_connected_elements_dict(
+        net, buses, respect_switches=True, respect_in_service=False, remove_empty_lists=True,
+        connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
+        connected_other_elements=True):
+    """ Returns a dict of lists of connected elements. """
+    pp_elms = pp_elements(
+        bus=connected_buses, bus_elements=connected_bus_elements,
+        branch_elements=connected_branch_elements, other_elements=connected_other_elements,
+        res_elements=False)
+    connected = dict()
+    for elm in pp_elms:
+        if elm == "bus":
+            conn = get_connected_buses(net, buses, respect_switches=respect_switches,
+                                          respect_in_service=respect_in_service)
+        elif elm == "switch":
+            conn = get_connected_switches(net, buses)
+        else:
+            conn = get_connected_elements(
+                net, elm, buses, respect_switches=respect_switches,
+                respect_in_service=respect_in_service)
+        if not remove_empty_lists or len(conn):
+            connected[elm] = list(conn)
+    return connected
