@@ -1348,7 +1348,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
-            elif table.startswith("res_"):
+            elif table.startswith("res_") and table != "res_cost":
                 p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
     if "bus_geodata" in net:
         p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
