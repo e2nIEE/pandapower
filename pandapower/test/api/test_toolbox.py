@@ -117,6 +117,17 @@ def test_nets_equal():
     assert tb.nets_equal(net, original, tol=0.1)
 
 
+def test_clear_result_tables():
+    net = nw.case9()
+    pp.runpp(net)
+    elms_to_check = ["bus", "line", "load"]
+    for elm in elms_to_check:
+        assert net["res_%s" % elm].shape[0]
+    pp.clear_result_tables(net)
+    for elm in elms_to_check:
+        assert not net["res_%s" % elm].shape[0]
+
+
 def test_add_column_from_node_to_elements():
     net = nw.create_cigre_network_mv("pv_wind")
     net.bus["subnet"] = ["subnet_%i" % i for i in range(net.bus.shape[0])]
