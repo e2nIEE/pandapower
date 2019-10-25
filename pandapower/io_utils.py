@@ -19,6 +19,7 @@ from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from warnings import warn
 from inspect import isclass, signature
 import os
+from functools import partial
 
 try:
     from functools import singledispatch
@@ -261,30 +262,37 @@ class PPJSONEncoder(json.JSONEncoder):
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        args = {"object_hook": pp_hook}
-        args.update(kwargs)
-        super().__init__(**args)
+        # net = pandapowerNet.__new__(pandapowerNet)
+        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, net=net)}
+        super_kwargs.update(kwargs)
+        super().__init__(**super_kwargs)
 
 
-def pp_hook(d):
+def pp_hook(d, net=None):
+    # keys = copy.deepcopy(list(d.keys()))
+    # for key in keys:
+    #     if isinstance(d[key], dict):
+    #         d[key] = pp_hook(d[key])
+
     if '_module' in d and '_class' in d:
         if "_object" in d:
             obj = d.pop('_object')
         elif "_init" in d:
             return d  # backwards compatibility
         else:
-            obj = {"_init": d, "_state": dict()}  # backwards compatibility
+            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
         class_name = d.pop('_class')
         module_name = d.pop('_module')
-        keys = copy.deepcopy(list(d.keys()))
-        for key in keys:
-            if isinstance(d[key], dict):
-                d[key] = pp_hook(d[key])
 
         if class_name == 'Series':
             return pd.read_json(obj, precise_float=True, **d)
         elif class_name == "DataFrame":
-            df = pd.read_json(obj, precise_float=True, **d)
+            if type(obj) == str:
+                df = pd.read_json(obj, precise_float=True, **d)
+            else:
+                df = pd.DataFrame(**obj).astype(d['dtype'], copy=False, errors='ignore')  # here copy=False is OK
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
@@ -308,7 +316,7 @@ def pp_hook(d):
                 from pandapower import from_json_string
                 return from_json_string(obj)
             else:
-                net = create_empty_network()
+                # net = create_empty_network()
                 net.update(obj)
                 return net
         elif module_name == "networkx":
@@ -317,19 +325,15 @@ def pp_hook(d):
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
-                needs_net = "net" in signature(class_.__init__).parameters.keys()
-                if needs_net and not hasattr(pp_hook, "net"):
-                    return json.dumps(
-                        {"_object": obj, "_class": class_name, "_module": module_name})
-                else:
-                    if isinstance(obj, str):
-                        obj = json.loads(obj, cls=PPJSONDecoder)
-                    if needs_net:
-                        obj["_init"]["net"] = pp_hook.net
-                    if "add_to_net" in obj["_init"]:
-                        obj["_init"]["add_to_net"] = False
-                    return class_.from_dict(obj)
+                if isinstance(obj, str):
+                    obj = json.loads(obj, cls=PPJSONDecoder)  # backwards compatibility
+                c = JSONSerializableClass.__new__(class_)
+                if 'net' in obj:
+                    obj.update({'net': net})
+                c.__dict__.update(obj)
+                return c
             else:
+                # for non-pp objects, e.g. tuple
                 return class_(obj, **d)
     else:
         return d
@@ -337,11 +341,13 @@ def pp_hook(d):
 
 class JSONSerializableClass(object):
     json_excludes = ["net", "self", "__class__"]
-    
+
     def __init__(self, table=None, overwrite=True):
-        self._init = dict()
+        pass
+        # self._init = dict()
 
     def update_initialized(self, parameters):
+        return
         """
         Saves all parameters as object attributes
         """
@@ -361,13 +367,18 @@ class JSONSerializableClass(object):
         return json.dumps(self.to_dict(), cls=PPJSONEncoder)
 
     def to_dict(self):
-        init_parameters = signature(self.__init__).parameters.keys()
-        d = {'_module': self.__module__.__str__(), '_class': self.__class__.__name__,
-             "_init": {key: val for key, val in self._init.items() if
-                       key in init_parameters and key not in self.json_excludes},
-             "has_net": "net" in init_parameters,
-             "_state": {key: val for key, val in self.__dict__.items() if key not in
-                        self.json_excludes and not callable(val)}}
+        d = {}
+        for key, val in self.__dict__.items():
+            if key in self.json_excludes:
+                continue
+            elif callable(val):
+                logger.debug(val)
+                continue
+                raise UserWarning('cannot save callable attributes (saving of objects with '
+                                  'monkey-patching is not implemented)')
+            d.update({key: val})
+        if "net" in signature(self.__init__).parameters.keys():
+            d.update({'net': 'net'})
         return d
 
     def add_to_net(self, table, index, column="object", overwrite=True):
@@ -463,8 +474,32 @@ class JSONSerializableClass(object):
         return cls.from_dict(d)
 
 
+class MakeFunctionJSONSerializable(JSONSerializableClass):
+    def __init__(self, function):
+        super().__init__()
+        # self.update_initialized(locals())
+        self.function = function
+        self.function_module = function.__module__
+        self.function_name = function.__name__
+
+    def to_dict(self):
+        d = super().to_dict()
+        d.update({'_module': self.function_module, '_class': self.function_name})
+        d.pop('_init')
+        return d
+
+    def __call__(self, *args, **kwargs):
+        return self.function(*args, **kwargs)
+
+    def __str__(self):
+        return self.function.__name__ + ' (JSON serializable)'
+
+    def __repr__(self):
+        return "This is a JSON serializable object around the function %s" % self.function.__name__
+
+
 def restore_jsoned_objects(net, obj_hook=pp_hook):
-    obj_hook.net = net
+    return
     restore_columns = [(element, "object") for element, table in net.items() \
                        if isinstance(table, pd.DataFrame) and "object" in table.columns]
     if "controller" in net and "controller" in net["controller"]:
@@ -473,10 +508,11 @@ def restore_jsoned_objects(net, obj_hook=pp_hook):
         for i, c in zip(net[element].index, net[element][column].values):
             try:
                 logger.debug("loading %s with index %s"%(element, str(i)))
+                if 'net' in c['_object']:
+                    c['_object'].update({'net': net})
                 net[element][column].at[i] = obj_hook(c)
             except Exception as e:
                 logger.warning("did not load %s with index %s: %s"%(element, str(i), e))
-    del obj_hook.net
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
@@ -506,8 +542,10 @@ def json_net(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    d = with_signature(obj, obj.to_json(orient='split',
-                                        default_handler=to_serializable, double_precision=15))
+    # d = with_signature(obj, obj.to_json(orient='split',
+    #                                     default_handler=to_serializable, double_precision=15))
+    df_dict = obj.to_dict(orient='split')
+    d = with_signature(obj, df_dict)
     d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
     return d
 
@@ -525,7 +563,8 @@ if GEOPANDAS_INSTALLED:
 @to_serializable.register(pd.Series)
 def json_series(obj):
     logger.debug('Series')
-    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable))
+    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable,
+                                        double_precision=15))
     d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
     return d
 
@@ -599,7 +638,7 @@ def json_networkx(obj):
 @to_serializable.register(JSONSerializableClass)
 def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
-    d = with_signature(obj, obj.to_json())
+    d = with_signature(obj, obj.to_dict())
     return d
 
 
