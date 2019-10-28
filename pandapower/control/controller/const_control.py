@@ -6,6 +6,12 @@
 import numpy as np
 from pandas import Index
 from pandapower.control.basic_controller import Controller
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ConstControl(Controller):
@@ -36,29 +42,22 @@ class ConstControl(Controller):
 
         **recycle** (bool, False) - Re-use of ppi-data (speeds-up time series simulation, experimental!)
 
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the
-            same type and with the same matching parameters (e.g. at same element) should be dropped
+        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
 
-        **set_q_from_cosphi** (bool, False) - Sets the q_mvar of load or sgen from the cos_phi value.
-                                              Can be used if either p or cos_phi of load or sgen is
-                                              controlled with this controller. Q_mvar is then
-                                              calculated from p_mw and cos_phi of the respective
-                                              element. The cos_phi column of the element must be
-                                              set in the respective element table.
-
-    NOTE: If multiple elements are represented with one controller, the data source must have
-        integer columns. At the moment, only the DFData format is tested for the multiple const control.
-
+    .. note:: If multiple elements are represented with one controller, the data source must have integer columns. At the moment, only the DFData format is tested for the multiple const control.
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=False, order=0, level=0,
-                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, set_q_from_cosphi_3ph=False, **kwargs):
+                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None, initial_powerflow = False,
+                 **kwargs):
         # just calling init of the parent
+        if matching_params is None:
+            matching_params = {"element": element, "variable": variable,
+                               "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params={"element": element, "variable": variable,
-                                          "element_index": element_index}, **kwargs)
+                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params
+                        ,initial_powerflow = initial_powerflow, **kwargs)
         self.update_initialized(locals())
         self.matching_params = {"element": element, "variable": variable,
                                 "element_index": element_index}
@@ -73,10 +72,12 @@ class ConstControl(Controller):
         self.values = None
         self.profile_name = profile_name
         self.scale_factor = scale_factor
-        self.set_q_from_cosphi = set_q_from_cosphi
+        if set_q_from_cosphi:
+            logger.error("Parameter set_q_from_cosphi deprecated!")
+            raise ValueError
         self.set_q_from_cosphi_3ph = set_q_from_cosphi_3ph
         self.applied = False
-        self.initial_powerflow = False
+        self.initial_powerflow = initial_powerflow
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
@@ -89,13 +90,10 @@ class ConstControl(Controller):
             self.write = self._write_with_loc
 
     def write_to_net(self):
-        # writes to self.element at index self.element_index in the column self.variable the data from self.values
+        """
+        Writes to self.element at index self.element_index in the column self.variable the data from self.values
+        """
         self.write()
-        # calculating q-values based on the datasource p_mw-values and cos_phi from net[self.element].cos_phi
-        if self.set_q_from_cosphi:
-            self.net[self.element].loc[self.element_index, "q_mvar"] = \
-                self.net[self.element].loc[self.element_index, "p_mw"].values * np.tan(
-                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
         if self.set_q_from_cosphi_3ph:
             self.net[self.element].loc[self.element_index, "q_a_mvar"] = \
                 self.net[self.element].loc[self.element_index, "p_a_mw"].values * np.tan(
@@ -108,28 +106,33 @@ class ConstControl(Controller):
                     np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
                 
     def time_step(self, time):
-        # get profiles from data source
-        # copies value directly from datasource
+        """
+        Get the values of the element from data source
+        """
         self.values = self.data_source.get_time_step_value(time_step=time,
                                                            profile_name=self.profile_name,
                                                            scale_factor=self.scale_factor)
         self.write_to_net()
 
     def initialize_control(self):
-        # at the beginning of each time step reset applied-flag
+        """
+        At the beginning of each time step reset applied-flag
+        """
+        #
         if self.data_source is None:
             self.values = self.net[self.element][self.variable].loc[self.element_index]
         self.applied = False
 
     def is_converged(self):
         """
-        Actual implementation of the convergence criteria
+        Actual implementation of the convergence criteria: If controller is applied, it can stop
         """
         return self.applied
 
     def control_step(self):
-        # write to pandapower net
-        # write p, q to bus within the net
+        """
+        Write to pandapower net by calling write_to_net()
+        """
         if self.values is not None:
             self.write_to_net()
         self.applied = True

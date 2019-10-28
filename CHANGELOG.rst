@@ -1,5 +1,9 @@
 Change Log
 =============
+- [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
+- [ADDED] A lot of PowerModels features like network data check and different solver
+- [FIXED] Smaller Bugfixes in PowerModels conversion, OPF in general and tests
+- [CHANGED] OPF bounds and settings for gens. limits or fixed values can now be enforced. See #511
 - [FIXED] renew opf_task() toolbox function which got outdated
 - [CHANGED] OPF documentation and _check_necessary_opf_parameters()
 - [FIXED] dtype at element parameter in cost tables

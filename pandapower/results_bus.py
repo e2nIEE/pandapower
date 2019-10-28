@@ -49,7 +49,7 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_bus_3ph"]["va_a_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
     net["res_bus_3ph"]["va_b_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
     net["res_bus_3ph"]["va_c_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["voltage_unbalance_percent"] = np.abs(V012_pu[2, :]/V012_pu[1, :])*100
+    net["res_bus_3ph"]["unbalance_percent"] = np.abs(V012_pu[2, :]/V012_pu[1, :])*100
     net["res_bus_3ph"].index = net["bus"].index
 
 

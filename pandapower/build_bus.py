@@ -311,11 +311,11 @@ def _build_bus_ppc(net, ppc):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 2  # changes of VMAX must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMAX] = 2.  # changes of VMAX must be considered in check_opf_data
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
 
     if len(net.xward):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus", aux)

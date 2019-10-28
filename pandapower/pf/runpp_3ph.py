@@ -73,7 +73,6 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 def _get_elements(params,net,element,phase,typ):
     sign = -1 if element.endswith("sgen") else 1
     elm = net[element].values
-    in_service = net[element].columns.get_loc("in_service")
     scaling = net[element].columns.get_loc("scaling")
     typ_col = net[element].columns.get_loc("type")
     active = (net["_is_elements"][element]) & (elm[:,typ_col] == typ)
@@ -509,7 +508,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v2_pu_it = X012_to_X2(v_012_it)
         i0_pu_it = X012_to_X0(i012_it)
         i2_pu_it = X012_to_X2(i012_it)
-        i1_for_s1 = -i012_it[1, :]
         s1 = np.multiply(v1_for_s1, i1_for_s1.conjugate())
         # =============================================================================
         # Current used to find S1 Positive sequence power

@@ -81,14 +81,8 @@ def _pd2ppc(net, sequence=None):
     check_connectivity = net["_options"]["check_connectivity"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
-    ppc = _init_ppc(net, sequence=sequence)
+    ppc = _init_ppc(net, mode=mode, sequence=sequence)
 
-    if mode == "opf":
-        # additional fields in ppc
-        ppc["gencost"] = np.array([], dtype=float)
-
-    # Initialises empty ppci
-    ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
     if sequence == 0:
@@ -142,7 +136,7 @@ def _pd2ppc(net, sequence=None):
     # generates "internal" ppci format (for powerflow calc) 
     # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
-    ppci = _ppc2ppci(ppc, ppci, net)
+    ppci = _ppc2ppci(ppc, net)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints
@@ -157,24 +151,28 @@ def _pd2ppc(net, sequence=None):
     return ppc, ppci
 
 
-def _init_ppc(net, sequence=None):
+def _init_ppc(net, mode="pf", sequence=None):
     # init empty ppc
-    ppc = \
-    {"baseMVA": net.sn_mva,
-        "version": 2,
-        "bus": np.array([], dtype=float),
-        "branch": np.array([], dtype=np.complex128),
-        "gen": np.array([], dtype=float),
-        "internal": {
-            "Ybus": np.array([], dtype=np.complex128),
-            "Yf": np.array([], dtype=np.complex128),
-            "Yt": np.array([], dtype=np.complex128),
-            "branch_is": np.array([], dtype=bool),
-            "gen_is": np.array([], dtype=bool),
-            "DLF": np.array([], dtype=np.complex128),
-            "buses_ord_bfs_nets": np.array([], dtype=float)
-            }
-    }
+    ppc = {"baseMVA": net.sn_mva
+        , "version": 2
+        , "bus": np.array([], dtype=float)
+        , "branch": np.array([], dtype=np.complex128)
+        , "gen": np.array([], dtype=float)
+        , "internal": {
+            "Ybus": np.array([], dtype=np.complex128)
+            , "Yf": np.array([], dtype=np.complex128)
+            , "Yt": np.array([], dtype=np.complex128)
+            , "branch_is": np.array([], dtype=bool)
+            , "gen_is": np.array([], dtype=bool)
+            , "DLF": np.array([], dtype=np.complex128)
+            , "buses_ord_bfs_nets": np.array([], dtype=float)
+        }
+           }
+    if mode == "opf":
+        # additional fields in ppc
+        ppc["gencost"] = np.array([], dtype=float)
+    net["_ppc"] = ppc
+
     if sequence is None:
         net["_ppc"] = ppc
     else:
@@ -183,7 +181,25 @@ def _init_ppc(net, sequence=None):
     return ppc
 
 
-def _ppc2ppci(ppc, ppci, net):
+def _ppc2ppci(ppc, net):
+    """
+    Creates the ppci which is used to run the power flow / OPF...
+    The ppci is similar to the ppc except that:
+    1. it contains no out of service elements
+    2. buses are sorted
+
+    Parameters
+    ----------
+    ppc - the ppc
+    net - the pandapower net
+
+    Returns
+    -------
+    ppci - the "internal" ppc
+
+    """
+    # get empty ppci
+    ppci = _init_ppc(net, mode=net["_options"]["mode"])
     # BUS Sorting and lookups
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]

@@ -353,6 +353,9 @@ def _check_connectivity_opf(ppc):
             # if slack is in reachable other slacks are connected to this one. Set it to Gen bus
             demoted_slacks = list(intersection - {slack})
             ppc['bus'][demoted_slacks, BUS_TYPE] = PV
+            logger.warning("Multiple connected slacks in one area found. This would probably lead to non-convergence "
+                           "of the OPF. I'll change all but one slack (ext_grid) to gens. To avoid undesired "
+                           "behaviour, rather convert the slacks to gens yourself and set slack=True for one of them.")
 
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
