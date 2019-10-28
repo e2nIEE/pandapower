@@ -75,7 +75,6 @@ class ConstControl(Controller):
         if set_q_from_cosphi:
             logger.error("Parameter set_q_from_cosphi deprecated!")
             raise ValueError
-        self.set_q_from_cosphi_3ph = set_q_from_cosphi_3ph
         self.applied = False
         self.initial_powerflow = initial_powerflow
         # write functions faster, depending on type of self.element_index
@@ -94,16 +93,6 @@ class ConstControl(Controller):
         Writes to self.element at index self.element_index in the column self.variable the data from self.values
         """
         self.write()
-        if self.set_q_from_cosphi_3ph:
-            self.net[self.element].loc[self.element_index, "q_a_mvar"] = \
-                self.net[self.element].loc[self.element_index, "p_a_mw"].values * np.tan(
-                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
-            self.net[self.element].loc[self.element_index, "q_b_mvar"] = \
-                self.net[self.element].loc[self.element_index, "p_b_mw"].values * np.tan(
-                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))        
-            self.net[self.element].loc[self.element_index, "q_c_mvar"] = \
-                self.net[self.element].loc[self.element_index, "p_c_mw"].values * np.tan(
-                    np.arccos(self.net[self.element].loc[self.element_index, "cos_phi"].values))
                 
     def time_step(self, time):
         """

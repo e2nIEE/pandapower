@@ -49,7 +49,7 @@ def get_delta_try_except(net):
         except pp.OPFNotConverged:
             continue
     return 1e-10
-
+@pytest.mark.xfail
 def test_dispatch1(dcline_net):
     net = dcline_net
     pp.create_pwl_cost(net, 0, "ext_grid", [[-1e12, 1e9, 100]])

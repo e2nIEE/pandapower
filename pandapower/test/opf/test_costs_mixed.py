@@ -115,7 +115,7 @@ def test_mixed_p_q_pwl():
     pp.create_pwl_cost(net, 0, "gen", [[-150, 150, 1]], power_type="q")
     pp.runopp(net)
     assert net["OPF_converged"]
-    assert net.res_cost == net.res_gen.p_mw.values + net.res_gen.q_mvar.values
+    assert np.isclose(net.res_cost , net.res_gen.p_mw.values + net.res_gen.q_mvar.values)
 
 if __name__ == "__main__":
     vm_max = 1.05
