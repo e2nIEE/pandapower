@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 import pandapower as pp
-import topology as top
+import pandapower.topology as top
 from pandapower import pp_dir
 
 
