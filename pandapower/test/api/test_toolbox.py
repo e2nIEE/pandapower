@@ -117,6 +117,17 @@ def test_nets_equal():
     assert tb.nets_equal(net, original, tol=0.1)
 
 
+def test_clear_result_tables():
+    net = nw.case9()
+    pp.runpp(net)
+    elms_to_check = ["bus", "line", "load"]
+    for elm in elms_to_check:
+        assert net["res_%s" % elm].shape[0]
+    pp.clear_result_tables(net)
+    for elm in elms_to_check:
+        assert not net["res_%s" % elm].shape[0]
+
+
 def test_add_column_from_node_to_elements():
     net = nw.create_cigre_network_mv("pv_wind")
     net.bus["subnet"] = ["subnet_%i" % i for i in range(net.bus.shape[0])]
@@ -857,5 +868,39 @@ def test_impedance_line_replacement():
     assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
+def test_replace_ext_grid_gen():
+    net = nw.example_simple()
+    pp.runpp(net)
+    assert list(net.res_ext_grid.index.values) == [0]
+
+    # replace_ext_grid_by_gen
+    pp.replace_ext_grid_by_gen(net, 0)
+    assert not net.ext_grid.shape[0]
+    assert not net.res_ext_grid.shape[0]
+    assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
+    assert net.res_gen.p_mw.dropna().shape[0] == 2
+
+    # replace_gen_by_ext_grid
+    pp.replace_gen_by_ext_grid(net)
+    assert not net.gen.shape[0]
+    assert not net.res_gen.shape[0]
+    assert net.ext_grid.va_degree.dropna().shape[0] == 2
+    assert any(np.isclose(net.ext_grid.va_degree.values, 0))
+    assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
+
+
+def test_get_connected_elements_dict():
+    net = nw.example_simple()
+    conn = pp.get_connected_elements_dict(net, [0])
+    assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
+    conn = pp.get_connected_elements_dict(net, [3, 4])
+    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
+
+
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    if 1:
+        pytest.main([__file__, "-xs"])
+    else:
+#        test_replace_ext_grid_gen()
+#        test_get_connected_elements_dict()
+        pass
