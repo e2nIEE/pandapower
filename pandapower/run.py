@@ -206,17 +206,18 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         #disable run control for inner loop to avoid infinite loop
         parameters["run_control"] = False
         run_control(**parameters)
-    passed_parameters = _passed_runpp_parameters(locals())
-    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
-                        init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                        trafo_model=trafo_model, trafo_loading=trafo_loading,
-                        enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
-                        voltage_depend_loads=voltage_depend_loads,
-                        consider_line_temperature=consider_line_temperature,
-                        passed_parameters=passed_parameters, **kwargs)
-    _check_bus_index_and_print_warning_if_high(net)
-    _check_gen_index_and_print_warning_if_high(net)
-    _powerflow(net, **kwargs)
+    else:
+        passed_parameters = _passed_runpp_parameters(locals())
+        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+                            init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
+                            trafo_model=trafo_model, trafo_loading=trafo_loading,
+                            enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
+                            voltage_depend_loads=voltage_depend_loads,
+                            consider_line_temperature=consider_line_temperature,
+                            passed_parameters=passed_parameters, **kwargs)
+        _check_bus_index_and_print_warning_if_high(net)
+        _check_gen_index_and_print_warning_if_high(net)
+        _powerflow(net, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
