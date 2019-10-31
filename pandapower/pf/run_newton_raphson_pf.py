@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 from time import time
 
 from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d
@@ -39,7 +38,6 @@ def _run_newton_raphson_pf(ppci, options):
 
     ##-----  run the power flow  -----
 
-
     t0 = time()
     if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
         ppci = _run_dc_pf(ppci)
@@ -51,10 +49,11 @@ def _run_newton_raphson_pf(ppci, options):
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci
 
+
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
 
-    if recycle["Ybus"] and ppci["internal"]["Ybus"].size:
+    if recycle is not None and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
         Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
     else:
         ## build admittance matrices
@@ -77,6 +76,22 @@ def _get_numba_functions(ppci, options):
     return makeYbus, pfsoln
 
 
+def _store_internal(ppci, internal_storage):
+    # internal storage is a dict with the variables to store in net["_ppc"]["internal"]
+    for key, val in internal_storage.items():
+        ppci["internal"][key] = val
+    return ppci
+
+
+def _get_Sbus(ppci, recycle=None):
+    baseMVA, bus, gen, branch = ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
+    if recycle is None or "Sbus" not in ppci["internal"]:
+        return makeSbus(baseMVA, bus, gen)
+    if recycle["bus_pq"]:
+        return makeSbus(baseMVA, bus, gen)
+    return ppci["internal"]["Sbus"]
+
+
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
@@ -84,14 +99,18 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
-    ## compute complex bus power injections [generation - load]
-    Sbus = makeSbus(baseMVA, bus, gen)
+    # compute complex bus power injections [generation - load]
+    Sbus = _get_Sbus(ppci, options["recycle"])
 
-    ## run the newton power  flow
+    # run the newton power  flow
+    V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
 
-    V, success, iterations, ppci["internal"]["J"], ppci["internal"]["Vm_it"], ppci["internal"]["Va_it"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+    # keep "internal" variables in  memory / net["_ppc"]["internal"]
+    ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
+                                  "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
+                                  "ref_gens": ref_gens})
 
-    ## update data matrices with solution
+    # update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
 
     return ppci, success, iterations, bus, gen, branch
@@ -139,10 +158,10 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
                 bi = gen[mx[i], GEN_BUS].astype(int)  ## adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
 
-#            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
-#                raise ValueError('Sorry, pandapower cannot enforce Q '
-#                                 'limits for slack buses in systems '
-#                                 'with multiple slacks.')
+            #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+            #                raise ValueError('Sorry, pandapower cannot enforce Q '
+            #                                 'limits for slack buses in systems '
+            #                                 'with multiple slacks.')
 
             changed_gens = gen[mx, GEN_BUS].astype(int)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ

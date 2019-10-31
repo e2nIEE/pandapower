@@ -435,8 +435,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    if recycle is None:
-        recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
+    # if recycle is None:
+    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -686,8 +686,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
     init_from_results = init == "results" or \
-        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
-        (isinstance(init_va_degree, str) and init_va_degree == "results")
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -797,3 +797,32 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
     pass
+
+
+def _internal_stored(net):
+    """
+
+    The function newtonpf() needs these variables as inputs:
+    Ybus, Sbus, V0, pv, pq, ppci, options
+
+    Parameters
+    ----------
+    net - the pandapower net
+
+    Returns
+    -------
+    True if all variables are stored False otherwise
+
+    """
+    # checks if all internal variables are stored in net, which are needed for a power flow
+
+    if net["_ppc"] is None:
+        return False
+
+    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "Ybus", "Yf", "Yt",
+                              "Sbus", "ref_gens"]
+    for var in mandatory_pf_variables:
+        if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
+            logger.warning("recycle is set to True, but internal variables are missing")
+            return False
+    return True
