@@ -33,6 +33,10 @@ except ImportError:
 
 
 def version_check():
+    if "plotly_version" not in locals() and "plotly_version" not in globals():
+        raise UserWarning("You are trying to use plotly, which is not installed.\r\n"
+                          "Please upgrade your python-plotly installation, "
+                          "e.g., via pip install --upgrade plotly")
     if version.parse(plotly_version) < version.parse("3.1.1"):
         raise UserWarning("Your plotly version {} is no longer supported.\r\n"
                           "Please upgrade your python-plotly installation, "
