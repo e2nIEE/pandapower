@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
 - [ADDED] A lot of PowerModels features like network data check and different solver
 - [FIXED] Smaller Bugfixes in PowerModels conversion, OPF in general and tests
 - [CHANGED] OPF bounds and settings for gens. limits or fixed values can now be enforced. See #511

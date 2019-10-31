@@ -2,26 +2,83 @@ import json
 import math
 import os
 import tempfile
-from math import pi
+from os import remove
+from os.path import isfile
 
 import numpy as np
+import pandas as pd
 
-from pandapower import pp_dir
-from pandapower.auxiliary import _add_auxiliary_elements, _clean_up
-from pandapower.opf.pm_tnep import build_ne_branch, CONSTRUCTION_COST
+from pandapower.auxiliary import _add_ppc_options, _add_opf_options, _add_auxiliary_elements
+from pandapower.build_branch import _calc_line_parameter
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
-    ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
-from pandapower.pypower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
-from pandapower.pypower.idx_cost import MODEL, COST, NCOST
-from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
+from pandapower.pypower.idx_brch import ANGMIN, ANGMAX, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, \
+    branch_cols, F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYPE, VMAX, VMIN, VM, PD, QD
+from pandapower.pypower.idx_cost import MODEL, NCOST, COST
+from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
 from pandapower.results import reset_results
 
+# const value in branch for tnep
+CONSTRUCTION_COST = 23
 try:
     import pplog as logging
 except ImportError:
     import logging
+
+
+def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
+                     trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                     pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt"):
+    """
+    Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
+
+    INPUT:
+
+    **net** - pandapower net
+
+    OPTIONAL:
+    **pm_file_path** (str, None) - file path to *.json file to store pm data to
+
+    **correct_pm_network_data** (bool, True) - correct some input data (e.g. angles, p.u. conversion)
+
+    **delta** (float, 1e-8) - (small) offset to set for "hard" OPF limits.
+
+    **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+    **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
+
+    **pm_solver** (str, "ipopt") - default solver to use.
+
+    **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
+
+    **pm_mip_solver** (str, "cbc") - default mip solver to use.
+
+    **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+
+    Returns
+    -------
+    **pm** (json str) - PowerModels.jl data structure
+    """
+
+    net._options = {}
+
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
+                     correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
+                     pm_nl_solver=pm_nl_solver)
+
+    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    buffer_file = dump_pm_json(pm, pm_file_path)
+    if pm_file_path is None and isfile(buffer_file):
+        remove(buffer_file)
+    return pm
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,42 +97,6 @@ def convert_to_pm_structure(net):
     return net, pm, ppc, ppci
 
 
-def _read_results_to_net(net, ppc, ppci, result_pm):
-    """
-    reads power models results from result_pm to ppc / ppci and then to pandapower net
-    """
-    # read power models results from result_pm to result (== ppc with results)
-    result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
-    net._pm_result = result_pm
-    success = ppc["success"]
-    if success:
-        if not multinetwork:
-            # results are extracted from a single time step to pandapower dataframes
-            _extract_results(net, result)
-        _clean_up(net)
-        net["OPF_converged"] = True
-    else:
-        _clean_up(net, res=False)
-        logger.warning("OPF did not converge!")
-
-
-def _runpm(net, delete_buffer_file=True):  # pragma: no cover
-    # convert pandapower to power models file -> this is done in python
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
-    # call optinal callback function
-    if net._options["pp_to_pm_callback"] is not None:
-        net._options["pp_to_pm_callback"](net, ppci, pm)
-    # writes pm json to disk, which is loaded afterwards in julia
-    buffer_file = dump_pm_json(pm)
-    # run power models optimization in julia
-    result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
-    # read results and write back to net
-    _read_results_to_net(net, ppc, ppci, result_pm)
-    if delete_buffer_file:
-        # delete buffer file after calculation
-        os.remove(buffer_file)
-
-
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -87,29 +108,6 @@ def dump_pm_json(pm, buffer_file=None):
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     return buffer_file
-
-
-def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
-    # checks if julia works, otherwise raises an error
-    try:
-        import julia
-        from julia import Main
-    except ImportError:
-        raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
-    try:
-        j = julia.Julia()
-    except:
-        raise UserWarning(
-            "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
-
-    # import two julia scripts and runs powermodels julia_file
-    Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
-    try:
-        run_powermodels = Main.include(julia_file)
-    except ImportError:
-        raise UserWarning("File %s could not be imported" % julia_file)
-    result_pm = run_powermodels(buffer_file)
-    return result_pm
 
 
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
@@ -222,7 +220,7 @@ def ppc_to_pm(net, ppci):
     for idx, row in enumerate(ppci["branch"], start=1):
         branch = dict()
         branch["index"] = idx
-        branch["transformer"] = int(idx > n_lines)
+        branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real
         branch["br_x"] = row[BR_X].real
         branch["g_fr"] = - row[BR_B].imag / 2.0
@@ -297,62 +295,58 @@ def ppc_to_pm(net, ppci):
     return pm
 
 
-def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
-    options = net._options
-    # status if result is from multiple grids
-    multinetwork = False
-    sol = result_pm["solution"]
-    ppci["obj"] = result_pm["objective"]
-    termination_status = str(result_pm["termination_status"])
-    ppci["success"] = "LOCALLY_SOLVED" in termination_status or "OPTIMAL" in termination_status
-    ppci["et"] = result_pm["solve_time"]
-    ppci["f"] = result_pm["objective"]
-
-    if "multinetwork" in sol and sol["multinetwork"]:
-        multinetwork = True
-        ppc["obj"] = ppci["obj"]
-        ppc["success"] = ppci["success"]
-        ppc["et"] = ppci["et"]
-        ppc["f"] = ppci["f"]
-        return ppc, multinetwork
-
-    for i, bus in sol["bus"].items():
-        bus_idx = int(i) - 1
-        ppci["bus"][bus_idx, VM] = bus["vm"]
-        # replace nans with 0.(in case of SOCWR model for example
-        ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
-
-    for i, gen in sol["gen"].items():
-        gen_idx = int(i) - 1
-        ppci["gen"][gen_idx, PG] = gen["pg"]
-        ppci["gen"][gen_idx, QG] = gen["qg"]
-
-    # read Q from branch results (if not DC calculation)
-    dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(sol["branch"]["1"]["qf"])
-    # read branch status results (OTS)
-    branch_status = "br_status" in sol["branch"]["1"]
-    for i, branch in sol["branch"].items():
-        br_idx = int(i) - 1
-        ppci["branch"][br_idx, PF] = branch["pf"]
-        ppci["branch"][br_idx, PT] = branch["pt"]
-        if not dc_results:
-            ppci["branch"][br_idx, QF] = branch["qf"]
-            ppci["branch"][br_idx, QT] = branch["qt"]
-        if branch_status:
-            ppci["branch"][br_idx, BR_STATUS] = branch["br_status"] > 0.5
-
-    result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
-    return result, multinetwork
-
-
 def add_pm_options(pm, net):
-    if "pm_solver" in net._options:
-        pm["pm_solver"] = net._options["pm_solver"]
-    if "pm_mip_solver" in net._options:
-        pm["pm_mip_solver"] = net._options["pm_mip_solver"]
-    if "pm_nl_solver" in net._options:
-        pm["pm_nl_solver"] = net._options["pm_nl_solver"]
-    if "pm_model" in net._options:
-        pm["pm_model"] = net._options["pm_model"]
+    # read values from net_options if present else use default values
+    pm["pm_solver"] = net._options["pm_solver"] if "pm_solver" in net._options else "ipopt"
+    pm["pm_mip_solver"] = net._options["pm_mip_solver"] if "pm_mip_solver" in net._options else "cbc"
+    pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
+    pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
+    pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
+
+    if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
+        # write time limits to power models data structure
+        for key, val in net._options["pm_time_limits"].items():
+            pm[key] = val
+    else:
+        pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"] = np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     return pm
+
+
+def build_ne_branch(net, ppc):
+    # this is only used by pm tnep
+    if "ne_line" in net:
+        length = len(net["ne_line"])
+        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
+        ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
+        # create branch array ne_branch like the common branch array in the ppc
+        net._pd2ppc_lookups["ne_branch"] = dict()
+        net._pd2ppc_lookups["ne_branch"]["ne_line"] = (0, length)
+        _calc_line_parameter(net, ppc, "ne_line", "ne_branch")
+        ppc["ne_branch"][:, CONSTRUCTION_COST] = net["ne_line"].loc[:, "construction_cost"].values
+    return ppc
+
+
+def init_ne_line(net, new_line_index, construction_costs=None):
+    """
+    init function for new line dataframe, which specifies the possible new lines being built by power models tnep opt
+
+    Parameters
+    ----------
+    net - pp net
+    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
+    construction_costs (list, 0.) - costs of newly constructed lines
+
+    Returns
+    -------
+
+    """
+    # init dataframe
+    net["ne_line"] = net["line"].loc[new_line_index, :]
+    # add costs, if None -> init with zeros
+    construction_costs = np.zeros(len(new_line_index)) if construction_costs is None else construction_costs
+    net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
+    # set in service, but only in ne line dataframe
+    net["ne_line"].loc[new_line_index, "in_service"] = True
+    # init res_ne_line to save built status afterwards
+    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)

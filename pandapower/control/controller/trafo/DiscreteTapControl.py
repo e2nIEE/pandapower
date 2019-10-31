@@ -25,8 +25,7 @@ class DiscreteTapControl(TrafoController):
 
         **in_service** (bool, True) - Indicates if the controller is currently in_service
 
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the
-            same type and with the same matching parameters (e.g. at same element) should be dropped
+        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, tid, u_lower, u_upper, side="lv", trafotype="2W",
@@ -45,6 +44,9 @@ class DiscreteTapControl(TrafoController):
         self.tap_pos = self.net[self.trafotable].at[tid, "tap_pos"]
 
     def control_step(self):
+        """
+        Implements one step of the Discrete controller, always stepping only one tap position up or down
+        """
         u = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
         self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
 
@@ -63,6 +65,9 @@ class DiscreteTapControl(TrafoController):
         self.net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
     def is_converged(self):
+        """
+        Checks if the voltage is within the desired voltage band, then returns True
+        """
         if not self.tid in self.net[self.trafotable].index or \
            not self.net[self.trafotable].at[self.tid, 'in_service']:
             return True

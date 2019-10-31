@@ -9,6 +9,7 @@ from time import time
 import numpy as np
 import pandas as pd
 
+from pandapower.io_utils import JSONSerializableClass
 from pandapower.io_utils import mkdirs_if_not_existent
 
 try:
@@ -18,7 +19,7 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 
 
-class OutputWriter:
+class OutputWriter(JSONSerializableClass):
     """
     The OutputWriter class is used to store and format specific outputs from a time series calculation.
 
@@ -54,6 +55,10 @@ class OutputWriter:
 
         **write_time** (int, None) - Time to save periodically to disk in minutes. Deactivated by default
 
+        **log_variables** (list, None) - list of tuples with (table, column) values to  be logged by output writer.
+        Defaults are: res_bus.vm_pu and res_line.loading_percent. Additional variables can be added later on
+        with ow.log_variable or removed with ow.remove_log_variable
+
 
     EXAMPLE:
         >>> from pandapower.timeseries.output_writer import OutputWriter
@@ -66,13 +71,16 @@ class OutputWriter:
     """
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
-                 csv_separator=";"):
+                 log_variables=None, csv_separator=";"):
+        super().__init__()
         self.net = net
-        self.csv_separator = csv_separator
         self.output_path = output_path
         self.output_file_type = output_file_type
-
         self.write_time = write_time
+        self.log_variables = [("res_bus", "vm_pu"),
+                              ("res_line", "loading_percent")] if log_variables is None else log_variables
+
+        self.csv_separator = csv_separator
         if write_time is not None:
             self.write_time *= 60.0  # convert to seconds
 
@@ -86,20 +94,44 @@ class OutputWriter:
         self.cur_realtime = time()
         # total time steps to calculate
         self.time_steps = time_steps
+        # add output_writer to net
+        self.add_to_net(table="output_writer", index=0, overwrite=True)
+        # inits dataframes and numpy arrays which store results
         self.init_all()
+        # Saves all parameters as object attributes to store in JSON
+        self.update_initialized(locals())
 
     def __str__(self):
-        return self.__class__.__name__
+        # return self.__class__.__name__
+        return self.__repr__()
 
     def __repr__(self):
-        s = "%s with output to %s" % (self.__class__.__name__, self.output_path)
+        s = "%s: writes output to '%s'" % (self.__class__.__name__, self.output_path)
+        s += " and logs:"
+        for output in self.log_variables:
+            table, variable = output[0], output[1]
+            s += "\n'" + str(table) + "." + str(variable) + "'"
         return s
+
+    def init_log_variables(self):
+        """
+        inits the log variables given to output writer.
+        log_variables is a list with tuples of DataFrame columns to log.
+        Example: [("res_bus", "vm_pu"), ("res_bus", "va_degree")]
+
+        If None are given the defaults are:
+        res_bus.vm_pu
+        res_line.loading_percent
+        """
+        for table, variable in self.log_variables:
+            self.log_variable(table, variable)
 
     def init_all(self):
         if isinstance(self.time_steps, list) or isinstance(self.time_steps, range):
             self.init_timesteps(self.time_steps)
             self._init_np_results()
             self._init_output()
+            self.init_log_variables()
         else:
             logger.debug("Time steps not set at init ")
 
@@ -184,7 +216,7 @@ class OutputWriter:
         self.cur_realtime = time()  # reset real time counter for next period
 
     def save_results(self, time_step, pf_converged, ctrl_converged):
-        #Saves the results of the current time step to a matrix,
+        # Saves the results of the current time step to a matrix,
         # using the output functions in the self.output_list
 
         # remember the last time step
@@ -226,9 +258,27 @@ class OutputWriter:
         for of in self.output_list:
             self.output["Parameters"].loc[time_step_idx, of.__name__] = np.NaN
 
-    def remove_output_variable(self, table, variable):
-        # ToDo: Implement this function
-        pass
+    def remove_log_variable(self, table, variable=None):
+        """
+        removes a logged variable from outputs
+
+        INPUT:
+        **table** (str) - name of the DataFrame table (example: "res_bus")
+
+        OPTIONAL:
+        **variable** (str, None) - column name of the DataFrame table (example: "vm_pu"). If None all are variables of
+        table are removed
+
+        """
+        # remove variables from list
+        if variable is not None:
+            self.output_list = [o for o in self.output_list if not (o.args[0] == table and o.args[1] == variable)]
+            self.log_variables = [o for o in self.log_variables if not (o[0] == table and o[1] == variable)]
+        else:
+            self.output_list = [o for o in self.output_list if not (o.args[0] == table)]
+            self.log_variables = [o for o in self.log_variables if not (o[0] == table)]
+        # init output container again
+        self._init_np_results()
 
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
@@ -312,7 +362,7 @@ class OutputWriter:
     def _log(self, table, variable, index, eval_function=None, eval_name=None):
         try:
             # ToDo: Create a mask for the numpy array in the beginning and use this one for getting the values. Faster
-            if self.net[table].index.equals(index):
+            if self.net[table].index.equals(pd.Index(index)):
                 # if index equals all values -> get numpy array directly
                 result = self.net[table][variable].values
             else:
