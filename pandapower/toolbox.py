@@ -1084,7 +1084,7 @@ def drop_buses(net, buses, drop_elements=True):
     """
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    res_buses = net.res_line.index.intersection(buses)
+    res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"].drop(res_buses, inplace=True)
     if drop_elements:
         drop_elements_at_buses(net, buses)
