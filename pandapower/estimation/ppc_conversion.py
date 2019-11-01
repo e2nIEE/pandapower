@@ -206,6 +206,22 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_to, IM_TO] = meas_to.value.values
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
+            
+        i_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "line") & \
+                                  meas.element.isin(map_line)]
+        if len(i_dg_measurements):
+            dg_meas_from = i_dg_measurements[(i_dg_measurements.side.values.astype(int) ==
+                                            net.line.from_bus[i_dg_measurements.element]).values]
+            dg_meas_to = i_dg_measurements[(i_dg_measurements.side.values.astype(int) ==
+                                          net.line.to_bus[i_dg_measurements.element]).values]
+            ix_from = [map_line[l] for l in dg_meas_from.element.values.astype(int)]
+            ix_to = [map_line[l] for l in dg_meas_to.element.values.astype(int)]
+            branch_append[ix_from, IA_FROM] = dg_meas_from.value.values
+            branch_append[ix_from, IA_FROM_STD] = dg_meas_from.std_dev.values
+            branch_append[ix_from, IA_FROM_IDX] = dg_meas_from.index.values
+            branch_append[ix_to, IA_TO] = dg_meas_to.value.values
+            branch_append[ix_to, IA_TO_STD] = dg_meas_to.std_dev.values
+            branch_append[ix_to, IA_TO_IDX] = dg_meas_to.index.values
 
         p_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "line") &
                               meas.element.isin(map_line)]
@@ -270,6 +286,22 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
 
+        i_tr_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "trafo") &
+                                     meas.element.isin(map_trafo)]
+        if len(i_tr_dg_measurements):
+            dg_meas_from = i_tr_dg_measurements[(i_tr_dg_measurements.side.values.astype(int) ==
+                                           net.trafo.hv_bus[i_tr_dg_measurements.element]).values]
+            dg_meas_to = i_tr_dg_measurements[(i_tr_dg_measurements.side.values.astype(int) ==
+                                         net.trafo.lv_bus[i_tr_dg_measurements.element]).values]
+            ix_from = [map_trafo[t] for t in dg_meas_from.element.values.astype(int)]
+            ix_to = [map_trafo[t] for t in dg_meas_to.element.values.astype(int)]
+            branch_append[ix_from, IA_FROM] = dg_meas_from.value.values
+            branch_append[ix_from, IA_FROM_STD] = dg_meas_from.std_dev.values
+            branch_append[ix_from, IA_FROM_IDX] = dg_meas_from.index.values
+            branch_append[ix_to, IA_TO] = dg_meas_to.value.values
+            branch_append[ix_to, IA_TO_STD] = dg_meas_to.std_dev.values
+            branch_append[ix_to, IA_TO_IDX] = dg_meas_to.index.values
+
         p_tr_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo") &
                                  meas.element.isin(map_trafo)]
         if len(p_tr_measurements):
@@ -325,6 +357,30 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_lv, IM_TO] = meas_lv.value.values
             branch_append[ix_lv, IM_TO_STD] = meas_lv.std_dev.values
             branch_append[ix_lv, IM_TO_IDX] = meas_lv.index.values
+
+    # Add degree_measurements for trafo3w
+    if map_trafo3w is not None:
+        i_tr3w_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "trafo3w") &
+                                   meas.element.isin(map_trafo3w)]
+        if len(i_tr3w_dg_measurements):
+            dg_meas_hv = i_tr3w_dg_measurements[(i_tr3w_dg_measurements.side.values.astype(int) ==
+                                           net.trafo3w.hv_bus[i_tr3w_dg_measurements.element]).values]
+            dg_meas_mv = i_tr3w_dg_measurements[(i_tr3w_dg_measurements.side.values.astype(int) ==
+                                           net.trafo3w.mv_bus[i_tr3w_dg_measurements.element]).values]
+            dg_meas_lv = i_tr3w_dg_measurements[(i_tr3w_dg_measurements.side.values.astype(int) ==
+                                           net.trafo3w.lv_bus[i_tr3w_dg_measurements.element]).values]
+            ix_hv = [map_trafo3w[t]['hv'] for t in dg_meas_hv.element.values.astype(int)]
+            ix_mv = [map_trafo3w[t]['mv'] for t in dg_meas_mv.element.values.astype(int)]
+            ix_lv = [map_trafo3w[t]['lv'] for t in dg_meas_lv.element.values.astype(int)]
+            branch_append[ix_hv, IA_FROM] = dg_meas_hv.value.values
+            branch_append[ix_hv, IA_FROM_STD] = dg_meas_hv.std_dev.values
+            branch_append[ix_hv, IA_FROM_IDX] = dg_meas_hv.index.values
+            branch_append[ix_mv, IA_TO] = dg_meas_mv.value.values
+            branch_append[ix_mv, IA_TO_STD] = dg_meas_mv.std_dev.values
+            branch_append[ix_mv, IA_TO_IDX] = dg_meas_mv.index.values
+            branch_append[ix_lv, IA_TO] = dg_meas_lv.value.values
+            branch_append[ix_lv, IA_TO_STD] = dg_meas_lv.std_dev.values
+            branch_append[ix_lv, IA_TO_IDX] = dg_meas_lv.index.values
 
         p_tr3w_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo3w") &
                                    meas.element.isin(map_trafo3w)]
@@ -427,8 +483,11 @@ def _build_measurement_vectors(ppci):
     q_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_FROM])
     q_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_TO])
     v_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + VM])
+    v_degree_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + VA])
     i_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_FROM])
     i_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_TO])
+    i_degree_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IA_FROM])
+    i_degree_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IA_TO])
     # piece together our measurement vector z
     z = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P],
                         ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM],
@@ -437,8 +496,11 @@ def _build_measurement_vectors(ppci):
                         ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM],
                         ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO],
                         ppci["bus"][v_bus_not_nan, bus_cols + VM],
+                        ppci["bus"][v_degree_bus_not_nan, bus_cols + VA],
                         ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM],
-                        ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO]
+                        ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO],
+                        ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM],
+                        ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO]
                         )).real.astype(np.float64)
     # conserve the pandapower indices of measurements in the ppci order
     pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
@@ -448,8 +510,11 @@ def _build_measurement_vectors(ppci):
                                       ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_IDX],
                                       ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_IDX],
                                       ppci["bus"][v_bus_not_nan, bus_cols + VM_IDX],
+                                      ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_IDX],
                                       ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_IDX],
-                                      ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX]
+                                      ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
+                                      ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_IDX],
+                                      ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_IDX]
                                       )).real.astype(int)
     # Covariance matrix R
     r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
@@ -459,8 +524,11 @@ def _build_measurement_vectors(ppci):
                             ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_STD],
                             ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_STD],
                             ppci["bus"][v_bus_not_nan, bus_cols + VM_STD],
+                            ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_STD],
                             ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
-                            ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
+                            ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD],
+                            ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_STD],
+                            ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_STD]
                             )).real.astype(np.float64)
     meas_mask = np.concatenate([p_bus_not_nan,
                                 p_line_f_not_nan,
@@ -469,10 +537,14 @@ def _build_measurement_vectors(ppci):
                                 q_line_f_not_nan,
                                 q_line_t_not_nan,
                                 v_bus_not_nan,
+                                v_degree_bus_not_nan,
                                 i_line_f_not_nan,
-                                i_line_t_not_nan])
+                                i_line_t_not_nan,
+                                i_degree_line_f_not_nan,
+                                i_degree_line_t_not_nan])
     any_i_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
-    return z, pp_meas_indices, r_cov, meas_mask, any_i_meas
+    any_degree_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
+    return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas
 
 
 def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus"):
@@ -504,6 +576,7 @@ class ExtendedPPCI(UserDict):
         self.pp_meas_indices = None 
         self.non_nan_meas_mask = None 
         self.any_i_meas = False
+        self.any_degree_meas = False
         self._initialize_meas(ppci)
 
         # check slack bus
@@ -523,9 +596,9 @@ class ExtendedPPCI(UserDict):
 
     def _initialize_meas(self, ppci):
         # calculate relevant vectors from ppci measurements
-        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask, self.any_i_meas =\
+        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask, self.any_i_meas, self.any_degree_meas =\
              _build_measurement_vectors(ppci)
-             
+
     @property
     def V(self):
         return self.v * np.exp(1j * self.delta)
