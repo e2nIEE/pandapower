@@ -114,7 +114,7 @@ def test_conflicting_controllers(net):
     ContinuousTapControl(net, 0, u_set=1.05, tol=tol, order=2)
 
     with pytest.raises(ct.ControllerNotConverged):
-        ct.run_control(net)
+        pp.runpp(net, run_control=True)
 
 
 @pytest.mark.xfail(
@@ -124,15 +124,15 @@ def test_in_service_bool(net):
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service="True", tol=1e-6)
-        ct.run_control(cnet)
+        pp.runpp(cnet, run_control=True)
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service=1.0, tol=1e-6)
-        ct.run_control(cnet)
+        pp.runpp(cnet, run_control=True)
     with pytest.raises(TypeError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service=[1, 2, 3], tol=1e-6)
-        ct.run_control(cnet)
+        pp.runpp(cnet, run_control=True)
 
 
 def test_multiple_levels(net):
@@ -149,7 +149,7 @@ def test_multiple_levels(net):
     assert order[1][1].index == 2
 
     assert level == [1, 2]
-    ct.run_control(net)
+    pp.runpp(net, run_control=True)
 
 
 def test_level(net):
@@ -157,7 +157,7 @@ def test_level(net):
     c2 = DummyController(net, level=1)
     c3 = DummyController(net, level=2)
 
-    ct.run_control(net)
+    pp.runpp(net, run_control=True)
 
     assert c1.is_converged()
     assert c2.is_converged()
@@ -171,7 +171,7 @@ def test_level_in_service(net):
     c4 = DummyController(net, level=1, order=-2, in_service=False)
     net.controller.at[0, 'in_service'] = False
 
-    ct.run_control(net)
+    pp.runpp(net, run_control=True)
     assert not c1.applied
     assert c2.applied
     assert c3.applied

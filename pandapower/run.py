@@ -61,7 +61,8 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-          voltage_depend_loads=True, consider_line_temperature=False, **kwargs):
+          voltage_depend_loads=True, consider_line_temperature=False,
+          run_control=False, **kwargs):
     """
     Runs a power flow
 
@@ -199,17 +200,24 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
-    passed_parameters = _passed_runpp_parameters(locals())
-    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
-                        init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                        trafo_model=trafo_model, trafo_loading=trafo_loading,
-                        enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
-                        voltage_depend_loads=voltage_depend_loads,
-                        consider_line_temperature=consider_line_temperature,
-                        passed_parameters=passed_parameters, **kwargs)
-    _check_bus_index_and_print_warning_if_high(net)
-    _check_gen_index_and_print_warning_if_high(net)
-    _powerflow(net, **kwargs)
+    if run_control and net.controller.in_service.any():
+        from pandapower.control import run_control
+        parameters = {**locals(), **kwargs}
+        #disable run control for inner loop to avoid infinite loop
+        parameters["run_control"] = False
+        run_control(**parameters)
+    else:
+        passed_parameters = _passed_runpp_parameters(locals())
+        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+                            init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
+                            trafo_model=trafo_model, trafo_loading=trafo_loading,
+                            enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
+                            voltage_depend_loads=voltage_depend_loads,
+                            consider_line_temperature=consider_line_temperature,
+                            passed_parameters=passed_parameters, **kwargs)
+        _check_bus_index_and_print_warning_if_high(net)
+        _check_gen_index_and_print_warning_if_high(net)
+        _powerflow(net, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
@@ -268,19 +276,22 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
+    Flexibilities can be defined in net.sgen / net.gen /net.load / net.storage
     net.sgen.controllable if a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
-        - net.sgen.min_p_mw / net.sgen.max_p_mw
-        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
-        - net.load.min_p_mw / net.load.max_p_mw
-        - net.load.min_q_mvar / net.load.max_q_mvar
         - net.gen.min_p_mw / net.gen.max_p_mw
         - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.dcline.max_p_mw
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
         - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
         - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
-        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.storage.min_p_mw / net.storage.max_p_mw
+        - net.storage.min_q_mvar / net.storage.max_q_mvar
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
