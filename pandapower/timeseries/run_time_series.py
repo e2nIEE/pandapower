@@ -32,21 +32,22 @@ def init_outputwriter(net, time_steps, **kwargs):
         **time_steps** (list) - time steps to be calculated
 
     """
-    output_writer = kwargs["output_writer"] if "output_writer" in kwargs else None
+    output_writer = kwargs.get("output_writer", None)
     if output_writer is not None:
+        # write the output_writer to net
         logger.warning("deprecated: output_writer should not be given to run_timeseries(). "
                        "This overwrites the stored one in net.output_writer.")
         net.output_writer.iat[0, 0] = output_writer
-    if "output_writer" not in net and output_writer is None:
-        # create a default output writer
+    if "output_writer" not in net or net.output_writer.iat[0, 0] is None:
+        # create a default output writer for this net
         ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
         logger.info("No output writer specified. Using default:")
         logger.info(ow)
-    else:
-        # inits output writer before time series calculation
-        output_writer = net.output_writer.iat[0, 0]
-        output_writer.time_steps = time_steps
-        output_writer.init_all()
+
+    # init output writer before time series calculation
+    output_writer = net.output_writer.iat[0, 0]
+    output_writer.time_steps = time_steps
+    output_writer.init_all()
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
@@ -100,7 +101,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control(net, run_control=True, ctrl_variables=ts_variables, **kwargs)
+        run_control(net, run_control=False, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
