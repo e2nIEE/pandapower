@@ -18,8 +18,8 @@ from pandapower.estimation.results import eppci2pp
 from copy import deepcopy
 
 
-def test_case57_compare_classical_wls_opt_wls():
-    net = nw.case57()
+def test_case30_compare_classical_wls_opt_wls():
+    net = nw.case30()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
     
@@ -29,7 +29,7 @@ def test_case57_compare_classical_wls_opt_wls():
     except:
         # if failed give it a warm start
         net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-4, 5)
+        estimation_wls = WLSAlgorithm(1e-4, 3)
         estimation_opt = OptAlgorithm(1e-6, 1000)
 
         eppci = estimation_wls.estimate(eppci)

@@ -621,6 +621,10 @@ class ExtendedPPCI(UserDict):
         self.E = E
         self.v = E[self.num_non_slack_bus:]
         self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
+    
+    def E2V(self, E):
+        self.update_E(E)
+        return self.V
         
     def get_Y(self):
         # Using recycled version if available

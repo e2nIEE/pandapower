@@ -54,7 +54,7 @@ class BaseAlgebra:
 
     def create_hx(self, E):
         f_bus, t_bus = self.fb, self.tb
-        V = self.eppci.V
+        V = self.eppci.E2V(E)
         Sfe = V[f_bus] * np.conj(self.Yf * V)
         Ste = V[t_bus] * np.conj(self.Yt * V)
         Sbuse = V * np.conj(self.Ybus * V)
@@ -84,7 +84,7 @@ class BaseAlgebra:
 
     def create_hx_jacobian(self, E):
         # Using sparse matrix in creation sub-jacobian matrix
-        V = self.eppci.V
+        V = self.eppci.E2V(E)
 
         dSbus_dth, dSbus_dv = self._dSbus_dv(V)
         dSf_dth, dSf_dv, dSt_dth, dSt_dv = self._dSbr_dv(V)
@@ -165,14 +165,14 @@ class BaseAlgebra:
 
 class BaseAlgebraZeroInjConstraints(BaseAlgebra):
     def create_cx(self, E, p_zero_inj, q_zero_inj):
-        V = self.eppci.V
+        V = self.eppci.E2V(E)
         Sbus = V * np.conj(self.Ybus * V)
         c = np.r_[Sbus[p_zero_inj].real,
                   Sbus[q_zero_inj].imag] * self.eppci['baseMVA']
         return c
 
     def create_cx_jacobian(self, E, p_zero_inj, q_zero_inj):
-        V = self.eppci.V
+        V = self.eppci.E2V(E)
         dSbus_dth, dSbus_dv = self._dSbus_dv(V)
         c_jac_th = np.r_[dSbus_dth.toarray().real[p_zero_inj],
                          dSbus_dth.toarray().imag[q_zero_inj]]

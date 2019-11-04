@@ -16,8 +16,8 @@ from pandapower.estimation.util import add_virtual_meas_from_loadflow
 from copy import deepcopy
 
 
-def test_recycle_case14():
-    net = nw.case14()
+def test_recycle_case30():
+    net = nw.case30()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
     se = StateEstimation(net, recycle=True)
@@ -25,6 +25,9 @@ def test_recycle_case14():
 
     # Run SE again
     assert se.estimate(net)
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
