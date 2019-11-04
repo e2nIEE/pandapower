@@ -13,6 +13,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.idx_bus import bus_cols
 import pandapower.pypower.idx_bus as idx_bus
+from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
@@ -468,7 +469,7 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
     return bus_append
 
 
-def _build_measurement_vectors(ppci):
+def _build_measurement_vectors(ppci, update_meas_only=False):
     """
     Building measurement vector z, pandapower to ppci measurement mapping and covariance matrix R
     :param ppci: generated ppci which contains the measurement columns
@@ -502,82 +503,86 @@ def _build_measurement_vectors(ppci):
                         ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM],
                         ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO]
                         )).real.astype(np.float64)
-    # conserve the pandapower indices of measurements in the ppci order
-    pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
-                                      ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_IDX],
-                                      ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_IDX],
-                                      ppci["bus"][q_bus_not_nan, bus_cols + Q_IDX],
-                                      ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_IDX],
-                                      ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_IDX],
-                                      ppci["bus"][v_bus_not_nan, bus_cols + VM_IDX],
-                                      ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_IDX],
-                                      ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_IDX],
-                                      ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
-                                      ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_IDX],
-                                      ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_IDX]
-                                      )).real.astype(int)
-    # Covariance matrix R
-    r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
-                            ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],
-                            ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_STD],
-                            ppci["bus"][q_bus_not_nan, bus_cols + Q_STD],
-                            ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_STD],
-                            ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_STD],
-                            ppci["bus"][v_bus_not_nan, bus_cols + VM_STD],
-                            ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_STD],
-                            ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
-                            ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD],
-                            ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_STD],
-                            ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_STD]
-                            )).real.astype(np.float64)
-    meas_mask = np.concatenate([p_bus_not_nan,
-                                p_line_f_not_nan,
-                                p_line_t_not_nan,
-                                q_bus_not_nan,
-                                q_line_f_not_nan,
-                                q_line_t_not_nan,
-                                v_bus_not_nan,
-                                v_degree_bus_not_nan,
-                                i_line_f_not_nan,
-                                i_line_t_not_nan,
-                                i_degree_line_f_not_nan,
-                                i_degree_line_t_not_nan])
-    any_i_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
-    any_degree_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
-    return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas
+    if not update_meas_only:
+        # conserve the pandapower indices of measurements in the ppci order
+        pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
+                                          ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_IDX],
+                                          ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_IDX],
+                                          ppci["bus"][q_bus_not_nan, bus_cols + Q_IDX],
+                                          ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_IDX],
+                                          ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_IDX],
+                                          ppci["bus"][v_bus_not_nan, bus_cols + VM_IDX],
+                                          ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_IDX],
+                                          ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_IDX],
+                                          ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
+                                          ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_IDX],
+                                          ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_IDX]
+                                          )).real.astype(int)
+        # Covariance matrix R
+        r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
+                                ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],
+                                ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_STD],
+                                ppci["bus"][q_bus_not_nan, bus_cols + Q_STD],
+                                ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_STD],
+                                ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_STD],
+                                ppci["bus"][v_bus_not_nan, bus_cols + VM_STD],
+                                ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_STD],
+                                ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
+                                ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD],
+                                ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_STD],
+                                ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_STD]
+                                )).real.astype(np.float64)
+        meas_mask = np.concatenate([p_bus_not_nan,
+                                    p_line_f_not_nan,
+                                    p_line_t_not_nan,
+                                    q_bus_not_nan,
+                                    q_line_f_not_nan,
+                                    q_line_t_not_nan,
+                                    v_bus_not_nan,
+                                    v_degree_bus_not_nan,
+                                    i_line_f_not_nan,
+                                    i_line_t_not_nan,
+                                    i_degree_line_f_not_nan,
+                                    i_degree_line_t_not_nan])
+        any_i_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
+        any_degree_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
+        return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas
+    else:
+        return z
 
 
-def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus"):
+def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus",
+             ppc=None, eppci=None):
     # initialize result tables if not existent
     _copy_power_flow_results(net)
-    
-    # initialize ppc
-    ppc, ppci = _init_ppc(net, v_start, delta_start, calculate_voltage_angles)
+    if isinstance(eppci, ExtendedPPCI):
+        _add_measurements_to_ppci(net, eppci, zero_injection)
+        eppci.update_meas(net)
+        return net, ppc, eppci
+    else:
+        # initialize ppc
+        ppc, ppci = _init_ppc(net, v_start, delta_start, calculate_voltage_angles)
 
-    # add measurements to ppci structure
-    # Finished converting pandapower network to ppci
-    ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
-    return net, ppc, ExtendedPPCI(ppci)
+        # add measurements to ppci structure
+        # Finished converting pandapower network to ppci
+        ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
+        return net, ppc, ExtendedPPCI(ppci)
+
 
 
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
         self.data = ppci
-        
-        # Base information
-        self.baseMVA = ppci['baseMVA']
-        self.bus_baseKV = ppci['bus'][:, idx_bus.BASE_KV].real.astype(int)
-        self.bus = ppci['bus']
-        self.branch = ppci['branch']
 
         # Measurement relevant parameters
         self.z = None
         self.r_cov = None
         self.pp_meas_indices = None 
         self.non_nan_meas_mask = None 
+        self.non_nan_meas_selector = None
         self.any_i_meas = False
         self.any_degree_meas = False
-        self._initialize_meas(ppci)
+        self._initialize_meas()
 
         # check slack bus
         self.non_slack_buses = np.argwhere(ppci["bus"][:, idx_bus.BUS_TYPE] != 3).ravel()
@@ -585,7 +590,9 @@ class ExtendedPPCI(UserDict):
         self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
         self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
                                       np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
+        self.delta_v_bus_selector = np.flatnonzero(self.delta_v_bus_mask)
 
+        # Initialize state variable
         self.v_init = ppci["bus"][:, idx_bus.VM]
         self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
         self.E_init = np.r_[self.delta_init[self.non_slack_bus_mask], self.v_init]
@@ -594,10 +601,14 @@ class ExtendedPPCI(UserDict):
         self.E = self.E_init.copy()
 
 
-    def _initialize_meas(self, ppci):
+    def _initialize_meas(self):
         # calculate relevant vectors from ppci measurements
         self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask, self.any_i_meas, self.any_degree_meas =\
-             _build_measurement_vectors(ppci)
+             _build_measurement_vectors(self, update_meas_only=False)
+        self.non_nan_meas_selector = np.flatnonzero(self.non_nan_meas_mask)
+    
+    def update_meas(self, net):
+        self.z = _build_measurement_vectors(self, update_meas_only=True)
 
     @property
     def V(self):
@@ -610,3 +621,13 @@ class ExtendedPPCI(UserDict):
         self.E = E
         self.v = E[self.num_non_slack_bus:]
         self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
+        
+    def get_Y(self):
+        # Using recycled version if available
+        if "Ybus" in self["internal"] and self["internal"]["Ybus"].size:
+            Ybus, Yf, Yt = self["internal"]['Ybus'], self["internal"]['Yf'], self["internal"]['Yt']
+        else:
+            ## build admittance matrices
+            Ybus, Yf, Yt = makeYbus(self['baseMVA'], self['bus'], self['branch'])
+            self["internal"]['Ybus'], self["internal"]['Yf'], self["internal"]['Yt'] = Ybus, Yf, Yt
+        return Ybus, Yf, Yt
