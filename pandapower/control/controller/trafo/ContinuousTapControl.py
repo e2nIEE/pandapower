@@ -30,8 +30,7 @@ class ContinuousTapControl(TrafoController):
 
         **check_tap_bounds** (bool, True) - In case of true the tap_bounds will be considered
 
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the
-            same type and with the same matching parameters (e.g. at same element) should be dropped
+        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, tid, u_set, tol=1e-3, side="lv", trafotype="2W", in_service=True,
@@ -68,6 +67,9 @@ class ContinuousTapControl(TrafoController):
         self.tol = tol
 
     def control_step(self):
+        """
+        Implements one step of the ContinuousTapControl
+        """
         ud = self.net.res_bus.at[self.controlled_bus, "vm_pu"] - self.u_set
         tc = ud / self.tap_step_percent * 100 / self.t_nom
         self.tap_pos += tc * self.tap_side_coeff * self.tap_sign
@@ -78,6 +80,11 @@ class ContinuousTapControl(TrafoController):
         self.net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
     def is_converged(self):
+        """
+        The ContinuousTapControl is converged, when the difference of the voltage between control steps is smaller
+        than the Tolerance (tol).
+        """
+
         if not self.net[self.trafotable].at[self.tid, 'in_service']:
             return True
         u = self.net.res_bus.at[self.controlled_bus, "vm_pu"]

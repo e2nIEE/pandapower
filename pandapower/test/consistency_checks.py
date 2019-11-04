@@ -17,13 +17,13 @@ def runpp_with_consistency_checks(net, **kwargs):
 
 def rundcpp_with_consistency_checks(net, **kwargs):
     pp.rundcpp(net, **kwargs)
-    consistency_checks(net)
+    consistency_checks(net, test_q=False)
     return True
 
-def consistency_checks(net, rtol=1e-3):
+def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
-    element_power_consistent_with_bus_power(net, rtol)
+    element_power_consistent_with_bus_power(net, rtol, test_q)
 
 def indices_consistent(net):
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt",
@@ -60,7 +60,7 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
         raise AssertionError("Branch losses are %.4f MVar, but power generation at the buses exceeds the feedin by %.4f MVar"%(branch_loss_q, bus_surplus_q))
 
 
-def element_power_consistent_with_bus_power(net, rtol=1e-2):
+def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
@@ -102,4 +102,5 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2):
         bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
-    assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
+    if test_q:
+        assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)

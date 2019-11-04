@@ -15,7 +15,7 @@ import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
-from numpy import ndarray, generic, equal
+from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from warnings import warn
 from inspect import isclass, signature
 import os
@@ -80,7 +80,8 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
         elif item == "std_types":
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
-                dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+                if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
+                    dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
             continue
         elif item == "user_pf_options":
             if len(value) > 0:
@@ -95,7 +96,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
 
         # value is pandas DataFrame
-        if include_empty_tables and value.empty:
+        if not include_empty_tables and value.empty:
             continue
 
         if item == "bus_geodata":
@@ -377,9 +378,9 @@ class JSONSerializableClass(object):
             obj_is_dict = isinstance(obj, dict)
             if not obj_is_dict:
                 if overwrite:
-                    logger.info("Updating %s with index %s" %(table, index))
+                    logger.info("Updating %s with index %s" % (table, index))
                 else:
-                    raise UserWarning("%s with index %s already exists" %(table, index))
+                    raise UserWarning("%s with index %s already exists" % (table, index))
         self.net[table].at[index, column] = self
 
     def __eq__(self, other):
@@ -389,8 +390,14 @@ class JSONSerializableClass(object):
 
         def check_equality(obj1, obj2):
             if isinstance(obj1, (ndarray, generic)) or isinstance(obj2, (ndarray, generic)):
-                if not equal(obj1, obj2):
-                    raise UnequalityFound              
+                unequal = True
+                if equal(obj1, obj2):
+                    unequal = False
+                elif anynp(isnan(obj1)):
+                    if allclose(obj1, obj2, atol=0, rtol=0, equal_nan=True):
+                        unequal = False
+                if unequal:
+                    raise UnequalityFound
             elif not isinstance(obj2, type(obj1)):
                 raise UnequalityFound
             elif isinstance(obj1, pandapowerNet):
@@ -414,7 +421,11 @@ class JSONSerializableClass(object):
             elif callable(obj1):
                 check_callable_equality(obj1, obj2)
             elif obj1 != obj2:
-                raise UnequalityFound            
+                try:
+                    if not (isnan(obj1) and isnan(obj2)):
+                        raise UnequalityFound
+                except:
+                    raise UnequalityFound
     
         def check_dictionary_equality(obj1, obj2):
             if set(obj1.keys()) != set(obj2.keys()):
@@ -593,10 +604,9 @@ def controller_to_serializable(obj):
 
 
 def mkdirs_if_not_existent(dir):
-    if os.path.isdir(dir) == False:
-        os.makedirs(dir)
-        return True
-    return False
+    already_exist = os.path.isdir(dir)
+    os.makedirs(dir, exist_ok=True)
+    return ~already_exist
 
 
 if SHAPELY_INSTALLED:

@@ -23,33 +23,6 @@ If you are not yet using Julia, install it. Note that you need a version that is
 
 5. To call Julia from Python, install the pyjulia package with :code:`pip install julia`. Afterwards, test if everything works by importing PowerModels from Python with: :code:`from julia.PowerModels import run_ac_opf`. This takes some time, since Python starts a julia instance in the background, but it if the import completes without error everything is configured correctly and you can now use PowerModels to optimize pandapower networks.
 
-.. warning:: A bug currently makes it necessary to modify a file of the pyjulia package. The exact line which needs to be modified depends on how you installed pyjulia. To find the exact line, have a look at your traceback after you execute the command :code:`from julia import Main`, e.g. in Pycharm (Corresponding `Github Issue <https://github.com/JuliaPy/pyjulia/issues/67#issuecomment-508407747>`_):
-
-    .. code-block::
-
-        File "C:\python\Anaconda3\lib\site-packages\julia\core.py", line 686, in __init__
-        self.libjulia = ctypes.PyDLL(libjulia_path, ctypes.RTLD_GLOBAL)
-        File "C:\python\Anaconda3\lib\ctypes\__init__.py", line 356, in __init__
-        self._handle = _dlopen(self._name, mode)
-        OSError: [WinError 127] The specified procedure could not be found
-
-    In this case, it is line no. 686. Replace
-
-    .. code-block::
-
-        self.libjulia = ctypes.PyDLL(libjulia_path, ctypes.RTLD_GLOBAL)
-
-    with
-
-    .. code-block::
-
-        cwd = os.getcwd()
-        os.chdir(os.path.dirname(libjulia_path))
-        self.libjulia = ctypes.PyDLL(libjulia_path, ctypes.RTLD_GLOBAL)
-        os.chdir(cwd)
-
-    Now Julia should work in your Python shell, Anaconda prompt and in Spyder, but currently not in Pycharm.
-
 Usage
 ------
 

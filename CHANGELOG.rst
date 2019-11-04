@@ -1,5 +1,12 @@
 Change Log
 =============
+- [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
+- [ADDED] A lot of PowerModels features like network data check and different solver
+- [FIXED] Smaller Bugfixes in PowerModels conversion, OPF in general and tests
+- [CHANGED] OPF bounds and settings for gens. limits or fixed values can now be enforced. See #511
+- [FIXED] renew opf_task() toolbox function which got outdated
+- [CHANGED] OPF documentation and _check_necessary_opf_parameters()
+- [FIXED] dtype at element parameter in cost tables
 - [ADDED] reindex_buses() toolbox function
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters
 - [ADDED] consideration of result tables in toolbox functions drop...
@@ -137,7 +144,7 @@ Change Log
 ----------------------
 
 - [ADDED] possibility to save networks to an sql database
-- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [CHANGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
 - [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
 - [FIXED] state estimation bug with phase shift transformers
 - [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception

@@ -50,6 +50,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     shortcircuit
     estimation
     control
+    timeseries
     topology
     networks
     plotting

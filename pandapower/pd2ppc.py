@@ -21,9 +21,8 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
-                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus
+    _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
-
 
 
 def _pd2ppc(net):
@@ -67,14 +66,8 @@ def _pd2ppc(net):
     check_connectivity = net["_options"]["check_connectivity"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
-    ppc = _init_ppc(net)
+    ppc = _init_ppc(net, mode=mode)
 
-    if mode == "opf":
-        # additional fields in ppc
-        ppc["gencost"] = np.array([], dtype=float)
-
-    # init empty ppci
-    ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
     # generate ppc['branch'] and directly generates branch values
@@ -115,7 +108,7 @@ def _pd2ppc(net):
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
-    ppci = _ppc2ppci(ppc, ppci, net)
+    ppci = _ppc2ppci(ppc, net)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints
@@ -130,7 +123,7 @@ def _pd2ppc(net):
     return ppc, ppci
 
 
-def _init_ppc(net):
+def _init_ppc(net, mode="pf"):
     # init empty ppc
     ppc = {"baseMVA": net.sn_mva
         , "version": 2
@@ -147,11 +140,32 @@ def _init_ppc(net):
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
            }
+    if mode == "opf":
+        # additional fields in ppc
+        ppc["gencost"] = np.array([], dtype=float)
     net["_ppc"] = ppc
     return ppc
 
 
-def _ppc2ppci(ppc, ppci, net):
+def _ppc2ppci(ppc, net):
+    """
+    Creates the ppci which is used to run the power flow / OPF...
+    The ppci is similar to the ppc except that:
+    1. it contains no out of service elements
+    2. buses are sorted
+
+    Parameters
+    ----------
+    ppc - the ppc
+    net - the pandapower net
+
+    Returns
+    -------
+    ppci - the "internal" ppc
+
+    """
+    # get empty ppci
+    ppci = _init_ppc(net, mode=net["_options"]["mode"])
     # BUS Sorting and lookups
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -249,15 +263,17 @@ def _update_lookup_entries(net, lookup, e2i, element):
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     aux._write_lookup_to_net(net, element, lookup)
 
+
 def _build_gen_lookups(net, element, f, t):
-     in_service = net._is_elements[element]
-     if "controllable" in element:
-         pandapower_index = net[element.split("_")[0]].index.values[in_service]
-     else:
-         pandapower_index = net[element].index.values[in_service]
-     ppc_index = np.arange(f, t)
-     if len(pandapower_index) > 0:
+    in_service = net._is_elements[element]
+    if "controllable" in element:
+        pandapower_index = net[element.split("_")[0]].index.values[in_service]
+    else:
+        pandapower_index = net[element].index.values[in_service]
+    ppc_index = np.arange(f, t)
+    if len(pandapower_index) > 0:
         _init_lookup(net, element, pandapower_index, ppc_index)
+
 
 def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
