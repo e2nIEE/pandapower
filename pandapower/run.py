@@ -201,7 +201,9 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
     recycle = kwargs.get("recycle", None)
-    powerflow = _recycled_powerflow if recycle is not None and _internal_stored(net) else _powerflow
+    if recycle is not None and _internal_stored(net):
+        _recycled_powerflow(net, **kwargs)
+        return
 
     if run_control and net.controller.in_service.any():
         from pandapower.control import run_control
@@ -220,7 +222,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                             passed_parameters=passed_parameters, **kwargs)
         _check_bus_index_and_print_warning_if_high(net)
         _check_gen_index_and_print_warning_if_high(net)
-        powerflow(net, **kwargs)
+        _powerflow(net, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,

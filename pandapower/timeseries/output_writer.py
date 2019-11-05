@@ -80,7 +80,7 @@ class OutputWriter(JSONSerializableClass):
         self.output_path = output_path
         self.output_file_type = output_file_type
         self.write_time = write_time
-        self.log_variables = list() if log_variables is None else log_variables
+        self.log_variables = log_variables
         # these are the default log variables which are added if log_variables is None
         self.default_log_variables = [("res_bus", "vm_pu"), ("res_line", "loading_percent")]
         self._add_log_defaults()
@@ -119,8 +119,11 @@ class OutputWriter(JSONSerializableClass):
         return s
 
     def _add_log_defaults(self):
-        if not len(self.log_variables):
+        if self.log_variables is None:
+            self.log_variables = list()
             self.log_variables = copy.copy(self.default_log_variables)
+        if not isinstance(self.log_variables, list):
+            raise TypeError("log_variables must be None or a list of tuples like [('res_bus', 'vm_pu')]")
 
     def init_log_variables(self):
         """

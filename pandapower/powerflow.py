@@ -75,6 +75,9 @@ def _powerflow(net, **kwargs):
 
 def _recycled_powerflow(net, **kwargs):
     options = net["_options"]
+    options["recycle"] = kwargs.get("recycle", None)
+    options["init_vm_pu"] = "results"
+    options["init_va_degree"] = "results"
     algorithm = options["algorithm"]
     ac = options["ac"]
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
