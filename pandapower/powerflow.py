@@ -76,17 +76,6 @@ def _recycled_powerflow(net, **kwargs):
     options = net["_options"]
     algorithm = options["algorithm"]
     ac = options["ac"]
-    # print("keys")
-    # print(net["_ppc"]["internal"].keys())
-    # print("ybus size: ", net["_ppc"]["internal"]["Ybus"].size)
-    # import numpy as np
-    # ppci = {"baseMVA": net.sn_mva
-    #     , "version": 2
-    #     , "bus": np.array([], dtype=float)
-    #     , "branch": np.array([], dtype=np.complex128)
-    #     , "gen": np.array([], dtype=float),
-    #         "internal": net["_ppc"]["internal"],
-    # }
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
@@ -120,26 +109,7 @@ def _recycled_powerflow(net, **kwargs):
         _build_gen_ppc(net, ppc)
         ppc["gen"] = nan_to_num(ppc["gen"])
 
-    # import copy
     ppci = _ppc2ppci(ppc, net, ppci=ppci)
-    # ppci_cp = copy.deepcopy(ppci)
-    # ppci = _ppc2ppci(copy.deepcopy(ppc), copy.deepcopy(net), ppci=None)
-    # ppci["success"] = False
-    # ppci["et"] = 0
-    # # net["_ppc"] = _copy_results_ppci_to_ppc(ppci, ppc, mode="")
-    # ppci_cp["gen"] = nan_to_num(ppci_cp["gen"])
-    # ppci["gen"] = nan_to_num(ppci["gen"])
-    # for el in ["gen", "branch", "bus"]:
-    #     diff = ppci[el] - ppci_cp[el]
-    #     if np.any(diff):
-    #         print(np.where(ppci[el] != ppci_cp[el]))
-    #         print(diff)
-    #         raise ValueError("ppci differs at %s" % el)
-
-
-    # print("key:")
-    # print(net["_ppc"]["internal"].keys())
-    # print("ybus size: ", net["_ppc"]["internal"]["Ybus"].size)
     ppci["internal"] = net["_ppc"]["internal"]
     net["_ppc"] = ppc
 

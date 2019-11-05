@@ -32,27 +32,22 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
     """
-    ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
+    # generator info
+    on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
+    gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
 
-    ## compute total injected bus powers
+    # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus
     Sbus = V[gbus] * conj(Ybus[gbus, :] * V - Ibus[gbus])
 
     _update_v(bus, V)
+    # update gen results
     _update_q(baseMVA, bus, gen, gbus, Sbus, on)
     _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens)
 
-    ##----- update/compute branch power flows -----
+    # ----- update/compute branch power flows -----
+    branch = _update_branch_flows(Yf, Yt, V, baseMVA, branch)
 
-    ## complex power at "from" bus
-    Sf = V[real(branch[:, F_BUS]).astype(int)] * calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA,
-                                                                   Yf.shape[0])
-    ## complex power injected at "to" bus
-    St = V[real(branch[:, T_BUS]).astype(int)] * calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA,
-                                                                   Yt.shape[0])
-    branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
     return bus, gen, branch
 
 
@@ -64,20 +59,11 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, re
 
     """
 
-    ##----- update bus voltages -----
-    bus[:, VM] = abs(V)
-    bus[:, VA] = angle(V) * 180 / pi
+    # ----- update bus voltages -----
+    _update_v(bus, V)
 
-    ##----- update/compute branch power flows -----
-
-    ## complex power at "from" bus
-    Sf = V[real(branch[:, F_BUS]).astype(int)] * calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA,
-                                                                   Yf.shape[0])
-    ## complex power injected at "to" bus
-    St = V[real(branch[:, T_BUS]).astype(int)] * calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA,
-                                                                   Yt.shape[0])
-
-    branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
+    # ----- update/compute branch power flows -----
+    branch = _update_branch_flows(Yf, Yt, V, baseMVA, branch)
 
     p_bus = bus[:, PD].sum()
     q_bus = bus[:, QD].sum()
@@ -89,6 +75,17 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, re
     gen[:, QG] = q_loss.real + q_bus  # branch q losses + q demand
 
     return bus, gen, branch
+
+
+def _update_branch_flows(Yf, Yt, V, baseMVA, branch):
+    # complex power at "from" bus
+    Sf = V[real(branch[:, F_BUS]).astype(int)] * calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA,
+                                                                   Yf.shape[0])
+    # complex power injected at "to" bus
+    St = V[real(branch[:, T_BUS]).astype(int)] * calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA,
+                                                                   Yt.shape[0])
+    branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
+    return branch
 
 
 @jit(nopython=True, cache=False)
