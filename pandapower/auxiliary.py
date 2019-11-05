@@ -766,7 +766,7 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     trafo_model = "t"
     trafo_loading = 'current'
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+    recycle = None
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -786,7 +786,7 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     trafo_loading = 'current'
     calculate_voltage_angles = True
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+    recycle = None
 
     # net.__internal_options = {}
     net._options = {}

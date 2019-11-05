@@ -3,10 +3,12 @@
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from numpy import nan_to_num
+
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
-from pandapower.build_gen import _build_pp_gen
-from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc
+from pandapower.build_gen import _build_gen_ppc
+from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -74,6 +76,17 @@ def _recycled_powerflow(net, **kwargs):
     options = net["_options"]
     algorithm = options["algorithm"]
     ac = options["ac"]
+    # print("keys")
+    # print(net["_ppc"]["internal"].keys())
+    # print("ybus size: ", net["_ppc"]["internal"]["Ybus"].size)
+    # import numpy as np
+    # ppci = {"baseMVA": net.sn_mva
+    #     , "version": 2
+    #     , "bus": np.array([], dtype=float)
+    #     , "branch": np.array([], dtype=np.complex128)
+    #     , "gen": np.array([], dtype=float),
+    #         "internal": net["_ppc"]["internal"],
+    # }
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
@@ -81,28 +94,54 @@ def _recycled_powerflow(net, **kwargs):
             "internal": net["_ppc"]["internal"],
             }
     if not ac:
-        _run_dc_pf(ppci)
+        # DC recycle
+        result = _run_dc_pf(ppci)
+        _ppci_to_net(result, net)
+        return
     if not algorithm in ['nr', 'iwamoto_nr'] and ac:
         raise ValueError("recycle is only available with Newton-Raphson power flow. Choose algorithm='nr'")
 
     recycle = options["recycle"]
-
+    ppc = net["_ppc"]
     if "bus_pq" in recycle and recycle["bus_pq"]:
         # update pq values in bus
-        _calc_pq_elements_and_add_on_ppc(net, ppci)
+        _calc_pq_elements_and_add_on_ppc(net, ppc)
 
     if "trafo" in recycle and recycle["trafo"]:
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppci)
+            _calc_trafo_parameter(net, ppc)
         if "trafo3w" in lookup:
-            _calc_trafo3w_parameter(net, ppci)
+            _calc_trafo3w_parameter(net, ppc)
+
     if "gen" in recycle and recycle["gen"]:
-        # Todo: This doesn't work yet (test fails)
-        f = net._pd2ppc_lookups["gen"][0]
-        t = net._pd2ppc_lookups["gen"][-1] + 1
-        _build_pp_gen(net, ppci, f, t)
+        # updates the ppc["gen"] part
+        _build_gen_ppc(net, ppc)
+        ppc["gen"] = nan_to_num(ppc["gen"])
+
+    # import copy
+    ppci = _ppc2ppci(ppc, net, ppci=ppci)
+    # ppci_cp = copy.deepcopy(ppci)
+    # ppci = _ppc2ppci(copy.deepcopy(ppc), copy.deepcopy(net), ppci=None)
+    # ppci["success"] = False
+    # ppci["et"] = 0
+    # # net["_ppc"] = _copy_results_ppci_to_ppc(ppci, ppc, mode="")
+    # ppci_cp["gen"] = nan_to_num(ppci_cp["gen"])
+    # ppci["gen"] = nan_to_num(ppci["gen"])
+    # for el in ["gen", "branch", "bus"]:
+    #     diff = ppci[el] - ppci_cp[el]
+    #     if np.any(diff):
+    #         print(np.where(ppci[el] != ppci_cp[el]))
+    #         print(diff)
+    #         raise ValueError("ppci differs at %s" % el)
+
+
+    # print("key:")
+    # print(net["_ppc"]["internal"].keys())
+    # print("ybus size: ", net["_ppc"]["internal"]["Ybus"].size)
+    ppci["internal"] = net["_ppc"]["internal"]
+    net["_ppc"] = ppc
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)

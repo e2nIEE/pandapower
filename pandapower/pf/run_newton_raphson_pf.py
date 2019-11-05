@@ -8,15 +8,15 @@ from time import time
 
 from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d
 
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.pf.run_dc_pf import _run_dc_pf
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -56,7 +56,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     if recycle is not None and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
         Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
     else:
-        ## build admittance matrices
+        # build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
 
@@ -87,7 +87,7 @@ def _get_Sbus(ppci, recycle=None):
     baseMVA, bus, gen, branch = ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
     if recycle is None or "Sbus" not in ppci["internal"]:
         return makeSbus(baseMVA, bus, gen)
-    if recycle["bus_pq"]:
+    if recycle["bus_pq"] or recycle["gen"]:
         return makeSbus(baseMVA, bus, gen)
     return ppci["internal"]["Sbus"]
 

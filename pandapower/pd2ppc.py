@@ -142,7 +142,7 @@ def _init_ppc(net, mode="pf"):
     return ppc
 
 
-def _ppc2ppci(ppc, net):
+def _ppc2ppci(ppc, net, ppci=None):
     """
     Creates the ppci which is used to run the power flow / OPF...
     The ppci is similar to the ppc except that:
@@ -160,7 +160,8 @@ def _ppc2ppci(ppc, net):
 
     """
     # get empty ppci
-    ppci = _init_ppc(net, mode=net["_options"]["mode"])
+    if ppci is None:
+        ppci = _init_ppc(net, mode=net["_options"]["mode"])
     # BUS Sorting and lookups
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
