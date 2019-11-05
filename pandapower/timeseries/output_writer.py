@@ -12,6 +12,8 @@ import pandas as pd
 
 from pandapower.io_utils import JSONSerializableClass
 from pandapower.io_utils import mkdirs_if_not_existent
+from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
+from pandapower.pd2ppc import _ppc2ppci
 
 try:
     import pplog
@@ -160,10 +162,6 @@ class OutputWriter(JSONSerializableClass):
         self.np_results = dict()
         for partial_func in self.output_list:
             self._init_np_array(partial_func)
-            # self._init_np_array(var_name, index, eval_function)
-
-    def _save_to_memmap(self, append):
-        raise NotImplementedError("Sorry not implemented yet")
 
     def _save_separate(self, append):
 
@@ -211,11 +209,9 @@ class OutputWriter(JSONSerializableClass):
                     self._save_single_xls_sheet(append)
                 elif self.output_file_type in [".csv", ".xls", ".xlsx", ".json", ".p"]:
                     self._save_separate(append)
-                elif self.output_file_type == ".dat":
-                    self._save_to_memmap(append)
                 else:
                     raise UserWarning(
-                        "Specify output file with .csv, .xls, .xlsx, .p, .json or .dat ending")
+                        "Specify output file with .csv, .xls, .xlsx, .p or .json ending")
                 if append:
                     self._init_output()
 
@@ -350,6 +346,12 @@ class OutputWriter(JSONSerializableClass):
             self.log_variables.append((table, variable, index, eval_function, eval_name))
 
     def _init_log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
+        if "ppc" in table:
+            var_name = self._get_output_name(table, variable)
+            ppc = self.net["_ppc"]
+            index = list(range(sum(ppc['bus'][:, BUS_TYPE] != NONE)))
+            self._append_output_list(table, variable, index, eval_function, eval_name, var_name, func=self._log_ppc)
+
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
             index = self.net[table.split("res_")[-1]].index
@@ -391,10 +393,10 @@ class OutputWriter(JSONSerializableClass):
             if i not in self.output_list[idx].args[2]:
                 self.output_list[idx].args[2].append(i)
 
-    def _append_output_list(self, table, variable, index, eval_function, eval_name, var_name):
+    def _append_output_list(self, table, variable, index, eval_function, eval_name, var_name, func=None):
         """ Appends the output_list by an additional partial_func. """
-        partial_func = functools.partial(self._log, table, variable, index, eval_function,
-                                         eval_name)
+        func = self._log if func is None else func
+        partial_func = functools.partial(func, table, variable, index, eval_function, eval_name)
         partial_func.__name__ = var_name
         self.output_list.append(partial_func)
         if self.time_steps is not None:
@@ -420,6 +422,24 @@ class OutputWriter(JSONSerializableClass):
 
         except Exception as e:
             logger.error("Error at index %s for %s[%s]: %s" % (index, table, variable, e))
+
+    def _log_ppc(self, table, variable, index, eval_function=None, eval_name=None):
+        # custom log function fo ppc results
+        ppc = self.net["_ppc"]
+        if variable == "vm":
+            v = VM
+        elif variable == "va":
+            v = VA
+        else:
+            raise NotImplementedError("No other variable implemented yet.")
+        result = ppc[table.split("_")[-1]][:, v]
+        if eval_function is not None:
+            result = eval_function(result)
+
+        # save results to numpy array
+        time_step_idx = self.time_step_lookup[self.time_step]
+        hash_name = self._get_np_name((table, variable, index, eval_function, eval_name))
+        self.np_results[hash_name][time_step_idx, :] = result
 
     def _np_to_pd(self):
         # convert numpy arrays (faster so save results) into pd Dataframes (user friendly)

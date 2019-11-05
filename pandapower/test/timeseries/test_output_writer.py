@@ -26,8 +26,8 @@ logger.setLevel(logging.ERROR)
 ow_logger.setLevel(logging.CRITICAL)
 
 
-def test_output_writer_log():
-    net = simple_test_net()
+def test_output_writer_log(simple_test_net):
+    net = simple_test_net
 
     # timeseries data
     df = pd.DataFrame([[15, 30, 2], [12, 27, 1.5], [7, 29, 2.1]])
@@ -69,8 +69,8 @@ def test_output_writer_log():
     assert all(ow4.output["res_bus.vm_pu"].columns == orig_index + new_idx)
 
 
-def test_output_writer_with_timesteps_set():
-    net = simple_test_net()
+def test_output_writer_with_timesteps_set(simple_test_net):
+    net = simple_test_net
 
     n_timesteps = 10
     profiles, ds = create_data_source(n_timesteps)
@@ -87,10 +87,9 @@ def test_output_writer_with_timesteps_set():
     assert len(ow.output["res_line.i_ka"]) == n_timesteps
 
 
-def test_output_writer_without_timesteps_set():
-    net = simple_test_net()
-
-    n_timesteps = 10
+def test_output_writer_without_timesteps_set(simple_test_net):
+    net = simple_test_net
+    n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -105,9 +104,9 @@ def test_output_writer_without_timesteps_set():
     assert len(ow.output["res_line.i_ka"]) == n_timesteps
 
 
-def test_output_writer_without_timesteps_set_repeat():
+def test_output_writer_without_timesteps_set_repeat(simple_test_net):
+    net = simple_test_net
     # the same outputwriter should be able to run repeated time series
-    net = simple_test_net()
 
     time_steps_to_check = [8, 5, 10]
     profiles, ds = create_data_source(max(time_steps_to_check))
@@ -125,9 +124,9 @@ def test_output_writer_without_timesteps_set_repeat():
         assert len(ow.output["res_bus.vm_pu"].index) == n_timesteps
 
 
-def test_output_writer_short_data_source():
+def test_output_writer_short_data_source(simple_test_net):
+    net = simple_test_net
     # outputwriter should fail if data source is shorter than time steps
-    net = simple_test_net()
 
     n_timesteps = 10
     profiles, ds = create_data_source(5)
@@ -144,8 +143,8 @@ def test_output_writer_short_data_source():
         run_timeseries(net, time_steps)
 
 
-def test_default_output_writer():
-    net = simple_test_net()
+def test_default_output_writer(simple_test_net):
+    net = simple_test_net
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
@@ -156,8 +155,9 @@ def test_default_output_writer():
     run_timeseries(net, time_steps)
 
 
-def test_output_writer_eval_simple():
-    net = simple_test_net()
+def test_output_writer_eval_simple(simple_test_net):
+    net = simple_test_net
+
     n_timesteps = 1
     profiles, ds = create_data_source(n_timesteps)
     # 1load
@@ -170,8 +170,8 @@ def test_output_writer_eval_simple():
     assert len(ow.output["res_bus.vm_pu"]["max"]) == n_timesteps
 
 
-def test_output_writer_multiple_index_definition():
-    net = simple_test_net()
+def test_output_writer_multiple_index_definition(simple_test_net):
+    net = simple_test_net
 
     n_timesteps = 1
     profiles, ds = create_data_source(n_timesteps)
@@ -205,8 +205,9 @@ def test_output_writer_multiple_index_definition():
                        ow.output["res_bus.vm_pu"].loc[:, net.bus.index], atol=0, rtol=0)
 
 
-def test_remove_variable():
-    net = simple_test_net()
+def test_remove_variable(simple_test_net):
+    net = simple_test_net
+
     ow = OutputWriter(net)
     # test printing
     logger.info(ow)
@@ -219,8 +220,9 @@ def test_remove_variable():
     assert len(ow.log_variables) == 0
 
 
-def test_store_and_load():
-    net = simple_test_net()
+def test_store_and_load(simple_test_net):
+    net = simple_test_net
+
     n_timesteps = 2
     profiles, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -244,6 +246,25 @@ def test_store_and_load():
     run_timeseries(net, time_steps=time_steps)
     # check if results were written
     assert os.path.isfile(res_line_file)
+
+
+def test_ppc_log(simple_test_net):
+    net = simple_test_net
+    n_timesteps = 5
+    profiles, ds = create_data_source(n_timesteps)
+    # 1load
+    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+                 recycle=True)
+
+    time_steps = range(0, n_timesteps)
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=list())
+    ow.log_variable('ppc_bus', 'vm')
+    ow.log_variable('ppc_bus', 'va')
+    pp.runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})
+    run_timeseries(net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False}, only_v_results=True)
+    assert len(ow.output["ppc_bus.vm"]) == n_timesteps
+    assert len(ow.output["ppc_bus.va"]) == n_timesteps
 
 
 if __name__ == '__main__':

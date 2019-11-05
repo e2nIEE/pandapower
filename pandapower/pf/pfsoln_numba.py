@@ -52,10 +52,11 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
 
 
 def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None):
-    """ experimental faster version of pfsoln.
+    """
+    faster version of pfsoln for a grid with a single slack bus
 
-        NOTE: this function is not used yet in standard pp, since there seems to be a problem with shunts
-        NOTE: Do not use in combination with voltage dependend loads
+    NOTE: Do not use in combination with shunts (check if ppc["bus"][:, GS/BS] are != 0.)
+    NOTE: Do not use in combination with voltage dependend loads
 
     """
 

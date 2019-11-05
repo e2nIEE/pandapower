@@ -652,6 +652,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     init_va_degree = kwargs.get("init_va_degree", None)
     recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    only_v_results = kwargs.get("only_v_results", False)
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -718,7 +719,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug)
+                    v_debug=v_debug, only_v_results=only_v_results)
     net._options.update(overrule_options)
 
 
@@ -732,7 +733,7 @@ def _init_nx_options(net):
 
 
 def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity,
-                          switch_rx_ratio, trafo3w_losses):
+                          switch_rx_ratio, trafo3w_losses, **kwargs):
     ac = False
     numba = True
     mode = "pf"
@@ -746,7 +747,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     algorithm = None
     max_iteration = None
     tolerance_mva = None
-
+    only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -754,7 +755,8 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    only_v_results=only_v_results)
 
 
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
@@ -767,6 +769,7 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     trafo_loading = 'current'
     enforce_q_lims = True
     recycle = None
+    only_v_results = False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -775,7 +778,7 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba, only_v_results=only_v_results)
 
 
 def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
@@ -787,7 +790,7 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     calculate_voltage_angles = True
     enforce_q_lims = True
     recycle = None
-
+    only_v_results = False
     # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -795,8 +798,7 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
-    pass
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results)
 
 
 def _internal_stored(net):

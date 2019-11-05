@@ -17,6 +17,7 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
+from pandapower.pypower.pfsoln import _update_v
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -56,11 +57,16 @@ def _run_newton_raphson_pf(ppci, options):
 
 
 def ppci_to_pfsoln(ppci, options):
-    # reads values from internal ppci storage to bus, gen, branch and returns it
-    _, pfsoln = _get_numba_functions(ppci, options)
     internal = ppci["internal"]
-    return pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
-                  internal["Yf"], internal["Yt"], internal["V"], internal["ref"], internal["ref_gens"])
+    if options["only_v_results"]:
+        # time series relevant hack which ONLY saves V from ppci
+        _update_v(internal["bus"], internal["V"])
+        return internal["bus"], internal["gen"], internal["branch"]
+    else:
+        # reads values from internal ppci storage to bus, gen, branch and returns it
+        _, pfsoln = _get_numba_functions(ppci, options)
+        return pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
+                      internal["Yf"], internal["Yt"], internal["V"], internal["ref"], internal["ref_gens"])
 
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):

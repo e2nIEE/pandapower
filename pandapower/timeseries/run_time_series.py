@@ -137,22 +137,19 @@ def get_run_function(net, **kwargs):
         **recycle_class** - class to recycle implementation
     """
 
-    recycle = False
+    # recycle = False
     recycle_class = None
+    #
 
-    if "recycle" in kwargs:
-        recycle = kwargs.pop("recycle")
-        recycle = True if recycle and all_controllers_recycleable(net) else False
+    recycle = kwargs.get("recycle", None)
+    run = kwargs.get("run", pp.runpp)
+    if recycle is not None:
+        # todo update check of controller here
+        pass
+        # from pandapower.timeseries.ts_runpp import TimeSeriesRunpp
+        # recycle_class = TimeSeriesRunpp(net)
+        # run = recycle_class.ts_runpp
 
-    if recycle:
-        # experimental
-        from pandapower.timeseries.ts_runpp import TimeSeriesRunpp
-        recycle_class = TimeSeriesRunpp(net)
-        run = recycle_class.ts_runpp
-    elif "run" in kwargs:
-        run = kwargs.pop("run")
-    else:
-        run = pp.runpp
     return run, recycle_class
 
 
@@ -218,10 +215,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
         # simple progress bar
         print_progress_bar(0, len(time_steps), prefix='Progress:', suffix='Complete', length=50)
 
-    if "recycle" in kwargs:
-        kwargs.pop("recycle")
-
-    return ts_variables, kwargs
+    return ts_variables
 
 
 def cleanup(ts_variables):
@@ -267,7 +261,7 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
         is replaced by the function kwargs["run"]
     """
 
-    ts_variables, kwargs = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
+    ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
 
     control_diagnostic(net)
     for i, time_step in enumerate(ts_variables["time_steps"]):

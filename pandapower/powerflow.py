@@ -17,7 +17,8 @@ from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results, \
+    _ppci_bus_to_ppc, _ppci_other_to_ppc
 
 
 class AlgorithmUnknown(ppException):
@@ -115,6 +116,10 @@ def _recycled_powerflow(net, **kwargs):
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)
+    if options["only_v_results"]:
+        _ppci_bus_to_ppc(result, ppc)
+        _ppci_other_to_ppc(result, ppc, options["mode"])
+        return
     # read the results from  result (==ppci) to net
     _ppci_to_net(result, net)
 
