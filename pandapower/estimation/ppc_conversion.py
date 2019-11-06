@@ -426,9 +426,17 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_lv, Q_TO] = meas_lv.value.values
             branch_append[ix_lv, Q_TO_STD] = meas_lv.std_dev.values
             branch_append[ix_lv, Q_TO_IDX] = meas_lv.index.values
-
-    ppci["bus"] = np.hstack((ppci["bus"], bus_append))
-    ppci["branch"] = np.hstack((ppci["branch"], branch_append))
+    
+    # Check append or update
+    if ppci["bus"].shape[1] == bus_cols:
+        ppci["bus"] = np.hstack((ppci["bus"], bus_append))
+    else:
+        ppci["bus"][:, bus_cols: bus_cols+bus_cols_se] = bus_append
+    
+    if ppci["branch"].shape[1] == branch_cols:
+        ppci["branch"] = np.hstack((ppci["branch"], branch_append))
+    else:
+        ppci["branch"][:, branch_cols: branch_cols+branch_cols_se] = branch_append
     return ppci
 
 
@@ -556,8 +564,8 @@ def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True,
     # initialize result tables if not existent
     _copy_power_flow_results(net)
     if isinstance(eppci, ExtendedPPCI):
-        _add_measurements_to_ppci(net, eppci, zero_injection)
-        eppci.update_meas(net)
+        eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection)
+        eppci.update_meas()
         return net, ppc, eppci
     else:
         # initialize ppc
@@ -607,7 +615,7 @@ class ExtendedPPCI(UserDict):
              _build_measurement_vectors(self, update_meas_only=False)
         self.non_nan_meas_selector = np.flatnonzero(self.non_nan_meas_mask)
     
-    def update_meas(self, net):
+    def update_meas(self):
         self.z = _build_measurement_vectors(self, update_meas_only=True)
 
     @property
