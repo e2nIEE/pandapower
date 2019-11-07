@@ -153,6 +153,11 @@ def test_default_output_writer(simple_test_net):
 
     time_steps = range(0, n_timesteps)
     run_timeseries(net, time_steps)
+    ow = net.output_writer.iloc[0, 0]
+    loading_percent = ow.output["res_line.loading_percent"]
+    vm_pu = ow.output["res_bus.vm_pu"]
+    assert loading_percent.shape[0] == n_timesteps and loading_percent.shape[1] == len(net.line)
+    assert vm_pu.shape[0] == n_timesteps and vm_pu.shape[1] == len(net.bus)
 
 
 def test_output_writer_eval_simple(simple_test_net):

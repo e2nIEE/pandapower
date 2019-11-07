@@ -11,17 +11,18 @@
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import pi, finfo, c_, real, flatnonzero as find, angle, conj, zeros, complex128
+from numpy import conj, zeros, complex128, abs, float64, sqrt, real
+from numpy import finfo, c_, flatnonzero as find
+
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
+from pandapower.pypower.idx_bus import PD, QD
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
+from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
 
 try:
     from numba import jit
 except ImportError:
     from pandapower.pf.no_numba import jit
-
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
-from pandapower.pypower.idx_bus import VM, VA, PD, QD
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
-from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
 
 EPS = finfo(float).eps
 
@@ -103,3 +104,49 @@ def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x, bus_ind):  # pragma: 
     Sx *= v[bus_ind]
 
     return Sx
+
+
+@jit(nopython=True, cache=False)
+def calc_branch_flows_batch(Yy_x, Yy_p, Yy_j, V, baseMVA, dim_x, bus_ind, base_kv):  # pragma: no cover
+    """
+    Function to get branch flows with a batch computation for the timeseries module
+
+    Parameters
+    ----------
+    Yy_x, Yy_p, Yy_j - Yt or Yf CSR represenation
+    V - complex voltage matrix results from time series
+    baseMVA - base MVA from ppc
+    dim_x - shape of Y
+    bus_ind - f_bus or t_bus
+    base_kv - pcci["bus"] BASE_KV values
+
+    Returns
+    ----------
+    i_abs, s_abs - absolute branch currents and power flows. This is "i_ft" / "s_ft" in results_branch.py
+    S - complex Sf / St values frpm ppci
+
+    """
+
+    S = zeros((V.shape[0], dim_x), dtype=complex128)
+    s_abs = zeros((V.shape[0], dim_x), dtype=float64)
+    i_abs = zeros((V.shape[0], dim_x), dtype=float64)
+    sqrt_3 = sqrt(3)
+
+    # iterate over entries in V (v= complex V result of each time step)
+    for t in range(V.shape[0]):
+        v = V[t]
+        vm = abs(v)
+        Sx = zeros(dim_x, dtype=complex128)
+
+        # iterate through sparse matrix and get Sx = conj(Y_kj* V[j])
+        for r in range(len(Yy_p) - 1):
+            for k in range(Yy_p[r], Yy_p[r + 1]):
+                Sx[r] += conj(Yy_x[k] * v[Yy_j[k]]) * baseMVA
+
+        # finally get Sx = V[k] * conj(Y_kj* V[j])
+        Sx *= v[bus_ind]
+        S[t, :] = Sx
+        s_abs[t, :] = abs(Sx)
+        i_abs[t, :] = s_abs[t, :] / (vm[bus_ind] * base_kv[bus_ind]) / sqrt_3
+
+    return S, s_abs, i_abs
