@@ -16,8 +16,8 @@ def add_const(net, ds, recycle):
                         recycle=recycle)
 
 
-def test_batch_output_reader():
-    net = simple_test_net()
+def test_batch_output_reader(simple_test_net):
+    net = simple_test_net
     n_timesteps = 5
     time_steps = range(0, n_timesteps)
     _, ds = create_data_source(n_timesteps)
@@ -37,7 +37,9 @@ def test_batch_output_reader():
     s, s_abs, i_abs = v_to_i_s(net, vm, va)
 
     del net, ow, c
-    net = simple_test_net()
+    net = simple_test_net
+    net.output_writer.drop(index=net.output_writer.index, inplace=True)
+    net.controller.drop(index=net.controller.index, inplace=True)
     add_const(net, ds, recycle=False)
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=list())
     ow.log_variable('res_line', 'i_from_ka')
