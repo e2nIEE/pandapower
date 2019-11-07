@@ -79,24 +79,27 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, re
 
 
 def _update_branch_flows(Yf, Yt, V, baseMVA, branch):
+    f_bus = real(branch[:, F_BUS]).astype(int)
+    t_bus = real(branch[:, T_BUS]).astype(int)
     # complex power at "from" bus
-    Sf = V[real(branch[:, F_BUS]).astype(int)] * calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA,
-                                                                   Yf.shape[0])
+    Sf = calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0], f_bus)
     # complex power injected at "to" bus
-    St = V[real(branch[:, T_BUS]).astype(int)] * calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA,
-                                                                   Yt.shape[0])
+    St = calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0], t_bus)
     branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
     return branch
 
 
 @jit(nopython=True, cache=False)
-def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x):  # pragma: no cover
+def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x, bus_ind):  # pragma: no cover
 
     Sx = zeros(dim_x, dtype=complex128)
 
-    # iterate through sparse matrix
+    # iterate through sparse matrix and get Sx = conj(Y_kj* V[j])
     for r in range(len(Yy_p) - 1):
         for k in range(Yy_p[r], Yy_p[r + 1]):
             Sx[r] += conj(Yy_x[k] * v[Yy_j[k]]) * baseMVA
+
+    # finally get Sx = V[k] * conj(Y_kj* V[j])
+    Sx *= v[bus_ind]
 
     return Sx

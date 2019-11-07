@@ -49,7 +49,6 @@ def _get_branch_flows(ppc):
     i_ft = s_ft / vm_ft / np.sqrt(3)
     return i_ft, s_ft
 
-
 def _get_line_results(net, ppc, i_ft, suffix=None):
     # create res_line_vals which are written to the pandas dataframe
     ac = net["_options"]["ac"]
@@ -83,7 +82,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
 
     # write to line
     res_line_df = net["res_line"] if suffix is None else net["res_line%s"%suffix]
-        
+
     res_line_df["p_from_mw"].values[:] = p_from_mw
     res_line_df["q_from_mvar"].values[:] = q_from_mvar
     res_line_df["p_to_mw"].values[:] = p_to_mw
@@ -106,7 +105,6 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
-
 
 def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     ac = net["_options"]["ac"]
@@ -308,9 +306,9 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     pq_buses[b_ppc, 0] += p
     pq_buses[b_ppc, 1] += q
     aux_buses = net["_pd2ppc_lookups"]["bus"][net["_pd2ppc_lookups"]["aux"]["xward"]]
-    
+
     res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s"%suffix]
-    
+
     res_xward_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
     res_xward_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
     res_xward_df.index = net["xward"].index
@@ -322,7 +320,30 @@ def _get_switch_results(net, i_ft, suffix=None):
     f, t = net._pd2ppc_lookups["branch"]["switch"]
     with np.errstate(invalid='ignore'):
         i_ka = np.max(i_ft[f:t], axis=1)
-        
+
     res_switch_df = "res_switch" if suffix is None else "res_switch%s"%suffix
     net[res_switch_df] = pd.DataFrame(data=i_ka, columns=["i_ka"],
                                      index=net.switch[net._impedance_bb_switches].index)
+
+
+def _get_branch_flows_batch(ppc, vm):
+    """
+    Function to get branch flows with a batch computation for the timeseries module
+
+    Parameters
+    ----------
+    ppc - the ppc
+    vm - a voltage magnitude matrix containing T x N_bus entries
+    vm - a voltage angle matrix containing T x N_bus entries
+
+    Returns
+    ----------
+    i_ft, s_ft - the branch currents and power flows from - to bus
+
+    """
+    br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
+    vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
+    s_ft = np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
+                   ppc["branch"][:, (QF, QT)].real ** 2)
+    i_ft = s_ft / vm_ft / np.sqrt(3)
+    return i_ft, s_ft
