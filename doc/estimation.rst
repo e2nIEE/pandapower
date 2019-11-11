@@ -37,7 +37,7 @@ For a more in-depth explanation of the internals of the state estimation method,
 Defining Measurements
 ===========================
 
-Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Contrary to the pandapower load flow results, bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.
 
 **Types of Measurements**
 
@@ -113,11 +113,11 @@ There are multiple measurements available, which have to be defined for the stat
 
 :: 
 
-    pp.create_measurement(net, "v", "bus", 1.006, .004, bus1)		# V at bus 1
-	pp.create_measurement(net, "v", "bus", 0.968, .004, bus2)	# V at bus 2
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus1)  # V at bus 1
+	pp.create_measurement(net, "v", "bus", 0.968, .004, bus2)  # V at bus 2
 
-	pp.create_measurement(net, "p", "bus", -501, 10, bus2)         # P at bus 2
-	pp.create_measurement(net, "q", "bus", -286, 10, bus2)         # Q at bus 2
+	pp.create_measurement(net, "p", "bus", -501, 10, bus2)     # P at bus 2
+	pp.create_measurement(net, "q", "bus", -286, 10, bus2)     # Q at bus 2
 
 	pp.create_measurement(net, "p", "line", 888, 8, element=line1, side="from")   # P_line (bus 1 -> bus 2) at bus 1
 	pp.create_measurement(net, "p", "line", 1173, 8, element=line2, side="from")  # P_line (bus 1 -> bus 3) at bus 1

@@ -55,11 +55,12 @@ def test_output_writer_log():
     run_timeseries(net, time_steps=range(2), output_writer=ow2)
     assert all(ow2.output["res_bus.vm_pu"].columns == orig_index + [new_idx])
 
-    ow3 = copy.deepcopy(ow)
-    new_idx = [2, 3]
-    ow3.log_variable("res_bus", "vm_pu", new_idx)
-    run_timeseries(net, time_steps=range(2), output_writer=ow3)
-    assert all(ow3.output["res_bus.vm_pu"].columns == orig_index + new_idx)
+    # Todo: This test makes no sense if res_bus is logged by default
+    # ow3 = copy.deepcopy(ow)
+    # new_idx = [2, 3]
+    # ow3.log_variable("res_bus", "vm_pu", new_idx)
+    # run_timeseries(net, time_steps=range(2), output_writer=ow3)
+    # assert all(ow3.output["res_bus.vm_pu"].columns == orig_index + new_idx)
 
     ow4 = copy.deepcopy(ow)
     new_idx = [2, 4]
@@ -146,15 +147,13 @@ def test_output_writer_short_data_source():
 def test_default_output_writer():
     net = simple_test_net()
 
-    n_timesteps = 10
+    n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
     run_timeseries(net, time_steps)
-
-    pass
 
 
 def test_output_writer_eval_simple():
@@ -188,18 +187,21 @@ def test_output_writer_multiple_index_definition():
     ow.log_variable('res_bus', 'vm_pu', index=[3, 4])
     ow.log_variable('res_bus', 'vm_pu', net.bus.index)
     ow.log_variable('res_bus', 'vm_pu', 0)
-
-    ow2 = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow2.log_variable('res_bus', 'vm_pu', net.bus.index)
-
     run_timeseries(net, time_steps)
+    backup_result = copy.deepcopy(ow.output["res_bus.vm_pu"].loc[:, net.bus.index])
+    del ow
+
+    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
+    ow.log_variable('res_bus', 'vm_pu', net.bus.index)
+
+    # run_timeseries(net, time_steps)
     run_timeseries(net, time_steps)
     # assert saving works
     ow.save_results(0, True, True)
     # assert all are considered
     assert len(ow.output["res_bus.vm_pu"].columns) == len(net.bus.index)
     # assert correct order of values
-    assert np.allclose(ow2.output["res_bus.vm_pu"].loc[:, net.bus.index],
+    assert np.allclose(backup_result,
                        ow.output["res_bus.vm_pu"].loc[:, net.bus.index], atol=0, rtol=0)
 
 
