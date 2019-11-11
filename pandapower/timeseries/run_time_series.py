@@ -243,7 +243,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # get run function
     run = kwargs.get("run", pp.runpp)
     recycle_options = False
-    if run.__name__ == "runpp":
+    if hasattr(run, __name__) and run.__name__ == "runpp":
         # use faster runpp options if possible
         recycle_options = get_recycle_settings(net, **kwargs)
 
