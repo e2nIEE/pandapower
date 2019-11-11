@@ -12,6 +12,8 @@ from pandapower.control.run_control import ControllerNotConverged, get_controlle
     check_for_initial_powerflow, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
+from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
+    get_batch_trafo3w_results, v_to_i_s, polar_to_rad
 
 try:
     import pplog
@@ -22,7 +24,7 @@ logger = pplog.getLogger(__name__)
 logger.setLevel(level=pplog.WARNING)
 
 
-def init_outputwriter(net, time_steps, **kwargs):
+def init_default_outputwriter(net, time_steps, **kwargs):
     """
     Initializes the output writer. If output_writer is None, default output_writer is created
 
@@ -44,6 +46,7 @@ def init_outputwriter(net, time_steps, **kwargs):
         logger.info("No output writer specified. Using default:")
         logger.info(ow)
 
+def init_output_writer(net, time_steps):
     # init output writer before time series calculation
     output_writer = net.output_writer.iat[0, 0]
     output_writer.time_steps = time_steps
@@ -112,7 +115,8 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
         pf_not_converged(time_step, ts_variables)
 
     # save
-    output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged)
+    output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
+                               recycle_options=ts_variables["recycle_options"])
 
 
 def all_controllers_recycleable(net):
@@ -123,7 +127,61 @@ def all_controllers_recycleable(net):
     return recycleable
 
 
-def get_run_function(net, **kwargs):
+def _check_controller_recyclability(net):
+    # if a parameter is set to True here, it will be recalculated during the time series simulation
+    recycle = dict(trafo=False, gen=False, bus_pq=False)
+    if "controller" not in net:
+        # everything can be recycled since no controller is in net. But the time series simulation makes no sense
+        # then anyway...
+        return recycle
+
+    for idx in net.controller.index:
+        # todo: write to controller data frame recycle column instead of using self.recycle of controller instance
+        ctrl_recycle = net.controller.at[idx, "controller"].recycle
+        if not isinstance(ctrl_recycle, dict):
+            # if one controller has a wrong recycle configuration it is deactived
+            recycle = False
+            break
+        # else check which recycle parameter are set to True
+        for rp in ["trafo", "bus_pq", "gen"]:
+            recycle[rp] = recycle[rp] or ctrl_recycle[rp]
+
+    return recycle
+
+
+def _check_output_writer_recyclability(net, recycle):
+    if "output_writer" not in net:
+        raise ValueError("OutputWriter not defined")
+    ow = net.output_writer.at[0, "object"]
+    # results which are read with a faster batch function after the time series simulation
+    recycle["batch_read"] = list()
+    recycle["only_v_results"] = False
+    new_log_variables = list()
+
+    for output in ow.log_variables:
+        table, variable = output[0], output[1]
+        if table not in ["res_bus", "res_line", "res_trafo", "res_trafo3w"] or recycle["trafo"]:
+            # no fast read of outputs possible if other elements are required as these or tap changer is active
+            recycle["only_v_results"] = False
+            recycle["batch_read"] = False
+            return recycle
+        else:
+            # fast read is possible
+            if variable in ["vm_pu", "va_degree"] and recycle["only_v_results"] is False:
+                recycle["only_v_results"] = True
+                new_log_variables.append(('ppc_bus', 'vm'))
+                new_log_variables.append(('ppc_bus', 'va'))
+            if variable in ["loading_percent", "i_ka", "i_to_ka", "i_from_ka", "i_hv_ka", "i_mv_ka", "i_lv_ka"]:
+                recycle["only_v_results"] = True
+                recycle["batch_read"].append((table, variable))
+
+    ow.log_variables = new_log_variables
+    ow.log_variable('ppc_bus', 'vm')
+    ow.log_variable('ppc_bus', 'va')
+    return recycle
+
+
+def get_recycle_settings(net, **kwargs):
     """
     checks if "run" is specified in kwargs and calls this function in time series loop.
     if "recycle" is in kwargs we use the TimeSeriesRunpp class (not implemented yet)
@@ -132,25 +190,18 @@ def get_run_function(net, **kwargs):
         **net** - The pandapower format network
 
     RETURN:
-        **run** - the run function to be called (default is pp.runpp())
-
-        **recycle_class** - class to recycle implementation
+        **recycle** - a dict with recycle options to be used by runpp
     """
 
-    # recycle = False
-    recycle_class = None
-    #
-
     recycle = kwargs.get("recycle", None)
-    run = kwargs.get("run", pp.runpp)
-    if recycle is not None:
-        # todo update check of controller here
-        pass
-        # from pandapower.timeseries.ts_runpp import TimeSeriesRunpp
-        # recycle_class = TimeSeriesRunpp(net)
-        # run = recycle_class.ts_runpp
+    if recycle is not False:
+        # check if every controller can be recycled and what can be recycled
+        recycle = _check_controller_recyclability(net)
+        # if still recycle is not None, also check for fast output_writer features
+        if recycle is not False:
+            recycle = _check_output_writer_recyclability(net, recycle)
 
-    return run, recycle_class
+    return recycle
 
 
 def init_time_steps(net, time_steps, **kwargs):
@@ -193,19 +244,24 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     ts_variables = dict()
 
-    init_outputwriter(net, time_steps, **kwargs)
+    init_default_outputwriter(net, time_steps, **kwargs)
     level, order = get_controller_order(net)
-    # use faster runpp if timeseries possible
-    run, recycle_class = get_run_function(net, **kwargs)
+    # get run function
+    run = kwargs.get("run", pp.runpp)
+    recycle_options = False
+    if run.__name__ == "runpp":
+        # use faster runpp options if possible
+        recycle_options = get_recycle_settings(net, **kwargs)
 
+    init_output_writer(net, time_steps)
     # True at default. Initial power flow is calculated before each control step (some controllers need inits)
     ts_variables["initial_powerflow"] = check_for_initial_powerflow(order)
     # order of controller (controllers are called in a for loop.)
     ts_variables["controller_order"] = order
     # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
     ts_variables["run"] = run
-    # recycle class function, which stores some NR variables. Only used if recycle == True
-    ts_variables["recycle_class"] = recycle_class
+    # recycle options, which define what can be recycled
+    ts_variables["recycle_options"] = recycle_options
     # time steps to be calculated (list or range)
     ts_variables["time_steps"] = time_steps
     # If True, a diverged power flow is ignored and the next step is calculated
@@ -219,8 +275,9 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
 
 def cleanup(ts_variables):
-    if ts_variables["recycle_class"] is not None:
-        ts_variables["recycle_class"].cleanup()
+    if isinstance(ts_variables["recycle_options"], dict):
+        # Todo: delete internal variaables and dumped results which are not needed
+        pass
 
 
 def print_progress(i, time_step, time_steps, verbose, **kwargs):

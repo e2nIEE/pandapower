@@ -226,7 +226,7 @@ class OutputWriter(JSONSerializableClass):
         self.dump_to_file(append=append)
         self.cur_realtime = time()  # reset real time counter for next period
 
-    def save_results(self, time_step, pf_converged, ctrl_converged):
+    def save_results(self, time_step, pf_converged, ctrl_converged, recycle_options=None):
         # Saves the results of the current time step to a matrix,
         # using the output functions in the self.output_list
 
@@ -247,6 +247,8 @@ class OutputWriter(JSONSerializableClass):
             if time() - self.cur_realtime > self.write_time:
                 self.dump()
         if self.time_step == self.time_steps[-1]:
+            if recycle_options is not None:
+                self.get_batch_outputs(recycle_options)
             self.dump()
 
     def save_to_parameters(self):
@@ -496,3 +498,33 @@ class OutputWriter(JSONSerializableClass):
         if eval_function is not None:
             n_columns = 1
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
+
+    def get_batch_outputs(self, recycle_options):
+        # read the results in batch from vm, va (ppci values)
+
+        if isinstance(recycle_options["batch_read"], list) and len(recycle_options["batch_read"]):
+            vm, va = self.output["ppc_bus.vm"], ow.output["ppc_bus.va"]
+            s, s_abs, i_abs = v_to_i_s(self.net, vm, va)
+            results = dict()
+
+            for table, variable in recycle_options["batch_read"]:
+                if table == "res_line" and "res_line" not in results:
+                    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(self.net, i_abs)
+                    results["res_line"] = dict(i_ka=i_ka, i_from_ka=i_from_ka, i_to_ka=i_to_ka,
+                                           loading_percent=loading_percent)
+                elif table == "res_trafo" and "res_trafo" not in results:
+                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = get_batch_trafo_results(self.net, i_abs, s_abs)
+                    results["res_trafo"] = dict(i_ka=i_ka, i_hv_ka=i_hv_ka, i_lv_ka=i_lv_ka,
+                                            loading_percent=loading_percent)
+                elif table == "res_trafo3w":
+                    i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(self.net, i_abs, s_abs)
+                    results["res_trafo3w"] = dict(i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent)
+                elif table == "res_bus" and "res_bus" not in results:
+                    # todo: convert ppci Vm Va to bus vm_pu va_degree
+                    results["res_bus"] = dict(vm_pu=vm, va_degree=va)
+                    pass
+                else:
+                    raise ValueError("Something went wrong")
+                output_name = "%s.%s" % (table, variable)
+                # convert to dataframe
+                self.output[output_name] = pd.DataFrame(data=results[table][variable])

@@ -9,7 +9,8 @@ from pandapower.test.timeseries.test_output_writer import create_data_source, Ou
 from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
     get_batch_trafo3w_results, v_to_i_s, polar_to_rad
 
-
+n_timesteps = 5
+time_steps = range(0, n_timesteps)
 def add_const(net, ds, recycle):
     return ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                         data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
@@ -18,8 +19,6 @@ def add_const(net, ds, recycle):
 
 def test_batch_output_reader(simple_test_net):
     net = simple_test_net
-    n_timesteps = 5
-    time_steps = range(0, n_timesteps)
     _, ds = create_data_source(n_timesteps)
     # 1load
     c = add_const(net, ds, recycle=True)
@@ -90,6 +89,35 @@ def test_batch_output_reader(simple_test_net):
     assert np.allclose(i3_lv_ka, i_l)
     assert np.allclose(t3_loading_percent_normal, ld3_trafo)
 
+def test_const_pq(simple_test_net):
+    # allows to use recycle = {"bus_pq"} and fast output read
+    net = simple_test_net
+
+    _, ds = create_data_source(n_timesteps)
+    # 1load
+    c = add_const(net, ds, recycle=None)
+    # default log variables are res_bus.vm_pu, res_line.loading_percent
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
+
+    run_timeseries(net, time_steps)
+
+
+def test_const_gen(simple_test_net):
+    # allows to use recycle = {"gen"} and fast output read
+    pass
+
+def test_const_ext_grid(simple_test_net):
+    # allows to use recycle = {"gen"} and fast output read
+    pass
+
+def test_trafo_tap(simple_test_net):
+    # allows to use recycle = {"trafo"} but not fast output read
+    pass
+
+def test_const_pq_gen_trafo_tap(simple_test_net):
+    # allows to use recycle = {"bus_pq", "gen", "trafo"}
+    pass
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    # pytest.main(['-s', __file__])
+    test_const_pq(simple_test_net())
