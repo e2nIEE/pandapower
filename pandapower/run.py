@@ -37,7 +37,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
-                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree',  'init_results',
+                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
                            'max_iteration', 'v_debug']
 
@@ -201,14 +201,14 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
     recycle = kwargs.get("recycle", None)
-    if recycle is not None and _internal_stored(net):
+    if (recycle is not None and recycle is not False) and _internal_stored(net):
         _recycled_powerflow(net, **kwargs)
         return
 
     if run_control and net.controller.in_service.any():
         from pandapower.control import run_control
         parameters = {**locals(), **kwargs}
-        #disable run control for inner loop to avoid infinite loop
+        # disable run control for inner loop to avoid infinite loop
         parameters["run_control"] = False
         run_control(**parameters)
     else:

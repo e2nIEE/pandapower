@@ -201,8 +201,6 @@ def test_output_writer_multiple_index_definition(simple_test_net):
 
     # run_timeseries(net, time_steps)
     run_timeseries(net, time_steps)
-    # assert saving works
-    ow.save_results(0, True, True)
     # assert all are considered
     assert len(ow.output["res_bus.vm_pu"].columns) == len(net.bus.index)
     # assert correct order of values

@@ -110,16 +110,16 @@ class TrafoController(Controller):
             self.tap_side_coeff *= -1
         self.set_recycle()
 
-        def set_recycle(self):
-            allowed_elements = ["trafo", "trafo3w", "line"]
-            if self.recycle is False or self.element not in allowed_elements:
-                # if recycle is set to False by the user when creating the controller it is deactivated or when
-                # const control controls an element which is not able to be recycled
-                self.recycle = False
-                return
-            # these variables determine what is re-calculated during a time series run
-            recycle = dict(trafo=True, gen=False, bus_pq=False)
-            self.recycle = recycle
+    def set_recycle(self):
+        allowed_elements = ["2W", "3W"]
+        if self.recycle is False or self.trafotype not in allowed_elements:
+            # if recycle is set to False by the user when creating the controller it is deactivated or when
+            # const control controls an element which is not able to be recycled
+            self.recycle = False
+            return
+        # these variables determine what is re-calculated during a time series run
+        recycle = dict(trafo=True, gen=False, bus_pq=False)
+        self.recycle = recycle
             
     def timestep(self):
         self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]

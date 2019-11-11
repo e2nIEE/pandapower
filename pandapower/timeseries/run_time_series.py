@@ -119,13 +119,6 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
                                recycle_options=ts_variables["recycle_options"])
 
 
-def all_controllers_recycleable(net):
-    # checks if controller are recycleable
-    recycleable = np.alltrue(net["controller"]["recycle"].values)
-    if not recycleable:
-        logger.warning("recycle feature not supported by some controllers in net. I have to deactive recycle")
-    return recycleable
-
 
 def _check_controller_recyclability(net):
     # if a parameter is set to True here, it will be recalculated during the time series simulation
@@ -160,7 +153,7 @@ def _check_output_writer_recyclability(net, recycle):
 
     for output in ow.log_variables:
         table, variable = output[0], output[1]
-        if table not in ["res_bus", "res_line", "res_trafo", "res_trafo3w"] or recycle["trafo"]:
+        if table not in ["res_bus", "res_line", "res_trafo", "res_trafo3w"] or recycle["trafo"] or len(output) > 2:
             # no fast read of outputs possible if other elements are required as these or tap changer is active
             recycle["only_v_results"] = False
             recycle["batch_read"] = False
@@ -171,6 +164,7 @@ def _check_output_writer_recyclability(net, recycle):
                 recycle["only_v_results"] = True
                 new_log_variables.append(('ppc_bus', 'vm'))
                 new_log_variables.append(('ppc_bus', 'va'))
+                recycle["batch_read"].append((table, variable))
             if variable in ["loading_percent", "i_ka", "i_to_ka", "i_from_ka", "i_hv_ka", "i_mv_ka", "i_lv_ka"]:
                 recycle["only_v_results"] = True
                 recycle["batch_read"].append((table, variable))
