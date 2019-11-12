@@ -2,8 +2,6 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from __future__ import print_function, absolute_import
-
 import pandapower as pp
 
 try:
@@ -14,7 +12,6 @@ except:
 from pandapower import ppException, LoadflowNotConverged, OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
 
-__author__ = 'jdollichon, fmeier, fschaefer'
 logger = pplog.getLogger(__name__)
 
 

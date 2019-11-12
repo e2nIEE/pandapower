@@ -89,6 +89,20 @@ def test_kwargs_with_user_options():
     assert net._options["trafo3w_losses"] == "lv"
 
 
+@pytest.mark.xfail(reason="Until now there was no way found to dynamically identify "
+                          "the arguments passed to runpp, so if the user options are "
+                          "overwritten with the default values, this is not recognized.")
+def test_overwrite_default_args_with_user_options():
+    net = example_simple()
+    pp.runpp(net)
+    assert net._options["check_connectivity"] is True
+    pp.set_user_pf_options(net, check_connectivity=False)
+    pp.runpp(net)
+    assert net._options["check_connectivity"] is False
+    pp.runpp(net, check_connectivity=True)
+    assert net._options["check_connectivity"] is True
+
+
 def test_runpp_init():
     net = pp.create_empty_network()
     b1, b2, l1 = add_grid_connection(net)

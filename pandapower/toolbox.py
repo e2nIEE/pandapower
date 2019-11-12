@@ -5,6 +5,7 @@
 
 import copy
 from collections import Iterable, defaultdict
+from itertools import chain
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
-                              create_impedance, create_empty_network
+    create_impedance, create_empty_network, create_gen, create_ext_grid
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
@@ -23,6 +24,228 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+# --- general issues
+def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
+    """
+    Utility function
+    Provides the tuples of elements and corresponding columns for buses they are connected to
+    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
+    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
+    :return: set of tuples with element names and column names
+    """
+    ebts = set()
+    if bus_elements:
+        ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
+                     ("storage", "bus")])
+    if branch_elements:
+        ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
+                     ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
+                     ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
+    if res_elements:
+        elements_without_res = ["switch", "measurement"]
+        ebts.update(
+            [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
+    return ebts
+
+
+def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
+                res_elements=False):
+    """ Returns the list of pandapower elements. """
+    pp_elms = set(["bus"]) if bus else set()
+    pp_elms |= set([el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    if other_elements:
+        pp_elms |= {"measurement"}
+    return pp_elms
+
+
+# def pq_from_cosphi(s, cosphi, qmode, pmode):
+#    """
+#    Calculates P/Q values from rated apparent power and cosine(phi) values.
+#       - s: rated apparent power
+#       - cosphi: cosine phi of the
+#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+#       - pmode: "load" for load or "gen" for generation
+#    As all other pandapower functions this function is based on the consumer viewpoint. For active
+#    power, that means that loads are positive and generation is negative. For reactive power,
+#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+#    """
+#    s = np.array(ensure_iterability(s))
+#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
+#    qmode = np.array(ensure_iterability(qmode, len(s)))
+#    pmode = np.array(ensure_iterability(pmode, len(s)))
+#
+#    # qmode consideration
+#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
+#    if len(unknown_qmode):
+#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+#    qmode_is_ohm = qmode == "ohm"
+#    if any(cosphi[qmode_is_ohm] != 1):
+#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
+#    qsign = np.ones(qmode.shape)
+#    qsign[qmode == "cap"] = -1
+#
+#    # pmode consideration
+#    unknown_pmode = set(pmode) - set(["load", "gen"])
+#    if len(unknown_pmode):
+#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+#    psign = np.ones(pmode.shape)
+#    psign[pmode == "gen"] = -1
+#
+#    # calculate p and q
+#    p = psign * s * cosphi
+#    q = qsign * np.sqrt(s ** 2 - p ** 2)
+#
+#    if len(p) > 1:
+#        return p, q
+#    else:
+#        return p[0], q[0]
+
+
+def pq_from_cosphi(s, cosphi, qmode, pmode):
+    """
+    Calculates P/Q values from rated apparent power and cosine(phi) values.
+
+       - s: rated apparent power
+       - cosphi: cosine phi of the
+       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - pmode: "load" for load or "gen" for generation
+
+    As all other pandapower functions this function is based on the consumer viewpoint. For active
+    power, that means that loads are positive and generation is negative. For reactive power,
+    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    """
+    if hasattr(s, "__iter__"):
+        s = ensure_iterability(s)
+        cosphi = ensure_iterability(cosphi, len(s))
+        qmode = ensure_iterability(qmode, len(s))
+        pmode = ensure_iterability(pmode, len(s))
+        p, q = [], []
+        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
+            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
+            p.append(p_)
+            q.append(q_)
+        return np.array(p), np.array(q)
+    else:
+        return _pq_from_cosphi(s, cosphi, qmode, pmode)
+
+
+def _pq_from_cosphi(s, cosphi, qmode, pmode):
+    if qmode == "ind":
+        qsign = 1 if pmode == "load" else -1
+    elif qmode == "cap":
+        qsign = -1 if pmode == "load" else 1
+    else:
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+
+    p = s * cosphi
+    q = qsign * np.sqrt(s ** 2 - p ** 2)
+    return p, q
+
+
+# def cosphi_from_pq(p, q):
+#    """
+#    Analog to pq_from_cosphi, but other way around.
+#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+#    """
+#    p = np.array(ensure_iterability(p))
+#    q = np.array(ensure_iterability(q, len(p)))
+#    if len(p) != len(q):
+#        raise ValueError("p and q must have the same length.")
+#    p_is_zero = np.array(p == 0)
+#    cosphi = np.empty(p.shape)
+#    if sum(p_is_zero):
+#        cosphi[p_is_zero] = np.nan
+#        logger.warning("A cosphi from p=0 is undefined.")
+#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
+#    s = (p ** 2 + q ** 2) ** 0.5
+#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
+#    if len(p) > 1:
+#        return cosphi, s, qmode, pmode
+#    else:
+#        return cosphi[0], s[0], qmode[0], pmode[0]
+
+
+def cosphi_from_pq(p, q):
+    if hasattr(p, "__iter__"):
+        assert len(p) == len(q)
+        s, cosphi, qmode, pmode = [], [], [], []
+        for p_, q_ in zip(p, q):
+            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
+            s.append(s_)
+            cosphi.append(cosphi_)
+            qmode.append(qmode_)
+            pmode.append(pmode_)
+        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
+    else:
+        return _cosphi_from_pq(p, q)
+
+
+def _cosphi_from_pq(p, q):
+    """
+    Analog to pq_from_cosphi, but other way around.
+    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+    """
+    if p == 0:
+        cosphi = np.nan
+        logger.warning("A cosphi from p=0 is undefined.")
+    else:
+        cosphi = np.cos(np.arctan(q / p))
+    s = (p ** 2 + q ** 2) ** 0.5
+    pmode = ["undef", "load", "gen"][int(np.sign(p))]
+    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    return cosphi, s, qmode, pmode
+
+
+def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
+    """ Returns a boolean whether the nets are equal or not. """
+    if ignore_index_order:
+        x_df.sort_index(axis=1, inplace=True)
+        y_df.sort_index(axis=1, inplace=True)
+        x_df.sort_index(axis=0, inplace=True)
+        y_df.sort_index(axis=0, inplace=True)
+    # eval if two DataFrames are equal, with regard to a tolerance
+    if x_df.shape == y_df.shape:
+        if x_df.shape[0]:
+            # we use numpy.allclose to grant a tolerance on numerical values
+            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
+                                          y_df.select_dtypes(include=[np.number]),
+                                          atol=tol, equal_nan=True)
+        else:
+            numerical_equal = True
+        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
+            y_df.select_dtypes(exclude=[np.number]))
+
+        return numerical_equal & rest_equal
+    else:
+        return False
+
+
+def compare_arrays(x, y):
+    """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
+        or y. NaN values are assumed as equal. """
+    if x.shape == y.shape:
+        # (x != x) is like np.isnan(x) - but works also for strings
+        return np.equal(x, y) | ((x != x) & (y != y))
+    else:
+        raise ValueError("x and y needs to have the same shape.")
+
+
+def ensure_iterability(var, len_=None):
+    """ This function ensures iterability of a variable (and optional length). """
+    if hasattr(var, "__iter__") and not isinstance(var, str):
+        if isinstance(len_, int) and len(var) != len_:
+            raise ValueError("Length of variable differs from %i." % len_)
+    else:
+        len_ = len_ or 1
+        var = [var] * len_
+    return var
 
 
 # --- Information
@@ -55,282 +278,321 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
                     net.line.name.at[r.name])
 
 
-def _check_plc_full_range(net, element_type):  # pragma: no cover
-    """ This is an auxiliary function for check_opf_data to check full range of piecewise linear
-    cost function """
-    plc = net.pwl_cost
-    plc_el_p = plc.loc[(plc.element_type == element_type) & (plc.type == 'p')]
-    plc_el_q = plc.loc[(plc.element_type == element_type) & (plc.type == 'q')]
-    p_idx = []
-    q_idx = []
-    if element_type != 'dcline':
-        if plc_el_p.shape[0]:
-            p_idx = net[element_type].loc[
-                (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].min_p_mw < plc_el_p.p[plc_el_p.index.values[0]].min()) |
-                 (net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
-        if plc_el_q.shape[0]:
-            q_idx = net[element_type].loc[
-                (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_p_mw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_p_mw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
-    else:  # element_type == 'dcline'
-        if plc_el_p.shape[0]:
-            p_idx = net[element_type].loc[
-                (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
-        if plc_el_q.shape[0]:
-            q_idx = net[element_type].loc[
-                (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_q_to_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].min_q_from_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_q_to_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()) |
-                 (net[element_type].max_q_from_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
-                ].index
-    if len(p_idx):
-        logger.warning("At" + element_type + str(p_idx.values) +
-                    "the piecewise linear costs do not cover full active power range. " +
-                    "In OPF the costs will be extrapolated.")
-    if len(q_idx):
-        logger.warning("At" + element_type + str(q_idx.values) +
-                    "the piecewise linear costs do not cover full reactive power range." +
-                    "In OPF the costs will be extrapolated.")
-
-
-def check_opf_data(net):  # pragma: no cover
+def opf_task(net, delta_pq=1e-3, keep=False, log=True):
     """
-    This function checks net data ability for opf calculations via runopp.
-
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which is checked for runopp
+    Collects some basic inforamtion of the optimal powerflow task und prints them.
     """
+    if keep:
+        net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    # --- Determine duplicated cost data
-    raise NotImplementedError
-    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
-        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
-    duplicates = all_costs.loc[all_costs.duplicated()]
-    if duplicates.shape[0]:
-        raise ValueError("There are elements with multiply costs.\nelement_types: %s\n"
-                         "element: %s\ntypes: %s" % (duplicates.element_type.values,
-                                                     duplicates.element.values,
-                                                     duplicates.type.values))
+    opf_task_overview = {"flexibilities": dict(),
+                         "network_constraints": dict(),
+                         "flexibilities_without_costs": dict()}
+    _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
+    _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
+    _determine_costs_dict(net, opf_task_overview)
 
-    # --- check full range of piecewise linear cost functions
-    _check_plc_full_range(net, 'ext_grid')
-    _check_plc_full_range(net, 'dcline')
-    for element_type in ['gen', 'sgen', 'load']:
-        if hasattr(net[element_type], "controllable"):
-            if (net[element_type].controllable.any()):
-                _check_plc_full_range(net, element_type)
+    _check_overlapping_constraints(opf_task_overview)
+    if log:
+        _log_opf_task_overview(opf_task_overview)
+
+    return opf_task_overview
 
 
-def _opf_controllables(elm_df, to_log, control_elm, control_elm_name,
-                       all_costs):  # pragma: no cover
-    """ This is an auxiliary function for opf_task to add controllables data to to_log """
-    if len(elm_df):
-        to_log += '\n' + "  " + control_elm_name
-        elm_p_cost_idx = set(all_costs.loc[(all_costs.element_type == control_elm) &
-                                           (all_costs.type == 'p')].element)
-        elm_q_cost_idx = set(all_costs.loc[(all_costs.element_type == control_elm) &
-                                           (all_costs.type == 'q')].element)
-        with_pq_cost = elm_df.loc[elm_p_cost_idx & elm_q_cost_idx].index
-        with_p_cost = elm_df.loc[elm_p_cost_idx - elm_q_cost_idx].index
-        with_q_cost = elm_df.loc[elm_q_cost_idx - elm_p_cost_idx].index
-        without_cost = elm_df.loc[set(elm_df.index) - (elm_p_cost_idx | elm_q_cost_idx)].index
-        if len(with_pq_cost) and len(with_pq_cost) < len(elm_df):
-            to_log += '\n' + '    ' + control_elm_name + ' ' + \
-                      ', '.join(map(str, elm_df.loc[with_pq_cost].index)) + " with p and q costs"
-        elif len(with_pq_cost):
-            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p and q costs"
-        if len(with_p_cost) and len(with_p_cost) < len(elm_df):
-            to_log += '\n' + '    ' + control_elm_name + ' ' + \
-                      ', '.join(map(str, elm_df.loc[with_p_cost].index)) + " with p costs"
-        elif len(with_p_cost):
-            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p costs"
-        if len(with_q_cost) and len(with_q_cost) < len(elm_df):
-            to_log += '\n' + '    ' + control_elm_name + ' ' + \
-                      ', '.join(map(str, elm_df.loc[with_q_cost].index)) + " with q costs"
-        elif len(with_q_cost):
-            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with q costs"
-        if len(without_cost) and len(without_cost) < len(elm_df):
-            to_log += '\n' + '    ' + control_elm_name + ' ' + \
-                      ', '.join(map(str, elm_df.loc[without_cost].index)) + " without costs"
-        elif len(without_cost):
-            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " without costs"
-    return to_log
-
-
-def opf_task(net):  # pragma: no cover
+def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
     """
-    Prints some basic inforamtion of the optimal powerflow task.
+    Determines which flexibilities exists in the net.
+
+    INPUT:
+        **net** - panpdapower net
+
+        **data** (dict) - to store flexibilities information
+
+        **delta_pq** (float) - if (abs(max - min) <= delta_pq) the variable is not assumed as
+            flexible, since the range is as small as delta_pq (should be small, too).
+
+    OPTIONAL:
+        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
     """
-    check_opf_data(net)
+    flex_elements = ["ext_grid", "gen", "dcline", "sgen", "load", "storage"]
+    flex_tuple = tuple(zip(flex_elements, [True] * 3 + [False] * 3))
 
-    plc = net.pwl_cost
-    pol = net.poly_cost
+    for elm, controllable_default in flex_tuple:
+        for power_type in ["P", "Q"]:
+            key = power_type + elm
+            if elm != "dcline":
+                constraints = {"P": ["min_p_mw", "max_p_mw"],
+                               "Q": ["min_q_mvar", "max_q_mvar"]}[power_type]
+            else:
+                constraints = {"P": ["max_p_mw"],
+                               "Q": ["min_q_from_mvar", "max_q_from_mvar",
+                                     "min_q_to_mvar", "max_q_to_mvar"]}[power_type]
 
-    # --- store cost data to all_costs
-    all_costs = net.pwl_cost[['type', 'element', 'element_type']].append(
-        net.poly_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
-    all_costs['str'] = None
-    for i, j in all_costs.iterrows():
-        costs = plc.loc[(plc.element == j.element) & (plc.element_type == j.element_type) &
-                        (plc.type == j.type)]
-        if len(costs):
-            all_costs.str.at[i] = "p: " + str(costs.p.values[0]) + ", f: " + str(costs.f.values[0])
+            # determine indices of controllable elements, continue if no controllable element exists
+            if elm in ["ext_grid", "dcline"]:
+                controllables = net[elm].index
+            elif "controllable" in net[elm].columns:
+                controllables = net[elm].index[net[elm].controllable]
+            elif controllable_default and net[elm].shape[0]:
+                controllables = net[elm].index
+            else:
+                continue
+            if not len(controllables):
+                continue
+
+            # consider delta_pq
+            if len(constraints) >= 2 and pd.Series(constraints[:2]).isin(net[elm].columns).all():
+                controllables = _find_idx_without_numerical_difference(
+                    net[elm], constraints[0], constraints[1], delta_pq, idx=controllables,
+                    equal_nan=False)
+            if elm == "dcline" and power_type == "Q" and len(controllables) and \
+                    pd.Series(constraints[2:4]).isin(net[elm].columns).all():
+                controllables = _find_idx_without_numerical_difference(
+                    net[elm], constraints[2], constraints[3], delta_pq, idx=controllables,
+                    equal_nan=False)
+
+            # add missing constraint columns
+            for col_to_add in set(constraints) - set(net[elm].columns):
+                net[elm][col_to_add] = np.nan
+
+            data[key] = _cluster_same_floats(net[elm].loc[controllables], constraints, **kwargs)
+            shorted = [col[:3] if col[:3] in ["min", "max"] else col for col in data[key].columns]
+            if len(shorted) == len(set(shorted)):
+                data[key].columns = shorted
+
+
+def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None, equal_nan=False):
+    """
+    Returns indices where comlumn1 and column2 have a numerical difference bigger than delta.
+
+    INPUT:
+        **df** (DataFrame)
+
+        **column1** (str) - name of first column within df to compare.
+            The values of df[column1] must be numericals.
+
+        **column2** (str) - name of second column within df to compare.
+            The values of df[column2] must be numericals.
+
+        **delta** (numerical) - value which defines whether indices are returned or not
+
+    OPTIONAL:
+        **idx** (iterable, None) - list of indices which should be considered only
+
+        **equal_nan** (bool, False) - if False, indices are included where at least one value in
+            df[column1] and df[column2] is NaN
+
+    OUTPUT:
+        **index** (pandas.Index) - index within idx where df[column1] and df[column2] deviates by
+            at least delta or, if equal_na is True, one value is NaN
+    """
+    idx = idx if idx is not None else df.index
+    idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
+    idx_without_null = idx.difference(idx_isnull)
+    idx_no_delta = idx_without_null[(
+                                            df.loc[idx_without_null, column1] -
+                                            df.loc[idx_without_null, column2]).abs().values <= delta]
+
+    if equal_nan:
+        return idx_without_null.difference(idx_no_delta)
+    else:
+        return idx.difference(idx_no_delta)
+
+
+def _determine_network_constraints_dict(net, data, **kwargs):
+    """
+    Determines which flexibilities exists in the net.
+
+    INPUT:
+        **net** - panpdapower net
+
+        **data** (dict) - to store constraints information
+
+    OPTIONAL:
+        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
+    """
+
+    const_tuple = [("VMbus", "bus", ["min_vm_pu", "max_vm_pu"]),
+                   ("LOADINGline", "line", ["max_loading_percent"]),
+                   ("LOADINGtrafo", "trafo", ["max_loading_percent"]),
+                   ("LOADINGtrafo3w", "trafo3w", ["max_loading_percent"])
+                   ]
+    for key, elm, constraints in const_tuple:
+        missing_columns = set(constraints) - set(net[elm].columns)
+        if net[elm].shape[0] and len(missing_columns) != len(constraints):
+
+            # add missing constraint columns
+            for col_to_add in missing_columns:
+                net[elm][col_to_add] = np.nan
+
+            data[key] = _cluster_same_floats(net[elm], constraints, **kwargs)
+            shorted = [col[:3] if col[:3] in ["min", "max"] else col for col in data[key].columns]
+            if len(shorted) == len(set(shorted)):
+                data[key].columns = shorted
+
+
+def _determine_costs_dict(net, opf_task_overview):
+    """
+    Determines which flexibilities do not have costs in the net. Each element is considered as one,
+    i.e. if ext_grid 0, for instance,  is flexible in both, P and Q, and has one cost entry for P,
+    it is not considered as 'flexibilities_without_costs'.
+
+    INPUT:
+        **net** - panpdapower net
+
+        **opf_task_overview** (dict of dicts) - both, "flexibilities_without_costs" and
+            "flexibilities" must be in opf_task_overview.keys()
+    """
+
+    cost_dfs = [df for df in ["poly_cost", "pwl_cost"] if net[df].shape[0]]
+    if not len(cost_dfs):
+        opf_task_overview["flexibilities_without_costs"] = "all"
+        return
+
+    flex_elements = ["ext_grid", "gen", "sgen", "load", "dcline", "storage"]
+
+    for flex_element in flex_elements:
+
+        # determine keys of opf_task_overview["flexibilities"] ending with flex_element
+        keys = [power_type + flex_element for power_type in ["P", "Q"] if (
+                power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
+
+        # determine indices of all flexibles
+        idx_without_cost = set()
+        for key in keys:
+            idx_without_cost |= set(chain(*opf_task_overview["flexibilities"][key]["index"]))
+            # simple alternative without itertools.chain():
+        #            idx_without_cost |= {idx for idxs in opf_task_overview["flexibilities"][key][
+        #                "index"] for idx in idxs}
+
+        for cost_df in cost_dfs:
+            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
+            if len(idx_with_cost - idx_without_cost):
+                logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
+                               " have both, poly_cost and pwl_cost: " +
+                               str(sorted(idx_with_cost - idx_without_cost)))
+            idx_without_cost -= idx_with_cost
+
+        if len(idx_without_cost):
+            opf_task_overview["flexibilities_without_costs"][flex_element] = list(idx_without_cost)
+
+
+def _cluster_same_floats(df, subset=None, **kwargs):
+    """
+    Clusters indices with close values. The values of df[subset] must be numericals.
+
+    INPUT:
+        **df** (DataFrame)
+
+    OPTIONAL:
+        **subset** (iterable, None) - list of columns of df which should be considered to cluster
+
+        **kwargs**** - for numpy.isclose(): rtol and atol
+
+    OUTPUT:
+        **cluster_df** (DataFrame) - table of clustered values and corresponding lists of indices
+    """
+    if df.index.duplicated().any():
+        logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
+                     "ambiguous.")
+    subset = subset if subset is not None else df.select_dtypes(include=[
+        np.number]).columns.tolist()
+    uniq = ~df.duplicated(subset=subset).values
+
+    # prepare cluster_df
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df["index"] = cluster_df["index"].astype(object)
+    cluster_df[subset] = df.loc[uniq, subset].values
+
+    if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
+        for i1, idx in enumerate(df.index):
+            cluster_df.at[i1, "index"] = [idx]
+    else:  # determine index clusters
+        i2 = 0
+        for i1, uni in enumerate(uniq):
+            if uni:
+                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
+                    df[subset].values.astype(float),
+                    df[subset].iloc[[i1]].values.astype(float),
+                    equal_nan=True, **kwargs).all(axis=1)])
+                i2 += 1
+
+    return cluster_df
+
+
+def _check_overlapping_constraints(opf_task_overview):
+    """
+    Logs variables where the minimum constraint is bigger than the maximum constraint.
+    """
+    overlap = []
+    for dict_key in ["flexibilities", "network_constraints"]:
+        for key, df in opf_task_overview[dict_key].items():
+            min_col = [col for col in df.columns if "min" in col]
+            max_col = [col for col in df.columns if "max" in col]
+            n_col = min(len(min_col), len(max_col))
+            for i_col in range(n_col):
+                assert min_col[i_col].replace("min", "") == max_col[i_col].replace("max", "")
+                if (df[min_col[i_col]] > df[max_col[i_col]]).any():
+                    overlap.append(key)
+    if len(overlap):
+        logger.error("At these variables, there is a minimum constraint exceeding the maximum " +
+                     "constraint value: " + str(overlap))
+
+
+def _log_opf_task_overview(opf_task_overview):
+    """
+    Logs OPF task information.
+    """
+    s = ""
+    for dict_key, data in opf_task_overview.items():
+        if isinstance(data, str):
+            assert dict_key == "flexibilities_without_costs"
+            s += "\n\n%s flexibilities without costs" % data
+            continue
         else:
-            costs = pol.loc[(pol.element == j.element) & (pol.element_type == j.element_type) &
-                            (pol.type == j.type)]
-            all_costs.str.at[i] = "c: " + str(costs.c.values[0])
+            assert isinstance(data, dict)
+        heading_logged = False
+        keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
+        for key, elm in zip(keys, elms):
+            assert elm in key
+            df = data[key]
 
-    # --- examine logger info
+            if dict_key in ["flexibilities", "network_constraints"]:
+                if not df.shape[0]:
+                    continue
+                if not heading_logged:
+                    s += "\n\n%s:" % dict_key
+                    heading_logged = True
 
-    # --- controllables & costs
-    to_log = '\n' + "Cotrollables & Costs:"
-    # dcline always is assumed as controllable
-    to_log = _opf_controllables(net.ext_grid, to_log, 'ext_grid', 'Ext_Grid', all_costs)
-    # check controllables in gen, sgen and load
-    control_elms = ['gen', 'sgen', 'load']
-    control_elm_names = ['Gen', 'SGen', 'Load']
-    for j, control_elm in enumerate(control_elms):
-        # only for net[control_elm] with len > 0, check_data has checked 'controllable' in columns
-        if len(net[control_elm]):
-            to_log = _opf_controllables(net[control_elm].loc[net[control_elm].controllable],
-                                        to_log, control_elm, control_elm_names[j], all_costs)
-    if len(net.dcline):  # dcline always is assumed as controllable
-        to_log = _opf_controllables(net.dcline, to_log, 'dcline', 'DC Line', all_costs)
-    to_log += '\n' + "Constraints:"
-    constr_exist = False  # stores if there are any constraints
+                # --- logging information
+                len_idx = len(list(chain(*df["index"])))
+                if df.shape[0] > 1:
+                    s += "\n    %ix %s" % (len_idx, key)
+                else:
+                    if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
+                        s += "\n    %g <= %ix %s (all) <= %g" % (
+                            df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
+                    else:
+                        s += "\n    %ix %s (all) with these constraints:" % (len_idx, key)
+                        for col in set(df.columns) - {"index"}:
+                            s += " %s=%g" % (col, df.loc[0, col])
+            elif dict_key == "flexibilities_without_costs":
+                if not heading_logged:
+                    s += "\n\n%s:" % dict_key
+                    heading_logged = True
+                s += "\n%ix %s" % (len(df), key)
+            else:
+                raise NotImplementedError("Key %s is unknown to this code." % dict_key)
+    logger.info(s + "\n")
 
-    # --- variables constraints
-    variables = ['ext_grid', 'gen', 'sgen', 'load']
-    variable_names = ['Ext_Grid', 'Gen', 'SGen', 'Load']
-    variable_long_names = ['External Grid', 'Generator', 'Static Generator', 'Load']
-    for j, variable in enumerate(variables):
-        constr_col = pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar'])
-        constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
-        constr = net[variable][constr_col_exist]
-        if variable != 'ext_grid' and "controllable" in net[variable].columns:
-            constr = constr.loc[net[variable].loc[net[variable].controllable].index]
-        if (constr.shape[1] > 0) & (constr.shape[0] > 0):
-            constr_exist = True
-            to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
-            for i in constr_col[~constr_col.isin(net[variable].columns)]:
-                constr[i] = np.nan
-            if (constr.min_p_mw >= constr.max_p_mw).any():
-                logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
-                               variable_names[j] + ". " + "Please observe the pandapower " +
-                               "signing system.")
-            if (constr.min_q_mvar >= constr.max_q_mvar).any():
-                logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
-                               variable_names[j] + ". Please observe the pandapower signing " +
-                               "system.")
-            if constr.duplicated()[1:].all():  # all with the same constraints
-                to_log += '\n' + "    at all " + variable_names[j] + \
-                          " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
-                          "[%s, %s, %s, %s]" % (
-                              constr.min_p_mw.values[0], constr.max_p_mw.values[0],
-                              constr.min_q_mvar.values[0], constr.max_q_mvar.values[0])
-            else:  # different constraints exist
-                unique_rows = ~constr.duplicated()
-                duplicated_rows = constr.duplicated()
-                for i in constr[unique_rows].index:
-                    same_data = list([i])
-                    for i2 in constr[duplicated_rows].index:
-                        if (constr.iloc[i] == constr.iloc[i2]).all():
-                            same_data.append(i2)
-                    to_log += '\n' + '    at ' + variable_names[j] + ' ' + \
-                              ', '.join(map(str, same_data)) + \
-                              ' [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is ' + \
-                              '[%s, %s, %s, %s]' % (constr.min_p_mw[i], constr.max_p_mw[i],
-                                                    constr.min_q_mvar[i], constr.max_q_mvar[i])
-    # --- DC Line constraints
-    constr_col = pd.Series(['max_p_mw', 'min_q_from_mvar', 'max_q_from_mvar', 'min_q_to_mvar',
-                            'max_q_to_mvar'])
-    constr_col_exist = constr_col[constr_col.isin(net['dcline'].columns)]
-    constr = net['dcline'][constr_col_exist].dropna(how='all')
-    if (constr.shape[1] > 0) & (constr.shape[0] > 0):
-        constr_exist = True
-        to_log += '\n' + "  DC Line Constraints"
-        for i in constr_col[~constr_col.isin(net['dcline'].columns)]:
-            constr[i] = np.nan
-        if (constr.min_q_from_mvar >= constr.max_q_from_mvar).any():
-            logger.warning("The value of min_q_from_mvar must be less than max_q_from_mvar for " +
-                           "all DC Line. Please observe the pandapower signing system.")
-        if (constr.min_q_to_mvar >= constr.max_q_to_mvar).any():
-            logger.warning("The value of min_q_to_mvar must be less than min_q_to_mvar for " +
-                           "all DC Line. Please observe the pandapower signing system.")
-        if constr.duplicated()[1:].all():  # all with the same constraints
-            to_log += '\n' + "    at all DC Line [max_p_mw, min_q_from_mvar, max_q_from_mvar, " + \
-                      "min_q_to_mvar, max_q_to_mvar] is [%s, %s, %s, %s, %s]" % \
-                      (constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
-                       constr.max_q_from_mvar.values[0], constr.min_q_to_mvar.values[0],
-                       constr.max_q_to_mvar.values[0])
-        else:  # different constraints exist
-            unique_rows = ~constr.duplicated()
-            duplicated_rows = constr.duplicated()
-            for i in constr[unique_rows].index:
-                same_data = list([i])
-                for i2 in constr[duplicated_rows].index:
-                    if (constr.iloc[i] == constr.iloc[i2]).all():
-                        same_data.append(i2)
-                to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
-                          ' [max_p_mw, min_q_from_mvar, max_q_from_mvar, min_q_to_mvar, ' + \
-                          'max_q_to_mvar] is [%s, %s, %s, %s, %s]' % (
-                              constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
-                              constr.max_q_from_mvar.values[0],
-                              constr.min_q_to_mvar.values[0], constr.max_q_to_mvar.values[0])
-    # --- Voltage constraints
-    if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
-        c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
-        if c_bus.shape[0] > 0:
-            constr_exist = True
-            to_log += '\n' + "  Voltage Constraints"
-            if (net.bus.min_vm_pu >= net.bus.max_vm_pu).any():
-                logger.warning("The value of min_vm_pu must be less than max_vm_pu.")
-            if c_bus.duplicated()[1:].all():  # all with the same constraints
-                to_log += '\n' + '    at all Nodes [min_vm_pu, max_vm_pu] is [%s, %s]' % \
-                          (c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
-            else:  # different constraints exist
-                unique_rows = ~c_bus.duplicated()
-                duplicated_rows = c_bus.duplicated()
-                for i in c_bus[unique_rows].index:
-                    same_data_nodes = list([i])
-                    for i2 in c_bus[duplicated_rows].index:
-                        if (c_bus.iloc[i] == c_bus.iloc[i2]).all():
-                            same_data_nodes.append(i2)
-                    to_log += '\n' + '    at Nodes ' + ', '.join(map(str, same_data_nodes)) + \
-                              ' [min_vm_pu, max_vm_pu] is [%s, %s]' % (c_bus.min_vm_pu[i],
-                                                                       c_bus.max_vm_pu[i])
-    # --- Branch constraints
-    branches = ['trafo', 'line']
-    branch_names = ['Trafo', 'Line']
-    for j, branch in enumerate(branches):
-        if "max_loading_percent" in net[branch].columns:
-            constr = net[branch]['max_loading_percent'].dropna()
-            if constr.shape[0] > 0:
-                constr_exist = True
-                to_log += '\n' + "  " + branch_names[j] + " Constraint"
-                if constr.duplicated()[1:].all():  # all with the same constraints
-                    to_log += '\n' + '    at all ' + branch_names[j] + \
-                              ' max_loading_percent is %s' % (constr[0])
-                else:  # different constraints exist
-                    unique_rows = ~c_bus.duplicated()
-                    duplicated_rows = c_bus.duplicated()
-                    for i in constr[unique_rows].index:
-                        same_data = list([i])
-                        for i2 in constr[duplicated_rows].index:
-                            if (constr.iloc[i] == constr.iloc[i2]).all():
-                                same_data.append(i2)
-                        to_log += '\n' + "    at " + branch_names[j] + " " + \
-                                  ', '.join(map(str, same_data)) + \
-                                  " max_loading_percent is %s" % (constr[j])
-    if not constr_exist:
-        to_log += '\n' + "  There are no constraints."
-    # --- do logger info
-    logger.info(to_log)
+
+def _get_keys_and_elements_from_opf_task_dict(dict_):
+    keys = list(dict_.keys())
+    elms = ["".join(c for c in key if not c.isupper()) for key in keys]
+    keys = list(np.array(keys)[np.argsort(elms)])
+    elms = sorted(elms)
+    return keys, elms
 
 
 def switch_info(net, sidx):  # pragma: no cover
@@ -423,38 +685,11 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
     return eq
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
-    if ignore_index_order:
-        x_df.sort_index(axis=1, inplace=True)
-        y_df.sort_index(axis=1, inplace=True)
-        x_df.sort_index(axis=0, inplace=True)
-        y_df.sort_index(axis=0, inplace=True)
-    # eval if two DataFrames are equal, with regard to a tolerance
-    if x_df.shape == y_df.shape:
-        if x_df.shape[0]:
-            # we use numpy.allclose to grant a tolerance on numerical values
-            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
-                                          y_df.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-        else:
-            numerical_equal = True
-        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
-        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
-            y_df.select_dtypes(exclude=[np.number]))
-
-        return numerical_equal & rest_equal
-    else:
-        return False
-
-
-def compare_arrays(x, y):
-    """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
-        or y. NaN values are assumed as equal. """
-    if x.shape == y.shape:
-        # (x != x) is like np.isnan(x) - but works also for strings
-        return np.equal(x, y) | ((x != x) & (y != y))
-    else:
-        raise ValueError("x and y needs to have the same shape.")
+def clear_result_tables(net):
+    """ This function clears all 'res_...' DataFrames in net. """
+    for key in net.keys():
+        if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
+            net[key].drop(net[key].index, inplace=True)
 
 
 # --- Simulation setup and preparations
@@ -550,7 +785,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
     """
     elements = elements if elements is not None else pp_elements()
     elements_with_el_and_et_column = [el for el in elements if "element" in net[el].columns and (
-        "element_type" in net[el].columns or "et" in net[el].columns)]
+            "element_type" in net[el].columns or "et" in net[el].columns)]
     elements_to_replace = elements_with_el_and_et_column if replace else [
         el for el in elements_with_el_and_et_column if column not in net[el].columns or net[el][
             column].isnull().all()]
@@ -569,7 +804,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
                 raise KeyError(message)
             else:
                 logger.debug(message)
-        for et in list(set(element_type)-set(element_types_without_column)):
+        for et in list(set(element_type) - set(element_types_without_column)):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
@@ -580,27 +815,25 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def create_continuous_bus_index(net, start=0, store_old_index=False):
+def reindex_buses(net, bus_lookup, partial_lookup=False):
     """
-    Creates a continuous bus index starting at 'start' and replaces all
-    references of old indices by the new ones.
+    Changes the index of net.bus and considers the new bus indices in all other pandapower element
+    tables.
 
     INPUT:
       **net** - pandapower network
 
-    OPTIONAL:
-      **start** - index begins with "start"
-      **store_old_index** - if True, stores the old index in net.bus["old_index"]
+      **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
 
-    OUTPUT:
-      **bus_lookup** - mapping of old to new index
+    OPTIONAL:
+      **partial_lookup** (bool, default False) - flag if bus_lookup is only part of the bus indices
     """
-    net.bus.sort_index(inplace=True)
-    if store_old_index:
-        net.bus["old_index"] = net.bus.index.values
-    new_bus_idxs = list(np.arange(start, len(net.bus) + start))
-    bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
-    net.bus.index = new_bus_idxs
+    if partial_lookup:
+        full_bus_lookup = copy.deepcopy(bus_lookup)
+        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup.keys()})
+        bus_lookup = full_bus_lookup
+
+    net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
 
     for element, value in element_bus_tuples():
@@ -617,6 +850,83 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
+def create_continuous_bus_index(net, start=0, store_old_index=False):
+    """
+    Creates a continuous bus index starting at 'start' and replaces all
+    references of old indices by the new ones.
+
+    INPUT:
+      **net** - pandapower network
+
+    OPTIONAL:
+      **start** - index begins with "start"
+
+      **store_old_index** - if True, stores the old index in net.bus["old_index"]
+
+    OUTPUT:
+      **bus_lookup** - mapping of old to new index
+    """
+    net.bus.sort_index(inplace=True)
+    if store_old_index:
+        net.bus["old_index"] = net.bus.index.values
+    new_bus_idxs = list(np.arange(start, len(net.bus) + start))
+    bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
+    reindex_buses(net, bus_lookup)
+    return bus_lookup
+
+
+def reindex_elements(net, element, new_indices, old_indices=None):
+    """
+    Changes the index of net[element].
+
+    INPUT:
+      **net** - pandapower network
+
+      **element** (str) - name of the element table
+
+      **new_indices** (iterable) - list of new indices
+
+    OPTIONAL:
+      **old_indices** (iterable) - list of old/previous indices which will be replaced.
+          If None, all indices are considered.
+    """
+    old_indices = old_indices if old_indices is not None else net[element].index
+    if not len(new_indices) or not net[element].shape[0]:
+        return
+    assert len(new_indices) == len(old_indices)
+    lookup = dict(zip(old_indices, new_indices))
+
+    if element == "bus":
+        partial = len(new_indices) < net[element].shape[0]
+        reindex_buses(net, lookup, partial_lookup=partial)
+        return
+
+    # --- reindex
+    net[element]["index"] = net[element].index
+    net[element].loc[old_indices, "index"] = get_indices(old_indices, lookup)
+    net[element].set_index("index", inplace=True)
+
+    # --- adapt measurement link
+    if element in ["line", "trafo", "trafo3w"]:
+        affected = net.measurement[(net.measurement.element_type == element) &
+                                   (net.measurement.element.isin(old_indices))]
+        if len(affected):
+            net.measurement.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+
+    # --- adapt switch link
+    if element in ["line", "trafo"]:
+        affected = net.switch[(net.switch.et == element[0]) &
+                              (net.switch.element.isin(old_indices))]
+        if len(affected):
+            net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+
+    # --- adapt line_geodata index
+    if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
+        net["line_geodata"]["index"] = net["line_geodata"].index
+        net["line_geodata"].loc[old_indices, "index"] = get_indices(old_indices, lookup)
+        net["line_geodata"].set_index("index", inplace=True)
+
+
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references
@@ -629,8 +939,8 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
       **start** - index begins with "start"
 
       **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
-          selected. Additionally elements, like line_geodata and bus_geodata, also can be
-          considered here.
+          selected. Customized DataFrames can also be considered here.
+
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
 
@@ -643,40 +953,49 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     elements |= add_df_to_reindex
 
+    # run reindex_elements() for all elements
     for elm in list(elements):
         net[elm].sort_index(inplace=True)
         new_index = list(np.arange(start, len(net[elm]) + start))
 
-        if elm == "line":
-            line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-        elif elm == "trafo":
-            trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-        elif elm == "trafo3w":
-            trafo3w_lookup = dict(zip(copy.deepcopy(net["trafo3w"].index.values), new_index))
-        elif elm == "line_geodata" and "line_geodata" in net:
-            line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
-            net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
-                                          inplace=True)
-
-        net[elm].index = new_index
-
-    line_switches = net.switch[net.switch.et == "l"]
-    net.switch.loc[line_switches.index, "element"] = get_indices(line_switches.element, line_lookup)
-
-    trafo_switches = net.switch[net.switch.et == "t"]
-    net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element,
-                                                                  trafo_lookup)
-
-    line_meas = net.measurement[net.measurement.element_type == "line"]
-    net.measurement.loc[line_meas.index, "element"] = get_indices(line_meas.element, line_lookup)
-
-    trafo_meas = net.measurement[net.measurement.element_type == "trafo"]
-    net.measurement.loc[trafo_meas.index, "element"] = get_indices(trafo_meas.element, trafo_lookup)
-
-    trafo3w_meas = net.measurement[net.measurement.element_type == "trafo3w"]
-    net.measurement.loc[trafo3w_meas.index, "element"] = get_indices(trafo3w_meas.element, trafo3w_lookup)
+        if elm in net and isinstance(net[elm], pd.DataFrame):
+            if elm in ["bus_geodata", "line_geodata"]:
+                logger.info(elm + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                            "already included by elm=='" + elm.split("_")[0] + "'.")
+            else:
+                reindex_elements(net, elm, new_index)
+        else:
+            logger.debug("No indices could be changed for element '%s'." % elm)
 
     return net
+
+
+def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
+    """
+    Sets scaling of loads and/or sgens according to a dictionary
+    mapping type to a scaling factor. Note that the type-string is case
+    sensitive.
+    E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
+
+    :param net:
+    :param scalings: A dictionary containing a mapping from element type to
+    :param scale_load:
+    :param scale_sgen:
+    """
+    if not isinstance(scalings, dict):
+        raise UserWarning("The parameter scaling has to be a dictionary, "
+                          "see docstring")
+
+    def scaleit(what):
+        et = net[what]
+        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in
+                         zip(et.type.values, et.scaling.values)]
+
+    scale = defaultdict(lambda: None, scalings)
+    if scale_load:
+        scaleit("load")
+    if scale_sgen:
+        scaleit("sgen")
 
 
 def set_data_type_of_columns_to_default(net):
@@ -711,34 +1030,6 @@ def set_data_type_of_columns_to_default(net):
                                                              errors="ignore")
 
 
-def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
-    """
-    Sets scaling of loads and/or sgens according to a dictionary
-    mapping type to a scaling factor. Note that the type-string is case
-    sensitive.
-    E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
-
-    :param net:
-    :param scalings: A dictionary containing a mapping from element type to
-    :param scale_load:
-    :param scale_sgen:
-    """
-    if not isinstance(scalings, dict):
-        raise UserWarning("The parameter scaling has to be a dictionary, "
-                          "see docstring")
-
-    def scaleit(what):
-        et = net[what]
-        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in
-                         zip(et.type.values, et.scaling.values)]
-
-    scale = defaultdict(lambda: None, scalings)
-    if scale_load:
-        scaleit("load")
-    if scale_sgen:
-        scaleit("sgen")
-
-
 # --- Modify topology
 
 def close_switch_at_line_with_two_open_switches(net):
@@ -759,80 +1050,31 @@ def close_switch_at_line_with_two_open_switches(net):
             len(closed_switches), closed_switches))
 
 
-def drop_inactive_elements(net, respect_switches=True):
+def fuse_buses(net, b1, b2, drop=True):
     """
-    Drops any elements not in service AND any elements connected to inactive
-    buses.
+    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
+    if drop=True (default).
     """
-    set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
-    drop_out_of_service_elements(net)
+    b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
 
+    for element, value in element_bus_tuples():
+        i = net[element][net[element][value].isin(b2)].index
+        net[element].loc[i, value] = b1
 
-def drop_out_of_service_elements(net):
-    # removes inactive lines and its switches and geodata
-    inactive_lines = net.line[~net.line.in_service].index
-    drop_lines(net, inactive_lines)
-
-    inactive_trafos = net.trafo[~net.trafo.in_service].index
-    drop_trafos(net, inactive_trafos, table='trafo')
-
-    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
-    drop_trafos(net, inactive_trafos3w, table='trafo3w')
-
-    do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
-        set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-        set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
-        set(net.trafo3w.lv_bus.values)
-
-    # removes inactive buses safely
-    inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
-    drop_buses(net, inactive_buses, drop_elements=True)
-
-    # TODO: the following is not necessary anymore?
-    for element in net.keys():
-        if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
-                and isinstance(net[element], pd.DataFrame) \
-                and "in_service" in net[element].columns:
-            drop_idx = net[element].query("not in_service").index
-            net[element].drop(drop_idx, inplace=True)
-            if len(drop_idx) > 0:
-                logger.info("dropped %d %s elements!" % (len(drop_idx), element))
-
-
-def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
-    """
-    Utility function
-    Provides the tuples of elements and corresponding columns for buses they are connected to
-    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
-    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
-    :return: set of tuples with element names and column names
-    """
-    ebts = set()
-    if bus_elements:
-        ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
-                     ("storage", "bus")])
-    if branch_elements:
-        ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
-                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
-                     ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
-                     ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
-    if res_elements:
-        elements_without_res = ["switch", "measurement"]
-        ebts.update(
-            [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
-    return ebts
-
-
-def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
-                res_elements=False):
-    """ Returns the list of pandapower elements. """
-    pp_elms = set(["bus"]) if bus else set()
-    pp_elms |= set([el[0] for el in element_bus_tuples(
-        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
-    if other_elements:
-        pp_elms |= {"measurement"}
-    return pp_elms
+    i = net["switch"][(net["switch"]["et"] == 'b') & (
+        net["switch"]["element"].isin(b2))].index
+    net["switch"].loc[i, "element"] = b1
+    net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
+                                     (net["switch"]["et"] == "b")].index, inplace=True)
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
+    net.measurement.loc[bus_meas, "element"] = b1
+    if drop:
+        # drop_elements=False because the elements must be connected to new buses now
+        drop_buses(net, b2, drop_elements=False)
+        # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
+        drop_duplicated_measurements(net, buses=[b1])
+    return net
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -842,6 +1084,8 @@ def drop_buses(net, buses, drop_elements=True):
     """
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+    res_buses = net.res_bus.index.intersection(buses)
+    net["res_bus"].drop(res_buses, inplace=True)
     if drop_elements:
         drop_elements_at_buses(net, buses)
 
@@ -870,6 +1114,11 @@ def drop_elements_at_buses(net, buses):
             else:
                 n_el = net[element].shape[0]
                 net[element].drop(eid, inplace=True)
+                # res_element
+                res_element = "res_" + element
+                if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
+                    res_eid = net[res_element].index.intersection(eid)
+                    net[res_element].drop(res_eid, inplace=True)
                 if net[element].shape[0] < n_el:
                     logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
 
@@ -891,6 +1140,8 @@ def drop_trafos(net, trafos, table="trafo"):
 
     # drop the trafos
     net[table].drop(trafos, inplace=True)
+    res_trafos = net["res_" + table].index.intersection(trafos)
+    net["res_" + table].drop(res_trafos, inplace=True)
     logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
 
 
@@ -906,6 +1157,8 @@ def drop_lines(net, lines):
     # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
+    res_lines = net.res_line.index.intersection(lines)
+    net["res_line"].drop(res_lines, inplace=True)
     logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
 
 
@@ -918,37 +1171,10 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
     if not analyzed_meas.duplicated(subset=[
-            "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
-
-
-def fuse_buses(net, b1, b2, drop=True):
-    """
-    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
-    if drop=True (default).
-    """
-    b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
-
-    for element, value in element_bus_tuples():
-        i = net[element][net[element][value].isin(b2)].index
-        net[element].loc[i, value] = b1
-
-    i = net["switch"][(net["switch"]["et"] == 'b') & (
-        net["switch"]["element"].isin(b2))].index
-    net["switch"].loc[i, "element"] = b1
-    net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
-                                     (net["switch"]["et"] == "b")].index, inplace=True)
-    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
-    net.measurement.loc[bus_meas, "element"] = b1
-    if drop:
-        # drop_elements=False because the elements must be connected to new buses now
-        drop_buses(net, b2, drop_elements=False)
-        # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        drop_duplicated_measurements(net, buses=[b1])
-    return net
 
 
 def set_element_status(net, buses, in_service):
@@ -992,11 +1218,66 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         net.switch.loc[oos_switches, "closed"] = True
 
         for idx, bus in net.switch[
-                ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
+            ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
         logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
+
+
+def drop_out_of_service_elements(net):
+    # removes inactive lines and its switches and geodata
+    inactive_lines = net.line[~net.line.in_service].index
+    drop_lines(net, inactive_lines)
+    inactive_res_lines = net.res_line.index.intersection(inactive_lines)
+    net.res_line.drop(inactive_res_lines, inplace=True)
+
+    inactive_trafos = net.trafo[~net.trafo.in_service].index
+    drop_trafos(net, inactive_trafos, table='trafo')
+    inactive_res_trafos = net.res_trafo.index.intersection(inactive_trafos)
+    net.res_trafo.drop(inactive_res_trafos, inplace=True)
+
+    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
+    drop_trafos(net, inactive_trafos3w, table='trafo3w')
+    inactive_res_trafos3w = net.res_trafo3w.index.intersection(inactive_trafos3w)
+    net.res_trafo3w.drop(inactive_res_trafos3w, inplace=True)
+
+    do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
+                    set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+                    set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
+                    set(net.trafo3w.lv_bus.values)
+
+    # removes inactive buses safely
+    inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
+    drop_buses(net, inactive_buses, drop_elements=True)
+    inactive_res_buses = net.res_bus.index.intersection(inactive_buses)
+    net.res_bus.drop(inactive_res_buses, inplace=True)
+
+    # removes inactive elements other than buses, trafos and lines
+    for element in net.keys():
+        if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
+                and isinstance(net[element], pd.DataFrame) \
+                and "in_service" in net[element].columns:
+            drop_idx = net[element].query("not in_service").index
+            net[element].drop(drop_idx, inplace=True)
+
+            # res_element
+            res_element = "res_" + element
+            if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
+                drop_res_idx = net[res_element].index.intersection(drop_idx)
+                net[res_element].drop(drop_res_idx, inplace=True)
+
+            if len(drop_idx) > 0:
+                logger.debug("dropped %d %s elements!" % (len(drop_idx), element))
+
+
+def drop_inactive_elements(net, respect_switches=True):
+    """
+    Drops any elements not in service AND any elements connected to inactive
+    buses.
+    """
+    set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
+    drop_out_of_service_elements(net)
 
 
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
@@ -1022,6 +1303,11 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     p2 = create_empty_network()
 
+    net_parameters = ["name", "f_hz"]
+    for net_parameter in net_parameters:
+        if net_parameter in net.keys():
+            p2[net_parameter] = net[net_parameter]
+
     p2.bus = net.bus.loc[buses]
     for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
                            other_elements=False, res_elements=False):
@@ -1043,13 +1329,26 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
 
+    def select_cost_df(net, p2, cost_type):
+        selected_idx = []
+        for idx in net[cost_type].index:
+            et = net[cost_type]["et"].loc[idx]
+            element = net[cost_type]["element"].at[idx]
+            if element in p2[et].index:
+                selected_idx.append(idx)
+        p2[cost_type] = net[cost_type].loc[selected_idx]
+
+    select_cost_df(net, p2, "poly_cost")
+    select_cost_df(net, p2, "pwl_cost")
+
     if include_results:
         for table in net.keys():
-            if net[table] is None:
+            if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
+            net[table].shape[0]):
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
-            elif table.startswith("res_"):
+            elif table.startswith("res_") and table != "res_cost":
                 p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
     if "bus_geodata" in net:
         p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
@@ -1132,6 +1431,285 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         if dev1 > tol or dev2 > tol:
             raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
     return net
+
+
+def create_replacement_switch_for_branch(net, element, idx):
+    """
+    Creates a switch parallel to a branch, connecting the same buses as the branch.
+    The switch is closed if the branch is in service and open if the branch is out of service.
+    The in_service status of the original branch is not affected and should be set separately,
+    if needed.
+
+    :param net: pandapower network
+    :param element: element table e. g. 'line', 'impedance'
+    :param idx: index of the branch e. g. 0
+    :return: None
+    """
+    bus_i = net[element].from_bus.at[idx]
+    bus_j = net[element].to_bus.at[idx]
+    in_service = net[element].in_service.at[idx]
+    if element in ['line', 'trafo']:
+        is_closed = all(
+            net.switch.loc[(net.switch.element == idx) & (net.switch.et == element[0]), 'closed'])
+        is_closed = is_closed and in_service
+    else:
+        is_closed = in_service
+
+    switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
+    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
+                        type='CB')
+    logger.debug('created switch %s (%d) as replacement for %s %s' %
+                 (switch_name, sid, element, idx))
+    return sid
+
+
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
+                                        zero_impedance=True, in_service_only=True, min_length_km=0,
+                                        min_r_ohm_per_km=0, min_x_ohm_per_km=0, min_c_nf_per_km=0,
+                                        min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0, min_xtf_pu=0,
+                                        drop_affected=False):
+    """
+    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
+    out of service.
+
+    :param net: pandapower network
+    :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
+    :param zero_length: whether zero length lines will be affected
+    :param zero_impedance: whether zero impedance branches will be affected
+    :param in_service_only: whether the branches that are not in service will be affected
+    :param drop_affected: wheter the affected branch elements are dropped
+    :param min_length_km: threshhold for line length for a line to be considered zero line
+    :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
+    :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
+    :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
+    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
+    :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
+    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
+    :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
+    :return:
+    """
+
+    if not isinstance(elements, tuple):
+        raise TypeError(
+            'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
+
+    replaced = dict()
+    for elm in elements:
+        branch_zero = set()
+        if elm == 'line' and zero_length:
+            branch_zero.update(net[elm].loc[net[elm].length_km <= min_length_km].index.tolist())
+
+        if elm == 'line' and zero_impedance:
+            branch_zero.update(net[elm].loc[(net[elm].r_ohm_per_km <= min_r_ohm_per_km) &
+                                            (net[elm].x_ohm_per_km <= min_x_ohm_per_km) &
+                                            (net[elm].c_nf_per_km <= min_c_nf_per_km)
+                                            ].index.tolist())
+
+        if elm == 'impedance' and zero_impedance:
+            branch_zero.update(net[elm].loc[(net[elm].rft_pu <= min_rft_pu) &
+                                            (net[elm].xft_pu <= min_xft_pu) &
+                                            (net[elm].rtf_pu <= min_rtf_pu) &
+                                            (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
+
+        affected_elements = set()
+        for b in branch_zero:
+            if in_service_only and ~net[elm].in_service.at[b]:
+                continue
+            create_replacement_switch_for_branch(net, element=elm, idx=b)
+            net[elm].loc[b, 'in_service'] = False
+            affected_elements.add(b)
+
+        replaced[elm] = net[elm].loc[affected_elements]
+
+        if drop_affected:
+            if elm == 'line':
+                drop_lines(net, affected_elements)
+            else:
+                net[elm].drop(affected_elements, inplace=True)
+
+            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+        else:
+            logger.info('set %d %ss out of service' % (len(affected_elements), elm))
+
+    return replaced
+
+
+def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_max=False):
+    """
+    Creates lines by given impedances data, while the impedances are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
+            will be replaced.
+
+        **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
+            replacement leads to equal power flow results. If False, unsymmetric impedances will
+            be replaced by symmetric lines.
+
+        **sn_as_max** (bool, False) - Flag to set whether sn_kva of impedances should be assumed
+            for max_i_ka of lines.
+    """
+    index = index or net.impedance.index
+    for _, imp in net.impedance.loc[index].iterrows():
+        if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
+            if only_valid_replace:
+                continue
+            logger.error("impedance differs in from or to bus direction. lines always " +
+                         "parameters always pertain in both direction. only from_bus to " +
+                         "to_bus parameters are considered.")
+        vn = net.bus.vn_kv.at[imp.from_bus]
+        Zni = vn ** 2 / imp.sn_mva
+        max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
+        create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni,
+                                    imp.xft_pu * Zni, 0, max_i_ka, name=imp.name,
+                                    in_service=imp.in_service)
+    net.impedance.drop(index, inplace=True)
+
+
+def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
+    """
+    Creates impedances by given lines data, while the lines are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all lines to be replaced. If None, all lines
+            will be replaced.
+
+        **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
+            the net.sn_kva is assumed
+
+        **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
+            leads to equal power flow results. If False, capacitance and dielectric conductance will
+            be neglected.
+    """
+    index = index or net.line.index
+    sn_mva = sn_mva or net.sn_mva
+    sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
+    sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
+    if len(sn_mva) != len(index):
+        raise ValueError("index and sn_mva must have the same length.")
+    i = 0
+    for idx, line_ in net.line.loc[index].iterrows():
+        if line_.c_nf_per_km or line_.g_us_per_km:
+            if only_valid_replace:
+                continue
+            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
+                         "converted to impedances, which do not model such parameters.")
+        vn = net.bus.vn_kv.at[line_.from_bus]
+        Zni = vn ** 2 / sn_mva[i]
+        create_impedance(net, line_.from_bus, line_.to_bus,
+                         line_.r_ohm_per_km * line_.length_km / Zni,
+                         line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+                         in_service=line_.in_service)
+        i += 1
+    drop_lines(net, index)
+
+
+def replace_ext_grid_by_gen(net, ext_grids=None):
+    """ Replaces external grids by generators.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **ext_grids** (iterable) - indices of external grids which should be replaced
+    """
+    # --- determine ext_grid index
+    if ext_grids is None:
+        ext_grids = net.ext_grid.index
+    else:
+        ext_grids = ensure_iterability(ext_grids)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.ext_grid.loc[ext_grids].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.gen
+    missing_non_default_col = existing_non_default_col.difference(net.gen.columns)
+    for col in missing_non_default_col:
+        net.gen[col] = np.nan
+
+    # --- create gens
+    new_idx = []
+    for ext_grid in net.ext_grid.loc[ext_grids].itertuples():
+        p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
+            ext_grid.Index, "p_mw"]
+        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
+                         in_service=ext_grid.in_service)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.gen[col].at[idx] = getattr(ext_grid, col)
+
+    # --- drop replaced ext_grids
+    net.ext_grid.drop(ext_grids, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "ext_grid") &
+                                         (net[table].element.isin(ext_grids))]
+            net[table].et.loc[to_change] = "gen"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_ext_grid.shape[0]:
+        to_add = net.res_ext_grid.loc[ext_grids]
+        to_add.index = new_idx
+        net.res_gen = pd.concat([net.res_gen, to_add])
+        net.res_ext_grid.drop(ext_grids, inplace=True)
+
+
+def replace_gen_by_ext_grid(net, gens=None):
+    """ Replaces generators by external grids.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **gens** (iterable) - indices of generators which should be replaced
+    """
+    # --- determine gen index
+    if gens is None:
+        gens = net.gen.index
+    else:
+        gens = ensure_iterability(gens)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.gen.loc[gens].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.ext_grid
+    missing_non_default_col = existing_non_default_col.difference(net.ext_grid.columns)
+    for col in missing_non_default_col:
+        net.ext_grid[col] = np.nan
+
+    # --- create ext_grids
+    new_idx = []
+    for gen in net.gen.loc[gens].itertuples():
+        va_degree = 0. if gen.bus not in net.res_bus.index else net.res_bus.va_degree.at[gen.bus]
+        idx = create_ext_grid(net, gen.bus, vm_pu=gen.vm_pu, va_degree=va_degree, name=gen.name,
+                              in_service=gen.in_service)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.ext_grid[col].at[idx] = getattr(gen, col)
+
+    # --- drop replaced gens
+    net.gen.drop(gens, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
+            net[table].et.loc[to_change] = "ext_grid"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_gen.shape[0]:
+        to_add = net.res_gen.loc[gens]
+        to_add.index = new_idx
+        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
+        net.res_gen.drop(gens, inplace=True)
 
 
 # --- item/element selections
@@ -1219,7 +1797,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == [
-            'b']:  # Raises error if switch is not a bus-bus switch
+        'b']:  # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
@@ -1284,7 +1862,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element == "measurement":
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
-                                                        (net.measurement.element_type == "bus")])
+                                                       (net.measurement.element_type == "bus")])
     elif element in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
         return {}
@@ -1478,326 +2056,26 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     return cs
 
 
-def ensure_iterability(var, len_=None):
-    """ This function ensures iterability of a variable (and optional length). """
-    if hasattr(var, "__iter__") and not isinstance(var, str):
-        if isinstance(len_, int) and len(var) != len_:
-            raise ValueError("Length of variable differs from %i." % len_)
-    else:
-        len_ = len_ or 1
-        var = [var]*len_
-    return var
-
-
-#def pq_from_cosphi(s, cosphi, qmode, pmode):
-#    """
-#    Calculates P/Q values from rated apparent power and cosine(phi) values.
-#       - s: rated apparent power
-#       - cosphi: cosine phi of the
-#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
-#       - pmode: "load" for load or "gen" for generation
-#    As all other pandapower functions this function is based on the consumer viewpoint. For active
-#    power, that means that loads are positive and generation is negative. For reactive power,
-#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
-#    """
-#    s = np.array(ensure_iterability(s))
-#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
-#    qmode = np.array(ensure_iterability(qmode, len(s)))
-#    pmode = np.array(ensure_iterability(pmode, len(s)))
-#
-#    # qmode consideration
-#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
-#    if len(unknown_qmode):
-#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
-#    qmode_is_ohm = qmode == "ohm"
-#    if any(cosphi[qmode_is_ohm] != 1):
-#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-#    qsign = np.ones(qmode.shape)
-#    qsign[qmode == "cap"] = -1
-#
-#    # pmode consideration
-#    unknown_pmode = set(pmode) - set(["load", "gen"])
-#    if len(unknown_pmode):
-#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
-#    psign = np.ones(pmode.shape)
-#    psign[pmode == "gen"] = -1
-#
-#    # calculate p and q
-#    p = psign * s * cosphi
-#    q = qsign * np.sqrt(s ** 2 - p ** 2)
-#
-#    if len(p) > 1:
-#        return p, q
-#    else:
-#        return p[0], q[0]
-
-
-def pq_from_cosphi(s, cosphi, qmode, pmode):
-    """
-    Calculates P/Q values from rated apparent power and cosine(phi) values.
-
-       - s: rated apparent power
-       - cosphi: cosine phi of the
-       - qmode: "ind" for inductive or "cap" for capacitive behaviour
-       - pmode: "load" for load or "gen" for generation
-
-    As all other pandapower functions this function is based on the consumer viewpoint. For active
-    power, that means that loads are positive and generation is negative. For reactive power,
-    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
-    """
-    if hasattr(s, "__iter__"):
-        s = ensure_iterability(s)
-        cosphi = ensure_iterability(cosphi, len(s))
-        qmode = ensure_iterability(qmode, len(s))
-        pmode = ensure_iterability(pmode, len(s))
-        p, q = [], []
-        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
-            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
-            p.append(p_)
-            q.append(q_)
-        return np.array(p), np.array(q)
-    else:
-        return _pq_from_cosphi(s, cosphi, qmode, pmode)
-
-
-def _pq_from_cosphi(s, cosphi, qmode, pmode):
-    if qmode == "ind":
-        qsign = 1 if pmode == "load" else -1
-    elif qmode == "cap":
-        qsign = -1 if pmode == "load" else 1
-    else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
-
-    p = s * cosphi
-    q = qsign * np.sqrt(s ** 2 - p ** 2)
-    return p, q
-
-
-#def cosphi_from_pq(p, q):
-#    """
-#    Analog to pq_from_cosphi, but other way around.
-#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-#    """
-#    p = np.array(ensure_iterability(p))
-#    q = np.array(ensure_iterability(q, len(p)))
-#    if len(p) != len(q):
-#        raise ValueError("p and q must have the same length.")
-#    p_is_zero = np.array(p == 0)
-#    cosphi = np.empty(p.shape)
-#    if sum(p_is_zero):
-#        cosphi[p_is_zero] = np.nan
-#        logger.warning("A cosphi from p=0 is undefined.")
-#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-#    s = (p ** 2 + q ** 2) ** 0.5
-#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
-#    if len(p) > 1:
-#        return cosphi, s, qmode, pmode
-#    else:
-#        return cosphi[0], s[0], qmode[0], pmode[0]
-
-
-def cosphi_from_pq(p, q):
-    if hasattr(p, "__iter__"):
-        assert len(p) == len(q)
-        s, cosphi, qmode, pmode = [], [], [], []
-        for p_, q_ in zip(p, q):
-            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
-            s.append(s_)
-            cosphi.append(cosphi_)
-            qmode.append(qmode_)
-            pmode.append(pmode_)
-        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
-    else:
-        return _cosphi_from_pq(p, q)
-
-
-def _cosphi_from_pq(p, q):
-    """
-    Analog to pq_from_cosphi, but other way around.
-    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-    """
-    if p == 0:
-        cosphi = np.nan
-        logger.warning("A cosphi from p=0 is undefined.")
-    else:
-        cosphi = np.cos(np.arctan(q / p))
-    s = (p ** 2 + q ** 2) ** 0.5
-    pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
-    return cosphi, s, qmode, pmode
-
-
-def create_replacement_switch_for_branch(net, element, idx):
-    """
-    Creates a switch parallel to a branch, connecting the same buses as the branch.
-    The switch is closed if the branch is in service and open if the branch is out of service.
-    The in_service status of the original branch is not affected and should be set separately,
-    if needed.
-
-    :param net: pandapower network
-    :param element: element table e. g. 'line', 'impedance'
-    :param idx: index of the branch e. g. 0
-    :return: None
-    """
-    bus_i = net[element].from_bus.at[idx]
-    bus_j = net[element].to_bus.at[idx]
-    in_service = net[element].in_service.at[idx]
-    if element in ['line', 'trafo']:
-        is_closed = all(
-            net.switch.loc[(net.switch.element == idx) & (net.switch.et == element[0]), 'closed'])
-        is_closed = is_closed and in_service
-    else:
-        is_closed = in_service
-
-    switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
-    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
-                        type='CB')
-    logger.debug('created switch %s (%d) as replacement for %s %s' %
-                 (switch_name, sid, element, idx))
-    return sid
-
-
-def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
-                                        zero_impedance=True, in_service_only=True, min_length_km=0,
-                                        min_r_ohm_per_km=0, min_x_ohm_per_km=0, min_c_nf_per_km=0,
-                                        min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0, min_xtf_pu=0,
-                                        drop_affected=False):
-    """
-    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
-    out of service.
-
-    :param net: pandapower network
-    :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
-    :param zero_length: whether zero length lines will be affected
-    :param zero_impedance: whether zero impedance branches will be affected
-    :param in_service_only: whether the branches that are not in service will be affected
-    :param drop_affected: wheter the affected branch elements are dropped
-    :param min_length_km: threshhold for line length for a line to be considered zero line
-    :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
-    :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
-    :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
-    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
-    :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
-    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
-    :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
-    :return:
-    """
-
-    if not isinstance(elements, tuple):
-        raise TypeError(
-            'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
-
-    replaced = dict()
-    for elm in elements:
-        branch_zero = set()
-        if elm == 'line' and zero_length:
-            branch_zero.update(net[elm].loc[net[elm].length_km <= min_length_km].index.tolist())
-
-        if elm == 'line' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].r_ohm_per_km <= min_r_ohm_per_km) &
-                                            (net[elm].x_ohm_per_km <= min_x_ohm_per_km) &
-                                            (net[elm].c_nf_per_km <= min_c_nf_per_km)
-                                            ].index.tolist())
-
-        if elm == 'impedance' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].rft_pu <= min_rft_pu) &
-                                            (net[elm].xft_pu <= min_xft_pu) &
-                                            (net[elm].rtf_pu <= min_rtf_pu) &
-                                            (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
-
-        affected_elements = set()
-        for b in branch_zero:
-            if in_service_only and ~net[elm].in_service.at[b]:
-                continue
-            create_replacement_switch_for_branch(net, element=elm, idx=b)
-            net[elm].loc[b, 'in_service'] = False
-            affected_elements.add(b)
-
-        replaced[elm] = net[elm].loc[affected_elements]
-
-        if drop_affected:
-            if elm == 'line':
-                drop_lines(net, affected_elements)
-            else:
-                net[elm].drop(affected_elements, inplace=True)
-
-            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+def get_connected_elements_dict(
+        net, buses, respect_switches=True, respect_in_service=False, remove_empty_lists=True,
+        connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
+        connected_other_elements=True):
+    """ Returns a dict of lists of connected elements. """
+    pp_elms = pp_elements(
+        bus=connected_buses, bus_elements=connected_bus_elements,
+        branch_elements=connected_branch_elements, other_elements=connected_other_elements,
+        res_elements=False)
+    connected = dict()
+    for elm in pp_elms:
+        if elm == "bus":
+            conn = get_connected_buses(net, buses, respect_switches=respect_switches,
+                                          respect_in_service=respect_in_service)
+        elif elm == "switch":
+            conn = get_connected_switches(net, buses)
         else:
-            logger.info('set %d %ss out of service' % (len(affected_elements), elm))
-
-    return replaced
-
-
-def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_max=False):
-    """
-    Creates lines by given impedances data, while the impedances are dropped.
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
-            will be replaced.
-
-        **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
-            replacement leads to equal power flow results. If False, unsymmetric impedances will
-            be replaced by symmetric lines.
-
-        **sn_as_max** (bool, False) - Flag to set whether sn_kva of impedances should be assumed
-            for max_i_ka of lines.
-    """
-    index = index or net.impedance.index
-    for _, imp in net.impedance.loc[index].iterrows():
-        if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
-            if only_valid_replace:
-                continue
-            logger.error("impedance differs in from or to bus direction. lines always " +
-                         "parameters always pertain in both direction. only from_bus to " +
-                         "to_bus parameters are considered.")
-        vn = net.bus.vn_kv.at[imp.from_bus]
-        Zni = vn ** 2 / imp.sn_mva
-        max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
-        create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni,
-                                    imp.xft_pu * Zni, 0, max_i_ka, name=imp.name,
-                                    in_service=imp.in_service)
-    net.impedance.drop(index, inplace=True)
-
-
-def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
-    """
-    Creates impedances by given lines data, while the lines are dropped.
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **index** (index, None) - Index of all lines to be replaced. If None, all lines
-            will be replaced.
-
-        **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
-            the net.sn_kva is assumed
-
-        **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
-            leads to equal power flow results. If False, capacitance and dielectric conductance will
-            be neglected.
-    """
-    index = index or net.line.index
-    sn_mva = sn_mva or net.sn_mva
-    sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
-    sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
-    if len(sn_mva) != len(index):
-        raise ValueError("index and sn_mva must have the same length.")
-    i = 0
-    for idx, line_ in net.line.loc[index].iterrows():
-        if line_.c_nf_per_km or line_.g_us_per_km:
-            if only_valid_replace:
-                continue
-            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
-                         "converted to impedances, which do not model such parameters.")
-        vn = net.bus.vn_kv.at[line_.from_bus]
-        Zni = vn ** 2 / sn_mva[i]
-        create_impedance(net, line_.from_bus, line_.to_bus,
-                         line_.r_ohm_per_km * line_.length_km / Zni,
-                         line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
-                         in_service=line_.in_service)
-        i += 1
-    drop_lines(net, index)
+            conn = get_connected_elements(
+                net, elm, buses, respect_switches=respect_switches,
+                respect_in_service=respect_in_service)
+        if not remove_empty_lists or len(conn):
+            connected[elm] = list(conn)
+    return connected

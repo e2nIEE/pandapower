@@ -266,10 +266,10 @@ def from_excel(filename, convert=True):
 
 
 def _from_excel_old(xls):
-    par = xls["parameters"]["parameters"]
+    par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
-
+    net.update(par)
     for item, table in xls.items():
         if item == "parameters":
             continue
@@ -352,7 +352,18 @@ def from_json_string(json_string, convert=False):
 
     """
     net = json.loads(json_string, cls=PPJSONDecoder)
+    if isinstance(net, dict):
+        net = pandapowerNet(net)
     restore_jsoned_objects(net)
+    # this can be removed in the future
+    # now net is saved with "_module", "_class", "_object"..., so json.load already returns
+    # pandapowerNet. Older files don't have it yet, and are loaded as dict.
+    # After some time, this part can be removed.
+    if not isinstance(net, pandapowerNet):
+        warn("This net is saved in older format, which will not be supported in future.\r\n"
+             "Please resave your grid using the current pandapower version.",
+             DeprecationWarning)
+        net = from_json_dict(net)
 
     if convert:
         convert_format(net)

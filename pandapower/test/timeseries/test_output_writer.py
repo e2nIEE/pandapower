@@ -5,15 +5,16 @@
 
 
 import copy
+import logging
+import os
 import tempfile
 
 import numpy as np
 import pandas as pd
 import pytest
 
-import pandapower.control as ct
 import pandapower as pp
-import logging
+import pandapower.control as ct
 from pandapower.control import ConstControl
 from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
 from pandapower.timeseries import DFData, OutputWriter
@@ -38,14 +39,14 @@ def test_output_writer_log():
 
     # Create, add output and set outputwriter
     ow = OutputWriter(net, output_path=tempfile.gettempdir())
+    ow.remove_log_variable("res_bus")
     orig_index = [0, 1]
     ow.log_variable("res_bus", "vm_pu", orig_index)
     ow.log_variable("res_sgen", "p_mw")
     ow.log_variable("res_sgen", "q_mvar")
 
     # Run timeseries
-    run_timeseries(net, time_steps=range(2), output_writer=ow)
-
+    run_timeseries(net, time_steps=range(2))
 
     # --- double logged variables handling
     ow2 = copy.deepcopy(ow)
@@ -54,11 +55,12 @@ def test_output_writer_log():
     run_timeseries(net, time_steps=range(2), output_writer=ow2)
     assert all(ow2.output["res_bus.vm_pu"].columns == orig_index + [new_idx])
 
-    ow3 = copy.deepcopy(ow)
-    new_idx = [2, 3]
-    ow3.log_variable("res_bus", "vm_pu", new_idx)
-    run_timeseries(net, time_steps=range(2), output_writer=ow3)
-    assert all(ow3.output["res_bus.vm_pu"].columns == orig_index + new_idx)
+    # Todo: This test makes no sense if res_bus is logged by default
+    # ow3 = copy.deepcopy(ow)
+    # new_idx = [2, 3]
+    # ow3.log_variable("res_bus", "vm_pu", new_idx)
+    # run_timeseries(net, time_steps=range(2), output_writer=ow3)
+    # assert all(ow3.output["res_bus.vm_pu"].columns == orig_index + new_idx)
 
     ow4 = copy.deepcopy(ow)
     new_idx = [2, 4]
@@ -80,7 +82,7 @@ def test_output_writer_with_timesteps_set():
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow)
+    run_timeseries(net, time_steps)
     assert len(ow.output["res_bus.vm_pu"]) == n_timesteps
     assert len(ow.output["res_line.i_ka"]) == n_timesteps
 
@@ -98,7 +100,7 @@ def test_output_writer_without_timesteps_set():
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow)
+    run_timeseries(net, time_steps)
     assert len(ow.output["res_bus.vm_pu"]) == n_timesteps
     assert len(ow.output["res_line.i_ka"]) == n_timesteps
 
@@ -119,7 +121,7 @@ def test_output_writer_without_timesteps_set_repeat():
 
     for n_timesteps in time_steps_to_check:
         time_steps = range(0, n_timesteps)
-        run_timeseries(net, time_steps, output_writer=ow)
+        run_timeseries(net, time_steps)
         assert len(ow.output["res_bus.vm_pu"].index) == n_timesteps
 
 
@@ -139,21 +141,19 @@ def test_output_writer_short_data_source():
     ow.log_variable('res_line', 'i_ka')
 
     with pytest.raises(KeyError):
-        run_timeseries(net, time_steps, output_writer=ow)
+        run_timeseries(net, time_steps)
 
 
 def test_default_output_writer():
     net = simple_test_net()
 
-    n_timesteps = 10
+    n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
     run_timeseries(net, time_steps)
-
-    pass
 
 
 def test_output_writer_eval_simple():
@@ -166,7 +166,7 @@ def test_output_writer_eval_simple():
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable('res_bus', 'vm_pu', eval_function=max, eval_name="max")
-    run_timeseries(net, time_steps, output_writer=ow)
+    run_timeseries(net, time_steps)
     assert len(ow.output["res_bus.vm_pu"]["max"]) == n_timesteps
 
 
@@ -187,21 +187,63 @@ def test_output_writer_multiple_index_definition():
     ow.log_variable('res_bus', 'vm_pu', index=[3, 4])
     ow.log_variable('res_bus', 'vm_pu', net.bus.index)
     ow.log_variable('res_bus', 'vm_pu', 0)
+    run_timeseries(net, time_steps)
+    backup_result = copy.deepcopy(ow.output["res_bus.vm_pu"].loc[:, net.bus.index])
+    del ow
 
-    ow2 = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow2.log_variable('res_bus', 'vm_pu', net.bus.index)
+    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
+    ow.log_variable('res_bus', 'vm_pu', net.bus.index)
 
-    run_timeseries(net, time_steps, output_writer=ow)
-    run_timeseries(net, time_steps, output_writer=ow2)
+    # run_timeseries(net, time_steps)
+    run_timeseries(net, time_steps)
     # assert saving works
     ow.save_results(0, True, True)
     # assert all are considered
     assert len(ow.output["res_bus.vm_pu"].columns) == len(net.bus.index)
     # assert correct order of values
-    assert np.allclose(ow2.output["res_bus.vm_pu"].loc[:, net.bus.index],
+    assert np.allclose(backup_result,
                        ow.output["res_bus.vm_pu"].loc[:, net.bus.index], atol=0, rtol=0)
 
 
+def test_remove_variable():
+    net = simple_test_net()
+    ow = OutputWriter(net)
+    # test printing
+    logger.info(ow)
+    assert len(ow.log_variables) == 2
+    assert ow.log_variables[0][0] == "res_bus" and ow.log_variables[0][1] == "vm_pu"
+    assert ow.log_variables[1][0] == "res_line" and ow.log_variables[1][1] == "loading_percent"
+    ow.remove_log_variable("res_bus")
+    assert ow.log_variables[0][0] == "res_line" and ow.log_variables[0][1] == "loading_percent"
+    ow.remove_log_variable("res_line", "loading_percent")
+    assert len(ow.log_variables) == 0
+
+
+def test_store_and_load():
+    net = simple_test_net()
+    n_timesteps = 2
+    profiles, ds = create_data_source(n_timesteps)
+    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
+    dirname = tempfile.gettempdir()
+    ow = OutputWriter(net, output_path=dirname, output_file_type=".json")
+    ow.remove_log_variable("res_bus")
+    tmp_file = os.path.join(dirname, "net.json")
+    pp.to_json(net, tmp_file)
+    del net
+    del ow
+    res_line_file = os.path.join(dirname, "res_line", "loading_percent.json")
+    # del result file is one is present
+    if os.path.isfile(res_line_file):
+        os.remove(res_line_file)
+    net = pp.from_json(tmp_file)
+    ow = net.output_writer.iat[0, 0]
+    assert len(ow.log_variables) == 1
+    assert ow.output_path == dirname
+    time_steps = range(0, n_timesteps)
+    run_timeseries(net, time_steps=time_steps)
+    # check if results were written
+    assert os.path.isfile(res_line_file)
 
 
 if __name__ == '__main__':

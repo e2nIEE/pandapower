@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from copy import deepcopy
 
-from pandapower.control.util.auxiliary import get_controller_index, check_controller_frame
+from pandapower.control.util.auxiliary import get_controller_index
 from pandapower.control.controller.trafo_control import TrafoController
 
 try:
@@ -19,7 +19,6 @@ def control_diagnostic(net, respect_in_service=True):
     """
     Diagnostic function to find obvious mistakes in control data
     """
-    check_controller_frame(net)
     # --- find and log same type controllers connected to same elements
     indices = list(net.controller.index)
     for idx in indices:

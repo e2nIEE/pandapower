@@ -27,8 +27,7 @@ def _pd2ppc_zero(net):
     net["_is_elements"] = aux._select_is_elements_numba(net)
 
     ppc = _init_ppc(net)
-    # init empty ppci
-    ppci = copy.deepcopy(ppc)
+
     _build_bus_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
@@ -44,7 +43,7 @@ def _pd2ppc_zero(net):
         ppc["bus"][net._isolated_buses, 1] = 4.
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
-    ppci = _ppc2ppci(ppc, ppci, net)
+    ppci = _ppc2ppci(ppc, net)
     net._ppc0 = ppc
     return ppc, ppci
 

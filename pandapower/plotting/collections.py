@@ -9,7 +9,7 @@ from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import LineCollection, PatchCollection, Collection
+from matplotlib.collections import LineCollection, PatchCollection, Collection, CircleCollection
 from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
@@ -199,7 +199,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
 def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                            use_bus_geodata=False, infofunc=None,
                            cmap=None, norm=None, picker=False, z=None,
-                           cbar_title="Line Loading [%]", clim=None, **kwargs):
+                           cbar_title="Line Loading [%]", clim=None,
+                           plot_colormap=True, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -238,6 +239,11 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if use_bus_geodata is False and net.line_geodata.empty:
+        # if bus geodata is available, but no line geodata
+        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is empty.")
+        use_bus_geodata = True
+
     if use_bus_geodata:
         linetab = net.line if lines is None else net.line.loc[lines]
     lines = net.line.index.tolist() if lines is None else list(lines)
@@ -297,7 +303,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
             lc.set_clim(clim)
 
         lc.set_array(np.ma.masked_invalid(z))
-        lc.has_colormap = True
+        lc.has_colormap = plot_colormap
         lc.cbar_title = cbar_title
     lc.info = info
 
@@ -406,7 +412,9 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
 
 
 def create_trafo_collection(net, trafos=None, picker=False, size=None,
-                            infofunc=None, **kwargs):
+                            infofunc=None, cmap=None, norm=None, z=None, clim=None,
+                            cbar_title="Transformer Loading",
+                            plot_colormap=True, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -439,6 +447,8 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     linewidths = kwargs.pop("linewidths", 2.)
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
+    if cmap is not None and z is None:
+        z = net.res_trafo.loading_percent
 
     for i, idx in enumerate(trafo_table.index):
         p1 = net.bus_geodata[["x", "y"]].loc[net.trafo.at[idx, "hv_bus"]].values
@@ -453,8 +463,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=color))
-        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=color))
+        ec = color if cmap is None else cmap(norm(z.at[idx]))
+        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=ec))
+        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=ec))
 
         lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
@@ -470,10 +481,23 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths,
                          **kwargs)
     pc.info = infos
+    if cmap is not None:
+        z_duplicated = np.repeat(z.values, 2)
+        lc.set_cmap(cmap)
+        lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
+        lc.set_array(np.ma.masked_invalid(z_duplicated))
+        lc.has_colormap = plot_colormap
+        lc.cbar_title = cbar_title
     return lc, pc
 
 
-def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, **kwargs):
+def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None,
+                              cmap=None, norm=None, z=None, clim=None,
+                              cbar_title="3W-Transformer Loading",
+                              plot_colormap=True,
+                              **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -501,6 +525,8 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
     infos = []
     color = kwargs.pop("color", "k")
     linewidth = kwargs.pop("linewidths", 2.)
+    if cmap is not None and z is None:
+        z = net.res_trafo3w.loading_percent
     for i, idx in enumerate(trafo3w_table.index):
         # get bus geodata
         p1 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "hv_bus"]].values
@@ -529,8 +555,9 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
         # determine endpoints of circles
         e = (center - p) * (1 - 5 * r / 3 / d).reshape(3, 1) + p
         # save circle and line collection data
+        ec = color if cmap is None else cmap(norm(z.at[idx]))
         for i in range(3):
-            circles.append(Circle(m[i], r, fc=(1, 0, 0, 0), ec=color))
+            circles.append(Circle(m[i], r, fc=(1, 0, 0, 0), ec=ec))
             lines.append([p[i], e[i]])
 
         if infofunc is not None:
@@ -542,6 +569,15 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
     lc.info = infos
     pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidth, **kwargs)
     pc.info = infos
+    if cmap is not None:
+        z_duplicated = np.repeat(z.values, 3)
+        lc.set_cmap(cmap)
+        lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
+        lc.set_array(np.ma.masked_invalid(z_duplicated))
+        lc.has_colormap = plot_colormap
+        lc.cbar_title = cbar_title
     return lc, pc
 
 
