@@ -7,7 +7,7 @@ import pytest
 import pandapower as pp
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.test.timeseries.test_output_writer import create_data_source, OutputWriter, ConstControl, \
-    run_timeseries
+    run_timeseries, simple_test_net
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
     get_batch_trafo3w_results, v_to_i_s, polar_to_rad
