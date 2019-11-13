@@ -1,11 +1,27 @@
 from cmath import rect
 
-from numpy import real, vectorize, deg2rad, maximum, sqrt
+from numpy import real, vectorize, deg2rad, maximum, sqrt, empty
 
 from pandapower import F_BUS, T_BUS
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.results_branch import _get_trafo3w_lookups
+from pandapower.results_bus import _get_bus_idx
+
+
+def get_batch_bus_results(net, vm, va):
+    # convert ppci bus results to net.res_bus results
+    # we need va, vm with out of service elements
+    # create matrix of proper size
+    bus_shape_ppc = net["_ppc"]["bus"].shape[0]
+    bus_idx = _get_bus_idx(net)
+    # (n_ts, n_bus in ppc)
+    vm_full = empty((vm.shape[0], bus_shape_ppc))
+    va_full = empty((va.shape[0], bus_shape_ppc))
+    # and fill it
+    vm_full[:, :vm.shape[1]] = vm.values
+    va_full[:, :va.shape[1]] = va.values
+    return vm_full[:, bus_idx], va_full[:, bus_idx]
 
 
 def get_batch_line_results(net, i_abs):
@@ -77,6 +93,11 @@ def get_batch_trafo3w_results(net, i_abs, s_abs):
     return i_h, i_m, i_l, ld_trafo
 
 
+def _get_empty_branch(ppc_branch_shape):
+    return empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape), \
+           empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape)
+
+
 def v_to_i_s(net, vm, va):
     ppc = net["_ppc"]
     internal = ppc["internal"]
@@ -96,7 +117,20 @@ def v_to_i_s(net, vm, va):
     Sb_t, st_abs, it_abs = calc_branch_flows_batch(Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0],
                                                    t_bus, base_kv)
 
-    return (Sb_f, Sb_t), (sf_abs, st_abs), (if_abs, it_abs)
+    # get ppc shaped values
+    ppc = net["_ppc"]
+    ppc_branch_shape = (V.shape[0], ppc["branch"].shape[0])
+    sb_f_ppc, sb_t_ppc, s_f_abs_ppc, s_t_abs_ppc, i_f_abs_ppc, i_t_abs_ppc = _get_empty_branch(ppc_branch_shape)
+
+    in_service = ppc["internal"]['branch_is']
+    sb_f_ppc[:, in_service] = Sb_f
+    sb_t_ppc[:, in_service] = Sb_t
+    s_f_abs_ppc[:, in_service] = sf_abs
+    s_t_abs_ppc[:, in_service] = st_abs
+    i_f_abs_ppc[:, in_service] = if_abs
+    i_t_abs_ppc[:, in_service] = it_abs
+
+    return (sb_f_ppc, sb_t_ppc), (s_f_abs_ppc, s_t_abs_ppc), (i_f_abs_ppc, i_t_abs_ppc)
 
 
 def polar_to_rad(vm, va):

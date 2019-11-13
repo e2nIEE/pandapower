@@ -12,12 +12,11 @@ import pandas as pd
 
 from pandapower.io_utils import JSONSerializableClass
 from pandapower.io_utils import mkdirs_if_not_existent
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
-from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
-    get_batch_trafo_results
-from pandapower.results_bus import _get_bus_idx
-from pandapower.pd2ppc import _ppc2ppci, _pd2ppc
 from pandapower.run import _init_runpp_options
+from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
+    get_batch_trafo_results, get_batch_bus_results
 
 try:
     import pplog
@@ -453,14 +452,14 @@ class OutputWriter(JSONSerializableClass):
 
     def _log_ppc(self, table, variable, index, eval_function=None, eval_name=None):
         # custom log function fo ppc results
-        ppc = self.net["_ppc"]
+        ppci = self.net["_ppc"]["internal"]
         if variable == "vm":
             v = VM
         elif variable == "va":
             v = VA
         else:
             raise NotImplementedError("No other variable implemented yet.")
-        result = ppc[table.split("_")[-1]][:, v]
+        result = ppci[table.split("_")[-1]][:, v]
         if eval_function is not None:
             result = eval_function(result)
 
@@ -526,8 +525,9 @@ class OutputWriter(JSONSerializableClass):
         # read the results in batch from vm, va (ppci values)
 
         if isinstance(recycle_options["batch_read"], list) and len(recycle_options["batch_read"]):
+            # vm, va is without out of service elements
             vm, va = self.output["ppc_bus.vm"], self.output["ppc_bus.va"]
-            s, s_abs, i_abs = v_to_i_s(self.net, vm, va)
+            _, s_abs, i_abs = v_to_i_s(self.net, vm, va)
             results = dict()
             new_output_list = list()
             for table, variable in recycle_options["batch_read"]:
@@ -543,9 +543,8 @@ class OutputWriter(JSONSerializableClass):
                     i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(self.net, i_abs, s_abs)
                     results["res_trafo3w"] = dict(i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent)
                 elif table == "res_bus" and "res_bus" not in results:
-                    # convert ppci bus results to net.res_bus results
-                    bus_idx = _get_bus_idx(self.net)
-                    results["res_bus"] = dict(vm_pu=vm.values[:, bus_idx], va_degree=va.values[:, bus_idx])
+                    vm_full, va_full = get_batch_bus_results(self.net, vm, va)
+                    results["res_bus"] = dict(vm_pu=vm_full, va_degree=va_full)
                 else:
                     raise ValueError("Something went wrong")
                 output_name = "%s.%s" % (table, variable)
@@ -553,4 +552,3 @@ class OutputWriter(JSONSerializableClass):
                 self.output[output_name] = pd.DataFrame(data=results[table][variable])
                 new_output_list.append((table, variable))
             self.output_list = new_output_list
-

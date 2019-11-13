@@ -4,16 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 
-import numpy as np
-
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
     check_for_initial_powerflow, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
-from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
-    get_batch_trafo3w_results, v_to_i_s, polar_to_rad
 
 try:
     import pplog
@@ -45,6 +41,7 @@ def init_default_outputwriter(net, time_steps, **kwargs):
         ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
         logger.info("No output writer specified. Using default:")
         logger.info(ow)
+
 
 def init_output_writer(net, time_steps):
     # init output writer before time series calculation
@@ -117,7 +114,6 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     # save
     output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
                                recycle_options=ts_variables["recycle_options"])
-
 
 
 def _check_controller_recyclability(net):
@@ -243,7 +239,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # get run function
     run = kwargs.get("run", pp.runpp)
     recycle_options = False
-    if hasattr(run, __name__) and run.__name__ == "runpp":
+    if hasattr(run, "__name__") and run.__name__ == "runpp":
         # use faster runpp options if possible
         recycle_options = get_recycle_settings(net, **kwargs)
 

@@ -109,14 +109,15 @@ def reset_results(net, suffix=None):
 
 
 def _ppci_bus_to_ppc(result, ppc):
+    # result is the ppci (ppc without out of service buses)
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
-    n_busses, bus_cols = np.shape(ppc['bus'])
+    n_buses, bus_cols = np.shape(ppc['bus'])
     n_rows_result, bus_cols_result = np.shape(result['bus'])
     # create matrix of proper size
-    updated_bus = np.empty((n_busses, bus_cols_result))
+    updated_bus = np.empty((n_buses, bus_cols_result))
     # fill in results (first 3 types)
     updated_bus[:n_rows_result, :] = result['bus']
-    if n_busses > n_rows_result:
+    if n_buses > n_rows_result:
         # keep rows for busses of type NONE
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus

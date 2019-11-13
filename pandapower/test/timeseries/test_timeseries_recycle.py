@@ -7,7 +7,7 @@ import pytest
 import pandapower as pp
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.test.timeseries.test_output_writer import create_data_source, OutputWriter, ConstControl, \
-    run_timeseries, simple_test_net
+    run_timeseries
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
     get_batch_trafo3w_results, v_to_i_s, polar_to_rad
@@ -223,6 +223,29 @@ def test_const_pq_gen_trafo_tap(simple_test_net):
     ow = _run_normal(net)
     assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
+
+
+def test_const_pq_out_of_service(simple_test_net):
+    # allows to use recycle = {"bus_pq"} and fast output read
+    net = simple_test_net
+    for i in range(3):
+        b = pp.create_bus(net, 20., in_service=False)
+        pp.create_line(net, 2, b, std_type="149-AL1/24-ST1A 20.0", length_km=1., in_service=False)
+        pp.create_transformer(net, 2, b, std_type="25 MVA 110/20 kV", in_service=False)
+        pp.create_transformer3w(net, 1, 2, b, std_type="63/25/38 MVA 110/20/10 kV", in_service=False)
+    _, ds = create_data_source(n_timesteps)
+    # 1load
+    c = add_const(net, ds, recycle=None)
+    vm_pu, ll = _run_recycle(net)
+    del c
+
+    # calculate the same results without recycle
+    c = add_const(net, ds, recycle=False)
+    ow = _run_normal(net)
+    in_service = net.bus.loc[net.bus.in_service].index
+    assert np.allclose(vm_pu.loc[:, in_service], ow.output["res_bus.vm_pu"].loc[:, in_service])
+    in_service = net.line.loc[net.line.in_service].index
+    assert np.allclose(ll.loc[:, in_service], ow.output["res_line.loading_percent"].loc[:, in_service])
 
 
 if __name__ == "__main__":
