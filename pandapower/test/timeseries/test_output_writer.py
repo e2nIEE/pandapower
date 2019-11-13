@@ -204,8 +204,7 @@ def test_output_writer_multiple_index_definition(simple_test_net):
     # assert all are considered
     assert len(ow.output["res_bus.vm_pu"].columns) == len(net.bus.index)
     # assert correct order of values
-    assert np.allclose(backup_result,
-                       ow.output["res_bus.vm_pu"].loc[:, net.bus.index], atol=0, rtol=0)
+    assert np.allclose(backup_result, ow.output["res_bus.vm_pu"].loc[:, net.bus.index])
 
 
 def test_remove_variable(simple_test_net):

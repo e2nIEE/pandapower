@@ -187,14 +187,14 @@ def test_trafo_tap(simple_test_net):
 
     # 1load
     c1 = add_const(net, ds, recycle=None)
-    c2 = ContinuousTapControl(net, 0, .99, tol=1e-12)
+    c2 = ContinuousTapControl(net, 0, .99, tol=1e-9)
 
     vm_pu, ll = _run_recycle(net)
     del c1, c2
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    c2 = ContinuousTapControl(net, 0, .99, recycle=False, tol=1e-12)
+    c2 = ContinuousTapControl(net, 0, .99, recycle=False, tol=1e-9)
     ow = _run_normal(net)
     assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -210,7 +210,7 @@ def test_const_pq_gen_trafo_tap(simple_test_net):
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable="vm_pu", element_index=0,
                    element="ext_grid")
-    c3 = ContinuousTapControl(net, 0, 1.01, tol=1e-12)
+    c3 = ContinuousTapControl(net, 0, 1.01, tol=1e-9)
 
     vm_pu, ll = _run_recycle(net)
     del c1, c2, c3
@@ -219,7 +219,7 @@ def test_const_pq_gen_trafo_tap(simple_test_net):
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
                    element="ext_grid")
-    c3 = ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-12)
+    c3 = ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-9)
     ow = _run_normal(net)
     assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
