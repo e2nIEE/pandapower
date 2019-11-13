@@ -1,6 +1,6 @@
 from cmath import rect
 
-from numpy import real, vectorize, deg2rad, maximum, sqrt, empty
+from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, zeros, nan
 
 from pandapower import F_BUS, T_BUS
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
@@ -18,6 +18,8 @@ def get_batch_bus_results(net, vm, va):
     # (n_ts, n_bus in ppc)
     vm_full = empty((vm.shape[0], bus_shape_ppc))
     va_full = empty((va.shape[0], bus_shape_ppc))
+    vm_full.fill(nan)
+    va_full.fill(nan)
     # and fill it
     vm_full[:, :vm.shape[1]] = vm.values
     va_full[:, :va.shape[1]] = va.values
@@ -94,8 +96,11 @@ def get_batch_trafo3w_results(net, i_abs, s_abs):
 
 
 def _get_empty_branch(ppc_branch_shape):
-    return empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape), \
-           empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape)
+    empties = (empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape, dtype=complex),
+               empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape))
+    for e in empties:
+        e.fill(nan)
+    return empties
 
 
 def v_to_i_s(net, vm, va):
