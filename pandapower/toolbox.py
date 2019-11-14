@@ -13,7 +13,7 @@ from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
-    create_impedance, create_empty_network, create_gen, create_ext_grid
+    create_impedance, create_empty_network, create_gen, create_ext_grid, create_sgen
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
@@ -1084,7 +1084,7 @@ def drop_buses(net, buses, drop_elements=True):
     """
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    res_buses = net.res_line.index.intersection(buses)
+    res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"].drop(res_buses, inplace=True)
     if drop_elements:
         drop_elements_at_buses(net, buses)
@@ -1637,7 +1637,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
         p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
         idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
-                         in_service=ext_grid.in_service)
+                         in_service=ext_grid.in_service, controllable=True)
         new_idx.append(idx)
         for col in existing_non_default_col:
             net.gen[col].at[idx] = getattr(ext_grid, col)
@@ -1710,6 +1710,111 @@ def replace_gen_by_ext_grid(net, gens=None):
         to_add.index = new_idx
         net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
         net.res_gen.drop(gens, inplace=True)
+
+
+def replace_gen_by_sgen(net, gens=None):
+    """ Replaces generators by static generators.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **gens** (iterable) - indices of generators which should be replaced
+    """
+    # --- determine gen index
+    if gens is None:
+        gens = net.gen.index
+    else:
+        gens = ensure_iterability(gens)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.gen.loc[gens].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.sgen
+    missing_non_default_col = existing_non_default_col.difference(net.sgen.columns)
+    for col in missing_non_default_col:
+        net.sgen[col] = np.nan
+
+    # --- create sgens
+    new_idx = []
+    for gen in net.gen.loc[gens].itertuples():
+        q_mvar = 0. if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]
+        controllable = True if "controllable" not in net.gen.columns else gen.controllable
+        idx = create_sgen(net, gen.bus, p_mw=gen.p_mw, q_mvar=q_mvar, name=gen.name,
+                          in_service=gen.in_service, controllable=controllable)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.sgen[col].at[idx] = getattr(gen, col)
+
+    # --- drop replaced gens
+    net.gen.drop(gens, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
+            net[table].et.loc[to_change] = "sgen"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_gen.shape[0]:
+        to_add = net.res_gen.loc[gens]
+        to_add.index = new_idx
+        net.res_sgen = pd.concat([net.res_sgen, to_add])
+        net.res_gen.drop(gens, inplace=True)
+
+
+def replace_sgen_by_gen(net, sgens=None):
+    """ Replaces static generators by generators.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **sgens** (iterable) - indices of static generators which should be replaced
+    """
+    # --- determine sgen index
+    if sgens is None:
+        sgens = net.sgen.index
+    else:
+        sgens = ensure_iterability(sgens)
+
+    # --- consider columns which do not exist in pp net dataframes by default
+    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    existing_non_default_col = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(
+        non_default_col)
+    # add missing columns to net.gen
+    missing_non_default_col = existing_non_default_col.difference(net.gen.columns)
+    for col in missing_non_default_col:
+        net.gen[col] = np.nan
+
+    # --- create gens
+    new_idx = []
+    for sgen in net.sgen.loc[sgens].itertuples():
+        vm_pu = 1.0 if sgen.Index not in net.res_sgen.index else net.res_bus.at[sgen.bus, "vm_pu"]
+        controllable = False if "controllable" not in net.sgen.columns else sgen.controllable
+        idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
+                         in_service=sgen.in_service, controllable=controllable)
+        new_idx.append(idx)
+        for col in existing_non_default_col:
+            net.gen[col].at[idx] = getattr(sgen, col)
+
+    # --- drop replaced sgens
+    net.sgen.drop(sgens, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == "sgen") &
+                                         (net[table].element.isin(sgens))]
+            net[table].et.loc[to_change] = "gen"
+            net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net.res_sgen.shape[0]:
+        to_add = net.res_sgen.loc[sgens]
+        to_add.index = new_idx
+        net.res_gen = pd.concat([net.res_gen, to_add])
+        net.res_sgen.drop(sgens, inplace=True)
 
 
 # --- item/element selections

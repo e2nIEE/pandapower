@@ -145,6 +145,11 @@ def test_json_encoding_decoding():
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
+def test_dataframes_with_integer_columns():
+    obj = pd.DataFrame(index=[1,2,3], columns=[0, 1])
+    json_string = json.dumps(obj, cls=PPJSONEncoder)
+    obj_loaded = json.loads(json_string, cls=PPJSONDecoder)
+    assert all(obj.columns == obj_loaded.columns)
 
 def assert_graphs_equal(mg1, mg2):
     edge1 = mg1.edges(data=True)
