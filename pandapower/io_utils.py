@@ -201,7 +201,7 @@ def isinstance_partial(obj, cls):
 
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
-        super(PPJSONEncoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.isinstance_func = isinstance_func
 
     def iterencode(self, o, _one_shot=False):
@@ -289,14 +289,15 @@ def pp_hook(d, net=None):
         if class_name == 'Series':
             return pd.read_json(obj, precise_float=True, **d)
         elif class_name == "DataFrame":
-            if type(obj) == str:
-                df = pd.read_json(obj, precise_float=True, **d)
-            else:
-                df = pd.DataFrame(**obj).astype(d['dtype'], copy=False, errors='ignore')  # here copy=False is OK
+            df = pd.read_json(obj, precise_float=True, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting int64 index")
+            # recreate jsoned objects
+            for col in ('object', 'controller'):  # "controller" for backwards compatibility
+                if col in df.columns:
+                    df[col] = df[col].apply(pp_hook, args=(net,))
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
@@ -323,6 +324,9 @@ def pp_hook(d, net=None):
             return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
             module = importlib.import_module(module_name)
+            if class_name == "method":
+                logger.warning('deserializing of method not implemented')
+                # class_ = getattr(module, obj) # doesn't work
             class_ = getattr(module, class_name)
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
                 if isinstance(obj, str):
@@ -342,7 +346,7 @@ def pp_hook(d, net=None):
 class JSONSerializableClass(object):
     json_excludes = ["net", "self", "__class__"]
 
-    def __init__(self, table=None, overwrite=True):
+    def __init__(self, **kwargs):
         pass
         # self._init = dict()
 
@@ -477,7 +481,6 @@ class JSONSerializableClass(object):
 class MakeFunctionJSONSerializable(JSONSerializableClass):
     def __init__(self, function):
         super().__init__()
-        # self.update_initialized(locals())
         self.function = function
         self.function_module = function.__module__
         self.function_name = function.__name__

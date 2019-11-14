@@ -230,7 +230,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
         'controller': [
-            ('controller', dtype(object)),
+            ('object', dtype(object)),
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
