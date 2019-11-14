@@ -327,6 +327,10 @@ def pp_hook(d, net=None):
             if class_name == "method":
                 logger.warning('deserializing of method not implemented')
                 # class_ = getattr(module, obj) # doesn't work
+                return obj
+            elif class_name == "function":
+                class_ = getattr(module, obj)  # works
+                return class_
             class_ = getattr(module, class_name)
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
                 if isinstance(obj, str):
@@ -371,16 +375,8 @@ class JSONSerializableClass(object):
         return json.dumps(self.to_dict(), cls=PPJSONEncoder)
 
     def to_dict(self):
-        d = {}
-        for key, val in self.__dict__.items():
-            if key in self.json_excludes:
-                continue
-            elif callable(val):
-                logger.debug(val)
-                continue
-                raise UserWarning('cannot save callable attributes (saving of objects with '
-                                  'monkey-patching is not implemented)')
-            d.update({key: val})
+        d = {key: val if not callable(val) else with_signature(val, val.__name__)
+             for key, val in self.__dict__.items() if key not in self.json_excludes}
         if "net" in signature(self.__init__).parameters.keys():
             d.update({'net': 'net'})
         return d
