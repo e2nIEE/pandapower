@@ -11,10 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection, Collection
 from matplotlib.font_manager import FontProperties
-from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
+from matplotlib.patches import Circle, Rectangle, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from pandas import isnull
+from pandapower.plotting.patch_makers import load_patches, _rotate_dim2, node_patches, gen_patches,\
+    sgen_patches, ext_grid_patches
 
 try:
     import pplog as logging
@@ -22,14 +24,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _rotate_dim2(arr, ang):
-    """
-    :param arr: array with 2 dimensions
-    :param ang: angle [rad]
-    """
-    return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
 
 class CustomTextPath(TextPath):
@@ -92,47 +86,24 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     return PatchCollection(tp, **kwargs)
 
 
-def add_cmap_to_collection(collection, cmap, norm, z, cbar_title):
+def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, clim=None):
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     collection.set_array(np.ma.masked_invalid(z))
     collection.has_colormap = True
     collection.cbar_title = cbar_title
+    if clim is not None:
+        collection.set_clim(clim)
     return collection
 
 
-def create_node_collection(nodes, coords, size=5, patch_type="circle", colors=None, picker=False,
+def create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False,
                            infos=None, **kwargs):
-    if len(nodes) == 0:
+    if len(coords) == 0:
         return None
 
-    assert len(nodes) == len(coords)
-
     infos = list(infos) if infos is not None else []
-    colors = [None] * len(nodes) if colors is None else colors
-
-    # RegularPolygon has no param width/height, everything else might use defaults
-    if not patch_type.startswith("poly"):
-        if 'height' not in kwargs and 'width' not in kwargs:
-            kwargs['height'] = kwargs['width'] = 2 * size
-
-    def figmaker(x, y, color):
-        if color is not None:
-            kwargs["color"] = color
-        if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
-            angle = kwargs.get('angle', 0)
-            fig = Ellipse((x, y), angle=angle, **kwargs)
-        elif patch_type == "rect":
-            fig = Rectangle((x - kwargs['width'] / 2, y - kwargs['height'] / 2), **kwargs)
-        elif patch_type.startswith("poly"):
-            edges = int(patch_type[4:])
-            fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
-        else:
-            logger.error("Wrong patchtype. Please choose a correct patch type.")
-            raise ValueError("Wrong patchtype")
-        return fig
-
-    patches = [figmaker(x, y, col) for (x, y), col in zip(coords, colors) if x != np.nan]
+    patches = node_patches(coords, size, patch_type, color, **kwargs)
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.node_indices = np.array(nodes)
 
@@ -143,13 +114,76 @@ def create_node_collection(nodes, coords, size=5, patch_type="circle", colors=No
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
+    pc.patch_type = patch_type
+    pc.size = size
+    if "zorder" in kwargs:
+        pc.set_zorder(kwargs["zorder"])
+    if 'orientation' in kwargs:
+        pc.orientation = kwargs['orientation']
 
     return pc
 
 
-def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=None,
-                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
+def create_line2d_collection(coords, indices, infos=None, picker=None, **kwargs):
+    # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
+    # b) prevents unexpected behavior when observing colors being "none"
+    lc = LineCollection(coords, picker=picker, **kwargs)
+    lc.indices = np.array(indices)
+    lc.info = infos if infos is not None else list()
+    return lc
+
+
+def create_node_element_collection(node_coords, patch_maker, size=1., infos=None, orientation=np.pi,
+                                   picker=False, patch_facecolor="w", patch_edgecolor="k",
+                                   line_color="k", **kwargs):
+    """
+    Creates matplotlib collections of node elements. All node element collections usually consist of
+    one patch collection representing the element itself and a small line collection that connects
+    the element to the respective node.
+
+    Input:
+        **node_coords** (iterable) - the coordinates (x, y) of the nodes with shape (N, 2)
+
+        **patch_maker** (function) - a function to generate the patches of which the collections \
+            consist (cf. the patch_maker module)
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infos** (iterable, None) - additional infos to add for each element
+
+        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
+            increasing values lead to clockwise direction changes.
+
+        **patch_facecolor** (matplotlib color, "w") - color of the patch face (content)
+
+        **patch_edgecolor** (matplotlib color, "k") - color of the patch edges
+
+        **line_color** (matplotlib color, "k") - color of the connecting lines
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **patch_coll** - patch collection representing the element
+
+        **line_coll** - connecting line collection
+    """
+    angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
+    assert len(node_coords) == len(angles), \
+        "The length of coordinates does not match the length of the orientation angles!"
+    infos = [] if infos is None else infos
+    lines, polys = patch_maker(node_coords, size, orientation, **kwargs)
+    patch_coll = PatchCollection(polys, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
+                                 picker=picker, **kwargs)
+    line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
+    patch_coll.info = infos
+    line_coll.info = infos
+    return patch_coll, line_coll
+
+
+def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=None, z=None,
+                          cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
+                          cbar_title="Bus Voltage [pu]", **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -197,54 +231,14 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
+    coords = list(zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values))
 
-    infos = []
+    infos = [infofunc(buses[i]) for i in range(len(buses))]
 
-    # RegularPolygon has no param width/height, everything else might use defaults
-    if not patch_type.startswith("poly"):
-        if 'height' not in kwargs and 'width' not in kwargs:
-            kwargs['height'] = kwargs['width'] = 2 * size
+    pc = create_node_collection(buses, coords, size, patch_type, colors, picker, infos, **kwargs)
 
-    def figmaker(x, y, i):
-        if colors is not None:
-            kwargs["color"] = colors[i]
-        if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
-            angle = kwargs['angle'] if 'angle' in kwargs else 0
-            fig = Ellipse((x, y), angle=angle, **kwargs)
-        elif patch_type == "rect":
-            fig = Rectangle((x - kwargs['width'] / 2, y - kwargs['height'] / 2), **kwargs)
-        elif patch_type.startswith("poly"):
-            edges = int(patch_type[4:])
-            fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
-        else:
-            logger.error("Wrong patchtype. Please choose a correct patch type.")
-            raise ValueError("Wrong patchtype")
-        if infofunc:
-            infos.append(infofunc(buses[i]))
-        return fig
-
-    patches = [figmaker(x, y, i)
-               for i, (x, y) in enumerate(coords)
-               if x != np.nan]
-    pc = PatchCollection(patches, match_original=True, picker=picker)
-    pc.bus_indices = np.array(buses)
     if cmap is not None:
-        pc.set_cmap(cmap)
-        pc.set_norm(norm)
-        if z is None:
-            z = net.res_bus.vm_pu.loc[buses]
-        pc.set_array(np.ma.masked_invalid(z))
-        pc.has_colormap = True
-        pc.cbar_title = cbar_title
-
-    pc.patch_type = patch_type
-    pc.size = size
-    if 'orientation' in kwargs:
-        pc.orientation = kwargs['orientation']
-    if "zorder" in kwargs:
-        pc.set_zorder(kwargs["zorder"])
-    pc.info = infos
+        add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
 
     return pc
 
@@ -689,7 +683,8 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
                                   cbar_title=cbar_title, clim=clim, **kwargs)
 
 
-def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+                           **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
 
@@ -697,6 +692,8 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
+        **loads** (list of ints, None) - the loads to include in the collection
+
         **size** (float, 1) - patch size
 
         **infofunc** (function, None) - infofunction for the patch element
@@ -704,37 +701,27 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
         **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
             increasing values lead to clockwise direction changes.
 
+        **picker** (bool, False) - picker argument passed to the patch collectionent
+
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
-        **load1** - patch collection
+        **load_pc** - patch collection
 
-        **load2** - patch collection
+        **load_lc** - line collection
     """
-    load_table = net.load if loads is None else net.load.loc[loads]
-    lines = []
-    polys = []
-    infos = []
-    off = 2.
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.load.shape[0]
-    color = kwargs.pop("color", "k")
-
-    for i, idx in enumerate(load_table.index):
-        p1 = net.bus_geodata[["x", "y"]].loc[net.load.at[idx, "bus"]]
-        p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
-        p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
-        lines.append((p1, p3))
-        if infofunc is not None:
-            infos.append(infofunc(i))
-    load1 = PatchCollection(polys, facecolor="w", edgecolor=color, **kwargs)
-    load2 = LineCollection(lines, color=color, **kwargs)
-    load1.info = infos
-    load2.info = infos
-    return load1, load2
+    if loads is None:
+        loads = net.load.index
+    infos = [infofunc(i) for i in range(len(loads))]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
+    load_pc, load_lc = create_node_element_collection(
+        node_coords, load_patches, size=size, infos=infos, orientation=orientation,
+        offset=2. * size, picker=picker, **kwargs)
+    return load_pc, load_lc
 
 
-def create_gen_collection(net, size=1., infofunc=None, **kwargs):
+def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+                          **kwargs):
     """
     Creates a matplotlib patch collection of pandapower gens.
 
@@ -742,40 +729,36 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
+        **gens** (list of ints, None) - the generators to include in the collection
+
         **size** (float, 1) - patch size
 
         **infofunc** (function, None) - infofunction for the patch element
 
+        **orientation** (float or list of floats, np.pi) - orientation of gen collection. pi is\
+            directed downwards, increasing values lead to clockwise direction changes.
+
+        **picker** (bool, False) - picker argument passed to the patch collectionent
+
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
-        **gen1** - patch collection
+        **gen_pc** - patch collection
 
-        **gen2** - patch collection
+        **gen_lc** - line collection
     """
-    lines = []
-    polys = []
-    infos = []
-    off = 1.7
-    for i, idx in enumerate(net.gen.index):
-        p1 = net.bus_geodata[["x", "y"]].loc[net.gen.at[idx, "bus"]]
-        p2 = p1 - np.array([0, size * off])
-        polys.append(Circle(p2, size))
-        polys.append(
-            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=45, theta2=135))
-        polys.append(
-            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=225, theta2=315))
-        lines.append((p1, p2 + np.array([0, size])))
-        if infofunc is not None:
-            infos.append(infofunc(i))
-    gen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
-    gen2 = LineCollection(lines, color="k", **kwargs)
-    gen1.info = infos
-    gen2.info = infos
-    return gen1, gen2
+    if gens is None:
+        gens = net.gen.index
+    infos = [infofunc(i) for i in range(len(gens))]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
+    gen_pc, gen_lc = create_node_element_collection(
+        node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
+        offset=1.7 * size, picker=picker, **kwargs)
+    return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+                           **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -783,53 +766,32 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
+        **sgens** (list of ints, None) - the static generators to include in the collection
+
         **size** (float, 1) - patch size
 
-        **infofunc** (function, None) - infofunction for the patch element
+        **infofunc** (function, None) - infofunction for the patch elem
 
-        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
-            increasing values lead to clockwise direction changes.
+        **picker** (bool, False) - picker argument passed to the patch collectionent
+
+        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
+            downwards, increasing values lead to clockwise direction changes.
 
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
-        **sgen1** - patch collection
+        **sgen_pc** - patch collection
 
-        **sgen2** - patch collection
+        **sgen_lc** - line collection
     """
-    sgen_table = net.sgen if sgens is None else net.sgen.loc[sgens]
-    lines = []
-    polys = []
-    infos = []
-    off = 1.7
-    r_triangle = size * 0.4
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.sgen.shape[0]
-
-    for i, idx in enumerate(sgen_table.index):
-        bus_geo = net.bus_geodata[["x", "y"]].loc[net.sgen.at[idx, "bus"]]
-        mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
-        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
-        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), ang[i])
-        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), ang[i])
-        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]),
-                                            ang[i])  # dropped perpendicular foot of triangle1
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), ang[i])
-        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), ang[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), ang[i])
-        polys.append(Circle(mp_circ, size))
-        polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_triangle, orientation=-ang[i]))
-        polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_triangle,
-                                    orientation=np.pi - ang[i]))
-        lines.append((bus_geo, circ_edge))
-        lines.append((perp_foot1, line_end1))
-        lines.append((perp_foot2, line_end2))
-        if infofunc is not None:
-            infos.append(infofunc(i))
-    sgen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
-    sgen2 = LineCollection(lines, color="k", **kwargs)
-    sgen1.info = infos
-    sgen2.info = infos
-    return sgen1, sgen2
+    if sgens is None:
+        sgens = net.sgen.index
+    infos = [infofunc(i) for i in range(len(sgens))]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
+    sgen_pc, sgen_lc = create_node_element_collection(
+        node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
+        offset=1.7 * size, r_triangle=size * 0.4, picker=picker, **kwargs)
+    return sgen_pc, sgen_lc
 
 
 def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
@@ -861,27 +823,20 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
         **ext_grid2** - patch collection
     """
-    lines = []
-    polys = []
-    infos = []
-    color = kwargs.pop("color", "k")
-    if ext_grid_buses is None:
-        ext_grid_buses = net.ext_grid.bus.values
     if ext_grids is None:
         ext_grids = net.ext_grid.index.values
-    for ext_grid_idx, bus_idx in zip(ext_grids, ext_grid_buses):
-        p1 = net.bus_geodata[["x", "y"]].loc[bus_idx].values
-        p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
-        polys.append(Rectangle((p2[0] - size / 2, p2[1] - size / 2), size, size))
-        lines.append((p1, p2 - _rotate_dim2(np.array([0, size / 2]), orientation)))
-        if infofunc is not None:
-            infos.append(infofunc(ext_grid_idx))
-    ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
-                                hatch="XXX", picker=picker, color=color, **kwargs)
-    ext_grid2 = LineCollection(lines, color=color, picker=picker, **kwargs)
-    ext_grid1.info = infos
-    ext_grid2.info = infos
-    return ext_grid1, ext_grid2
+    if ext_grid_buses is None:
+        ext_grid_buses = net.ext_grid.bus.loc[ext_grids].values
+    else:
+        assert len(ext_grids) == len(ext_grid_buses), \
+            "Length mismatch between chosen ext_grids and ext_grid_buses."
+    infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids]
+
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[ext_grid_buses]
+    ext_grid_pc, ext_grid_lc = create_node_element_collection(
+        node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
+        offset=1.7 * size, r_triangle=size * 0.4, picker=picker, hatch='XXX', **kwargs)
+    return ext_grid_pc, ext_grid_lc
 
 
 def onBusbar(net, bus, line_coords):
