@@ -148,10 +148,18 @@ def _rename_columns(net):
             net.measurement.drop(["bus"], axis=1, inplace=True)
     if "options" in net:
         if "recycle" in net["options"]:
-            if "_is_elements" not in net["options"]["recycle"]:
-                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(
-                    net["options"]["recycle"]["is_elems"])
-                net["options"]["recycle"].pop("is_elems", None)
+            if "Ybus" in net["options"]["recycle"]:
+                if net["options"]["recycle"]["Ybus"]:
+                    net["options"]["recycle"]["trafo"] = False
+                del net["options"]["recycle"]["Ybus"]
+            else:
+                net["options"]["recycle"]["trafo"] = True
+            if "ppc" in net["options"]["recycle"]:
+                if net["options"]["recycle"]["ppc"]:
+                    net["options"]["recycle"]["bus_pq"] = False
+                del net["options"]["recycle"]["ppc"]
+            else:
+                net["options"]["recycle"]["bus_pq"] = True
 
 
 def _add_missing_columns(net):
@@ -247,6 +255,7 @@ def _set_data_type_of_columns(net):
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              errors="ignore")
+
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]

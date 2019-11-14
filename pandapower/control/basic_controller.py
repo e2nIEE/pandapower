@@ -135,7 +135,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def check_recyclability(self, recycle):
+    def set_recycle(self):
         """
         Checks the recyclability of this controller and changes the recyclability of the control handler if
         necessary. With this a faster time series calculation can be achieved since not everything must be
@@ -143,8 +143,9 @@ class Controller(JSONSerializableClass):
 
         Beware: Setting recycle wrong can mess up your results. Set it to False in init if in doubt!
         """
-        # checks what can be reused from this controller
-        return recycle & self.recycle
+        # checks what can be reused from this controller - default is False in base controller
+        self.recycle = False
+        return self.recycle
 
     def initialize_control(self):
         """
