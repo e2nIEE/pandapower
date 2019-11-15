@@ -97,6 +97,11 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                         "vn_kv"].values
         meas.loc[meas_i_mask, "value"] /= 1000*base_i_ka/np.sqrt(3)
         meas.loc[meas_i_mask, "std_dev"] /= 1000*base_i_ka/np.sqrt(3)
+
+    if not meas.query("(measurement_type=='ia' )| (measurement_type=='va')").empty:
+        meas_dg_mask = (meas.measurement_type=='ia')|(meas.measurement_type=='va')
+        meas.loc[meas_dg_mask, "value"] = np.deg2rad(meas.loc[meas_dg_mask, "value"])
+        meas.loc[meas_dg_mask, "std_dev"] = np.deg2rad(meas.loc[meas_dg_mask, "std_dev"])
     
     # Get elements mapping from pandapower to ppc
     map_bus = net["_pd2ppc_lookups"]["bus"]
@@ -143,6 +148,13 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         bus_append[bus_positions, VM] = v_measurements.value.values
         bus_append[bus_positions, VM_STD] = v_measurements.std_dev.values
         bus_append[bus_positions, VM_IDX] = v_measurements.index.values
+
+    va_measurements = meas_bus[(meas_bus.measurement_type == "va")]
+    if len(va_measurements):
+        bus_positions = map_bus[va_measurements.element.values.astype(int)]
+        bus_append[bus_positions, VA] = va_measurements.value.values
+        bus_append[bus_positions, VA_STD] = va_measurements.std_dev.values
+        bus_append[bus_positions, VA_IDX] = va_measurements.index.values
 
     p_measurements = meas_bus[(meas_bus.measurement_type == "p")]
     if len(p_measurements):
@@ -210,13 +222,13 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
             
-        i_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "line") & \
+        ia_measurements = meas[(meas.measurement_type == "ia") & (meas.element_type == "line") & \
                                   meas.element.isin(map_line)]
-        if len(i_dg_measurements):
-            dg_meas_from = i_dg_measurements[(i_dg_measurements.side.values.astype(int) ==
-                                            net.line.from_bus[i_dg_measurements.element]).values]
-            dg_meas_to = i_dg_measurements[(i_dg_measurements.side.values.astype(int) ==
-                                          net.line.to_bus[i_dg_measurements.element]).values]
+        if len(ia_measurements):
+            dg_meas_from = ia_measurements[(ia_measurements.side.values.astype(int) ==
+                                            net.line.from_bus[ia_measurements.element]).values]
+            dg_meas_to = ia_measurements[(ia_measurements.side.values.astype(int) ==
+                                          net.line.to_bus[ia_measurements.element]).values]
             ix_from = [map_line[l] for l in dg_meas_from.element.values.astype(int)]
             ix_to = [map_line[l] for l in dg_meas_to.element.values.astype(int)]
             branch_append[ix_from, IA_FROM] = dg_meas_from.value.values
@@ -289,7 +301,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
 
-        i_tr_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "trafo") &
+        i_tr_dg_measurements = meas[(meas.measurement_type == "ia") & (meas.element_type == "trafo") &
                                      meas.element.isin(map_trafo)]
         if len(i_tr_dg_measurements):
             dg_meas_from = i_tr_dg_measurements[(i_tr_dg_measurements.side.values.astype(int) ==
@@ -363,7 +375,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
 
     # Add degree_measurements for trafo3w
     if map_trafo3w is not None:
-        i_tr3w_dg_measurements = meas[(meas.measurement_type == "i_degree") & (meas.element_type == "trafo3w") &
+        i_tr3w_dg_measurements = meas[(meas.measurement_type == "ia") & (meas.element_type == "trafo3w") &
                                    meas.element.isin(map_trafo3w)]
         if len(i_tr3w_dg_measurements):
             dg_meas_hv = i_tr3w_dg_measurements[(i_tr3w_dg_measurements.side.values.astype(int) ==
