@@ -68,10 +68,10 @@ if __name__ == '__main__':
     net.trafo.shift_degree = 0
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
-    net.measurement = net.measurement.loc[net.measurement.measurement_type!="va"]
+#    net.measurement = net.measurement.loc[net.measurement.measurement_type!="va"]
 #    net.measurement = net.measurement.loc[net.measurement.measurement_type!="ia"]
-#    net.measurement = net.measurement.loc[net.measurement.measurement_type!="i"]
-#    net.measurement = net.measurement.reset_index()
+    net.measurement = net.measurement.loc[net.measurement.measurement_type!="i"]
+    net.measurement = net.measurement.reset_index()
     
     estimate(net)
     pp.runpp(net)
