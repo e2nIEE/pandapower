@@ -143,14 +143,14 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
         width = kwargs.pop("width", 2 * size)
         height = kwargs.pop("height", 2 * size)
         angle = kwargs.pop('angle', 0)
-        return ellipse_patches(node_coords, width, height, angle, **kwargs)
+        return ellipse_patches(node_coords, width, height, angle, color=colors, **kwargs)
     elif patch_type == "rect":
         width = kwargs.pop("width", 2 * size)
         height = kwargs.pop("height", 2 * size)
-        return rectangle_patches(node_coords, width, height, **kwargs)
+        return rectangle_patches(node_coords, width, height, color=colors, **kwargs)
     elif patch_type.startswith("poly"):
         edges = int(patch_type[4:])
-        return polygon_patches(node_coords, size, edges, **kwargs)
+        return polygon_patches(node_coords, size, edges, color=colors, **kwargs)
     else:
         logger.error("Wrong patchtype. Please choose a correct patch type.")
         raise ValueError("Wrong patchtype")
