@@ -86,19 +86,20 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     return PatchCollection(tp, **kwargs)
 
 
-def coords_from_bus_geodata(element_indices, from_buses, to_buses, bus_geodata, table_name):
-    have_geo = np.isin(from_buses, bus_geodata.index.values) \
-               & np.isin(to_buses, bus_geodata.index.values)
+def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
+                             node_name="Bus"):
+    have_geo = np.isin(from_nodes, node_geodata.index.values) \
+               & np.isin(to_nodes, node_geodata.index.values)
     elements_with_geo = element_indices[have_geo]
-    fb_with_geo, tb_with_geo = from_buses[have_geo], to_buses[have_geo]
+    fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([bus_geodata.loc[fb_with_geo, ["x", "y"]].values,
-                                 bus_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
+              in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
+                                 node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
               if not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
-        logger.warning("No coords found for %s %s. Bus geodata is missing for those %s!"
-                       % (table_name + "s", elements_without_geo, table_name + "s"))
+        logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
+                       % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
     return coords, elements_with_geo
 
 
@@ -290,7 +291,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
 
     coords = list(zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values))
 
-    infos = [infofunc(buses[i]) for i in range(len(buses))] if infofunc is not None else []
+    infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
     pc = create_node_collection(buses, coords, size, patch_type, colors, picker, infos, **kwargs)
 
@@ -355,7 +356,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         return None
 
     if use_bus_geodata:
-        coords, lines_with_geo = coords_from_bus_geodata(
+        coords, lines_with_geo = coords_from_node_geodata(
             lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
             bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
     else:
@@ -519,7 +520,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
         if not isinstance(trafos, set) else np.array(list(trafos))
     trafo_table = net.trafo.loc[trafos]
 
-    coords, trafos_with_geo = coords_from_bus_geodata(
+    coords, trafos_with_geo = coords_from_node_geodata(
         trafos, trafo_table.hv_bus.values, trafo_table.lv_bus.values,
         bus_geodata if bus_geodata is not None else net["bus_geodata"], "trafo")
 
@@ -837,10 +838,10 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
             "Length mismatch between chosen ext_grids and ext_grid_buses."
     infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids]
 
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[ext_grid_buses]
+    node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
     ext_grid_pc, ext_grid_lc = create_node_element_collection(
         node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
-        offset=1.7 * size, r_triangle=size * 0.4, picker=picker, hatch='XXX', **kwargs)
+        offset=1.7 * size, picker=picker, hatch='XXX', **kwargs)
     return ext_grid_pc, ext_grid_lc
 
 
