@@ -80,12 +80,12 @@ def get_list(individuals, number_entries, name_ind, name_ent):
         if number_entries == len(individuals):
             return individuals
         elif number_entries > len(individuals):
-            logger.warning("The number of given %s (%d) is larger than the number of %s (%d) to"
+            logger.warning("The number of given %s (%d) is smaller than the number of %s (%d) to"
                            " draw! The %s will be repeated to fit."
                            % (name_ind, len(individuals), name_ent, number_entries, name_ind))
             return (individuals * (int(number_entries / len(individuals)) + 1))[:number_entries]
         else:
-            logger.warning("The number of given %s (%d) is smaller than the number of %s (%d) to"
+            logger.warning("The number of given %s (%d) is larger than the number of %s (%d) to"
                            " draw! The %s will be capped to fit."
                            % (name_ind, len(individuals), name_ent, number_entries, name_ind))
             return individuals[:number_entries]
@@ -156,12 +156,12 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
         raise ValueError("Wrong patchtype")
 
 
-def trafo_patches(hv_node_coords, lv_node_coords, size, color):
-    assert len(hv_node_coords) == len(lv_node_coords),\
-        "Cannot create trafo patches as length of coord lists is not equal."
-    colors = get_color_list(color, len(hv_node_coords))
+def trafo_patches(coords, size, color):
+    colors = get_color_list(color, len(coords))
     circles, lines = list(), list()
-    for p1, p2, col in zip(hv_node_coords, lv_node_coords, colors):
+    for (p1, p2), col in zip(coords, colors):
+        p1 = np.array(p1)
+        p2 = np.array(p2)
         if np.all(p1 == p2):
             continue
         d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)

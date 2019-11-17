@@ -87,12 +87,13 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
 
 
 def coords_from_bus_geodata(element_indices, from_buses, to_buses, bus_geodata, table_name):
-    elements_with_geo = element_indices[np.isin(from_buses, bus_geodata.index.values)
-                                        & np.isin(to_buses, bus_geodata.index.values)]
-    fb_with_geo, tb_with_geo = from_buses[elements_with_geo], to_buses[elements_with_geo]
+    have_geo = np.isin(from_buses, bus_geodata.index.values) \
+               & np.isin(to_buses, bus_geodata.index.values)
+    elements_with_geo = element_indices[have_geo]
+    fb_with_geo, tb_with_geo = from_buses[have_geo], to_buses[have_geo]
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in zip(bus_geodata.x.values[fb_with_geo], bus_geodata.y.values[fb_with_geo],
-                     bus_geodata.x.values[tb_with_geo], bus_geodata.y.values[tb_with_geo])
+              in np.concatenate([bus_geodata.loc[fb_with_geo, ["x", "y"]].values,
+                                 bus_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
               if not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
