@@ -16,7 +16,7 @@ from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from pandas import isnull
 from pandapower.plotting.patch_makers import load_patches, _rotate_dim2, node_patches, gen_patches,\
-    sgen_patches, ext_grid_patches
+    sgen_patches, ext_grid_patches, trafo_patches
 
 try:
     import pplog as logging
@@ -86,11 +86,26 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     return PatchCollection(tp, **kwargs)
 
 
-def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, clim=None):
+def coords_from_bus_geodata(element_indices, from_buses, to_buses, bus_geodata, table_name):
+    elements_with_geo = element_indices[np.isin(from_buses, bus_geodata.index.values)
+                                        & np.isin(to_buses, bus_geodata.index.values)]
+    fb_with_geo, tb_with_geo = from_buses[elements_with_geo], to_buses[elements_with_geo]
+    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
+              in zip(bus_geodata.x.values[fb_with_geo], bus_geodata.y.values[fb_with_geo],
+                     bus_geodata.x.values[tb_with_geo], bus_geodata.y.values[tb_with_geo])
+              if not (x_from == x_to and y_from == y_to)]
+    elements_without_geo = set(element_indices) - set(elements_with_geo)
+    if len(elements_without_geo) > 0:
+        logger.warning("No coords found for %s %s. Bus geodata is missing for those %s!"
+                       % (table_name + "s", elements_without_geo, table_name + "s"))
+    return coords, elements_with_geo
+
+
+def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=True, clim=None):
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     collection.set_array(np.ma.masked_invalid(z))
-    collection.has_colormap = True
+    collection.has_colormap = plot_colormap
     collection.cbar_title = cbar_title
     if clim is not None:
         collection.set_clim(clim)
@@ -181,6 +196,47 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     return patch_coll, line_coll
 
 
+def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, colors=None,
+                                     picker=False, patch_facecolor="w", patch_edgecolor="k",
+                                     line_color="k", linewidths=2., **kwargs):
+    """
+
+    :param coords:
+    :type coords:
+    :param patch_maker:
+    :type patch_maker:
+    :param size:
+    :type size:
+    :param infos:
+    :type infos:
+    :param colors:
+    :type colors:
+    :param picker:
+    :type picker:
+    :param patch_facecolor:
+    :type patch_facecolor:
+    :param patch_edgecolor:
+    :type patch_edgecolor:
+    :param line_color:
+    :type line_color:
+    :param linewidths:
+    :type linewidths:
+    :param kwargs:
+    :type kwargs:
+    :return:
+    :rtype:
+    """
+    infos = [] if infos is None else infos
+    patches, lines = patch_maker(coords, size, colors)
+    patch_coll = PatchCollection(patches, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
+                                 picker=picker, **kwargs)
+    line_coll = LineCollection(lines, color=line_color, picker=picker, linewidths=linewidths,
+                               **kwargs)
+    patch_coll.info = infos
+    line_coll.info = infos
+    return patch_coll, line_coll
+
+
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
                           cbar_title="Bus Voltage [pu]", **kwargs):
@@ -233,7 +289,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
 
     coords = list(zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values))
 
-    infos = [infofunc(buses[i]) for i in range(len(buses))]
+    infos = [infofunc(buses[i]) for i in range(len(buses))] if infofunc is not None else []
 
     pc = create_node_collection(buses, coords, size, patch_type, colors, picker, infos, **kwargs)
 
@@ -272,7 +328,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
         **norm** (matplotlib norm object, None) - matplotlib norm object
 
-        **picker** (bool, False) - picker argument passed to the patch collection
+        **picker** (bool, False) - picker argument passed to the line collection
 
         **z** (array, None) - array of line loading magnitudes for colormap. Used in case of given
             cmap. If None net.res_line.loading_percent is used.
@@ -286,82 +342,47 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
-    global linetab
     if use_bus_geodata is False and net.line_geodata.empty:
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
                        "empty.")
         use_bus_geodata = True
 
-    if use_bus_geodata:
-        linetab = net.line if lines is None else net.line.loc[lines]
-    lines = net.line.index.tolist() if lines is None else list(lines)
-    if len(lines) == 0:
-        return None
-    if line_geodata is None:
-        line_geodata = net["line_geodata"]
-
+    lines = net.line.index.values if lines is None else np.array(lines) \
+        if not isinstance(lines, set) else np.array(list(lines))
     if len(lines) == 0:
         return None
 
-    lines_with_geo = []
     if use_bus_geodata:
-        if bus_geodata is None:
-            bus_geodata = net["bus_geodata"]
-        data = []
-        buses_with_geodata = bus_geodata.index.values
-        bg_dict = bus_geodata.to_dict()  # transforming to dict to make access faster
-        for line, fb, tb in zip(linetab.index, linetab.from_bus.values, linetab.to_bus.values):
-            if fb in buses_with_geodata and tb in buses_with_geodata:
-                lines_with_geo.append(line)
-                data.append(([(bg_dict["x"][fb], bg_dict["y"][fb]),
-                              (bg_dict["x"][tb], bg_dict["y"][tb])],
-                             infofunc(line) if infofunc else []))
+        coords, lines_with_geo = coords_from_bus_geodata(
+            lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
+            bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
+    else:
+        lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
+        coords = list(line_geodata[lines_with_geo])
         lines_without_geo = set(lines) - set(lines_with_geo)
         if lines_without_geo:
-            logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
-                           % lines_without_geo)
-    else:
-        data = []
-        coords_dict = line_geodata.coords.to_dict()  # transforming to dict to make access faster
-        for line in lines:
-            if line in line_geodata.index:
-                lines_with_geo.append(line)
-                data.append((coords_dict[line], infofunc(line) if infofunc else []))
+            logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
+                           % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
 
-        lines_without_geo = set(lines) - set(lines_with_geo)
-        if len(lines_without_geo) > 0:
-            logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
-                           % lines_without_geo)
-
-    if len(data) == 0:
+    if len(lines_with_geo) == 0:
         return None
 
-    data, info = list(zip(*data))
+    infos = [infofunc(line) for line in lines_with_geo] if infofunc else []
 
-    # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
-    # b) prevents unexpected behavior when observing colors being "none"
-    lc = LineCollection(data, picker=picker, **kwargs)
-    lc.line_indices = np.array(lines_with_geo)
+    lc = create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+
     if cmap is not None:
         if z is None:
             z = net.res_line.loading_percent.loc[lines_with_geo]
-        lc.set_cmap(cmap)
-        lc.set_norm(norm)
-        if clim is not None:
-            lc.set_clim(clim)
-
-        lc.set_array(np.ma.masked_invalid(z))
-        lc.has_colormap = plot_colormap
-        lc.cbar_title = cbar_title
-    lc.info = info
+        add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return lc
 
 
 def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None,
                                        cmap=None, clim=None, norm=None, z=None,
-                                       cbar_title="Transformer Loading", **kwargs):
+                                       cbar_title="Transformer Loading", picker=False, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -375,7 +396,20 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
         **bus_geodata** (DataFrame, None) - coordinates to use for plotting
             If None, net["bus_geodata"] is used
 
-         **infofunc** (function, None) - infofunction for the patch element
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **z** (array, None) - array of line loading magnitudes for colormap. Used in case of given
+            cmap. If None net.res_line.loading_percent is used.
+
+        **cbar_title** (str, "Line Loading [%]") - colormap bar title in case of given cmap
+
+        **picker** (bool, False) - picker argument passed to the line collection
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -391,24 +425,17 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
                       bus_geodata.loc[trafos["hv_bus"], "y"].values))
     lv_geo = list(zip(bus_geodata.loc[trafos["lv_bus"], "x"].values,
                       bus_geodata.loc[trafos["lv_bus"], "y"].values))
-
     tg = list(zip(hv_geo, lv_geo))
 
-    info = [infofunc(tr) if infofunc is not None else [] for tr in trafos.index.values]
+    info = [infofunc(tr) for tr in trafos.index.values] if infofunc is not None else []
 
-    lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
-    lc.info = info
+    lc = create_line2d_collection(tg, trafos.index.values, info, picker=picker, **kwargs)
+
     if cmap is not None:
         if z is None:
             z = net.res_trafo.loading_percent.loc[trafos.index]
-        lc.set_cmap(cmap)
-        lc.set_norm(norm)
-        if clim is not None:
-            lc.set_clim(clim)
+        add_cmap_to_collection(lc, cmap, norm, z, cbar_title, True, clim)
 
-        lc.set_array(np.ma.masked_invalid(z))
-        lc.has_colormap = True
-        lc.cbar_title = cbar_title
     return lc
 
 
@@ -460,10 +487,9 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     return lc
 
 
-def create_trafo_collection(net, trafos=None, picker=False, size=None,
-                            infofunc=None, cmap=None, norm=None, z=None, clim=None,
-                            cbar_title="Transformer Loading",
-                            plot_colormap=True, **kwargs):
+def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=None, cmap=None,
+                            norm=None, z=None, clim=None, cbar_title="Transformer Loading",
+                            plot_colormap=True, bus_geodata=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -488,57 +514,35 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
 
         **pc** - patch collection
     """
-    trafo_table = net.trafo if trafos is None else net.trafo.loc[trafos]
-    lines = []
-    circles = []
-    infos = []
-    color = kwargs.pop("color", "k")
+    trafos = net.trafo.index.values if trafos is None else np.array(trafos) \
+        if not isinstance(trafos, set) else np.array(list(trafos))
+    trafo_table = net.trafo.loc[trafos]
+
+    coords, trafos_with_geo = coords_from_bus_geodata(
+        trafos, trafo_table.hv_bus.values, trafo_table.lv_bus.values,
+        bus_geodata if bus_geodata is not None else net["bus_geodata"], "trafo")
+
+    if len(trafos_with_geo) == 0:
+        return None
+
+    colors = kwargs.pop("color", "k")
     linewidths = kwargs.pop("linewidths", 2.)
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
-    if cmap is not None and z is None:
-        z = net.res_trafo.loading_percent
+    if cmap is not None:
+        if z is None:
+            z = net.res_trafo.loading_percent
+        colors = [cmap(norm(z.at[idx])) for idx in trafos_with_geo]
 
-    for i, idx in enumerate(trafo_table.index):
-        p1 = net.bus_geodata[["x", "y"]].loc[net.trafo.at[idx, "hv_bus"]].values
-        p2 = net.bus_geodata[["x", "y"]].loc[net.trafo.at[idx, "lv_bus"]].values
-        if np.all(p1 == p2):
-            continue
-        d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
-        if size is None:
-            size_this = np.sqrt(d) / 5
-        else:
-            size_this = size
-        off = size_this * 0.35
-        circ1 = (0.5 - off / d) * (p1 - p2) + p2
-        circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        ec = color if cmap is None else cmap(norm(z.at[idx]))
-        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=ec))
-        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=ec))
+    infos = list(np.repeat([infofunc(i) for i in range(len(trafos_with_geo))], 2))\
+        if infofunc is not None else []
 
-        lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
-        lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
-        lines.append([p1, lp1])
-        lines.append([p2, lp2])
-        if infofunc is not None:
-            infos.append(infofunc(i))
-            infos.append(infofunc(i))
-    if len(circles) == 0:
-        return None, None
-    lc = LineCollection(lines, color=color, picker=picker, linewidths=linewidths, **kwargs)
-    lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths,
-                         **kwargs)
-    pc.info = infos
+    lc, pc = create_complex_branch_collection(coords, trafo_patches, size, infos, colors=colors,
+                                              picker=picker, linewidths=linewidths, **kwargs)
+
     if cmap is not None:
         z_duplicated = np.repeat(z.values, 2)
-        lc.set_cmap(cmap)
-        lc.set_norm(norm)
-        if clim is not None:
-            lc.set_clim(clim)
-        lc.set_array(np.ma.masked_invalid(z_duplicated))
-        lc.has_colormap = plot_colormap
-        lc.cbar_title = cbar_title
+        add_cmap_to_collection(lc, cmap, norm, z_duplicated, cbar_title, plot_colormap, clim)
     return lc, pc
 
 

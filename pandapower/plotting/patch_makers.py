@@ -154,3 +154,29 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
     else:
         logger.error("Wrong patchtype. Please choose a correct patch type.")
         raise ValueError("Wrong patchtype")
+
+
+def trafo_patches(hv_node_coords, lv_node_coords, size, color):
+    assert len(hv_node_coords) == len(lv_node_coords),\
+        "Cannot create trafo patches as length of coord lists is not equal."
+    colors = get_color_list(color, len(hv_node_coords))
+    circles, lines = list(), list()
+    for p1, p2, col in zip(hv_node_coords, lv_node_coords, colors):
+        if np.all(p1 == p2):
+            continue
+        d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+        if size is None:
+            size_this = np.sqrt(d) / 5
+        else:
+            size_this = size
+        off = size_this * 0.35
+        circ1 = (0.5 - off / d) * (p1 - p2) + p2
+        circ2 = (0.5 + off / d) * (p1 - p2) + p2
+        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=col))
+        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=col))
+
+        lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
+        lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
+        lines.append([p1, lp1])
+        lines.append([p2, lp2])
+    return circles, lines
