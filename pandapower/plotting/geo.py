@@ -28,12 +28,11 @@ def convert_gis_to_geodata(net, bus_geodata=True, line_geodata=True):
         net.line_geodata["coords"] = net.line_geodata.geometry.apply(lambda x: list(x.coords))
 
 
-def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0,
-                         trafo_size=1.0, load_size=1.0, sgen_size=1.0,
-                         switch_size=2.0, switch_distance=1.0):
+def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
+                         sgen_size=1.0, switch_size=2.0, switch_distance=1.0):
     """
-    Calculates the size for most collection types according to the distance between min and max geocoord so that
-    the collections fit the plot nicely
+    Calculates the size for most collection types according to the distance between min and max
+    geocoord so that the collections fit the plot nicely
 
     # Comment: This is implemented because if you would choose a fixed values
     # (e.g. bus_size = 0.2), the size
