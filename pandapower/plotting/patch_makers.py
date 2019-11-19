@@ -17,14 +17,14 @@ def _rotate_dim2(arr, ang):
 
 
 def load_patches(node_coords, size, angles, **kwargs):
-    offset = kwargs.pop("offset", 2. * size)
+    offset = kwargs.get("offset", size)
     polys, lines = list(), list()
     for i, node_geo in enumerate(node_coords):
-        p2 = node_geo + _rotate_dim2(np.array([0, size * offset]), angles[i])
-        p3 = node_geo + _rotate_dim2(np.array([0, size * (offset - 0.5)]), angles[i])
+        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 3 * 2]), angles[i])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angles[i]))
         lines.append((node_geo, p3))
-    return lines, polys
+    return lines, polys, {"offset"}
 
 
 def gen_patches(node_coords, size, angles, **kwargs):
@@ -38,16 +38,16 @@ def gen_patches(node_coords, size, angles, **kwargs):
         polys.append(
             Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=225, theta2=315))
         lines.append((node_geo, p2 + np.array([0, size])))
-    return lines, polys
+    return lines, polys, {"offset"}
 
 
 def sgen_patches(node_coords, size, angles, **kwargs):
     polys, lines = list(), list()
-    offset = kwargs.pop("offset", 2. * size)
+    offset = kwargs.pop("offset", size)
     r_triangle = kwargs.pop("r_triangles", size * 0.4)
     for i, node_geo in enumerate(node_coords):
-        mid_circ = node_geo + _rotate_dim2(np.array([0, size * offset]), angles[i])
-        circ_edge = node_geo + _rotate_dim2(np.array([0, size * (offset - 1)]), angles[i])
+        mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
         mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
         mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
         # dropped perpendicular foot of triangle1
@@ -63,20 +63,21 @@ def sgen_patches(node_coords, size, angles, **kwargs):
         lines.append((node_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
         lines.append((perp_foot2, line_end2))
-    return lines, polys
+    return lines, polys, {"offset", "r_triangle"}
 
 
 def ext_grid_patches(node_coords, size, angles, **kwargs):
+    offset = kwargs.pop("offset", size / 2)
     polys, lines = list(), list()
     for i, node_geo in enumerate(node_coords):
-        p2 = node_geo + _rotate_dim2(np.array([0, size]), angles[i])
+        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
         polys.append(Rectangle((p2[0] - size / 2, p2[1] - size / 2), size, size))
-        lines.append((node_geo, p2 - _rotate_dim2(np.array([0, size / 2]), angles[i])))
-    return lines, polys
+        lines.append((node_geo, p2 - _rotate_dim2(np.array([0, offset]), angles[i])))
+    return lines, polys, set()
 
 
 def get_list(individuals, number_entries, name_ind, name_ent):
-    if hasattr(individuals, "__iter__"):
+    if hasattr(individuals, "__iter__") and not isinstance(individuals, str):
         if number_entries == len(individuals):
             return individuals
         elif number_entries > len(individuals):
@@ -118,10 +119,11 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
-            patches.append(Rectangle((x - width / 2, y - height / 2), color=color, **kwargs))
+            patches.append(Rectangle((x - width / 2, y - height / 2), width, height, color=color,
+                                     **kwargs))
     else:
         for x, y in node_coords:
-            patches.append(Rectangle((x - width / 2, y - height / 2), **kwargs))
+            patches.append(Rectangle((x - width / 2, y - height / 2), width, height, **kwargs))
     return patches
 
 
@@ -179,4 +181,4 @@ def trafo_patches(coords, size, color):
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
         lines.append([p1, lp1])
         lines.append([p2, lp2])
-    return circles, lines
+    return lines, circles

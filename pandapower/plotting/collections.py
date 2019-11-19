@@ -189,7 +189,9 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     assert len(node_coords) == len(angles), \
         "The length of coordinates does not match the length of the orientation angles!"
     infos = [] if infos is None else infos
-    lines, polys = patch_maker(node_coords, size, orientation, **kwargs)
+    lines, polys, popped_keywords = patch_maker(node_coords, size, angles, **kwargs)
+    for kw in popped_keywords:
+        kwargs.pop(kw)
     patch_coll = PatchCollection(polys, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
                                  picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
@@ -229,7 +231,9 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, co
     :rtype:
     """
     infos = [] if infos is None else infos
-    patches, lines = patch_maker(coords, size, colors)
+    lines, patches, keywords = patch_maker(coords, size, colors, **kwargs)
+    for kw in keywords:
+        kwargs.pop(kw)
     patch_coll = PatchCollection(patches, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
                                  picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, linewidths=linewidths,
@@ -722,7 +726,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
     load_pc, load_lc = create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
-        offset=2. * size, picker=picker, **kwargs)
+        offset=size, picker=picker, **kwargs)
     return load_pc, load_lc
 
 
@@ -759,7 +763,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
     gen_pc, gen_lc = create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
-        offset=1.7 * size, picker=picker, **kwargs)
+        offset=size, picker=picker, **kwargs)
     return gen_pc, gen_lc
 
 
@@ -796,7 +800,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
     sgen_pc, sgen_lc = create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
-        offset=1.7 * size, r_triangle=size * 0.4, picker=picker, **kwargs)
+        offset=size, r_triangle=size * 0.4, picker=picker, **kwargs)
     return sgen_pc, sgen_lc
 
 
@@ -841,7 +845,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
     ext_grid_pc, ext_grid_lc = create_node_element_collection(
         node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
-        offset=1.7 * size, picker=picker, hatch='XXX', **kwargs)
+        offset=size / 2, picker=picker, hatch='XXX', **kwargs)
     return ext_grid_pc, ext_grid_lc
 
 
