@@ -17,19 +17,15 @@ from copy import deepcopy
 
 
 def test_pmu_four_bus():
-#    net = nw.simple_four_bus_system()
-#    net = nw.case9()
-    net = nw.case30()
+    net = nw.case9()
 
-    net.trafo.shift_degree = 0
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
-#    net.measurement = net.measurement.loc[net.measurement.measurement_type!="ia"]
     
     estimate(net)
     pp.runpp(net)
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=3e-1)  
 
 
 def test_pmu_with_trafo3w():
@@ -53,27 +49,11 @@ def test_pmu_with_trafo3w():
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
 
-    estimate(net)
-    pp.runpp(net)
-    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
-
-
-if __name__ == '__main__':
-#    pytest.main([__file__, "-xs"])
-
-    net = nw.case9()
-#    net = nw.case14()
-    
-    net.trafo.shift_degree = 0
-    pp.runpp(net)
-    add_virtual_pmu_meas_from_loadflow(net)
-#    net.measurement = net.measurement.loc[net.measurement.measurement_type!="va"]
-#    net.measurement = net.measurement.loc[net.measurement.measurement_type!="ia"]
-    net.measurement = net.measurement.loc[net.measurement.measurement_type!="i"]
-    net.measurement = net.measurement.reset_index()
-    
-    estimate(net)
+    estimate(net, algorithm="lp", maximum_iterations=10)
     pp.runpp(net)
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
     assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=3e-1)  
+
+
+if __name__ == '__main__':
+    pytest.main([__file__, "-xs"])

@@ -175,9 +175,9 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
 
 
 def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01, 
-                                       p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=.001, seed=14):
+                                       p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.01, seed=14):
     np.random.seed(seed)
-    
+
     bus_meas_types = {'v': 'vm_pu', "va": "va_degree", 'p': 'p_mw', 'q': 'q_mvar'}
     branch_meas_type = {'line':{'side': ('from', 'to'), 
                                 'meas_type': ('i_ka','ia_degree', 'p_mw', 'q_mvar')},
@@ -185,7 +185,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01,
                                  'meas_type': ('i_ka','ia_degree', 'p_mw', 'q_mvar')},
                         'trafo3w': {'side': ('hv', 'mv', 'lv'), 
                                     'meas_type': ('i_ka','ia_degree', 'p_mw', 'q_mvar')}}
-    
+
     # Added degree result for branches              
     for br_type in branch_meas_type.keys():
         for side in branch_meas_type[br_type]['side']:
@@ -208,7 +208,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01,
             else:
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=v_std_dev)
-    
+
     for br_type in branch_meas_type.keys():
         if not net['res_'+br_type].empty:
             for br_ix, br_res in net['res_'+br_type].iterrows():
@@ -222,23 +222,24 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01,
     add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev, i_std_dev, dg_std_dev)
 
 
-def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev, i_std_dev, dg_std_dev):
+def add_virtual_meas_error(net,  v_std_dev=0.001, i_std_dev=0.01, 
+                           p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1):
     assert not net.measurement.empty
-    
+
     r = np.random.normal(0, 1, net.measurement.shape[0]) # random error in range from -1, 1
     p_meas_mask = net.measurement.measurement_type=="p"
     q_meas_mask = net.measurement.measurement_type=="q"    
     v_meas_mask = net.measurement.measurement_type=="v" 
     i_meas_mask = net.measurement.measurement_type=="i"
     dg_meas_mask = net.measurement.measurement_type.isin(("ia", "va"))
-    
-    net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev
+
+    net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev * net.measurement.loc[p_meas_mask, 'value'].abs()
     net.measurement.loc[p_meas_mask, 'std_dev'] = p_std_dev
-    net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev
+    net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev * net.measurement.loc[q_meas_mask, 'value'].abs()
     net.measurement.loc[q_meas_mask, 'std_dev'] = q_std_dev
     net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
     net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev
-    net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev
+    net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev / 10000
     net.measurement.loc[i_meas_mask, 'std_dev'] = i_std_dev
     net.measurement.loc[dg_meas_mask, 'value'] += r[dg_meas_mask.values] * dg_std_dev
     net.measurement.loc[dg_meas_mask, 'std_dev'] = dg_std_dev

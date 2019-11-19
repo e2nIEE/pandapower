@@ -95,14 +95,14 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         meas_i_mask = (meas.measurement_type=='i')
         base_i_ka = ppci["baseMVA"] / net.bus.loc[(meas.side.fillna(meas.element))[meas_i_mask].values, 
                         "vn_kv"].values
-        meas.loc[meas_i_mask, "value"] /= 1000*base_i_ka/np.sqrt(3)
-        meas.loc[meas_i_mask, "std_dev"] /= 1000*base_i_ka/np.sqrt(3)
+        meas.loc[meas_i_mask, "value"] /= base_i_ka/np.sqrt(3)
+        meas.loc[meas_i_mask, "std_dev"] /= base_i_ka/np.sqrt(3)
 
     if not meas.query("(measurement_type=='ia' )| (measurement_type=='va')").empty:
         meas_dg_mask = (meas.measurement_type=='ia')|(meas.measurement_type=='va')
         meas.loc[meas_dg_mask, "value"] = np.deg2rad(meas.loc[meas_dg_mask, "value"])
         meas.loc[meas_dg_mask, "std_dev"] = np.deg2rad(meas.loc[meas_dg_mask, "std_dev"])
-    
+
     # Get elements mapping from pandapower to ppc
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
@@ -566,8 +566,10 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                     i_line_t_not_nan,
                                     i_degree_line_f_not_nan,
                                     i_degree_line_t_not_nan])
-        any_i_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
-        any_degree_meas = (np.sum(np.r_[i_line_f_not_nan, i_line_t_not_nan]) > 0)
+        any_i_meas = np.any(np.r_[i_line_f_not_nan, i_line_t_not_nan])
+        any_degree_meas = np.any(np.r_[v_degree_bus_not_nan,
+                                       i_degree_line_f_not_nan, 
+                                       i_degree_line_t_not_nan]) 
         return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas
     else:
         return z
@@ -589,7 +591,6 @@ def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True,
         # Finished converting pandapower network to ppci
         ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
         return net, ppc, ExtendedPPCI(ppci)
-
 
 
 class ExtendedPPCI(UserDict):
