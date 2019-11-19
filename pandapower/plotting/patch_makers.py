@@ -1,5 +1,7 @@
 from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
 import numpy as np
+from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list
+
 try:
     import pplog as logging
 except ImportError:
@@ -8,26 +10,51 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _rotate_dim2(arr, ang):
-    """
-    :param arr: array with 2 dimensions
-    :param ang: angle [rad]
-    """
-    return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
-
-
 def load_patches(node_coords, size, angles, **kwargs):
+    """
+    Creation function of patches for loads.
+
+    :param node_coords: coordinates of the nodes that the loads belong to.
+    :type node_coords: iterable
+    :param size: size of the patch
+    :type size: float
+    :param angles: angles by which to rotate the patches (in radians)
+    :type angles: iterable(float), float
+    :param kwargs: additional keyword arguments (might contain parameter "offset")
+    :type kwargs:
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines leading to load patches\
+        - polys (list of RegularPolygon) - list containing the load patches\
+        - keywords (set) - set of keywords removed from kwargs
+    """
     offset = kwargs.get("offset", size)
+    all_angles = get_angle_list(angles, len(node_coords))
     polys, lines = list(), list()
     for i, node_geo in enumerate(node_coords):
-        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 3 * 2]), angles[i])
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angles[i]))
+        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), all_angles[i])
+        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 3 * 2]), all_angles[i])
+        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-all_angles[i]))
         lines.append((node_geo, p3))
     return lines, polys, {"offset"}
 
 
 def gen_patches(node_coords, size, angles, **kwargs):
+    """
+    Creation function of patches for generators.
+
+    :param node_coords: coordinates of the nodes that the generators belong to.
+    :type node_coords: iterable
+    :param size: size of the patch
+    :type size: float
+    :param angles: angles by which to rotate the patches (in radians)
+    :type angles: iterable(float), float
+    :param kwargs: additional keyword arguments (might contain parameter "offset")
+    :type kwargs:
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines leading to generator patches\
+        - polys (list of RegularPolygon) - list containing the generator patches\
+        - keywords (set) - set of keywords removed from kwargs
+    """
     polys, lines = list(), list()
     offset = kwargs.pop("offset", 2. * size)
     for i, node_geo in enumerate(node_coords):
@@ -42,6 +69,22 @@ def gen_patches(node_coords, size, angles, **kwargs):
 
 
 def sgen_patches(node_coords, size, angles, **kwargs):
+    """
+    Creation function of patches for static generators.
+
+    :param node_coords: coordinates of the nodes that the static generators belong to.
+    :type node_coords: iterable
+    :param size: size of the patch
+    :type size: float
+    :param angles: angles by which to rotate the patches (in radians)
+    :type angles: iterable(float), float
+    :param kwargs: additional keyword arguments (might contain parameters "offset" and "r_triangle")
+    :type kwargs:
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines leading to static generator patches\
+        - polys (list of RegularPolygon) - list containing the static generator patches\
+        - keywords (set) - set of keywords removed from kwargs
+    """
     polys, lines = list(), list()
     offset = kwargs.pop("offset", size)
     r_triangle = kwargs.pop("r_triangles", size * 0.4)
@@ -67,41 +110,49 @@ def sgen_patches(node_coords, size, angles, **kwargs):
 
 
 def ext_grid_patches(node_coords, size, angles, **kwargs):
+    """
+    Creation function of patches for external grids.
+
+    :param node_coords: coordinates of the nodes that the external grids belong to.
+    :type node_coords: iterable
+    :param size: size of the patch
+    :type size: float
+    :param angles: angles by which to rotate the patches (in radians)
+    :type angles: iterable(float), float
+    :param kwargs: additional keyword arguments (might contain parameter "offset")
+    :type kwargs:
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines leading to external grid patches\
+        - polys (list of RegularPolygon) - list containing the external grid patches\
+        - keywords (set) - set of keywords removed from kwargs (empty
+    """
     offset = kwargs.pop("offset", size / 2)
     polys, lines = list(), list()
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
         polys.append(Rectangle((p2[0] - size / 2, p2[1] - size / 2), size, size))
         lines.append((node_geo, p2 - _rotate_dim2(np.array([0, offset]), angles[i])))
-    return lines, polys, set()
-
-
-def get_list(individuals, number_entries, name_ind, name_ent):
-    if hasattr(individuals, "__iter__") and not isinstance(individuals, str):
-        if number_entries == len(individuals):
-            return individuals
-        elif number_entries > len(individuals):
-            logger.warning("The number of given %s (%d) is smaller than the number of %s (%d) to"
-                           " draw! The %s will be repeated to fit."
-                           % (name_ind, len(individuals), name_ent, number_entries, name_ind))
-            return (individuals * (int(number_entries / len(individuals)) + 1))[:number_entries]
-        else:
-            logger.warning("The number of given %s (%d) is larger than the number of %s (%d) to"
-                           " draw! The %s will be capped to fit."
-                           % (name_ind, len(individuals), name_ent, number_entries, name_ind))
-            return individuals[:number_entries]
-    return [individuals] * number_entries
-
-
-def get_color_list(color, number_entries, name_entries="nodes"):
-    return get_list(color, number_entries, "colors", name_entries)
-
-
-def get_angle_list(angle, number_entries,  name_entries="nodes"):
-    return get_list(angle, number_entries, "angles", name_entries)
+    return lines, polys, set("offset")
 
 
 def ellipse_patches(node_coords, width, height, angle=0, color=None, **kwargs):
+    """
+    Function to create a list of ellipse patches from node coordinates.
+
+    :param node_coords: coordinates of the nodes to draw
+    :type node_coords: iterable
+    :param width: width of the ellipse (described by an exterior rectangle)
+    :type width: float
+    :param height: height of the ellipse (described by an exterior rectangle)
+    :type height: float
+    :param angle: angle by which to rotate the ellipse
+    :type angle: float
+    :param color: color or colors of the patches
+    :type color: iterable, float
+    :param kwargs: additional keyword arguments to pass to the Ellipse initialization
+    :type kwargs: dict
+    :return: patches - list of ellipse patches for the nodes
+    """
     patches = list()
     angles = get_angle_list(angle, len(node_coords))
     if color is not None:
@@ -115,6 +166,21 @@ def ellipse_patches(node_coords, width, height, angle=0, color=None, **kwargs):
 
 
 def rectangle_patches(node_coords, width, height, color=None, **kwargs):
+    """
+    Function to create a list of rectangle patches from node coordinates.
+
+    :param node_coords: coordinates of the nodes to draw
+    :type node_coords: iterable
+    :param width: width of the rectangle
+    :type width: float
+    :param height: height of the rectangle
+    :type height: float
+    :param color: color or colors of the patches
+    :type color: iterable, float
+    :param kwargs: additional keyword arguments to pass to the Rectangle initialization
+    :type kwargs: dict
+    :return: patches - list of rectangle patches for the nodes
+    """
     patches = list()
     if color is not None:
         colors = get_color_list(color, len(node_coords))
@@ -128,6 +194,22 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
 
 
 def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
+    """
+    Function to create a list of polygon patches from node coordinates. The number of edges for the
+    polygon can be defined.
+
+    :param node_coords: coordinates of the nodes to draw
+    :type node_coords: iterable
+    :param radius: radius for the polygon (from centroid to edges)
+    :type radius: float
+    :param num_edges: number of edges of the polygon
+    :type num_edges: int
+    :param color: color or colors of the patches
+    :type color: iterable, float
+    :param kwargs: additional keyword arguments to pass to the Polygon initialization
+    :type kwargs: dict
+    :return: patches - list of rectangle patches for the nodes
+    """
     patches = list()
     if color is not None:
         colors = get_color_list(color, len(node_coords))
@@ -141,16 +223,42 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
 
 
 def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
-    if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
-        width = kwargs.pop("width", 2 * size)
-        height = kwargs.pop("height", 2 * size)
+    """
+    Creates node patches from coordinates translating the patch type into patches.
+
+    :param node_coords: coordinates of the nodes to draw
+    :type node_coords: iterable
+    :param size: size of the patch (can be interpreted differently, depending on the patch type)
+    :type size: float
+    :param patch_type: type of patches to create  - can be one of
+        - "circle" or "ellipse" for an ellipse (cirlces are just ellipses with the same width \
+            + height)\
+        - "rect" or "rectangle" for a rectangle\
+        - "poly<n>" for a polygon with n edges
+    :type patch_type: str
+    :param colors: colors or color of the patches
+    :type colors: iterable, float
+    :param kwargs: additional keyword arguments to pass to the patch initialization \
+        (might contain "width", "height", "angle" depending on the patch type)
+    :type kwargs: dict
+    :return: patches - list of rectangle patches for the nodes
+    """
+    if patch_type.lower() == 'ellipse' or patch_type.lower() == 'circle':
+        # circles are just ellipses
+        if patch_type.lower() == "circle" and len(set(kwargs.keys()) & {"width", "height"}) == 1:
+            wh = kwargs["width"] if "width" in kwargs else kwargs["height"]
+            width = wh
+            height = wh
+        else:
+            width = kwargs.pop("width", 2 * size)
+            height = kwargs.pop("height", 2 * size)
         angle = kwargs.pop('angle', 0)
         return ellipse_patches(node_coords, width, height, angle, color=colors, **kwargs)
-    elif patch_type == "rect":
+    elif patch_type.lower() == "rect" or patch_type.lower() == "rectangle":
         width = kwargs.pop("width", 2 * size)
         height = kwargs.pop("height", 2 * size)
         return rectangle_patches(node_coords, width, height, color=colors, **kwargs)
-    elif patch_type.startswith("poly"):
+    elif patch_type.lower().startswith("poly"):
         edges = int(patch_type[4:])
         return polygon_patches(node_coords, size, edges, color=colors, **kwargs)
     else:
@@ -159,6 +267,22 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
 
 
 def trafo_patches(coords, size, color):
+    """
+    Creates a list of patches and line coordinates representing transformers each connecting two
+    nodes.
+
+    :param coords: list of connecting node coordinates (usually should be \
+        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+    :type coords: (N, (2, 2)) shaped iterable
+    :param size: size of the trafo patches
+    :type size: float
+    :param color: color or colors of the trafo patches (only edges and connecting lines, interior\
+        is white)
+    :type color: iterable, float
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines connecting nodes and transformer patches\
+        - circles (list of Circle) - list containing the transformer patches (rings)
+    """
     colors = get_color_list(color, len(coords))
     circles, lines = list(), list()
     for (p1, p2), col in zip(coords, colors):
