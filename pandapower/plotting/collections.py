@@ -15,8 +15,10 @@ from matplotlib.patches import Circle, Rectangle, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from pandas import isnull
-from pandapower.plotting.patch_makers import load_patches, _rotate_dim2, node_patches, gen_patches,\
+from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
     sgen_patches, ext_grid_patches, trafo_patches
+from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
+    position_on_busbar
 
 try:
     import pplog as logging
@@ -86,24 +88,27 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     return PatchCollection(tp, **kwargs)
 
 
-def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus"):
-    have_geo = np.isin(from_nodes, node_geodata.index.values) \
-               & np.isin(to_nodes, node_geodata.index.values)
-    elements_with_geo = element_indices[have_geo]
-    fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
-                                 node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
-              if not (x_from == x_to and y_from == y_to)]
-    elements_without_geo = set(element_indices) - set(elements_with_geo)
-    if len(elements_without_geo) > 0:
-        logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
-                       % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
-    return coords, elements_with_geo
-
-
 def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=True, clim=None):
+    """
+    Adds a colormap to the given collection.
+
+    :param collection: collection for which to add colormap
+    :type collection: matplotlib.collections.collection
+    :param cmap: colormap which to use
+    :type cmap: any colormap from matplotlib.colors
+    :param norm: any norm which to use to translate values into colors
+    :type norm: any norm from matplotlib.colors
+    :param z: the array which to use in order to create the colors for the given collection
+    :type z: iterable
+    :param cbar_title: title of the colorbar
+    :type cbar_title: str
+    :param plot_colormap: flag whether the colormap is actually drawn (if False, is excluded in\
+        :func:`add_single_collection`)
+    :type plot_colormap: bool, default True
+    :param clim: color limit of the collection
+    :type clim: list(float), default None
+    :return: collection - the given collection with added colormap (no copy!)
+    """
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     collection.set_array(np.ma.masked_invalid(z))
@@ -116,6 +121,32 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
 
 def create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False,
                            infos=None, **kwargs):
+    """
+    Creates a collection with patches for the given nodes. Can be used generically for different \
+    types of nodes (bus in pandapower network, but also other nodes, e.g. in a networkx graph).
+
+    :param nodes: indices of the nodes to plot
+    :type nodes: iterable
+    :param coords: list of node coordinates (shape (2, N))
+    :type coords: iterable
+    :param size: size of the patches (handed over to patch creation function)
+    :type size: float
+    :param patch_type: type of patches that chall be created for the nodes - can be one of\
+        - "circle" for a circle\
+        - "rect" for a rectangle\
+        - "poly<n>" for a polygon with n edges
+    :type patch_type: str, default "circle"
+    :param color: colors or color of the node patches
+    :type color: iterable, float
+    :param picker: picker argument passed to the patch collection
+    :type picker: bool, default False
+    :param infos: list of infos belonging to each of the patches (can be displayed when hovering \
+        over the elements)
+    :type infos: list, default None
+    :param kwargs: keyword arguments are passed to the patch maker and patch collection
+    :type kwargs:
+    :return: pc - patch collection for the nodes
+    """
     if len(coords) == 0:
         return None
 
@@ -141,7 +172,24 @@ def create_node_collection(nodes, coords, size=5, patch_type="circle", color=Non
     return pc
 
 
-def create_line2d_collection(coords, indices, infos=None, picker=None, **kwargs):
+def create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs):
+    """
+    Generic function to create a LineCollection from coordinates.
+
+    :param coords: list of line coordinates (list should look like this: \
+        `[[(x11, y11), (x12, y12), (x13, y13), ...], [(x21, y21), (x22, x23), ...], ...]`)
+    :type coords: list or np.array
+    :param indices: list of node indices
+    :type indices: list or np.array
+    :param infos: list of infos belonging to each of the lines (can be displayed when hovering \
+        over them)
+    :type infos: list, default None
+    :param picker: picker argument passed to the line collection
+    :type picker: bool, default False
+    :param kwargs: keyword arguments are passed to the line collection
+    :type kwargs:
+    :return: lc - line collection for the given coordinates
+    """
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
@@ -158,32 +206,33 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     one patch collection representing the element itself and a small line collection that connects
     the element to the respective node.
 
-    Input:
-        **node_coords** (iterable) - the coordinates (x, y) of the nodes with shape (N, 2)
+    :param node_coords: the coordinates (x, y) of the nodes with shape (N, 2)
+    :type node_coords: iterable
+    :param patch_maker: a function to generate the patches of which the collections consist (cf. \
+        the patch_maker module)
+    :type patch_maker: function
+    :param size: patch size
+    :type size: float, default 1
+    :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
+        over them)
+    :type infos: iterable, default None
+    :param orientation: orientation of load collection. pi is directed downwards, increasing values\
+        lead to clockwise direction changes.
+    :type orientation: float, default np.pi
+    :param picker: picker argument passed to the line collection
+    :type picker: bool, default False
+    :param patch_facecolor: color of the patch face (content)
+    :type patch_facecolor: matplotlib color, "w"
+    :param patch_edgecolor: color of the patch edges
+    :type patch_edgecolor: matplotlib color, "k"
+    :param line_color: color of the connecting lines
+    :type line_color: matplotlib color, "k"
+    :param kwargs: key word arguments are passed to the patch function
+    :type kwargs:
+    :return: Return values:\
+        - patch_coll - patch collection representing the element\
+        - line_coll - connecting line collection
 
-        **patch_maker** (function) - a function to generate the patches of which the collections \
-            consist (cf. the patch_maker module)
-
-    OPTIONAL:
-        **size** (float, 1) - patch size
-
-        **infos** (iterable, None) - additional infos to add for each element
-
-        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
-            increasing values lead to clockwise direction changes.
-
-        **patch_facecolor** (matplotlib color, "w") - color of the patch face (content)
-
-        **patch_edgecolor** (matplotlib color, "k") - color of the patch edges
-
-        **line_color** (matplotlib color, "k") - color of the connecting lines
-
-        **kwargs - key word arguments are passed to the patch function
-
-    OUTPUT:
-        **patch_coll** - patch collection representing the element
-
-        **line_coll** - connecting line collection
     """
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
     assert len(node_coords) == len(angles), \
@@ -204,31 +253,38 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, co
                                      picker=False, patch_facecolor="w", patch_edgecolor="k",
                                      line_color="k", linewidths=2., **kwargs):
     """
+    Creates a matplotlib line collection and a matplotlib patch collection representing a branch\
+    element that cannot be represented by just a line.
 
-    :param coords:
-    :type coords:
-    :param patch_maker:
-    :type patch_maker:
-    :param size:
-    :type size:
-    :param infos:
-    :type infos:
-    :param colors:
-    :type colors:
-    :param picker:
-    :type picker:
-    :param patch_facecolor:
-    :type patch_facecolor:
-    :param patch_edgecolor:
-    :type patch_edgecolor:
-    :param line_color:
-    :type line_color:
-    :param linewidths:
-    :type linewidths:
-    :param kwargs:
+    :param coords: list of connecting node coordinates (usually should be \
+        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+    :type coords: (N, (2, 2)) shaped iterable
+    :param patch_maker: a function to generate the patches of which the collections consist (cf. \
+        the patch_maker module)
+    :type patch_maker: function
+    :param size: patch size
+    :type size: float, default 1
+    :param infos: list of infos belonging to each of the branches (can be displayed when hovering \
+        over them)
+    :type infos: iterable, default None
+    :param colors: colors or color of the branch patches
+    :type colors: iterable, float
+    :param picker: picker argument passed to the line collection
+    :type picker: bool, default False
+    :param patch_facecolor: color of the patch face (content)
+    :type patch_facecolor: matplotlib color, "w"
+    :param patch_edgecolor: color of the patch edges
+    :type patch_edgecolor: matplotlib color, "k"
+    :param line_color: color of the connecting lines
+    :type line_color: matplotlib color, "k"
+    :param linewidths: linewidths of the connecting lines and the patch edges
+    :type linewidths: float, default 2.
+    :param kwargs: key word arguments are passed to the patch maker and the patch and line \
+        collections
     :type kwargs:
-    :return:
-    :rtype:
+    :return: Return values:\
+        - patch_coll - patch collection representing the branch element\
+        - line_coll - line collection connecting the patches with the nodes
     """
     infos = [] if infos is None else infos
     lines, patches, keywords = patch_maker(coords, size, colors, **kwargs)
@@ -553,11 +609,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
 
 # noinspection PyArgumentList
-def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None,
-                              cmap=None, norm=None, z=None, clim=None,
-                              cbar_title="3W-Transformer Loading",
-                              plot_colormap=True,
-                              **kwargs):
+def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, cmap=None, norm=None,
+                              z=None, clim=None, cbar_title="3W-Transformer Loading",
+                              plot_colormap=True, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -849,84 +903,6 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     return ext_grid_pc, ext_grid_lc
 
 
-def onBusbar(net, bus, line_coords):
-    """
-    Checks if the first or the last coordinates of a line are on a bus
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-        **bus** (int) - ID of the target bus on one end of the line
-
-        **line_coords (array, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
-        in the middle represent the bending points of the line
-
-    OUTPUT:
-        **intersection** (tupel, shape= (2L,))- Intersection point of the line with the given bus. \
-            Can be used for switch position
-
-    """
-    # If the line has no Intersection line will be returned and the bus coordinates can be used to
-    # calculate the switch position
-    intersection = None
-    bus_coords = net.bus_geodata.loc[bus, "coords"]
-    # Checking if bus has "coords" - if it is a busbar
-    if bus_coords is not None and bus_coords is not np.NaN and line_coords is not None:
-        for i in range(len(bus_coords) - 1):
-            try:
-                # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
-                # occurs
-                m = (bus_coords[i + 1][1] - bus_coords[i][1]) / \
-                    (bus_coords[i + 1][0] - bus_coords[i][0])
-                # Clculating the off-set of the busbar-line
-                b = bus_coords[i][1] - bus_coords[i][0] * m
-                # Checking if the first end of the line is on the busbar-line
-                if 0 == m * line_coords[0][0] + b - line_coords[0][1]:
-                    # Checking if the end of the line is in the Range of the busbar-line
-                    if bus_coords[i + 1][0] <= line_coords[0][0] <= bus_coords[i][0]\
-                            or bus_coords[i][0] <= line_coords[0][0] <= bus_coords[i + 1][0]:
-                        # Intersection found. Breaking for-loop
-                        intersection = line_coords[0]
-                        break
-                # Checking if the second end of the line is on the busbar-line
-                elif 0 == m * line_coords[-1][0] + b - line_coords[-1][1]:
-                    if bus_coords[i][0] >= line_coords[-1][0] >= bus_coords[i + 1][0] \
-                            or bus_coords[i][0] <= line_coords[-1][0] <= bus_coords[i + 1][0]:
-                        # Intersection found. Breaking for-loop
-                        intersection = line_coords[-1]
-                        break
-            # If the busbar-line is a vertical line and the slope is infinitely
-            except ZeroDivisionError:
-                # Checking if the first line-end is at the same position
-                if bus_coords[i][0] == line_coords[0][0]:
-                    # Checking if the first line-end is in the Range of the busbar-line
-                    if bus_coords[i][1] >= line_coords[0][1] >= bus_coords[i + 1][1] \
-                            or bus_coords[i][1] <= line_coords[0][1] <= bus_coords[i + 1][1]:
-                        # Intersection found. Breaking for-loop
-                        intersection = line_coords[0]
-                        break
-                # Checking if the second line-end is at the same position
-                elif bus_coords[i][0] == line_coords[-1][0]:
-                    if bus_coords[i][1] >= line_coords[-1][1] >= bus_coords[i + 1][1] \
-                            or bus_coords[i][1] <= line_coords[-1][1] <= bus_coords[i + 1][1]:
-                        # Intersection found. Breaking for-loop
-                        intersection = line_coords[-1]
-                        break
-    # If the bus has no "coords" it mus be a normal bus
-    elif bus_coords is np.NaN:
-        bus_geo = (net["bus_geodata"].loc[bus, "x"], net["bus_geodata"].loc[bus, "y"])
-        # Checking if the first end of the line is on the bus
-        if bus_geo == line_coords[0]:
-            intersection = line_coords[0]
-        # Checking if the second end of the line is on the bus
-        elif bus_geo == line_coords[-1]:
-            intersection = line_coords[-1]
-
-    return intersection
-
-
 def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
@@ -976,7 +952,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
                 # check, which end of the line is nearer to the switch bus
-                intersection = onBusbar(net, target_bus, line_coords=line_coords)
+                intersection = position_on_busbar(net, target_bus, busbar_coords=line_coords)
                 if intersection is not None:
                     pos_sb = intersection
                 if len(line_coords) >= 2:
