@@ -29,7 +29,7 @@ def test_case30_compare_classical_wls_opt_wls():
     except:
         # if failed give it a warm start
         net, ppc, eppci = pp2eppci(net)
-        estimation_wls = WLSAlgorithm(1e-4, 3)
+        estimation_wls = WLSAlgorithm(1e-3, 3)
         estimation_opt = OptAlgorithm(1e-6, 1000)
 
         eppci = estimation_wls.estimate(eppci)
@@ -44,23 +44,20 @@ def test_case30_compare_classical_wls_opt_wls():
 
 
 def test_lp_lav():
-    for net in [nw.case14(), nw.case30()]:
+    for net in [nw.case14()]:
         pp.runpp(net)
         add_virtual_meas_from_loadflow(net)
 
         estimate(net, algorithm="lp")
 
         assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-        assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2)  
+        assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
 
 
-def test_case30_compare_lav_opt_lav():
-    net = nw.case30()
+def test_opt_lav():
+    net = nw.case9()
     pp.runpp(net)
-    add_virtual_meas_from_loadflow(net)
-
-    net_lp = deepcopy(net)
-    estimate(net_lp, algorithm="lp")
+    add_virtual_meas_from_loadflow(net, with_random_error=False)
 
     net, ppc, eppci = pp2eppci(net)
     estimation_wls = WLSAlgorithm(1e-3, 5)
@@ -71,8 +68,8 @@ def test_case30_compare_lav_opt_lav():
     assert estimation_opt.successful
     net = eppci2pp(net, ppc, eppci)
 
-    assert np.allclose(net_lp.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net_lp.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=5e-2)
+    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-1)
     
 
 def test_ql_qc():
@@ -83,7 +80,7 @@ def test_ql_qc():
 
     #  give it a warm start
     net, ppc, eppci = pp2eppci(net)
-    estimation_wls = WLSAlgorithm(1e-4, 5)
+    estimation_wls = WLSAlgorithm(1e-3, 5)
     estimation_opt = OptAlgorithm(1e-6, 3000)
 
     eppci = estimation_wls.estimate(eppci)
@@ -96,11 +93,11 @@ def test_ql_qc():
     net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
+    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=1e-1)
 
     # give it a warm start
     net, ppc, eppci = pp2eppci(net)
-    estimation_wls = WLSAlgorithm(1e-4, 5)
+    estimation_wls = WLSAlgorithm(1e-6, 5)
     estimation_opt = OptAlgorithm(1e-6, 3000)
 
     eppci = estimation_wls.estimate(eppci)

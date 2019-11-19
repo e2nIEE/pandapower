@@ -141,7 +141,8 @@ def reset_bb_switch_impedance(net):
         net.switch.drop("z_ohm_ori", axis=1, inplace=True)
 
 
-def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_dev=0.03, seed=14):
+def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_dev=0.03,
+                                   seed=14, with_random_error=False):
     np.random.seed(seed)
 
     bus_meas_types = {'v': 'vm_pu', 'p': 'p_mw', 'q': 'q_mvar'}
@@ -170,12 +171,12 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
                         pp.create_measurement(net, meas_type=meas_type[0], element_type=br_type, 
                                               element=br_ix, side=side,
                                               value=br_res[meas_type[0]+'_'+side+meas_type[1:]], std_dev=1)
+    
+    add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev, with_random_error=with_random_error)
 
-    add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev)
 
-
-def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01, 
-                                       p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.01, seed=14):
+def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1, 
+                                       p_std_dev=0.01, q_std_dev=0.01, dg_std_dev=0.1, seed=14, with_random_error=True):
     np.random.seed(seed)
 
     bus_meas_types = {'v': 'vm_pu', "va": "va_degree", 'p': 'p_mw', 'q': 'q_mvar'}
@@ -218,12 +219,13 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.01,
                                               element=br_ix, side=side,
                                               value=br_res[meas_type.split("_")[0]+'_'+
                                                            side+'_'+meas_type.split("_")[1]], std_dev=1)
-
-    add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev, i_std_dev, dg_std_dev)
+    if with_random_error:
+        add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev,
+                               i_std_dev, dg_std_dev, with_random_error=with_random_error)
 
 
 def add_virtual_meas_error(net,  v_std_dev=0.001, i_std_dev=0.01, 
-                           p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1):
+                           p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1, with_random_error=True):
     assert not net.measurement.empty
 
     r = np.random.normal(0, 1, net.measurement.shape[0]) # random error in range from -1, 1
@@ -232,14 +234,16 @@ def add_virtual_meas_error(net,  v_std_dev=0.001, i_std_dev=0.01,
     v_meas_mask = net.measurement.measurement_type=="v" 
     i_meas_mask = net.measurement.measurement_type=="i"
     dg_meas_mask = net.measurement.measurement_type.isin(("ia", "va"))
-
-    net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev * net.measurement.loc[p_meas_mask, 'value'].abs()
+    
+    if with_random_error:
+        net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev * net.measurement.loc[p_meas_mask, 'value'].abs()
+        net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev * net.measurement.loc[q_meas_mask, 'value'].abs()
+        net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
+        net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev / 10000
+        net.measurement.loc[dg_meas_mask, 'value'] += r[dg_meas_mask.values] * dg_std_dev
+        
     net.measurement.loc[p_meas_mask, 'std_dev'] = p_std_dev
-    net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev * net.measurement.loc[q_meas_mask, 'value'].abs()
     net.measurement.loc[q_meas_mask, 'std_dev'] = q_std_dev
-    net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
     net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev
-    net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev / 10000
     net.measurement.loc[i_meas_mask, 'std_dev'] = i_std_dev
-    net.measurement.loc[dg_meas_mask, 'value'] += r[dg_meas_mask.values] * dg_std_dev
     net.measurement.loc[dg_meas_mask, 'std_dev'] = dg_std_dev

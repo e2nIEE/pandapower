@@ -22,8 +22,8 @@ def test_pmu_four_bus():
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
     
-    estimate(net)
-    pp.runpp(net)
+    estimate(net, algorithm="lp")
+
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
     assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=3e-1)  
 
@@ -47,7 +47,7 @@ def test_pmu_with_trafo3w():
     pp.create_transformer3w(net, bus_slack, bus_20_1, bus_10_1, std_type="63/25/38 MVA 110/20/10 kV")
 
     pp.runpp(net)
-    add_virtual_pmu_meas_from_loadflow(net)
+    add_virtual_pmu_meas_from_loadflow(net, with_random_error=False)
 
     estimate(net, algorithm="lp", maximum_iterations=10)
     pp.runpp(net)
