@@ -1,6 +1,11 @@
 import numpy as np
-from pandapower.plotting import logger
-from pandapower.plotting.patch_makers import logger
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _rotate_dim2(arr, ang):
