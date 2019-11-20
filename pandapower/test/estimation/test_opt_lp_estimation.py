@@ -44,14 +44,14 @@ def test_case30_compare_classical_wls_opt_wls():
 
 
 def test_lp_lav():
-    for net in [nw.case14()]:
-        pp.runpp(net)
-        add_virtual_meas_from_loadflow(net)
+    net = nw.case14()
+    pp.runpp(net)
+    add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
 
-        estimate(net, algorithm="lp")
+    estimate(net, algorithm="lp")
 
-        assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-        assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
+    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2)  
 
 
 def test_opt_lav():
@@ -69,13 +69,13 @@ def test_opt_lav():
     net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-1)
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2)
     
 
 def test_ql_qc():
     net = nw.case9()
     pp.runpp(net)
-    add_virtual_meas_from_loadflow(net)
+    add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
 
     #  give it a warm start
@@ -93,7 +93,7 @@ def test_ql_qc():
     net = eppci2pp(net, ppc, eppci)
 
     assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=1e-1)
+    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
 
     # give it a warm start
     net, ppc, eppci = pp2eppci(net)

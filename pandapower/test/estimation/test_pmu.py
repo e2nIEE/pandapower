@@ -16,16 +16,16 @@ from pandapower.estimation.util import add_virtual_meas_from_loadflow, add_virtu
 from copy import deepcopy
 
 
-def test_pmu_four_bus():
-    net = nw.case9()
+def test_pmu_case14():
+    net = nw.case14()
 
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
     
-    estimate(net, algorithm="lp")
+    estimate(net, algorithm="lp", maximum_iterations=20)
 
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=3e-1)  
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)
 
 
 def test_pmu_with_trafo3w():
@@ -52,7 +52,7 @@ def test_pmu_with_trafo3w():
     estimate(net, algorithm="lp", maximum_iterations=10)
     pp.runpp(net)
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=3e-1)  
+    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1)  
 
 
 if __name__ == '__main__':
