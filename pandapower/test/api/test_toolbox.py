@@ -889,6 +889,34 @@ def test_replace_ext_grid_gen():
     assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
 
 
+def test_replace_gen_sgen():
+    net = nw.case9()
+    vm_set = [1.03, 1.02]
+    net.gen["vm_pu"] = vm_set
+    pp.runpp(net)
+    assert list(net.res_gen.index.values) == [0, 1]
+
+    # replace_gen_by_sgen
+    pp.replace_gen_by_sgen(net)
+    assert not net.gen.shape[0]
+    assert not net.res_gen.shape[0]
+    assert not np.allclose(net.sgen.q_mvar.values, 0)
+    assert net.res_gen.shape[0] == 0
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.loc[net.sgen.bus, "vm_pu"].values, vm_set)
+
+    # replace_sgen_by_gen
+    net2 = copy.deepcopy(net)
+    pp.replace_sgen_by_gen(net2, [1])
+    assert net2.gen.shape[0] == 1
+    assert net2.res_gen.shape[0] == 1
+    assert net2.gen.shape[0] == 1
+    assert net2.res_gen.shape[0] == 1
+
+    pp.replace_sgen_by_gen(net, 1)
+    assert pp.nets_equal(net, net2)
+
+
 def test_get_connected_elements_dict():
     net = nw.example_simple()
     conn = pp.get_connected_elements_dict(net, [0])
@@ -956,9 +984,10 @@ def test_replace_xward_by_internal_elements():
 
 
 if __name__ == "__main__":
-    if 1:
+    if 0:
         pytest.main([__file__, "-xs"])
     else:
 #        test_replace_ext_grid_gen()
+#        test_replace_gen_sgen()
 #        test_get_connected_elements_dict()
         pass

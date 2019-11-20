@@ -105,7 +105,7 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         sm = np.zeros(omega.shape[0])
         ps = np.zeros(omega.shape[0])
 
-        @jit(nopython=True)
+        @jit
         def calc_sm(omega, x, y, sm):  # pragma: no cover
             m = omega.shape[0]
             x_shape = x.shape[0]
