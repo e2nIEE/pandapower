@@ -32,7 +32,7 @@ def load_patches(node_coords, size, angles, **kwargs):
     polys, lines = list(), list()
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), all_angles[i])
-        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 3 * 2]), all_angles[i])
+        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), all_angles[i])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-all_angles[i]))
         lines.append((node_geo, p3))
     return lines, polys, {"offset"}
@@ -290,7 +290,7 @@ def trafo_patches(coords, size, color):
         p2 = np.array(p2)
         if np.all(p1 == p2):
             continue
-        d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+        d = np.sqrt(np.sum((p1 - p2) ** 2))
         if size is None:
             size_this = np.sqrt(d) / 5
         else:
