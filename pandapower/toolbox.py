@@ -2192,13 +2192,12 @@ def replace_ward_by_internal_elements(net, wards=None):
     Replaces wards by laods and shunts
     INPUT:
         **net** - pandapower net
-        **wards** - indices of wards which schould be replaced
     
     OPTIONAL:
-        **gens** (iterable) - indices of generators which should be replaced  
+        **wards** (iterable) - indices of xwards which should be replaced  
     
     OUTPUT:
-        No output - the given ward elemntes in pandapower net are replaced by loads and shunts
+        No output - the given wards in pandapower net are replaced by loads and shunts
 
     """
     # --- determine wards index
@@ -2246,13 +2245,15 @@ def replace_ward_by_internal_elements(net, wards=None):
 
 def replace_xward_by_internal_elements(net, xwards=None):
     """
-    Replaces xward elemnts by loads, shunts, impedance and generators 
+    Replaces xward by loads, shunts, impedance and generators 
     INPUT:
         **net** - pandapower net
-        **xward** - indices of xwards which schould be replaced
+        
+    OPTIONAL:
+        **xwards** (iterable) - indices of xwards which should be replaced  
       
     OUTPUT:
-        No output - the given xward elemntes in pandapower are replaced by loads, shunts, impadance and generators
+        No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
 
     """
     # --- determine xwards index
