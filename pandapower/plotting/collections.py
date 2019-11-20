@@ -198,9 +198,10 @@ def create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs
     return lc
 
 
-def create_node_element_collection(node_coords, patch_maker, size=1., infos=None, orientation=np.pi,
-                                   picker=False, patch_facecolor="w", patch_edgecolor="k",
-                                   line_color="k", **kwargs):
+def create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
+                                   repeat_infos=(1, 1), orientation=np.pi, picker=False,
+                                   patch_facecolor="w", patch_edgecolor="k", line_color="k",
+                                   **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
     one patch collection representing the element itself and a small line collection that connects
@@ -216,6 +217,9 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
         over them)
     :type infos: iterable, default None
+    :param repeat_infos: determines how many times the info shall be repeated to match the number \
+        of patches (first element) and lines (second element) returned by the patch maker
+    :type repeat_infos: tuple (length 2), default (1, 1)
     :param orientation: orientation of load collection. pi is directed downwards, increasing values\
         lead to clockwise direction changes.
     :type orientation: float, default np.pi
@@ -237,21 +241,27 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
     assert len(node_coords) == len(angles), \
         "The length of coordinates does not match the length of the orientation angles!"
-    infos = [] if infos is None else infos
+    if infos is None:
+        infos_pc = []
+        infos_lc = []
+    else:
+        infos_pc = list(np.repeat(infos, repeat_infos[0]))
+        infos_lc = list(np.repeat(infos, repeat_infos[1]))
+
     lines, polys, popped_keywords = patch_maker(node_coords, size, angles, **kwargs)
     for kw in popped_keywords:
         kwargs.pop(kw)
     patch_coll = PatchCollection(polys, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
                                  picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
-    patch_coll.info = infos
-    line_coll.info = infos
+    patch_coll.info = infos_pc
+    line_coll.info = infos_lc
     return patch_coll, line_coll
 
 
-def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, colors=None,
-                                     picker=False, patch_facecolor="w", patch_edgecolor="k",
-                                     line_color="k", linewidths=2., **kwargs):
+def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, repeat_infos=(2, 2),
+                                     colors=None, picker=False, patch_facecolor="w",
+                                     patch_edgecolor="k", line_color="k", linewidths=2., **kwargs):
     """
     Creates a matplotlib line collection and a matplotlib patch collection representing a branch\
     element that cannot be represented by just a line.
@@ -267,6 +277,9 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, co
     :param infos: list of infos belonging to each of the branches (can be displayed when hovering \
         over them)
     :type infos: iterable, default None
+    :param repeat_infos: determines how many times the info shall be repeated to match the number \
+        of patches (first element) and lines (second element) returned by the patch maker
+    :type repeat_infos: tuple (length 2), default (1, 1)
     :param colors: colors or color of the branch patches
     :type colors: iterable, float
     :param picker: picker argument passed to the line collection
@@ -286,7 +299,13 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, co
         - patch_coll - patch collection representing the branch element\
         - line_coll - line collection connecting the patches with the nodes
     """
-    infos = [] if infos is None else infos
+    if infos is None:
+        infos_pc = []
+        infos_lc = []
+    else:
+        infos_pc = list(np.repeat(infos, repeat_infos[0]))
+        infos_lc = list(np.repeat(infos, repeat_infos[1]))
+
     lines, patches, keywords = patch_maker(coords, size, colors, **kwargs)
     for kw in keywords:
         kwargs.pop(kw)
@@ -294,8 +313,8 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, co
                                  picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, linewidths=linewidths,
                                **kwargs)
-    patch_coll.info = infos
-    line_coll.info = infos
+    patch_coll.info = infos_pc
+    line_coll.info = infos_lc
     return patch_coll, line_coll
 
 
@@ -596,8 +615,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
             z = net.res_trafo.loading_percent
         colors = [cmap(norm(z.at[idx])) for idx in trafos_with_geo]
 
-    infos = list(np.repeat([infofunc(i) for i in range(len(trafos_with_geo))], 2))\
-        if infofunc is not None else []
+    infos = [infofunc(i) for i in range(len(trafos_with_geo))] if infofunc is not None else []
 
     lc, pc = create_complex_branch_collection(coords, trafo_patches, size, infos, colors=colors,
                                               picker=picker, linewidths=linewidths, **kwargs)
