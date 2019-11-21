@@ -23,7 +23,7 @@ except ImportError:
 try:
     from pandapower.topology.graph_tool_interface import GraphToolInterface
     graph_tool_available = True
-except ImportError as e:
+except (ImportError, ModuleNotFoundError) as e:
     graph_tool_available = False
 
 INDEX = 0
