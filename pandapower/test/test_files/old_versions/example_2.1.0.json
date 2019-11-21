@@ -1186,7 +1186,7 @@
         "tap_max": "float64",
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
-        "tap_pos": "int64",
+        "tap_pos": "float64",
         "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
