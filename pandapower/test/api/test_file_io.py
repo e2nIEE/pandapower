@@ -17,7 +17,7 @@ from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
 import numpy as np
 from pandapower.timeseries import DFData
-import control
+import pandapower.control
 
 
 def test_pickle(net_in, tempdir):
@@ -176,8 +176,8 @@ def test_json_tuple_in_pandas():
 def test_new_pp_object_io():
     net = nw.mv_oberrhein()
     ds = DFData(pd.DataFrame(data=np.array([[0, 1, 2], [7, 8, 9]])))
-    control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
-    control.ContinuousTapControl(net, 142, 1)
+    pp.control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
+    pp.control.ContinuousTapControl(net, 142, 1)
 
     obj = net.controller.object.at[0]
     obj.run = pp.runpp
