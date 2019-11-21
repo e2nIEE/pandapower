@@ -192,7 +192,8 @@ def test_new_pp_object_io():
     assert obj1.net is net1
     assert obj2.net is net1
     assert obj1.run is pp.runpp
-    #todo: implement and test "method"
+    assert isinstance(obj1.data_source, DFData)
+    assert isinstance(obj1.data_source.df, pd.DataFrame)
 
 
 if __name__ == "__main__":

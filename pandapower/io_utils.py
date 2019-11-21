@@ -270,10 +270,10 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None):
-    keys = copy.deepcopy(list(d.keys()))
-    for key in keys:
-        if isinstance(d[key], dict):
-            d[key] = pp_hook(d[key])
+    # keys = copy.deepcopy(list(d.keys()))
+    # for key in keys:
+    #     if isinstance(d[key], dict):
+    #         d[key] = pp_hook(d[key], net=net)
 
     if '_module' in d and '_class' in d:
         if "_object" in d:
@@ -610,7 +610,7 @@ def json_networkx(obj):
 @to_serializable.register(JSONSerializableClass)
 def controller_to_serializable(obj):
     logger.debug('JSONSerializableClass')
-    d = with_signature(obj, obj.to_dict())
+    d = with_signature(obj, obj.to_json())
     return d
 
 
