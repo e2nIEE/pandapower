@@ -199,5 +199,36 @@ def test_new_pp_object_io():
     assert isinstance(obj1.data_source.df, pd.DataFrame)
 
 
+def test_convert_format_for_pp_objects(net_in):
+    pp.create_transformer(net_in, net_in.bus.index.values[0], net_in.bus.index.values[1],
+                          '0.25 MVA 20/0.4 kV', tap_pos=0)
+    c1 = pp.control.ContinuousTapControl(net_in, 0, 1.02)
+    c2 = pp.control.DiscreteTapControl(net_in, 0, 1, 1)
+    c1.u_set = 0.98
+    c2.u_lower = 0.99
+    c2.u_upper = 1.1
+    # needed to trigger conversion
+    net_in.version = "2.1.0"
+
+    net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
+    assert 'controller' in net_in.controller.columns
+
+    s = json.dumps(net_in, cls=PPJSONEncoder)
+    net1 = pp.from_json_string(s, convert=True)
+
+    assert 'controller' not in net1.controller.columns
+    assert 'object' in net1.controller.columns
+
+    obj1 = net1.controller.object.at[0]
+    obj2 = net1.controller.object.at[1]
+
+    assert not hasattr(obj1, 'u_set')
+    assert not hasattr(obj2, 'u_lower')
+    assert not hasattr(obj2, 'u_upper')
+    assert obj1.vm_set_pu == 0.98
+    assert obj2.vm_lower_pu == 0.99
+    assert obj2.vm_upper_pu == 1.1
+
+
 if __name__ == "__main__":
     pytest.main(["test_file_io.py", "-x"])
