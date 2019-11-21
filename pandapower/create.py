@@ -5,7 +5,7 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, zeros
+from numpy import nan, isnan, arange, dtype, zeros, isin, float64, all as np_all, any as np_any
 from packaging import version
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
@@ -633,6 +633,137 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
             net.load.loc[:, "controllable"] = pd.Series()
 
         net.load.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.load.columns:
+            net.load.loc[index, "controllable"] = False
+
+    return index
+
+
+def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
+                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=nan, min_p_mw=nan,
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
+    """
+    Adds a number of loads in table net["load"].
+
+    All loads are modelled in the consumer system, meaning load is positive and generation is
+    negative active power. Please pay attention to the correct signing of the reactive power as
+    well.
+
+    INPUT:
+        **net** - The net within this load should be created
+
+        **buses** (list of int) - A list of bus ids to which the loads are connected
+
+    OPTIONAL:
+        **p_mw** (list of floats) - The real power of the loads
+
+        - postive value   -> load
+        - negative value  -> generation
+
+        **q_mvar** (list of floats, default 0) - The reactive power of the loads
+
+        **const_z_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+            be associated to constant impedance loads at rated voltage
+
+        **const_i_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+            be associated to constant current load at rated voltage
+
+        **sn_mva** (list of floats, default None) - Nominal power of the loads
+
+        **name** (list of strings, default None) - The name for this load
+
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the load
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
+            is set to a range between one higher than the highest already existing index and the \
+            length of loads that shall be created.
+
+        **in_service** (list of boolean) - True for in_service or False for out of service
+
+        **max_p_mw** (list of floats, default NaN) - Maximum active power load - necessary for \
+            controllable loads in for OPF
+
+        **min_p_mw** (list of floats, default NaN) - Minimum active power load - necessary for \
+            controllable loads in for OPF
+
+        **max_q_mvar** (list of floats, default NaN) - Maximum reactive power load - necessary for \
+            controllable loads in for OPF
+
+        **min_q_mvar** (list of floats, default NaN) - Minimum reactive power load - necessary for \
+            controllable loads in OPF
+
+        **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
+            or not. Only respected for OPF
+
+    OUTPUT:
+        **index** (int) - The unique IDs of the created elements
+
+    EXAMPLE:
+        create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
+
+    """
+    if np_any(~isin(buses, net["bus"].index.values)):
+        raise UserWarning("Cannot attach to buses %s, they does not exist"
+                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+
+    if index is None:
+        bid = get_free_id(net["load"])
+        index = arange(bid, bid + len(buses), 1)
+    elif np_any(isin(index, net["load"].index.values)):
+        raise UserWarning("Loads with the ids %s already exists"
+                          % net["load"].index.values[isin(net["load"].index.values, index)])
+
+    # store dtypes
+    dtypes = net.load.dtypes
+
+    dd = pd.DataFrame(index=index, columns=net.load.columns)
+    dd["bus"] = buses
+    dd["p_mw"] = p_mw
+    dd["q_mvar"] = q_mvar
+    dd["sn_mva"] = sn_mva
+    dd["const_z_percent"] = const_z_percent
+    dd["const_i_percent"] = const_i_percent
+    dd["scaling"] = scaling
+    dd["in_service"] = in_service
+    dd["name"] = name
+    dd["type"] = type
+    net["load"] = net["load"].append(dd)[net["load"].columns.tolist()]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.load, dtypes)
+
+    if not isnan(min_p_mw):
+        if "min_p_mw" not in net.load.columns:
+            net.load.loc[:, "min_p_mw"] = pd.Series()
+
+        net.load.loc[index, "min_p_mw"] = min_p_mw.astype(float64)
+
+    if not isnan(max_p_mw):
+        if "max_p_mw" not in net.load.columns:
+            net.load.loc[:, "max_p_mw"] = pd.Series()
+
+        net.load.loc[index, "max_p_mw"] = max_p_mw.astype(float64)
+
+    if not isnan(min_q_mvar):
+        if "min_q_mvar" not in net.load.columns:
+            net.load.loc[:, "min_q_mvar"] = pd.Series()
+
+        net.load.loc[index, "min_q_mvar"] = min_q_mvar.astype(float64)
+
+    if not isnan(max_q_mvar):
+        if "max_q_mvar" not in net.load.columns:
+            net.load.loc[:, "max_q_mvar"] = pd.Series()
+
+        net.load.loc[index, "max_q_mvar"] = max_q_mvar.astype(float64)
+
+    if not np_all(isnan(controllable)):
+        if "controllable" not in net.load.columns:
+            net.load.loc[:, "controllable"] = pd.Series()
+
+        net.load.loc[index, "controllable"] = controllable.astype(bool)
     else:
         if "controllable" in net.load.columns:
             net.load.loc[index, "controllable"] = False
@@ -1445,9 +1576,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         INPUT:
             **net** - The net within this line should be created
 
-            **from_bus** (list of int) - ID of the bus on one side which the line will be connected with
+            **from_buses** (list of int) - ID of the bus on one side which the line will be connected with
 
-            **to_bus** (list of int) - ID of the bus on the other side which the line will be connected with
+            **to_buses** (list of int) - ID of the bus on the other side which the line will be connected with
 
             **length_km** (list of float) - The line length in km
 
@@ -2473,10 +2604,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
-    are: v, p, q, i
+    are: v, p, q, i, va, ia
 
     INPUT:
-        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i", "va", "ia" are possible
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
         "trafo", and "trafo3w" are possible
@@ -2513,13 +2644,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
 
-    if meas_type not in ("v", "p", "q", "i"):
+    if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
     if side is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type {} requires a value in 'element'".format(element_type))
 
-    if meas_type == "v":
+    if meas_type in ("v", "va"):
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo", "trafo3w"):
@@ -2545,10 +2676,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if index in net["measurement"].index:
         raise UserWarning("A measurement with index={} already exists".format(index))
 
-    if meas_type == "i" and element_type == "bus":
+    if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type == "v" and element_type in ("line", "trafo", "trafo3w"):
+    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:
@@ -2679,6 +2810,3 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     net.poly_cost.loc[index, columns] = variables
     _preserve_dtypes(net.poly_cost, dtypes)
     return index
-
-
-net = create_empty_network()

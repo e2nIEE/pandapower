@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import copy
 import functools
 import os
 from time import time
@@ -77,8 +78,10 @@ class OutputWriter(JSONSerializableClass):
         self.output_path = output_path
         self.output_file_type = output_file_type
         self.write_time = write_time
-        self.log_variables = [("res_bus", "vm_pu"),
-                              ("res_line", "loading_percent")] if log_variables is None else log_variables
+        self.log_variables = list() if log_variables is None else log_variables
+        # these are the default log variables which are added if log_variables is None
+        self.default_log_variables = [("res_bus", "vm_pu"), ("res_line", "loading_percent")]
+        self._add_log_defaults()
 
         self.csv_separator = csv_separator
         if write_time is not None:
@@ -97,7 +100,7 @@ class OutputWriter(JSONSerializableClass):
         # add output_writer to net
         self.add_to_net(table="output_writer", index=0, overwrite=True)
         # inits dataframes and numpy arrays which store results
-        self.init_all()
+        # self.init_all()
         # Saves all parameters as object attributes to store in JSON
 
     def __str__(self):
@@ -112,6 +115,10 @@ class OutputWriter(JSONSerializableClass):
             s += "\n'" + str(table) + "." + str(variable) + "'"
         return s
 
+    def _add_log_defaults(self):
+        if not len(self.log_variables):
+            self.log_variables = copy.copy(self.default_log_variables)
+
     def init_log_variables(self):
         """
         inits the log variables given to output writer.
@@ -122,15 +129,20 @@ class OutputWriter(JSONSerializableClass):
         res_bus.vm_pu
         res_line.loading_percent
         """
-        for table, variable in self.log_variables:
-            self.log_variable(table, variable)
+        for log_args in self.log_variables:
+            # add log variable
+            self._init_log_variable(*log_args)
 
     def init_all(self):
         if isinstance(self.time_steps, list) or isinstance(self.time_steps, range):
+            self.output = dict()
+            self.np_results = dict()
+            self.output_list = list()
+            self.init_log_variables()
             self.init_timesteps(self.time_steps)
             self._init_np_results()
             self._init_output()
-            self.init_log_variables()
+
         else:
             logger.debug("Time steps not set at init ")
 
@@ -307,7 +319,36 @@ class OutputWriter(JSONSerializableClass):
             >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
 
         """
+        del_indices = list()
+        append_args = set()
+        append = True
+        # check if new log_variable is already in log_variables. If so either append or delete
+        for i, log_args in enumerate(self.log_variables):
+            if log_args[0] == table and log_args[1] == variable:
+                # table and variable exist in log_variables
+                if eval_function is not None or eval_name is not None:
+                    append = True
+                    continue
+                if len(log_args) == 2 and eval_function is None:
+                    # everything from table / variable is logged
+                    append = False
+                    continue
+                if log_args[2] is not None and index is not None and eval_function is None:
+                    # if index is given and an index was given before extend the index and get unique
+                    log_args[2] = set(log_args[2].extend(index))
+                else:
+                    del_indices.append(i)
+                    append_args.add((table, variable))
+                    append = False
 
+        for i in del_indices:
+            del self.log_variables[i]
+        for log_arg in append_args:
+            self.log_variables.append(log_arg)
+        if append:
+            self.log_variables.append((table, variable, index, eval_function, eval_name))
+
+    def _init_log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
             index = self.net[table.split("res_")[-1]].index
