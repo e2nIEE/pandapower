@@ -30,7 +30,6 @@ class Controller(JSONSerializableClass):
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
             index = get_free_id(self.net.controller)
-        self.update_initialized(locals())
         self.index = self.add_controller_to_net(in_service=in_service, order=order,
                                                 level=level, index=index, recycle=recycle,
                                                 drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -110,9 +109,9 @@ class Controller(JSONSerializableClass):
         """
         if index in self.net.controller.index.values:
             # check if controller is being recreated from json and just add the instance
-            c = self.net.controller.controller.at[index]
+            c = self.net.controller.object.at[index]
             if isinstance(c, dict):
-                self.net.controller.at[index, 'controller'] = self
+                self.net.controller.at[index, 'object'] = self
                 return index
             raise UserWarning("A controller with index %s already exists" % index)
         if drop_same_existing_ctrl:
@@ -121,7 +120,7 @@ class Controller(JSONSerializableClass):
             log_same_type_existing_controllers(self.net, type(self), index=index, **kwargs)
 
         dtypes = self.net.controller.dtypes
-        columns = ['controller', 'in_service', 'order', 'level', 'recycle']
+        columns = ['object', 'in_service', 'order', 'level', 'recycle']
         self.net.controller.loc[index, columns] = self, in_service, order, level, recycle
         _preserve_dtypes(self.net.controller, dtypes)
         return index

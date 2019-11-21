@@ -56,9 +56,9 @@ class ConstControl(Controller):
             matching_params = {"element": element, "variable": variable,
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params
-                        ,initial_powerflow = initial_powerflow, **kwargs)
-        self.update_initialized(locals())
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params, initial_powerflow = initial_powerflow,
+                         **kwargs)
         self.matching_params = {"element": element, "variable": variable,
                                 "element_index": element_index}
 

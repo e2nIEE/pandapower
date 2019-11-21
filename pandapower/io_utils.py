@@ -289,14 +289,15 @@ def pp_hook(d, net=None):
         if class_name == 'Series':
             return pd.read_json(obj, precise_float=True, **d)
         elif class_name == "DataFrame":
-            if type(obj) == str:
-                df = pd.read_json(obj, precise_float=True, **d)
-            else:
-                df = pd.DataFrame(**obj).astype(d['dtype'], copy=False, errors='ignore')  # here copy=False is OK
+            df = pd.read_json(obj, precise_float=True, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting int64 index")
+            # recreate jsoned objects
+            for col in ('object', 'controller'):  # "controller" for backwards compatibility
+                if col in df.columns:
+                    df[col] = df[col].apply(pp_hook, args=(net,))
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
@@ -323,6 +324,13 @@ def pp_hook(d, net=None):
             return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
             module = importlib.import_module(module_name)
+            if class_name == "method":
+                logger.warning('deserializing of method not implemented')
+                # class_ = getattr(module, obj) # doesn't work
+                return obj
+            elif class_name == "function":
+                class_ = getattr(module, obj)  # works
+                return class_
             class_ = getattr(module, class_name)
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
                 if isinstance(obj, str):
@@ -342,21 +350,8 @@ def pp_hook(d, net=None):
 class JSONSerializableClass(object):
     json_excludes = ["net", "self", "__class__"]
 
-    def __init__(self, table=None, overwrite=True):
+    def __init__(self, **kwargs):
         pass
-        # self._init = dict()
-
-    def update_initialized(self, parameters):
-        return
-        """
-        Saves all parameters as object attributes
-        """
-        if "kwargs" in parameters:
-            self._init.update(parameters.pop("kwargs"))
-        for excluded in self.json_excludes:
-            if excluded in parameters:
-                del parameters[excluded]
-        self._init.update(parameters)
 
     def to_json(self):
         """
@@ -367,16 +362,8 @@ class JSONSerializableClass(object):
         return json.dumps(self.to_dict(), cls=PPJSONEncoder)
 
     def to_dict(self):
-        d = {}
-        for key, val in self.__dict__.items():
-            if key in self.json_excludes:
-                continue
-            elif callable(val):
-                logger.debug(val)
-                continue
-                raise UserWarning('cannot save callable attributes (saving of objects with '
-                                  'monkey-patching is not implemented)')
-            d.update({key: val})
+        d = {key: val if not callable(val) else with_signature(val, val.__name__)
+             for key, val in self.__dict__.items() if key not in self.json_excludes}
         if "net" in signature(self.__init__).parameters.keys():
             d.update({'net': 'net'})
         return d
@@ -477,7 +464,6 @@ class JSONSerializableClass(object):
 class MakeFunctionJSONSerializable(JSONSerializableClass):
     def __init__(self, function):
         super().__init__()
-        # self.update_initialized(locals())
         self.function = function
         self.function_module = function.__module__
         self.function_name = function.__name__
@@ -496,23 +482,6 @@ class MakeFunctionJSONSerializable(JSONSerializableClass):
 
     def __repr__(self):
         return "This is a JSON serializable object around the function %s" % self.function.__name__
-
-
-def restore_jsoned_objects(net, obj_hook=pp_hook):
-    return
-    restore_columns = [(element, "object") for element, table in net.items() \
-                       if isinstance(table, pd.DataFrame) and "object" in table.columns]
-    if "controller" in net and "controller" in net["controller"]:
-        restore_columns.append(("controller", "controller"))
-    for element, column in restore_columns:
-        for i, c in zip(net[element].index, net[element][column].values):
-            try:
-                logger.debug("loading %s with index %s"%(element, str(i)))
-                if 'net' in c['_object']:
-                    c['_object'].update({'net': net})
-                net[element][column].at[i] = obj_hook(c)
-            except Exception as e:
-                logger.warning("did not load %s with index %s: %s"%(element, str(i), e))
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

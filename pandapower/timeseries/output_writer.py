@@ -99,7 +99,6 @@ class OutputWriter(JSONSerializableClass):
         # inits dataframes and numpy arrays which store results
         self.init_all()
         # Saves all parameters as object attributes to store in JSON
-        self.update_initialized(locals())
 
     def __str__(self):
         # return self.__class__.__name__

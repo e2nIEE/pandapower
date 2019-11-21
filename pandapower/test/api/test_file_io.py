@@ -16,6 +16,8 @@ import pandapower.networks as nw
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
 import numpy as np
+from pandapower.timeseries import DFData
+import control
 
 
 def test_pickle(net_in, tempdir):
@@ -164,6 +166,28 @@ def test_json_tuple_in_pandas():
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)
     assert (type(s["test"][0]) == type(s1["test"][0]))
+
+
+def test_new_pp_object_io():
+    net = nw.mv_oberrhein()
+    ds = DFData(pd.DataFrame(data=np.array([[0, 1, 2], [7, 8, 9]])))
+    control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
+    control.ContinuousTapControl(net, 142, 1)
+
+    obj = net.controller.object.at[0]
+    obj.run = pp.runpp
+
+    s = json.dumps(net, cls=PPJSONEncoder)
+
+    net1 = json.loads(s, cls=PPJSONDecoder)
+
+    obj1 = net1.controller.object.at[0]
+    obj2 = net1.controller.object.at[1]
+
+    assert obj1.net is net1
+    assert obj2.net is net1
+    assert obj1.run is pp.runpp
+    #todo: implement and test "method"
 
 
 if __name__ == "__main__":
