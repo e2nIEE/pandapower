@@ -139,17 +139,20 @@ def test_json_encoding_decoding():
     assert net.tuple == net1.tuple
     assert np.allclose(a, a1)
 
-    # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists (see test_json_tuple_in_dataframe)
+    # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
+    #  (see test_json_tuple_in_dataframe)
     assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
     assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
+
 def test_dataframes_with_integer_columns():
-    obj = pd.DataFrame(index=[1,2,3], columns=[0, 1])
+    obj = pd.DataFrame(index=[1, 2, 3], columns=[0, 1])
     json_string = json.dumps(obj, cls=PPJSONEncoder)
     obj_loaded = json.loads(json_string, cls=PPJSONDecoder)
     assert all(obj.columns == obj_loaded.columns)
+
 
 def assert_graphs_equal(mg1, mg2):
     edge1 = mg1.edges(data=True)
