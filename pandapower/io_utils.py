@@ -278,8 +278,13 @@ def pp_hook(d, net=None):
     if '_module' in d and '_class' in d:
         if "_object" in d:
             obj = d.pop('_object')
-        elif "_init" in d:
-            return d  # backwards compatibility
+        elif "_state" in d:
+            obj = d['_state']
+            if d['has_net']:
+                obj['net'] = 'net'
+            if '_init' in obj:
+                del obj['_init']
+            return obj  # backwards compatibility
         else:
             # obj = {"_init": d, "_state": dict()}  # backwards compatibility
             obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
