@@ -2604,10 +2604,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
-    are: v, p, q, i
+    are: v, p, q, i, va, ia
 
     INPUT:
-        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i", "va", "ia" are possible
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
         "trafo", and "trafo3w" are possible
@@ -2644,13 +2644,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
 
-    if meas_type not in ("v", "p", "q", "i"):
+    if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
     if side is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type {} requires a value in 'element'".format(element_type))
 
-    if meas_type == "v":
+    if meas_type in ("v", "va"):
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo", "trafo3w"):
@@ -2676,10 +2676,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if index in net["measurement"].index:
         raise UserWarning("A measurement with index={} already exists".format(index))
 
-    if meas_type == "i" and element_type == "bus":
+    if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type == "v" and element_type in ("line", "trafo", "trafo3w"):
+    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:

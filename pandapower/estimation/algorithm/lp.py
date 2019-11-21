@@ -47,7 +47,7 @@ class LPAlgorithm(BaseAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         return eppci
-    
+
     def solve_lp(self, H, x, r):
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
