@@ -39,7 +39,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree',  'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug']
+                           'max_iteration', 'v_debug', 'run_control']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -200,7 +200,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
-    if run_control and net.controller.in_service.any():
+    if (run_control or net.user_pf_options.get('run_control', False)) and net.controller.in_service.any():
         from pandapower.control import run_control
         parameters = {**locals(), **kwargs}
         #disable run control for inner loop to avoid infinite loop
