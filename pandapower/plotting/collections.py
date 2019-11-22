@@ -616,9 +616,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
     infos = [infofunc(i) for i in range(len(trafos_with_geo))] if infofunc is not None else []
 
-    lc, pc = create_complex_branch_collection(coords, trafo_patches, size, infos,
-                                              patch_edgecolor=colors, line_color=colors,
-                                              picker=picker, linewidths=linewidths, **kwargs)
+    lc, pc = create_complex_branch_collection(
+        coords, trafo_patches, size, infos, patch_facecolor="none", patch_edgecolor=colors,
+        line_color=colors, picker=picker, linewidths=linewidths, **kwargs)
 
     if cmap is not None:
         z_duplicated = np.repeat(z.values, 2)
@@ -831,7 +831,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     """
     if gens is None:
         gens = net.gen.index
-    infos = [infofunc(i) for i in range(len(gens))]
+    infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
     gen_pc, gen_lc = create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
@@ -868,7 +868,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     """
     if sgens is None:
         sgens = net.sgen.index
-    infos = [infofunc(i) for i in range(len(sgens))]
+    infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
     sgen_pc, sgen_lc = create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,

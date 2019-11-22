@@ -1,6 +1,7 @@
 from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
 import numpy as np
-from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list
+from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
+    get_linewidth_list
 
 try:
     import pplog as logging
@@ -196,19 +197,20 @@ def gen_patches(node_coords, size, angles, **kwargs):
     polys, lines = list(), list()
     offset = kwargs.get("offset", 2. * size)
     all_angles = get_angle_list(angles, len(node_coords))
-    edgecolor = kwargs.get("patch_edgecolor", "w")
-    facecolor = kwargs.get("patch_facecolor", "w")
+    edgecolor = kwargs.get("patch_edgecolor", "k")
+    facecolor = kwargs.get("patch_facecolor", (1, 0, 0, 0))
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), all_angles[i])
         polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
         polys.append(
-            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=45, theta2=135,
-                fc=facecolors[i], ec=edgecolors[i]))
+            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
+                ec=edgecolors[i]))
         polys.append(
-            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=225, theta2=315,
-                fc=facecolors[i], ec=edgecolors[i]))
+            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
+                ec=edgecolors[i]))
+        print("Arc:", polys[-1])
         lines.append((node_geo, p2 + np.array([0, size])))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
@@ -312,9 +314,11 @@ def trafo_patches(coords, size, **kwargs):
         - circles (list of Circle) - list containing the transformer patches (rings)
     """
     edgecolor = kwargs.get("patch_edgecolor", "w")
-    facecolor = kwargs.get("patch_facecolor", "w")
+    facecolor = kwargs.get("patch_facecolor", (1, 0, 0, 0))
     edgecolors = get_color_list(edgecolor, len(coords))
     facecolors = get_color_list(facecolor, len(coords))
+    linewidths = kwargs.get("linewidths", 2.)
+    linewidths = get_linewidth_list(linewidths, len(coords), name_entries="trafos")
     circles, lines = list(), list()
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
@@ -329,8 +333,10 @@ def trafo_patches(coords, size, **kwargs):
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size_this, fc=facecolors[i], ec=edgecolors[i]))
-        circles.append(Circle(circ2, size_this, fc=facecolors[i], ec=edgecolors[i]))
+        circles.append(Circle(circ1, size_this, fc=facecolors[i], ec=edgecolors[i],
+                              lw=linewidths[i]))
+        circles.append(Circle(circ2, size_this, fc=facecolors[i], ec=edgecolors[i],
+                              lw=linewidths[i]))
 
         lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
