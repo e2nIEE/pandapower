@@ -28,7 +28,7 @@ def test_convert_format(version):
     vm_pu_old = net.res_bus.vm_pu.copy()
     pp.convert_format(net)
     try:
-        pp.runpp(net, run_control="controller" in net)
+        pp.runpp(net, run_control="controller" in net and len(net.controller) > 0)
     except:
         raise UserWarning("Can not run power flow in network "
                           "saved with pandapower version %s" % version)
