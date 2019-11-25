@@ -349,8 +349,6 @@ def from_json_string(json_string, convert=False):
 
     """
     net = json.loads(json_string, cls=PPJSONDecoder)
-    if isinstance(net, dict):
-        net = pandapowerNet(net)
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
