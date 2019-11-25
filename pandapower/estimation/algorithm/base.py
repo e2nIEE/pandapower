@@ -140,7 +140,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         q_zero_injections = zero_injection_bus
         new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
 
-        num_bus = eppci.bus.shape[0]
+        num_bus = eppci["bus"].shape[0]
 
         # matrix calculation object
         sem = BaseAlgebraZeroInjConstraints(eppci)
