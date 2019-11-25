@@ -230,5 +230,18 @@ def test_convert_format_for_pp_objects(net_in):
     assert obj2.vm_upper_pu == 1.1
 
 
+def test_json_io_same_net(net_in, tempdir):
+    pp.control.ConstControl(net_in, 'load', 'p_mw', 0)
+
+    s = pp.to_json(net_in)
+    net1 = pp.from_json_string(s)
+    assert net1.controller.object.at[0].net is net1
+
+    filename = os.path.join(tempdir, "testfile.json")
+    pp.to_json(net_in, filename)
+    net2 = pp.from_json(filename)
+    assert net2.controller.object.at[0].net is net2
+
+
 if __name__ == "__main__":
     pytest.main(["test_file_io.py", "-x"])
