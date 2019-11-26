@@ -506,9 +506,14 @@ def json_net(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    d = with_signature(obj, obj.to_json(orient='split',
-                                        default_handler=to_serializable, double_precision=15))
-    d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
+    orient = "split"
+    json_string = obj.to_json(orient=orient,
+                                        default_handler=to_serializable, 
+                                        double_precision=15)
+    d = with_signature(obj, json_string)
+    d['orient'] = orient
+    if isinstance(obj.columns[0], str):
+        d['dtype'] = obj.dtypes.astype('str').to_dict()
     return d
 
 
