@@ -42,7 +42,8 @@ def to_mpc(net, filename=None, **kwargs):
     """
     ppc = to_ppc(net, **kwargs)
 
-    mpc = _ppc2mpc(ppc)
+    mpc = dict()
+    mpc["mpc"] = _ppc2mpc(ppc)
     if filename is not None:
         # savemat
         savemat(filename, mpc)

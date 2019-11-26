@@ -99,11 +99,18 @@ def get_list(individuals, number_entries, name_ind, name_ent):
 
 
 def get_color_list(color, number_entries, name_entries="nodes"):
+    if (len(color) == 3 or len(color) == 4) and all(isinstance(c, float) for c in color):
+        logger.info("Interpreting color %s as rgb or rgba!" % rgb)
+        return get_list([color], number_entries, "colors", name_entries)
     return get_list(color, number_entries, "colors", name_entries)
 
 
 def get_angle_list(angle, number_entries, name_entries="nodes"):
     return get_list(angle, number_entries, "angles", name_entries)
+
+
+def get_linewidth_list(linewidth, number_entries, name_entries="lines"):
+    return get_list(linewidth, number_entries, "linewidths", name_entries)
 
 
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,

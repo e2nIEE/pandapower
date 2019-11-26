@@ -248,11 +248,12 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
-    lines, polys, popped_keywords = patch_maker(node_coords, size, angles, **kwargs)
-    for kw in popped_keywords:
+    lines, polys, popped_keywords = patch_maker(
+        node_coords, size, angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
+        **kwargs)
+    for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(polys, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
-                                 picker=picker, **kwargs)
+    patch_coll = PatchCollection(polys, match_original=True, picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
@@ -260,8 +261,8 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
 
 
 def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, repeat_infos=(2, 2),
-                                     colors=None, picker=False, patch_facecolor="w",
-                                     patch_edgecolor="k", line_color="k", linewidths=2., **kwargs):
+                                     picker=False, patch_facecolor="w", patch_edgecolor="k",
+                                     line_color="k", linewidths=2., **kwargs):
     """
     Creates a matplotlib line collection and a matplotlib patch collection representing a branch\
     element that cannot be represented by just a line.
@@ -280,16 +281,14 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, re
     :param repeat_infos: determines how many times the info shall be repeated to match the number \
         of patches (first element) and lines (second element) returned by the patch maker
     :type repeat_infos: tuple (length 2), default (1, 1)
-    :param colors: colors or color of the branch patches
-    :type colors: iterable, float
     :param picker: picker argument passed to the line collection
     :type picker: bool, default False
-    :param patch_facecolor: color of the patch face (content)
-    :type patch_facecolor: matplotlib color, "w"
-    :param patch_edgecolor: color of the patch edges
-    :type patch_edgecolor: matplotlib color, "k"
-    :param line_color: color of the connecting lines
-    :type line_color: matplotlib color, "k"
+    :param patch_facecolor: color or colors of the patch face (content)
+    :type patch_facecolor: matplotlib color or iterable, "w"
+    :param patch_edgecolor: color or colors of the patch edges
+    :type patch_edgecolor: matplotlib color or iterable, "k"
+    :param line_color: color or colors of the connecting lines
+    :type line_color: matplotlib color or iterable, "k"
     :param linewidths: linewidths of the connecting lines and the patch edges
     :type linewidths: float, default 2.
     :param kwargs: key word arguments are passed to the patch maker and the patch and line \
@@ -306,11 +305,11 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, re
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
-    lines, patches, keywords = patch_maker(coords, size, colors, **kwargs)
-    for kw in keywords:
+    lines, patches, popped_keywords = patch_maker(coords, size, patch_facecolor=patch_facecolor,
+                                                  patch_edgecolor=patch_edgecolor, **kwargs)
+    for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(patches, facecolor=patch_facecolor, edgecolor=patch_edgecolor,
-                                 picker=picker, **kwargs)
+    patch_coll = PatchCollection(patches, match_original=True, picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, linewidths=linewidths,
                                **kwargs)
     patch_coll.info = infos_pc
@@ -318,7 +317,7 @@ def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, re
     return patch_coll, line_coll
 
 
-def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=None, z=None,
+def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
                           cbar_title="Bus Voltage [pu]", **kwargs):
     """
@@ -341,7 +340,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
 
         **infofunc** (function, None) - infofunction for the patch element
 
-        **colors** (list, None) - list of colors for every element
+        **color** (list or color, None) - color or list of colors for every element
 
         **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
             cmap. If None net.res_bus.vm_pu is used.
@@ -372,7 +371,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
-    pc = create_node_collection(buses, coords, size, patch_type, colors, picker, infos, **kwargs)
+    pc = create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
 
     if cmap is not None:
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
@@ -617,8 +616,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
     infos = [infofunc(i) for i in range(len(trafos_with_geo))] if infofunc is not None else []
 
-    lc, pc = create_complex_branch_collection(coords, trafo_patches, size, infos, colors=colors,
-                                              picker=picker, linewidths=linewidths, **kwargs)
+    lc, pc = create_complex_branch_collection(
+        coords, trafo_patches, size, infos, patch_facecolor="none", patch_edgecolor=colors,
+        line_color=colors, picker=picker, linewidths=linewidths, **kwargs)
 
     if cmap is not None:
         z_duplicated = np.repeat(z.values, 2)
@@ -794,11 +794,11 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     """
     if loads is None:
         loads = net.load.index
-    infos = [infofunc(i) for i in range(len(loads))]
+    infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
     load_pc, load_lc = create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
-        offset=size, picker=picker, **kwargs)
+        picker=picker, **kwargs)
     return load_pc, load_lc
 
 
@@ -831,11 +831,11 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     """
     if gens is None:
         gens = net.gen.index
-    infos = [infofunc(i) for i in range(len(gens))]
+    infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
     gen_pc, gen_lc = create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
-        offset=size, picker=picker, **kwargs)
+        picker=picker, **kwargs)
     return gen_pc, gen_lc
 
 
@@ -868,11 +868,11 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     """
     if sgens is None:
         sgens = net.sgen.index
-    infos = [infofunc(i) for i in range(len(sgens))]
+    infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
     sgen_pc, sgen_lc = create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
-        offset=size, r_triangle=size * 0.4, picker=picker, **kwargs)
+        picker=picker, **kwargs)
     return sgen_pc, sgen_lc
 
 
@@ -912,12 +912,14 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     else:
         assert len(ext_grids) == len(ext_grid_buses), \
             "Length mismatch between chosen ext_grids and ext_grid_buses."
-    infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids]
+    infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids] if infofunc is not None else []
 
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
+
     ext_grid_pc, ext_grid_lc = create_node_element_collection(
         node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
-        offset=size / 2, picker=picker, hatch='XXX', **kwargs)
+        picker=picker, hatch='XXX', **kwargs)
+
     return ext_grid_pc, ext_grid_lc
 
 
