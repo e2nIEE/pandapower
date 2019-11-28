@@ -2189,7 +2189,7 @@ def get_connected_elements_dict(
 
 def replace_ward_by_internal_elements(net, wards=None):
     """
-    Replaces wards by laods and shunts
+    Replaces wards by loads and shunts
     INPUT:
         **net** - pandapower net
     
@@ -2220,7 +2220,7 @@ def replace_ward_by_internal_elements(net, wards=None):
     # --- result data
     if net.res_ward.shape[0]:
         sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
-        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values!=0, 1)
+        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards]!=0, 1)
         to_add_load = net.res_ward.loc[wards,["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
         to_add_load.p_mw = net.ward.ps_mw[wards].values\
