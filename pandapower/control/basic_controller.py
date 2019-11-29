@@ -113,9 +113,10 @@ class Controller(JSONSerializableClass):
         else:
             log_same_type_existing_controllers(self.net, type(self), index=index, **kwargs)
 
+        dtypes = self.net.controller.dtypes
+
         super().add_to_net(element='controller', index=index, overwrite=overwrite)
 
-        dtypes = self.net.controller.dtypes
         columns = ['in_service', 'order', 'level', 'recycle']
         self.net.controller.loc[index, columns] = in_service, order, level, recycle
         _preserve_dtypes(self.net.controller, dtypes)
