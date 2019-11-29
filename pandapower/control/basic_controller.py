@@ -115,6 +115,7 @@ class Controller(JSONSerializableClass):
 
         dtypes = self.net.controller.dtypes
 
+        # use base class method to raise an error if the object is in DF and overwrite = False
         super().add_to_net(element='controller', index=index, overwrite=overwrite)
 
         columns = ['object', 'in_service', 'order', 'level', 'recycle']
