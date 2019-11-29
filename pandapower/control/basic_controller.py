@@ -117,8 +117,8 @@ class Controller(JSONSerializableClass):
 
         super().add_to_net(element='controller', index=index, overwrite=overwrite)
 
-        columns = ['in_service', 'order', 'level', 'recycle']
-        self.net.controller.loc[index, columns] = in_service, order, level, recycle
+        columns = ['object', 'in_service', 'order', 'level', 'recycle']
+        self.net.controller.loc[index, columns] = self, in_service, order, level, recycle
         _preserve_dtypes(self.net.controller, dtypes)
 
     def time_step(self, time):
