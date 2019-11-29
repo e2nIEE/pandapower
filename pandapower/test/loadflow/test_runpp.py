@@ -586,13 +586,13 @@ def test_recycle():
     pl = 1.2
     ql = 1.1
     ps = 0.5
-    u_set = 1.0
+    vm_set_pu = 1.0
 
     b3 = pp.create_bus(net, vn_kv=.4)
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                    c_nf_per_km=300, max_i_ka=.2, df=.8)
     pp.create_load(net, b3, p_mw=pl, q_mvar=ql)
-    pp.create_gen(net, b2, p_mw=ps, vm_pu=u_set)
+    pp.create_gen(net, b2, p_mw=ps, vm_pu=vm_set_pu)
 
     runpp_with_consistency_checks(net, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
 
@@ -602,19 +602,19 @@ def test_recycle():
     pl = 0.6
     ql = 0.55
     ps = 0.25
-    u_set = 0.98
+    vm_set_pu = 0.98
 
     net["load"].p_mw.iloc[0] = pl
     net["load"].q_mvar.iloc[0] = ql
     net["gen"].p_mw.iloc[0] = ps
-    net["gen"].vm_pu.iloc[0] = u_set
+    net["gen"].vm_pu.iloc[0] = vm_set_pu
 
     runpp_with_consistency_checks(net, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
 
     assert np.allclose(net.res_load.p_mw.iloc[0], pl)
     assert np.allclose(net.res_load.q_mvar.iloc[0], ql)
     assert np.allclose(net.res_gen.p_mw.iloc[0], ps)
-    assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
+    assert np.allclose(net.res_gen.vm_pu.iloc[0], vm_set_pu)
 
 
 @pytest.mark.xfail
