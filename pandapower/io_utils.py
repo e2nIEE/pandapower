@@ -373,18 +373,16 @@ class JSONSerializableClass(object):
             d.update({'net': 'net'})
         return d
 
-    def add_to_net(self, table, index, column="object", overwrite=True):
-        if table not in self.net:
-            self.net[table] = pd.DataFrame(columns=[column])
-        if index in self.net[table].index:
-            obj = self.net[table].object.at[index]
-            obj_is_dict = isinstance(obj, dict)
-            if not obj_is_dict:
-                if overwrite:
-                    logger.info("Updating %s with index %s" % (table, index))
-                else:
-                    raise UserWarning("%s with index %s already exists" % (table, index))
-        self.net[table].at[index, column] = self
+    def add_to_net(self, element, index, column="object", overwrite=False):
+        if element not in self.net:
+            self.net[element] = pd.DataFrame(columns=[column])
+        if index in self.net[element].index.values:
+            obj = self.net[element].object.at[index]
+            if overwrite or not isinstance(obj, JSONSerializableClass):
+                logger.info("Updating %s with index %s" % (element, index))
+            else:
+                raise UserWarning("%s with index %s already exists" % (element, index))
+        self.net[element].at[index, column] = self
 
     def __eq__(self, other):
 
@@ -464,29 +462,6 @@ class JSONSerializableClass(object):
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
-
-
-class MakeFunctionJSONSerializable(JSONSerializableClass):
-    def __init__(self, function):
-        super().__init__()
-        self.function = function
-        self.function_module = function.__module__
-        self.function_name = function.__name__
-
-    def to_dict(self):
-        d = super().to_dict()
-        d.update({'_module': self.function_module, '_class': self.function_name})
-        d.pop('_init')
-        return d
-
-    def __call__(self, *args, **kwargs):
-        return self.function(*args, **kwargs)
-
-    def __str__(self):
-        return self.function.__name__ + ' (JSON serializable)'
-
-    def __repr__(self):
-        return "This is a JSON serializable object around the function %s" % self.function.__name__
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

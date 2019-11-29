@@ -274,3 +274,5 @@ def _convert_objects(net):
     if "controller" in net.keys():
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
+            if not hasattr(obj, 'net'):
+                obj.__init__(net, overwrite=True, **obj.__dict__)
