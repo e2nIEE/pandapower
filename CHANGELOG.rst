@@ -1,5 +1,8 @@
 Change Log
 =============
+- [ADDED] Support phasor measurement in state estimation
+- [ADDED] Support recycle in state estimation
+- [CHANGED] Unified the mesurement unit conversion of state estimation in ppc conversion
 - [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
 - [ADDED] A lot of PowerModels features like network data check and different solver
 - [FIXED] Smaller Bugfixes in PowerModels conversion, OPF in general and tests
