@@ -925,6 +925,64 @@ def test_get_connected_elements_dict():
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
 
 
+def test_replace_ward_by_internal_elements():
+    net = nw.example_simple()
+    pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
+    pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2") 
+    pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False) 
+    pp.runpp(net)
+    net_org=copy.deepcopy(net)
+    pp.replace_ward_by_internal_elements(net)
+    for elm in ["load", "shunt"]:
+        assert net[elm].shape[0] == 4
+    res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
+    pp.runpp(net)
+    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
+    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
+    assert (res_load_created.values == net.res_load.values).all()
+    assert (res_shunt_created.values == net.res_shunt.values).all()
+
+    net = nw.example_simple()
+    pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
+    pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2") 
+    pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False) 
+    pp.runpp(net)
+    net_org=copy.deepcopy(net)
+    pp.replace_ward_by_internal_elements(net, [1])
+    for elm in ["load", "shunt"]:
+        assert net[elm].shape[0] == 2
+    res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
+    pp.runpp(net)
+    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
+    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
+    assert (res_load_created.values == net.res_load.values).all()
+    assert (res_shunt_created.values == net.res_shunt.values).all()
+
+def test_replace_xward_by_internal_elements():
+    
+    net = nw.example_simple()
+    pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
+    pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2") 
+    pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")    
+    pp.runpp(net)
+    net_org=copy.deepcopy(net)
+    pp.replace_xward_by_internal_elements(net)
+    pp.runpp(net)
+    assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
+    assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+    net = nw.example_simple()
+    pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
+    pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2") 
+    pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")    
+    pp.runpp(net)
+    net_org=copy.deepcopy(net)
+    pp.replace_xward_by_internal_elements(net, [0,1])
+    pp.runpp(net)
+    assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
+    assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+
 if __name__ == "__main__":
     if 0:
         pytest.main([__file__, "-xs"])
