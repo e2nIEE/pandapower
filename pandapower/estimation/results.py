@@ -30,8 +30,11 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
     # extract results from ppc
-    _add_pf_options(net, tolerance_mva=1e-8, trafo_loading="current",
-                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
+    try:
+        _add_pf_options(net, tolerance_mva=1e-8, trafo_loading="current",
+                        numba=True, ac=True, algorithm='nr', max_iteration="auto")
+    except:
+        pass
     # writes res_bus.vm_pu / va_degree and res_line
     _extract_results_se(net, ppc)
 

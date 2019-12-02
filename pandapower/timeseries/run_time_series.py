@@ -168,7 +168,7 @@ def init_time_steps(net, time_steps, **kwargs):
         else:
             logger.warning("No time steps to calculate are specified. "
                            "I'll check the datasource of the first controller for avaiable time steps")
-            max_timestep = net.controller.loc[0].controller.data_source.get_time_steps_len()
+            max_timestep = net.controller.object.at[0].data_source.get_time_steps_len()
             time_steps = range(max_timestep)
     return time_steps
 

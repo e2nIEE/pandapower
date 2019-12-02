@@ -26,7 +26,7 @@ def test_discrete_tap_control_lv():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl(net, tid=0, side='lv', u_lower=0.95, u_upper=0.99)
+    DiscreteTapControl(net, tid=0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
@@ -87,7 +87,7 @@ def test_discrete_tap_control_hv():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl(net, tid=0, side='lv', u_lower=0.95, u_upper=0.99)
+    DiscreteTapControl(net, tid=0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"

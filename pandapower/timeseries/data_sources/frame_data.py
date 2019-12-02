@@ -31,7 +31,6 @@ class DFData(DataSource):
 
     def __init__(self, df, multi=False):
         super().__init__()
-        self.update_initialized(locals())
         self.df = df
         if multi:
             # casting column and index to int for multi- columns accessing

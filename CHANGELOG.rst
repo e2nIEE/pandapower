@@ -1,5 +1,8 @@
 Change Log
 =============
+- [ADDED] Support phasor measurement in state estimation
+- [ADDED] Support recycle in state estimation
+- [CHANGED] Unified the mesurement unit conversion of state estimation in ppc conversion
 - [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
 - [ADDED] A lot of PowerModels features like network data check and different solver
 - [FIXED] Smaller Bugfixes in PowerModels conversion, OPF in general and tests
@@ -13,6 +16,11 @@ Change Log
 - [ADDED] jupyter notebook examples for time series
 - [ADDED] control and timeseries module
 - [ADDED] jupyter notebook for power storage optimization with PowerModels.jl
+- [CHANGED] JSON I/O: pandapower objects that are derived from JSONSerializableClass are now instantiated using __new__ instead of __init__ (as before), and the serialization has been adjusted; self.update_initialized(locals()) is not necessary anymore and has been removed; restore_json_objects is not needed anymore and has been removed
+- [CHANGED] column name in net.controller: "controller" -> "object"
+- [CHANGED] variable names in ContinuousTapControl ("u_set" -> "vm_set_pu") and in DiscreteTapControl ("u_lower" -> "vm_lower_pu", "u_upper" -> "vm_upper_pu")
+- [ADDED] convert_format.py: added the renaming of controller column and of the controller attributes, added tests for version 2.1.0
+- [CHANGED] __version__ is now changed to 2.1.1
 
 [2.1.0]- 2019-07-08
 ----------------------
