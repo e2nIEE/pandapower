@@ -2770,7 +2770,7 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
         **cp1_eur_per_mw** (float) - Linear costs per MW
