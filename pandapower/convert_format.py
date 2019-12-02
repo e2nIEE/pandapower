@@ -151,10 +151,18 @@ def _rename_columns(net):
         net["controller"].rename(columns={"controller": "object"}, inplace=True)
     if "options" in net:
         if "recycle" in net["options"]:
-            if "_is_elements" not in net["options"]["recycle"]:
-                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(
-                    net["options"]["recycle"]["is_elems"])
-                net["options"]["recycle"].pop("is_elems", None)
+            if "Ybus" in net["options"]["recycle"]:
+                if net["options"]["recycle"]["Ybus"]:
+                    net["options"]["recycle"]["trafo"] = False
+                del net["options"]["recycle"]["Ybus"]
+            else:
+                net["options"]["recycle"]["trafo"] = True
+            if "ppc" in net["options"]["recycle"]:
+                if net["options"]["recycle"]["ppc"]:
+                    net["options"]["recycle"]["bus_pq"] = False
+                del net["options"]["recycle"]["ppc"]
+            else:
+                net["options"]["recycle"]["bus_pq"] = True
 
 
 def _add_missing_columns(net):
@@ -229,6 +237,27 @@ def _update_column(column):
     column = column.replace("_mid", "_neutral")
     column = column.replace("vsc", "vk")
     return column
+
+
+def _set_data_type_of_columns(net):
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if col == "tap_pos":
+                    continue
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        if version.parse(pd.__version__) < version.parse("0.21"):
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                        else:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    if version.parse(pd.__version__) < version.parse("0.20.0"):
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
 
 
 def _convert_to_mw(net):

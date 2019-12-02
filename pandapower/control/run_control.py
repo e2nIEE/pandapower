@@ -101,6 +101,16 @@ def check_final_convergence(net, run_count, max_iter):
         logger.debug("Converged after %i power flows" % run_count)
 
 
+def get_recycle(ctrl_variables):
+    # check if recycle is in ctrl_variables
+    recycle, only_v_results = None, False
+    if ctrl_variables is not None and "recycle_options" in ctrl_variables:
+        recycle = ctrl_variables.get("recycle_options", None)
+        if isinstance(recycle, dict):
+            only_v_results = recycle.get("only_v_results", False)
+    return recycle, only_v_results
+
+
 def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence=False, **kwargs):
     """
     Main function to call a net with controllers
@@ -127,6 +137,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
     """
 
     controller_order, initial_powerflow, run = prepare_run_ctrl(net, ctrl_variables)
+    kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     # initialize each controller prior to the first power flow
     for levelorder in controller_order:
