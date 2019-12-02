@@ -44,7 +44,7 @@ def get_controller_order(net):
     controller_order = []
     for l in level_list:
         to_add = level.apply(lambda x: l in x) & net.controller.in_service
-        controller_order.append(net.controller[to_add].sort_values(["order"]).controller.values)
+        controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
     logger.debug("levellist: " + str(level_list))
     logger.debug("order: " + str(controller_order))

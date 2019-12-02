@@ -126,7 +126,7 @@ def _check_controller_recyclability(net):
 
     for idx in net.controller.index:
         # todo: write to controller data frame recycle column instead of using self.recycle of controller instance
-        ctrl_recycle = net.controller.at[idx, "controller"].recycle
+        ctrl_recycle = net.controller.at[idx, "object"].recycle
         if not isinstance(ctrl_recycle, dict):
             # if one controller has a wrong recycle configuration it is deactived
             recycle = False
@@ -206,7 +206,7 @@ def init_time_steps(net, time_steps, **kwargs):
         else:
             logger.warning("No time steps to calculate are specified. "
                            "I'll check the datasource of the first controller for avaiable time steps")
-            max_timestep = net.controller.loc[0].controller.data_source.get_time_steps_len()
+            max_timestep = net.controller.object.at[0].data_source.get_time_steps_len()
             time_steps = range(max_timestep)
     return time_steps
 
