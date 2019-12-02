@@ -32,6 +32,7 @@ def convert_format(net):
         reset_results(net)
     if isinstance(net.version, float) and net.version < 1.6:
         set_data_type_of_columns_to_default(net)
+    _convert_objects(net)
     net.version = __version__
     return net
 
@@ -146,6 +147,8 @@ def _rename_columns(net):
                 net.measurement.loc[~bus_measurements, "bus"].values
             net.measurement.rename(columns={'type': 'measurement_type'}, inplace=True)
             net.measurement.drop(["bus"], axis=1, inplace=True)
+    if "controller" in net:
+        net["controller"].rename(columns={"controller": "object"}, inplace=True)
     if "options" in net:
         if "recycle" in net["options"]:
             if "_is_elements" not in net["options"]["recycle"]:
@@ -228,26 +231,6 @@ def _update_column(column):
     return column
 
 
-def _set_data_type_of_columns(net):
-    new_net = create_empty_network()
-    for key, item in net.items():
-        if isinstance(item, pd.DataFrame):
-            for col in item.columns:
-                if col == "tap_pos":
-                    continue
-                if key in new_net and col in new_net[key].columns:
-                    if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
-
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
     for element, tab in net.items():
@@ -268,3 +251,28 @@ def _convert_to_mw(net):
                     if old in parameter and parameter != "pfe_kw":
                         parameters[parameter.replace(old, new)] = value * 1e-3
                         del parameters[parameter]
+
+
+def _update_object_attributes(obj):
+    """
+    Rename attributes of a given object. A new attribute is added and the old one is removed.
+    """
+    to_rename = {"u_set": "vm_set_pu",
+                 "u_lower": "vm_lower_pu",
+                 "u_upper": "vm_upper_pu"}
+
+    for key, val in to_rename.items():
+        if key in obj.__dict__:
+            obj.__dict__[val] = obj.__dict__.pop(key)
+
+
+def _convert_objects(net):
+    """
+    The function updates attribute names in pandapower objects. For now, it affects TrafoController.
+    Should be expanded for other objects if necessary.
+    """
+    if "controller" in net.keys():
+        for obj in net["controller"].object.values:
+            _update_object_attributes(obj)
+            if not hasattr(obj, 'net'):
+                obj.__init__(net, overwrite=True, **obj.__dict__)
