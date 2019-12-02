@@ -68,7 +68,8 @@ def build_igraph_from_pp(net, respect_switches=False):
     return g, meshed, roots  # g, (not g.is_dag())
 
 
-def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=False):
+def create_generic_coordinates(net, mg=None, library="igraph", respect_separation_points=False,
+                               name_node='bus'):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings.
     It will remove out of service buses/lines from the net. The coordinates will be created either by igraph or by
@@ -89,22 +90,21 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         net = create_generic_coordinates(net)
 
     """
-
-    if "bus_geodata" in net and net.bus_geodata.shape[0]:
+    if "name_node +'_geodata'" in net and net[name_node +'_geodata'].shape[0]:
         print("Please delete all geodata. This function cannot be used with pre-existing geodata.")
         return
-    if not "bus_geodata" in net or net.bus_geodata is None:
-        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
+    if not "name_node +'_geodata'" in net or net[name_node +'_geodata'] is None:
+        net[name_node +'_geodata'] = pd.DataFrame(columns=["x", "y"])
 
     gnet = copy.deepcopy(net)
-    gnet.bus = gnet.bus[gnet.bus.in_service == True]
+    gnet[name_node] = gnet[name_node][gnet[name_node].in_service == True]
     if library == "igraph":
         try:
             import igraph
         except ImportError:
             raise UserWarning("The library igraph is selected for plotting, "
                               "but not installed correctly.")
-        graph, meshed, roots = build_igraph_from_pp(gnet, respect_switches)
+        graph, meshed, roots = build_igraph_from_pp(gnet, respect_separation_points)
         if meshed:
             layout = graph.layout("kk")
         else:
@@ -113,7 +113,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         coords = list(zip(*layout.coords))
     elif library == "networkx":
         if mg is None:
-            nxg = top.create_nxgraph(gnet, respect_switches)
+            nxg = top.create_nxgraph(gnet, respect_separation_points)
         else:
             nxg = copy.deepcopy(mg)
         # workaround for bug in agraph
@@ -126,19 +126,20 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         coords = list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(nxg, prog='neato').values()))))
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
-    net.bus_geodata.x = coords[1]
-    net.bus_geodata.y = coords[0]
-    net.bus_geodata.index = gnet.bus.index
+    net[name_node +'_geodata'].x = coords[1]
+    net[name_node +'_geodata'].y = coords[0]
+    net[name_node +'_geodata'].index = gnet[name_node].index
     return net
 
 
-def fuse_geodata(net):
+def fuse_geodata(net, name_node_geodata='bus'):
+    name_node = name_node_geodata
     mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
                             respect_switches=False)
-    geocoords = set(net.bus_geodata.index)
+    geocoords = set(net[name_node +'_geodata'].index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus_geodata.loc[area & geocoords].values[0]
-            for bus in area:
-                net.bus_geodata.loc[bus] = geo
+            geo = net[name_node +'_geodata'].loc[area & geocoords].values[0]
+            for name_node in area:
+                net[name_node +'_geodata'].loc[name_node] = geo
 
