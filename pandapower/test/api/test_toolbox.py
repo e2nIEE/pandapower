@@ -65,7 +65,7 @@ def test_opf_task():
     # check costs
     pp.create_poly_cost(net, idx_ext_grid, "ext_grid", 2)
     pp.create_poly_cost(net, 1, "gen", 1.7)
-    pp.create_poly_cost(net, 0, "dcline", 2, type="q")
+    pp.create_poly_cost(net, 0, "dcline", 2)
     pp.create_pwl_cost(net, 2, "gen", [[-1e9, 1, 3.1], [1, 1e9, 0.5]], power_type="q")
     out4 = pp.opf_task(net)
     for dict_key in ["flexibilities", "network_constraints"]:
