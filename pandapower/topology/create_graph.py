@@ -22,8 +22,9 @@ except ImportError:
 
 try:
     from pandapower.topology.graph_tool_interface import GraphToolInterface
+
     graph_tool_available = True
-except (ImportError, ModuleNotFoundError) as e:
+except:
     graph_tool_available = False
 
 INDEX = 0
@@ -225,7 +226,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
     # add all buses that were not added when creating branches
     if len(mg.nodes()) < len(net.bus.index):
         if graph_tool_available and isinstance(mg, GraphToolInterface):
-                mg.add_vertex(max(net.bus.index) + 1)
+            mg.add_vertex(max(net.bus.index) + 1)
         else:
             for b in set(net.bus.index) - set(mg.nodes()):
                 mg.add_node(b)
