@@ -39,7 +39,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree',  'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug']
+                           'max_iteration', 'v_debug', 'run_control']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()

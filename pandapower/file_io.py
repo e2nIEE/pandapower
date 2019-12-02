@@ -28,8 +28,7 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder, \
-                                restore_jsoned_objects
+from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
 
 
 def to_pickle(net, filename):
@@ -310,13 +309,11 @@ def from_json(filename, convert=True):
     """
     if hasattr(filename, 'read'):
         net = json.load(filename, cls=PPJSONDecoder)
-        restore_jsoned_objects(net)
     elif not os.path.isfile(filename):
         raise UserWarning("File {} does not exist!!".format(filename))
     else:
         with open(filename) as fp:
             net = json.load(fp, cls=PPJSONDecoder)
-            restore_jsoned_objects(net)
             # this can be removed in the future
             # now net is saved with "_module", "_class", "_object"..., so json.load already returns
             # pandapowerNet. Older files don't have it yet, and are loaded as dict.
@@ -352,9 +349,6 @@ def from_json_string(json_string, convert=False):
 
     """
     net = json.loads(json_string, cls=PPJSONDecoder)
-    if isinstance(net, dict):
-        net = pandapowerNet(net)
-    restore_jsoned_objects(net)
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
