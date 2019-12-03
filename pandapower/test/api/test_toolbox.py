@@ -5,6 +5,7 @@
 
 
 import copy
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -36,7 +37,7 @@ def test_opf_task():
     # --- run and check opf_task()
     out1 = pp.opf_task(net, keep=True)
     assert out1["flexibilities_without_costs"] == "all"
-    assert sorted(out1["flexibilities"].keys()) == [i1+i2 for i1 in ["P", "Q"] for i2 in [
+    assert sorted(out1["flexibilities"].keys()) == [i1 + i2 for i1 in ["P", "Q"] for i2 in [
         "dcline", "ext_grid", "gen", "storage"]]
     for key, df in out1["flexibilities"].items():
         assert df.shape[0]
@@ -57,7 +58,7 @@ def test_opf_task():
 
     net.gen.loc[0, "min_p_mw"] = net.gen.loc[0, "max_p_mw"] - 1e-1
     out1["flexibilities"]["Pgen"].loc[0, "min"] = out1["flexibilities"]["Pgen"].loc[
-        0, "max"] - 1e-1
+                                                      0, "max"] - 1e-1
     out3 = pp.opf_task(net, delta_pq=1e-3, keep=True)
     for key in out3["flexibilities"]:
         assert pp.dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
@@ -65,7 +66,7 @@ def test_opf_task():
     # check costs
     pp.create_poly_cost(net, idx_ext_grid, "ext_grid", 2)
     pp.create_poly_cost(net, 1, "gen", 1.7)
-    pp.create_poly_cost(net, 0, "dcline", 2, type="q")
+    pp.create_poly_cost(net, 0, "dcline", 2)
     pp.create_pwl_cost(net, 2, "gen", [[-1e9, 1, 3.1], [1, 1e9, 0.5]], power_type="q")
     out4 = pp.opf_task(net)
     for dict_key in ["flexibilities", "network_constraints"]:
@@ -145,12 +146,12 @@ def test_add_column_from_node_to_elements():
                                              np.array(["subnet_%i" % bus for bus in net[elm].bus])))
             elif branch_bus[0] in net[elm].columns:
                 assert all(pp.compare_arrays(net[elm]["subnet"].values, np.array([
-                        "subnet_%i" % bus for bus in net[elm][branch_bus[0]]])))
+                    "subnet_%i" % bus for bus in net[elm][branch_bus[0]]])))
             elif branch_bus[1] in net[elm].columns:
                 assert all(pp.compare_arrays(net[elm]["subnet"].values, np.array([
-                        "subnet_%i" % bus for bus in net[elm][branch_bus[1]]])))
+                    "subnet_%i" % bus for bus in net[elm][branch_bus[1]]])))
 
-    check_subnet_correctness(net, pp.pp_elements(bus=False)-{"sgen"}, branch_bus)
+    check_subnet_correctness(net, pp.pp_elements(bus=False) - {"sgen"}, branch_bus)
 
     pp.add_column_from_node_to_elements(net_orig, "subnet", True, branch_bus=branch_bus)
     check_subnet_correctness(net_orig, pp.pp_elements(bus=False), branch_bus)
@@ -269,13 +270,12 @@ def test_reindex_elements():
     assert np.allclose(net.switch.element.iloc[[4, 5]], [77, 77])
 
     old_idx = copy.deepcopy(net.bus.index.values)
-    pp.reindex_elements(net, "bus", old_idx+2)
-    assert np.allclose(net.bus.index.values, old_idx+2)
+    pp.reindex_elements(net, "bus", old_idx + 2)
+    assert np.allclose(net.bus.index.values, old_idx + 2)
 
     pp.reindex_elements(net, "bus", [400, 600], [4, 6])
     assert 400 in net.bus.index
     assert 600 in net.bus.index
-
 
 
 def test_continuous_element_numbering():
@@ -288,9 +288,9 @@ def test_continuous_element_numbering():
     net.trafo.rename(index={1: 400}, inplace=True)
     net.trafo3w.rename(index={0: 540}, inplace=True)
 
-    net.switch.loc[(net.switch.et=="l")&(net.switch.element==4), "element"] = 280
-    net.switch.loc[(net.switch.et=="t")&(net.switch.element==0), "element"] = 300
-    net.switch.loc[(net.switch.et=="t")&(net.switch.element==1), "element"] = 400
+    net.switch.loc[(net.switch.et == "l") & (net.switch.element == 4), "element"] = 280
+    net.switch.loc[(net.switch.et == "t") & (net.switch.element == 0), "element"] = 300
+    net.switch.loc[(net.switch.et == "t") & (net.switch.element == 1), "element"] = 400
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
     assert net.measurement["element"].max() == 540
@@ -539,7 +539,7 @@ def test_close_switch_at_line_with_two_open_switches():
 
 
 def test_pq_from_cosphi():
-    p, q = pp.pq_from_cosphi(1/0.95, 0.95, "ind", "load")
+    p, q = pp.pq_from_cosphi(1 / 0.95, 0.95, "ind", "load")
     assert np.isclose(p, 1)
     assert np.isclose(q, 0.3286841051788632)
 
@@ -584,14 +584,14 @@ def test_cosphi_from_pq():
     p = np.array([1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1])
     q = np.array([1, -1, 0, 0.5, -0.5, 1, -1, 0, 1, -1, 0])
     cosphi, s, qmode, pmode = pp.cosphi_from_pq(p, q)
-    assert np.allclose(cosphi[[0, 1, 8, 9]], 2**0.5/2)
+    assert np.allclose(cosphi[[0, 1, 8, 9]], 2 ** 0.5 / 2)
     assert np.allclose(cosphi[[3, 4]], 0.89442719)
     assert np.allclose(cosphi[[2, 10]], 1)
     assert pd.Series(cosphi[[5, 6, 7]]).isnull().all()
     assert np.allclose(s, (p ** 2 + q ** 2) ** 0.5)
-    assert all(pmode == np.array(["load"]*5+["undef"]*3+["gen"]*3))
+    assert all(pmode == np.array(["load"] * 5 + ["undef"] * 3 + ["gen"] * 3))
     ind_cap_ohm = ["ind", "cap", "ohm"]
-    assert all(qmode == np.array(ind_cap_ohm+["ind", "cap"]+ind_cap_ohm*2))
+    assert all(qmode == np.array(ind_cap_ohm + ["ind", "cap"] + ind_cap_ohm * 2))
 
 
 def test_create_replacement_switch_for_branch():
@@ -635,6 +635,7 @@ def test_create_replacement_switch_for_branch():
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
     assert ~net.switch.closed.at[2]
     assert ~net.switch.closed.at[3]
+
 
 @pytest.fixture
 def net():
@@ -925,11 +926,63 @@ def test_get_connected_elements_dict():
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
 
 
+def test_replace_ward_by_internal_elements():
+    net = nw.example_simple()
+    pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
+    pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2")
+    pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False)
+    pp.runpp(net)
+    net_org = copy.deepcopy(net)
+    pp.replace_ward_by_internal_elements(net)
+    for elm in ["load", "shunt"]:
+        assert net[elm].shape[0] == 4
+    res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
+    pp.runpp(net)
+    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
+    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
+    assert (res_load_created.values == net.res_load.values).all()
+    assert (res_shunt_created.values == net.res_shunt.values).all()
+
+    net = nw.example_simple()
+    pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
+    pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2")
+    pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False)
+    pp.runpp(net)
+    net_org = copy.deepcopy(net)
+    pp.replace_ward_by_internal_elements(net, [1])
+    for elm in ["load", "shunt"]:
+        assert net[elm].shape[0] == 2
+    res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
+    pp.runpp(net)
+    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
+    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
+    assert (res_load_created.values == net.res_load.values).all()
+    assert (res_shunt_created.values == net.res_shunt.values).all()
+
+
+def test_replace_xward_by_internal_elements():
+    net = nw.example_simple()
+    pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
+    pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2")
+    pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")
+    pp.runpp(net)
+    net_org = copy.deepcopy(net)
+    pp.replace_xward_by_internal_elements(net)
+    pp.runpp(net)
+    assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
+    assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+    net = nw.example_simple()
+    pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
+    pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2")
+    pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")
+    pp.runpp(net)
+    net_org = copy.deepcopy(net)
+    pp.replace_xward_by_internal_elements(net, [0, 1])
+    pp.runpp(net)
+    assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
+    assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+
 if __name__ == "__main__":
-    if 0:
-        pytest.main([__file__, "-xs"])
-    else:
-#        test_replace_ext_grid_gen()
-#        test_replace_gen_sgen()
-#        test_get_connected_elements_dict()
-        pass
+    pytest.main([__file__, "-xs"])
