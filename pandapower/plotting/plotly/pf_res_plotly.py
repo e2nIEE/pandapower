@@ -73,6 +73,9 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
         **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
 
+    OUTPUT:
+        **figure** (graph_objs._figure.Figure) figure object
+
     """
     version_check()
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
@@ -154,6 +157,6 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
                                       color='grey', size=bus_size * 2, trace_name='external_grid',
                                       patch_type=marker_type)
 
-    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
-                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                filename=filename)
+    return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
+                       showlegend=False, aspectratio=aspectratio, on_map=on_map,
+                       map_style=map_style, figsize=figsize, filename=filename)

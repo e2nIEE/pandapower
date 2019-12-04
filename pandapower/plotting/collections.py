@@ -1115,7 +1115,7 @@ def add_single_collection(c, ax, plot_colorbars, copy_collections):
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
-    for c in collections:
+    for i, c in enumerate(collections):
         if Collection in inspect.getmro(c.__class__):
             # if Collection is in one of the base classes of c
             add_single_collection(c, ax, plot_colorbars, copy_collections)
@@ -1123,7 +1123,7 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
             # if c is a tuple or a list of collections
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:
-            logger.warning("{} in collections is of unknown type. Skipping".format(c))
+            logger.warning("{} in collections is of unknown type. Skipping".format(i))
 
 
 if __name__ == "__main__":
