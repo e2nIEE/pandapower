@@ -457,8 +457,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    if recycle is None:
-        recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
+    # if recycle is None:
+    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -480,7 +480,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "init_results": init_results,
         "p_lim_default": p_lim_default,
         "q_lim_default": q_lim_default,
-        "neglect_open_switch_branches": neglect_open_switch_branches
+        "neglect_open_switch_branches": neglect_open_switch_branches,
     }
     _add_options(net, options)
 
@@ -836,6 +836,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     init_va_degree = kwargs.get("init_va_degree", None)
     recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    only_v_results = kwargs.get("only_v_results", False)
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -870,8 +871,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
     init_from_results = init == "results" or \
-        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
-        (isinstance(init_va_degree, str) and init_va_degree == "results")
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -902,7 +903,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug)
+                    v_debug=v_debug, only_v_results=only_v_results)
     net._options.update(overrule_options)
 
 
@@ -916,7 +917,7 @@ def _init_nx_options(net):
 
 
 def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity,
-                          switch_rx_ratio, trafo3w_losses):
+                          switch_rx_ratio, trafo3w_losses, **kwargs):
     ac = False
     numba = True
     mode = "pf"
@@ -930,7 +931,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     algorithm = None
     max_iteration = None
     tolerance_mva = None
-
+    only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -938,7 +939,8 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    only_v_results=only_v_results)
 
 
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
@@ -950,7 +952,8 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     trafo_model = "t"
     trafo_loading = 'current'
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+    recycle = None
+    only_v_results = False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -959,7 +962,7 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba, only_v_results=only_v_results)
 
 
 def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
@@ -970,8 +973,8 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     trafo_loading = 'current'
     calculate_voltage_angles = True
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
+    recycle = None
+    only_v_results = False
     # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -979,5 +982,33 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
-    pass
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results)
+
+
+def _internal_stored(net):
+    """
+
+    The function newtonpf() needs these variables as inputs:
+    Ybus, Sbus, V0, pv, pq, ppci, options
+
+    Parameters
+    ----------
+    net - the pandapower net
+
+    Returns
+    -------
+    True if all variables are stored False otherwise
+
+    """
+    # checks if all internal variables are stored in net, which are needed for a power flow
+
+    if net["_ppc"] is None:
+        return False
+
+    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "Ybus", "Yf", "Yt",
+                              "Sbus", "ref_gens"]
+    for var in mandatory_pf_variables:
+        if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
+            logger.warning("recycle is set to True, but internal variables are missing")
+            return False
+    return True

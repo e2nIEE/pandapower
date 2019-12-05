@@ -270,7 +270,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
         'controller': [
-            ('controller', dtype(object)),
+            ('object', dtype(object)),
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
@@ -3318,20 +3318,20 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None):
     """
-    Creates an entry for polynimoal costs for an element. The currently supported elements are
-     - Generator
-     - External Grid
-     - Static Generator
-     - Load
-     - Dcline
-     - Storage
+    Creates an entry for polynimoal costs for an element. The currently supported elements are:
+     - Generator ("gen")
+     - External Grid ("ext_grid")
+     - Static Generator ("sgen")
+     - Load ("load")
+     - Dcline ("dcline")
+     - Storage ("storage")
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
         **cp1_eur_per_mw** (float) - Linear costs per MW
@@ -3347,7 +3347,6 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
         **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.

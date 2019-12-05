@@ -415,15 +415,21 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
     
+    neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    only_v_results = kwargs.get("only_v_results", False)
+    
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio,
                      init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta_q)
+                     voltage_depend_loads=False, delta=delta_q,\
+                     neglect_open_switch_branches=neglect_open_switch_branches
+                     )
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration, v_debug=v_debug)
+                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,\
+                    only_v_results=only_v_results,v_debug=v_debug)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -607,7 +613,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
     _clean_up(net)
 
-    return count, v_012_it, i_012_res
+    return net["converged"]
 
 def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
     I012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),

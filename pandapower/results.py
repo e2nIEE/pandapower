@@ -150,50 +150,33 @@ def reset_results(net, suffix=None,balanced= True):
 
         init_element(net, element, suffix,balanced)
 
-
-def _copy_results_ppci_to_ppc(result, ppc, mode):
-    '''
-    result contains results for all in service elements
-    ppc shall get the results for in- and out of service elements
-    -> results must be copied
-
-    ppc and ppci are structured as follows:
-
-          [in_service elements]
-    ppc = [out_of_service elements]
-
-    result = [in_service elements]
-
-    @author: fschaefer
-
-    @param result:
-    @param ppc:
-    @return:
-    '''
-
-    # copy the results for bus, gen and branch
+def _ppci_bus_to_ppc(result, ppc):
+    # result is the ppci (ppc without out of service buses)
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
-    n_busses, bus_cols = np.shape(ppc['bus'])
+    n_buses, bus_cols = np.shape(ppc['bus'])
     n_rows_result, bus_cols_result = np.shape(result['bus'])
     # create matrix of proper size
-    updated_bus = np.empty((n_busses, bus_cols_result))
+    updated_bus = np.empty((n_buses, bus_cols_result))
     # fill in results (first 3 types)
     updated_bus[:n_rows_result, :] = result['bus']
-    if n_busses > n_rows_result:
+    if n_buses > n_rows_result:
         # keep rows for busses of type NONE
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus
 
 
-#    if mode == "sc":
-#        ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]
+def _ppci_branch_to_ppc(result, ppc):
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
 
+
+def _ppci_gen_to_ppc(result, ppc):
     gen_cols = np.shape(ppc['gen'])[1]
     ppc['gen'][result["internal"]['gen_is'], :gen_cols] = result['gen'][:, :gen_cols]
 
+
+def _ppci_other_to_ppc(result, ppc, mode):
     ppc['internal'] = result['internal']
 
     if mode != "sc" and mode != "se":
@@ -207,6 +190,34 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
 
+
+def _copy_results_ppci_to_ppc(result, ppc, mode):
+    """
+    result contains results for all in service elements
+    ppc gets the results for in- and out of service elements
+    -> results must be copied
+
+    ppc and ppci are structured as follows:
+          [in_service elements]
+    ppc = [out_of_service elements]
+    result = [in_service elements]
+
+    Parameters
+    ----------
+    result - ppci with results
+    ppc - ppc without results
+    mode - "pf","opf", "sc"...
+
+    Returns
+    -------
+    ppc with results
+    """
+
+    # copy the results for bus, gen and branch and some additional values like "success"
+    _ppci_bus_to_ppc(result, ppc)
+    _ppci_branch_to_ppc(result, ppc)
+    _ppci_gen_to_ppc(result, ppc)
+    _ppci_other_to_ppc(result, ppc, mode)
 
     result = ppc
     return result
