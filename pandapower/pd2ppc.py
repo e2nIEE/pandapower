@@ -649,17 +649,17 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_R] = \
         line["r0_ohm_per_km"].values * length / baseR / parallel if \
             line["r0_ohm_per_km"].values.all() != 0 else \
-            line["r_ohm_per_km"].values * length / baseR / parallel
+            line["r_ohm_per_km"].values * 4 * length / baseR / parallel
     # Just putting pos seq inducatance if zero seq inductance is zero
     ppc["branch"][f:t, BR_X] = \
         line["x0_ohm_per_km"].values * length / baseR / parallel if \
             line["x0_ohm_per_km"].values.all() != 0 else \
-            line["x_ohm_per_km"].values * length / baseR / parallel
+            line["x_ohm_per_km"].values * 4 *  length / baseR / parallel
     # Just putting pos seq capacitance if zero seq capacitance is zero
     ppc["branch"][f:t, BR_B] = \
         (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR \
          * length * parallel) if \
             line["c0_nf_per_km"].values.all() != 0 else \
-            (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 \
+            (2 * net["f_hz"] * math.pi * (line["c_nf_per_km"].values * 0.25) * 1e-9 \
              * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
