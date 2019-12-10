@@ -119,8 +119,8 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
     return collection
 
 
-def create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False,
-                           infos=None, **kwargs):
+def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False,
+                            infos=None, **kwargs):
     """
     Creates a collection with patches for the given nodes. Can be used generically for different \
     types of nodes (bus in pandapower network, but also other nodes, e.g. in a networkx graph).
@@ -172,7 +172,7 @@ def create_node_collection(nodes, coords, size=5, patch_type="circle", color=Non
     return pc
 
 
-def create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs):
+def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs):
     """
     Generic function to create a LineCollection from coordinates.
 
@@ -198,10 +198,10 @@ def create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs
     return lc
 
 
-def create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
-                                   repeat_infos=(1, 1), orientation=np.pi, picker=False,
-                                   patch_facecolor="w", patch_edgecolor="k", line_color="k",
-                                   **kwargs):
+def _create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
+                                    repeat_infos=(1, 1), orientation=np.pi, picker=False,
+                                    patch_facecolor="w", patch_edgecolor="k", line_color="k",
+                                    **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
     one patch collection representing the element itself and a small line collection that connects
@@ -260,9 +260,9 @@ def create_node_element_collection(node_coords, patch_maker, size=1., infos=None
     return patch_coll, line_coll
 
 
-def create_complex_branch_collection(coords, patch_maker, size=1, infos=None, repeat_infos=(2, 2),
-                                     picker=False, patch_facecolor="w", patch_edgecolor="k",
-                                     line_color="k", linewidths=2., **kwargs):
+def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, repeat_infos=(2, 2),
+                                      picker=False, patch_facecolor="w", patch_edgecolor="k",
+                                      line_color="k", linewidths=2., **kwargs):
     """
     Creates a matplotlib line collection and a matplotlib patch collection representing a branch\
     element that cannot be represented by just a line.
@@ -371,7 +371,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
-    pc = create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
+    pc = _create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
 
     if cmap is not None:
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
@@ -450,7 +450,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
     infos = [infofunc(line) for line in lines_with_geo] if infofunc else []
 
-    lc = create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
 
     if cmap is not None:
         if z is None:
@@ -509,7 +509,7 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     info = [infofunc(tr) for tr in trafos.index.values] if infofunc is not None else []
 
-    lc = create_line2d_collection(tg, trafos.index.values, info, picker=picker, **kwargs)
+    lc = _create_line2d_collection(tg, trafos.index.values, info, picker=picker, **kwargs)
 
     if cmap is not None:
         if z is None:
@@ -616,7 +616,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
     infos = [infofunc(i) for i in range(len(trafos_with_geo))] if infofunc is not None else []
 
-    lc, pc = create_complex_branch_collection(
+    lc, pc = _create_complex_branch_collection(
         coords, trafo_patches, size, infos, patch_facecolor="none", patch_edgecolor=colors,
         line_color=colors, picker=picker, linewidths=linewidths, **kwargs)
 
@@ -796,7 +796,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
         loads = net.load.index
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
-    load_pc, load_lc = create_node_element_collection(
+    load_pc, load_lc = _create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
     return load_pc, load_lc
@@ -833,7 +833,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
         gens = net.gen.index
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
-    gen_pc, gen_lc = create_node_element_collection(
+    gen_pc, gen_lc = _create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
     return gen_pc, gen_lc
@@ -870,7 +870,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         sgens = net.sgen.index
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
-    sgen_pc, sgen_lc = create_node_element_collection(
+    sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
     return sgen_pc, sgen_lc
@@ -916,7 +916,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
 
-    ext_grid_pc, ext_grid_lc = create_node_element_collection(
+    ext_grid_pc, ext_grid_lc = _create_node_element_collection(
         node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, hatch='XXX', **kwargs)
 
