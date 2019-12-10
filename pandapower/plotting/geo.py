@@ -7,30 +7,37 @@ except ImportError:
     pass
 
 
-def convert_geodata_to_gis(net, epsg=31467, bus_geodata=True, line_geodata=True):
-    if bus_geodata:
-        bus_geo = net.bus_geodata
-        geo = [Point(x, y) for x, y in bus_geo[["x", "y"]].values]
-        net.bus_geodata = GeoDataFrame(bus_geo, crs=from_epsg(epsg), geometry=geo,
-                                       index=bus_geo.index)
-    if line_geodata:
-        line_geo = net.line_geodata
-        geo = GeoSeries([LineString(x) for x in net.line_geodata.coords.values],
-                        index=net.line_geodata.index, crs=from_epsg(epsg))
-        net.line_geodata = GeoDataFrame(line_geo, crs=from_epsg(epsg), geometry=geo,
-                                        index=line_geo.index)
+def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True,
+                           name_node_geodata='bus', name_branch_geodata='line'):
+    name_node = name_node_geodata
+    name_branch = name_branch_geodata
+    if node_geodata:
+        node_geo = net[name_node + '_geodata']
+        geo = [Point(x, y) for x, y in node_geo[["x", "y"]].values]
+        net[name_node + '_geodata'] = GeoDataFrame(node_geo, crs=from_epsg(epsg), geometry=geo,
+                                       index=node_geo.index)
+    if branch_geodata:
+        branch_geo = net[name_branch + '_geodata']
+        geo = GeoSeries([LineString(x) for x in net[name_branch + '_geodata'].coords.values],
+                        index=net[name_branch + '_geodata'].index, crs=from_epsg(epsg))
+        net[name_branch + '_geodata'] = GeoDataFrame(branch_geo, crs=from_epsg(epsg), geometry=geo,
+                                        index=branch_geo.index)
     net["gis_epsg_code"] = epsg
 
 
-def convert_gis_to_geodata(net, bus_geodata=True, line_geodata=True):
-    if bus_geodata:
-        net.bus_geodata["x"] = [x.x for x in net.bus_geodata.geometry]
-        net.bus_geodata["y"] = [x.y for x in net.bus_geodata.geometry]
-    if line_geodata:
-        net.line_geodata["coords"] = net.line_geodata.geometry.apply(lambda x: list(x.coords))
+def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True, name_node_geodata='bus',
+                           name_branch_geodata='line'):
+    name_node = name_node_geodata
+    name_branch = name_branch_geodata
+    if node_geodata:
+        net[name_node + '_geodata']["x"] = [x.x for x in net[name_node + '_geodata'].geometry]
+        net[name_node + '_geodata']["y"] = [x.y for x in net[name_node + '_geodata'].geometry]
+    if branch_geodata:
+        net[name_branch +'_geodata']["coords"] = \
+            net[name_branch +'_geodata'].geometry.apply(lambda x: list(x.coords))
 
 
-def convert_epgs_bus_geodata(net, epsg_in=4326, epsg_out=31467):
+def convert_epgs_bus_geodata(net, epsg_in=4326, epsg_out=31467, name_node_geodata='bus'):
     """
     Converts bus geodata in net from epsg_in to epsg_out
 
@@ -42,8 +49,11 @@ def convert_epgs_bus_geodata(net, epsg_in=4326, epsg_out=31467):
     :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
     :return: net - the given pandapower network (no copy!)
     """
+    name_node = name_node_geodata
     in_proj = Proj(init='epsg:%i' % epsg_in)
     out_proj = Proj(init='epsg:%i' % epsg_out)
-    x1, y1 = net.bus_geodata.loc[:, "x"].values, net.bus_geodata.loc[:, "y"].values
-    net.bus_geodata.loc[:, "x"], net.bus_geodata.loc[:, "y"] = transform(in_proj, out_proj, x1, y1)
+    x1, y1 = net[name_node + '_geodata'].loc[:, "x"].values, \
+             net[name_node + '_geodata'].loc[:, "y"].values
+    net[name_node + '_geodata'].loc[:, "x"], net[name_node + '_geodata'].loc[:, "y"] = \
+        transform(in_proj, out_proj, x1, y1)
     return net
