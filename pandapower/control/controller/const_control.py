@@ -131,7 +131,7 @@ class ConstControl(Controller):
         self.values = self.data_source.get_time_step_value(time_step=time,
                                                            profile_name=self.profile_name,
                                                            scale_factor=self.scale_factor)
-        self.write_to_net()
+        # self.write_to_net()
 
     def initialize_control(self):
         """
