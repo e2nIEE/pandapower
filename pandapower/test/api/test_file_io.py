@@ -244,4 +244,4 @@ def test_json_io_same_net(net_in, tempdir):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py", "-x"])
+    pytest.main([__file__, "-x"])
