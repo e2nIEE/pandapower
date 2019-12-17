@@ -417,7 +417,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
     only_v_results = kwargs.get("only_v_results", False)
-    
+    if (recycle is not None and recycle is not False):
+        raise ValueError("recycle is only available with Balanced Load Flow ")
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
