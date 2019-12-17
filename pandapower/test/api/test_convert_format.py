@@ -38,5 +38,4 @@ def test_convert_format(version):
 
 
 if __name__ == '__main__':
-    # load_and_test_network("1.4.3")
-    pytest.main(__file__)
+    pytest.main([__file__])

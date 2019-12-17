@@ -482,7 +482,7 @@ def to_serializable(obj):
 
 
 @to_serializable.register(pandapowerNet)
-def json_net(obj):
+def json_pandapowernet(obj):
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
     d = with_signature(obj, net_dict)
     return d

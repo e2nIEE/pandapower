@@ -26,7 +26,7 @@
 # THE SOFTWARE.
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
-from collections import MutableMapping
+from collections.abc import MutableMapping
 import copy
 
 import numpy as np

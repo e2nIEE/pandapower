@@ -1727,7 +1727,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence 
         internal impedance of ext_grid
 
-        \* only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in loadflow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
@@ -2401,7 +2401,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
-        \* only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2673,8 +2673,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        \* only considered in loadflow if calculate_voltage_angles = True
-        \**The model currently only supports one tap-changer per 3W Transformer.
+        ** only considered in loadflow if calculate_voltage_angles = True
+        **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
