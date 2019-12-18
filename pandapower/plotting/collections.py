@@ -439,7 +439,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
             bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
     else:
         lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
-        coords = list(line_geodata[lines_with_geo])
+        coords = list(line_geodata.loc[lines_with_geo, 'coords'])
         lines_without_geo = set(lines) - set(lines_with_geo)
         if lines_without_geo:
             logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
