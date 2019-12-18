@@ -1434,7 +1434,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = None
+        net["line_geodata"].at[index, "coords"] = geodata
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
@@ -1544,7 +1545,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = None
+        net["line_geodata"].at[index, "coords"] = geodata
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
