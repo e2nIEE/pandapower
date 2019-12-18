@@ -551,10 +551,10 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
             ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva\
-                         needs to be specified for " % case + "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
+    if not "s_sc_%s_mva" % case in eg and  mode == 'pf_3ph':
+        s_sc = 1000/ppc['baseMVA']
+    else:
+        s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified\
                          for external grid" % case)
