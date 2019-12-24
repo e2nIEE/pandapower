@@ -795,7 +795,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     if loads is None:
         loads = net.load.index
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
+    node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
     load_pc, load_lc = _create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
@@ -869,7 +869,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     if sgens is None:
         sgens = net.sgen.index
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
+    node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
     sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
