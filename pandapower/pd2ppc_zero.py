@@ -6,6 +6,8 @@
 import math
 import numpy as np
 import copy
+import pandas as pd
+from packaging import version
 import pandapower.auxiliary as aux
 from pandapower.pd2ppc import _init_ppc
 from pandapower.build_bus import _build_bus_ppc
@@ -240,8 +242,12 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
-    y0_grid_np = y0_grid.to_numpy()
-    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid_np.real, y0_grid_np.imag)
+
+    if version.parse(pd.__version__) < version.parse("0.24"):
+        buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
+    else:
+        y0_grid_np = y0_grid.to_numpy()
+        buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid_np.real, y0_grid_np.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
