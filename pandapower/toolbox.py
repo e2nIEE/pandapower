@@ -1659,7 +1659,10 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
     if net.res_ext_grid.shape[0]:
         to_add = net.res_ext_grid.loc[ext_grids]
         to_add.index = new_idx
-        net.res_gen = pd.concat([net.res_gen, to_add])
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net.res_gen = pd.concat([net.res_gen, to_add])
+        else:
+            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_ext_grid.drop(ext_grids, inplace=True)
 
 
@@ -1710,7 +1713,10 @@ def replace_gen_by_ext_grid(net, gens=None):
     if net.res_gen.shape[0]:
         to_add = net.res_gen.loc[gens]
         to_add.index = new_idx
-        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
+        else:
+            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
         net.res_gen.drop(gens, inplace=True)
 
 
@@ -1762,7 +1768,10 @@ def replace_gen_by_sgen(net, gens=None):
     if net.res_gen.shape[0]:
         to_add = net.res_gen.loc[gens]
         to_add.index = new_idx
-        net.res_sgen = pd.concat([net.res_sgen, to_add])
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net.res_sgen = pd.concat([net.res_sgen, to_add])
+        else:
+            net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
         net.res_gen.drop(gens, inplace=True)
 
 
@@ -1815,7 +1824,10 @@ def replace_sgen_by_gen(net, sgens=None):
     if net.res_sgen.shape[0]:
         to_add = net.res_sgen.loc[sgens]
         to_add.index = new_idx
-        net.res_gen = pd.concat([net.res_gen, to_add])
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net.res_gen = pd.concat([net.res_gen, to_add])
+        else:
+            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_sgen.drop(sgens, inplace=True)
 
 
