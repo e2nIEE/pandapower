@@ -563,11 +563,7 @@ def _add_motor_impedances_ppc(net, ppc):
     r_motor = motor.rx * x_motor
     y_motor = 1 / (r_motor + x_motor * 1j)
 
-    if version.parse(pd.__version__) < version.parse("0.24"):
-        buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
-    else:
-        y_motor_np = y_motor.to_numpy()
-        buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor_np.real, y_motor_np.imag)
+    buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
