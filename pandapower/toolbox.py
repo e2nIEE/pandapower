@@ -4,7 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from collections import Iterable, defaultdict
+from collections import defaultdict
+from collections.abc import Iterable
 from itertools import chain
 
 import numpy as np

@@ -125,7 +125,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     if len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
-        create_generic_coordinates(net, respect_switches=respect_switches)
+        create_generic_coordinates(net, respect_separation_points=respect_switches)
         if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
