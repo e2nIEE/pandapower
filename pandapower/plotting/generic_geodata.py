@@ -160,7 +160,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
             raise UserWarning("The library igraph is selected for plotting, but not installed "
                               "correctly.")
         graph, meshed, roots = build_igraph_from_pp(net, respect_switches)
-        coords = coords_from_igraph(graph, meshed, roots)
+        coords = coords_from_igraph(graph, roots, meshed)
     elif library == "networkx":
         if mg is None:
             nxg = top.create_nxgraph(gnet, respect_switches=respect_switches)
