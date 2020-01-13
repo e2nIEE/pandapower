@@ -8,7 +8,6 @@ import copy
 
 import networkx as nx
 import pandas as pd
-import numpy as np
 
 import pandapower.topology as top
 
@@ -98,8 +97,8 @@ def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     """
     if calculate_meshed:
         meshed = False
-        for i in range(1, net.bus.shape[0]):
-            if len(g.get_all_shortest_paths(0, i, mode="ALL")) > 1:
+        for i in range(1, len(graph.vs)):
+            if len(graph.get_all_shortest_paths(0, i, mode="ALL")) > 1:
                 meshed = True
                 break
     if meshed is True:
@@ -160,11 +159,11 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         if not IGRAPH_INSTALLED:
             raise UserWarning("The library igraph is selected for plotting, but not installed "
                               "correctly.")
-        graph, meshed, roots = create_igraph(net, respect_switches)
+        graph, meshed, roots = build_igraph_from_pp(net, respect_switches)
         coords = coords_from_igraph(graph, meshed, roots)
     elif library == "networkx":
         if mg is None:
-            nxg = create_mg(gnet, respect_switches)
+            nxg = top.create_nxgraph(gnet, respect_switches=respect_switches)
         else:
             nxg = copy.deepcopy(mg)
         coords = coords_from_nxgraph(nxg)
