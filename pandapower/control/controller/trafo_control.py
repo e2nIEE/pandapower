@@ -36,7 +36,6 @@ class TrafoController(Controller):
                  **kwargs):
         super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle,
                          **kwargs)
-        self.update_initialized(locals())
         self.tid = tid
         self.trafotype = trafotype
 

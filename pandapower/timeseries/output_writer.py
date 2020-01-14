@@ -103,11 +103,10 @@ class OutputWriter(JSONSerializableClass):
         # total time steps to calculate
         self.time_steps = time_steps
         # add output_writer to net
-        self.add_to_net(table="output_writer", index=0, overwrite=True)
+        self.add_to_net(element="output_writer", index=0, overwrite=True)
         # inits dataframes and numpy arrays which store results
         # self.init_all()
         # Saves all parameters as object attributes to store in JSON
-        self.update_initialized(locals())
 
     def __str__(self):
         # return self.__class__.__name__
@@ -120,6 +119,10 @@ class OutputWriter(JSONSerializableClass):
             table, variable = output[0], output[1]
             s += "\n'" + str(table) + "." + str(variable) + "'"
         return s
+
+    def _monkey_patch(self, method, new):
+        from types import MethodType
+        setattr(self, method, MethodType(new, self))
 
     def _add_log_defaults(self):
         if self.log_variables is None:

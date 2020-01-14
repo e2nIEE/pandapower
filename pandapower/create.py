@@ -230,7 +230,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
         'controller': [
-            ('controller', dtype(object)),
+            ('object', dtype(object)),
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
@@ -1271,7 +1271,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
-        \* only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in loadflow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
@@ -1864,7 +1864,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
-        \* only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2112,8 +2112,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        \* only considered in loadflow if calculate_voltage_angles = True
-        \**The model currently only supports one tap-changer per 3W Transformer.
+        ** only considered in loadflow if calculate_voltage_angles = True
+        **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -2604,10 +2604,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
-    are: v, p, q, i
+    are: v, p, q, i, va, ia
 
     INPUT:
-        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i", "va", "ia" are possible
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
         "trafo", and "trafo3w" are possible
@@ -2644,13 +2644,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
 
-    if meas_type not in ("v", "p", "q", "i"):
+    if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
     if side is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type {} requires a value in 'element'".format(element_type))
 
-    if meas_type == "v":
+    if meas_type in ("v", "va"):
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo", "trafo3w"):
@@ -2676,10 +2676,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if index in net["measurement"].index:
         raise UserWarning("A measurement with index={} already exists".format(index))
 
-    if meas_type == "i" and element_type == "bus":
+    if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type == "v" and element_type in ("line", "trafo", "trafo3w"):
+    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:
@@ -2757,20 +2757,20 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None):
     """
-    Creates an entry for polynimoal costs for an element. The currently supported elements are
-     - Generator
-     - External Grid
-     - Static Generator
-     - Load
-     - Dcline
-     - Storage
+    Creates an entry for polynimoal costs for an element. The currently supported elements are:
+     - Generator ("gen")
+     - External Grid ("ext_grid")
+     - Static Generator ("sgen")
+     - Load ("load")
+     - Dcline ("dcline")
+     - Storage ("storage")
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
         **cp1_eur_per_mw** (float) - Linear costs per MW
@@ -2786,7 +2786,6 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
         **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.

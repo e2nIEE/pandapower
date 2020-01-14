@@ -126,7 +126,7 @@ def _check_controller_recyclability(net):
 
     for idx in net.controller.index:
         # todo: write to controller data frame recycle column instead of using self.recycle of controller instance
-        ctrl_recycle = net.controller.at[idx, "controller"].recycle
+        ctrl_recycle = net.controller.at[idx, "object"].recycle
         if not isinstance(ctrl_recycle, dict):
             # if one controller has a wrong recycle configuration it is deactived
             recycle = False
@@ -206,7 +206,7 @@ def init_time_steps(net, time_steps, **kwargs):
         else:
             logger.warning("No time steps to calculate are specified. "
                            "I'll check the datasource of the first controller for avaiable time steps")
-            max_timestep = net.controller.loc[0].controller.data_source.get_time_steps_len()
+            max_timestep = net.controller.object.at[0].data_source.get_time_steps_len()
             time_steps = range(max_timestep)
     return time_steps
 
@@ -256,6 +256,8 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["time_steps"] = time_steps
     # If True, a diverged power flow is ignored and the next step is calculated
     ts_variables["continue_on_divergence"] = continue_on_divergence
+    # print settings
+    ts_variables["verbose"] = verbose
 
     if logger.level is not 10 and verbose:
         # simple progress bar
@@ -266,7 +268,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
 def cleanup(ts_variables):
     if isinstance(ts_variables["recycle_options"], dict):
-        # Todo: delete internal variaables and dumped results which are not needed
+        # Todo: delete internal variables and dumped results which are not needed
         pass
 
 
@@ -284,6 +286,20 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
     if "progress_function" in kwargs:
         func = kwargs["progress_function"]
         func(i, time_step, time_steps, **kwargs)
+
+def run_loop(net, ts_variables, **kwargs):
+    """
+    runs the time series loop which calls pp.runpp (or another run function) in each iteration
+
+    Parameters
+    ----------
+    net - pandapower net
+    ts_variables - settings for time series
+
+    """
+    for i, time_step in enumerate(ts_variables["time_steps"]):
+        print_progress(i, time_step, ts_variables["time_steps"], ts_variables["verbose"], **kwargs)
+        run_time_step(net, time_step, ts_variables, **kwargs)
 
 
 def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, **kwargs):
@@ -311,9 +327,7 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
 
     control_diagnostic(net)
-    for i, time_step in enumerate(ts_variables["time_steps"]):
-        print_progress(i, time_step, ts_variables["time_steps"], verbose, **kwargs)
-        run_time_step(net, time_step, ts_variables, **kwargs)
+    run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated
     cleanup(ts_variables)

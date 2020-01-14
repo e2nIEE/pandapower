@@ -57,9 +57,9 @@ class ConstControl(Controller):
             matching_params = {"element": element, "variable": variable,
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params
-                         , initial_powerflow=initial_powerflow, **kwargs)
-        self.update_initialized(locals())
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params, initial_powerflow = initial_powerflow,
+                         **kwargs)
         self.matching_params = {"element": element, "variable": variable,
                                 "element_index": element_index}
 
@@ -81,13 +81,13 @@ class ConstControl(Controller):
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
-            self.write = self._write_to_single_index
+            self.write = "single_index"
         elif self.net[self.element].index.equals(Index(self.element_index)):
             # use : indexer if all elements are in index
-            self.write = self._write_to_all_index
+            self.write = "all_index"
         else:
             # use common .loc
-            self.write = self._write_with_loc
+            self.write = "loc"
         self.set_recycle()
 
     def set_recycle(self):
@@ -110,9 +110,19 @@ class ConstControl(Controller):
 
     def write_to_net(self):
         """
-        Writes to self.element at index self.element_index in the column self.variable the data from self.values
+        Writes to self.element at index self.element_index in the column self.variable the data
+        from self.values
         """
-        self.write()
+        # write functions faster, depending on type of self.element_index
+        if self.write == "single_index":
+            self._write_to_single_index()
+        elif self.write == "all_index":
+            self._write_to_all_index()
+        elif self.write == "loc":
+            self._write_with_loc()
+        else:
+            raise NotImplementedError("ConstControl: self.write must be one of "
+                                      "['single_index', 'all_index', 'loc']")
 
     def time_step(self, time):
         """

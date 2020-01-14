@@ -322,5 +322,4 @@ def test_add_temperature_coefficient():
 
 
 if __name__ == "__main__":
-#    net = pp.create_empty_network()
-    pytest.main(["test_std_types.py"])
+    pytest.main([__file__])
