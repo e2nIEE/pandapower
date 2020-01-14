@@ -120,6 +120,10 @@ class OutputWriter(JSONSerializableClass):
             s += "\n'" + str(table) + "." + str(variable) + "'"
         return s
 
+    def _monkey_patch(self, method, new):
+        from types import MethodType
+        setattr(self, method, MethodType(new, self))
+
     def _add_log_defaults(self):
         if self.log_variables is None:
             self.log_variables = list()

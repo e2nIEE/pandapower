@@ -109,8 +109,9 @@ def _run_recycle(net):
     return vm_pu, ll
 
 
-def _run_normal(net):
+def _run_normal(net, time_steps=time_steps):
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
+    ow.log_variable("res_bus", "va_degree")
     run_timeseries(net, time_steps, recycle=False)
     return ow
 

@@ -380,10 +380,9 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
 
 def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
-                           use_bus_geodata=False, infofunc=None,
-                           cmap=None, norm=None, picker=False, z=None,
-                           cbar_title="Line Loading [%]", clim=None,
-                           plot_colormap=True, **kwargs):
+                           use_bus_geodata=False, infofunc=None, cmap=None, norm=None, picker=False,
+                           z=None, cbar_title="Line Loading [%]", clim=None, plot_colormap=True,
+                           **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -422,7 +421,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
-    if use_bus_geodata is False and net.line_geodata.empty:
+    if use_bus_geodata is False and line_geodata is None and net.line_geodata.empty:
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
                        "empty.")
@@ -438,6 +437,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
             lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
             bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
     else:
+        line_geodata = line_geodata if line_geodata is not None else net.line_geodata
         lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
         coords = list(line_geodata.loc[lines_with_geo, 'coords'])
         lines_without_geo = set(lines) - set(lines_with_geo)
@@ -795,7 +795,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     if loads is None:
         loads = net.load.index
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.load.loc[loads, "bus"].values]
+    node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
     load_pc, load_lc = _create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
@@ -869,7 +869,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     if sgens is None:
         sgens = net.sgen.index
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.sgen.loc[sgens, "bus"].values]
+    node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
     sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
