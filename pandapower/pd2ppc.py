@@ -10,6 +10,7 @@ import copy
 import numpy as np
 import math
 import pandapower.auxiliary as aux
+import warnings
 from pandapower.build_branch import _initialize_branch_lookup,\
 _build_branch_ppc, _switch_branches, _branches_with_oos_buses,\
 _calc_tap_from_dataframe,_calc_nominal_ratio_from_dataframe,\
@@ -363,6 +364,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), \
                                 np.array([])
+    if not "vector_group" in trafo_df:
+        raise ValueError("Vector Group of transformer needs to be specified for zero \
+                         sequence modelling \n Try : net.trafo[\"vector_group\"] = 'Dyn'" )
+
     for vector_group, trafos in trafo_df.groupby("vector_group"):
         ppc_idx = trafos["_ppc_idx"].values.astype(int)
         ppc["branch"][ppc_idx, BR_STATUS] = 0
@@ -374,10 +379,16 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         vkr_percent = trafos["vkr_percent"].values.astype(float)
         sn_mva = trafos["sn_mva"].values.astype(float)
         # Just put pos seq parameter if zero seq parameter is zero
+        if not "vk0_percent" in trafos:
+            raise ValueError("Short circuit voltage of transformer Vk0 needs to be specified for zero \
+                             sequence modelling \n Try : net.trafo[\"vk0_percent\"] = net.trafo[\"vk_percent\"]" )
         vk0_percent = trafos["vk0_percent"].values.astype(float) if \
             trafos["vk0_percent"].values.astype(float).all() != 0. else \
             trafos["vk_percent"].values.astype(float)
         # Just put pos seq parameter if zero seq parameter is zero
+        if not "vkr0_percent" in trafos:
+            raise ValueError("Real part of short circuit voltage Vk0(Real) needs to be specified for transformer \
+                             modelling \n Try : net.trafo[\"vkr0_percent\"] = net.trafo[\"vkr_percent\"]" )        
         vkr0_percent = trafos["vkr0_percent"].values.astype(float) if \
             trafos["vkr0_percent"].values.astype(float).all() != 0. else \
             trafos["vkr_percent"].values.astype(float)
@@ -385,8 +396,20 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         hv_buses = trafos["hv_bus"].values.astype(int)
         lv_buses_ppc = bus_lookup[lv_buses]
         hv_buses_ppc = bus_lookup[hv_buses]
+        if not "mag0_percent" in trafos:
+            # For Shell Type transformers vk0 = vk * 1
+            #        and mag0_percent = 10 ... 100  Zm0/ Zsc0
+            # --pg 50 DigSilent Power Factory Transformer manual
+            raise ValueError("Magnetizing impedance to vk0 ratio needs to be specified for transformer \
+                             modelling  \n Try : net.trafo[\"mag0_percent\"] = 100" )           
         mag0_ratio = trafos.mag0_percent.values.astype(float)
+        if not "mag0_rx" in trafos:
+            raise ValueError("Magnetizing impedance R/X ratio needs to be specified for transformer \
+                             modelling \n Try : net.trafo[\"mag0_rx\"] = 0 " )        
         mag0_rx = trafos["mag0_rx"].values.astype(float)
+        if not "si0_hv_partial" in trafos:
+            raise ValueError("Zero sequence short circuit impedance partition towards HV side needs to be specified for transformer \
+                             modelling \n Try : net.trafo[\"si0_hv_partial\"] = 0.9 " )          
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
         in_service = trafos["in_service"].astype(int)
@@ -551,15 +574,15 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
             ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg and  mode == 'pf_3ph':
-        s_sc = 1000/ppc['baseMVA']
+    if not "s_sc_%s_mva" % case in eg:
+        raise ValueError("Short Circuit apparent power s_sc_%s_mva for zero sequence needs to be specified for "% case +
+                         "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
     else:
         s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified\
-                         for external grid" % case)
+        raise ValueError("Positive sequence short circuit R/X rate rx_%s needs to be specified\
+                         for external grid \n Try: net.ext_grid['rx_max'] = 0.1" % case)
     rx = eg["rx_%s" % case].values
-
     z_grid = c / s_sc
     if mode == 'pf_3ph':
         z_grid = c / (s_sc / 3)
@@ -567,6 +590,13 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     r_grid = rx * x_grid
     eg["r"] = r_grid
     eg["x"] = x_grid
+
+    if not "x0x_%s" % case in eg:
+        raise ValueError("Zero sequence to positive sequence reactance ratio x0x_%s needs to be specified for "% case +
+                         "external grid \n Try : net.ext_grid[\"x0x_max\"] = 1.0" )
+    if not "r0x0_%s" % case in eg:
+        raise ValueError("Zero sequence short circuit R0/X0 rate r0x0_%s needs to be specified\
+                         for external grid \n Try : net.ext_grid[\"r0x0_max\"] = 0.1" % case )
 
     # ext_grid zero sequence impedance
     if case == "max":
@@ -585,6 +615,7 @@ def _add_line_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]
     if not "line" in branch_lookup:
         return
+#    line = net["line"].loc[net._is_elements["line_is_idx"].values.tolist()]
     line = net["line"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     length = line["length_km"].values
@@ -600,16 +631,24 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, F_BUS] = fb
     ppc["branch"][f:t, T_BUS] = tb
     # Just putting pos seq resistance if zero seq resistance is zero 
-    ppc["branch"][f:t, BR_R] = \
-        line["r0_ohm_per_km"].values * length / baseR / parallel if \
+    if not "r0_ohm_per_km" in line:
+        raise ValueError("Zero sequence resistance R0 needs to be specified\
+                         for line \n Try : net.line[\"r0_ohm_per_km\"] = net.line[\"r_ohm_per_km\"].values * 4" )
+    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel if \
             line["r0_ohm_per_km"].values.all() != 0 else \
-            line["r_ohm_per_km"].values * 4 * length / baseR / parallel
+            line["r_ohm_per_km"].values * 4 * length / baseR / parallel 
     # Just putting pos seq inducatance if zero seq inductance is zero
+    if not "x0_ohm_per_km" in line:
+        raise ValueError("Zero sequence reactance X0 needs to be specified\
+                         for line \n Try : net.line[\"x0_ohm_per_km\"] = net.line[\"x_ohm_per_km\"].values * 4" )
     ppc["branch"][f:t, BR_X] = \
         line["x0_ohm_per_km"].values * length / baseR / parallel if \
             line["x0_ohm_per_km"].values.all() != 0 else \
             line["x_ohm_per_km"].values * 4 *  length / baseR / parallel
     # Just putting pos seq capacitance if zero seq capacitance is zero
+    if not "c0_nf_per_km" in line:
+        raise ValueError("Zero sequence capacitance C0 needs to be specified\
+                         for line \n Try : net.line[\"c0_nf_per_km\"] = net.line[\"c_nf_per_km\"].values * 0.25" )
     ppc["branch"][f:t, BR_B] = \
         (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR \
          * length * parallel) if \
