@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import matplotlib.pyplot as plt
 
-from pandapower.plotting.geo import get_collection_sizes
+from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
     create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_sgen_collection, \
@@ -102,7 +102,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
-        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+        create_generic_coordinates(net, respect_separation_points=respect_switches, library=library)
 
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord

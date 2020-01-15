@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -244,4 +244,4 @@ def test_json_io_same_net(net_in, tempdir):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py", "-x"])
+    pytest.main([__file__, "-x"])

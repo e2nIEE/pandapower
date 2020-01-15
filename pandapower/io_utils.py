@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -39,7 +39,7 @@ try:
     import shapely.geometry
 
     SHAPELY_INSTALLED = True
-except ImportError:
+except (ImportError, OSError):
     SHAPELY_INSTALLED = False
 
 try:
@@ -482,7 +482,7 @@ def to_serializable(obj):
 
 
 @to_serializable.register(pandapowerNet)
-def json_net(obj):
+def json_pandapowernet(obj):
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
     d = with_signature(obj, net_dict)
     return d

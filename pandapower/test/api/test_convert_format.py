@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -38,5 +38,4 @@ def test_convert_format(version):
 
 
 if __name__ == '__main__':
-    # load_and_test_network("1.4.3")
-    pytest.main(__file__)
+    pytest.main([__file__])
