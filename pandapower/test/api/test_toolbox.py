@@ -13,7 +13,6 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
-from numpy.random import default_rng
 
 def test_opf_task():
     net = pp.create_empty_network()
@@ -181,12 +180,11 @@ def test_add_column_from_element_to_elements():
     assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
 
 
-def test_reindex_buses(net):
+def test_reindex_buses():
     net_orig = nw.example_simple()
     net = nw.example_simple()
 
-    rng = default_rng()
-    to_add = rng.choice(1e4, size=len(net.bus.index), replace=False)
+    to_add = 5
     new_bus_idxs = np.array(list(net.bus.index)) + to_add
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     # a more complexe bus_lookup of course should also work, but this one is easy to check
