@@ -463,7 +463,6 @@ class JSONSerializableClass(object):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
 
-
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
         obj_module = obj.__module__.__str__()
@@ -497,7 +496,7 @@ def json_dataframe(obj):
                                         double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
-    if isinstance(obj.columns[0], str):
+    if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
         d['dtype'] = obj.dtypes.astype('str').to_dict()
     return d
 
