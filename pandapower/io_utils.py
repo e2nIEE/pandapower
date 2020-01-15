@@ -496,7 +496,7 @@ def json_dataframe(obj):
                                         double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
-    if isinstance(obj.columns[0], str):
+    if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
         d['dtype'] = obj.dtypes.astype('str').to_dict()
     return d
 
