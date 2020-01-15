@@ -13,7 +13,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
-
+from numpy.random import default_rng
 
 def test_opf_task():
     net = pp.create_empty_network()
@@ -181,11 +181,12 @@ def test_add_column_from_element_to_elements():
     assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
 
 
-def test_reindex_buses():
+def test_reindex_buses(net):
     net_orig = nw.example_simple()
     net = nw.example_simple()
 
-    to_add = np.random.randint(0, 1000)
+    rng = default_rng()
+    to_add = rng.choice(1e4, size=len(net.bus.index), replace=False)
     new_bus_idxs = np.array(list(net.bus.index)) + to_add
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     # a more complexe bus_lookup of course should also work, but this one is easy to check
@@ -201,7 +202,6 @@ def test_reindex_buses():
             if elm == "bus":
                 assert all(np.array(list(net[elm].index)) == np.array(list(
                     net_orig[elm].index)) + to_add)
-    np.random.seed(None)
 
 
 def test_continuos_bus_numbering():
@@ -257,7 +257,7 @@ def test_continuos_bus_numbering():
 def test_reindex_elements():
     net = nw.example_simple()
 
-    new_sw_idx = np.random.randint(0, 1000, size=net.switch.shape[0])
+    new_sw_idx = [569, 763, 502, 258, 169, 259, 348, 522]
     pp.reindex_elements(net, "switch", new_sw_idx)
     assert np.allclose(net.switch.index.values, new_sw_idx)
 
@@ -986,7 +986,3 @@ def test_replace_xward_by_internal_elements():
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
