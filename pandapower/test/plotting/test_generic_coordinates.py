@@ -6,7 +6,7 @@
 
 import pytest
 import copy
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.toolbox import net_in
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 try:
     import igraph
@@ -16,8 +16,8 @@ except ImportError:
 
 
 @pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires python-igraph.")
-def test_create_generic_coordinates_igraph(create_test_network):
-    net = copy.deepcopy(create_test_network)
+def test_create_generic_coordinates_igraph(net_in):
+    net = copy.deepcopy(net_in)
     net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
     create_generic_coordinates(net, library="igraph")
     assert len(net.bus_geodata) == len(net.bus)
@@ -25,8 +25,8 @@ def test_create_generic_coordinates_igraph(create_test_network):
 
 @pytest.mark.xfail(reason="The current implementation is not working properly, as multigraph edges "
                           "as AtlasViews are accessed with list logic.")
-def test_create_generic_coordinates_nx(create_test_network):
-    net = copy.deepcopy(create_test_network)
+def test_create_generic_coordinates_nx(net_in):
+    net = copy.deepcopy(net_in)
     net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
     create_generic_coordinates(net, library="networkx")
     assert len(net.bus_geodata) == len(net.bus)
