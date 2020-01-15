@@ -13,6 +13,7 @@ import pandapower as pp
 import pandapower.topology as top
 from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 import pandapower.networks as nw
+import pandapower.control as ct
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
 import numpy as np
@@ -242,6 +243,12 @@ def test_json_io_same_net(net_in, tempdir):
     net2 = pp.from_json(filename)
     assert net2.controller.object.at[0].net is net2
 
+def test_deepcopy_controller():
+    net = nw.mv_oberrhein()
+    ct.ContinuousTapControl(net, 114, 1.01)  
+    assert net == net.controller.object.iloc[0].net   
+    net2 = copy.copy(net)    
+    assert net2 == net2.controller.object.iloc[0].net
 
 if __name__ == "__main__":
     pytest.main([__file__, "-x"])
