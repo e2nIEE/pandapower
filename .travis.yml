@@ -26,7 +26,6 @@ install:
     fi
   - conda install matplotlib --yes
   - conda install -c conda-forge python-igraph --yes
-  - conda install -c anaconda pygraphviz --yes
   - pip install pytest pytest-cov
   - pip install codecov
   - python setup.py install
