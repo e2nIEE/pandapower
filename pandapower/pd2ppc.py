@@ -277,4 +277,5 @@ def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
 
     # update lookup
     lookup[pandapower_index] = ppc_index
+
     aux._write_lookup_to_net(net, lookup_name, lookup)

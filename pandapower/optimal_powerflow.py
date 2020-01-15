@@ -39,6 +39,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     reset_results(net)
 
     ppc, ppci = _pd2ppc(net)
+
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppci

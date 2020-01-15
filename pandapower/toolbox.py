@@ -816,7 +816,7 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def reindex_buses(net, bus_lookup, partial_lookup=False):
+def reindex_buses(net, bus_lookup):
     """
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
@@ -825,14 +825,15 @@ def reindex_buses(net, bus_lookup, partial_lookup=False):
       **net** - pandapower network
 
       **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
-
-    OPTIONAL:
-      **partial_lookup** (bool, default False) - flag if bus_lookup is only part of the bus indices
     """
-    if partial_lookup:
-        full_bus_lookup = copy.deepcopy(bus_lookup)
-        full_bus_lookup.update({b: b for b in net.bus.index if b not in bus_lookup.keys()})
-        bus_lookup = full_bus_lookup
+    not_fitting_bus_lookup_keys = set(bus_lookup.keys()) - set(net.bus.index)
+    if len(not_fitting_bus_lookup_keys):
+        logger.error("These bus indices are unknown to net. Thus, they cannot be reindexed: " +
+                     str(not_fitting_bus_lookup_keys))
+
+    missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
+    if len(missing_bus_indices):
+        bus_lookup.update({b: b for b in missing_bus_indices})
 
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
@@ -898,8 +899,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
     lookup = dict(zip(old_indices, new_indices))
 
     if element == "bus":
-        partial = len(new_indices) < net[element].shape[0]
-        reindex_buses(net, lookup, partial_lookup=partial)
+        reindex_buses(net, lookup)
         return
 
     # --- reindex
@@ -2192,10 +2192,10 @@ def replace_ward_by_internal_elements(net, wards=None):
     Replaces wards by loads and shunts
     INPUT:
         **net** - pandapower net
-    
+
     OPTIONAL:
-        **wards** (iterable) - indices of xwards which should be replaced  
-    
+        **wards** (iterable) - indices of xwards which should be replaced
+
     OUTPUT:
         No output - the given wards in pandapower net are replaced by loads and shunts
 
@@ -2205,18 +2205,18 @@ def replace_ward_by_internal_elements(net, wards=None):
         wards = net.ward.index
     else:
         wards = ensure_iterability(wards)
-    
-    # --- create loads and shunts        
+
+    # --- create loads and shunts
     new_load_idx = []
     new_shunt_idx = []
     for ward in net.ward.loc[wards].itertuples():
-        load_idx = create_load(net, ward.bus, ward.ps_mw, ward.qs_mvar, 
+        load_idx = create_load(net, ward.bus, ward.ps_mw, ward.qs_mvar,
                                in_service=ward.in_service, name=ward.name)
-        shunt_idx = create_shunt(net, ward.bus, q_mvar=ward.qz_mvar, p_mw=ward.pz_mw, 
-                                 in_service=ward.in_service, name=ward.name)        
+        shunt_idx = create_shunt(net, ward.bus, q_mvar=ward.qz_mvar, p_mw=ward.pz_mw,
+                                 in_service=ward.in_service, name=ward.name)
         new_load_idx.append(load_idx)
         new_shunt_idx.append(shunt_idx)
-            
+
     # --- result data
     if net.res_ward.shape[0]:
         sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
@@ -2228,7 +2228,7 @@ def replace_ward_by_internal_elements(net, wards=None):
         to_add_load.q_mvar = net.ward.qs_mvar[wards].values\
                             *sign_in_service*sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
-        
+
         to_add_shunt = net.res_ward.loc[wards,["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
         to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values**2*net.ward.pz_mw[wards].values\
@@ -2236,22 +2236,22 @@ def replace_ward_by_internal_elements(net, wards=None):
         to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values**2*net.ward.qz_mvar[wards].values\
                             *sign_in_service*sign_not_isolated
         to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
-        net.res_shunt = pd.concat([net.res_shunt, to_add_shunt]) 
-        
+        net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
+
         net.res_ward.drop(wards, inplace=True)
-        
-    # --- drop replaced wards 
-    net.ward.drop(wards, inplace=True) 
+
+    # --- drop replaced wards
+    net.ward.drop(wards, inplace=True)
 
 def replace_xward_by_internal_elements(net, xwards=None):
     """
-    Replaces xward by loads, shunts, impedance and generators 
+    Replaces xward by loads, shunts, impedance and generators
     INPUT:
         **net** - pandapower net
-        
+
     OPTIONAL:
-        **xwards** (iterable) - indices of xwards which should be replaced  
-      
+        **xwards** (iterable) - indices of xwards which should be replaced
+
     OUTPUT:
         No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
 
@@ -2261,23 +2261,22 @@ def replace_xward_by_internal_elements(net, xwards=None):
         xwards = net.xward.index
     else:
         xwards = ensure_iterability(xwards)
-    
-    # --- create buses, loads, shunts, gens and impedances        
+
+    # --- create buses, loads, shunts, gens and impedances
     for xward in net.xward.loc[xwards].itertuples():
         bus_v = net.bus.vn_kv[xward.bus]
         bus_idx = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
                              name=xward.name)
-        create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar, 
+        create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
                                in_service=xward.in_service, name=xward.name)
-        create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw, 
-                                 in_service=xward.in_service, name=xward.name)        
+        create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
+                                 in_service=xward.in_service, name=xward.name)
         create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
-                             name=xward.name)          
+                             name=xward.name)
         create_impedance(net, xward.bus, bus_idx, \
-                            xward.r_ohm/(bus_v**2), xward.x_ohm/(bus_v**2), 
+                            xward.r_ohm/(bus_v**2), xward.x_ohm/(bus_v**2),
                             net.sn_mva, in_service=xward.in_service, name=xward.name)
 
-    # --- drop replaced wards 
+    # --- drop replaced wards
     net.xward.drop(xwards, inplace=True)
     net.res_xward.drop(xwards, inplace=True)
-    
