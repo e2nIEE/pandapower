@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -387,9 +387,13 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             # TODO for custom colormaps
             cbar_cmap_name = 'Jet' if cmap is 'jet' else cmap
             # workaround to get colorbar for lines (an unvisible node is added)
-            lines_cbar = dict(type='scatter', x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
+            # get x and y of first line.from_bus:
+            x = [net.bus_geodata.x[net.line.from_bus[net.line.index[0]]]]
+            y = [net.bus_geodata.y[net.line.from_bus[net.line.index[0]]]]
+            lines_cbar = dict(type='scatter', x=x, y=y, mode='markers',
                               marker=Marker(size=0, cmin=cmin, cmax=cmax,
                                             color='rgb(255,255,255)',
+                                            opacity=0,
                                             colorscale=cbar_cmap_name,
                                             colorbar=ColorBar(thickness=10,
                                                               x=cpos),
