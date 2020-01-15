@@ -19,7 +19,7 @@ from pandapower.control import ConstControl
 from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
 from pandapower.timeseries import DFData, OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-
+from pandapower.networks import simple_four_bus_system
 logger = logging.getLogger(__name__)
 ow_logger = logging.getLogger("hp.control.output_writer")
 logger.setLevel(logging.ERROR)
@@ -269,5 +269,32 @@ def test_ppc_log(simple_test_net):
     assert len(ow.output["ppc_bus.va"]) == n_timesteps
 
 
+def test_ow_index():
+    net = simple_four_bus_system()
+    steps = [3,5,7]
+    p_data = pd.DataFrame(index=steps, columns=["0", "1"], data=[[0.01, 0.02], 
+                                                                 [0.03, 0.04],
+                                                                 [0.05, 0.06],
+                                                                 ])
+    v_data = pd.DataFrame(index=steps, columns=["0"], data=[1.01, 1.03, 1.02])
+        
+    ds_p = DFData(p_data)
+    ds_v = DFData(v_data)
+    
+    ct.ConstControl(net, element='load', variable='p_mw',
+                 element_index=net.load.index.tolist(), data_source=ds_p,
+                 profile_name=p_data.columns)
+    ct.ConstControl(net, element='ext_grid', variable='vm_pu', 
+                 element_index=0, data_source=ds_v, 
+                 profile_name='0')
+    
+    ow = OutputWriter(net)
+    ow.log_variable('res_bus', 'vm_pu')
+    ow.log_variable('res_line', 'loading_percent')
+    
+    run_timeseries(net, time_steps=p_data.index)
+    
+    assert np.all(ow.output["res_line.loading_percent"].index == p_data.index)
+    
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
