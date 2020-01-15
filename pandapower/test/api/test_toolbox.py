@@ -940,10 +940,10 @@ def test_replace_ward_by_internal_elements():
         assert net[elm].shape[0] == 4
     res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
     pp.runpp(net)
-    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
-    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
-    assert (res_load_created.values == net.res_load.values).all()
-    assert (res_shunt_created.values == net.res_shunt.values).all()
+    assert np.allclose(net_org.res_ext_grid.p_mw, net.res_ext_grid.p_mw)
+    assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
+    assert np.allclose(res_load_created, net.res_load)
+    assert np.allclose(res_shunt_created, net.res_shunt)
 
     net = nw.example_simple()
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
@@ -956,10 +956,10 @@ def test_replace_ward_by_internal_elements():
         assert net[elm].shape[0] == 2
     res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
     pp.runpp(net)
-    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
-    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
-    assert (res_load_created.values == net.res_load.values).all()
-    assert (res_shunt_created.values == net.res_shunt.values).all()
+    assert np.allclose(net_org.res_ext_grid.p_mw, net.res_ext_grid.p_mw)
+    assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
+    assert np.allclose(res_load_created, net.res_load)
+    assert np.allclose(res_shunt_created, net.res_shunt)
 
 
 def test_replace_xward_by_internal_elements():
