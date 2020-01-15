@@ -35,6 +35,7 @@ import pandas as pd
 import scipy as sp
 from packaging import version
 import six
+import json
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
@@ -163,6 +164,11 @@ class ADict(dict, MutableMapping):
             )
 
         return self._build(self[key])
+
+    def __deepcopy__(self, memo):
+        from pandapower.file_io import PPJSONEncoder, from_json_string
+        json_string = json.dumps(self, cls=PPJSONEncoder)
+        return from_json_string(json_string)
 
     @classmethod
     def _valid_name(cls, key):

@@ -463,6 +463,15 @@ class JSONSerializableClass(object):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
 
+    def __copy__(self):
+        print("hello")
+
+    
+    def __deepcopy__(self, memo):
+        super().__deepcopy__(self, memo)
+#        cls = self.__class__
+        print("helloe")
+
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
