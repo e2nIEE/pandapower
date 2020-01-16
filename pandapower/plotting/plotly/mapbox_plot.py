@@ -68,6 +68,9 @@ def geo_data_to_latlong(net, projection):
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
         return
 
+    if projection == 'epsg:4326':
+        return
+    
     wgs84 = Proj(init='epsg:4326')  # lat/long
 
     try:
