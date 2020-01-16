@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -277,4 +277,5 @@ def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
 
     # update lookup
     lookup[pandapower_index] = ppc_index
+
     aux._write_lookup_to_net(net, lookup_name, lookup)

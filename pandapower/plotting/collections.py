@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -380,10 +380,9 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
 
 def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
-                           use_bus_geodata=False, infofunc=None,
-                           cmap=None, norm=None, picker=False, z=None,
-                           cbar_title="Line Loading [%]", clim=None,
-                           plot_colormap=True, **kwargs):
+                           use_bus_geodata=False, infofunc=None, cmap=None, norm=None, picker=False,
+                           z=None, cbar_title="Line Loading [%]", clim=None, plot_colormap=True,
+                           **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -422,7 +421,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
-    if use_bus_geodata is False and net.line_geodata.empty:
+    if use_bus_geodata is False and line_geodata is None and net.line_geodata.empty:
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
                        "empty.")
@@ -438,6 +437,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
             lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
             bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
     else:
+        line_geodata = line_geodata if line_geodata is not None else net.line_geodata
         lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
         coords = list(line_geodata.loc[lines_with_geo, 'coords'])
         lines_without_geo = set(lines) - set(lines_with_geo)
@@ -1140,7 +1140,7 @@ def add_single_collection(c, ax, plot_colorbars, copy_collections):
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
-    for c in collections:
+    for i, c in enumerate(collections):
         if Collection in inspect.getmro(c.__class__):
             # if Collection is in one of the base classes of c
             add_single_collection(c, ax, plot_colorbars, copy_collections)
@@ -1148,7 +1148,7 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
             # if c is a tuple or a list of collections
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:
-            logger.warning("{} in collections is of unknown type. Skipping".format(c))
+            logger.warning("{} in collections is of unknown type. Skipping".format(i))
 
 
 if __name__ == "__main__":
