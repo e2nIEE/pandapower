@@ -232,8 +232,8 @@ def from_excel(filename, convert=True):
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
 
-        **convert** (bool, True) - If True, converts the format of the net loaded from excel from 
-            the older version of pandapower to the newer version format 
+        **convert** (bool, True) - If True, converts the format of the net loaded from excel from
+            the older version of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -296,7 +296,7 @@ def from_json(filename, convert=True):
     INPUT:
         **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
-        **convert** (bool, True) - If True, converts the format of the net loaded from json from the older 
+        **convert** (bool, True) - If True, converts the format of the net loaded from json from the older
             version of pandapower to the newer version format
 
     OUTPUT:
