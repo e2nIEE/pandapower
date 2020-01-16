@@ -84,6 +84,11 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
                 if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
                     dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
             continue
+        elif item == "profiles":
+            for t in net.profiles.keys():  # which could be e.g. "sgen", "gen", "load", ...
+                if net.profiles[t].shape[0]:  # avoid empty excel sheets for std_types if empty
+                    dodfs["%s_profiles" % t] = pd.DataFrame(net.profiles[t])
+            continue
         elif item == "user_pf_options":
             if len(value) > 0:
                 dodfs["user_pf_options"] = pd.DataFrame(value, index=[0])
@@ -112,7 +117,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             dodfs[item] = geo
         else:
             dodfs[item] = value
-        # save dtypes 
+        # save dtypes
         for column, dtype in value.dtypes.iteritems():
             dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
@@ -165,6 +170,11 @@ def from_dict_of_dfs(dodfs):
             df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
+            continue  # don't go into try..except
+        elif item.endswith("_profiles"):
+            if "profiles" not in net.keys():
+                net["profiles"] = dict()
+            net["profiles"][item[:-9]] = table
             continue  # don't go into try..except
         elif item == "user_pf_options":
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
@@ -402,16 +412,16 @@ class JSONSerializableClass(object):
             elif not isinstance(obj2, type(obj1)):
                 raise UnequalityFound
             elif isinstance(obj1, pandapowerNet):
-                pass               
+                pass
             elif isinstance(obj1, pd.DataFrame):
                 if len(obj1) > 0:
-                    try: 
+                    try:
                         assert_frame_equal(obj1, obj2)
                     except:
                         raise UnequalityFound
             elif isinstance(obj2, pd.Series):
                 if len(obj1) > 0:
-                    try: 
+                    try:
                         assert_series_equal(obj1, obj2)
                     except:
                         raise UnequalityFound
@@ -427,7 +437,7 @@ class JSONSerializableClass(object):
                         raise UnequalityFound
                 except:
                     raise UnequalityFound
-    
+
         def check_dictionary_equality(obj1, obj2):
             if set(obj1.keys()) != set(obj2.keys()):
                 raise UnequalityFound
@@ -438,7 +448,7 @@ class JSONSerializableClass(object):
         def check_callable_equality(obj1, obj2):
             if str(obj1) != str(obj2):
                 raise UnequalityFound
-                
+
         if isinstance(other, self.__class__):
                 try:
                     check_equality(self.__dict__, other.__dict__)
