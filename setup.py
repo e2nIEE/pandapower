@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
@@ -32,7 +32,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.0.1',
+    version='2.2.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',

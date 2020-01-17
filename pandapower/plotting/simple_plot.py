@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import matplotlib.pyplot as plt
 
+from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
-    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_sgen_collection, create_load_collection
+    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_sgen_collection, \
+    create_load_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
@@ -100,23 +102,19 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
-        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+        create_generic_coordinates(net, respect_separation_points=respect_switches, library=library)
 
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord
-        mean_distance_between_buses = sum((net['bus_geodata'].max() - net[
-            'bus_geodata'].min()).dropna() / 200)
-        # set the bus / ext_grid sizes accordingly
-        # Comment: This is implemented because if you would choose a fixed values
-        # (e.g. bus_size = 0.2), the size
-        # could be to small for large networks and vice versa
-        bus_size *= mean_distance_between_buses
-        ext_grid_size *= mean_distance_between_buses * 1.5
-        switch_size *= mean_distance_between_buses * 1
-        switch_distance *= mean_distance_between_buses * 2
-        load_size *= mean_distance_between_buses
-        sgen_size *= mean_distance_between_buses
-        trafo_size *= mean_distance_between_buses
+        sizes = get_collection_sizes(net, bus_size, ext_grid_size, switch_size,
+                                     switch_distance, load_size, sgen_size, trafo_size)
+        bus_size = sizes["bus"]
+        ext_grid_size = sizes["ext_grid"]
+        trafo_size = sizes["trafo"]
+        sgen_size = sizes["sgen"]
+        load_size = sizes["load"]
+        switch_size = sizes["switch"]
+        switch_distance = sizes["switch_distance"]
 
     # create bus collections to plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
@@ -146,16 +144,16 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
                                         trafo.lv_bus in net.bus_geodata.index]
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_collection(net, trafo_buses_with_geo_coordinates,
-                                            color=trafo_color, size=trafo_size)
+                                     color=trafo_color, size=trafo_size)
         collections.append(tc)
 
     # create trafo3w collection if trafo3w is available
     trafo3w_buses_with_geo_coordinates = [
         t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus_geodata.index and
-        trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
+                                                      trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
     if len(trafo3w_buses_with_geo_coordinates) > 0:
         tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
-                                              color=trafo_color)
+                                       color=trafo_color)
         collections.append(tc)
 
     if plot_line_switches and len(net.switch):
@@ -183,7 +181,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
 if __name__ == "__main__":
     import pandapower.networks as nw
+
     net = nw.case145()
-#    net = nw.create_cigre_network_mv()
-#    net = nw.mv_oberrhein()
+    #    net = nw.create_cigre_network_mv()
+    #    net = nw.mv_oberrhein()
     simple_plot(net, bus_size=0.4)

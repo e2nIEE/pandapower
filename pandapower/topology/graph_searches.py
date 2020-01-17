@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -87,7 +87,7 @@ def connected_components(mg, notravbuses=set()):
 
 
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
-                         notravbuses=None):
+                         notravbuses=None, weight='weight'):
     """
         Calculates the shortest distance between a source bus and all buses connected to it.
 
@@ -106,10 +106,11 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
         **notravbuses** (integer/list, None) - lines connected to these buses are not being
                                               considered
+        **weight** (string, None) – Edge data key corresponding to the edge weight
 
      OUTPUT:
         **dist** - Returns a pandas series with containing all distances to the source bus
-                   in km.
+                   in km. If weight=None dist is the topological distance (int).
 
      EXAMPLE:
          import pandapower.topology as top
@@ -119,10 +120,10 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     """
     g = create_nxgraph(net, respect_switches=respect_switches,
                        nogobuses=nogobuses, notravbuses=notravbuses)
-    return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
+    return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
+def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -158,13 +159,6 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         if not set(cc) & slacks:
             not_supplied.update(set(cc))
 
-    buses_remove = set()
-    if in_service_only:
-        for bus in not_supplied:
-            if not net.bus.loc[bus, 'in_service']:
-                buses_remove.add(bus)
-
-    not_supplied = not_supplied - buses_remove
     return not_supplied
 
 
@@ -197,7 +191,8 @@ def find_basic_graph_characteristics(g, roots, characteristics):
         try:
             child = next(children)
             if stub_buses:
-                path.append(child)  # keep track of movement through the graph
+                if child not in visited:
+                    path.append(child)  # keep track of movement through the graph
             if grandparent == child:
                 continue
             if child in visited:
@@ -208,7 +203,8 @@ def find_basic_graph_characteristics(g, roots, characteristics):
                 visited.add(child)
                 stack.append((parent, child, iter(g[child])))
         except StopIteration:
-            stack.pop()
+            back = stack.pop()
+            path.append(back[0])
             if low[parent] >= discovery[grandparent]:
                 # Articulation points and start of not n-1 safe buses
                 if grandparent not in roots:
@@ -223,14 +219,12 @@ def find_basic_graph_characteristics(g, roots, characteristics):
 
                     # Stub buses
                     if stub_buses:
-                        if path[-1] == grandparent:
-                            path.pop()
+                        stub = path.pop()
+                        if stub != grandparent:
+                            char_dict['stub_buses'].add(stub)
+                        while path and path[-1] != grandparent and path[-1] not in roots:
                             stub = path.pop()
                             char_dict['stub_buses'].add(stub)
-                        else:
-                            while path[-1] != grandparent:
-                                stub = path.pop()
-                                char_dict['stub_buses'].add(stub)
             low[grandparent] = min(low[parent], low[grandparent])
 
     if connected:
@@ -445,71 +439,27 @@ def elements_on_path(mg, path, element="line"):
     if element not in ["line", "switch", "trafo", "trafo3w"]:
         raise ValueError("Invalid element type %s"%element)
     if isinstance(mg, nx.MultiGraph):
-        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() 
+        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys()
                 if edge[0]==element]
     else:
         return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
                 if mg.get_edge_data(b1, b2)["key"][0]==element]
 
 
-def estimate_voltage_vector(net):
-    """
-    Function initializes the voltage vector of net with a rough estimation. All buses are set to the
-    slack bus voltage. Transformer differences in magnitude and phase shifting are accounted for.
-    :param net: pandapower network
-    :return: pandas dataframe with estimated vm_pu and va_degree
-    """
-    res_bus = pd.DataFrame(index=net.bus.index, columns=["vm_pu", "va_degree"])
-    net_graph = create_nxgraph(net, include_trafos=False)
-    for _, ext_grid in net.ext_grid.iterrows():
-        area = list(connected_component(net_graph, ext_grid.bus))
-        res_bus.vm_pu.loc[area] = ext_grid.vm_pu
-        res_bus.va_degree.loc[area] = ext_grid.va_degree
-    trafos = net.trafo[net.trafo.in_service == 1]
-    trafo_index = trafos.index.tolist()
-    while len(trafo_index):
-        for tix in trafo_index:
-            trafo = trafos.loc[tix]
-            if pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]) \
-                    and pd.isnull(res_bus.vm_pu.at[trafo.lv_bus]):
-                try:
-                    area = list(connected_component(net_graph, trafo.lv_bus))
-                    shift = trafo.shift_degree if "shift_degree" in trafo else 0
-                    ratio = (trafo.vn_hv_kv / trafo.vn_lv_kv) / (net.bus.vn_kv.at[trafo.hv_bus]
-                                                                 / net.bus.vn_kv.at[trafo.lv_bus])
-                    res_bus.vm_pu.loc[area] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
-                    res_bus.va_degree.loc[area] = res_bus.va_degree.at[trafo.hv_bus] - shift
-                except KeyError:
-                    raise UserWarning("An out-of-service bus is connected to an in-service "
-                                      "transformer. Please set the transformer out of service or"
-                                      "put the bus into service. Treat results with caution!")
-                trafo_index.remove(tix)
-            elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
-                # parallel transformer, lv buses are already set from previous transformer
-                trafo_index.remove(tix)
-            if len(trafo_index) == len(trafos):
-                # after the initial run we could not identify any areas correctly, it's probably a transmission grid
-                # with slack on the LV bus and multiple transformers/gens. do flat init and return
-                res_bus.vm_pu.loc[res_bus.vm_pu.isnull()] = 1.
-                res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
-                return res_bus
-    return res_bus
-
-
-def get_end_points_of_continously_connected_lines(net, lines):
+def get_end_points_of_continuously_connected_lines(net, lines):
     mg = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
     switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
     mg.add_edges_from(switch_buses)
-    
+
     all_buses = set(line_buses.flatten())
     longest_path = []
     for b1, b2 in combinations(all_buses, 2):
         try:
             path = nx.shortest_path(mg, b1, b2)
         except nx.NetworkXNoPath:
-            raise UserWarning("Lines not continously connected")
+            raise UserWarning("Lines not continuously connected")
         if len(path) > len(longest_path):
             longest_path = path
     if all_buses - set(longest_path):

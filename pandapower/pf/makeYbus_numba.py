@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -17,7 +17,7 @@ from pandapower.pypower.idx_bus import GS, BS
 from pandapower.pypower.makeYbus import branch_vectors
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):  # pragma: no cover
     """
     Fast calculation of Ybus

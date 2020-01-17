@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -582,13 +582,13 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     logger.debug("Maximum voltage angle difference between pypower and pandapower: "
                  "%.2e degree" % max_(abs(diff_res["bus"][:, 1])))
     logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
-                 "%.2e kW" % max_(abs(diff_res["branch"][:, [0, 2]] * 1e3)))
+                 "%.2e MW" % max_(abs(diff_res["branch"][:, [0, 2]])))
     logger.debug("Maximum branch flow reactive power difference between pypower and "
                  "pandapower: %.2e MVAr" % max_(abs(diff_res["branch"][:, [1, 3]])))
     logger.debug("Maximum active power generation difference between pypower and pandapower: "
                  "%.2e MW" % max_(abs(diff_res["gen"][:, 0])))
     logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
-                 "%.2e kVAr" % max_(abs(diff_res["gen"][:, 1] * 1e3)))
+                 "%.2e MVAr" % max_(abs(diff_res["gen"][:, 1])))
     if _validate_diff_res(diff_res, {"bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_mw": 1e-6,
                                      "branch_q_mvar": 1e-6}) and \
             (max_(abs(diff_res["gen"])) > 1e-1).any():

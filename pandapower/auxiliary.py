@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -26,7 +26,8 @@
 # THE SOFTWARE.
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
-from collections import MutableMapping
+from collections.abc import MutableMapping
+import copy
 
 import numpy as np
 import numpy.core.numeric as ncn
@@ -34,6 +35,7 @@ import pandas as pd
 import scipy as sp
 from packaging import version
 import six
+import json
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
@@ -55,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 class ADict(dict, MutableMapping):
     def __init__(self, *args, **kwargs):
-        super(ADict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # to prevent overwrite of internal attributes by new keys
         # see _valid_name()
@@ -163,6 +165,11 @@ class ADict(dict, MutableMapping):
 
         return self._build(self[key])
 
+    def __deepcopy__(self, memo):
+        from pandapower.file_io import PPJSONEncoder, from_json_string
+        json_string = json.dumps(self, cls=PPJSONEncoder)
+        return from_json_string(json_string)
+
     @classmethod
     def _valid_name(cls, key):
         """
@@ -182,7 +189,14 @@ class ADict(dict, MutableMapping):
 
 class pandapowerNet(ADict):
     def __init__(self, *args, **kwargs):
-        super(pandapowerNet, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        if isinstance(args[0], self.__class__):
+            net = args[0]
+            self.clear()
+            self.update(**net.deepcopy())
+
+    def deepcopy(self):
+        return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
         r = "This pandapower network includes the following parameter tables:"
@@ -325,6 +339,9 @@ def _check_connectivity_opf(ppc):
             # if slack is in reachable other slacks are connected to this one. Set it to Gen bus
             demoted_slacks = list(intersection - {slack})
             ppc['bus'][demoted_slacks, BUS_TYPE] = PV
+            logger.warning("Multiple connected slacks in one area found. This would probably lead to non-convergence "
+                           "of the OPF. I'll change all but one slack (ext_grid) to gens. To avoid undesired "
+                           "behaviour, rather convert the slacks to gens yourself and set slack=True for one of them.")
 
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
@@ -424,8 +441,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    if recycle is None:
-        recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
+    # if recycle is None:
+    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -458,7 +475,7 @@ def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
-            "create_continous_bus_index()" % max_bus)
+            "create_continuous_bus_index()" % max_bus)
 
 
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
@@ -469,7 +486,7 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
         logger.warning(
             "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
             # " Try resetting the bus indices with the toolbox function "
-            # "create_continous_bus_index()"
+            # "create_continuous_bus_index()"
             % max_gen)
 
 
@@ -641,6 +658,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     init_va_degree = kwargs.get("init_va_degree", None)
     recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    only_v_results = kwargs.get("only_v_results", False)
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -674,8 +692,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
-    init_from_results = init == "results" or (isinstance(init_vm_pu, str) and init_vm_pu=="results") \
-                                or (isinstance(init_va_degree, str) and init_va_degree=="results")
+    init_from_results = init == "results" or \
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -694,7 +713,6 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_vm_pu = init
         init_va_degree = init
 
-
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -707,8 +725,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug)
+                    v_debug=v_debug, only_v_results=only_v_results)
     net._options.update(overrule_options)
+
 
 def _init_nx_options(net):
     net._options = {}
@@ -719,7 +738,8 @@ def _init_nx_options(net):
                      voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
 
 
-def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, switch_rx_ratio, trafo3w_losses):
+def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity,
+                          switch_rx_ratio, trafo3w_losses, **kwargs):
     ac = False
     numba = True
     mode = "pf"
@@ -733,18 +753,20 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     algorithm = None
     max_iteration = None
     tolerance_mva = None
-
+    only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    only_v_results=only_v_results)
 
-def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta, init,
-                         numba, trafo3w_losses, consider_line_temperature=False):
+
+def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
+                         init, numba, trafo3w_losses, consider_line_temperature=False):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -752,16 +774,17 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     trafo_model = "t"
     trafo_loading = 'current'
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+    recycle = None
+    only_v_results = False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba, only_v_results=only_v_results)
 
 
 def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
@@ -772,14 +795,42 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     trafo_loading = 'current'
     calculate_voltage_angles = True
     enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
+    recycle = None
+    only_v_results = False
     # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
-    pass
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results)
+
+
+def _internal_stored(net):
+    """
+
+    The function newtonpf() needs these variables as inputs:
+    Ybus, Sbus, V0, pv, pq, ppci, options
+
+    Parameters
+    ----------
+    net - the pandapower net
+
+    Returns
+    -------
+    True if all variables are stored False otherwise
+
+    """
+    # checks if all internal variables are stored in net, which are needed for a power flow
+
+    if net["_ppc"] is None:
+        return False
+
+    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "Ybus", "Yf", "Yt",
+                              "Sbus", "ref_gens"]
+    for var in mandatory_pf_variables:
+        if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
+            logger.warning("recycle is set to True, but internal variables are missing")
+            return False
+    return True

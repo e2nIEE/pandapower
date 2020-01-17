@@ -1,6 +1,47 @@
 Change Log
 =============
 
+[2.2.0]- 2020-01-17
+----------------------
+- [ADDED] control and timeseries module
+- [ADDED] Support phasor measurement in state estimation
+- [ADDED] Support recycle in state estimation
+- [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
+- [ADDED] Other PowerModels features via interface callable (e.g. network data check and different solver)
+- [ADDED] toolbox function select_subnet now also copies cost data and net parameters
+- [ADDED] consideration of result tables in toolbox functions drop
+- [ADDED] new jupyter notebook examples for time series, controller and PowerModels.jl interface
+- [ADDED] reindex_buses() toolbox function
+
+- [FIXED] Bugfixes in PowerModels conversion, OPF in general and tests
+- [FIXED] renew opf_task() toolbox function which got outdated
+- [FIXED] dtype at element parameter in cost tables
+- [FIXED] convert_format.py: added the renaming of controller column and of the controller attributes, added tests for version 2.1.0
+
+- [CHANGED] Unified the mesurement unit conversion of state estimation in ppc conversion
+- [CHANGED] OPF bounds and settings for gens. limits or fixed values can now be enforced. See #511
+- [CHANGED] OPF documentation and _check_necessary_opf_parameters()
+- [CHANGED] JSON I/O: pandapower objects that are derived from JSONSerializableClass are now instantiated using __new__ instead of __init__ (as before), and the serialization has been adjusted; self.update_initialized(locals()) is not necessary anymore and has been removed; restore_json_objects is not needed anymore and has been removed
+- [CHANGED] column name in net.controller: "controller" -> "object"
+- [CHANGED] variable names in ContinuousTapControl ("u_set" -> "vm_set_pu") and in DiscreteTapControl ("u_lower" -> "vm_lower_pu", "u_upper" -> "vm_upper_pu")
+- [CHANGED] __version__ is now changed to 2.2.0
+
+[2.1.0]- 2019-07-08
+----------------------
+- [ADDED] calc_single_sc function to analyse a single fault instead of vectorized fault
+- [ADDED] convenience function for logarithmic colormaps in plotting
+- [CHANGED] corrected spelling 'continous' to 'continuous' in several functions
+- [ADDED] additional standard types for overhead lines
+- [CHANGED] make pp.to_json format closer to the JSON standard #406
+- [ADDED] PowerModels.jl storage interface for time series based storage optimization.
+- [ADDED] PowerModels.jl OTS interface for optimize transmission switching optimization.
+- [ADDED] PowerModels.jl TNEP interface for transmission expansion optimization. See Jupyter Notebook
+- [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
+- [ADDED] Graph-Tool interface
+- [ADDED] Multiple new algorithms and robust estimators in state estimation
+- [ADDED] Support measurements for trafo3w in state estimation
+- [ADDED] Auto zero-injection bus handling in state estimation
+
 [2.0.1]- 2019-03-28
 ----------------------
 - [FIXED] bug in short-circuit impedance of gens
@@ -115,7 +156,7 @@ Change Log
 ----------------------
 
 - [ADDED] possibility to save networks to an sql database
-- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [CHANGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
 - [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
 - [FIXED] state estimation bug with phase shift transformers
 - [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception

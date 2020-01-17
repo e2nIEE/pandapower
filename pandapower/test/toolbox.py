@@ -1,38 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 import os
+import shutil
+import tempfile
 from math import isnan
 
 import numpy as np
 import pandas.util.testing as pdt
 import pytest
-import tempfile
-import shutil
 
 import pandapower as pp
 import pandapower.networks as networks
 
-try:
-    import pplog as logging
-except ImportError:
-    import logging
 
-
-def run_all_tests():
-    """ function executing all tests
-    """
-    logger = logging.getLogger()
-    logger.setLevel(logging.CRITICAL)
-    pytest.main([os.path.abspath(os.path.join(pp.pp_dir, "test")), "-s"])
-    logger.setLevel(logging.INFO)
-
-
-@pytest.fixture(scope="module", params=[1])  # TODO
+@pytest.fixture(params=[1])  # TODO
 def net_in(request):
     if request.param == 1:
         net = create_test_network()
@@ -41,6 +26,7 @@ def net_in(request):
         return net
     if request.param == 2:
         return networks.case145()
+
 
 @pytest.yield_fixture(scope="module")
 def tempdir():
@@ -169,53 +155,6 @@ def assert_res_out_of_service(net, idx, name):
     return status
 
 
-# TODO Future res_out_of_service:
-#    try:
-#        assert eval('net.res_'+name+'.loc['+str(idx)+'].isnull().all()')
-#    except AssertionError:
-#        print ("res_{} table is not according to specifications if {} is out of service".format(name, name))
-
-# def assertItemsEqual(expected_seq, actual_seq, msg = None):
-#        """An unordered sequence specific comparison. It asserts that
-#        actual_seq and expected_seq have the same element counts.
-#        Equivalent to: :
-#
-#            self.assertEqual(Counter(iter(actual_seq)),
-#                             Counter(iter(expected_seq)))
-#
-#        Asserts that each element has the same count in both sequences.
-#        Example:
-#            - [0, 1, 1] and [1, 0, 1] compare equal.
-#            - [0, 0, 1] and [0, 1] compare unequal.
-#        """
-#        import warnings
-#        import sys
-#        import collections
-#        import unittest
-#
-#        first_seq, second_seq = list(expected_seq), list(actual_seq)
-#        with warnings.catch_warnings():
-#            if sys.py3kwarning:
-#                # Silence Py3k warning raised during the sorting
-#                for _msg in ["(code|dict|type) inequality comparisons",
-#                             "builtin_function_or_method order comparisons",
-#                             "comparing unequal types"]:
-#                    warnings.filterwarnings("ignore", _msg, DeprecationWarning)
-#            try:
-#                first = collections.Counter(first_seq)
-#                second = collections.Counter(second_seq)
-#            except TypeError:
-#                # Handle case with unhashable elements
-#                differences = unittest.case._count_diff_all_purpose(first_seq, second_seq)
-#            else:
-#                if first == second:
-#                    return
-#                differences = unittest.case._count_diff_hashable(first_seq, second_seq)
-#
-#        if differences:
-#            raise AssertionError
-
-
 def create_test_network():
     """Creates a simple pandapower test network
     """
@@ -276,7 +215,3 @@ def create_test_line(net, b1, b2, in_service=True):
     return pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                           c_nf_per_km=300, max_i_ka=.2, df=.8,
                                           in_service=in_service, index=pp.get_free_id(net.line) + 1)
-
-
-if __name__ == "__main__":
-    run_all_tests()

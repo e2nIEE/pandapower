@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,6 +9,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from packaging import version
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
@@ -20,7 +21,7 @@ except ImportError:
     from .pf.no_numba import jit
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_find(ar, bus):  # pragma: no cover
     while True:
         p = ar[bus]
@@ -30,7 +31,7 @@ def ds_find(ar, bus):  # pragma: no cover
     return p
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
@@ -42,7 +43,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
         ar[root2] = root1
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm,
               bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
@@ -54,7 +55,7 @@ def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z
             ds_union(ar, bus1, bus2, bus_is_pv)
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def fill_bus_lookup(ar, bus_lookup, bus_index):
     for i in range(len(bus_index)):
         bus_lookup[bus_index[i]] = i
@@ -294,7 +295,7 @@ def _build_bus_ppc(net, ppc):
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
     if mode != "nx":
-        set_reference_buses(net, ppc, bus_lookup)
+        set_reference_buses(net, ppc, bus_lookup, mode)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
@@ -310,11 +311,11 @@ def _build_bus_ppc(net, ppc):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 2  # changes of VMAX must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMAX] = 2.  # changes of VMAX must be considered in check_opf_data
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
 
     if len(net.xward):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus", aux)
@@ -341,10 +342,15 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
-def set_reference_buses(net, ppc, bus_lookup):
+def set_reference_buses(net, ppc, bus_lookup, mode):
+    if mode == "nx":
+        return
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
-    gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
+    if mode == "sc":
+        gen_slacks = net._is_elements["gen"] #generators are slacks for short-circuit calculation
+    else:
+        gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
     if gen_slacks.any():
         slack_buses = net.gen["bus"].values[gen_slacks]
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF

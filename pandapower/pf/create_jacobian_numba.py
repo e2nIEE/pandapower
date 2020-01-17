@@ -4,17 +4,17 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from numba import jit
 
 
-# @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
+# @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=False)
 
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices.
 
@@ -103,7 +103,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragma
 
 
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
-@jit(nopython=True, cache=True)
+@jit(nopython=True, cache=False)
 # @profile
 def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices. This version is similar to create_J except that

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -26,6 +26,9 @@ def _run_dc_pf(ppci):
 
     ## build B matrices and phase shift injections
     B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
+
+    ## updates Bbus matrix
+    ppci['internal']['Bbus'] = B
 
     ## compute complex bus power injections [generation - load]
     ## adjusted for phase shifters and real shunts

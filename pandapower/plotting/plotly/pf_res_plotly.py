@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
+                  climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
                   filename="temp-plot.html"):
     """
     Plots a pandapower network in plotly
@@ -62,7 +63,18 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
         **bus_size** (float, 10.0) -  size of buses to plot.
 
+        **climits_volt** (tuple, (0.9, 1.0)) - limits of the colorbar for voltage
+
+        **climits_load** (tuple, (0, 100)) - limits of the colorbar for line_loading
+
+        **cpos_volt** (float, 1.0) - position of the bus voltage colorbar
+
+        **cpos_load** (float, 1.1) - position of the loading percent colorbar
+
         **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
+
+    OUTPUT:
+        **figure** (graph_objs._figure.Figure) figure object
 
     """
     version_check()
@@ -78,7 +90,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
-        create_generic_coordinates(net, respect_switches=True)
+        create_generic_coordinates(net, respect_separation_points=True)
         if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
@@ -96,8 +108,10 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
             'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2)).round(precision).astype(str) + ' kV' + '<br />' +
             'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg').tolist()
+    hoverinfo = pd.Series(index=net.bus.index, data=hoverinfo)
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
-                                 cbar_title='Bus Voltage [pu]', cmin=0.9, cmax=1.1)
+                                 cbar_title='Bus Voltage [pu]', cmin=climits_volt[0], cmax=climits_volt[1],
+                                 cpos=cpos_volt)
 
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
@@ -108,21 +122,22 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     elif use_line_geodata and len(net.line_geodata) == 0:
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geodata = False
-    idx = net.line.index
     # hoverinfo which contains name and pf results
     hoverinfo = (
             net.line.name.astype(str) + '<br />' +
             'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
             'I_from = ' + net.res_line.i_from_ka.round(precision).astype(str) + ' kA' + '<br />' +
             'I_to = ' + net.res_line.i_to_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
+    hoverinfo = pd.Series(index=net.line.index, data=hoverinfo)
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
                                     cmap=cmap_lines,
                                     cmap_vals=net.res_line['loading_percent'].values,
-                                    cmin=0,
-                                    cmax=100,
-                                    cbar_title='Line Loading [%]')
+                                    cmin=climits_load[0],
+                                    cmax=climits_load[1],
+                                    cbar_title='Line Loading [%]',
+                                    cpos=cpos_load)
 
     # ----- Trafos ------
     # hoverinfo which contains name and pf results
@@ -131,6 +146,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             'I = ' + net.res_trafo.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
             'I_hv = ' + net.res_trafo.i_hv_ka.round(precision).astype(str) + ' kA' + '<br />' +
             'I_lv = ' + net.res_trafo.i_lv_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
+    hoverinfo = pd.Series(index=net.trafo.index, data=hoverinfo)
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
 
@@ -141,6 +157,6 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
                                       color='grey', size=bus_size * 2, trace_name='external_grid',
                                       patch_type=marker_type)
 
-    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
-                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                filename=filename)
+    return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
+                       showlegend=False, aspectratio=aspectratio, on_map=on_map,
+                       map_style=map_style, figsize=figsize, filename=filename)
