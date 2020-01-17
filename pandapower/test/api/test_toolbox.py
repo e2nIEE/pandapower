@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,6 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
-
 
 def test_opf_task():
     net = pp.create_empty_network()
@@ -185,7 +184,7 @@ def test_reindex_buses():
     net_orig = nw.example_simple()
     net = nw.example_simple()
 
-    to_add = np.random.randint(0, 1000)
+    to_add = 5
     new_bus_idxs = np.array(list(net.bus.index)) + to_add
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     # a more complexe bus_lookup of course should also work, but this one is easy to check
@@ -201,7 +200,6 @@ def test_reindex_buses():
             if elm == "bus":
                 assert all(np.array(list(net[elm].index)) == np.array(list(
                     net_orig[elm].index)) + to_add)
-    np.random.seed(None)
 
 
 def test_continuos_bus_numbering():
@@ -257,7 +255,7 @@ def test_continuos_bus_numbering():
 def test_reindex_elements():
     net = nw.example_simple()
 
-    new_sw_idx = np.random.randint(0, 1000, size=net.switch.shape[0])
+    new_sw_idx = [569, 763, 502, 258, 169, 259, 348, 522]
     pp.reindex_elements(net, "switch", new_sw_idx)
     assert np.allclose(net.switch.index.values, new_sw_idx)
 
@@ -942,10 +940,10 @@ def test_replace_ward_by_internal_elements():
         assert net[elm].shape[0] == 4
     res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
     pp.runpp(net)
-    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
-    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
-    assert (res_load_created.values == net.res_load.values).all()
-    assert (res_shunt_created.values == net.res_shunt.values).all()
+    assert np.allclose(net_org.res_ext_grid.p_mw, net.res_ext_grid.p_mw)
+    assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
+    assert np.allclose(res_load_created, net.res_load)
+    assert np.allclose(res_shunt_created, net.res_shunt)
 
     net = nw.example_simple()
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
@@ -958,10 +956,10 @@ def test_replace_ward_by_internal_elements():
         assert net[elm].shape[0] == 2
     res_load_created, res_shunt_created = copy.deepcopy(net.res_load), copy.deepcopy(net.res_shunt)
     pp.runpp(net)
-    assert (net_org.res_ext_grid.p_mw == net.res_ext_grid.p_mw).all()
-    assert (net_org.res_ext_grid.q_mvar == net.res_ext_grid.q_mvar).all()
-    assert (res_load_created.values == net.res_load.values).all()
-    assert (res_shunt_created.values == net.res_shunt.values).all()
+    assert np.allclose(net_org.res_ext_grid.p_mw, net.res_ext_grid.p_mw)
+    assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
+    assert np.allclose(res_load_created, net.res_load)
+    assert np.allclose(res_shunt_created, net.res_shunt)
 
 
 def test_replace_xward_by_internal_elements():
@@ -986,7 +984,3 @@ def test_replace_xward_by_internal_elements():
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])

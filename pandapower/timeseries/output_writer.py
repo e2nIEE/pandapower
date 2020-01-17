@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
@@ -9,7 +9,7 @@ from time import time
 
 import numpy as np
 import pandas as pd
-
+from collections.abc import Iterable
 from pandapower.io_utils import JSONSerializableClass
 from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
@@ -146,7 +146,7 @@ class OutputWriter(JSONSerializableClass):
             self._init_log_variable(*log_args)
 
     def init_all(self):
-        if isinstance(self.time_steps, list) or isinstance(self.time_steps, range):
+        if isinstance(self.time_steps, Iterable):
             self.output = dict()
             self.np_results = dict()
             self.output_list = list()
@@ -552,6 +552,6 @@ class OutputWriter(JSONSerializableClass):
                     raise ValueError("Something went wrong")
                 output_name = "%s.%s" % (table, variable)
                 # convert to dataframe
-                self.output[output_name] = pd.DataFrame(data=results[table][variable])
+                self.output[output_name] = pd.DataFrame(data=results[table][variable], index=self.time_steps)
                 new_output_list.append((table, variable))
             self.output_list = new_output_list

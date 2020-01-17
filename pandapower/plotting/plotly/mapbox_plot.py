@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -70,7 +70,7 @@ def geo_data_to_latlong(net, projection):
 
     if projection == 'epsg:4326':
         return
-    
+
     wgs84 = Proj(init='epsg:4326')  # lat/long
 
     try:
