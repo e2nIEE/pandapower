@@ -209,7 +209,7 @@ def test_convert_format_for_pp_objects(net_in):
     c2.u_lower = 0.99
     c2.u_upper = 1.1
     # needed to trigger conversion
-    net_in.version = "2.1.0"
+    net_in.version = "2.2.0"
 
     net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
     assert 'controller' in net_in.controller.columns
