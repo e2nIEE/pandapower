@@ -928,6 +928,13 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         net["line_geodata"].loc[old_indices, "index"] = get_indices(old_indices, lookup)
         net["line_geodata"].set_index("index", inplace=True)
 
+    # adapt index in cost dataframes
+    for cost_df in ["pwl_cost", "poly_cost"]:
+        element_in_cost_df = net[cost_df].et == element
+        if sum(element_in_cost_df):
+            net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
+                element_in_cost_df], lookup)
+
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
