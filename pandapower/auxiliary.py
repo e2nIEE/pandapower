@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -35,6 +35,7 @@ import pandas as pd
 import scipy as sp
 from packaging import version
 import six
+import json
 from numpy import complex128
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
@@ -164,6 +165,11 @@ class ADict(dict, MutableMapping):
             )
 
         return self._build(self[key])
+
+    def __deepcopy__(self, memo):
+        from pandapower.file_io import PPJSONEncoder, from_json_string
+        json_string = json.dumps(self, cls=PPJSONEncoder)
+        return from_json_string(json_string)
 
     @classmethod
     def _valid_name(cls, key):

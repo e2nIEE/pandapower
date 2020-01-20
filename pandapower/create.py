@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -1909,7 +1909,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = None
+        net["line_geodata"].at[index, "coords"] = geodata
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
@@ -2046,7 +2047,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = None
+        net["line_geodata"].at[index, "coords"] = geodata
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
@@ -2582,8 +2584,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     dd = pd.DataFrame(v, index=[index])
     if version.parse(pd.__version__) < version.parse("0.21"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
-    else:
+    elif version.parse(pd.__version__) < version.parse("0.23"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
+    else:
+        net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
