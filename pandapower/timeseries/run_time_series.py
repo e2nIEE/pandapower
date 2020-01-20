@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 
@@ -10,6 +10,7 @@ from pandapower.control.run_control import ControllerNotConverged, get_controlle
     check_for_initial_powerflow, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
+from collections.abc import Iterable
 
 try:
     import pplog
@@ -196,7 +197,7 @@ def get_recycle_settings(net, **kwargs):
 
 def init_time_steps(net, time_steps, **kwargs):
     # initializes time steps if as a range
-    if not (isinstance(time_steps, list) or isinstance(time_steps, range)):
+    if not isinstance(time_steps, Iterable):
         if time_steps is None and ("start_step" in kwargs and "stop_step" in kwargs):
             logger.warning("start_step and stop_step are depricated. "
                            "Please use a tuple like time_steps = (start_step, stop_step) instead or a list")

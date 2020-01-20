@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -82,9 +82,10 @@ class ConstControl(Controller):
         if isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
             self.write = "single_index"
-        elif self.net[self.element].index.equals(Index(self.element_index)):
-            # use : indexer if all elements are in index
-            self.write = "all_index"
+        # commenting this out for now, see issue 609
+        # elif self.net[self.element].index.equals(Index(self.element_index)):
+        #     # use : indexer if all elements are in index
+        #     self.write = "all_index"
         else:
             # use common .loc
             self.write = "loc"
