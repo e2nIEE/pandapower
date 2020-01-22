@@ -331,7 +331,8 @@ def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
 
 def _check_connectivity_opf(ppc):
     """
-    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are in net.
+    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
+    in net.
     :param ppc: pypower case file
     :return:
     """
@@ -359,9 +360,10 @@ def _check_connectivity_opf(ppc):
             # if slack is in reachable other slacks are connected to this one. Set it to Gen bus
             demoted_slacks = list(intersection - {slack})
             ppc['bus'][demoted_slacks, BUS_TYPE] = PV
-            logger.warning("Multiple connected slacks in one area found. This would probably lead to non-convergence "
-                           "of the OPF. I'll change all but one slack (ext_grid) to gens. To avoid undesired "
-                           "behaviour, rather convert the slacks to gens yourself and set slack=True for one of them.")
+            logger.warning("Multiple connected slacks in one area found. This would probably lead "
+                           "to non-convergence of the OPF. I'll change all but one slack (ext_grid)"
+                           " to gens. To avoid undesired behaviour, rather convert the slacks to "
+                           "gens yourself and set slack=True for one of them.")
 
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
@@ -494,22 +496,19 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
 def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
     max_bus = max(net.bus.index.values)
     if max_bus >= n_max > len(net["bus"]):
-        logger.warning(
-            "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
-            " Try resetting the bus indices with the toolbox function "
-            "create_continuous_bus_index()" % max_bus)
+        logger.warning("Maximum bus index is high (%i). You should avoid high bus indices because "
+                       "of perfomance reasons. Try resetting the bus indices with the toolbox "
+                       "function create_continuous_bus_index()" % max_bus)
 
 
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
     if net.gen.empty:
         return
     max_gen = max(net.gen.index.values)
-    if max_gen >= n_max and len(net["gen"]) < n_max:
-        logger.warning(
-            "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
-            # " Try resetting the bus indices with the toolbox function "
-            # "create_continuous_bus_index()"
-            % max_gen)
+    if max_gen >= n_max > len(net["gen"]):
+        logger.warning("Maximum generator index is high (%i). You should avoid high generator "
+                       "indices because of perfomance reasons. Try resetting the bus indices with "
+                       "the toolbox function create_continuous_elements_index()" % max_gen)
 
 
 def _add_pf_options(net, tolerance_mva, trafo_loading, numba, ac,
@@ -851,7 +850,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed(numba)
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values) or np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_percent"].values)
+                or np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
     if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
@@ -869,12 +869,14 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
 
-    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
+                             "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
-        raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
+        raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "
+                         "'init_va_degree'.")
 
     init_from_results = init == "results" or \
                         (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
@@ -968,7 +970,8 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba, only_v_results=only_v_results)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba,
+                     only_v_results=only_v_results)
 
 
 def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
@@ -1011,8 +1014,8 @@ def _internal_stored(net):
     if net["_ppc"] is None:
         return False
 
-    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "Ybus", "Yf", "Yt",
-                              "Sbus", "ref_gens"]
+    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
+                              "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
     for var in mandatory_pf_variables:
         if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
             logger.warning("recycle is set to True, but internal variables are missing")

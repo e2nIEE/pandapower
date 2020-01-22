@@ -102,7 +102,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
-        create_generic_coordinates(net, respect_separation_points=respect_switches, library=library)
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
 
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord

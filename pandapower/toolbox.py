@@ -1310,7 +1310,12 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             if tb in buses and s["bus"] != tb:
                 buses.add(fb)
 
-    p2 = create_empty_network()
+    if keep_everything_else:
+        p2 = copy.deepcopy(net)
+        include_results = True  # assumption: the user doesn't want to old results without selection
+    else:
+        p2 = create_empty_network()
+        p2["std_types"] = copy.deepcopy(net["std_types"])
 
     net_parameters = ["name", "f_hz"]
     for net_parameter in net_parameters:
@@ -1372,12 +1377,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
            (s["et"] == "l" and s["element"] in p2["line"].index) or
            (s["et"] == "t" and s["element"] in p2["trafo"].index))]
     p2["switch"] = net["switch"].loc[si]
-    # return a pandapowerNet
-    if keep_everything_else:
-        newnet = copy.deepcopy(net)
-        newnet.update(p2)
-        return pandapowerNet(newnet)
-    p2["std_types"] = copy.deepcopy(net["std_types"])
+
     return pandapowerNet(p2)
 
 
