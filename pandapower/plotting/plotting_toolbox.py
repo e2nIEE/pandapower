@@ -100,7 +100,7 @@ def get_list(individuals, number_entries, name_ind, name_ent):
 
 def get_color_list(color, number_entries, name_entries="nodes"):
     if (len(color) == 3 or len(color) == 4) and all(isinstance(c, float) for c in color):
-        logger.info("Interpreting color %s as rgb or rgba!" % rgb)
+        logger.info("Interpreting color %s as rgb or rgba!" % str(color))
         return get_list([color], number_entries, "colors", name_entries)
     return get_list(color, number_entries, "colors", name_entries)
 
