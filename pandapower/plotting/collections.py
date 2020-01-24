@@ -1092,7 +1092,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
         **plot_colorbars** (bool, True) - defines whether colorbars should be plotted
 
-        **set_aspect** (bool, True) - defines whether 'equal' and 'datalim' aspects of axis scaling
+        **set_aspect** (bool, True) - defines whether 'equal' and 'datalim' aspects of axis scaling\
             should be set.
 
         **axes_visible** (tuple, (False, False)) - defines visibility of (xaxis, yaxis)
