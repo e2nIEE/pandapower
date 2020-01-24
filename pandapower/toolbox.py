@@ -1106,11 +1106,11 @@ def drop_switches_at_buses(net, buses):
     logger.info("dropped %d switches" % len(i))
 
 
-def drop_elements_at_buses(net, buses):
+def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True):
     """
     drop elements connected to given buses
     """
-    for element, column in element_bus_tuples():
+    for element, column in element_bus_tuples(bus_elements, branch_elements, res_elements=False):
         if element == "switch":
             drop_switches_at_buses(net, buses)
 
