@@ -1106,11 +1106,11 @@ def drop_switches_at_buses(net, buses):
     logger.info("dropped %d switches" % len(i))
 
 
-def drop_elements_at_buses(net, buses):
+def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True):
     """
     drop elements connected to given buses
     """
-    for element, column in element_bus_tuples():
+    for element, column in element_bus_tuples(bus_elements, branch_elements, res_elements=False):
         if element == "switch":
             drop_switches_at_buses(net, buses)
 
@@ -1310,7 +1310,12 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             if tb in buses and s["bus"] != tb:
                 buses.add(fb)
 
-    p2 = create_empty_network()
+    if keep_everything_else:
+        p2 = copy.deepcopy(net)
+        include_results = True  # assumption: the user doesn't want to old results without selection
+    else:
+        p2 = create_empty_network()
+        p2["std_types"] = copy.deepcopy(net["std_types"])
 
     net_parameters = ["name", "f_hz"]
     for net_parameter in net_parameters:
@@ -1372,12 +1377,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
            (s["et"] == "l" and s["element"] in p2["line"].index) or
            (s["et"] == "t" and s["element"] in p2["trafo"].index))]
     p2["switch"] = net["switch"].loc[si]
-    # return a pandapowerNet
-    if keep_everything_else:
-        newnet = copy.deepcopy(net)
-        newnet.update(p2)
-        return pandapowerNet(newnet)
-    p2["std_types"] = copy.deepcopy(net["std_types"])
+
     return pandapowerNet(p2)
 
 
@@ -2008,7 +2008,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     return connected_elements
 
 
-def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_switches=True,
+def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect_switches=True,
                         respect_in_service=False):
     """
      Returns buses connected to given buses. The source buses will NOT be returned.
@@ -2030,6 +2030,8 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_swit
                                                       l: lines
                                                       s: switches
                                                       t: trafos
+                                                      t3: trafo3ws
+                                                      i: impedances
      OUTPUT:
         **cl** (set) - Returns connected buses.
 
@@ -2080,6 +2082,15 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_swit
         cb |= set(net.trafo3w.loc[ct3].hv_bus.values)
         cb |= set(net.trafo3w.loc[ct3].mv_bus.values)
         cb |= set(net.trafo3w.loc[ct3].lv_bus.values)
+
+    if "i" in consider:
+        in_service_constr = net.impedance.in_service if respect_in_service else True
+        connected_fb_impedances = set(net.impedance.index[
+                                     (net.impedance.from_bus.isin(buses)) & (in_service_constr)])
+        connected_tb_impedances = set(net.impedance.index[
+                                     (net.impedance.to_bus.isin(buses)) & (in_service_constr)])
+        cb |= set(net.impedance[net.impedance.index.isin(connected_tb_impedances)].from_bus)
+        cb |= set(net.impedance[net.impedance.index.isin(connected_fb_impedances)].to_bus)
 
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)
