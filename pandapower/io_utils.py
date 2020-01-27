@@ -554,6 +554,14 @@ def json_num(obj):
     return str(obj)
 
 
+@to_serializable.register(complex)
+def json_complex(obj):
+    logger.debug("complex")
+    d = with_signature(obj, str(obj), obj_module='builtins', obj_class='complex')
+    d.pop('dtype')
+    return d
+
+
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
