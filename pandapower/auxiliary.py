@@ -166,10 +166,32 @@ class ADict(dict, MutableMapping):
         return self._build(self[key])
 
     def __deepcopy__(self, memo):
-        from pandapower.file_io import PPJSONEncoder, from_json_string
-        from pandapower.io_utils import with_signature
-        json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
-        return from_json_string(json_string)
+        """
+        overloads the deepcopy function of pandapower if at least one DataFrame with column "object" is in net
+
+        reason: some of these objects contain a reference to net which breaks the default deepcopy function.
+        This fix was introduced in pandapower 2.2.1 and is rather a quick and dirty solution to the problem
+
+        """
+        save_to_json = False
+        for el in self:
+            if isinstance(self[el], pd.DataFrame) and "object" in self[el] and len(self[el]):
+                save_to_json = True
+                break
+        if save_to_json:
+            # deepcopy by dumping to json and loading from it
+            from pandapower.file_io import PPJSONEncoder, from_json_string
+            from pandapower.io_utils import with_signature
+            json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
+            return from_json_string(json_string)
+
+        # deepcopy of every element in self (== the pandapower net)
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     @classmethod
     def _valid_name(cls, key):
