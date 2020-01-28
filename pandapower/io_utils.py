@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import types
 
 import pandas as pd
 from pandas.util.testing import assert_series_equal, assert_frame_equal
@@ -11,13 +11,12 @@ from pandapower.auxiliary import pandapowerNet
 import numpy
 import numbers
 import json
-import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from warnings import warn
-from inspect import isclass, signature
+from inspect import isclass, signature, _findclass
 import os
 from functools import partial
 
@@ -350,11 +349,7 @@ def pp_hook(d, net=None):
             if isclass(class_) and issubclass(class_, JSONSerializableClass):
                 if isinstance(obj, str):
                     obj = json.loads(obj, cls=PPJSONDecoder)  # backwards compatibility
-                c = JSONSerializableClass.__new__(class_)
-                if 'net' in obj:
-                    obj.update({'net': net})
-                c.__dict__.update(obj)
-                return c
+                return class_.from_dict(obj, net)
             else:
                 # for non-pp objects, e.g. tuple
                 return class_(obj, **d)
@@ -377,8 +372,15 @@ class JSONSerializableClass(object):
         return json.dumps(self.to_dict(), cls=PPJSONEncoder)
 
     def to_dict(self):
-        d = {key: val if not callable(val) else with_signature(val, val.__name__)
-             for key, val in self.__dict__.items() if key not in self.json_excludes}
+        def consider_callable(value):
+            if callable(value) and value.__class__ in (types.MethodType, types.FunctionType):
+                if value.__class__ == types.MethodType and _findclass(value) is not None:
+                    return with_signature(value, value.__name__, obj_module=_findclass(value))
+                return with_signature(value, value.__name__)
+            return value
+
+        d = {key: consider_callable(val) for key, val in self.__dict__.items()
+             if key not in self.json_excludes}
         if "net" in signature(self.__init__).parameters.keys():
             d.update({'net': 'net'})
         return d
@@ -450,28 +452,27 @@ class JSONSerializableClass(object):
                 raise UnequalityFound
 
         if isinstance(other, self.__class__):
-                try:
-                    check_equality(self.__dict__, other.__dict__)
-                    return True
-                except UnequalityFound:
-                    return False
+            try:
+                check_equality(self.__dict__, other.__dict__)
+                return True
+            except UnequalityFound:
+                return False
         else:
             return False
 
     @classmethod
-    def from_dict(cls, d):
-        state = d["_state"]
-        init = d["_init"]
-        if "index" in state:
-            init["index"] = state["index"]
-        obj = cls(**init)
-        obj.__dict__.update(state)
+    def from_dict(cls, d, net):
+        obj = JSONSerializableClass.__new__(cls)
+        if 'net' in d:
+            d.update({'net': net})
+        obj.__dict__.update(d)
         return obj
 
     @classmethod
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
+
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
@@ -501,9 +502,7 @@ def json_pandapowernet(obj):
 def json_dataframe(obj):
     logger.debug('DataFrame')
     orient = "split"
-    json_string = obj.to_json(orient=orient,
-                                        default_handler=to_serializable,
-                                        double_precision=15)
+    json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
     if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
@@ -555,6 +554,14 @@ def json_num(obj):
     return str(obj)
 
 
+@to_serializable.register(complex)
+def json_complex(obj):
+    logger.debug("complex")
+    d = with_signature(obj, str(obj), obj_module='builtins', obj_class='complex')
+    d.pop('dtype')
+    return d
+
+
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
@@ -603,9 +610,9 @@ def controller_to_serializable(obj):
     return d
 
 
-def mkdirs_if_not_existent(dir):
-    already_exist = os.path.isdir(dir)
-    os.makedirs(dir, exist_ok=True)
+def mkdirs_if_not_existent(dir_to_create):
+    already_exist = os.path.isdir(dir_to_create)
+    os.makedirs(dir_to_create, exist_ok=True)
     return ~already_exist
 
 

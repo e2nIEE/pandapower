@@ -4,21 +4,21 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import os
-import pytest
 import copy
-
-import pandas as pd
-import pandapower as pp
-import pandapower.topology as top
-from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
-import pandapower.networks as nw
-import pandapower.control as ct
-from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
+import os
+
 import numpy as np
+import pandas as pd
+import pytest
+
+import pandapower as pp
+import pandapower.control as ct
+import pandapower.networks as nw
+import pandapower.topology as top
+from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
+from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 from pandapower.timeseries import DFData
-import pandapower.control
 
 
 def test_pickle(net_in, tempdir):
@@ -243,12 +243,16 @@ def test_json_io_same_net(net_in, tempdir):
     net2 = pp.from_json(filename)
     assert net2.controller.object.at[0].net is net2
 
+
 def test_deepcopy_controller():
     net = nw.mv_oberrhein()
-    ct.ContinuousTapControl(net, 114, 1.01)  
-    assert net == net.controller.object.iloc[0].net   
-    net2 = copy.copy(net)    
+    ct.ContinuousTapControl(net, 114, 1.01)
+    assert net == net.controller.object.iloc[0].net
+    net2 = copy.deepcopy(net)
     assert net2 == net2.controller.object.iloc[0].net
+    net3 = copy.copy(net)
+    assert net3 == net3.controller.object.iloc[0].net
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-x"])

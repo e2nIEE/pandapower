@@ -1,6 +1,16 @@
 Change Log
 =============
 
+[2.2.1]- 2020-01-29
+----------------------
+- [FIXED] Missing csv files #625
+- [FIXED] deepcopy speed and missing DataFrames in net #620, #631
+- [FIXED] simple plotly error with generic coords #619
+- [FIXED] create line with passed geodata #610
+- [FIXED] ConstControl write to and all_index attribute #609
+- [FIXED] collection plotting issue #608
+
+
 [2.2.0]- 2020-01-17
 ----------------------
 - [ADDED] control and timeseries module
