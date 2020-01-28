@@ -191,6 +191,7 @@ class ADict(dict, MutableMapping):
         memo[id(self)] = result
         for k, v in self.items():
             setattr(result, k, copy.deepcopy(v, memo))
+        result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
         return result
 
     @classmethod
