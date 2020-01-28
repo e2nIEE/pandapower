@@ -168,7 +168,8 @@ class ADict(dict, MutableMapping):
 
     def __deepcopy__(self, memo):
         from pandapower.file_io import PPJSONEncoder, from_json_string
-        json_string = json.dumps(self, cls=PPJSONEncoder)
+        from pandapower.io_utils import with_signature
+        json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
         return from_json_string(json_string)
 
     @classmethod
