@@ -1659,8 +1659,9 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "ext_grid") &
                                          (net[table].element.isin(ext_grids))]
-            net[table].et.loc[to_change] = "gen"
-            net[table].element.loc[to_change] = new_idx
+            if len(to_change):
+                net[table].et.loc[to_change] = "gen"
+                net[table].element.loc[to_change] = new_idx
 
     # --- result data
     if net.res_ext_grid.shape[0]:
@@ -1713,8 +1714,9 @@ def replace_gen_by_ext_grid(net, gens=None):
     for table in ["pwl_cost", "poly_cost"]:
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
-            net[table].et.loc[to_change] = "ext_grid"
-            net[table].element.loc[to_change] = new_idx
+            if len(to_change):
+                net[table].et.loc[to_change] = "ext_grid"
+                net[table].element.loc[to_change] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1768,8 +1770,9 @@ def replace_gen_by_sgen(net, gens=None):
     for table in ["pwl_cost", "poly_cost"]:
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
-            net[table].et.loc[to_change] = "sgen"
-            net[table].element.loc[to_change] = new_idx
+            if len(to_change):
+                net[table].et.loc[to_change] = "sgen"
+                net[table].element.loc[to_change] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1824,8 +1827,9 @@ def replace_sgen_by_gen(net, sgens=None):
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "sgen") &
                                          (net[table].element.isin(sgens))]
-            net[table].et.loc[to_change] = "gen"
-            net[table].element.loc[to_change] = new_idx
+            if len(to_change):
+                net[table].et.loc[to_change] = "gen"
+                net[table].element.loc[to_change] = new_idx
 
     # --- result data
     if net.res_sgen.shape[0]:
