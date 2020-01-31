@@ -1100,12 +1100,12 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
-def _create_column_and_set_value(net, index, variable, column, element, default_val=None):
+def _create_column_and_set_value(net, index, variable, column, element, default_val=nan):
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     if not isnan(variable):
         if column not in net[element].columns:
-            net[element].loc[:, column] = pd.Series(default_val)
+            net[element].loc[:, column] = float(default_val)
         net[element].at[index, column] = float(variable)
     return net
 
