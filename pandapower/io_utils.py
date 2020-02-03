@@ -5,7 +5,7 @@
 import types
 
 import pandas as pd
-from pandas.util.testing import assert_series_equal, assert_frame_equal
+from pandas.testing import assert_series_equal, assert_frame_equal
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import pandapowerNet
 import numpy
