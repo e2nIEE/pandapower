@@ -10,7 +10,7 @@ import tempfile
 from math import isnan
 
 import numpy as np
-import pandas.testing as pdt
+import pandas.util.testing as pdt
 import pytest
 
 import pandapower as pp
