@@ -2,23 +2,27 @@
 
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import types
-
-import pandas as pd
-from pandas.util.testing import assert_series_equal, assert_frame_equal
-from pandapower.create import create_empty_network
-from pandapower.auxiliary import pandapowerNet
-import numpy
-import numbers
-import json
-import networkx
-from networkx.readwrite import json_graph
+import copy
 import importlib
-from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
-from warnings import warn
-from inspect import isclass, signature, _findclass
+import json
+import numbers
 import os
+import pickle
+import sys
+import types
 from functools import partial
+from inspect import isclass, signature, _findclass
+from warnings import warn
+
+import networkx
+import numpy
+import pandas as pd
+from networkx.readwrite import json_graph
+from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
+from packaging import version
+from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_empty_network
+from pandas.util.testing import assert_series_equal, assert_frame_equal
 
 try:
     from functools import singledispatch
@@ -28,6 +32,7 @@ except ImportError:
 
 try:
     import fiona
+    import fiona.crs
     import geopandas
 
     GEOPANDAS_INSTALLED = True
@@ -200,6 +205,92 @@ def restore_all_dtypes(net, dtypes):
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             pass
+
+
+def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
+    save_net = dict()
+    for key, item in net.items():
+        if hasattr(item, "columns") and "geometry" in item.columns:
+            # we convert shapely-objects to primitive data-types on a deepcopy
+            item = copy.deepcopy(item)
+            if key in point_geo_columns and not isinstance(item.geometry.values[0], tuple):
+                item["geometry"] = item.geometry.apply(lambda x: (x.x, x.y))
+            elif key in line_geo_columns and not isinstance(item.geometry.values[0], list):
+                item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
+
+        save_net[key] = {"DF": item.to_dict("split"),
+                         "dtypes": {col: dt for col, dt in zip(item.columns, item.dtypes)}} \
+            if isinstance(item, pd.DataFrame) else item
+    return save_net
+
+
+def get_raw_data_from_pickle(filename):
+    def read(f):
+        if sys.version_info >= (3, 0):
+            return pickle.load(f, encoding='latin1')
+        else:
+            return pickle.load(f)
+
+    if hasattr(filename, 'read'):
+        net = read(filename)
+    elif not os.path.isfile(filename):
+        raise UserWarning("File %s does not exist!!" % filename)
+    else:
+        with open(filename, "rb") as f:
+            net = read(f)
+    return net
+
+
+def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
+    try:
+        epsg = net.gis_epsg_code
+    except AttributeError:
+        epsg = None
+
+    for key, item in net.items():
+        if isinstance(item, dict) and "DF" in item:
+            df_dict = item["DF"]
+            if "columns" in df_dict:
+                # make sure the index is Int64Index
+                try:
+                    df_index = pd.Int64Index(df_dict['index'])
+                except TypeError:
+                    df_index = df_dict['index']
+                if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
+                        and epsg is not None:
+                    # convert primitive data-types to shapely-objects
+                    if key in point_geo_columns:
+                        data = {"x": [row[0] for row in df_dict["data"]],
+                                "y": [row[1] for row in df_dict["data"]]}
+                        geo = [shapely.geometry.Point(row[2][0], row[2][1]) for row in df_dict["data"]]
+                    elif key in line_geo_columns:
+                        data = {"coords": [row[0] for row in df_dict["data"]]}
+                        geo = [shapely.geometry.LineString(row[1]) for row in df_dict["data"]]
+
+                    net[key] = geopandas.GeoDataFrame(data, crs=fiona.crs.from_epsg(epsg),
+                                                      geometry=geo, index=df_index)
+                else:
+                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
+                                            data=df_dict["data"])
+            else:
+                net[key] = pd.DataFrame.from_dict(df_dict)
+                if "columns" in item:
+                    if version.parse(pd.__version__) < version.parse("0.21"):
+                        net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                    else:
+                        net[key] = net[key].reindex(item["columns"], axis=1)
+
+            if "dtypes" in item:
+                if "columns" in df_dict and "geometry" in df_dict["columns"]:
+                    pass
+                else:
+                    try:
+                        # only works with pandas 0.19 or newer
+                        net[key] = net[key].astype(item["dtypes"])
+                    except:
+                        # works with pandas <0.19
+                        for column in net[key].columns:
+                            net[key][column] = net[key][column].astype(item["dtypes"][column])
 
 
 def isinstance_partial(obj, cls):
