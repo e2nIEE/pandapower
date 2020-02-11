@@ -22,7 +22,7 @@ from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandas.util.testing import assert_series_equal, assert_frame_equal
+from pandas.testing import assert_series_equal, assert_frame_equal
 
 try:
     from functools import singledispatch
