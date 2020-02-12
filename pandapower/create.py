@@ -2202,7 +2202,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             et == "t"
 
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
-        bus and transformer, "b" = switch between two buses
+            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
+            two buses
 
     OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
