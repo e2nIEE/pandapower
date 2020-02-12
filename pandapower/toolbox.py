@@ -65,6 +65,18 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     return pp_elms
 
 
+def branch_element_bus_dict(include_switch=False):
+    """ """
+    ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
+    branch_elements = {ebt[0] for ebt in ebts}
+    bebd = {elm: [] for elm in branch_elements}
+    for elm, bus in ebts:
+        bebd[elm].append(bus)
+    if not include_switch:
+        del bebd["switch"]
+    return bebd
+
+
 # def pq_from_cosphi(s, cosphi, qmode, pmode):
 #    """
 #    Calculates P/Q values from rated apparent power and cosine(phi) values.
@@ -2198,7 +2210,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
 
 
 def get_connected_elements_dict(
-        net, buses, respect_switches=True, respect_in_service=False, remove_empty_lists=True,
+        net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
         connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
         connected_other_elements=True):
     """ Returns a dict of lists of connected elements. """
@@ -2217,7 +2229,7 @@ def get_connected_elements_dict(
             conn = get_connected_elements(
                 net, elm, buses, respect_switches=respect_switches,
                 respect_in_service=respect_in_service)
-        if not remove_empty_lists or len(conn):
+        if include_empty_lists or len(conn):
             connected[elm] = list(conn)
     return connected
 
