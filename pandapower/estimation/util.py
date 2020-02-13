@@ -172,8 +172,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
                                               element=br_ix, side=side,
                                               value=br_res[meas_type[0]+'_'+side+meas_type[1:]], std_dev=1)
     
-    add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev, with_random_error=with_random_error)
-
+    add_virtual_meas_error(net, v_std_dev = v_std_dev, p_std_dev = p_std_dev, q_std_dev = q_std_dev, with_random_error=with_random_error)
 
 def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1, 
                                        p_std_dev=0.01, q_std_dev=0.01, dg_std_dev=0.1, seed=14, with_random_error=True):
@@ -220,9 +219,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
                                               value=br_res[meas_type.split("_")[0]+'_'+
                                                            side+'_'+meas_type.split("_")[1]], std_dev=1)
     if with_random_error:
-        add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev,
-                               i_std_dev, dg_std_dev, with_random_error=with_random_error)
-
+        add_virtual_meas_error(net, v_std_dev = v_std_dev, p_std_dev = p_std_dev, q_std_dev = q_std_dev, i_std_dev, dg_std_dev, with_random_error=with_random_error)
 
 def add_virtual_meas_error(net,  v_std_dev=0.001, i_std_dev=0.01, 
                            p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1, with_random_error=True):
