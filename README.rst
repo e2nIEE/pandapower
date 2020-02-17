@@ -75,3 +75,8 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 |
 
 We welcome contributions to pandapower of any kind - if you want to contribute, please check out the `pandapower contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`_.
+
+
+.. image:: https://api.codacy.com/project/badge/Grade/e2ce960935fd4f96b4be4dff9a0c76e3
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/gh/e2nIEE/pandapower?utm_source=github.com&utm_medium=referral&utm_content=e2nIEE/pandapower&utm_campaign=Badge_Grade_Dashboard
