@@ -1573,6 +1573,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
             for max_i_ka of lines.
     """
     index = index or net.impedance.index
+    new_index = []
     for _, imp in net.impedance.loc[index].iterrows():
         if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
             if only_valid_replace:
@@ -1583,10 +1584,11 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
         vn = net.bus.vn_kv.at[imp.from_bus]
         Zni = vn ** 2 / imp.sn_mva
         max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
-        create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni,
-                                    imp.xft_pu * Zni, 0, max_i_ka, name=imp.name,
-                                    in_service=imp.in_service)
+        new_index.append(create_line_from_parameters(
+            net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni, imp.xft_pu * Zni, 0, max_i_ka,
+            name=imp.name, in_service=imp.in_service))
     net.impedance.drop(index, inplace=True)
+    return new_index
 
 
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
@@ -1613,6 +1615,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     if len(sn_mva) != len(index):
         raise ValueError("index and sn_mva must have the same length.")
     i = 0
+    new_index = []
     for idx, line_ in net.line.loc[index].iterrows():
         if line_.c_nf_per_km or line_.g_us_per_km:
             if only_valid_replace:
@@ -1621,12 +1624,13 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
-        create_impedance(net, line_.from_bus, line_.to_bus,
-                         line_.r_ohm_per_km * line_.length_km / Zni,
-                         line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
-                         in_service=line_.in_service)
+        new_index.append(create_impedance(
+            net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
+            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+            in_service=line_.in_service))
         i += 1
     drop_lines(net, index)
+    return new_index
 
 
 def replace_ext_grid_by_gen(net, ext_grids=None):
@@ -1684,6 +1688,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_ext_grid.drop(ext_grids, inplace=True)
+    return new_idx
 
 
 def replace_gen_by_ext_grid(net, gens=None):
@@ -1739,6 +1744,7 @@ def replace_gen_by_ext_grid(net, gens=None):
         else:
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
         net.res_gen.drop(gens, inplace=True)
+    return new_idx
 
 
 def replace_gen_by_sgen(net, gens=None):
@@ -1795,6 +1801,7 @@ def replace_gen_by_sgen(net, gens=None):
         else:
             net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
         net.res_gen.drop(gens, inplace=True)
+    return new_idx
 
 
 def replace_sgen_by_gen(net, sgens=None):
@@ -1852,6 +1859,7 @@ def replace_sgen_by_gen(net, sgens=None):
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_sgen.drop(sgens, inplace=True)
+    return new_idx
 
 
 # --- item/element selections
