@@ -1,6 +1,8 @@
 Change Log
 =============
 
+- [ADDED] dclines and considering given branch indices by create_nxgraph()
+
 [2.2.1]- 2020-01-29
 ----------------------
 - [FIXED] Missing csv files #625
