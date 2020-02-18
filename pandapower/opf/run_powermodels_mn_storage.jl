@@ -1,5 +1,6 @@
 using PowerModels
 using Ipopt
+using Gurobi
 using JuMP
 using .PP2PM
 
@@ -49,9 +50,10 @@ function run_powermodels(json_path)
         print("Running storage without time series")
     end
 
-    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer)
+    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0)
 
     # run multinetwork storage opf
     result = PowerModels._run_mn_strg_opf(mn, PowerModels.ACPPowerModel, ipopt_solver)
+    print_summary(result)
     return result
 end

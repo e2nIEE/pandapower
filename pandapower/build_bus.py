@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,6 +9,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from packaging import version
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
@@ -310,11 +311,11 @@ def _build_bus_ppc(net, ppc):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 2  # changes of VMAX must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMAX] = 2.  # changes of VMAX must be considered in check_opf_data
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
+            ppc["bus"][:n_bus, VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
 
     if len(net.xward):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus", aux)
@@ -560,7 +561,8 @@ def _add_motor_impedances_ppc(net, ppc):
     z_motor = 1 / (motor.sn_mva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
     x_motor = z_motor / np.sqrt(motor.rx ** 2 + 1)
     r_motor = motor.rx * x_motor
-    y_motor = 1 / (r_motor + x_motor * 1j)
+    r_motor_np, x_motor_np = r_motor.values, x_motor.values
+    y_motor = 1 / (r_motor_np + x_motor_np * 1j)
 
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
     ppc["bus"][buses, GS] = gs

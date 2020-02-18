@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -15,6 +15,7 @@ from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 
 try:
     import pypower.case24_ieee_rts as c24
+
     pypower_installed = True
 except ImportError:
     pypower_installed = False
@@ -63,8 +64,7 @@ def test_validate_from_ppc():
 
 def test_ppc_testgrids():
     # check ppc_testgrids
-    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
-            'case57']
+    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14', 'case57']
     for i in name:
         ppc = get_testgrids(i, 'ppc_testgrids.p')
         net = from_ppc(ppc, f_hz=60)
@@ -111,12 +111,12 @@ def test_case9_conversion():
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
     # compare optimal powerflow results
-    pp.runopp(net)
-    pp.runopp(net2)
+    pp.runopp(net, delta=1e-16)
+    pp.runopp(net2, delta=1e-16)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
 
-@pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
+@pytest.mark.skipif(pypower_installed == False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import pytest
 import numpy as np
+import pytest
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection
 from pandapower.convert_format import convert_format
+from pandapower.networks import simple_four_bus_system
+from pandapower.test.toolbox import add_grid_connection
 
 try:
     import pplog as logging
@@ -39,6 +40,7 @@ def simplest_grid():
 
     return net
 
+
 @pytest.fixture
 def simple_opf_test_net():
     net = pp.create_empty_network()
@@ -52,6 +54,7 @@ def simple_opf_test_net():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100)
     return net
+
 
 def test_convert_format():
     """ Testing a very simple network without transformer for voltage
@@ -75,6 +78,7 @@ def test_convert_format():
                                    max_loading_percent=100 * 690)
     # run OPF
     convert_format(net)
+
     for init in ["pf", "flat"]:
         pp.runopp(net, init=init)
         assert net["OPF_converged"]
@@ -122,7 +126,7 @@ def test_simplest_voltage():
     assert min(net.res_bus.vm_pu) > vm_min
 
 
-#def test_eg_voltage():
+# def test_eg_voltage():
 #    """ Testing a very simple network without transformer for voltage
 #    constraints with OPF """
 #
@@ -384,6 +388,7 @@ def test_opf_sgen_loading():
     # check connectivity check
     pp.runopp(net, check_connectivity=True)
 
+
 def test_unconstrained_line():
     """ Testing a very simple network without transformer for voltage
     constraints with OPF """
@@ -426,9 +431,9 @@ def test_trafo3w_loading():
                                    max_loading_percent=120)
     pp.create_load(net, b3, p_mw=5, controllable=False)
     load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6,
-                        max_q_mvar= 1e6)
+                             max_q_mvar=1e6)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
-    #pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
+    # pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
@@ -460,7 +465,6 @@ def test_opf_poly(simple_opf_test_net):
     for init in ["pf", "flat"]:
         pp.runopp(net, init=init)
         assert net["OPF_converged"]
-
     # check and assert result
     logger.debug("test_simplest_voltage")
     logger.debug("res_gen:\n%s" % net.res_gen)
@@ -486,11 +490,10 @@ def test_opf_pwl(simple_opf_test_net):
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
-
 def test_dcopf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    pp.create_pwl_cost(net, 0, "gen"     , [[0, 100, 100], [100, 200, 100]])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
     pp.create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
     # run OPF
     pp.rundcopp(net)
@@ -502,6 +505,7 @@ def test_dcopf_pwl(simple_opf_test_net):
     logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
+
 
 def test_opf_varying_max_line_loading():
     """ Testing a  simple network with transformer for loading
@@ -526,8 +530,6 @@ def test_opf_varying_max_line_loading():
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
 
-
-
     pp.create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.025,
                    min_q_mvar=-0.025)
     pp.create_sgen(net, 2, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.025,
@@ -547,8 +549,7 @@ def test_opf_varying_max_line_loading():
     pp.runopp(net, init="flat")
     assert net["OPF_converged"]
 
-    assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281+0.j,  0.00692820+0.j,  0.12800000+0.j]))
-
+    assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281 + 0.j, 0.00692820 + 0.j, 0.12800000 + 0.j]))
 
     # assert and check result
     logger.debug("test_opf_sgen_loading")
@@ -666,8 +667,8 @@ def test_storage_opf():
     assert np.isclose(res_stor_q_mvar, res_load_q_mvar)
     assert np.isclose(res_cost_stor, res_cost_load)
 
-def test_in_service_controllables():
 
+def test_in_service_controllables():
     """ Testing controllable but out of service elements behaviour """
     # boundaries
     vm_max = 1.1
@@ -696,11 +697,11 @@ def test_in_service_controllables():
                    max_q_mvar=2.5, min_q_mvar=-2.5)
 
     # costs
-    pp.create_poly_cost(net, 0, "ext_grid",cp1_eur_per_mw= 3)
-    pp.create_poly_cost(net, 0, "load",cp1_eur_per_mw= -1)
-    pp.create_poly_cost(net, 0, "sgen",cp1_eur_per_mw= 2)
-    pp.create_poly_cost(net, 1, "sgen",cp1_eur_per_mw= 1)
-    pp.create_poly_cost(net, 1, "load",cp1_eur_per_mw= -1)
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
+    pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=-1)
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
+    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
+    pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
 
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
@@ -713,49 +714,19 @@ def test_no_controllables(simple_opf_test_net):
     # was ist das problwem an diesem fall und wie fange ich es ab?
     net = simple_opf_test_net
     net.gen.controllable = False
-    # pp.runopp(net)
-    # net.gen = net.gen.drop(index=0)
-    pp.create_poly_cost(net, 0, "gen",cp1_eur_per_mw= -2)
-    pp.create_poly_cost(net, 0, "load",cp1_eur_per_mw= 1)
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-2)
+    pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=1)
+    try:
+        pp.runopp(net)
+    except pp.OPFNotConverged:
+        # opf will fail if not bus limits are set and vm_pu is the default value of 1.0 (it is enforced)
+        assert True
+    net.gen.loc[:, "vm_pu"] = 1.062  # vm_pu setpoint is mandatory if controllable=False
+    net.gen.loc[:, "p_mw"] = 0.149
     pp.runopp(net)
+    assert np.allclose(net.res_gen.at[0, "vm_pu"], 1.062)
+    assert np.allclose(net.res_gen.at[0, "p_mw"], 0.149)
 
-# def test_controllables_default():
-#     """ Testing sgens/gens/loads with no defined controllable parameter  """
-#     # boundaries
-#     vm_max = 1.1
-#     #todo
-#     vm_min = 0.9
-#     max_line_loading_percent = 100
-#9
-#     # create network
-#     net = pp.create_empty_network()
-#     b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-#     b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-#
-#     pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
-#                    max_loading_percent=max_line_loading_percent)
-#
-#     # test elements static
-#     pp.create_ext_grid(net, b2)
-#     pp.create_load(net, b1, p_mw=7.5, max_p_mw=10, min_p_mw=0,
-#                    max_q_mvar=2.5, min_q_mvar=-2.5)
-#     net.load["controllable"] = False
-#     # load should default to controllable =False
-#     # pp.create_sgen(net, b1, p_mw=-25, max_p_mw=-10, min_p_mw=-0.025,
-#     #                max_q_mvar=0.025, min_q_mvar=-0.025)
-#     # # sgen should default to controllable =True
-#     # pp.create_gen(net, b1, p_mw=-25, max_p_mw=-10, min_p_mw=-0.025,
-#     #                max_q_mvar=0.025, min_q_mvar=-0.025)
-#     # # gen should default to controllable =True
-#
-#     # costs
-#     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0,-3, 0]))
-#     pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=0, 1, 0]))
-    # pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0, 2, 0]))
-    # pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0, 2, 0]))
-
-    pp.runopp(net)
-    assert net["OPF_converged"]
 
 def test_opf_no_controllables_vs_pf():
     """ Comparing the calculation results of PF and OPF in a simple network with non-controllable
@@ -825,6 +796,115 @@ def test_line_temperature():
     pp.runopp(net, verbose=False, consider_line_temperature=False)
     assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
     assert "r_ohm_per_km" not in net.res_line.columns
+
+
+@pytest.fixture
+def four_bus_net():
+    net = simple_four_bus_system()
+    net.sgen.drop(index=1, inplace=True)
+    net.load.drop(index=1, inplace=True)
+    return net
+
+
+def test_three_slacks_vm_setpoint(four_bus_net):
+    # tests a net with three slacks in one area. Two of them will be converted to gens, since only one is allowed per
+    # area. The others should have vmin / vmax set as their vm_pu setpoint
+    net = four_bus_net
+    # create two additional slacks with different voltage setpoints
+    pp.create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
+    pp.create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
+    pp.runpp(net)
+    # assert if voltage limits are correct in result in pf an opf
+    assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
+    pp.runopp(net)
+    assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
+
+
+def test_only_gen_slack_vm_setpoint(four_bus_net):
+    # tests a net with only gens of which one of them is a a slack
+    # The  vmin / vmax vm_pu setpoint should be correct
+    net = four_bus_net
+    net.ext_grid.drop(index=net.ext_grid.index, inplace=True)
+    net.bus.loc[:, "min_vm_pu"] = 0.9
+    net.bus.loc[:, "max_vm_pu"] = 1.1
+    # create two additional slacks with different voltage setpoints
+    pp.create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True)
+    g1 = pp.create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+                       controllable=False)  # controllable == False -> vm_pu enforced
+    g3 = pp.create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
+                       min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between bus voltages
+    pp.runpp(net)
+    # assert if voltage limits are correct in result in pf an opf
+    assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
+    pp.runopp(net)
+
+    # controllable == True is more important than  slack == True -> vm_pu is between bus limits
+    assert not np.allclose(net.res_bus.at[0, "vm_pu"], 1.)
+    # controllable == True is less important than  slack == True -> see
+    # https://github.com/e2nIEE/pandapower/issues/511#issuecomment-536593128
+
+    # assert value of controllable == False gen
+    assert np.allclose(net.res_bus.at[1, "vm_pu"], 1.01)
+    assert np.allclose(net.res_bus.at[1, "p_mw"], -0.02)
+    # assert limit of controllable == True gen
+    assert 0.9 < net.res_bus.at[3, "vm_pu"] < 1.1
+    assert not net.res_bus.at[3, "vm_pu"] == 1.02
+
+
+def test_gen_p_vm_fixed(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    min_vm_pu, max_vm_pu = .95, 1.05
+    min_p_mw, max_p_mw = 0., 1.
+    p_mw, vm_pu = 0.02, 1.01
+    bus = 1
+
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    pp.create_gen(net, bus, p_mw=p_mw, vm_pu=vm_pu, controllable=False,
+                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert np.allclose(net.res_bus.at[bus, "vm_pu"], vm_pu)
+    assert np.allclose(net.res_bus.at[bus, "p_mw"], -p_mw)
+
+
+def test_gen_p_vm_limits(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    net.bus.loc[:, "min_vm_pu"] = 0.9
+    net.bus.loc[:, "max_vm_pu"] = 1.1
+    min_vm_pu, max_vm_pu = .99, 1.005
+    min_p_mw, max_p_mw = 0., 1.
+    bus = 1
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
+    assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
+    assert min_p_mw <= -net.res_bus.at[bus, "p_mw"] < max_p_mw
+
+
+def test_gen_violated_p_vm_limits(four_bus_net):
+    # tests if gen max_vm_pu and min_vm_pu are correctly enforced
+    net = four_bus_net
+    min_vm_pu, max_vm_pu = .98, 1.007  # gen limits are out of bus limits
+    net.bus.loc[:, "min_vm_pu"] = min_vm_pu
+    net.bus.loc[:, "max_vm_pu"] = max_vm_pu
+
+    min_p_mw, max_p_mw = 0., 1.
+    bus = 1
+    # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
+    g = pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+                      min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    pp.runopp(net)
+    assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
+    assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
+    assert min_p_mw <= -net.res_bus.at[bus, "p_mw"] < max_p_mw
+    net.gen.at[g, "vm_pu"] = 0.9  # lower bus vm_pu limit violation
+    pp.runopp(net)
+    assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
 
 
 if __name__ == "__main__":

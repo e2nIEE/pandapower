@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.timeseries.data_source import DataSource
@@ -10,26 +10,27 @@ try:
 except:
     import logging as pplog
 
-from pandapower.timeseries.data_source import DataSource
-
 logger = pplog.getLogger(__name__)
 
 
 class DFData(DataSource):
     """
-    a very basic implementation for a pandas.DataFrame data source, that uses index column as time
-    step.
-    the user should take care that the data is numeric and all the time steps are present,
-    because we let it fail here.
+    Hold a pandas.DataFrame as the data source, that uses index column as time step.
+    Take care that the data is numeric and all the time steps are present.
 
     Please note: The columns should be integers for scalar accessing!
-    You can enable casting of columns and indexes with the option multi =True!
-    This is necessary e.g. if you read your data from csv.
+
+    INPUT:
+        **df** - A pandas DataFrame which holds the time series data
+
+    OPTIONAL:
+
+        **multi** (bool, False) - If True casts columns and indexes to integers.
+        This might be necessary if you read your data from csv.
     """
 
     def __init__(self, df, multi=False):
         super().__init__()
-        self.update_initialized(locals())
         self.df = df
         if multi:
             # casting column and index to int for multi- columns accessing
