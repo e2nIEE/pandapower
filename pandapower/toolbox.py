@@ -404,9 +404,8 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
     idx = idx if idx is not None else df.index
     idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
     idx_without_null = idx.difference(idx_isnull)
-    idx_no_delta = idx_without_null[(
-                                            df.loc[idx_without_null, column1] -
-                                            df.loc[idx_without_null, column2]).abs().values <= delta]
+    idx_no_delta = idx_without_null[(df.loc[idx_without_null, column1] - df.loc[
+        idx_without_null, column2]).abs().values <= delta]
 
     if equal_nan:
         return idx_without_null.difference(idx_no_delta)
@@ -1192,7 +1191,7 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
     if not analyzed_meas.duplicated(subset=[
-        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+       "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
@@ -1239,7 +1238,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         net.switch.loc[oos_switches, "closed"] = True
 
         for idx, bus in net.switch[
-            ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
+          ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
@@ -1264,9 +1263,9 @@ def drop_out_of_service_elements(net):
     net.res_trafo3w.drop(inactive_res_trafos3w, inplace=True)
 
     do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
-                    set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-                    set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
-                    set(net.trafo3w.lv_bus.values)
+        set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+        set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
+        set(net.trafo3w.lv_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
@@ -1370,7 +1369,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
-            net[table].shape[0]):
+               net[table].shape[0]):
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
@@ -1947,7 +1946,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == [
-        'b']:  # Raises error if switch is not a bus-bus switch
+            'b']:  # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
@@ -2230,7 +2229,7 @@ def get_connected_elements_dict(
     for elm in pp_elms:
         if elm == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
-                                          respect_in_service=respect_in_service)
+                                       respect_in_service=respect_in_service)
         elif elm == "switch":
             conn = get_connected_switches(net, buses)
         else:
@@ -2275,21 +2274,19 @@ def replace_ward_by_internal_elements(net, wards=None):
     # --- result data
     if net.res_ward.shape[0]:
         sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
-        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards]!=0, 1)
-        to_add_load = net.res_ward.loc[wards,["p_mw", "q_mvar"]]
+        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards] != 0, 1)
+        to_add_load = net.res_ward.loc[wards, ["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
-        to_add_load.p_mw = net.ward.ps_mw[wards].values\
-                            *sign_in_service*sign_not_isolated
-        to_add_load.q_mvar = net.ward.qs_mvar[wards].values\
-                            *sign_in_service*sign_not_isolated
+        to_add_load.p_mw = net.ward.ps_mw[wards].values*sign_in_service*sign_not_isolated
+        to_add_load.q_mvar = net.ward.qs_mvar[wards].values*sign_in_service*sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
 
-        to_add_shunt = net.res_ward.loc[wards,["p_mw", "q_mvar", "vm_pu"]]
+        to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
-        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values**2*net.ward.pz_mw[wards].values\
-                            *sign_in_service*sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values**2*net.ward.qz_mvar[wards].values\
-                            *sign_in_service*sign_not_isolated
+        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values**2*net.ward.pz_mw[wards].values * \
+            sign_in_service*sign_not_isolated
+        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values**2*net.ward.qz_mvar[wards].values * \
+            sign_in_service*sign_not_isolated
         to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
@@ -2297,6 +2294,7 @@ def replace_ward_by_internal_elements(net, wards=None):
 
     # --- drop replaced wards
     net.ward.drop(wards, inplace=True)
+
 
 def replace_xward_by_internal_elements(net, xwards=None):
     """
@@ -2308,7 +2306,8 @@ def replace_xward_by_internal_elements(net, xwards=None):
         **xwards** (iterable) - indices of xwards which should be replaced
 
     OUTPUT:
-        No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
+        No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance
+        and generators
 
     """
     # --- determine xwards index
@@ -2323,14 +2322,13 @@ def replace_xward_by_internal_elements(net, xwards=None):
         bus_idx = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
                              name=xward.name)
         create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
-                               in_service=xward.in_service, name=xward.name)
+                    in_service=xward.in_service, name=xward.name)
         create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
-                                 in_service=xward.in_service, name=xward.name)
+                     in_service=xward.in_service, name=xward.name)
         create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
-                             name=xward.name)
-        create_impedance(net, xward.bus, bus_idx, \
-                            xward.r_ohm/(bus_v**2), xward.x_ohm/(bus_v**2),
-                            net.sn_mva, in_service=xward.in_service, name=xward.name)
+                   name=xward.name)
+        create_impedance(net, xward.bus, bus_idx, xward.r_ohm/(bus_v**2), xward.x_ohm/(bus_v**2),
+                         net.sn_mva, in_service=xward.in_service, name=xward.name)
 
     # --- drop replaced wards
     net.xward.drop(xwards, inplace=True)
