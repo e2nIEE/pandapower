@@ -66,7 +66,7 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
 
 
 def branch_element_bus_dict(include_switch=False):
-    """ """
+    """ Returns a dict with keys of branch elements and values of bus column names as list. """
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
     branch_elements = {ebt[0] for ebt in ebts}
     bebd = {elm: [] for elm in branch_elements}
@@ -693,7 +693,7 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                         not_equal.append(df_name)
 
     if len(not_equal) > 0:
-        logger.info("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
 
     return eq
 
