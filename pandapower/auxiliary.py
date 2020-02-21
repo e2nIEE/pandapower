@@ -243,9 +243,9 @@ class pandapowerNet(ADict):
         return r
 
 
-def _preserve_dtypes(df, dtypes):
+def _preserve_dtypes(df, dtypes, preserve_name_dtype=False):
     for item, dtype in list(dtypes.iteritems()):
-        if df.dtypes.at[item] != dtype:
+        if df.dtypes.at[item] != dtype and preserve_name_dtype or item != "name":
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
