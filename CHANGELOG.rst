@@ -21,6 +21,7 @@ Change Log
 - [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
 - [ADDED] Other PowerModels features via interface callable (e.g. network data check and different solver)
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters
+- [ADDED] toolbox functions replace_ward_by_internal_elements and replace_xward_by_internal_elements
 - [ADDED] consideration of result tables in toolbox functions drop
 - [ADDED] new jupyter notebook examples for time series, controller and PowerModels.jl interface
 - [ADDED] reindex_buses() toolbox function

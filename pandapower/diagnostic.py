@@ -324,7 +324,7 @@ def no_ext_grid(net):
 
     """
 
-    if not len(net.ext_grid) > 0:
+    if not len(net.ext_grid) + sum(net.gen.slack) > 0:
         return True
 
 
@@ -722,7 +722,8 @@ def disconnected_elements(net):
     for section in sections:
         section_dict = {}
 
-        if not section & set(net.ext_grid.bus) and any(net.bus.in_service.loc[section]):
+        if not section & set(net.ext_grid.bus).union(net.gen.bus[net.gen.slack]) and any(
+                net.bus.in_service.loc[section]):
             section_buses = list(net.bus[net.bus.index.isin(section)
                                          & (net.bus.in_service == True)].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
