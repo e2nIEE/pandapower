@@ -243,6 +243,9 @@ class pandapowerNet(ADict):
         return r
 
     def __str__(self):
+        '''
+        displaying class name when calling __str__
+        '''
         return self.__class__.__name__
 
 
