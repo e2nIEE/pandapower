@@ -1300,6 +1300,15 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
+def _select_cost_df(net, p2, cost_type):
+    isin = np.array([False]*net[cost_type].shape[0])
+    for et in net[cost_type].et.unique():
+        isin_et = net[cost_type].element.isin(net[et].index)
+        is_et = net[cost_type].element == et
+        isin |= isin_et & is_et
+    p2[cost_type] = net[cost_type].loc[isin]
+
+
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """
@@ -1325,7 +1334,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         include_results = True  # assumption: the user doesn't want to old results without selection
     else:
-        p2 = create_empty_network()
+        p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
     net_parameters = ["name", "f_hz"]
@@ -1354,17 +1363,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
 
-    def select_cost_df(net, p2, cost_type):
-        selected_idx = []
-        for idx in net[cost_type].index:
-            et = net[cost_type]["et"].loc[idx]
-            element = net[cost_type]["element"].at[idx]
-            if element in p2[et].index:
-                selected_idx.append(idx)
-        p2[cost_type] = net[cost_type].loc[selected_idx]
-
-    select_cost_df(net, p2, "poly_cost")
-    select_cost_df(net, p2, "pwl_cost")
+    _select_cost_df(net, p2, "poly_cost")
+    _select_cost_df(net, p2, "pwl_cost")
 
     if include_results:
         for table in net.keys():
@@ -1392,7 +1392,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1416,7 +1416,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             net[element].loc[elements.index, "element"] = new_index
 
     for element, table in net.items():
-        if element.startswith("_") or element.startswith("res") or element == "dtypes":
+        if element.startswith("_") or element == "dtypes" or (element.startswith("res") and (
+                validate or not merge_results)):
             continue
         if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
@@ -1430,7 +1431,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
+            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
             dtypes = net1[element].dtypes
             try:
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
