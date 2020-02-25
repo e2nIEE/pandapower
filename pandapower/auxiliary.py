@@ -679,9 +679,15 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     numba = kwargs.get("numba", True)
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
-    recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    # recycle options
+    recycle = kwargs.get("recycle", None)
     only_v_results = kwargs.get("only_v_results", False)
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
+
+
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -751,7 +757,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug, only_v_results=only_v_results)
+                    v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
+                    permc_spec=permc_spec)
     net._options.update(overrule_options)
 
 

@@ -2,6 +2,7 @@ Change Log
 =============
 
 - [ADDED] dclines and considering given branch indices by create_nxgraph()
+- [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
 
 [2.2.1]- 2020-01-29
 ----------------------
