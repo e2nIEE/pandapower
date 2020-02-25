@@ -324,7 +324,7 @@ def no_ext_grid(net):
 
     """
 
-    if not len(net.ext_grid) + sum(net.gen.slack) > 0:
+    if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
         return True
 
 
@@ -722,7 +722,8 @@ def disconnected_elements(net):
     for section in sections:
         section_dict = {}
 
-        if not section & set(net.ext_grid.bus).union(net.gen.bus[net.gen.slack]) and any(
+        if not section & set(net.ext_grid.bus[net.ext_grid.in_service]).union(
+                net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
                 net.bus.in_service.loc[section]):
             section_buses = list(net.bus[net.bus.index.isin(section)
                                          & (net.bus.in_service == True)].index)
@@ -904,24 +905,20 @@ def deviation_from_std_type(net):
 
 def parallel_switches(net):
     """
-        Checks for parallel switches.
+    Checks for parallel switches.
 
-         INPUT:
-            **net** (PandapowerNet)    - pandapower network
+     INPUT:
+        **net** (PandapowerNet)    - pandapower network
 
-
-         OUTPUT:
-            **parallel_switches** (list)   - List of tuples each containing parallel switches.
-
-
-
-
+     OUTPUT:
+        **parallel_switches** (list)   - List of tuples each containing parallel switches.
     """
     parallel_switches = []
     compare_parameters = ['bus', 'element', 'et']
     parallels_bus_and_element = list(
         net.switch.groupby(compare_parameters).count().query('closed > 1').index)
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
+        parallel_switches.append(list(net.switch.query(
+            'bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches
