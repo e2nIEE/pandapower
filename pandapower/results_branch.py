@@ -180,9 +180,22 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     else:
         Pabcl_mw = np.zeros_like(Pabcf_mw)
         Qabcl_mvar = np.zeros_like(Qabct_mvar)
-    Iabc_f_ka = np.abs(sequence_to_phase(I012_from_ka))
-    Iabc_t_ka = np.abs(sequence_to_phase(I012_to_ka))
+    
+    #geting complex values of the sequence current    
+    Iabc_f_ka_complex = sequence_to_phase(I012_from_ka)
+    Iabc_t_ka_complex = sequence_to_phase(I012_to_ka)
+    
+    Iabc_f_ka = np.abs(Iabc_f_ka_complex)
+    Iabc_t_ka = np.abs(Iabc_t_ka_complex)
     Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
+    
+    In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
+    In_f_ka = np.abs(In_f_ka_complex)
+    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
+    In_t_ka_complex = Iabc_t_ka_complex.sum(axis=0)
+    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
+    In_t_ka = np.abs(In_t_ka_complex)
+    In_ka = np.maximum.reduce([In_t_ka, In_f_ka])
 
     # write to line
     net["res_line_3ph"]["p_a_from_mw"] = Pabcf_mw[0, :].flatten()
@@ -212,6 +225,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"]["i_a_ka"] = Iabc_ka[0, :]
     net["res_line_3ph"]["i_b_ka"] = Iabc_ka[1, :]
     net["res_line_3ph"]["i_c_ka"] = Iabc_ka[2, :]
+    net["res_line_3ph"]["i_n_from_ka"] = In_f_ka
+    net["res_line_3ph"]["i_n_to_ka"] = In_t_ka
+    net["res_line_3ph"]["i_n_ka"] = In_ka
     net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :] / i_max_phase * 100
     net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :] / i_max_phase * 100
     net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :] / i_max_phase * 100
@@ -310,6 +326,22 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
         Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
+    
+#    #geting complex values of the sequence current    
+#    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
+#    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
+#    
+#    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
+#    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
+#
+#    
+#    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
+#    In_hv_ka = np.abs(In_hv_ka_complex)
+#    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
+#    In_lv_ka_complex = Iabc_lv_ka_complex.sum(axis=0)
+#    In_lv_ka = np.abs(In_lv_ka_complex)
+#    In_lv_ia_n_degree = np.angle(In_lv_ka_complex).flatten()*180/np.pi
+
 
     if trafo_loading == "current":
         trafo_df = net["trafo"]
@@ -347,12 +379,14 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     res_trafo_df["q_a_l_mvar"] = Qabcl_mvar[0, :].flatten()
     res_trafo_df["q_b_l_mvar"] = Qabcl_mvar[1, :].flatten()
     res_trafo_df["q_c_l_mvar"] = Qabcl_mvar[2, :].flatten()
-    res_trafo_df["va_c_degreehv_ka"] = Iabc_hv_ka[0, :].flatten()
+    res_trafo_df["i_a_hv_ka"] = Iabc_hv_ka[0, :].flatten()
     res_trafo_df["i_b_hv_ka"] = Iabc_hv_ka[1, :].flatten()
     res_trafo_df["i_c_hv_ka"] = Iabc_hv_ka[2, :].flatten()
+#    res_trafo_df["i_n_hv_ka"] = In_hv_ka.flatten()
     res_trafo_df["i_a_lv_ka"] = Iabc_lv_ka[0, :].flatten()
     res_trafo_df["i_b_lv_ka"] = Iabc_lv_ka[1, :].flatten()
     res_trafo_df["i_c_lv_ka"] = Iabc_lv_ka[2, :].flatten()
+#    res_trafo_df["i_n_lv_ka"] = In_lv_ka.flatten()
     res_trafo_df["loading_percentA"] = loading_percent[0, :]
     res_trafo_df["loading_percentB"] = loading_percent[1, :]
     res_trafo_df["loading_percentC"] = loading_percent[2, :]
