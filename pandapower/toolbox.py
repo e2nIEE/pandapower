@@ -1318,8 +1318,8 @@ def drop_inactive_elements(net, respect_switches=True):
 def _select_cost_df(net, p2, cost_type):
     isin = np.array([False]*net[cost_type].shape[0])
     for et in net[cost_type].et.unique():
-        isin_et = net[cost_type].element.isin(net[et].index)
-        is_et = net[cost_type].element == et
+        isin_et = net[cost_type].element.isin(p2[et].index)
+        is_et = net[cost_type].et == et
         isin |= isin_et & is_et
     p2[cost_type] = net[cost_type].loc[isin]
 
