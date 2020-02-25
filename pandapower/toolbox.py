@@ -56,7 +56,9 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
                 res_elements=False):
-    """ Returns the list of pandapower elements. """
+    """
+    Returns the list of pandapower elements.
+    """
     pp_elms = set(["bus"]) if bus else set()
     pp_elms |= set([el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
@@ -66,7 +68,9 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
 
 
 def branch_element_bus_dict(include_switch=False):
-    """ """
+    """
+    Returns a dict with keys of branch elements and values of bus column names as list.
+    """
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
     branch_elements = {ebt[0] for ebt in ebts}
     bebd = {elm: [] for elm in branch_elements}
@@ -217,7 +221,9 @@ def _cosphi_from_pq(p, q):
 
 
 def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
-    """ Returns a boolean whether the nets are equal or not. """
+    """
+    Returns a boolean whether the nets are equal or not.
+    """
     if ignore_index_order:
         x_df.sort_index(axis=1, inplace=True)
         y_df.sort_index(axis=1, inplace=True)
@@ -242,8 +248,10 @@ def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
 
 
 def compare_arrays(x, y):
-    """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
-        or y. NaN values are assumed as equal. """
+    """
+    Returns an array of bools whether array x is equal to array y. Strings are allowed in x
+    or y. NaN values are assumed as equal.
+    """
     if x.shape == y.shape:
         # (x != x) is like np.isnan(x) - but works also for strings
         return np.equal(x, y) | ((x != x) & (y != y))
@@ -252,7 +260,9 @@ def compare_arrays(x, y):
 
 
 def ensure_iterability(var, len_=None):
-    """ This function ensures iterability of a variable (and optional length). """
+    """
+    Ensures iterability of a variable (and optional length).
+    """
     if hasattr(var, "__iter__") and not isinstance(var, str):
         if isinstance(len_, int) and len(var) != len_:
             raise ValueError("Length of variable differs from %i." % len_)
@@ -693,13 +703,15 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                         not_equal.append(df_name)
 
     if len(not_equal) > 0:
-        logger.info("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
 
     return eq
 
 
 def clear_result_tables(net):
-    """ This function clears all 'res_...' DataFrames in net. """
+    """
+    Clears all 'res_...' DataFrames in net.
+    """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
             net[key].drop(net[key].index, inplace=True)
@@ -823,7 +835,9 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
 
 
 def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
-    """ Adds zones to elements, inferring them from the zones of buses they are connected to. """
+    """
+    Adds zones to elements, inferring them from the zones of buses they are connected to.
+    """
     elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
@@ -1183,8 +1197,9 @@ def drop_lines(net, lines):
 
 
 def drop_duplicated_measurements(net, buses=None, keep="first"):
-    """ Drops duplicated measurements at given set buses. If buses is None, all buses are
-    considered. """
+    """
+    Drops duplicated measurements at given set buses. If buses is None, all buses are considered.
+    """
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
@@ -1300,6 +1315,15 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
+def _select_cost_df(net, p2, cost_type):
+    isin = np.array([False]*net[cost_type].shape[0])
+    for et in net[cost_type].et.unique():
+        isin_et = net[cost_type].element.isin(net[et].index)
+        is_et = net[cost_type].element == et
+        isin |= isin_et & is_et
+    p2[cost_type] = net[cost_type].loc[isin]
+
+
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """
@@ -1325,7 +1349,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         include_results = True  # assumption: the user doesn't want to old results without selection
     else:
-        p2 = create_empty_network()
+        p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
     net_parameters = ["name", "f_hz"]
@@ -1354,17 +1378,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
 
-    def select_cost_df(net, p2, cost_type):
-        selected_idx = []
-        for idx in net[cost_type].index:
-            et = net[cost_type]["et"].loc[idx]
-            element = net[cost_type]["element"].at[idx]
-            if element in p2[et].index:
-                selected_idx.append(idx)
-        p2[cost_type] = net[cost_type].loc[selected_idx]
-
-    select_cost_df(net, p2, "poly_cost")
-    select_cost_df(net, p2, "pwl_cost")
+    _select_cost_df(net, p2, "poly_cost")
+    _select_cost_df(net, p2, "pwl_cost")
 
     if include_results:
         for table in net.keys():
@@ -1392,7 +1407,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1406,7 +1421,9 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         runpp(net2, **kwargs)
 
     def adapt_element_idx_references(net, element, element_type, offset=0):
-        """ used for switch and measurement """
+        """
+        used for switch and measurement
+        """
         # element_type[0] == "l" for "line", etc.:
         et = element_type[0] if element == "switch" else element_type
         et_col = "et" if element == "switch" else "element_type"
@@ -1416,7 +1433,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             net[element].loc[elements.index, "element"] = new_index
 
     for element, table in net.items():
-        if element.startswith("_") or element.startswith("res") or element == "dtypes":
+        if element.startswith("_") or element == "dtypes" or (element.startswith("res") and (
+                validate or not merge_results)):
             continue
         if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
@@ -1430,7 +1448,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
+            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
             dtypes = net1[element].dtypes
             try:
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
@@ -1633,7 +1651,8 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
 
 
 def replace_ext_grid_by_gen(net, ext_grids=None):
-    """ Replaces external grids by generators.
+    """
+    Replaces external grids by generators.
     INPUT:
         **net** - pandapower net
 
@@ -1691,7 +1710,8 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
 
 
 def replace_gen_by_ext_grid(net, gens=None):
-    """ Replaces generators by external grids.
+    """
+    Replaces generators by external grids.
     INPUT:
         **net** - pandapower net
 
@@ -1747,7 +1767,8 @@ def replace_gen_by_ext_grid(net, gens=None):
 
 
 def replace_gen_by_sgen(net, gens=None):
-    """ Replaces generators by static generators.
+    """
+    Replaces generators by static generators.
     INPUT:
         **net** - pandapower net
 
@@ -1804,7 +1825,8 @@ def replace_gen_by_sgen(net, gens=None):
 
 
 def replace_sgen_by_gen(net, sgens=None):
-    """ Replaces static generators by generators.
+    """
+    Replaces static generators by generators.
     INPUT:
         **net** - pandapower net
 
@@ -2283,7 +2305,6 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                                             be considered
     OUTPUT:
        **cl** (set) - Returns connected switches.
-
     """
 
     if not hasattr(buses, "__iter__"):
@@ -2319,7 +2340,7 @@ def get_connected_elements_dict(
         net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
         connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
         connected_other_elements=True):
-    """ Returns a dict of lists of connected elements. """
+    """Returns a dict of lists of connected elements."""
     pp_elms = pp_elements(
         bus=connected_buses, bus_elements=connected_bus_elements,
         branch_elements=connected_branch_elements, other_elements=connected_other_elements,
