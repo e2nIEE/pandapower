@@ -2305,7 +2305,6 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                                             be considered
     OUTPUT:
        **cl** (set) - Returns connected switches.
-
     """
 
     if not hasattr(buses, "__iter__"):
@@ -2341,9 +2340,7 @@ def get_connected_elements_dict(
         net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
         connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
         connected_other_elements=True):
-    """
-    Returns a dict of lists of connected elements.
-    """
+    """Returns a dict of lists of connected elements."""
     pp_elms = pp_elements(
         bus=connected_buses, bus_elements=connected_bus_elements,
         branch_elements=connected_branch_elements, other_elements=connected_other_elements,

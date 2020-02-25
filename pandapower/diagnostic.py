@@ -918,6 +918,7 @@ def parallel_switches(net):
     parallels_bus_and_element = list(
         net.switch.groupby(compare_parameters).count().query('closed > 1').index)
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
+        parallel_switches.append(list(net.switch.query(
+            'bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches
