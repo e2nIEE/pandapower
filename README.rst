@@ -21,12 +21,12 @@
    :target: https://travis-ci.org/e2nIEE/pandapower/branches
    :alt: travis
 
-.. image:: https://codecov.io/gh/e2nIEE/pandapower/branch/develop/graph/badge.svg
+.. image:: https://codecov.io/gh/e2nIEE/pandapower/branch/master/graph/badge.svg
    :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
    :alt: codecov
     
-.. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
-   :target: https://app.codacy.com/project/lthurner/pandapower/dashboard
+.. image:: https://api.codacy.com/project/badge/Grade/e2ce960935fd4f96b4be4dff9a0c76e3
+   :target: https://app.codacy.com/gh/e2nIEE/pandapower?branch=master
    :alt: codacy
     
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
