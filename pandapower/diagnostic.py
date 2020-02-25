@@ -905,18 +905,13 @@ def deviation_from_std_type(net):
 
 def parallel_switches(net):
     """
-        Checks for parallel switches.
+    Checks for parallel switches.
 
-         INPUT:
-            **net** (PandapowerNet)    - pandapower network
+     INPUT:
+        **net** (PandapowerNet)    - pandapower network
 
-
-         OUTPUT:
-            **parallel_switches** (list)   - List of tuples each containing parallel switches.
-
-
-
-
+     OUTPUT:
+        **parallel_switches** (list)   - List of tuples each containing parallel switches.
     """
     parallel_switches = []
     compare_parameters = ['bus', 'element', 'et']
