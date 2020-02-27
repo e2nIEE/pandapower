@@ -169,28 +169,29 @@ class ADict(dict, MutableMapping):
         """
         overloads the deepcopy function of pandapower if at least one DataFrame with column "object" is in net
 
+        in addition, line geodata can contain mutable objects like lists, and it is also treated specially
+
         reason: some of these objects contain a reference to net which breaks the default deepcopy function.
-        This fix was introduced in pandapower 2.2.1 and is rather a quick and dirty solution to the problem
+        Also, the DataFrame doesn't deepcopy its elements if geodata changes in the lists, it affects both net instances
+        This fix was introduced in pandapower 2.2.1
 
         """
-        save_to_json = False
-        for el in self:
-            if isinstance(self[el], pd.DataFrame) and "object" in self[el] and len(self[el]):
-                save_to_json = True
-                break
-        if save_to_json:
-            # deepcopy by dumping to json and loading from it
-            from pandapower.file_io import PPJSONEncoder, from_json_string
-            from pandapower.io_utils import with_signature
-            json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
-            return from_json_string(json_string)
-
-        # deepcopy of every element in self (== the pandapower net)
+        deep_columns = {'object', 'coords', 'geometry'}
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.items():
-            setattr(result, k, copy.deepcopy(v, memo))
+            if isinstance(v, pd.DataFrame) and not set(v.columns).isdisjoint(deep_columns):
+                if k not in result:
+                    result[k] = pd.DataFrame(index=v.index, columns=v.columns).astype(v.dtypes)
+                for col in v.columns:
+                    if col in deep_columns:
+                        result[k][col] = v[col].apply(lambda x: copy.deepcopy(x, memo))
+                    else:
+                        result[k][col] = copy.deepcopy(v[col], memo)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
         result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
         return result
 
