@@ -13,6 +13,7 @@ import types
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
+import weakref
 
 import networkx
 import numpy
@@ -453,6 +454,25 @@ class JSONSerializableClass(object):
 
     def __init__(self, **kwargs):
         pass
+
+    @property
+    def net(self):
+        return self._net()
+
+    @net.setter
+    def net(self, net):
+        self._net = weakref.ref(net)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'net':
+                setattr(result, k, memo[id(self.net)])
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     def to_json(self):
         """
