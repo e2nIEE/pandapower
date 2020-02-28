@@ -450,7 +450,7 @@ def pp_hook(d, net=None):
 
 
 class JSONSerializableClass(object):
-    json_excludes = ["net", "self", "__class__"]
+    json_excludes = ["net", "_net", "self", "__class__"]
 
     def __init__(self, **kwargs):
         pass
@@ -575,7 +575,8 @@ class JSONSerializableClass(object):
     def from_dict(cls, d, net):
         obj = JSONSerializableClass.__new__(cls)
         if 'net' in d:
-            d.update({'net': net})
+            d.pop('net')
+            obj.net = net
         obj.__dict__.update(d)
         return obj
 
