@@ -2364,6 +2364,7 @@ def get_connected_elements_dict(
 
 def get_gc_objects_dict():
     """
+    This function is based on the code in mem_top module
     Summarize object types that are tracket by the garbage collector in the moment.
     Useful to test if there are memoly leaks.
     :return: dictionary with keys corresponding to types and values to the number of objects of the type
