@@ -5,6 +5,7 @@
 
 
 import pytest
+import gc
 import copy
 import numpy as np
 import pandas as pd
@@ -15,6 +16,17 @@ import pandapower as pp
 import pandapower.networks
 import pandapower.control
 import pandapower.timeseries
+
+
+class MemoryLeakDemo:
+    """
+    Dummy class to demonstrate memory leaks
+    """
+    def __init__(self, net):
+        self.net = net
+        # it is interesting, that if "self" is just an attribute of net, there are no problems
+        # if "self" is saved in a DataFrame, it causes a memory leak
+        net['memory_leak_demo'] = pd.DataFrame(data=[self], columns=['object'])
 
 
 def test_get_indices():
@@ -62,6 +74,39 @@ def test_net_deepcopy():
     assert not net1.controller.object.at[1].data_source.df is ds.df
 
     assert not net1.line_geodata.coords.at[0] is net.line_geodata.coords.at[0]
+
+
+def test_memory_leaks():
+    net = pp.networks.example_simple()
+
+    # first, test to check that there are no memory leaks
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
+
+    for _ in range(100):
+        net_copy = copy.deepcopy(net)
+        # In each net copy it has only one controller
+        pp.control.ContinuousTapControl(net_copy, tid=0, vm_set_pu=1)
+
+    gc.collect()
+
+    types_dict2 = pp.toolbox.get_gc_objects_dict()
+
+    assert types_dict1[pandapower.auxiliary.pandapowerNet] == 1
+    assert types_dict2[pandapower.auxiliary.pandapowerNet] == 2
+
+    assert types_dict1.get(pandapower.control.ContinuousTapControl, 0) == 0
+    assert types_dict2[pandapower.control.ContinuousTapControl] == 1
+
+    # now, demonstrate how a memory leak occurs
+    for _ in range(10):
+        net_copy = copy.deepcopy(net)
+        MemoryLeakDemo(net_copy)
+
+    gc.collect()
+
+    types_dict3 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict3[pandapower.auxiliary.pandapowerNet] == 11
+    assert types_dict3[MemoryLeakDemo] == 10
 
 
 if __name__ == '__main__':
