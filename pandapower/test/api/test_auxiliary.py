@@ -98,10 +98,12 @@ def test_memory_leaks():
     assert types_dict2[pandapower.control.ContinuousTapControl] == 1
 
     # now, demonstrate how a memory leak occurs
+    # emulates the earlier behavior before the fix with weakref
     for _ in range(10):
         net_copy = copy.deepcopy(net)
         MemoryLeakDemo(net_copy)
 
+    # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
 
     types_dict3 = pp.toolbox.get_gc_objects_dict()
