@@ -9,6 +9,13 @@ import copy
 import numpy as np
 import pandas as pd
 
+try:
+    import geopandas as gpd
+    import shapely.geometry
+    GEOPANDAS_INSTALLED = True
+except ImportError:
+    GEOPANDAS_INSTALLED = False
+
 from pandapower.auxiliary import get_indices
 
 import pandapower as pp
@@ -46,6 +53,7 @@ def test_get_indices():
 def test_net_deepcopy():
     net = pp.networks.example_simple()
     net.line_geodata.loc[0, 'coords'] = [[0,1], [1,2]]
+    net.bus_geodata.loc[0, ['x', 'y']] = 0, 1
 
     pp.control.ContinuousTapControl(net, tid=0, vm_set_pu=1)
     ds = pp.timeseries.DFData(pd.DataFrame(data=[[0,1,2], [3,4,5]]))
@@ -62,6 +70,19 @@ def test_net_deepcopy():
     assert not net1.controller.object.at[1].data_source.df is ds.df
 
     assert not net1.line_geodata.coords.at[0] is net.line_geodata.coords.at[0]
+
+    if GEOPANDAS_INSTALLED:
+        for tab in ('bus_geodata', 'line_geodata'):
+            if tab == 'bus_geodata':
+                geometry = net[tab].apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
+            else:
+                geometry = net[tab].coords.apply(shapely.geometry.LineString)
+            net[tab] = gpd.GeoDataFrame(net[tab], geometry=geometry)
+        net1 = net.deepcopy()
+        assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
+        assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
+        assert isinstance(net1.bus_geodata.geometry.iat[0], shapely.geometry.Point)
+        assert isinstance(net1.line_geodata.geometry.iat[0], shapely.geometry.LineString)
 
 
 if __name__ == '__main__':
