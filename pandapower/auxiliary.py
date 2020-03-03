@@ -183,7 +183,7 @@ class ADict(dict, MutableMapping):
         for k, v in self.items():
             if isinstance(v, pd.DataFrame) and not set(v.columns).isdisjoint(deep_columns):
                 if k not in result:
-                    result[k] = pd.DataFrame(index=v.index, columns=v.columns)
+                    result[k] = v.__class__(index=v.index, columns=v.columns)
                 for col in v.columns:
                     if col in deep_columns:
                         result[k][col] = v[col].apply(lambda x: copy.deepcopy(x, memo))
