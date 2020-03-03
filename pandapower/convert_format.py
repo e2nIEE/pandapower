@@ -275,10 +275,10 @@ def _convert_to_mw(net):
 
     for element, std_types in net.std_types.items():
         for std_type, parameters in std_types.items():
-            for parameter, value in parameters.items():
+            for parameter in set(parameters.keys()):
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
-                        parameters[parameter.replace(old, new)] = value * 1e-3
+                        parameters[parameter.replace(old, new)] = parameters[parameter] * 1e-3
                         del parameters[parameter]
 
 
