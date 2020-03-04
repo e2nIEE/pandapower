@@ -60,7 +60,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
+    print('\r%s |%s| %s%% %s\n' % (prefix, bar, percent, suffix), end="")
     # Print New Line on Complete
     if iteration == total:
         print("\n")
@@ -260,7 +260,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # print settings
     ts_variables["verbose"] = verbose
 
-    if logger.level is not 10 and verbose:
+    if logger.level != 10 and verbose:
         # simple progress bar
         print_progress_bar(0, len(time_steps), prefix='Progress:', suffix='Complete', length=50)
 
@@ -275,7 +275,7 @@ def cleanup(ts_variables):
 
 def print_progress(i, time_step, time_steps, verbose, **kwargs):
     # simple status print in each time step.
-    if logger.level is not 10 and verbose:
+    if logger.level != 10 and verbose:
         len_timesteps = len(time_steps)
         print_progress_bar(i + 1, len_timesteps, prefix='Progress:', suffix='Complete', length=50)
 
