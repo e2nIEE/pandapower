@@ -28,7 +28,7 @@ def SimpleGrid():
 
     # Chose the load to match nominal current
     p_ac = 110 * 0.645 * np.sqrt(3)
-    pp.create_load(net, b2, sn_mva=p_ac, q_mvar=5, p_mw=p_ac, name="load_b8", const_i_percent=0)
+    pp.create_load(net, b2, sn_mva=p_ac, q_mvar=5, p_mw=p_ac, name="load_b8", const_i_percent=100)
 
     pp.create_sgen(net, b2, sn_mva=p_ac*1.05, q_mvar=50, p_mw=p_ac, name="sgen_b8")
 
