@@ -13,6 +13,7 @@ import pandas as pd
 try:
     import geopandas as gpd
     import shapely.geometry
+
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -29,6 +30,7 @@ class MemoryLeakDemo:
     """
     Dummy class to demonstrate memory leaks
     """
+
     def __init__(self, net):
         self.net = net
         # it is interesting, that if "self" is just an attribute of net, there are no problems
@@ -36,8 +38,19 @@ class MemoryLeakDemo:
         net['memory_leak_demo'] = pd.DataFrame(data=[self], columns=['object'])
 
 
+class MemoryLeakDemoDF:
+    """
+    Dummy class to demonstrate memory leaks
+    """
+
+    def __init__(self, df):
+        self.df = df
+        # if "self" is saved in a DataFrame, it causes a memory leak
+        df.loc[0, 'object'] = self
+
+
 def test_get_indices():
-    a = [i+100 for i in range(10)]
+    a = [i + 100 for i in range(10)]
     lookup = {idx: pos for pos, idx in enumerate(a)}
     lookup["before_fuse"] = a
 
@@ -64,11 +77,11 @@ def test_get_indices():
 
 def test_net_deepcopy():
     net = pp.networks.example_simple()
-    net.line_geodata.loc[0, 'coords'] = [[0,1], [1,2]]
+    net.line_geodata.loc[0, 'coords'] = [[0, 1], [1, 2]]
     net.bus_geodata.loc[0, ['x', 'y']] = 0, 1
 
     pp.control.ContinuousTapControl(net, tid=0, vm_set_pu=1)
-    ds = pp.timeseries.DFData(pd.DataFrame(data=[[0,1,2], [3,4,5]]))
+    ds = pp.timeseries.DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
     pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0], profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
@@ -102,8 +115,8 @@ def test_memory_leaks():
 
     # first, test to check that there are no memory leaks
     types_dict1 = pp.toolbox.get_gc_objects_dict()
-
-    for _ in range(100):
+    num = 3
+    for _ in range(num):
         net_copy = copy.deepcopy(net)
         # In each net copy it has only one controller
         pp.control.ContinuousTapControl(net_copy, tid=0, vm_set_pu=1)
@@ -112,24 +125,70 @@ def test_memory_leaks():
 
     types_dict2 = pp.toolbox.get_gc_objects_dict()
 
-    assert types_dict1[pandapower.auxiliary.pandapowerNet] == 1
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] == 2
+    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == 1
+    assert types_dict2[pandapower.control.ContinuousTapControl] - types_dict1.get(
+        pandapower.control.ContinuousTapControl, 0) == 1
 
-    assert types_dict1.get(pandapower.control.ContinuousTapControl, 0) == 0
-    assert types_dict2[pandapower.control.ContinuousTapControl] == 1
 
+def test_memory_leaks_demo():
+    net = pp.networks.example_simple()
+    # first, test to check that there are no memory leaks
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
-    for _ in range(10):
+    num = 3
+    for _ in range(num):
         net_copy = copy.deepcopy(net)
         MemoryLeakDemo(net_copy)
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
+    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == num
+    assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
-    types_dict3 = pp.toolbox.get_gc_objects_dict()
-    assert types_dict3[pandapower.auxiliary.pandapowerNet] == 11
-    assert types_dict3[MemoryLeakDemo] == 10
+
+def test_memory_leaks_no_copy():
+    types_dict0 = pp.toolbox.get_gc_objects_dict()
+    num = 3
+    for _ in range(num):
+        net = pp.create_empty_network()
+        # In each net copy it has only one controller
+        pp.control.ConstControl(net, 'sgen', 'p_mw', 0)
+
+    gc.collect()
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict1[pandapower.control.ConstControl] - types_dict0.get(pandapower.control.ConstControl, 0) == 1
+    assert types_dict1[pandapower.auxiliary.pandapowerNet] - types_dict0.get(pandapower.auxiliary.pandapowerNet, 0) == 1
+
+
+def test_memory_leak_no_copy_demo():
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    # now, demonstrate how a memory leak occurs
+    # emulates the earlier behavior before the fix with weakref
+    num = 3
+    for _ in range(num):
+        net = pp.networks.example_simple()
+        MemoryLeakDemo(net)
+
+    # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
+    gc.collect()
+    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict2[pandapower.auxiliary.pandapowerNet] - \
+           types_dict1.get(pandapower.auxiliary.pandapowerNet, 0) == num
+    assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
+
+
+def test_memory_leak_df():
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    num = 3
+    for _ in range(num):
+        df = pd.DataFrame()
+        MemoryLeakDemoDF(df)
+
+    gc.collect()
+    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
 
 
 if __name__ == '__main__':
