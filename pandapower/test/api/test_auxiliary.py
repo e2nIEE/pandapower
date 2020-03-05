@@ -49,6 +49,16 @@ class MemoryLeakDemoDF:
         df.loc[0, 'object'] = self
 
 
+class MemoryLeakDemoDict:
+    """
+    Dummy class to demonstrate memory leaks
+    """
+
+    def __init__(self, d):
+        self.d = d
+        d['object'] = self
+
+
 def test_get_indices():
     a = [i + 100 for i in range(10)]
     lookup = {idx: pos for pos, idx in enumerate(a)}
@@ -189,6 +199,18 @@ def test_memory_leak_df():
     gc.collect()
     types_dict2 = pp.toolbox.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
+
+
+def test_memory_leak_dict():
+    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    num = 3
+    for _ in range(num):
+        d = dict()
+        MemoryLeakDemoDict(d)
+
+    gc.collect()
+    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
 
 
 if __name__ == '__main__':
