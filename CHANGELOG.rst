@@ -3,6 +3,8 @@ Change Log
 
 - [ADDED] dclines and considering given branch indices by create_nxgraph()
 - [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
+- [FIXED] Changed the __deepcopy__ for pandapowerNet back to using copy.deepcopy, fixed the issue that caused the switch to json #676
+- [FIXED] Potential memory leaks due to circular references in JSONSerializableObjects, fixed by using weakref #677
 
 [2.2.1]- 2020-01-29
 ----------------------
