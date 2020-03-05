@@ -8,11 +8,9 @@ import re
 
 with open('README.rst', 'rb') as f:
     install = f.read().decode('utf-8')
-    install = install.replace('\r\n', '\n')
 
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
-    changelog = changelog.replace('\r\n', '\n')
 
 classifiers = [
     'Development Status :: 5 - Production/Stable',
