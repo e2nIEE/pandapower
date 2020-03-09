@@ -87,7 +87,7 @@ def convert_to_pm_structure(net):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
-    reset_results(net)
+    reset_results(net, all_empty=False)
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
