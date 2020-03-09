@@ -1851,14 +1851,29 @@ def replace_sgen_by_gen(net, sgens=None):
 
     # --- create gens
     new_idx = []
+    log_warning = False
     for sgen in net.sgen.loc[sgens].itertuples():
-        vm_pu = 1.0 if sgen.Index not in net.res_sgen.index else net.res_bus.at[sgen.bus, "vm_pu"]
+        if sgen.Index in net.res_sgen.index:
+            vm_pu = net.res_bus.at[sgen.bus, "vm_pu"]
+        else:  # no result information to get vm_pu -> use net.gen.vm_pu or net.ext_grid.vm_pu or
+            # set 1.0
+            if sgen.bus in net.gen.bus.values:
+                vm_pu = net.gen.vm_pu.loc[net.gen.bus == sgen.bus].values[0]
+            elif sgen.bus in net.ext_grid.bus.values:
+                vm_pu = net.ext_grid.vm_pu.loc[net.ext_grid.bus == sgen.bus].values[0]
+            else:
+                vm_pu = 1.0
+                log_warning = True
         controllable = False if "controllable" not in net.sgen.columns else sgen.controllable
         idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
                          in_service=sgen.in_service, controllable=controllable)
         new_idx.append(idx)
         for col in existing_non_default_col:
             net.gen[col].at[idx] = getattr(sgen, col)
+
+    if log_warning:
+        logger.warning("In replace_sgen_by_gen(), for some generator 'vm_pu' is assumed as 1.0 " +
+                       "since no power flow results were available.")
 
     # --- drop replaced sgens
     net.sgen.drop(sgens, inplace=True)
