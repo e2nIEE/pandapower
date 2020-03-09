@@ -52,7 +52,7 @@ def _powerflow(net, **kwargs):
     if not ac or init_results:
         verify_results(net)
     else:
-        reset_results(net)
+        reset_results(net, all_empty=True)
 
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
