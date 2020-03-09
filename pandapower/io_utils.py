@@ -559,6 +559,8 @@ class JSONSerializableClass(object):
                     check_equality(obj1[key], obj2[key])
 
         def check_callable_equality(obj1, obj2):
+            if isinstance(obj1, weakref.ref) and isinstance(obj2, weakref.ref):
+                return
             if str(obj1) != str(obj2):
                 raise UnequalityFound
 
@@ -566,7 +568,7 @@ class JSONSerializableClass(object):
             try:
                 check_equality(self.__dict__, other.__dict__)
                 return True
-            except UnequalityFound:
+            except UnequalityFound as e:
                 return False
         else:
             return False
