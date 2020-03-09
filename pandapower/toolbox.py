@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import gc
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
@@ -2359,3 +2360,19 @@ def get_connected_elements_dict(
         if include_empty_lists or len(conn):
             connected[elm] = list(conn)
     return connected
+
+
+def get_gc_objects_dict():
+    """
+    This function is based on the code in mem_top module
+    Summarize object types that are tracket by the garbage collector in the moment.
+    Useful to test if there are memoly leaks.
+    :return: dictionary with keys corresponding to types and values to the number of objects of the type
+    """
+    objs = gc.get_objects()
+    nums_by_types = dict()
+
+    for obj in objs:
+        _type = type(obj)
+        nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
+    return nums_by_types
