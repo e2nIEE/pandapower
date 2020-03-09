@@ -24,7 +24,7 @@ def _extract_results(net, ppc, ppc_0):
         _get_trafo3w_results(net, ppc)
 
 def _extract_single_results(net, ppc):
-    reset_results(net, suffix="_sc", all_empty=True)
+    reset_results(net, suffix="_sc", all_empty=False)
     _get_single_bus_results(net, ppc)
     net["_options"]["ac"] = True
     net["_options"]["trafo_loading"] = "current"
