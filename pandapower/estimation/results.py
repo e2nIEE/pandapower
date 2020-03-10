@@ -17,7 +17,7 @@ def _calc_power_flow(ppci, V):
     baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
     Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
     ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
-    
+
     # calculate bus power injections
     Sbus = np.multiply(V, np.conj(Ybus * V))
     ppci["bus"][:, PD] = -Sbus.real  # saved in per unit, injection -> demand
@@ -71,7 +71,7 @@ def _copy_power_flow_results(net):
         res_name_pf = res_name + "_power_flow"
         if res_name in net:
             net[res_name_pf] = (net[res_name]).copy()
-    reset_results(net)
+    reset_results(net, all_empty=False)
 
 
 def _rename_results(net):
@@ -93,7 +93,7 @@ def _rename_results(net):
             net[res_name] = net[res_name_pf]
         else:
             del net[res_name]
-            
+
 def eppci2pp(net, ppc, eppci):
     # calculate the branch power flow and bus power injection based on the estimated voltage vector
     eppci = _calc_power_flow(eppci, eppci.V)
