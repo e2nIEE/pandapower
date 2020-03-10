@@ -183,7 +183,7 @@ class OutputWriter(JSONSerializableClass):
                 # if output_list contains functools.partial
                 table = partial.args[0]
                 variable = partial.args[1]
-            if table is not "Parameters":
+            if table != "Parameters":
                 file_path = os.path.join(self.output_path, table)
                 mkdirs_if_not_existent(file_path)
                 if append:
