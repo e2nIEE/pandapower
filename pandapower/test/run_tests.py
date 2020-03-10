@@ -41,7 +41,7 @@ def run_all_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-n", n_cpu])
+        pytest.main([test_dir, "-xs", "-n", str(n_cpu)])
     else:
         pytest.main([test_dir, "-xs"])
     logger.setLevel(logging.INFO)
@@ -58,7 +58,7 @@ def run_fast_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-m", "not slow", "-n", n_cpu])
+        pytest.main([test_dir, "-xs", "-m", "not slow", "-n", str(n_cpu)])
     else:
         pytest.main([test_dir, "-xs", "-m", "not slow"])
 
@@ -73,7 +73,7 @@ def run_slow_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-m", "slow", "-n", n_cpu])
+        pytest.main([test_dir, "-xs", "-m", "slow", "-n", str(n_cpu)])
     else:
         pytest.main([test_dir, "-xs", "-m", "slow"])
 
