@@ -1654,6 +1654,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
 def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None):
     """
     Replaces external grids by generators.
+
     INPUT:
         **net** - pandapower net
 
@@ -1720,6 +1721,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None):
 def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None):
     """
     Replaces generators by external grids.
+
     INPUT:
         **net** - pandapower net
 
@@ -1784,6 +1786,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None):
 def replace_gen_by_sgen(net, gens=None, sgen_indices=None):
     """
     Replaces generators by static generators.
+
     INPUT:
         **net** - pandapower net
 
@@ -1849,6 +1852,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None):
 def replace_sgen_by_gen(net, sgens=None, gen_indices=None):
     """
     Replaces static generators by generators.
+
     INPUT:
         **net** - pandapower net
 
@@ -1881,7 +1885,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None):
     new_idx = []
     log_warning = False
     for sgen, index in zip(net.sgen.loc[sgens].itertuples(), gen_indices):
-        if sgen.Index in net.res_sgen.index:
+        if sgen.bus in net.res_bus.index:
             vm_pu = net.res_bus.at[sgen.bus, "vm_pu"]
         else:  # no result information to get vm_pu -> use net.gen.vm_pu or net.ext_grid.vm_pu or
             # set 1.0
