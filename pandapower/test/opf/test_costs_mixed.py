@@ -14,9 +14,6 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel("DEBUG")
-
 
 def test_cost_mixed():
     """ Testing a very simple network for the resulting cost value
@@ -119,6 +116,8 @@ def test_mixed_p_q_pwl():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+    logger.setLevel("DEBUG")
     # vm_max = 1.05
     # vm_min = 0.95
     #
@@ -166,4 +165,4 @@ if __name__ == "__main__":
     # assert np.isclose(net.res_ext_grid.p_mw.values[0], 0, atol=1e-4)
     # assert np.isclose(net.res_cost, net.res_gen.p_mw.values[0]*1000, atol=1e-3)
 
-   pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"])
