@@ -1,6 +1,8 @@
 Change Log
 =============
 
+- [CHANGED] reset_results empties result tables per default
+- [CHANGED] nan values result tables of power system test cases are emptied
 - [ADDED] dclines and considering given branch indices by create_nxgraph()
 - [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
 - [FIXED] Changed the __deepcopy__ for pandapowerNet back to using copy.deepcopy, fixed the issue that caused the switch to json #676

@@ -36,7 +36,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
-    reset_results(net)
+    reset_results(net, all_empty=False)
 
     ppc, ppci = _pd2ppc(net)
 
