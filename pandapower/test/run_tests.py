@@ -46,7 +46,7 @@ def run_all_tests(parallel=False, n_cpu=None):
             logger.error("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
-            logger.error("Testing not successfullly finished.")
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs"])
     logger.setLevel(logging.INFO)
@@ -70,7 +70,7 @@ def run_fast_tests(parallel=False, n_cpu=None):
             logger.error("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
-            logger.error("Testing not successfullly finished.")
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs", "-m", "not slow"])
 
@@ -92,7 +92,7 @@ def run_slow_tests(parallel=False, n_cpu=None):
             logger.error("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
-            logger.error("Testing not successfullly finished.")
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs", "-m", "slow"])
 
