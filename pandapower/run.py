@@ -353,7 +353,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                          check_connectivity=check_connectivity,
                          switch_rx_ratio=switch_rx_ratio, delta=delta, init=init, numba=numba,
                          trafo3w_losses=trafo3w_losses,
-                         consider_line_temperature=consider_line_temperature)
+                         consider_line_temperature=consider_line_temperature, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
@@ -403,7 +403,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
     _init_rundcopp_options(net, check_connectivity=check_connectivity,
                            switch_rx_ratio=switch_rx_ratio, delta=delta,
-                           trafo3w_losses=trafo3w_losses)
+                           trafo3w_losses=trafo3w_losses, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

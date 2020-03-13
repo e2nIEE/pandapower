@@ -670,7 +670,6 @@ def _branches_with_oos_buses(net, ppc):
             ppc["bus"] = np.vstack(future_buses)
 
 
-
 def _calc_switch_parameter(net, ppc):
     """
     calculates the line parameter in per unit.

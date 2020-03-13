@@ -1,6 +1,23 @@
 Change Log
 =============
 
+- [CHANGED] reset_results empties result tables per default
+- [CHANGED] nan values result tables of power system test cases are emptied
+- [ADDED] dclines and considering given branch indices by create_nxgraph()
+- [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
+- [FIXED] Changed the __deepcopy__ for pandapowerNet back to using copy.deepcopy, fixed the issue that caused the switch to json #676
+- [FIXED] Potential memory leaks due to circular references in JSONSerializableObjects, fixed by using weakref #677
+
+[2.2.1]- 2020-01-29
+----------------------
+- [FIXED] Missing csv files #625
+- [FIXED] deepcopy speed and missing DataFrames in net #620, #631
+- [FIXED] simple plotly error with generic coords #619
+- [FIXED] create line with passed geodata #610
+- [FIXED] ConstControl write to and all_index attribute #609
+- [FIXED] collection plotting issue #608
+
+
 [2.2.0]- 2020-01-17
 ----------------------
 - [ADDED] control and timeseries module
@@ -9,6 +26,7 @@ Change Log
 - [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
 - [ADDED] Other PowerModels features via interface callable (e.g. network data check and different solver)
 - [ADDED] toolbox function select_subnet now also copies cost data and net parameters
+- [ADDED] toolbox functions replace_ward_by_internal_elements and replace_xward_by_internal_elements
 - [ADDED] consideration of result tables in toolbox functions drop
 - [ADDED] new jupyter notebook examples for time series, controller and PowerModels.jl interface
 - [ADDED] reindex_buses() toolbox function

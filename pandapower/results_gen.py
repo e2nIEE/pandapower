@@ -5,10 +5,10 @@
 
 
 import numpy as np
-from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
+from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_gen import PG, QG
 
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
@@ -20,7 +20,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if eg_end > 0:
         b, p, q = _get_ext_grid_results(net, ppc)
     else:
-        b, p, q = [], [], []# np.array([]), np.array([]), np.array([])
+        b, p, q = [], [], []  # np.array([]), np.array([]), np.array([])
 
     # get results for gens
     if gen_end > eg_end:

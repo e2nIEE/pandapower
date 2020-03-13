@@ -4,8 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import copy
-
 import numpy as np
 import pandas as pd
 
@@ -90,20 +88,25 @@ def init_element(net, element, suffix=None):
 
 
 def get_elements_to_empty():
-    return ["bus"]  # ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
+    return ["bus"]
 
 
 def get_elements_to_init():
-    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward",
-            "xward", "dcline"]
+    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage",
+            "shunt", "gen", "ward", "xward", "dcline"]
 
 
-def reset_results(net, suffix=None):
+def reset_results(net, suffix=None, all_empty=True):
+
     elements_to_empty = get_elements_to_empty()
+    elements_to_init = get_elements_to_init()
+    if all_empty:
+        elements_to_empty += elements_to_init
+        elements_to_init = []
+
     for element in elements_to_empty:
         empty_res_element(net, element, suffix)
 
-    elements_to_init = get_elements_to_init()
     for element in elements_to_init:
         init_element(net, element, suffix)
 

@@ -577,6 +577,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
             Only respected for OPF
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -630,7 +631,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = pd.Series()
+            net.load.loc[:, "controllable"] = False
 
         net.load.loc[index, "controllable"] = bool(controllable)
     else:
@@ -697,6 +698,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
             or not. Only respected for OPF
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique IDs of the created elements
@@ -761,7 +763,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
     if not np_all(isnan(controllable)):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = pd.Series()
+            net.load.loc[:, "controllable"] = False
 
         net.load.loc[index, "controllable"] = controllable.astype(bool)
     else:
@@ -855,6 +857,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
+            Defaults to False if "controllable" column exists in DataFrame
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
@@ -918,7 +921,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     if not isnan(controllable):
         if "controllable" not in net.sgen.columns:
-            net.sgen.loc[:, "controllable"] = pd.Series()
+            net.sgen.loc[:, "controllable"] = False
 
         net.sgen.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1031,6 +1034,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
         **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
         powerflow
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created storage
@@ -1086,7 +1090,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
     if not isnan(controllable):
         if "controllable" not in net.storage.columns:
-            net.storage.loc[:, "controllable"] = pd.Series()
+            net.storage.loc[:, "controllable"] = False
 
         net.storage.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1096,12 +1100,12 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
-def _create_column_and_set_value(net, index, variable, column, element, default_val=None):
+def _create_column_and_set_value(net, index, variable, column, element, default_val=nan):
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     if not isnan(variable):
         if column not in net[element].columns:
-            net[element].loc[:, column] = pd.Series(default_val)
+            net[element].loc[:, column] = float(default_val)
         net[element].at[index, column] = float(variable)
     return net
 
@@ -1197,7 +1201,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = pd.Series(True)
+            net.gen.loc[:, "controllable"] = True
         net.gen.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
@@ -2198,7 +2202,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             et == "t"
 
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
-        bus and transformer, "b" = switch between two buses
+            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
+            two buses
 
     OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
