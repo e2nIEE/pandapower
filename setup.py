@@ -38,6 +38,7 @@ setup(
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
     long_description=long_description,
+	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
     install_requires=["pandas>=0.17",
