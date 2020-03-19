@@ -58,6 +58,9 @@ def _powerflow(net, **kwargs):
     if algorithm not in ['nr', 'bfsw']:
         net["_options"]["voltage_depend_loads"] = False
 
+    # clear lookups
+    net._pd2ppc_lookups = {"bus": None, "ext_grid": None, "gen": None, "branch": None}
+
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)
 
