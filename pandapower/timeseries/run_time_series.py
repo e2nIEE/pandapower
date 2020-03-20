@@ -157,14 +157,12 @@ def _check_output_writer_recyclability(net, recycle):
             return recycle
         else:
             # fast read is possible
-            if variable in ["vm_pu", "va_degree"] and recycle["only_v_results"] is False:
-                recycle["only_v_results"] = True
+            if variable in ["vm_pu", "va_degree"]:
                 new_log_variables.append(('ppc_bus', 'vm'))
                 new_log_variables.append(('ppc_bus', 'va'))
-                recycle["batch_read"].append((table, variable))
-            if variable in ["loading_percent", "i_ka", "i_to_ka", "i_from_ka", "i_hv_ka", "i_mv_ka", "i_lv_ka"]:
-                recycle["only_v_results"] = True
-                recycle["batch_read"].append((table, variable))
+
+            recycle["only_v_results"] = True
+            recycle["batch_read"].append((table, variable))
 
     ow.log_variables = new_log_variables
     ow.log_variable('ppc_bus', 'vm')
