@@ -1,6 +1,8 @@
 Change Log
 =============
 
+[2.2.2]- 2020-03-17
+----------------------
 - [CHANGED] reset_results empties result tables per default
 - [CHANGED] nan values result tables of power system test cases are emptied
 - [ADDED] dclines and considering given branch indices by create_nxgraph()
