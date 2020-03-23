@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num
+from numpy import nan_to_num, array
 
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -57,6 +57,10 @@ def _powerflow(net, **kwargs):
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
         net["_options"]["voltage_depend_loads"] = False
+
+    # clear lookups
+    net._pd2ppc_lookups = {"bus": array([], dtype=int), "ext_grid": array([], dtype=int),
+                           "gen": array([], dtype=int), "branch": array([], dtype=int)}
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)
