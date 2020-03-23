@@ -100,6 +100,10 @@ def _recycled_powerflow(net, **kwargs):
 
     recycle = options["recycle"]
     ppc = net["_ppc"]
+    ppc["success"] = False
+    ppc["iterations"] = 0.
+    ppc["et"] = 0.
+
     if "bus_pq" in recycle and recycle["bus_pq"]:
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc)
@@ -123,6 +127,9 @@ def _recycled_powerflow(net, **kwargs):
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)
+    ppc["success"] = ppci["success"]
+    ppc["iterations"] = ppci["iterations"]
+    ppc["et"] = ppci["et"]
     if options["only_v_results"]:
         _ppci_bus_to_ppc(result, ppc)
         _ppci_other_to_ppc(result, ppc, options["mode"])
