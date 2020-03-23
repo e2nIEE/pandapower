@@ -486,6 +486,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     net._empty_res_line_sc = net._empty_res_line
     net._empty_res_trafo_sc = net._empty_res_trafo
     net._empty_res_trafo3w_sc = net._empty_res_trafo3w
+    
+    net._empty_res_load_3ph = net._empty_res_load
+    net._empty_res_sgen_3ph = net._empty_res_sgen
+    net._empty_res_storage_3ph = net._empty_res_storage
+    
     for s in net:
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
@@ -493,7 +498,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         add_basic_std_types(net)
     else:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
-    reset_results(net)
+    for mode in ["pf", "se", "sc", "pf_3ph"]:
+        reset_results(net, mode)
     net['user_pf_options'] = dict()
     return net
 

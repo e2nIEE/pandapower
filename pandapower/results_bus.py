@@ -156,7 +156,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
         return p, q, b
 
 
-def write_pq_results_to_element(net, ppc, element):
+def write_pq_results_to_element(net, ppc, element, suffix=None):
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
@@ -172,6 +172,8 @@ def write_pq_results_to_element(net, ppc, element):
     # info element
     el_data = net[element]
     res_ = "res_%s" % element
+    if suffix is not None:
+        res_ += "_%s"%suffix
     ctrl_ = "%s_controllable" % element
 
     is_controllable = False
@@ -253,9 +255,11 @@ def write_pq_results_to_element_3ph(net, element):
     return net
 
 
-def get_p_q_b(net, element):
+def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
+    if suffix != None:
+        res_ += "_%s"%suffix
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
@@ -321,13 +325,13 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
 
     ac = net["_options"]["ac"]
     # Todo: Voltage dependent loads
-    elements = ["storage", "ward", "xward"]
-    elements_3ph = ["load", "sgen", "asymmetric_load", "asymmetric_sgen"]
-    sign = -1  # Load/Consumption is considered negative power after pandapower 2.0 changes
+    elements = ["storage", "sgen", "load"]
+    elements_3ph = ["asymmetric_load", "asymmetric_sgen"]
     for element in elements:
+        sign = 1 if element in ['sgen','asymmetric_sgen'] else -1
         if len(net[element]):
-            write_pq_results_to_element(net,net._ppc1, element)
-            p_el, q_el, bus_el = get_p_q_b(net, element)
+            write_pq_results_to_element(net, net._ppc1, element, suffix="3ph")
+            p_el, q_el, bus_el = get_p_q_b(net, element, suffix="3ph")
             pA = np.hstack([pA, sign * p_el/3])
             pB = np.hstack([pB, sign * p_el/3])
             pC = np.hstack([pC, sign * p_el/3])
@@ -337,8 +341,6 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
             b = np.hstack([b, bus_el])
     for element in elements_3ph:
         if len(net[element]):
-            if element in ['sgen','asymmetric_sgen']:
-                sign = 1
             write_pq_results_to_element_3ph(net, element)
             p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(net, element)
             pA = np.hstack([pA, sign * p_el_A])
