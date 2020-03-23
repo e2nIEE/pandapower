@@ -20,7 +20,7 @@ from pandapower.pypower.idx_gen import PG, QG
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
-    eg_end = len(net['ext_grid'])
+    eg_end = sum(net['ext_grid'].in_service)
     gen_end = eg_end + len(net['gen'])
 
     if eg_end > 0:

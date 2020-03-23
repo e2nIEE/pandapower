@@ -72,7 +72,7 @@ def ppci_to_pfsoln(ppci, options):
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
 
-    if recycle is not None and recycle is not False and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
+    if isinstance(recycle, dict) and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
         Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
     else:
         # build admittance matrices
@@ -108,7 +108,7 @@ def _store_internal(ppci, internal_storage):
 
 def _get_Sbus(ppci, recycle=None):
     baseMVA, bus, gen = ppci["baseMVA"], ppci["bus"], ppci["gen"]
-    if recycle is None or "Sbus" not in ppci["internal"]:
+    if not isinstance(recycle, dict) or "Sbus" not in ppci["internal"]:
         return makeSbus(baseMVA, bus, gen)
     if recycle["bus_pq"] or recycle["gen"]:
         return makeSbus(baseMVA, bus, gen)
