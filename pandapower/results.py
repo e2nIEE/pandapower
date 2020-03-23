@@ -106,7 +106,7 @@ def init_element(net, element, suffix=None):
     else:
         empty_res_element(net, element, suffix)
 
-def get_relevant_elements(mode):
+def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
