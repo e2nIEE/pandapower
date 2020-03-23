@@ -201,7 +201,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
     recycle = kwargs.get("recycle", None)
-    if (recycle is not None and recycle is not False) and _internal_stored(net):
+    if isinstance(recycle, dict) and _internal_stored(net):
         _recycled_powerflow(net, **kwargs)
         return
 
