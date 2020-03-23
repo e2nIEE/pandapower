@@ -345,6 +345,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "f_hz": f_hz,
         "sn_mva": sn_mva
     })
+    net._empty_res_line_sc = net._empty_res_line
+    net._empty_res_trafo_sc = net._empty_res_trafo
+    net._empty_res_trafo3w_sc = net._empty_res_trafo3w
     for s in net:
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))

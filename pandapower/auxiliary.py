@@ -27,7 +27,6 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 import copy
-import json
 from collections.abc import MutableMapping
 
 import numpy as np
