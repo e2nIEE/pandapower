@@ -419,4 +419,33 @@ def test_3ph_isolated_nodes():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_runpp_3ph.py"])
+    v_base = 110  # 110kV Base Voltage
+    mva_base = 100  # 100 MVA
+    net = pp.create_empty_network(sn_mva=mva_base)
+
+    busn = pp.create_bus(net, vn_kv=v_base, name="busn", index=1)
+    pp.create_bus(net, vn_kv=20., in_service=True, index=2, name="busx")
+    busk = pp.create_bus(net, vn_kv=v_base, name="busk", index=5)
+    busl = pp.create_bus(net, vn_kv=v_base, name="busl", index=6)
+    pp.create_bus(net, vn_kv=20., in_service=False, index=3)
+    busy = pp.create_bus(net, vn_kv=20., in_service=True, index=0, name="busy")
+
+    pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection",
+                       s_sc_max_mva=5000, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556,
+                             "c0_nf_per_km": 230.6, "max_i_ka": 0.963,
+                             "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
+                             "c_nf_per_km": 230}, "example_type")
+    # Loads on supplied buses
+    pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+                    p_c_mw=10, q_c_mvar=5)
+    pp.create_load(net, bus=busl, p_mw=7, q_mvar=0.070, name="Load 1")
+    # Loads on unsupplied buses
+    pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
+    pp.create_line(net, from_bus=busn, to_bus=busk, length_km=50.0, std_type="example_type")
+    pp.create_line(net, from_bus=busl, to_bus=busk, length_km=50.0, std_type="example_type")
+    pp.add_zero_impedance_parameters(net)
+    runpp_3ph_with_consistency_checks(net)
+#    pytest.main(["test_runpp_3ph.py"])

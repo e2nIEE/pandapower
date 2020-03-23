@@ -13,6 +13,7 @@ import types
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
+import weakref
 
 import networkx
 import numpy
@@ -405,7 +406,7 @@ def pp_hook(d, net=None):
                     df[col] = df[col].apply(pp_hook, args=(net,))
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
-            df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
+            df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs']).astype(d['dtype'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
@@ -449,10 +450,29 @@ def pp_hook(d, net=None):
 
 
 class JSONSerializableClass(object):
-    json_excludes = ["net", "self", "__class__"]
+    json_excludes = ["net", "_net", "self", "__class__"]
 
     def __init__(self, **kwargs):
         pass
+
+    @property
+    def net(self):
+        return self._net()
+
+    @net.setter
+    def net(self, net):
+        self._net = weakref.ref(net)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'net':
+                setattr(result, k, memo[id(self.net)])
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     def to_json(self):
         """
@@ -539,6 +559,8 @@ class JSONSerializableClass(object):
                     check_equality(obj1[key], obj2[key])
 
         def check_callable_equality(obj1, obj2):
+            if isinstance(obj1, weakref.ref) and isinstance(obj2, weakref.ref):
+                return
             if str(obj1) != str(obj2):
                 raise UnequalityFound
 
@@ -546,7 +568,7 @@ class JSONSerializableClass(object):
             try:
                 check_equality(self.__dict__, other.__dict__)
                 return True
-            except UnequalityFound:
+            except UnequalityFound as e:
                 return False
         else:
             return False
@@ -555,7 +577,8 @@ class JSONSerializableClass(object):
     def from_dict(cls, d, net):
         obj = JSONSerializableClass.__new__(cls)
         if 'net' in d:
-            d.update({'net': net})
+            d.pop('net')
+            obj.net = net
         obj.__dict__.update(d)
         return obj
 

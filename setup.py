@@ -33,14 +33,15 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.2.1',
+    version='2.2.2',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
     long_description=long_description,
+	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17, <1",
+    install_requires=["pandas>=0.17",
                       "networkx",
                       "scipy",
                       "numpy>=0.11",

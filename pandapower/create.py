@@ -447,51 +447,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("loading_percentA", "f8"),
                             ("loading_percentB", "f8"),
                             ("loading_percentC", "f8")],                                                 
-
-        "_empty_res_trafo3w_3ph": [("p_a_hv_mw", "f8"),("p_b_hv_mw", "f8"),("p_c_hv_mw", "f8"),
-                               ("q_a_hv_mvar", "f8"),("q_b_hv_mvar", "f8"),("q_c_hv_mvar", "f8"),
-                               ("p_a_mv_mw", "f8"),("p_b_mv_mw", "f8"),("p_c_mv_mw", "f8"),
-                               ("q_a_mv_mvar", "f8"),("q_b_mv_mvar", "f8"),("q_c_mv_mvar", "f8"),
-                               ("p_a_lv_mw", "f8"),("p_b_lv_mw", "f8"),("p_c_lv_mw", "f8"),
-                               ("q_a_lv_mvar", "f8"),("q_b_lv_mvar", "f8"),("q_c_lv_mvar", "f8"),
-                               ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl__Cmw", "f8"),
-                               ("ql_a_mvar", "f8"),("ql_b_mvar", "f8"),("ql_c_mvar", "f8"),
-                               ("i_hv_ka", "f8"),
-                               ("i_mv_ka", "f8"),
-                               ("i_lv_ka", "f8"),
-                               ("vm_hv_pu", "f8"),
-                               ("va_hv_degree", "f8"),
-                               ("vm_mv_pu", "f8"),
-                               ("va_mv_degree", "f8"),
-                               ("vm_lv_pu", "f8"),
-                               ("va_lv_degree", "f8"),
-                               ("va_internal_degree", "f8"),
-                               ("vm_internal_pu", "f8"),
-                               ("loading_percent", "f8")],                               
-
-        "_empty_res_load_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],                            
         "_empty_res_asymmetric_load_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],
-# =============================================================================
-#         "_empty_res_impedance_load_3ph": [("r_A", "f8"),
-#                             ("r_B", "f8"),
-#                             ("r_C", "f8"),
-#                             ("x_A", "f8"),
-#                             ("x_B", "f8"),
-#                             ("x_C", "f8")
-#                             ],  
-# =============================================================================
-
-        "_empty_res_sgen_3ph": [("p_a_mw", "f8"),
                             ("q_a_mvar", "f8"),
                             ("p_b_mw", "f8"),
                             ("q_b_mvar", "f8"),
@@ -510,53 +466,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_gen": [("p_mw", "f8"),
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
-                           ("vm_pu", "f8")],
-        "_empty_res_gen_3ph": [("p_a_mw", "f8"),
-                           ("q_a_mvar", "f8"),
-                           ("va_a_degree", "f8"),
-                           ("vm_a_pu", "f8"),
-                           ("p_b_mw", "f8"),
-                           ("q_b_mvar", "f8"),
-                           ("va_b_degree", "f8"),
-                           ("vm_b_pu", "f8"),
-                           ("p_c_mw", "f8"),
-                           ("q_c_mvar", "f8"),
-                           ("va_c_degree", "f8"),
-                           ("vm_c_pu", "f8")],                                               
-
-        "_empty_res_shunt_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                             ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                             ("vm_pu", "f8")],                             
-
-        "_empty_res_impedance_3ph": [("p_a_from_mw", "f8"),("p_b_from_mw", "f8"),("p_c_from_mw", "f8"),
-                                 ("q_a_from_mvar", "f8"),("q_b_from_mvar", "f8"),("q_c_from_mvar", "f8"),
-                                 ("p_a_to_mw", "f8"),("p_b_to_mw", "f8"),("p_c_to_mw", "f8"),
-                                 ("q_a_to_mvar", "f8"),("q_b_to_mvar", "f8"),("q_c_to_mvar", "f8"),
-                                 ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl_c_mw", "f8"),
-                                 ("ql_a_mvar", "f8"),("ql_b_mvar", "f8"),("ql_c_mvar", "f8"),
-                                 ("i_from_ka", "f8"),
-                                 ("i_to_ka", "f8")],                                 
-
-        "_empty_res_dcline_3ph": [("p_a_from_mw", "f8"),("p_b_from_mw", "f8"),("p_c_from_mw", "f8"),
-                              ("q_a_from_mvar", "f8"),("q_b_from_mvar", "f8"),("q_c_from_mvar", "f8"),
-                              ("p_a_to_mw", "f8"),("p_b_to_mw", "f8"),("p_c_to_mw", "f8"),
-                              ("q_a_to_mvar", "f8"),("q_b_to_mvar", "f8"),("q_c_to_mvar", "f8"),
-                              ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl_c_mw", "f8"),
-                              ("vm_from_pu", "f8"),
-                              ("va_from_degree", "f8"),
-                              ("vm_to_pu", "f8"),
-                              ("va_to_degree", "f8")],                              
-
-        "_empty_res_ward_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                            ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                            ("vm_pu", "f8")],                            
-
-        "_empty_res_xward_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                             ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_internal_pu", "f8")],                             
-
+                           ("vm_pu", "f8")],                                        
+                        
         # internal
         "_ppc": None,
         "_ppc0": None,
@@ -572,6 +483,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "f_hz": f_hz,
         "sn_mva": sn_mva
     })
+    net._empty_res_line_sc = net._empty_res_line
+    net._empty_res_trafo_sc = net._empty_res_trafo
+    net._empty_res_trafo3w_sc = net._empty_res_trafo3w
     for s in net:
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))

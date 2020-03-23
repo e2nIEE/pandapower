@@ -9,6 +9,9 @@ from numpy import complex128
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV,NONE
+
+from pandapower.auxiliary import _sum_by_group
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
 from pandapower.pypower.idx_gen import PG, QG
 
 
@@ -139,7 +142,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         if voltage_depend_loads:
             # constant impedance and constant current
-            vm_l = net["_ppc"]["bus"][lidx,7]
+            vm_l = net["_ppc"]["bus"][lidx, 7]
             volt_depend = ci * vm_l + cz * vm_l ** 2
             pl = l["p_mw"].values * scaling * load_is * volt_depend
             net["res_load"]["p_mw"] += pl
@@ -168,8 +171,8 @@ def write_pq_results_to_element(net, ppc, element):
 
     # info element
     el_data = net[element]
-    res_ = "res_%s"%element
-    ctrl_ = "%s_controllable"%element
+    res_ = "res_%s" % element
+    ctrl_ = "%s_controllable" % element
 
     is_controllable = False
     if ctrl_ in _is_elements:
@@ -196,7 +199,6 @@ def write_pq_results_to_element(net, ppc, element):
         if is_controllable:
             net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
     return net
-
 
 
 def write_pq_results_to_element_3ph(net, element):
@@ -249,6 +251,8 @@ def write_pq_results_to_element_3ph(net, element):
     # update index of result table
     net[res_].index = net[element].index
     return net
+
+
 def get_p_q_b(net, element):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
@@ -404,7 +408,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward ** 2 * net["xward"]["pz_mw"].values * xward_is
-        net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values  + p_xward
+        net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_xward
         p = np.hstack([p, p_xward])
         if ac:
             net["res_xward"]["vm_pu"].values[:] = u_xward

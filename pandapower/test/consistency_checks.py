@@ -7,6 +7,7 @@
 import pandas as pd
 from numpy import allclose, isclose
 from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.results import get_relevant_elements
 import pandapower as pp
 
 
@@ -31,8 +32,8 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
     element_power_consistent_with_bus_power(net, rtol, test_q)
 
 def indices_consistent(net):
-    for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt",
-                    "ward", "xward", "impedance", "gen", "dcline", "storage"]:
+    elements = get_relevant_elements()
+    for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
@@ -117,9 +118,8 @@ def consistency_checks_3ph(net, rtol=2e-3):
     element_power_consistent_with_bus_power_3ph(net, rtol)
 
 def indices_consistent_3ph(net):
-    for element in ["bus", "load", "asymmetric_load", "ext_grid", "sgen", 
-                    "asymmetric_sgen", "trafo", "trafo3w", "line", "shunt",
-                    "ward", "xward", "impedance", "gen", "dcline", "storage"]:
+    elements = get_relevant_elements("pf_3ph")
+    for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element+"_3ph"].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)

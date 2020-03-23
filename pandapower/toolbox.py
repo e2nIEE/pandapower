@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import gc
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
@@ -56,7 +57,9 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
                 res_elements=False):
-    """ Returns the list of pandapower elements. """
+    """
+    Returns the list of pandapower elements.
+    """
     pp_elms = set(["bus"]) if bus else set()
     pp_elms |= set([el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
@@ -66,7 +69,9 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
 
 
 def branch_element_bus_dict(include_switch=False):
-    """ """
+    """
+    Returns a dict with keys of branch elements and values of bus column names as list.
+    """
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
     branch_elements = {ebt[0] for ebt in ebts}
     bebd = {elm: [] for elm in branch_elements}
@@ -217,7 +222,9 @@ def _cosphi_from_pq(p, q):
 
 
 def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
-    """ Returns a boolean whether the nets are equal or not. """
+    """
+    Returns a boolean whether the nets are equal or not.
+    """
     if ignore_index_order:
         x_df.sort_index(axis=1, inplace=True)
         y_df.sort_index(axis=1, inplace=True)
@@ -242,8 +249,10 @@ def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
 
 
 def compare_arrays(x, y):
-    """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
-        or y. NaN values are assumed as equal. """
+    """
+    Returns an array of bools whether array x is equal to array y. Strings are allowed in x
+    or y. NaN values are assumed as equal.
+    """
     if x.shape == y.shape:
         # (x != x) is like np.isnan(x) - but works also for strings
         return np.equal(x, y) | ((x != x) & (y != y))
@@ -252,7 +261,9 @@ def compare_arrays(x, y):
 
 
 def ensure_iterability(var, len_=None):
-    """ This function ensures iterability of a variable (and optional length). """
+    """
+    Ensures iterability of a variable (and optional length).
+    """
     if hasattr(var, "__iter__") and not isinstance(var, str):
         if isinstance(len_, int) and len(var) != len_:
             raise ValueError("Length of variable differs from %i." % len_)
@@ -693,13 +704,15 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                         not_equal.append(df_name)
 
     if len(not_equal) > 0:
-        logger.info("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
 
     return eq
 
 
 def clear_result_tables(net):
-    """ This function clears all 'res_...' DataFrames in net. """
+    """
+    Clears all 'res_...' DataFrames in net.
+    """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
             net[key].drop(net[key].index, inplace=True)
@@ -823,7 +836,9 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
 
 
 def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
-    """ Adds zones to elements, inferring them from the zones of buses they are connected to. """
+    """
+    Adds zones to elements, inferring them from the zones of buses they are connected to.
+    """
     elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
@@ -1183,8 +1198,9 @@ def drop_lines(net, lines):
 
 
 def drop_duplicated_measurements(net, buses=None, keep="first"):
-    """ Drops duplicated measurements at given set buses. If buses is None, all buses are
-    considered. """
+    """
+    Drops duplicated measurements at given set buses. If buses is None, all buses are considered.
+    """
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
@@ -1300,6 +1316,15 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
+def _select_cost_df(net, p2, cost_type):
+    isin = np.array([False]*net[cost_type].shape[0])
+    for et in net[cost_type].et.unique():
+        isin_et = net[cost_type].element.isin(p2[et].index)
+        is_et = net[cost_type].et == et
+        isin |= isin_et & is_et
+    p2[cost_type] = net[cost_type].loc[isin]
+
+
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """
@@ -1325,7 +1350,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         include_results = True  # assumption: the user doesn't want to old results without selection
     else:
-        p2 = create_empty_network()
+        p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
     net_parameters = ["name", "f_hz"]
@@ -1354,17 +1379,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
 
-    def select_cost_df(net, p2, cost_type):
-        selected_idx = []
-        for idx in net[cost_type].index:
-            et = net[cost_type]["et"].loc[idx]
-            element = net[cost_type]["element"].at[idx]
-            if element in p2[et].index:
-                selected_idx.append(idx)
-        p2[cost_type] = net[cost_type].loc[selected_idx]
-
-    select_cost_df(net, p2, "poly_cost")
-    select_cost_df(net, p2, "pwl_cost")
+    _select_cost_df(net, p2, "poly_cost")
+    _select_cost_df(net, p2, "pwl_cost")
 
     if include_results:
         for table in net.keys():
@@ -1392,7 +1408,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1406,7 +1422,9 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         runpp(net2, **kwargs)
 
     def adapt_element_idx_references(net, element, element_type, offset=0):
-        """ used for switch and measurement """
+        """
+        used for switch and measurement
+        """
         # element_type[0] == "l" for "line", etc.:
         et = element_type[0] if element == "switch" else element_type
         et_col = "et" if element == "switch" else "element_type"
@@ -1416,7 +1434,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             net[element].loc[elements.index, "element"] = new_index
 
     for element, table in net.items():
-        if element.startswith("_") or element.startswith("res") or element == "dtypes":
+        if element.startswith("_") or element == "dtypes" or (element.startswith("res") and (
+                validate or not merge_results)):
             continue
         if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
@@ -1430,7 +1449,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
+            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
             dtypes = net1[element].dtypes
             try:
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
@@ -1632,39 +1651,70 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     return new_index
 
 
-def replace_ext_grid_by_gen(net, ext_grids=None):
-    """ Replaces external grids by generators.
+def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, cols_to_keep=None,
+                            add_cols_to_keep=None):
+    """
+    Replaces external grids by generators.
+
     INPUT:
         **net** - pandapower net
 
     OPTIONAL:
         **ext_grids** (iterable) - indices of external grids which should be replaced
+
+        **gen_indices** (iterable) - required indices of new generators
+
+        **slack** (bool, False) - indicates which value is set to net.gen.slack for the new
+            generators
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
+            ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+            "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+            'cols_to_keep' to be kept while replacing ext_grids.
     """
     # --- determine ext_grid index
     if ext_grids is None:
         ext_grids = net.ext_grid.index
     else:
         ext_grids = ensure_iterability(ext_grids)
+    if gen_indices is None:
+        gen_indices = [None]*len(ext_grids)
+    elif len(gen_indices) != len(ext_grids):
+        raise ValueError("The length of 'gen_indices' must be the same as 'ext_grids' but is " +
+                         "%i instead of %i" % (len(gen_indices), len(ext_grids)))
 
-    # --- consider columns which do not exist in pp net dataframes by default
-    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
-    existing_non_default_col = net.ext_grid.loc[ext_grids].dropna(axis=1).columns.intersection(
-        non_default_col)
-    # add missing columns to net.gen
-    missing_non_default_col = existing_non_default_col.difference(net.gen.columns)
-    for col in missing_non_default_col:
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net.ext_grid.loc[ext_grids].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net.gen which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
+    for col in missing_cols_to_keep:
         net.gen[col] = np.nan
 
     # --- create gens
     new_idx = []
-    for ext_grid in net.ext_grid.loc[ext_grids].itertuples():
+    for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(), gen_indices):
         p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
         idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
-                         in_service=ext_grid.in_service, controllable=True)
+                         in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
-        for col in existing_non_default_col:
-            net.gen[col].at[idx] = getattr(ext_grid, col)
+    net.gen.slack.loc[new_idx] = slack
+    net.gen.loc[new_idx, existing_cols_to_keep] = net.ext_grid.loc[
+        ext_grids, existing_cols_to_keep].values
 
     # --- drop replaced ext_grids
     net.ext_grid.drop(ext_grids, inplace=True)
@@ -1690,38 +1740,64 @@ def replace_ext_grid_by_gen(net, ext_grids=None):
     return new_idx
 
 
-def replace_gen_by_ext_grid(net, gens=None):
-    """ Replaces generators by external grids.
+def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=None,
+                            add_cols_to_keep=None):
+    """
+    Replaces generators by external grids.
+
     INPUT:
         **net** - pandapower net
 
     OPTIONAL:
         **gens** (iterable) - indices of generators which should be replaced
+
+        **ext_grid_indices** (iterable) - required indices of new external grids
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
+            gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+            "bus", "vm_pu", "va_degree", "name", "in_service"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+            'cols_to_keep' to be kept while replacing gens.
     """
     # --- determine gen index
     if gens is None:
         gens = net.gen.index
     else:
         gens = ensure_iterability(gens)
+    if ext_grid_indices is None:
+        ext_grid_indices = [None]*len(gens)
+    elif len(ext_grid_indices) != len(gens):
+        raise ValueError("The length of 'ext_grid_indices' must be the same as 'gens' but is " +
+                         "%i instead of %i" % (len(ext_grid_indices), len(gens)))
 
-    # --- consider columns which do not exist in pp net dataframes by default
-    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
-    existing_non_default_col = net.gen.loc[gens].dropna(axis=1).columns.intersection(
-        non_default_col)
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "va_degree", "name", "in_service"})
+
+    existing_cols_to_keep = net.gen.loc[gens].dropna(axis=1).columns.intersection(
+        cols_to_keep)
     # add missing columns to net.ext_grid
-    missing_non_default_col = existing_non_default_col.difference(net.ext_grid.columns)
-    for col in missing_non_default_col:
+    missing_cols_to_keep = existing_cols_to_keep.difference(net.ext_grid.columns)
+    for col in missing_cols_to_keep:
         net.ext_grid[col] = np.nan
 
     # --- create ext_grids
     new_idx = []
-    for gen in net.gen.loc[gens].itertuples():
+    for gen, index in zip(net.gen.loc[gens].itertuples(), ext_grid_indices):
         va_degree = 0. if gen.bus not in net.res_bus.index else net.res_bus.va_degree.at[gen.bus]
         idx = create_ext_grid(net, gen.bus, vm_pu=gen.vm_pu, va_degree=va_degree, name=gen.name,
-                              in_service=gen.in_service)
+                              in_service=gen.in_service, index=index)
         new_idx.append(idx)
-        for col in existing_non_default_col:
-            net.ext_grid[col].at[idx] = getattr(gen, col)
+    net.ext_grid.loc[new_idx, existing_cols_to_keep] = net.gen.loc[
+        gens, existing_cols_to_keep].values
 
     # --- drop replaced gens
     net.gen.drop(gens, inplace=True)
@@ -1746,39 +1822,66 @@ def replace_gen_by_ext_grid(net, gens=None):
     return new_idx
 
 
-def replace_gen_by_sgen(net, gens=None):
-    """ Replaces generators by static generators.
+def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
+                        add_cols_to_keep=None):
+    """
+    Replaces generators by static generators.
+
     INPUT:
         **net** - pandapower net
 
     OPTIONAL:
         **gens** (iterable) - indices of generators which should be replaced
+
+        **sgen_indices** (iterable) - required indices of new static generators
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
+            gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+            "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+            'cols_to_keep' to be kept while replacing gens.
     """
     # --- determine gen index
     if gens is None:
         gens = net.gen.index
     else:
         gens = ensure_iterability(gens)
+    if sgen_indices is None:
+        sgen_indices = [None]*len(gens)
+    elif len(sgen_indices) != len(gens):
+        raise ValueError("The length of 'sgen_indices' must be the same as 'gens' but is " +
+                         "%i instead of %i" % (len(sgen_indices), len(gens)))
 
-    # --- consider columns which do not exist in pp net dataframes by default
-    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
-    existing_non_default_col = net.gen.loc[gens].dropna(axis=1).columns.intersection(
-        non_default_col)
-    # add missing columns to net.sgen
-    missing_non_default_col = existing_non_default_col.difference(net.sgen.columns)
-    for col in missing_non_default_col:
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "p_mw", "q_mvar", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net.gen.loc[gens].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net.gen which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net.sgen.columns)
+    for col in missing_cols_to_keep:
         net.sgen[col] = np.nan
 
     # --- create sgens
     new_idx = []
-    for gen in net.gen.loc[gens].itertuples():
+    for gen, index in zip(net.gen.loc[gens].itertuples(), sgen_indices):
         q_mvar = 0. if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]
         controllable = True if "controllable" not in net.gen.columns else gen.controllable
         idx = create_sgen(net, gen.bus, p_mw=gen.p_mw, q_mvar=q_mvar, name=gen.name,
-                          in_service=gen.in_service, controllable=controllable)
+                          in_service=gen.in_service, controllable=controllable, index=index)
         new_idx.append(idx)
-        for col in existing_non_default_col:
-            net.sgen[col].at[idx] = getattr(gen, col)
+    net.sgen.loc[new_idx, existing_cols_to_keep] = net.gen.loc[
+        gens, existing_cols_to_keep].values
 
     # --- drop replaced gens
     net.gen.drop(gens, inplace=True)
@@ -1803,39 +1906,81 @@ def replace_gen_by_sgen(net, gens=None):
     return new_idx
 
 
-def replace_sgen_by_gen(net, sgens=None):
-    """ Replaces static generators by generators.
+def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
+                        add_cols_to_keep=None):
+    """
+    Replaces static generators by generators.
+
     INPUT:
         **net** - pandapower net
 
     OPTIONAL:
         **sgens** (iterable) - indices of static generators which should be replaced
+
+        **gen_indices** (iterable) - required indices of new generators
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
+            sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+            "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+            'cols_to_keep' to be kept while replacing sgens.
     """
     # --- determine sgen index
     if sgens is None:
         sgens = net.sgen.index
     else:
         sgens = ensure_iterability(sgens)
+    if gen_indices is None:
+        gen_indices = [None]*len(sgens)
+    elif len(gen_indices) != len(sgens):
+        raise ValueError("The length of 'gen_indices' must be the same as 'sgens' but is " +
+                         "%i instead of %i" % (len(gen_indices), len(sgens)))
 
-    # --- consider columns which do not exist in pp net dataframes by default
-    non_default_col = ["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
-    existing_non_default_col = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(
-        non_default_col)
-    # add missing columns to net.gen
-    missing_non_default_col = existing_non_default_col.difference(net.gen.columns)
-    for col in missing_non_default_col:
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net.gen which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
+    for col in missing_cols_to_keep:
         net.gen[col] = np.nan
 
     # --- create gens
     new_idx = []
-    for sgen in net.sgen.loc[sgens].itertuples():
-        vm_pu = 1.0 if sgen.Index not in net.res_sgen.index else net.res_bus.at[sgen.bus, "vm_pu"]
+    log_warning = False
+    for sgen, index in zip(net.sgen.loc[sgens].itertuples(), gen_indices):
+        if sgen.bus in net.res_bus.index:
+            vm_pu = net.res_bus.at[sgen.bus, "vm_pu"]
+        else:  # no result information to get vm_pu -> use net.gen.vm_pu or net.ext_grid.vm_pu or
+            # set 1.0
+            if sgen.bus in net.gen.bus.values:
+                vm_pu = net.gen.vm_pu.loc[net.gen.bus == sgen.bus].values[0]
+            elif sgen.bus in net.ext_grid.bus.values:
+                vm_pu = net.ext_grid.vm_pu.loc[net.ext_grid.bus == sgen.bus].values[0]
+            else:
+                vm_pu = 1.0
+                log_warning = True
         controllable = False if "controllable" not in net.sgen.columns else sgen.controllable
         idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
-                         in_service=sgen.in_service, controllable=controllable)
+                         in_service=sgen.in_service, controllable=controllable, index=index)
         new_idx.append(idx)
-        for col in existing_non_default_col:
-            net.gen[col].at[idx] = getattr(sgen, col)
+    net.gen.loc[new_idx, existing_cols_to_keep] = net.sgen.loc[
+        sgens, existing_cols_to_keep].values
+
+    if log_warning:
+        logger.warning("In replace_sgen_by_gen(), for some generator 'vm_pu' is assumed as 1.0 " +
+                       "since no power flow results were available.")
 
     # --- drop replaced sgens
     net.sgen.drop(sgens, inplace=True)
@@ -2283,7 +2428,6 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                                             be considered
     OUTPUT:
        **cl** (set) - Returns connected switches.
-
     """
 
     if not hasattr(buses, "__iter__"):
@@ -2319,7 +2463,7 @@ def get_connected_elements_dict(
         net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
         connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
         connected_other_elements=True):
-    """ Returns a dict of lists of connected elements. """
+    """Returns a dict of lists of connected elements."""
     pp_elms = pp_elements(
         bus=connected_buses, bus_elements=connected_bus_elements,
         branch_elements=connected_branch_elements, other_elements=connected_other_elements,
@@ -2338,3 +2482,19 @@ def get_connected_elements_dict(
         if include_empty_lists or len(conn):
             connected[elm] = list(conn)
     return connected
+
+
+def get_gc_objects_dict():
+    """
+    This function is based on the code in mem_top module
+    Summarize object types that are tracket by the garbage collector in the moment.
+    Useful to test if there are memoly leaks.
+    :return: dictionary with keys corresponding to types and values to the number of objects of the type
+    """
+    objs = gc.get_objects()
+    nums_by_types = dict()
+
+    for obj in objs:
+        _type = type(obj)
+        nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
+    return nums_by_types

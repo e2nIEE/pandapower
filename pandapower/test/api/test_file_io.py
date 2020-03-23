@@ -74,6 +74,10 @@ def test_json(net_in, tempdir):
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
         assert_net_equal(net_geo, net_out)
+        assert isinstance(net_out.line_geodata, gpd.GeoDataFrame)
+        assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
+        assert isinstance(net_out.bus_geodata.geometry.iat[0], Point)
+        assert isinstance(net_out.line_geodata.geometry.iat[0], LineString)
     except (NameError, ImportError):
         pass
 

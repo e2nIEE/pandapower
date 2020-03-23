@@ -26,17 +26,15 @@
 # THE SOFTWARE.
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
-from collections.abc import MutableMapping
 import copy
+from collections.abc import MutableMapping
 
 import numpy as np
 import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
-from packaging import version
 import six
-import json
-from numpy import complex128
+from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD,VM,VA,REF, VMIN, VMAX, PV
@@ -170,28 +168,30 @@ class ADict(dict, MutableMapping):
         """
         overloads the deepcopy function of pandapower if at least one DataFrame with column "object" is in net
 
+        in addition, line geodata can contain mutable objects like lists, and it is also treated specially
+
         reason: some of these objects contain a reference to net which breaks the default deepcopy function.
-        This fix was introduced in pandapower 2.2.1 and is rather a quick and dirty solution to the problem
+        Also, the DataFrame doesn't deepcopy its elements if geodata changes in the lists, it affects both net instances
+        This fix was introduced in pandapower 2.2.1
 
         """
-        save_to_json = False
-        for el in self:
-            if isinstance(self[el], pd.DataFrame) and "object" in self[el] and len(self[el]):
-                save_to_json = True
-                break
-        if save_to_json:
-            # deepcopy by dumping to json and loading from it
-            from pandapower.file_io import PPJSONEncoder, from_json_string
-            from pandapower.io_utils import with_signature
-            json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
-            return from_json_string(json_string)
-
-        # deepcopy of every element in self (== the pandapower net)
+        deep_columns = {'object', 'coords', 'geometry'}
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.items():
-            setattr(result, k, copy.deepcopy(v, memo))
+            if isinstance(v, pd.DataFrame) and not set(v.columns).isdisjoint(deep_columns):
+                if k not in result:
+                    result[k] = v.__class__(index=v.index, columns=v.columns)
+                for col in v.columns:
+                    if col in deep_columns:
+                        result[k][col] = v[col].apply(lambda x: copy.deepcopy(x, memo))
+                    else:
+                        result[k][col] = copy.deepcopy(v[col], memo)
+                _preserve_dtypes(result[k], v.dtypes)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
         result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
         return result
 
@@ -863,9 +863,14 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     numba = kwargs.get("numba", True)
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
-    recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    # recycle options
+    recycle = kwargs.get("recycle", None)
     only_v_results = kwargs.get("only_v_results", False)
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
+
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -935,7 +940,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug, only_v_results=only_v_results)
+                    v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
+                    permc_spec=permc_spec)
     net._options.update(overrule_options)
 
 
@@ -976,7 +982,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
 
 
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
-                         init, numba, trafo3w_losses, consider_line_temperature=False):
+                         init, numba, trafo3w_losses, consider_line_temperature=False, **kwargs):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -986,6 +992,9 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     enforce_q_lims = True
     recycle = None
     only_v_results = False
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -995,10 +1004,10 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba,
-                     only_v_results=only_v_results)
+                     only_v_results=only_v_results, use_umfpack=use_umfpack, permc_spec=permc_spec)
 
 
-def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
+def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses, **kwargs):
     mode = "opf"
     ac = False
     init = "flat"
@@ -1008,6 +1017,9 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     enforce_q_lims = True
     recycle = None
     only_v_results = False
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
     # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -1015,7 +1027,8 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results)
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results,
+                     use_umfpack=use_umfpack, permc_spec=permc_spec)
 
 
 def _internal_stored(net):
