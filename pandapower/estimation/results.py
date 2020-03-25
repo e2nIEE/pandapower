@@ -8,7 +8,7 @@ import numpy as np
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.pfsoln_numba import pfsoln
-from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, reset_results
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, init_results
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 
 def _calc_power_flow(ppci, V):
@@ -64,14 +64,14 @@ def _copy_power_flow_results(net):
     :param net: pandapower grid
     :return:
     """
-    elements_to_init = ["bus", "ext_grid", "line", "load", "sgen", "trafo", "trafo3w",
+    elements_to_init = ["bus", "ext_grid", "line", "load", "load_3ph" "sgen", "sgen_3ph", "trafo", "trafo3w",
                         "shunt", "impedance", "gen", "ward", "xward", "dcline"]
     for element in elements_to_init:
         res_name = "res_" + element
         res_name_pf = res_name + "_power_flow"
         if res_name in net:
             net[res_name_pf] = (net[res_name]).copy()
-    reset_results(net, all_empty=False)
+    init_results(net)
 
 
 def _rename_results(net):

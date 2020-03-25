@@ -21,6 +21,7 @@ from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_i
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _extract_single_results
+from pandapower.results import init_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
@@ -118,6 +119,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
                     branch_results=branch_results)
+    init_results(net, "sc")
     if fault == "3ph":
         _calc_sc(net)
     if fault == "2ph":
