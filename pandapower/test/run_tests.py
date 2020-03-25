@@ -43,7 +43,7 @@ def run_all_tests(parallel=False, n_cpu=None):
             n_cpu = _get_cpus()
         err = pytest.main([test_dir, "-xs", "-n", str(n_cpu)])
         if err == 4:
-            logger.error("Parallel testing not possible. "
+            raise ModuleNotFoundError("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
@@ -67,7 +67,7 @@ def run_fast_tests(parallel=False, n_cpu=None):
             n_cpu = _get_cpus()
         err = pytest.main([test_dir, "-xs", "-m", "not slow", "-n", str(n_cpu)])
         if err == 4:
-            logger.error("Parallel testing not possible. "
+            raise ModuleNotFoundError("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
@@ -89,7 +89,7 @@ def run_slow_tests(parallel=False, n_cpu=None):
             n_cpu = _get_cpus()
         err = pytest.main([test_dir, "-xs", "-m", "slow", "-n", str(n_cpu)])
         if err == 4:
-            logger.error("Parallel testing not possible. "
+            raise ModuleNotFoundError("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
@@ -98,4 +98,4 @@ def run_slow_tests(parallel=False, n_cpu=None):
 
 
 if __name__ == "__main__":
-    run_all_tests()
+    run_all_tests(True)
