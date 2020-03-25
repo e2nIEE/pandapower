@@ -16,7 +16,6 @@ from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
 from pandapower.results import reset_results
 
 def _extract_results(net, ppc, ppc_0):
-    _initialize_result_tables(net)
     _get_bus_results(net, ppc, ppc_0)
     if net._options["branch_results"]:
         _get_line_results(net, ppc)
@@ -24,7 +23,6 @@ def _extract_results(net, ppc, ppc_0):
         _get_trafo3w_results(net, ppc)
 
 def _extract_single_results(net, ppc):
-    reset_results(net, suffix="_sc", all_empty=False)
     _get_single_bus_results(net, ppc)
     net["_options"]["ac"] = True
     net["_options"]["trafo_loading"] = "current"
@@ -32,12 +30,6 @@ def _extract_single_results(net, ppc):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_sc")
 
-
-def _initialize_result_tables(net):
-    net.res_bus_sc = pd.DataFrame(index=net.bus.index)
-    net.res_line_sc = pd.DataFrame(index=net.line.index)
-    net.res_trafo_sc = pd.DataFrame(index=net.trafo.index)
-    net.res_trafo3w_sc = pd.DataFrame(index=net.trafo3w.index)
 
 def _get_single_bus_results(net, ppc):
     _set_buses_out_of_service(ppc)
