@@ -48,7 +48,8 @@ setup(
                       "packaging"],
     extras_require={":python_version<'3.0'": ["future"],
                     "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-                    "plotting": ["plotly", "matplotlib", "python-igraph"]},
+                    "plotting": ["plotly", "matplotlib", "python-igraph"],
+                    "test": ["pytest", "pytest-xdist"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
