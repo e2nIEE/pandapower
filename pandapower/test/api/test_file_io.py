@@ -84,6 +84,18 @@ def test_json(net_in, tempdir):
     assert_net_equal(net_in, net_out)
 
 
+def test_encrypted_json(net_in, tempdir):
+    import cryptography.fernet
+    filename = os.path.join(tempdir, "testfile.json")
+    pp.to_json(net_in, filename, encryption_key="verysecret")
+    with pytest.raises(json.JSONDecodeError):
+        pp.from_json(filename)
+    with pytest.raises(cryptography.fernet.InvalidToken):
+        pp.from_json(filename, encryption_key="wrong")
+    net_out = pp.from_json(filename, encryption_key="verysecret")
+    assert_net_equal(net_in, net_out)    
+
+
 def test_type_casting_json(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.json")
     net_in.sn_kva = 1000
