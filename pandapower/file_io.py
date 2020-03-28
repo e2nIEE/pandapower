@@ -241,7 +241,7 @@ def from_json(file, convert=True, encryption_key=None):
     else:
         with open(file, "r") as fp:
             json_string = fp.read()
-    
+
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key)
 
 
