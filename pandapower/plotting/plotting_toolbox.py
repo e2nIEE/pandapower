@@ -113,6 +113,14 @@ def get_linewidth_list(linewidth, number_entries, name_entries="lines"):
     return get_list(linewidth, number_entries, "linewidths", name_entries)
 
 
+def get_index_array(indices, net_table_indices):
+    if indices is None:
+        return np.copy(net_table_indices.values)
+    elif isinstance(indices, set):
+        return np.array(list(indices))
+    return np.array(indices)
+
+
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
                              node_name="Bus"):
     """

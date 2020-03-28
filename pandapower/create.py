@@ -371,6 +371,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("i_b_lv_ka", "f8"),
                             ("i_c_hv_ka", "f8"),
                             ("i_c_lv_ka", "f8"),
+                            ("i_n_hv_ka", "f8"),
+                            ("i_n_lv_ka", "f8"),
                             ("loading_percentA", "f8"),
                             ("loading_percentB", "f8"),
                             ("loading_percentC", "f8"),
@@ -439,54 +441,13 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("i_a_ka", "f8"),
                             ("i_b_ka", "f8"),
                             ("i_c_ka", "f8"),
+                            ("i_n_from_ka", "f8"),
+                            ("i_n_to_ka", "f8"),
+                            ("i_n_ka", "f8"),
                             ("loading_percentA", "f8"),
                             ("loading_percentB", "f8"),
                             ("loading_percentC", "f8")],                                                 
-
-        "_empty_res_trafo3w_3ph": [("p_a_hv_mw", "f8"),("p_b_hv_mw", "f8"),("p_c_hv_mw", "f8"),
-                               ("q_a_hv_mvar", "f8"),("q_b_hv_mvar", "f8"),("q_c_hv_mvar", "f8"),
-                               ("p_a_mv_mw", "f8"),("p_b_mv_mw", "f8"),("p_c_mv_mw", "f8"),
-                               ("q_a_mv_mvar", "f8"),("q_b_mv_mvar", "f8"),("q_c_mv_mvar", "f8"),
-                               ("p_a_lv_mw", "f8"),("p_b_lv_mw", "f8"),("p_c_lv_mw", "f8"),
-                               ("q_a_lv_mvar", "f8"),("q_b_lv_mvar", "f8"),("q_c_lv_mvar", "f8"),
-                               ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl__Cmw", "f8"),
-                               ("ql_a_mvar", "f8"),("ql_b_mvar", "f8"),("ql_c_mvar", "f8"),
-                               ("i_hv_ka", "f8"),
-                               ("i_mv_ka", "f8"),
-                               ("i_lv_ka", "f8"),
-                               ("vm_hv_pu", "f8"),
-                               ("va_hv_degree", "f8"),
-                               ("vm_mv_pu", "f8"),
-                               ("va_mv_degree", "f8"),
-                               ("vm_lv_pu", "f8"),
-                               ("va_lv_degree", "f8"),
-                               ("va_internal_degree", "f8"),
-                               ("vm_internal_pu", "f8"),
-                               ("loading_percent", "f8")],                               
-
-        "_empty_res_load_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],                            
         "_empty_res_asymmetric_load_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],
-# =============================================================================
-#         "_empty_res_impedance_load_3ph": [("r_A", "f8"),
-#                             ("r_B", "f8"),
-#                             ("r_C", "f8"),
-#                             ("x_A", "f8"),
-#                             ("x_B", "f8"),
-#                             ("x_C", "f8")
-#                             ],  
-# =============================================================================
-
-        "_empty_res_sgen_3ph": [("p_a_mw", "f8"),
                             ("q_a_mvar", "f8"),
                             ("p_b_mw", "f8"),
                             ("q_b_mvar", "f8"),
@@ -505,53 +466,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_gen": [("p_mw", "f8"),
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
-                           ("vm_pu", "f8")],
-        "_empty_res_gen_3ph": [("p_a_mw", "f8"),
-                           ("q_a_mvar", "f8"),
-                           ("va_a_degree", "f8"),
-                           ("vm_a_pu", "f8"),
-                           ("p_b_mw", "f8"),
-                           ("q_b_mvar", "f8"),
-                           ("va_b_degree", "f8"),
-                           ("vm_b_pu", "f8"),
-                           ("p_c_mw", "f8"),
-                           ("q_c_mvar", "f8"),
-                           ("va_c_degree", "f8"),
-                           ("vm_c_pu", "f8")],                                               
-
-        "_empty_res_shunt_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                             ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                             ("vm_pu", "f8")],                             
-
-        "_empty_res_impedance_3ph": [("p_a_from_mw", "f8"),("p_b_from_mw", "f8"),("p_c_from_mw", "f8"),
-                                 ("q_a_from_mvar", "f8"),("q_b_from_mvar", "f8"),("q_c_from_mvar", "f8"),
-                                 ("p_a_to_mw", "f8"),("p_b_to_mw", "f8"),("p_c_to_mw", "f8"),
-                                 ("q_a_to_mvar", "f8"),("q_b_to_mvar", "f8"),("q_c_to_mvar", "f8"),
-                                 ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl_c_mw", "f8"),
-                                 ("ql_a_mvar", "f8"),("ql_b_mvar", "f8"),("ql_c_mvar", "f8"),
-                                 ("i_from_ka", "f8"),
-                                 ("i_to_ka", "f8")],                                 
-
-        "_empty_res_dcline_3ph": [("p_a_from_mw", "f8"),("p_b_from_mw", "f8"),("p_c_from_mw", "f8"),
-                              ("q_a_from_mvar", "f8"),("q_b_from_mvar", "f8"),("q_c_from_mvar", "f8"),
-                              ("p_a_to_mw", "f8"),("p_b_to_mw", "f8"),("p_c_to_mw", "f8"),
-                              ("q_a_to_mvar", "f8"),("q_b_to_mvar", "f8"),("q_c_to_mvar", "f8"),
-                              ("pl_a_mw", "f8"),("pl_b_mw", "f8"),("pl_c_mw", "f8"),
-                              ("vm_from_pu", "f8"),
-                              ("va_from_degree", "f8"),
-                              ("vm_to_pu", "f8"),
-                              ("va_to_degree", "f8")],                              
-
-        "_empty_res_ward_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                            ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                            ("vm_pu", "f8")],                            
-
-        "_empty_res_xward_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                             ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_internal_pu", "f8")],                             
-
+                           ("vm_pu", "f8")],                                        
+                        
         # internal
         "_ppc": None,
         "_ppc0": None,
@@ -560,13 +476,22 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_is_elements": None,
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
-                            "gen": None},
+                            "gen": None,
+                            "branch": None},
         "version": __version__,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
         "sn_mva": sn_mva
     })
+    net._empty_res_line_sc = net._empty_res_line
+    net._empty_res_trafo_sc = net._empty_res_trafo
+    net._empty_res_trafo3w_sc = net._empty_res_trafo3w
+    
+    net._empty_res_load_3ph = net._empty_res_load
+    net._empty_res_sgen_3ph = net._empty_res_sgen
+    net._empty_res_storage_3ph = net._empty_res_storage
+    
     for s in net:
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
@@ -574,7 +499,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         add_basic_std_types(net)
     else:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
-    reset_results(net)
+    for mode in ["pf", "se", "sc", "pf_3ph"]:
+        reset_results(net, mode)
     net['user_pf_options'] = dict()
     return net
 
@@ -799,6 +725,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
             Only respected for OPF
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -852,7 +779,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = pd.Series()
+            net.load.loc[:, "controllable"] = False
 
         net.load.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1050,6 +977,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
             or not. Only respected for OPF
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique IDs of the created elements
@@ -1114,7 +1042,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
     if not np_all(isnan(controllable)):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = pd.Series()
+            net.load.loc[:, "controllable"] = False
 
         net.load.loc[index, "controllable"] = controllable.astype(bool)
     else:
@@ -1208,6 +1136,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
+            Defaults to False if "controllable" column exists in DataFrame
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
@@ -1271,7 +1200,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     if not isnan(controllable):
         if "controllable" not in net.sgen.columns:
-            net.sgen.loc[:, "controllable"] = pd.Series()
+            net.sgen.loc[:, "controllable"] = False
 
         net.sgen.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1481,6 +1410,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
         **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
         powerflow
+            Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created storage
@@ -1536,7 +1466,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
     if not isnan(controllable):
         if "controllable" not in net.storage.columns:
-            net.storage.loc[:, "controllable"] = pd.Series()
+            net.storage.loc[:, "controllable"] = False
 
         net.storage.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1546,12 +1476,12 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
-def _create_column_and_set_value(net, index, variable, column, element, default_val=None):
+def _create_column_and_set_value(net, index, variable, column, element, default_val=nan):
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     if not isnan(variable):
         if column not in net[element].columns:
-            net[element].loc[:, column] = pd.Series(default_val)
+            net[element].loc[:, column] = float(default_val)
         net[element].at[index, column] = float(variable)
     return net
 
@@ -1647,7 +1577,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = pd.Series(True)
+            net.gen.loc[:, "controllable"] = True
         net.gen.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
@@ -2759,7 +2689,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             et == "t"
 
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
-        bus and transformer, "b" = switch between two buses
+            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
+            two buses
 
     OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed

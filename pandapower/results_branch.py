@@ -123,7 +123,6 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     to_bus = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write to line
-
     res_line_df = net["res_line"] if suffix is None else net["res_line%s"%suffix]
 
     res_line_df["p_from_mw"].values[:] = p_from_mw
@@ -148,8 +147,6 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
-
-
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
@@ -180,9 +177,22 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     else:
         Pabcl_mw = np.zeros_like(Pabcf_mw)
         Qabcl_mvar = np.zeros_like(Qabct_mvar)
-    Iabc_f_ka = np.abs(sequence_to_phase(I012_from_ka))
-    Iabc_t_ka = np.abs(sequence_to_phase(I012_to_ka))
+    
+    #geting complex values of the sequence current    
+    Iabc_f_ka_complex = sequence_to_phase(I012_from_ka)
+    Iabc_t_ka_complex = sequence_to_phase(I012_to_ka)
+    
+    Iabc_f_ka = np.abs(Iabc_f_ka_complex)
+    Iabc_t_ka = np.abs(Iabc_t_ka_complex)
     Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
+    
+    In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
+    In_f_ka = np.abs(In_f_ka_complex)
+    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
+    In_t_ka_complex = Iabc_t_ka_complex.sum(axis=0)
+    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
+    In_t_ka = np.abs(In_t_ka_complex)
+    In_ka = np.maximum.reduce([In_t_ka, In_f_ka])
 
     # write to line
     net["res_line_3ph"]["p_a_from_mw"] = Pabcf_mw[0, :].flatten()
@@ -212,6 +222,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"]["i_a_ka"] = Iabc_ka[0, :]
     net["res_line_3ph"]["i_b_ka"] = Iabc_ka[1, :]
     net["res_line_3ph"]["i_c_ka"] = Iabc_ka[2, :]
+    net["res_line_3ph"]["i_n_from_ka"] = In_f_ka
+    net["res_line_3ph"]["i_n_to_ka"] = In_t_ka
+    net["res_line_3ph"]["i_n_ka"] = In_ka
     net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :] / i_max_phase * 100
     net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :] / i_max_phase * 100
     net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :] / i_max_phase * 100
@@ -264,8 +277,8 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write results to trafo dataframe
+    res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s" % suffix]
 
-    res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s"%suffix]
     res_trafo_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo_df["q_hv_mvar"].values[:] = q_hv_mvar
     res_trafo_df["p_lv_mw"].values[:] = p_lv_mw
@@ -310,6 +323,22 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
         Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
+    
+#    #geting complex values of the sequence current    
+#    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
+#    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
+#    
+#    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
+#    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
+#
+#    
+#    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
+#    In_hv_ka = np.abs(In_hv_ka_complex)
+#    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
+#    In_lv_ka_complex = Iabc_lv_ka_complex.sum(axis=0)
+#    In_lv_ka = np.abs(In_lv_ka_complex)
+#    In_lv_ia_n_degree = np.angle(In_lv_ka_complex).flatten()*180/np.pi
+
 
     if trafo_loading == "current":
         trafo_df = net["trafo"]
@@ -347,12 +376,14 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     res_trafo_df["q_a_l_mvar"] = Qabcl_mvar[0, :].flatten()
     res_trafo_df["q_b_l_mvar"] = Qabcl_mvar[1, :].flatten()
     res_trafo_df["q_c_l_mvar"] = Qabcl_mvar[2, :].flatten()
-    res_trafo_df["va_c_degreehv_ka"] = Iabc_hv_ka[0, :].flatten()
+    res_trafo_df["i_a_hv_ka"] = Iabc_hv_ka[0, :].flatten()
     res_trafo_df["i_b_hv_ka"] = Iabc_hv_ka[1, :].flatten()
     res_trafo_df["i_c_hv_ka"] = Iabc_hv_ka[2, :].flatten()
+#    res_trafo_df["i_n_hv_ka"] = In_hv_ka.flatten()
     res_trafo_df["i_a_lv_ka"] = Iabc_lv_ka[0, :].flatten()
     res_trafo_df["i_b_lv_ka"] = Iabc_lv_ka[1, :].flatten()
     res_trafo_df["i_c_lv_ka"] = Iabc_lv_ka[2, :].flatten()
+#    res_trafo_df["i_n_lv_ka"] = In_lv_ka.flatten()
     res_trafo_df["loading_percentA"] = loading_percent[0, :]
     res_trafo_df["loading_percentB"] = loading_percent[1, :]
     res_trafo_df["loading_percentC"] = loading_percent[2, :]
@@ -367,6 +398,7 @@ def _get_trafo3w_lookups(net):
     mv = int(f + 2 * (t - f) / 3)
     lv = t
     return f, hv, mv, lv
+
 
 def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     if "trafo3w" not in net._pd2ppc_lookups["branch"]:
@@ -418,15 +450,15 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     loading_percent = ld_trafo
-    
+
     hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(int)
     aux_buses = ppc["branch"][f:hv, T_BUS].real.astype(int)
     mv_buses = ppc["branch"][hv:mv, T_BUS].real.astype(int)
     lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(int)
 
     # write results to trafo3w dataframe
-
     res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s"%suffix]
+
     res_trafo3w_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo3w_df["q_hv_mvar"].values[:] = q_hv_mvar
     res_trafo3w_df["p_mv_mw"].values[:] = p_mv_mw
@@ -479,8 +511,8 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-
     res_impediance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+
     res_impediance_df["p_from_mw"].values[:] = p_from_mw
     res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
     res_impediance_df["p_to_mw"].values[:] = p_to_mw
@@ -512,7 +544,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     pq_buses[b_ppc, 1] += q
     aux_buses = net["_pd2ppc_lookups"]["bus"][net["_pd2ppc_lookups"]["aux"]["xward"]]
 
-    res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s"%suffix]
+    res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s" % suffix]
 
     res_xward_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
     res_xward_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
@@ -527,6 +559,6 @@ def _get_switch_results(net, i_ft, suffix=None):
     with np.errstate(invalid='ignore'):
         i_ka = np.max(i_ft[f:t], axis=1)
 
-    res_switch_df = "res_switch" if suffix is None else "res_switch%s"%suffix
+    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
     net[res_switch_df] = pd.DataFrame(data=i_ka, columns=["i_ka"],
-                                     index=net.switch[net._impedance_bb_switches].index)
+                                      index=net.switch[net._impedance_bb_switches].index)

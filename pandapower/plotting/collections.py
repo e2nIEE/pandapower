@@ -18,7 +18,7 @@ from pandas import isnull
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
     sgen_patches, ext_grid_patches, trafo_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
-    position_on_busbar
+    position_on_busbar, get_index_array
 
 try:
     import pplog as logging
@@ -361,7 +361,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     OUTPUT:
         **pc** - patch collection
     """
-    buses = net.bus.index.tolist() if buses is None else list(buses)
+    buses = get_index_array(buses, net.bus.index)
     if len(buses) == 0:
         return None
     if bus_geodata is None:
@@ -427,8 +427,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                        "empty.")
         use_bus_geodata = True
 
-    lines = net.line.index.values if lines is None else np.array(lines) \
-        if not isinstance(lines, set) else np.array(list(lines))
+    lines = get_index_array(lines, net.line.index)
     if len(lines) == 0:
         return None
 
@@ -496,24 +495,25 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     OUTPUT:
         **lc** - line collection
     """
-    trafos = net.trafo if trafos is None else net.trafo.loc[trafos]
+    trafos = get_index_array(trafos, net.trafo.index)
+    trafo_table = net.trafo.loc[trafos]
 
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    hv_geo = list(zip(bus_geodata.loc[trafos["hv_bus"], "x"].values,
-                      bus_geodata.loc[trafos["hv_bus"], "y"].values))
-    lv_geo = list(zip(bus_geodata.loc[trafos["lv_bus"], "x"].values,
-                      bus_geodata.loc[trafos["lv_bus"], "y"].values))
+    hv_geo = list(zip(bus_geodata.loc[trafo_table["hv_bus"], "x"].values,
+                      bus_geodata.loc[trafo_table["hv_bus"], "y"].values))
+    lv_geo = list(zip(bus_geodata.loc[trafo_table["lv_bus"], "x"].values,
+                      bus_geodata.loc[trafo_table["lv_bus"], "y"].values))
     tg = list(zip(hv_geo, lv_geo))
 
-    info = [infofunc(tr) for tr in trafos.index.values] if infofunc is not None else []
+    info = [infofunc(tr) for tr in trafos] if infofunc is not None else []
 
-    lc = _create_line2d_collection(tg, trafos.index.values, info, picker=picker, **kwargs)
+    lc = _create_line2d_collection(tg, trafos, info, picker=picker, **kwargs)
 
     if cmap is not None:
         if z is None:
-            z = net.res_trafo.loading_percent.loc[trafos.index]
+            z = net.res_trafo.loading_percent.loc[trafos]
         add_cmap_to_collection(lc, cmap, norm, z, cbar_title, True, clim)
 
     return lc
@@ -542,23 +542,22 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     OUTPUT:
         **lc** - line collection
     """
-    trafos = net.trafo3w if trafos is None else net.trafo3w.loc[trafos]
+    trafos = get_index_array(trafos, net.trafo3w.index)
+    trafo_table = net.trafo3w.loc[trafos]
 
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    hv_geo, mv_geo, lv_geo = (list(zip(*(bus_geodata.loc[trafos[column], var].values
+    hv_geo, mv_geo, lv_geo = (list(zip(*(bus_geodata.loc[trafo_table[column], var].values
                                          for var in ['x', 'y'])))
                               for column in ['hv_bus', 'mv_bus', 'lv_bus'])
 
     # create 3 connection lines, each of 2 points, for every trafo3w
-    tg = [x for c in [list(combinations(y, 2))
-                      for y in zip(hv_geo, mv_geo, lv_geo)]
-          for x in c]
+    tg = [x for c in [list(combinations(y, 2)) for y in zip(hv_geo, mv_geo, lv_geo)] for x in c]
 
     # 3 times infofunc for every trafo
     info = [infofunc(x) if infofunc is not None else []
-            for tr in [(t, t, t) for t in trafos.index.values]
+            for tr in [(t, t, t) for t in trafos]
             for x in tr]
 
     lc = LineCollection(tg, **kwargs)
@@ -594,8 +593,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
         **pc** - patch collection
     """
-    trafos = net.trafo.index.values if trafos is None else np.array(trafos) \
-        if not isinstance(trafos, set) else np.array(list(trafos))
+    trafos = get_index_array(trafos, net.trafo.index)
     trafo_table = net.trafo.loc[trafos]
 
     coords, trafos_with_geo = coords_from_node_geodata(
@@ -651,7 +649,8 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
 
         **pc** - patch collection
     """
-    trafo3w_table = net.trafo3w if trafo3ws is None else net.trafo3w.loc[trafo3ws]
+    trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
+    trafo3w_table = net.trafo3w.loc[trafo3ws]
     lines = []
     circles = []
     infos = []
@@ -792,8 +791,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
 
         **load_lc** - line collection
     """
-    if loads is None:
-        loads = net.load.index
+    loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
     load_pc, load_lc = _create_node_element_collection(
@@ -829,8 +827,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
 
         **gen_lc** - line collection
     """
-    if gens is None:
-        gens = net.gen.index
+    gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
     gen_pc, gen_lc = _create_node_element_collection(
@@ -866,8 +863,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
 
         **sgen_lc** - line collection
     """
-    if sgens is None:
-        sgens = net.sgen.index
+    gens = get_index_array(sgens, net.sgen.index)
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
     sgen_pc, sgen_lc = _create_node_element_collection(
@@ -905,8 +901,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
         **ext_grid2** - patch collection
     """
-    if ext_grids is None:
-        ext_grids = net.ext_grid.index.values
+    ext_grids = get_index_array(ext_grids, net.ext_grid.index)
     if ext_grid_buses is None:
         ext_grid_buses = net.ext_grid.bus.loc[ext_grids].values
     else:
