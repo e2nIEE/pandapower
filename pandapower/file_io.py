@@ -17,8 +17,6 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-#from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder, \
-#    to_dict_with_coord_transform, get_raw_data_from_pickle, transform_net_with_df_and_geo
 import pandapower.io_utils as io_utils
 
 def to_pickle(net, filename):
