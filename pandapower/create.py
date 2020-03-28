@@ -2671,17 +2671,17 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     """
     Adds a switch in the net["switch"] table.
 
-    Switches can be either between to buses (bus-bus switch) or at the end of a line or transformer
-    element (bus-elememnt switch).
+    Switches can be either between two buses (bus-bus switch) or at the end of a line or transformer
+    element (bus-element switch).
 
     Two buses that are connected through a closed bus-bus switches are fused in the power flow if
-    the switch es closed or separated if the switch is open.
+    the switch is closed or separated if the switch is open.
 
     An element that is connected to a bus through a bus-element switch is connected to the bus
     if the switch is closed or disconnected if the switch is open.
 
     INPUT:
-        **net** (pandapowerNet) - The net within this transformer should be created
+        **net** (pandapowerNet) - The net within which this switch should be created
 
         **bus** - The bus that the switch is connected to
 
