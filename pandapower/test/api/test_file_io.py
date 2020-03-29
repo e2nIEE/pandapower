@@ -13,9 +13,9 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
-import pandapower.control
-import pandapower.networks
-import pandapower.topology
+import pandapower.control as control
+import pandapower.networks as networks
+import pandapower.topology as topology
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
@@ -149,9 +149,9 @@ def test_to_json_dtypes(tmp_path):
 
 
 def test_json_encoding_decoding():
-    net = pp.networks.mv_oberrhein()
+    net = networks.mv_oberrhein()
     net.tuple = (1, "4")
-    net.mg = pp.topology.create_nxgraph(net)
+    net.mg = topology.create_nxgraph(net)
     s = set(['1', 4])
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
@@ -204,10 +204,10 @@ def test_json_tuple_in_pandas():
 
 
 def test_new_pp_object_io():
-    net = pp.networks.mv_oberrhein()
+    net = networks.mv_oberrhein()
     ds = DFData(pd.DataFrame(data=np.array([[0, 1, 2], [7, 8, 9]])))
-    pp.control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
-    pp.control.ContinuousTapControl(net, 142, 1)
+    control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
+    control.ContinuousTapControl(net, 142, 1)
 
     obj = net.controller.object.at[0]
     obj.run = pp.runpp
@@ -229,8 +229,8 @@ def test_new_pp_object_io():
 def test_convert_format_for_pp_objects(net_in):
     pp.create_transformer(net_in, net_in.bus.index.values[0], net_in.bus.index.values[1],
                           '0.25 MVA 20/0.4 kV', tap_pos=0)
-    c1 = pp.control.ContinuousTapControl(net_in, 0, 1.02)
-    c2 = pp.control.DiscreteTapControl(net_in, 0, 1, 1)
+    c1 = control.ContinuousTapControl(net_in, 0, 1.02)
+    c2 = control.DiscreteTapControl(net_in, 0, 1, 1)
     c1.u_set = 0.98
     c2.u_lower = 0.99
     c2.u_upper = 1.1
@@ -258,7 +258,7 @@ def test_convert_format_for_pp_objects(net_in):
 
 
 def test_json_io_same_net(net_in, tmp_path):
-    pp.control.ConstControl(net_in, 'load', 'p_mw', 0)
+    control.ConstControl(net_in, 'load', 'p_mw', 0)
 
     s = pp.to_json(net_in)
     net1 = pp.from_json_string(s)
@@ -272,7 +272,7 @@ def test_json_io_same_net(net_in, tmp_path):
 
 def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
-    pp.control.ContinuousTapControl(net, 114, 1.01)
+    control.ContinuousTapControl(net, 114, 1.01)
     assert net == net.controller.object.iloc[0].net
     net2 = copy.deepcopy(net)
     assert net2 == net2.controller.object.iloc[0].net
