@@ -13,9 +13,9 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
-import control
-import networks
-import topology
+import pandapower.control
+import pandapower.networks
+import pandapower.topology
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
@@ -149,9 +149,9 @@ def test_to_json_dtypes(tmp_path):
 
 
 def test_json_encoding_decoding():
-    net = networks.mv_oberrhein()
+    net = pp.networks.mv_oberrhein()
     net.tuple = (1, "4")
-    net.mg = topology.create_nxgraph(net)
+    net.mg = pp.topology.create_nxgraph(net)
     s = set(['1', 4])
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
@@ -204,7 +204,7 @@ def test_json_tuple_in_pandas():
 
 
 def test_new_pp_object_io():
-    net = networks.mv_oberrhein()
+    net = pp.networks.mv_oberrhein()
     ds = DFData(pd.DataFrame(data=np.array([[0, 1, 2], [7, 8, 9]])))
     pp.control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
     pp.control.ContinuousTapControl(net, 142, 1)
@@ -257,22 +257,22 @@ def test_convert_format_for_pp_objects(net_in):
     assert obj2.vm_upper_pu == 1.1
 
 
-def test_json_io_same_net(net_in, tempdir):
+def test_json_io_same_net(net_in, tmp_path):
     pp.control.ConstControl(net_in, 'load', 'p_mw', 0)
 
     s = pp.to_json(net_in)
     net1 = pp.from_json_string(s)
     assert net1.controller.object.at[0].net is net1
 
-    filename = os.path.join(tempdir, "testfile.json")
+    filename = os.path.abspath(tmp_path) + "testfile.json"
     pp.to_json(net_in, filename)
     net2 = pp.from_json(filename)
     assert net2.controller.object.at[0].net is net2
 
 
 def test_deepcopy_controller():
-    net = networks.mv_oberrhein()
-    control.ContinuousTapControl(net, 114, 1.01)
+    net = pp.networks.mv_oberrhein()
+    pp.control.ContinuousTapControl(net, 114, 1.01)
     assert net == net.controller.object.iloc[0].net
     net2 = copy.deepcopy(net)
     assert net2 == net2.controller.object.iloc[0].net
