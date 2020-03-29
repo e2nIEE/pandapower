@@ -32,14 +32,14 @@ def net_in(request):
 
 
 def test_pickle(net_in, tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.p"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.p"
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
     assert_net_equal(net_in, net_out)
 
 
 def test_excel(net_in, tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.xlsx"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -54,7 +54,7 @@ def test_excel(net_in, tmp_path):
 
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     with open(filename, 'w') as fp:
         json.dump(net_in, fp, cls=PPJSONEncoder)
 
@@ -66,7 +66,7 @@ def test_json_basic(net_in, tmp_path):
 
 
 def test_json(net_in, tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     try:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
@@ -101,18 +101,18 @@ def test_json(net_in, tmp_path):
 
 def test_encrypted_json(net_in, tmp_path):
     import cryptography.fernet
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename, encryption_key="verysecret")
     with pytest.raises(json.JSONDecodeError):
         pp.from_json(filename)
     with pytest.raises(cryptography.fernet.InvalidToken):
         pp.from_json(filename, encryption_key="wrong")
     net_out = pp.from_json(filename, encryption_key="verysecret")
-    assert_net_equal(net_in, net_out)    
+    assert_net_equal(net_in, net_out)
 
 
 def test_type_casting_json(net_in, tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net_in.sn_kva = 1000
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
@@ -120,7 +120,7 @@ def test_type_casting_json(net_in, tmp_path):
 
 
 def test_sqlite(net_in, tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.db"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.db"
     pp.to_sqlite(net_in, filename)
     net_out = pp.from_sqlite(filename)
     assert_net_equal(net_in, net_out)
@@ -133,7 +133,7 @@ def test_convert_format():  # TODO what is this thing testing ?
 
 
 def test_to_json_dtypes(tmp_path):
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net = create_test_network()
     pp.runpp(net)
     net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
@@ -264,7 +264,7 @@ def test_json_io_same_net(net_in, tmp_path):
     net1 = pp.from_json_string(s)
     assert net1.controller.object.at[0].net is net1
 
-    filename = os.path.abspath(tmp_path) + "testfile.json"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename)
     net2 = pp.from_json(filename)
     assert net2.controller.object.at[0].net is net2

@@ -13,7 +13,7 @@ from pandapower.test.toolbox import create_test_network
 
 def test_html(tmp_path):
     net = create_test_network()
-    filename = os.path.abspath(tmp_path) + "testfile.html"
+    filename = os.path.abspath(str(tmp_path)) + "testfile.html"
     pandapower.plotting.to_html(net, filename)
 
 
