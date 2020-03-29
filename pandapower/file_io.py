@@ -73,7 +73,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json(net, file=None, encryption_key=None):
+def to_json(net, filename=None, encryption_key=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -99,13 +99,13 @@ def to_json(net, file=None, encryption_key=None):
     if encryption_key is not None:
         json_string = io_utils.encrypt_string(json_string, encryption_key)
 
-    if file is None:
+    if filename is None:
         return json_string
 
-    if hasattr(file, 'write'):
-        file.write(json_string)
+    if hasattr(filename, 'write'):
+        filename.write(json_string)
     else:
-        with open(file, "w") as fp:
+        with open(filename, "w") as fp:
             fp.write(json_string)
 
 
@@ -212,7 +212,7 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(file, convert=True, encryption_key=None):
+def from_json(filename, convert=True, encryption_key=None):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -234,12 +234,12 @@ def from_json(file, convert=True, encryption_key=None):
         >>> net = pp.from_json("example.json")
 
     """
-    if hasattr(file, 'read'):
-        json_string = file.read()
-    elif not os.path.isfile(file):
-        raise UserWarning("File {} does not exist!!".format(file))
+    if hasattr(filename, 'read'):
+        json_string = filename.read()
+    elif not os.path.isfile(filename):
+        raise UserWarning("File {} does not exist!!".format(filename))
     else:
-        with open(file, "r") as fp:
+        with open(filename, "r") as fp:
             json_string = fp.read()
 
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key)
