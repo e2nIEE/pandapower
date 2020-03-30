@@ -5,18 +5,17 @@
 
 import pandas as pd
 import numpy as np
-import copy
 from packaging import version
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower import __version__
-from pandapower.toolbox import set_data_type_of_columns_to_default
 
 
 def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
+    from pandapower.toolbox import set_data_type_of_columns_to_default
     if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
         return net
     _add_nominal_power(net)

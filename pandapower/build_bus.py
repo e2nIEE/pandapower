@@ -9,6 +9,8 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from packaging import version
+from numpy import complex128
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, \
@@ -355,13 +357,15 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
 
-def _calc_pq_elements_and_add_on_ppc(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-    for element in ["load", "sgen", "storage", "ward", "xward"]:
+    mode = net["_options"]["mode"]
+    pq_elements = ["load", "sgen", "storage", "ward", "xward"] 
+    for element in pq_elements:
         tab = net[element]
         if len(tab):
             if element == "load" and voltage_depend_loads:
@@ -396,6 +400,20 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
+     
+    l_3ph = net["asymmetric_load"]
+    if len(l_3ph) > 0 and mode == "pf":
+            # TODO: Voltage dependent loads
+        vl = _is_elements["asymmetric_load"] * l_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(l_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(l_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, l_3ph["bus"].values])
+    sgen_3ph = net["asymmetric_sgen"]
+    if len(sgen_3ph) > 0 and mode == "pf":
+        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(sgen_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(sgen_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, sgen_3ph["bus"].values])
 
     # sum up p & q of bus elements
     if b.size:
@@ -404,6 +422,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
+        # Todo: Actually, P and Q have to be divided by 3 because Sabc=3*S012 (we are writing pos. seq. values here!)
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
@@ -485,17 +504,19 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
-        c = 1.
+        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
-                         "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
+                         "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
+    s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
+        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid \n Try: net.ext_grid['rx_max'] = 0.1" %
                          case)
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
+    if mode == 'pf_3ph':
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power                        
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -503,8 +524,9 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
+    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
+    ppc["bus"][buses, BS] = bs * ppc['baseMVA']
+    return gs * ppc['baseMVA'], bs * ppc['baseMVA']
 
 
 def _add_gen_sc_impedance(net, ppc):

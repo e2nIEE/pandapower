@@ -107,7 +107,7 @@ def _store_internal(ppci, internal_storage):
 
 
 def _get_Sbus(ppci, recycle=None):
-    baseMVA, bus, gen, branch = ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
+    baseMVA, bus, gen = ppci["baseMVA"], ppci["bus"], ppci["gen"]
     if not isinstance(recycle, dict) or "Sbus" not in ppci["internal"]:
         return makeSbus(baseMVA, bus, gen)
     if recycle["bus_pq"] or recycle["gen"]:
