@@ -17,7 +17,7 @@ from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results, \
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, verify_results, \
     _ppci_bus_to_ppc, _ppci_other_to_ppc
 
 
@@ -41,7 +41,6 @@ def _powerflow(net, **kwargs):
     """
 
     # get infos from options
-    init_results = net["_options"]["init_results"]
     ac = net["_options"]["ac"]
     algorithm = net["_options"]["algorithm"]
 
@@ -49,10 +48,10 @@ def _powerflow(net, **kwargs):
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
 
-    if not ac or init_results:
+    if not ac or net["_options"]["init_results"]:
         verify_results(net)
     else:
-        reset_results(net, all_empty=False)
+        init_results(net)
 
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
@@ -100,6 +99,10 @@ def _recycled_powerflow(net, **kwargs):
 
     recycle = options["recycle"]
     ppc = net["_ppc"]
+    ppc["success"] = False
+    ppc["iterations"] = 0.
+    ppc["et"] = 0.
+
     if "bus_pq" in recycle and recycle["bus_pq"]:
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc)
@@ -123,6 +126,9 @@ def _recycled_powerflow(net, **kwargs):
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)
+    ppc["success"] = ppci["success"]
+    ppc["iterations"] = ppci["iterations"]
+    ppc["et"] = ppci["et"]
     if options["only_v_results"]:
         _ppci_bus_to_ppc(result, ppc)
         _ppci_other_to_ppc(result, ppc, options["mode"])

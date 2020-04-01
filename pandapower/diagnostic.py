@@ -4,8 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
-
 import copy
 import pandas as pd
 import numpy as np
@@ -18,7 +16,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
@@ -714,7 +711,7 @@ def disconnected_elements(net):
                                                    'disconnected sgens'    : sgen_indices}
 
     """
-
+    import pandapower.topology as top
     mg = top.create_nxgraph(net)
     sections = top.connected_components(mg)
     disc_elements = []

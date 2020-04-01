@@ -38,6 +38,7 @@ setup(
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
     long_description=long_description,
+	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
     install_requires=["pandas>=0.17",
@@ -47,7 +48,8 @@ setup(
                       "packaging"],
     extras_require={":python_version<'3.0'": ["future"],
                     "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-                    "plotting": ["plotly", "matplotlib", "python-igraph"]},
+                    "plotting": ["plotly", "matplotlib", "python-igraph"],
+                    "test": ["pytest", "pytest-xdist"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
