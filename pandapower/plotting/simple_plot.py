@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 trafo_size=1.0, plot_loads=False, plot_sgens=False, load_size=1.0, sgen_size=1.0,
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
-                bus_color="b", line_color='grey', trafo_color='k', ext_grid_color='y',
-                switch_color='k', library="igraph", show_plot=True, ax=None):
+                bus_color="b", line_color='grey', trafo_color='k', ext_grid_color='b',
+                switch_color='k', ext_grid_hatch='\\/\\/', library="igraph", show_plot=True, ax=None):
     """
     Plots a pandapower network as simple as possible. If no geodata is available, artificial
     geodata is generated. For advanced plotting see the tutorial
@@ -135,7 +135,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
     if len(eg_buses_with_geo_coordinates) > 0:
         sc = create_bus_collection(net, eg_buses_with_geo_coordinates, patch_type="rect",
-                                   size=ext_grid_size, color=ext_grid_color, zorder=11)
+                                   size=ext_grid_size, color=ext_grid_color, zorder=11, hatch=ext_grid_hatch)
         collections.append(sc)
 
     # create trafo collection if trafo is available

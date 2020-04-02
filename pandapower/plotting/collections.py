@@ -119,8 +119,8 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
     return collection
 
 
-def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False,
-                            infos=None, **kwargs):
+def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False, 
+                            infos=None, hatch=None, **kwargs):
     """
     Creates a collection with patches for the given nodes. Can be used generically for different \
     types of nodes (bus in pandapower network, but also other nodes, e.g. in a networkx graph).
@@ -152,7 +152,7 @@ def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=No
 
     infos = list(infos) if infos is not None else []
     patches = node_patches(coords, size, patch_type, color, **kwargs)
-    pc = PatchCollection(patches, match_original=True, picker=picker)
+    pc = PatchCollection(patches, match_original=True, picker=picker, hatch=hatch)
     pc.node_indices = np.array(nodes)
 
     pc.patch_type = patch_type
@@ -319,7 +319,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          cbar_title="Bus Voltage [pu]", **kwargs):
+                          cbar_title="Bus Voltage [pu]", hatch=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -371,7 +371,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
-    pc = _create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
+    pc = _create_node_collection(buses, coords, size, patch_type, color, picker, infos, hatch, **kwargs)
 
     if cmap is not None:
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
@@ -1125,7 +1125,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 def add_single_collection(c, ax, plot_colorbars, copy_collections):
     if copy_collections:
-        c = copy.copy(c)
+        c = copy.deepcopy(c)
     ax.add_collection(c)
     if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
         extend = c.extend if hasattr(c, "extend") else "neither"
