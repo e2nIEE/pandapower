@@ -46,7 +46,7 @@ def three_bus_example():
     return net
 
 @pytest.fixture
-def big_sgen_example():
+def big_sgen_three_bus_example():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
@@ -60,7 +60,7 @@ def big_sgen_example():
     pp.create_sgen(net, b2, sn_mva=200., p_mw=0, k=1.2)
     return net
 
-def test_max_branch_results(three_bus_example):
+def test_max_branch_results_1(three_bus_example):
     net = three_bus_example
     sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([0.53746061, 0.50852707, 0.4988896]))
@@ -69,21 +69,33 @@ def test_max_branch_results(three_bus_example):
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.49811957,  0.50106881]))
 
 
-def test_big_sgen_results(big_sgen_example):
-    net = big_sgen_example
+def test_max_branch_results_2(big_sgen_three_bus_example):
+    net = big_sgen_three_bus_example
     sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([1.78453722, 1.75560368, 1.72233192]))
     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([1.25967331, 1.72233192 ]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([1.78144709, 2.65532524]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([1.26511638, 1.7298553]))
 
-def test_min_branch_results(three_bus_example):
+def test_min_branch_results_1(three_bus_example):
     net = three_bus_example
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([ 0.43248784,  0.41156533,  0.40431286]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.39171613,  0.40431286]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.72795118,  0.74576565]))
-    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.39340278,  0.40605375]))
+    # These are not technically correct
+    #assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.39171613,  0.40431286]))
+    #assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.72795118,  0.74576565]))
+    #assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.39340278,  0.40605375]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.01259,  0.]))
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.]))
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.]))
+
+def test_min_branch_results_2(big_sgen_three_bus_example):
+    net = big_sgen_three_bus_example
+    sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([1.67956442, 1.65864191, 1.62941387]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.36878998, 0.]))
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.69843619,   0.]))
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.3704009,  0.]))
 
 def test_wind_park(wind_park_example):
     net = wind_park_example
