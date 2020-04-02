@@ -135,7 +135,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
     if len(eg_buses_with_geo_coordinates) > 0:
         sc = create_bus_collection(net, eg_buses_with_geo_coordinates, patch_type="rect",
-                                   size=ext_grid_size, color=ext_grid_color, zorder=11, hatch=ext_grid_hatch)
+                                   size=ext_grid_size, edgecolor=ext_grid_color, zorder=11, facecolor='white',
+                                   linewidth=line_width, hatch=ext_grid_hatch)
         collections.append(sc)
 
     # create trafo collection if trafo is available
