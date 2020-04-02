@@ -60,7 +60,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
+    print('\r%s |%s| %s%% %s\n' % (prefix, bar, percent, suffix), end="")
     # Print New Line on Complete
     if iteration == total:
         print("\n")
@@ -157,14 +157,12 @@ def _check_output_writer_recyclability(net, recycle):
             return recycle
         else:
             # fast read is possible
-            if variable in ["vm_pu", "va_degree"] and recycle["only_v_results"] is False:
-                recycle["only_v_results"] = True
+            if variable in ["vm_pu", "va_degree"]:
                 new_log_variables.append(('ppc_bus', 'vm'))
                 new_log_variables.append(('ppc_bus', 'va'))
-                recycle["batch_read"].append((table, variable))
-            if variable in ["loading_percent", "i_ka", "i_to_ka", "i_from_ka", "i_hv_ka", "i_mv_ka", "i_lv_ka"]:
-                recycle["only_v_results"] = True
-                recycle["batch_read"].append((table, variable))
+
+            recycle["only_v_results"] = True
+            recycle["batch_read"].append((table, variable))
 
     ow.log_variables = new_log_variables
     ow.log_variable('ppc_bus', 'vm')
@@ -239,7 +237,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     level, order = get_controller_order(net)
     # get run function
     run = kwargs.get("run", pp.runpp)
-    recycle_options = False
+    recycle_options = None
     if hasattr(run, "__name__") and run.__name__ == "runpp":
         # use faster runpp options if possible
         recycle_options = get_recycle_settings(net, **kwargs)
@@ -260,7 +258,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # print settings
     ts_variables["verbose"] = verbose
 
-    if logger.level is not 10 and verbose:
+    if logger.level != 10 and verbose:
         # simple progress bar
         print_progress_bar(0, len(time_steps), prefix='Progress:', suffix='Complete', length=50)
 
@@ -275,7 +273,7 @@ def cleanup(ts_variables):
 
 def print_progress(i, time_step, time_steps, verbose, **kwargs):
     # simple status print in each time step.
-    if logger.level is not 10 and verbose:
+    if logger.level != 10 and verbose:
         len_timesteps = len(time_steps)
         print_progress_bar(i + 1, len_timesteps, prefix='Progress:', suffix='Complete', length=50)
 

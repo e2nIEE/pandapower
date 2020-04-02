@@ -26,19 +26,18 @@
 # THE SOFTWARE.
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
-from collections.abc import MutableMapping
 import copy
+from collections.abc import MutableMapping
 
 import numpy as np
 import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
-from packaging import version
 import six
-import json
+from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD,VM,VA,REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -169,28 +168,30 @@ class ADict(dict, MutableMapping):
         """
         overloads the deepcopy function of pandapower if at least one DataFrame with column "object" is in net
 
+        in addition, line geodata can contain mutable objects like lists, and it is also treated specially
+
         reason: some of these objects contain a reference to net which breaks the default deepcopy function.
-        This fix was introduced in pandapower 2.2.1 and is rather a quick and dirty solution to the problem
+        Also, the DataFrame doesn't deepcopy its elements if geodata changes in the lists, it affects both net instances
+        This fix was introduced in pandapower 2.2.1
 
         """
-        save_to_json = False
-        for el in self:
-            if isinstance(self[el], pd.DataFrame) and "object" in self[el] and len(self[el]):
-                save_to_json = True
-                break
-        if save_to_json:
-            # deepcopy by dumping to json and loading from it
-            from pandapower.file_io import PPJSONEncoder, from_json_string
-            from pandapower.io_utils import with_signature
-            json_string = json.dumps(with_signature(self, dict(self)), cls=PPJSONEncoder)
-            return from_json_string(json_string)
-
-        # deepcopy of every element in self (== the pandapower net)
+        deep_columns = {'object', 'coords', 'geometry'}
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.items():
-            setattr(result, k, copy.deepcopy(v, memo))
+            if isinstance(v, pd.DataFrame) and not set(v.columns).isdisjoint(deep_columns):
+                if k not in result:
+                    result[k] = v.__class__(index=v.index, columns=v.columns)
+                for col in v.columns:
+                    if col in deep_columns:
+                        result[k][col] = v[col].apply(lambda x: copy.deepcopy(x, memo))
+                    else:
+                        result[k][col] = copy.deepcopy(v[col], memo)
+                _preserve_dtypes(result[k], v.dtypes)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
         result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
         return result
 
@@ -287,6 +288,25 @@ def _sum_by_group(bus, first_val, second_val):
     second_val = second_val[index]
     second_val[1:] = second_val[1:] - second_val[:-1]
     return bus, first_val, second_val
+
+
+def _sum_by_group_nvals(bus, *vals):
+    order = np.argsort(bus)
+    bus = bus[order]
+    index = np.ones(len(bus), 'bool')
+    index[:-1] = bus[1:] != bus[:-1]
+    bus = bus[index]
+    newvals = tuple(np.zeros((len(vals),len(bus))))
+    for val, newval in zip(vals, newvals):
+        val = val[order]
+        val.cumsum(out=val)
+        val = val[index]
+        val[1:] = val[1:] - val[:-1]
+        newval[:] = val
+        # Returning vals keeps the original array dimensions, which causes an error if more than one element is
+        # connected to the same bus. Instead, we create a second tuple of arrays on which we map the results.
+        # Todo: Check if this workaround causes no problems
+    return (bus,) + newvals
 
 
 def get_indices(selection, lookup, fused_indices=True):
@@ -432,19 +452,21 @@ except RuntimeError:
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
-def _select_is_elements_numba(net, isolated_nodes=None):
+def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     # is missing sgen_controllable and load_controllable
-
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        ppc = net["_ppc"] if sequence is None else net["_ppc%s"%sequence]
+        ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-
+#    mode = net["_options"]["mode"]
+    elements = ["load", "sgen","asymmetric_load", "asymmetric_sgen", "gen"\
+    , "ward", "xward", "shunt", "ext_grid", "storage"]   #,"impedance_load"
     is_elements = dict()
-    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
+    for element in elements:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:
@@ -496,7 +518,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "init_results": init_results,
         "p_lim_default": p_lim_default,
         "q_lim_default": q_lim_default,
-        "neglect_open_switch_branches": neglect_open_switch_branches
+        "neglect_open_switch_branches": neglect_open_switch_branches,
     }
     _add_options(net, options)
 
@@ -586,6 +608,29 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
+    # mode = net.__internal_options["mode"]
+
+    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
+    # net._is_elements = None
+
+#    mode = net._options["mode"]
+#    if res:
+#        res_bus = net["res_bus_sc"] if mode == "sc" else \
+#            net["res_bus_3ph"] if mode == "pf_3ph" else \
+#                net["res_bus"]
+#    if len(net["trafo3w"]) > 0:
+#        buses_3w = net.trafo3w["ad_bus"].values
+#        net["bus"].drop(buses_3w, inplace=True)
+#        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+#        if res:
+#            res_bus.drop(buses_3w, inplace=True)
+#
+#    if len(net["xward"]) > 0:
+#        xward_buses = net["xward"]["ad_bus"].values
+#        net["bus"].drop(xward_buses, inplace=True)
+#        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+#        if res:
+#            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -600,8 +645,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][net._isolated_buses, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = NONE
 
 
 def _write_lookup_to_net(net, element, element_lookup):
@@ -630,6 +675,145 @@ def _check_if_numba_is_installed(numba):
 
     return numba
 
+
+# =============================================================================
+# Functions for 3 Phase Unbalanced Load Flow
+# =============================================================================
+
+# =============================================================================
+# Convert to three decoupled sequence networks
+# =============================================================================
+
+
+def X012_to_X0(X012):
+    return np.transpose(X012[0, :])
+
+
+def X012_to_X1(X012):
+    return np.transpose(X012[1, :])
+
+
+def X012_to_X2(X012):
+    return np.transpose(X012[2, :])
+
+
+# =============================================================================
+# Three decoupled sequence network to 012 matrix conversion
+# =============================================================================
+
+def combine_X012(X0, X1, X2):
+    comb = np.vstack((X0, X1, X2))
+    return comb
+
+
+# =============================================================================
+# Symmetrical transformation matrix
+# Tabc : 012 > abc
+# T012 : abc >012
+# =============================================================================
+
+def phase_shift_unit_operator(angle_deg):
+    return 1 * np.exp(1j * np.deg2rad(angle_deg))
+
+
+a = phase_shift_unit_operator(120)
+asq = phase_shift_unit_operator(-120)
+Tabc = np.array(
+    [
+        [1, 1, 1],
+        [1, asq, a],
+        [1, a, asq]
+    ])
+
+T012 = np.divide(np.array(
+    [
+        [1, 1, 1],
+        [1, a, asq],
+        [1, asq, a]
+    ]), 3)
+
+
+def sequence_to_phase(X012):
+    return np.asarray(np.matmul(Tabc, X012))
+
+
+def phase_to_sequence(Xabc):
+    return np.asarray(np.matmul(T012, Xabc))
+
+#def Y_phase_to_sequence(Xabc):
+#   return np.asarray(np.matmul(T012,Xabc,Tabc))
+# =============================================================================
+# Calculating Sequence Current from sequence Voltages
+# =============================================================================
+
+def I0_from_V012(V012, Y):
+    V0 = X012_to_X0(V012)
+    if type(Y)in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix] :
+        return np.asarray(np.matmul(Y.todense(), V0))
+    else:
+        return np.asarray(np.matmul(Y, V0))
+
+
+def I1_from_V012(V012, Y):
+    V1 = X012_to_X1(V012)[:,np.newaxis]
+    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+        i1 = np.asarray(np.matmul(Y.todense(), V1))
+        return np.transpose(i1)
+    else:
+        i1 = np.asarray(np.matmul(Y, V1))
+        return np.transpose(i1)
+
+
+def I2_from_V012(V012, Y):
+    V2 = X012_to_X2(V012)
+    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+        return np.asarray(np.matmul(Y.todense(), V2))
+    else:
+        return np.asarray(np.matmul(Y, V2))
+
+
+def V1_from_ppc(ppc):
+    return np.transpose(
+        np.array(
+            ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
+        )
+    )
+
+
+def V_from_I(Y, I):
+    return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
+
+
+def I_from_V(Y, V):
+    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+        return np.asarray(np.matmul(Y.todense(), V))
+    else:
+        return np.asarray(np.matmul(Y, V))
+
+
+# =============================================================================
+# Calculating Power
+# =============================================================================
+
+def S_from_VI_elementwise(V, I):
+    return np.multiply(V, I.conjugate())
+
+
+def I_from_SV_elementwise(S, V):
+    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero
+
+
+def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
+    if n_res is None:
+        n_res = S012.shape[1]
+    if idx is None:
+        idx = np.ones(n_res, dtype="bool")
+    I012 = np.array(np.zeros((3, n_res)),dtype = np.complex128)
+    I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
+    Vabc = sequence_to_phase(V012[:, idx])
+    Iabc = sequence_to_phase(I012[:, idx])
+    Sabc = S_from_VI_elementwise(Vabc, Iabc)
+    return Sabc, Vabc
 
 def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
@@ -685,9 +869,14 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     numba = kwargs.get("numba", True)
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
-    recycle = kwargs.get("recycle", None)
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    # recycle options
+    recycle = kwargs.get("recycle", None)
     only_v_results = kwargs.get("only_v_results", False)
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
+
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -757,7 +946,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    v_debug=v_debug, only_v_results=only_v_results)
+                    v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
+                    permc_spec=permc_spec)
     net._options.update(overrule_options)
 
 
@@ -798,7 +988,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
 
 
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
-                         init, numba, trafo3w_losses, consider_line_temperature=False):
+                         init, numba, trafo3w_losses, consider_line_temperature=False, **kwargs):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -808,6 +998,9 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
     enforce_q_lims = True
     recycle = None
     only_v_results = False
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -817,10 +1010,10 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba,
-                     only_v_results=only_v_results)
+                     only_v_results=only_v_results, use_umfpack=use_umfpack, permc_spec=permc_spec)
 
 
-def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses):
+def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses, **kwargs):
     mode = "opf"
     ac = False
     init = "flat"
@@ -830,6 +1023,9 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
     enforce_q_lims = True
     recycle = None
     only_v_results = False
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
     # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -837,7 +1033,8 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results)
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results,
+                     use_umfpack=use_umfpack, permc_spec=permc_spec)
 
 
 def _internal_stored(net):
