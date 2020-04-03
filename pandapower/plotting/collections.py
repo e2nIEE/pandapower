@@ -374,6 +374,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     pc = _create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
 
     if cmap is not None:
+        if z is None:
+            z = net.res_bus.vm_pu
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
 
     return pc
