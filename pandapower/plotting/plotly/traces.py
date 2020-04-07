@@ -211,8 +211,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column] if cmap_vals is None else cmap_vals
 
-        cmin = cmin if cmin else cmap_vals.min()
-        cmax = cmax if cmax else cmap_vals.max()
+        cmin = cmap_vals.min() is cmin is None else cmin
+        cmax = cmap_vals.max() is cmax is None else cmax
 
         bus_trace['marker'] = Marker(size=size,
                                      color=cmap_vals, cmin=cmin, cmax=cmax,
@@ -392,8 +392,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     if show_colorbar and cmap is not None:
 
-        cmin = cmin if cmin else cmap_vals.min()
-        cmax = cmax if cmax else cmap_vals.max()
+        cmin = cmap_vals.min() is cmin is None else cmin
+        cmax = cmap_vals.max() is cmax is None else cmax
         try:
             # TODO for custom colormaps
             cbar_cmap_name = 'Jet' if cmap == 'jet' else cmap
