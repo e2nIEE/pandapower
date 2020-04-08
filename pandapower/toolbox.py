@@ -19,7 +19,6 @@ from pandapower.create import create_switch, create_line_from_parameters, \
     create_load, create_shunt, create_bus, create_sgen
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
-from pandapower.topology import unsupplied_buses
 
 try:
     import pplog as logging
@@ -1233,6 +1232,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
+    from pandapower.topology import unsupplied_buses
     closed_switches = set()
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
