@@ -484,9 +484,6 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "f_hz": f_hz,
         "sn_mva": sn_mva
     })
-    net._empty_res_line_sc = net._empty_res_line
-    net._empty_res_trafo_sc = net._empty_res_trafo
-    net._empty_res_trafo3w_sc = net._empty_res_trafo3w
     
     net._empty_res_load_3ph = net._empty_res_load
     net._empty_res_sgen_3ph = net._empty_res_sgen
