@@ -196,12 +196,12 @@ def get_recycle_settings(net, **kwargs):
 def init_time_steps(net, time_steps, **kwargs):
     # initializes time steps if as a range
     if not isinstance(time_steps, Iterable):
-        if time_steps is None and ("start_step" in kwargs and "stop_step" in kwargs):
+        if isinstance(time_steps, tuple):
+            time_steps = range(time_steps[0], time_steps[1])
+        elif time_steps is None and ("start_step" in kwargs and "stop_step" in kwargs):
             logger.warning("start_step and stop_step are depricated. "
                            "Please use a tuple like time_steps = (start_step, stop_step) instead or a list")
             time_steps = range(kwargs["start_step"], kwargs["stop_step"] + 1)
-        elif isinstance(time_steps, tuple):
-            time_steps = range(time_steps[0], time_steps[1])
         else:
             logger.warning("No time steps to calculate are specified. "
                            "I'll check the datasource of the first controller for avaiable time steps")
