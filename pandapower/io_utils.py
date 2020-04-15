@@ -395,7 +395,7 @@ def pp_hook(d, net=None):
         if class_name == 'Series':
             return pd.read_json(obj, precise_float=True, **d)
         elif class_name == "DataFrame":
-            df = pd.read_json(obj, precise_float=True, **d)
+            df = pd.read_json(obj, precise_float=True, convert_axes=False, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
