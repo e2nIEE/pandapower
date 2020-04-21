@@ -1125,7 +1125,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 def add_single_collection(c, ax, plot_colorbars, copy_collections):
     if copy_collections:
-        c = copy.copy(c)
+        c = copy.deepcopy(c)
     ax.add_collection(c)
     if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
         extend = c.extend if hasattr(c, "extend") else "neither"
