@@ -327,18 +327,20 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
 
         **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
-        **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
-            line temperature. If True, net.line must contain a column "temperature_degree_celsius".
-            The temperature dependency coefficient alpha must be provided in the net.line.alpha
+        **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided\
+            line temperature. If True, net.line must contain a column "temperature_degree_celsius".\
+            The temperature dependency coefficient alpha must be provided in the net.line.alpha\
             column, otherwise the default value of 0.004 is used
 
-         **kwargs** - Pypower / Matpower keyword arguments: - OPF_VIOLATION (5e-6) constraint violation tolerance
-                                                            - PDIPM_COSTTOL (1e-6) optimality tolerance
-                                                            - PDIPM_GRADTOL (1e-6) gradient tolerance
-                                                            - PDIPM_COMPTOL (1e-6) complementarity condition (inequality) tolerance
-                                                            - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
-                                                            - PDIPM_MAX_IT  (150) maximum number of iterations
-                                                            - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
+         **kwargs** - Pypower / Matpower keyword arguments:
+
+         - OPF_VIOLATION (5e-6) constraint violation tolerance
+         - PDIPM_COSTTOL (1e-6) optimality tolerance
+         - PDIPM_GRADTOL (1e-6) gradient tolerance
+         - PDIPM_COMPTOL (1e-6) complementarity condition (inequality) tolerance
+         - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
+         - PDIPM_MAX_IT  (150) maximum number of iterations
+         - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
 
     """
     _check_necessary_opf_parameters(net, logger)
