@@ -123,7 +123,6 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     to_bus = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write to line
-
     res_line_df = net["res_line"] if suffix is None else net["res_line%s"%suffix]
 
     res_line_df["p_from_mw"].values[:] = p_from_mw
@@ -148,8 +147,6 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
-
-
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
@@ -280,8 +277,8 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write results to trafo dataframe
+    res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s" % suffix]
 
-    res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s"%suffix]
     res_trafo_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo_df["q_hv_mvar"].values[:] = q_hv_mvar
     res_trafo_df["p_lv_mw"].values[:] = p_lv_mw
@@ -402,6 +399,7 @@ def _get_trafo3w_lookups(net):
     lv = t
     return f, hv, mv, lv
 
+
 def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     if "trafo3w" not in net._pd2ppc_lookups["branch"]:
         return
@@ -452,15 +450,15 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     loading_percent = ld_trafo
-    
+
     hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(int)
     aux_buses = ppc["branch"][f:hv, T_BUS].real.astype(int)
     mv_buses = ppc["branch"][hv:mv, T_BUS].real.astype(int)
     lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(int)
 
     # write results to trafo3w dataframe
-
     res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s"%suffix]
+
     res_trafo3w_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo3w_df["q_hv_mvar"].values[:] = q_hv_mvar
     res_trafo3w_df["p_mv_mw"].values[:] = p_mv_mw
@@ -513,8 +511,8 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-
     res_impediance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+
     res_impediance_df["p_from_mw"].values[:] = p_from_mw
     res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
     res_impediance_df["p_to_mw"].values[:] = p_to_mw
@@ -546,7 +544,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     pq_buses[b_ppc, 1] += q
     aux_buses = net["_pd2ppc_lookups"]["bus"][net["_pd2ppc_lookups"]["aux"]["xward"]]
 
-    res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s"%suffix]
+    res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s" % suffix]
 
     res_xward_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
     res_xward_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
@@ -561,6 +559,6 @@ def _get_switch_results(net, i_ft, suffix=None):
     with np.errstate(invalid='ignore'):
         i_ka = np.max(i_ft[f:t], axis=1)
 
-    res_switch_df = "res_switch" if suffix is None else "res_switch%s"%suffix
+    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
     net[res_switch_df] = pd.DataFrame(data=i_ka, columns=["i_ka"],
-                                     index=net.switch[net._impedance_bb_switches].index)
+                                      index=net.switch[net._impedance_bb_switches].index)

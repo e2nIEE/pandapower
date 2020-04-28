@@ -29,7 +29,7 @@ from pandapower.run import _passed_runpp_parameters
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
-    reset_results
+    init_results
 try:
     import pplog as logging
 except ImportError:
@@ -407,6 +407,9 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 #        if len(hv_buses) > 0:
 #            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
 #            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+    # scipy spsolve options in NR power flow
+    use_umfpack = kwargs.get("use_umfpack", True)
+    permc_spec = kwargs.get("permc_spec", None)
     calculate_voltage_angles = True
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
@@ -432,11 +435,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                      )
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,\
-                    only_v_results=only_v_results,v_debug=v_debug)
+                    only_v_results=only_v_results,v_debug=v_debug, use_umfpack=use_umfpack,
+                    permc_spec=permc_spec)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
-    reset_results(net, balanced=False)
+    init_results(net, "pf_3ph")
     # =========================================================================
     # pd2ppc conversion
     # =========================================================================
@@ -615,8 +619,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         net["converged"] = True
 
     _clean_up(net)
-
-    return net["converged"]
 
 def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
     I012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),

@@ -7,6 +7,7 @@
 import pandas as pd
 from numpy import allclose, isclose
 from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.results import get_relevant_elements
 import pandapower as pp
 
 
@@ -31,8 +32,8 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
     element_power_consistent_with_bus_power(net, rtol, test_q)
 
 def indices_consistent(net):
-    for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt",
-                    "ward", "xward", "impedance", "gen", "dcline", "storage"]:
+    elements = get_relevant_elements()
+    for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
@@ -117,9 +118,8 @@ def consistency_checks_3ph(net, rtol=2e-3):
     element_power_consistent_with_bus_power_3ph(net, rtol)
 
 def indices_consistent_3ph(net):
-    for element in ["bus", "load", "asymmetric_load", "ext_grid", "sgen", 
-                    "asymmetric_sgen", "trafo", "trafo3w", "line", "shunt",
-                    "ward", "xward", "impedance", "gen", "dcline", "storage"]:
+    elements = get_relevant_elements("pf_3ph")
+    for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element+"_3ph"].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
@@ -196,30 +196,20 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
     bus_q_c = pd.Series(data=0., index=net.bus.index)
 
     for idx, tab in net.ext_grid.iterrows():
-        if tab.in_service:
-            bus_p_a.at[tab.bus] += net.res_ext_grid_3ph.p_a_mw.at[idx]
-            bus_q_a.at[tab.bus] += net.res_ext_grid_3ph.q_a_mvar.at[idx]
-            bus_p_b.at[tab.bus] += net.res_ext_grid_3ph.p_b_mw.at[idx]
-            bus_q_b.at[tab.bus] += net.res_ext_grid_3ph.q_b_mvar.at[idx]
-            bus_p_c.at[tab.bus] += net.res_ext_grid_3ph.p_c_mw.at[idx]
-            bus_q_c.at[tab.bus] += net.res_ext_grid_3ph.q_c_mvar.at[idx]
-
-    for idx, tab in net.gen.iterrows():
-        if tab.in_service:
-            bus_p_a.at[tab.bus] += net.res_gen_3ph.p_a_mw.at[idx]
-            bus_q_a.at[tab.bus] += net.res_gen_3ph.q_a_mvar.at[idx]
-            bus_p_b.at[tab.bus] += net.res_gen_3ph.p_b_mw.at[idx]
-            bus_q_b.at[tab.bus] += net.res_gen_3ph.q_b_mvar.at[idx]
-            bus_p_c.at[tab.bus] += net.res_gen_3ph.p_c_mw.at[idx]
-            bus_q_c.at[tab.bus] += net.res_gen_3ph.q_c_mvar.at[idx]
+        bus_p_a.at[tab.bus] += net.res_ext_grid_3ph.p_a_mw.at[idx]
+        bus_q_a.at[tab.bus] += net.res_ext_grid_3ph.q_a_mvar.at[idx]
+        bus_p_b.at[tab.bus] += net.res_ext_grid_3ph.p_b_mw.at[idx]
+        bus_q_b.at[tab.bus] += net.res_ext_grid_3ph.q_b_mvar.at[idx]
+        bus_p_c.at[tab.bus] += net.res_ext_grid_3ph.p_c_mw.at[idx]
+        bus_q_c.at[tab.bus] += net.res_ext_grid_3ph.q_c_mvar.at[idx]
 
     for idx, tab in net.load.iterrows():
-        bus_p_a.at[tab.bus] -= net.res_load_3ph.p_a_mw.at[idx]
-        bus_q_a.at[tab.bus] -= net.res_load_3ph.q_a_mvar.at[idx]
-        bus_p_b.at[tab.bus] -= net.res_load_3ph.p_b_mw.at[idx]
-        bus_q_b.at[tab.bus] -= net.res_load_3ph.q_b_mvar.at[idx]
-        bus_p_c.at[tab.bus] -= net.res_load_3ph.p_c_mw.at[idx]
-        bus_q_c.at[tab.bus] -= net.res_load_3ph.q_c_mvar.at[idx]
+        bus_p_a.at[tab.bus] -= net.res_load_3ph.p_mw.at[idx]/3
+        bus_q_a.at[tab.bus] -= net.res_load_3ph.q_mvar.at[idx] /3
+        bus_p_b.at[tab.bus] -= net.res_load_3ph.p_mw.at[idx]/3
+        bus_q_b.at[tab.bus] -= net.res_load_3ph.q_mvar.at[idx] /3
+        bus_p_c.at[tab.bus] -= net.res_load_3ph.p_mw.at[idx]/3
+        bus_q_c.at[tab.bus] -= net.res_load_3ph.q_mvar.at[idx] /3
 
     for idx, tab in net.asymmetric_load.iterrows():
         bus_p_a.at[tab.bus] -= net.res_asymmetric_load_3ph.p_a_mw.at[idx]
@@ -230,28 +220,12 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
         bus_q_c.at[tab.bus] -= net.res_asymmetric_load_3ph.q_c_mvar.at[idx]
 
     for idx, tab in net.sgen.iterrows():
-        bus_p_a.at[tab.bus] += net.res_sgen_3ph.p_a_mw.at[idx]
-        bus_q_a.at[tab.bus] += net.res_sgen_3ph.q_a_mvar.at[idx]
-        bus_p_b.at[tab.bus] += net.res_sgen_3ph.p_b_mw.at[idx]
-        bus_q_b.at[tab.bus] += net.res_sgen_3ph.q_b_mvar.at[idx]
-        bus_p_c.at[tab.bus] += net.res_sgen_3ph.p_c_mw.at[idx]
-        bus_q_c.at[tab.bus] += net.res_sgen_3ph.q_c_mvar.at[idx]
-
-#    for idx, tab in net.storage.iterrows():
-#        bus_p.at[tab.bus] += net.res_storage.p_mw.at[idx]
-#        bus_q.at[tab.bus] += net.res_storage.q_mvar.at[idx]
-#
-#    for idx, tab in net.shunt.iterrows():
-#        bus_p.at[tab.bus] += net.res_shunt.p_mw.at[idx]
-#        bus_q.at[tab.bus] += net.res_shunt.q_mvar.at[idx]
-#
-#    for idx, tab in net.ward.iterrows():
-#        bus_p.at[tab.bus] += net.res_ward.p_mw.at[idx]
-#        bus_q.at[tab.bus] += net.res_ward.q_mvar.at[idx]
-#
-#    for idx, tab in net.xward.iterrows():
-#        bus_p.at[tab.bus] += net.res_xward.p_mw.at[idx]
-#        bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
+        bus_p_a.at[tab.bus] += net.res_sgen_3ph.p_mw.at[idx] / 3
+        bus_q_a.at[tab.bus] += net.res_sgen_3ph.q_mvar.at[idx] / 3
+        bus_p_b.at[tab.bus] += net.res_sgen_3ph.p_mw.at[idx] / 3
+        bus_q_b.at[tab.bus] += net.res_sgen_3ph.q_mvar.at[idx] / 3
+        bus_p_c.at[tab.bus] += net.res_sgen_3ph.p_mw.at[idx] / 3
+        bus_q_c.at[tab.bus] += net.res_sgen_3ph.q_mvar.at[idx] / 3
 
     assert allclose(net.res_bus_3ph.p_a_mw.values, bus_p_a.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_3ph.q_a_mvar.values, bus_q_a.values, equal_nan=True, rtol=rtol)

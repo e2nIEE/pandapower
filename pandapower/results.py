@@ -4,10 +4,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import copy
-
 import numpy as np
 import pandas as pd
+
 
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
@@ -15,6 +14,7 @@ from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, 
     _get_bus_results_3ph
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
+suffix_mode = {"sc": "sc", "se": "se", "pf_3ph": "3ph"}
 
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)
@@ -27,6 +27,7 @@ def _extract_results(net, ppc):
     _get_bus_results(net, ppc, bus_pq)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
+
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     # reset_results(net, False)
@@ -42,6 +43,7 @@ def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
     _get_bus_results_3ph(net, bus_pq)
     
+
 def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
@@ -63,92 +65,74 @@ def _get_aranged_lookup(net):
     return bus_lookup_aranged
 
 
-def verify_results(net):
-    elements_to_empty = get_elements_to_empty()
-    elements_to_init = get_elements_to_init()
-    mode = net["_options"]["mode"]
-    for element in elements_to_init + elements_to_empty:
-        if mode != "pf_3ph" :
-            balanced=True
-            element = (
-        "load" if element == "asymmetric_load" else
-        "sgen" if element == "asymmetric_sgen" else
-        "load" if element == "impedance_load" else
-        element)
-        elif mode == "pf_3ph":
-            balanced= False
-            
-        res_element, res_empty_element = get_result_tables(element,suffix=None,balanced=balanced)
-        res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
+def verify_results(net, mode="pf"):
+    elements = get_relevant_elements(mode)
+    suffix = suffix_mode.get(mode, None)
+    for element in elements:
+        res_element, res_empty_element = get_result_tables(element, suffix)
         if len(net[element]) != len(net[res_element]):
-            if element in elements_to_empty:
-                empty_res_element(net, element,balanced=balanced)
-            else:
-                init_element(net, element,balanced=balanced)
-                if element == "bus":
-                    net._options["init_vm_pu"] = "auto"
-                    net._options["init_va_degree"] = "auto"
+            init_element(net, element)
+            if element == "bus":
+                net._options["init_vm_pu"] = "auto"
+                net._options["init_va_degree"] = "auto"
 
-def get_result_tables(element, suffix=None,balanced=True):
-    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_" + element+"_3ph"
-    res_element =  "res_" + element if balanced else "res_" + element+"_3ph"
+
+def get_result_tables(element, suffix=None):
+    res_element = "res_" + element
     if suffix is not None:
-        res_element += suffix
-    return res_element, res_empty_element
+        res_element += "_%s"%suffix
+    return res_element, "_empty_%s"%res_element
 
 
-def empty_res_element(net, element, suffix=None,balanced= True):
-    res_element, res_empty_element = get_result_tables(element, suffix,balanced)
-    net[res_element] = net[res_empty_element].copy()
+def empty_res_element(net, element, suffix=None):
+    res_element, res_empty_element = get_result_tables(element, suffix)
+    if res_empty_element in net:
+        net[res_element] = net[res_empty_element].copy()
+    else:
+        net[res_element] = pd.DataFrame()
 
 
-def init_element(net, element, suffix=None,balanced=True):
-    if balanced :
-        element = (
-        "load" if element == "asymmetric_load" else
-        "sgen" if element == "asymmetric_sgen" else
-#        "load" if element == "impedance_load" else
-        element)
-    res_element, res_empty_element = get_result_tables(element, suffix,balanced)
+def init_element(net, element, suffix=None):
+    res_element, res_empty_element = get_result_tables(element, suffix)
     index = net[element].index
     if len(index):
-
         # init empty dataframe
-        res_columns = net[res_empty_element].columns
-        net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
-
+        if res_empty_element in net:
+            columns = net[res_empty_element].columns
+            net[res_element] = pd.DataFrame(np.nan, index=index,
+                                            columns=columns, dtype='float')
+        else:
+            net[res_element] = pd.DataFrame(index=index, dtype='float')            
     else:
+        empty_res_element(net, element, suffix)
 
-        empty_res_element(net, element, suffix,balanced=balanced)
+def get_relevant_elements(mode="pf"):
+    if mode == "pf" or mode == "opf":
+        return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
+                "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
+                "dcline"]
+    elif mode == "sc":
+        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
+    elif mode == "se":
+        return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
+                "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
+                "dcline", "measurement"]        
+    elif mode == "pf_3ph":
+        return ["bus", "line", "trafo", "ext_grid", "shunt",
+                "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]  
+        
+def init_results(net, mode="pf"):
+    elements = get_relevant_elements(mode)
+    suffix = suffix_mode.get(mode, None)
+    for element in elements:
+        init_element(net, element, suffix)
+        
+def reset_results(net, mode="pf"):
+    elements = get_relevant_elements(mode)
+    suffix = suffix_mode.get(mode, None)
+    for element in elements:
+        empty_res_element(net, element, suffix)
 
-
-
-def get_elements_to_empty():
-#    if balanced:
-    return ["bus"]
-#    else:
-#        return ["bus_3ph"]
-
-
-#def get_elements_to_init(balanced=True):
-def get_elements_to_init():
-
-
-    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
-           , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"\
-           ,"asymmetric_load","asymmetric_sgen"]#,"impedance_load"]
-
-
-
-def reset_results(net, suffix=None,balanced= True):
-    elements_to_empty = get_elements_to_empty()
-    for element in elements_to_empty:
-        empty_res_element(net, element, suffix,balanced)
-
-    elements_to_init = get_elements_to_init()
-    for element in elements_to_init:
-
-        init_element(net, element, suffix,balanced)
 
 def _ppci_bus_to_ppc(result, ppc):
     # result is the ppci (ppc without out of service buses)

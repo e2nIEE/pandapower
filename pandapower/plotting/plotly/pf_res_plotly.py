@@ -116,7 +116,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
     # if bus geodata is available, but no line geodata
-    cmap_lines = 'jet' if cmap is 'Jet' else cmap
+    cmap_lines = 'jet' if cmap == 'Jet' else cmap
     if use_line_geodata is None:
         use_line_geodata = False if len(net.line_geodata) == 0 else True
     elif use_line_geodata and len(net.line_geodata) == 0:

@@ -14,6 +14,7 @@ import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
 
+
 def test_opf_task():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
@@ -872,52 +873,79 @@ def test_impedance_line_replacement():
 
 
 def test_replace_ext_grid_gen():
-    net = nw.example_simple()
-    pp.runpp(net)
-    assert list(net.res_ext_grid.index.values) == [0]
+    for i in range(2):
+        net = nw.example_simple()
+        net.ext_grid["uuid"] = "test"
+        pp.runpp(net)
+        assert list(net.res_ext_grid.index.values) == [0]
 
-    # replace_ext_grid_by_gen
-    pp.replace_ext_grid_by_gen(net, 0)
-    assert not net.ext_grid.shape[0]
-    assert not net.res_ext_grid.shape[0]
-    assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
-    assert net.res_gen.p_mw.dropna().shape[0] == 2
+        # replace_ext_grid_by_gen
+        if i == 0:
+            pp.replace_ext_grid_by_gen(net, 0, gen_indices=[4], add_cols_to_keep=["uuid"])
+        elif i == 1:
+            pp.replace_ext_grid_by_gen(net, [0], gen_indices=[4], cols_to_keep=["uuid", "max_p_mw"])
+        assert not net.ext_grid.shape[0]
+        assert not net.res_ext_grid.shape[0]
+        assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
+        assert net.res_gen.p_mw.dropna().shape[0] == 2
+        assert np.allclose(net.gen.index.values, [0, 4])
+        assert net.gen.uuid.loc[4] == "test"
 
-    # replace_gen_by_ext_grid
-    pp.replace_gen_by_ext_grid(net)
-    assert not net.gen.shape[0]
-    assert not net.res_gen.shape[0]
-    assert net.ext_grid.va_degree.dropna().shape[0] == 2
-    assert any(np.isclose(net.ext_grid.va_degree.values, 0))
-    assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
+        # replace_gen_by_ext_grid
+        if i == 0:
+            pp.replace_gen_by_ext_grid(net)
+        elif i == 1:
+            pp.replace_gen_by_ext_grid(net, [0, 4], ext_grid_indices=[2, 3])
+            assert np.allclose(net.ext_grid.index.values, [2, 3])
+        assert not net.gen.shape[0]
+        assert not net.res_gen.shape[0]
+        assert net.ext_grid.va_degree.dropna().shape[0] == 2
+        assert any(np.isclose(net.ext_grid.va_degree.values, 0))
+        assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
 
 
 def test_replace_gen_sgen():
-    net = nw.case9()
-    vm_set = [1.03, 1.02]
-    net.gen["vm_pu"] = vm_set
-    pp.runpp(net)
-    assert list(net.res_gen.index.values) == [0, 1]
+    for i in range(2):
+        net = nw.case9()
+        vm_set = [1.03, 1.02]
+        net.gen["vm_pu"] = vm_set
+        net.gen["dspf"] = 1
+        pp.runpp(net)
+        assert list(net.res_gen.index.values) == [0, 1]
 
-    # replace_gen_by_sgen
-    pp.replace_gen_by_sgen(net)
-    assert not net.gen.shape[0]
-    assert not net.res_gen.shape[0]
-    assert not np.allclose(net.sgen.q_mvar.values, 0)
-    assert net.res_gen.shape[0] == 0
-    pp.runpp(net)
-    assert np.allclose(net.res_bus.loc[net.sgen.bus, "vm_pu"].values, vm_set)
+        # replace_gen_by_sgen
+        if i == 0:
+            pp.replace_gen_by_sgen(net)
+        elif i == 1:
+            pp.replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
+                "max_p_mw"], add_cols_to_keep=["dspf"])  # min_p_mw is not in cols_to_keep
+            assert np.allclose(net.sgen.index.values, [4, 1])
+            assert np.allclose(net.sgen.dspf.values, 1)
+            assert "max_p_mw" in net.sgen.columns
+            assert "min_p_mw" not in net.sgen.columns
+        assert not net.gen.shape[0]
+        assert not net.res_gen.shape[0]
+        assert not np.allclose(net.sgen.q_mvar.values, 0)
+        assert net.res_gen.shape[0] == 0
+        pp.runpp(net)
+        assert np.allclose(net.res_bus.loc[net.sgen.bus, "vm_pu"].values, vm_set)
 
-    # replace_sgen_by_gen
-    net2 = copy.deepcopy(net)
-    pp.replace_sgen_by_gen(net2, [1])
-    assert net2.gen.shape[0] == 1
-    assert net2.res_gen.shape[0] == 1
-    assert net2.gen.shape[0] == 1
-    assert net2.res_gen.shape[0] == 1
+        # replace_sgen_by_gen
+        net2 = copy.deepcopy(net)
+        if i == 0:
+            pp.replace_sgen_by_gen(net2, [1])
+        elif i == 1:
+            pp.replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["dspf"])
+            assert np.allclose(net2.gen.index.values, [2])
+            assert np.allclose(net2.gen.dspf.values, 1)
+        assert net2.gen.shape[0] == 1
+        assert net2.res_gen.shape[0] == 1
+        assert net2.gen.shape[0] == 1
+        assert net2.res_gen.shape[0] == 1
 
-    pp.replace_sgen_by_gen(net, 1)
-    assert pp.nets_equal(net, net2)
+        if i == 0:
+            pp.replace_sgen_by_gen(net, 1)
+            assert pp.nets_equal(net, net2)
 
 
 def test_get_connected_elements_dict():
@@ -984,3 +1012,8 @@ def test_replace_xward_by_internal_elements():
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+
+if __name__ == '__main__':
+#    pytest.main([__file__, "-x"])
+    test_replace_gen_sgen()

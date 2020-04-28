@@ -41,7 +41,12 @@ def run_all_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-n", n_cpu])
+        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu)])
+        if err == 4:
+            raise ModuleNotFoundError("Parallel testing not possible. "
+                         "Please make sure that pytest-xdist is installed correctly.")
+        elif err > 2:
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs"])
     logger.setLevel(logging.INFO)
@@ -55,10 +60,17 @@ def run_fast_tests(parallel=False, n_cpu=None):
     n_cpu (int, None) - number of CPUs to run the tests on in parallel. Only relevant for parallel runs.
 
     """
+    logger = _create_logger()
+
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-m", "not slow", "-n", n_cpu])
+        err = pytest.main([test_dir, "-xs", "-m", "not slow", "-n", str(n_cpu)])
+        if err == 4:
+            raise ModuleNotFoundError("Parallel testing not possible. "
+                         "Please make sure that pytest-xdist is installed correctly.")
+        elif err > 2:
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs", "-m", "not slow"])
 
@@ -70,13 +82,20 @@ def run_slow_tests(parallel=False, n_cpu=None):
     parallel (bool, False) - If true and pytest-xdist is installed, tests are run in parallel
     n_cpu (int, None) - number of CPUs to run the tests on in parallel. Only relevant for parallel runs.
     """
+    logger = _create_logger()
+
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        pytest.main([test_dir, "-xs", "-m", "slow", "-n", n_cpu])
+        err = pytest.main([test_dir, "-xs", "-m", "slow", "-n", str(n_cpu)])
+        if err == 4:
+            raise ModuleNotFoundError("Parallel testing not possible. "
+                         "Please make sure that pytest-xdist is installed correctly.")
+        elif err > 2:
+            logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs", "-m", "slow"])
 
 
 if __name__ == "__main__":
-    run_all_tests()
+    run_all_tests(True)

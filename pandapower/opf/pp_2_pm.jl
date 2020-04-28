@@ -51,7 +51,7 @@ function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
     mip_time_limit::Float64=Inf)
     
     if optimizer == "gurobi"
-            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=time_limit)
+            solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=time_limit, OutputFlag=log_level)
     end
 
     if optimizer == "ipopt"
