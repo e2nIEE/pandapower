@@ -1348,7 +1348,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if keep_everything_else:
         p2 = copy.deepcopy(net)
-        include_results = True  # assumption: the user doesn't want to old results without selection
+        if not include_results:
+            clear_result_tables(p2)
+        # include_results = True  # assumption: the user doesn't want to old results without selection
     else:
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])

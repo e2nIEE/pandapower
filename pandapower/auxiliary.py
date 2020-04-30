@@ -73,6 +73,9 @@ class ADict(dict, MutableMapping):
     def __getstate__(self):
         return self.copy(), self._allow_invalid_attributes
 
+    def __dir__(self):
+        return list(six.iterkeys(self))
+
     def __setstate__(self, state):
         mapping, allow_invalid_attributes = state
         self.update(mapping)

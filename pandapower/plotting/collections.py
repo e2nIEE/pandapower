@@ -248,12 +248,16 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
+    linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
+
     lines, polys, popped_keywords = patch_maker(
         node_coords, size, angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(polys, match_original=True, picker=picker, **kwargs)
+    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
@@ -306,7 +310,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
     lines, patches, popped_keywords = patch_maker(coords, size, patch_facecolor=patch_facecolor,
-                                                  patch_edgecolor=patch_edgecolor, **kwargs)
+                                                  patch_edgecolor=patch_edgecolor, linewidths=linewidths, **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
     patch_coll = PatchCollection(patches, match_original=True, picker=picker, **kwargs)
@@ -1125,7 +1129,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 def add_single_collection(c, ax, plot_colorbars, copy_collections):
     if copy_collections:
-        c = copy.copy(c)
+        c = copy.deepcopy(c)
     ax.add_collection(c)
     if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
         extend = c.extend if hasattr(c, "extend") else "neither"
