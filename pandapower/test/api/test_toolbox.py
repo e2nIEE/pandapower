@@ -430,7 +430,52 @@ def test_merge_and_split_nets():
     net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
+def test_select_subnet():
+    # This network has switches of type 'l' and 't'
+    net = nw.create_cigre_network_mv()
+    
+    # Do nothing
+    same_net = pp.select_subnet(net, net.bus.index)
+    assert pp.dataframes_equal(net.bus, same_net.bus)
+    assert pp.dataframes_equal(net.switch, same_net.switch)
+    assert pp.dataframes_equal(net.trafo, same_net.trafo)
+    assert pp.dataframes_equal(net.line, same_net.line)
+    assert pp.dataframes_equal(net.load, same_net.load)
+    assert pp.dataframes_equal(net.ext_grid, same_net.ext_grid)
 
+    # Remove everything
+    empty = pp.select_subnet(net, set())
+    assert len(empty.bus) == 0
+    assert len(empty.line) == 0
+    assert len(empty.load) == 0
+    assert len(empty.trafo) == 0
+    assert len(empty.switch) == 0
+    assert len(empty.ext_grid) == 0
+    
+    # Should keep all trafo ('t') switches when buses are included
+    hv_buses = set(net.trafo.hv_bus)
+    lv_buses = set(net.trafo.lv_bus)
+    trafo_switch_buses = set(net.switch[net.switch.et=='t'].bus)
+    subnet = pp.select_subnet(net, hv_buses | lv_buses | trafo_switch_buses)
+    assert net.switch[net.switch.et=='t'].index.isin(subnet.switch.index).all()
+
+    # Should keep all line ('l') switches when buses are included
+    from_bus = set(net.line.from_bus)
+    to_bus = set(net.line.to_bus)
+    line_switch_buses = set(net.switch[net.switch.et=='l'].bus)
+    subnet = pp.select_subnet(net, from_bus | to_bus | line_switch_buses)
+    assert net.switch[net.switch.et=='l'].index.isin(subnet.switch.index).all()
+    
+    # This network has switches of type 'b'
+    net2 = nw.create_cigre_network_lv()
+    
+    # Should keep all bus-to-bus ('b') switches when buses are included
+    buses = set(net2.switch[net2.switch.et=='b'].bus)
+    elements = set(net2.switch[net2.switch.et=='b'].element)
+    subnet = pp.select_subnet(net2, buses | elements)
+    assert net2.switch[net2.switch.et=='b'].index.isin(subnet.switch.index).all()
+    
+    
 def test_overloaded_lines():
     net = pp.create_empty_network()
 
