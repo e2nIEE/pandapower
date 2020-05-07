@@ -430,6 +430,7 @@ def test_merge_and_split_nets():
     net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
+
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
@@ -474,7 +475,7 @@ def test_select_subnet():
     elements = set(net2.switch[net2.switch.et=='b'].element)
     subnet = pp.select_subnet(net2, buses | elements)
     assert net2.switch[net2.switch.et=='b'].index.isin(subnet.switch.index).all()
-    
+
     
 def test_overloaded_lines():
     net = pp.create_empty_network()
