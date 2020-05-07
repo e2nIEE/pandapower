@@ -1400,12 +1400,13 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
 
     # switches
-    si = [i for i, s in net["switch"].iterrows()
-          if s["bus"] in buses and
-          ((s["et"] == "b" and s["element"] in p2["bus"].index) or
-           (s["et"] == "l" and s["element"] in p2["line"].index) or
-           (s["et"] == "t" and s["element"] in p2["trafo"].index))]
-    p2["switch"] = net["switch"].loc[si]
+    p2["switch"] = net.switch[
+        net.switch.bus.isin(p2.bus.index) & pd.concat([
+            net.switch[net.switch.et=='b'].element.isin(p2.bus.index),
+            net.switch[net.switch.et=='l'].element.isin(p2.line.index),
+            net.switch[net.switch.et=='t'].element.isin(p2.trafo.index),
+        ], sort=False)
+    ]
 
     return pandapowerNet(p2)
 
