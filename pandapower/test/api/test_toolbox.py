@@ -476,7 +476,7 @@ def test_select_subnet():
     subnet = pp.select_subnet(net2, buses | elements)
     assert net2.switch[net2.switch.et=='b'].index.isin(subnet.switch.index).all()
 
-    
+
 def test_overloaded_lines():
     net = pp.create_empty_network()
 
