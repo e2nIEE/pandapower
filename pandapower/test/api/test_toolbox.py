@@ -434,7 +434,7 @@ def test_merge_and_split_nets():
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
-    
+
     # Do nothing
     same_net = pp.select_subnet(net, net.bus.index)
     assert pp.dataframes_equal(net.bus, same_net.bus)
@@ -452,7 +452,7 @@ def test_select_subnet():
     assert len(empty.trafo) == 0
     assert len(empty.switch) == 0
     assert len(empty.ext_grid) == 0
-    
+
     # Should keep all trafo ('t') switches when buses are included
     hv_buses = set(net.trafo.hv_bus)
     lv_buses = set(net.trafo.lv_bus)
@@ -466,10 +466,10 @@ def test_select_subnet():
     line_switch_buses = set(net.switch[net.switch.et=='l'].bus)
     subnet = pp.select_subnet(net, from_bus | to_bus | line_switch_buses)
     assert net.switch[net.switch.et=='l'].index.isin(subnet.switch.index).all()
-    
+
     # This network has switches of type 'b'
     net2 = nw.create_cigre_network_lv()
-    
+
     # Should keep all bus-to-bus ('b') switches when buses are included
     buses = set(net2.switch[net2.switch.et=='b'].bus)
     elements = set(net2.switch[net2.switch.et=='b'].element)
