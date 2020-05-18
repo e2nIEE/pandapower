@@ -600,7 +600,7 @@ def test_fuse_buses():
     assert net2["line"]["from_bus"].at[0] == b1
     assert line2 in net2.line.index
     assert net2["switch"]["bus"].at[0] == b1
-    assert list(net2["load"]["bus"]) == [b1, b1, b3]
+    assert net2["load"]["bus"].tolist() == [b1, b1, b3]
     assert net2["measurement"]["element"].at[0] == b1
     # assertion: b2 remains in net.bus table
     assert b2 in net2.bus.index
