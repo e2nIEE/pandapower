@@ -48,7 +48,7 @@
   
 pandapower is an easy to use network calculation program aimed to automate the analysis and optimization of power systems. It uses the data analysis library `pandas <http://pandas.pydata.org>`_ and is compatible with the commonly used MATPOWER / PYPOWER case format. pandapower allows using different solvers including an improved Newton-Raphson power flow implementation, all `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ solvers, and the `PowerModels.jl <https://github.com/lanl-ansi/PowerModels.jl/>`_ library.
 
-More information about pandapower can be found on www.pandapower.org:
+More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org/>`_:
 
 About pandapower:
 
@@ -63,7 +63,14 @@ Getting Started:
 - `Interactive Tutorials <https://www.pandapower.org/start/#tutorials>`_
 - `Documentation <https://pandapower.readthedocs.io/>`_
 
-If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
+If you are interested in the latest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
+
+To get realistic load profile data and grid models across all voltage levels that are ready to
+be used in pandapower, have a look at the *SimBench* `project website <https://www.simbench.net>`_ or
+`on GitHub <https://github.com/e2nIEE/simbench>`_.
+
+If you want to model pipe networks (heat, gas or water) as well,
+pandapower's sibling project *pandapipes* might be the right choice (`website <https://www.pandapipes.org>`_, `GitHub repository <https://github.com/e2nIEE/pandapipes>`_).
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
