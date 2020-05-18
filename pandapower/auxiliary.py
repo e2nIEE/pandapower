@@ -47,17 +47,15 @@ except ImportError:
     from .pf.no_numba import jit
 
 try:
-    from lightsim2grid.newtonpf import newtonpf
-
-    lightsim2grid_available = True
+    from lightsim2grid.newtonpf import newtonpf as newtonpf_ls
 except ImportError:
-    lightsim2grid_available = False
-
+    newtonpf_ls = None
 try:
     import pplog as logging
 except ImportError:
     import logging
 
+lightsim2grid_available = True if newtonpf_ls is not None else False
 logger = logging.getLogger(__name__)
 
 

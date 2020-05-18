@@ -285,8 +285,6 @@ def storage_patches(node_coords, size, angles, **kwargs):
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
-    edgecolors = get_color_list(edgecolor, len(node_coords))
-    facecolors = get_color_list(facecolor, len(node_coords))
     all_angles = get_angle_list(angles, len(node_coords))
     for i, node_geo in enumerate(node_coords):
         mid_circ = node_geo + _rotate_dim2(np.array([0, offset + r_triangle * 2.]), angles[i])
@@ -299,8 +297,6 @@ def storage_patches(node_coords, size, angles, **kwargs):
 
         perp_foot2 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle]), angles[i])
         line_end2 = perp_foot2 + _rotate_dim2(np.array([2. * r_triangle, 0]), angles[i])
-
-        p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
 
         lines.append((node_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
