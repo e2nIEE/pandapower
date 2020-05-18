@@ -16,8 +16,8 @@ from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
-from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pypower.pfsoln import _update_v
+from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -26,11 +26,11 @@ except ImportError:
     pass
 
 try:
-    import pplog as logging
-except ImportError:
-    import logging
+    from lightsim2grid.newtonpf import newtonpf as newton_ls
 
-logger = logging.getLogger(__name__)
+    lightsim2grid_available = True
+except ImportError:
+    lightsim2grid_available = False
 
 
 def _run_newton_raphson_pf(ppci, options):
@@ -125,8 +125,10 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     # compute complex bus power injections [generation - load]
     Sbus = _get_Sbus(ppci, options["recycle"])
 
-    # run the newton power  flow
-    V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+
+    # run the newton power flow
+    newton = newton_ls if lightsim2grid_available and options["lightsim2grid"] else newtonpf
+    V, success, iterations, J, Vm_it, Va_it = newton(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
