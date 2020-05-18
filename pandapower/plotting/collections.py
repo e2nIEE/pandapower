@@ -16,7 +16,7 @@ from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from pandas import isnull
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
-    sgen_patches, ext_grid_patches, trafo_patches
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -248,12 +248,16 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
+    linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
+
     lines, polys, popped_keywords = patch_maker(
         node_coords, size, angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(polys, match_original=True, picker=picker, **kwargs)
+    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
@@ -306,7 +310,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
     lines, patches, popped_keywords = patch_maker(coords, size, patch_facecolor=patch_facecolor,
-                                                  patch_edgecolor=patch_edgecolor, **kwargs)
+                                                  patch_edgecolor=patch_edgecolor, linewidths=linewidths, **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
     patch_coll = PatchCollection(patches, match_original=True, picker=picker, **kwargs)
@@ -871,6 +875,39 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         picker=picker, **kwargs)
     return sgen_pc, sgen_lc
 
+def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+                           **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower storage element.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **storages** (list of ints, None) - the net.storage.index values to include in the collection
+
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - info function for the patch element
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
+            downwards, increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **storage_pc** - patch collection
+
+        **storage_lc** - line collection
+    """
+    infos = [infofunc(i) for i in range(len(storages))] if infofunc is not None else []
+    node_coords = net.bus_geodata.loc[net.storage.loc[storages, "bus"].values, ["x", "y"]].values
+    storage_pc, storage_lc = _create_node_element_collection(
+        node_coords, storage_patches, size=size, infos=infos, orientation=orientation,
+        picker=picker, **kwargs)
+    return storage_pc, storage_lc
 
 def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
                                ext_grids=None, ext_grid_buses=None, **kwargs):
@@ -1125,7 +1162,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 def add_single_collection(c, ax, plot_colorbars, copy_collections):
     if copy_collections:
-        c = copy.copy(c)
+        c = copy.deepcopy(c)
     ax.add_collection(c)
     if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
         extend = c.extend if hasattr(c, "extend") else "neither"
