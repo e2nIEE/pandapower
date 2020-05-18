@@ -283,9 +283,6 @@ def storage_patches(node_coords, size, angles, **kwargs):
     polys, lines = list(), list()
     offset = kwargs.get("offset", 1 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
-    edgecolor = kwargs.get("patch_edgecolor", "w")
-    facecolor = kwargs.get("patch_facecolor", "w")
-    all_angles = get_angle_list(angles, len(node_coords))
     for i, node_geo in enumerate(node_coords):
         mid_circ = node_geo + _rotate_dim2(np.array([0, offset + r_triangle * 2.]), angles[i])
         circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
