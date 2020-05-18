@@ -31,7 +31,6 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
-    pass
 
 
 def _run_newton_raphson_pf(ppci, options):
@@ -128,11 +127,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    # V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, V0, Sbus, pv, pq, ppci, options)
-    if lightsim2grid_available and options["lightsim2grid"]:
-        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, V0, Sbus, pv, pq, ppci, options)
-    else:
-        V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+    newton = newton_ls if lightsim2grid_available and options["lightsim2grid"] else newtonpf
+    V, success, iterations, J, Vm_it, Va_it = newton(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
