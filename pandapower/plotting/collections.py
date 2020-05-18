@@ -16,7 +16,7 @@ from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from pandas import isnull
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
-    sgen_patches, ext_grid_patches, trafo_patches
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -875,6 +875,39 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         picker=picker, **kwargs)
     return sgen_pc, sgen_lc
 
+def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+                           **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower storage element.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **storages** (list of ints, None) - the net.storage.index values to include in the collection
+
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - info function for the patch element
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
+            downwards, increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **storage_pc** - patch collection
+
+        **storage_lc** - line collection
+    """
+    infos = [infofunc(i) for i in range(len(storages))] if infofunc is not None else []
+    node_coords = net.bus_geodata.loc[net.storage.loc[storages, "bus"].values, ["x", "y"]].values
+    storage_pc, storage_lc = _create_node_element_collection(
+        node_coords, storage_patches, size=size, infos=infos, orientation=orientation,
+        picker=picker, **kwargs)
+    return storage_pc, storage_lc
 
 def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
                                ext_grids=None, ext_grid_buses=None, **kwargs):
