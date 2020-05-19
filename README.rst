@@ -38,7 +38,7 @@
    :alt: pepy
 
 .. image:: https://mybinder.org/badge_logo.svg
-   :target: :target: https://mybinder.org/v2/gh/e2nIEE/pandapower/master?filepath=tutorials
+   :target: https://mybinder.org/v2/gh/e2nIEE/pandapower/master?filepath=tutorials
    :alt: binder
  
 
