@@ -586,7 +586,7 @@ def test_fuse_buses():
     assert line2 in net1.line.index
     assert sw1 not in net1.switch.index
     assert sw2 not in net1.switch.index
-    assert net1["load"]["bus"].to_list() == [b1, b1, b3]
+    assert list(net1["load"]["bus"].values) == [b1, b1, b3]
     assert net1["measurement"]["element"].at[0] == b1
     # assertion: b2 not in net.bus table if drop=True
     assert b2 not in net1.bus.index
