@@ -295,7 +295,7 @@ def test_continuous_element_numbering():
     add_virtual_meas_from_loadflow(net)
     assert net.measurement["element"].max() == 540
 
-    net = tb.create_continuous_elements_index(net)
+    tb.create_continuous_elements_index(net)
     assert net.line.index.max() == net.line.shape[0] - 1
     assert net.trafo.index.max() == net.trafo.shape[0] - 1
     assert net.trafo3w.index.max() == net.trafo3w.shape[0] - 1
@@ -533,27 +533,78 @@ def test_add_zones_to_elements():
     assert "CIGRE_MV" in zone_switch
 
 
+def test_drop_inner_branches():
+
+    def check_elm_number(net1, net2, excerpt_elms=None):
+        excerpt_elms = set() if excerpt_elms is None else set(excerpt_elms)
+        for elm in set(pp.pp_elements()) - excerpt_elms:
+            assert net1[elm].shape[0] == net2[elm].shape[0]
+
+    net = nw.example_simple()
+    new_bus = pp.create_bus(net, 10)
+    pp.create_transformer3w(net, 2, 3, new_bus, "63/25/38 MVA 110/20/10 kV")
+
+    net1 = copy.deepcopy(net)
+    tb.drop_inner_branches(net1, [2, 3], branch_elements=["line"])
+    check_elm_number(net1, net)
+    tb.drop_inner_branches(net1, [0, 1], branch_elements=["line"])
+    check_elm_number(net1, net, ["line"])
+    assert all(net.line.index.difference({0}) == net1.line.index)
+
+    net2 = copy.deepcopy(net)
+    tb.drop_inner_branches(net2, [2, 3, 4, 5])
+    assert all(net.line.index.difference({1}) == net2.line.index)
+    assert all(net.trafo.index.difference({0}) == net2.trafo.index)
+    assert all(net.switch.index.difference({1, 2, 3}) == net2.switch.index)
+    check_elm_number(net2, net, ["line", "switch", "trafo"])
+
+
 def test_fuse_buses():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1, name="b1")
     b2 = pp.create_bus(net, vn_kv=1.5, name="b2")
+    b3 = pp.create_bus(net, vn_kv=2, name="b2")
 
     line1 = pp.create_line(net, b2, b1, length_km=1, std_type="NAYY 4x50 SE")
+    line2 = pp.create_line(net, b2, b3, length_km=1, std_type="NAYY 4x50 SE")
 
-    pp.create_switch(net, b2, line1, et="l")
-    pp.create_switch(net, b1, b2, et="b")
+    sw1 = pp.create_switch(net, b2, line1, et="l")
+    sw2 = pp.create_switch(net, b1, b2, et="b")
 
     pp.create_load(net, b1, p_mw=0.006)
     pp.create_load(net, b2, p_mw=0.005)
+    pp.create_load(net, b3, p_mw=0.005)
 
-    tb.fuse_buses(net, b1, b2, drop=True)
+    pp.create_measurement(net, "v", "bus", 1.2, 0.03, b2)
+
+    # --- drop = True
+    net1 = copy.deepcopy(net)
+    tb.fuse_buses(net1, b1, b2, drop=True)
 
     # assertion: elements connected to b2 are given to b1 instead
-    assert net["line"]["from_bus"].at[0] == b1
-    assert net["switch"]["bus"].at[0] == b1
-    assert net["load"]["bus"].at[1] == b1
+    assert line1 not in net1.line.index
+    assert line2 in net1.line.index
+    assert sw1 not in net1.switch.index
+    assert sw2 not in net1.switch.index
+    assert list(net1["load"]["bus"].values) == [b1, b1, b3]
+    assert net1["measurement"]["element"].at[0] == b1
     # assertion: b2 not in net.bus table if drop=True
-    assert b2 not in net.bus.index
+    assert b2 not in net1.bus.index
+    assert b3 in net1.bus.index
+
+    # --- drop = False
+    net2 = copy.deepcopy(net)
+    tb.fuse_buses(net2, b1, b2, drop=False)
+
+    # assertion: elements connected to b2 are given to b1 instead
+    assert net2["line"]["from_bus"].at[0] == b1
+    assert line2 in net2.line.index
+    assert net2["switch"]["bus"].at[0] == b1
+    assert net2["load"]["bus"].tolist() == [b1, b1, b3]
+    assert net2["measurement"]["element"].at[0] == b1
+    # assertion: b2 remains in net.bus table
+    assert b2 in net2.bus.index
+    assert b3 in net2.bus.index
 
 
 def test_close_switch_at_line_with_two_open_switches():
@@ -1061,5 +1112,4 @@ def test_replace_xward_by_internal_elements():
 
 
 if __name__ == '__main__':
-#    pytest.main([__file__, "-x"])
-    test_replace_gen_sgen()
+    pytest.main([__file__, "-x"])
