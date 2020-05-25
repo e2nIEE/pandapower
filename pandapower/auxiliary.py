@@ -37,7 +37,7 @@ import six
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD,VM,VA,REF, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -47,10 +47,15 @@ except ImportError:
     from .pf.no_numba import jit
 
 try:
+    from lightsim2grid.newtonpf import newtonpf as newtonpf_ls
+except ImportError:
+    newtonpf_ls = None
+try:
     import pplog as logging
 except ImportError:
     import logging
 
+lightsim2grid_available = True if newtonpf_ls is not None else False
 logger = logging.getLogger(__name__)
 
 
@@ -293,7 +298,7 @@ def _sum_by_group_nvals(bus, *vals):
     index = np.ones(len(bus), 'bool')
     index[:-1] = bus[1:] != bus[:-1]
     bus = bus[index]
-    newvals = tuple(np.zeros((len(vals),len(bus))))
+    newvals = tuple(np.zeros((len(vals), len(bus))))
     for val, newval in zip(vals, newvals):
         val = val[order]
         val.cumsum(out=val)
@@ -455,13 +460,13 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc = net["_ppc"] if sequence is None else net["_ppc%s"%sequence]
+        ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-#    mode = net["_options"]["mode"]
-    elements = ["load", "sgen","asymmetric_load", "asymmetric_sgen", "gen"\
-    , "ward", "xward", "shunt", "ext_grid", "storage"]   #,"impedance_load"
+    #    mode = net["_options"]["mode"]
+    elements = ["load", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
+        , "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
@@ -610,24 +615,24 @@ def _clean_up(net, res=True):
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
     # net._is_elements = None
 
-#    mode = net._options["mode"]
-#    if res:
-#        res_bus = net["res_bus_sc"] if mode == "sc" else \
-#            net["res_bus_3ph"] if mode == "pf_3ph" else \
-#                net["res_bus"]
-#    if len(net["trafo3w"]) > 0:
-#        buses_3w = net.trafo3w["ad_bus"].values
-#        net["bus"].drop(buses_3w, inplace=True)
-#        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-#        if res:
-#            res_bus.drop(buses_3w, inplace=True)
-#
-#    if len(net["xward"]) > 0:
-#        xward_buses = net["xward"]["ad_bus"].values
-#        net["bus"].drop(xward_buses, inplace=True)
-#        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-#        if res:
-#            res_bus.drop(xward_buses, inplace=True)
+    #    mode = net._options["mode"]
+    #    if res:
+    #        res_bus = net["res_bus_sc"] if mode == "sc" else \
+    #            net["res_bus_3ph"] if mode == "pf_3ph" else \
+    #                net["res_bus"]
+    #    if len(net["trafo3w"]) > 0:
+    #        buses_3w = net.trafo3w["ad_bus"].values
+    #        net["bus"].drop(buses_3w, inplace=True)
+    #        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+    #        if res:
+    #            res_bus.drop(buses_3w, inplace=True)
+    #
+    #    if len(net["xward"]) > 0:
+    #        xward_buses = net["xward"]["ad_bus"].values
+    #        net["bus"].drop(xward_buses, inplace=True)
+    #        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+    #        if res:
+    #            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -671,6 +676,34 @@ def _check_if_numba_is_installed(numba):
         numba = False
 
     return numba
+
+
+def _deactive(msg):
+    logger.error(msg)
+    return False
+
+
+def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_dependend_loads, algorithm, enforce_q_lims):
+    if lightsim2grid:
+        if not lightsim2grid_available:
+            return _deactive("option 'lightsim2grid' is True activates but module cannot be imported. "
+                             "I'll deactive lightsim2grid.")
+        if algorithm != 'nr':
+            raise ValueError("option 'lightsim2grid' is True activates but algorithm is not 'nr'.")
+        if voltage_dependend_loads:
+            return _deactive("option 'lightsim2grid' is True but voltage dependend loads are in your grid."
+                             "I'll deactive lightsim2grid.")
+        if enforce_q_lims:
+            return _deactive("option 'lightsim2grid' is True and enforce_q_lims is True. This is not supported."
+                             "I'll deactive lightsim2grid.")
+        if len(net.ext_grid) > 1:
+            return _deactive("option 'lightsim2grid' is True and multiple ext_grids are in the grid."
+                             "I'll deactive lightsim2grid.")
+        if np.any(net.gen.bus.isin(net.ext_grid.bus)):
+            return _deactive("option 'lightsim2grid' is True and gens are at slack buses."
+                             "I'll deactive lightsim2grid.")
+
+    return lightsim2grid
 
 
 # =============================================================================
@@ -737,7 +770,8 @@ def sequence_to_phase(X012):
 def phase_to_sequence(Xabc):
     return np.asarray(np.matmul(T012, Xabc))
 
-#def Y_phase_to_sequence(Xabc):
+
+# def Y_phase_to_sequence(Xabc):
 #   return np.asarray(np.matmul(T012,Xabc,Tabc))
 # =============================================================================
 # Calculating Sequence Current from sequence Voltages
@@ -745,15 +779,15 @@ def phase_to_sequence(Xabc):
 
 def I0_from_V012(V012, Y):
     V0 = X012_to_X0(V012)
-    if type(Y)in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix] :
+    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
     else:
         return np.asarray(np.matmul(Y, V0))
 
 
 def I1_from_V012(V012, Y):
-    V1 = X012_to_X1(V012)[:,np.newaxis]
-    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+    V1 = X012_to_X1(V012)[:, np.newaxis]
+    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
         return np.transpose(i1)
     else:
@@ -763,7 +797,7 @@ def I1_from_V012(V012, Y):
 
 def I2_from_V012(V012, Y):
     V2 = X012_to_X2(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
     else:
         return np.asarray(np.matmul(Y, V2))
@@ -782,7 +816,7 @@ def V_from_I(Y, I):
 
 
 def I_from_V(Y, V):
-    if type(Y) in [sp.sparse.csr.csr_matrix,sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V))
     else:
         return np.asarray(np.matmul(Y, V))
@@ -797,7 +831,7 @@ def S_from_VI_elementwise(V, I):
 
 
 def I_from_SV_elementwise(S, V):
-    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero
+    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V != 0))  # Return zero if div by zero
 
 
 def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
@@ -805,12 +839,13 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         n_res = S012.shape[1]
     if idx is None:
         idx = np.ones(n_res, dtype="bool")
-    I012 = np.array(np.zeros((3, n_res)),dtype = np.complex128)
+    I012 = np.array(np.zeros((3, n_res)), dtype=np.complex128)
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
     Vabc = sequence_to_phase(V012[:, idx])
     Iabc = sequence_to_phase(I012[:, idx])
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
+
 
 def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
@@ -873,6 +908,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
+    lightsim2grid = kwargs.get("lightsim2grid", False)
 
     if "init" in overrule_options:
         init = overrule_options["init"]
@@ -889,6 +925,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
+
+    lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
+                                                       algorithm, enforce_q_lims)
 
     ac = True
     mode = "pf"
@@ -944,7 +983,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
-                    permc_spec=permc_spec)
+                    permc_spec=permc_spec, lightsim2grid=lightsim2grid)
     net._options.update(overrule_options)
 
 
