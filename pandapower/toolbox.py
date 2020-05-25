@@ -1001,8 +1001,6 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
         else:
             logger.debug("No indices could be changed for element '%s'." % elm)
 
-    return net
-
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     """
@@ -1084,13 +1082,14 @@ def close_switch_at_line_with_two_open_switches(net):
             len(closed_switches), closed_switches))
 
 
-def fuse_buses(net, b1, b2, drop=True):
+def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     """
     Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
     if drop=True (default).
     """
     b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
 
+    # --- reroute element connections from b2 to b1
     for element, value in element_bus_tuples():
         i = net[element][net[element][value].isin(b2)].index
         net[element].loc[i, value] = b1
@@ -1098,17 +1097,23 @@ def fuse_buses(net, b1, b2, drop=True):
     i = net["switch"][(net["switch"]["et"] == 'b') & (
         net["switch"]["element"].isin(b2))].index
     net["switch"].loc[i, "element"] = b1
-    net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
-                                     (net["switch"]["et"] == "b")].index, inplace=True)
-    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
-    net.measurement.loc[bus_meas, "element"] = b1
+
+    # --- reroute bus measurements from b2 to b1
+    if fuse_bus_measurements:
+        bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+        bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
+        net.measurement.loc[bus_meas, "element"] = b1
+
+    # --- drop b2
     if drop:
-        # drop_elements=False because the elements must be connected to new buses now
+        # drop_elements=True is not needed because the elements must be connected to new buses now:
         drop_buses(net, b2, drop_elements=False)
+        # branch elements which connected b1 with b2 are now connecting b1 with b1. these branch
+        # can now be dropped:
+        drop_inner_branches(net, buses=[b1])
         # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        drop_duplicated_measurements(net, buses=[b1])
-    return net
+        if fuse_bus_measurements:
+            drop_duplicated_measurements(net, buses=[b1])
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -1210,6 +1215,31 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
+
+
+def drop_inner_branches(net, buses, branch_elements=None):
+    """
+    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
+    'to_bus').
+    """
+    branch_dict = branch_element_bus_dict(include_switch=True)
+    if branch_elements is not None:
+        branch_dict = {key: branch_dict[key] for key in branch_elements}
+
+    for elm, bus_types in branch_dict.items():
+        inner = pd.Series(True, index=net[elm].index)
+        for bus_type in bus_types:
+            inner &= net[elm][bus_type].isin(buses)
+        if elm == "switch":
+            inner &= net[elm]["element"].isin(buses)
+            inner &= net[elm]["et"] == "b"  # bus-bus-switches
+
+        if elm == "line":
+            drop_lines(net, net[elm].index[inner])
+        elif "trafo" in elm:
+            drop_trafos(net, net[elm].index[inner])
+        else:
+            net[elm].drop(net[elm].index[inner], inplace=True)
 
 
 def set_element_status(net, buses, in_service):
