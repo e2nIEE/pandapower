@@ -45,7 +45,7 @@ def build_igraph_from_pp(net, respect_switches=False):
     except (DeprecationWarning, ImportError):
         raise ImportError("Please install python-igraph with "
                           "`pip install python-igraph` or "
-                          "`conda install python-igraph`"
+                          "`conda install python-igraph` "
                           "or from https://www.lfd.uci.edu/~gohlke/pythonlibs")
     g = ig.Graph(directed=True)
     g.add_vertices(net.bus.shape[0])
