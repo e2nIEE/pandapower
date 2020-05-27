@@ -13,7 +13,6 @@ from pandapower.pypower.idx_bus import VM, VA
 from pandapower.results_bus import _get_bus_idx, _set_buses_out_of_service
 from pandapower.results import _get_aranged_lookup, _get_branch_results
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
-from pandapower.results import reset_results
 
 def _extract_results(net, ppc, ppc_0):
     _get_bus_results(net, ppc, ppc_0)
@@ -23,6 +22,10 @@ def _extract_results(net, ppc, ppc_0):
         _get_trafo3w_results(net, ppc)
 
 def _extract_single_results(net, ppc):
+    for element in ["line", "trafo"]:
+        net["res_%s_sc"%element] = pd.DataFrame(np.nan, index=net[element].index,
+                                                columns=net["_empty_res_%s"%element].columns,
+                                                dtype='float')
     _get_single_bus_results(net, ppc)
     net["_options"]["ac"] = True
     net["_options"]["trafo_loading"] = "current"
