@@ -7,7 +7,7 @@ import tempfile
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
-    check_for_initial_powerflow, run_control
+    check_for_initial_run, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 from collections.abc import Iterable
@@ -244,7 +244,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     init_output_writer(net, time_steps)
     # True at default. Initial power flow is calculated before each control step (some controllers need inits)
-    ts_variables["initial_powerflow"] = check_for_initial_powerflow(order)
+    ts_variables["initial_run"] = check_for_initial_run(order)
     # order of controller (controllers are called in a for loop.)
     ts_variables["controller_order"] = order
     # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like

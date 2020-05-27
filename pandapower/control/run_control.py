@@ -67,6 +67,13 @@ def check_for_initial_run(controllers):
                 return True
     return False
 
+def ctrl_variables_default(net):
+    ctrl_variables = dict()
+    ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net)
+    ctrl_variables["run"] = pp.runpp
+    ctrl_variables["initial_run"] = check_for_initial_run(
+        ctrl_variables["controller_order"])
+    return ctrl_variables
 
 def prepare_run_ctrl(net, ctrl_variables):
     """
@@ -79,11 +86,7 @@ def prepare_run_ctrl(net, ctrl_variables):
     """
     # sort controller_order by order if not already done
     if ctrl_variables is None:
-        ctrl_variables = dict()
-        ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net)
-        ctrl_variables["run"] = pp.runpp
-        ctrl_variables["initial_run"] = check_for_initial_run(
-            ctrl_variables["controller_order"])
+        ctrl_variables = ctrl_variables_default(net)
 
     return ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
            ctrl_variables["run"]
