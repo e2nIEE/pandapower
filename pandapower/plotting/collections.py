@@ -1051,7 +1051,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
                 # check, which end of the line is nearer to the switch bus
-                intersection = position_on_busbar(net, target_bus, busbar_coords=line_coords)
+                intersection = position_on_busbar(net, sb, busbar_coords=line_coords)
                 if intersection is not None:
                     pos_sb = intersection
                 if len(line_coords) >= 2:
