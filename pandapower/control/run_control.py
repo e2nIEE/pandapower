@@ -52,7 +52,7 @@ def get_controller_order(net):
     return level_list, controller_order
 
 
-def check_for_initial_powerflow(controllers):
+def check_for_initial_run(controllers):
     """
     Function checking if any of the controllers need an initial power flow
     If net has no controllers, an initial power flow is done by default
@@ -63,7 +63,7 @@ def check_for_initial_powerflow(controllers):
 
     for order in controllers:
         for ctrl in order:
-            if ctrl.initial_powerflow:
+            if ctrl.initial_run:
                 return True
     return False
 
@@ -74,7 +74,7 @@ def prepare_run_ctrl(net, ctrl_variables):
 
     **controller_order** (list) - Order in which controllers in net.controller will be called
     **runpp** (function) - the runpp function (for time series a faster version is possible)
-    **initial_powerflow** (bool) - some controllers need an initial powerflow prior to the control step
+    **initial_run** (bool) - some controllers need an initial run of the powerflow prior to the control step
 
     """
     # sort controller_order by order if not already done
@@ -82,10 +82,10 @@ def prepare_run_ctrl(net, ctrl_variables):
         ctrl_variables = dict()
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net)
         ctrl_variables["run"] = pp.runpp
-        ctrl_variables["initial_powerflow"] = check_for_initial_powerflow(
+        ctrl_variables["initial_run"] = check_for_initial_run(
             ctrl_variables["controller_order"])
 
-    return ctrl_variables["controller_order"], ctrl_variables["initial_powerflow"], \
+    return ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
            ctrl_variables["run"]
 
 
@@ -136,7 +136,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
 
     """
 
-    controller_order, initial_powerflow, run = prepare_run_ctrl(net, ctrl_variables)
+    controller_order, initial_run, run = prepare_run_ctrl(net, ctrl_variables)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     # initialize each controller prior to the first power flow
@@ -145,7 +145,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
             ctrl.initialize_control()
 
     # initial power flow (takes time, but is not needed for every kind of controller)
-    if initial_powerflow:
+    if initial_run:
         run(net, **kwargs)  # run can be runpp, runopf or whatever
     else:
         net["converged"] = True  # assume that the initial state is valid
