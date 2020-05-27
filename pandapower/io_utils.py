@@ -370,7 +370,7 @@ class PPJSONDecoder(json.JSONDecoder):
         super().__init__(**super_kwargs)
 
 
-def pp_hook_object_preparation(d):
+def pp_hook(d, net=None):
     if "_object" in d:
         obj = d.pop('_object')
     elif "_state" in d:
@@ -383,17 +383,16 @@ def pp_hook_object_preparation(d):
     else:
         # obj = {"_init": d, "_state": dict()}  # backwards compatibility
         obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-    return obj
+    return pp_hook_serialization(obj, d, net=net)
 
 
-def pp_hook(d, net=None):
+def pp_hook_serialization(obj, d, net):
     # keys = copy.deepcopy(list(d.keys()))
     # for key in keys:
     #     if isinstance(d[key], dict):
     #         d[key] = pp_hook(d[key], net=net)
 
     if '_module' in d and '_class' in d:
-        obj = pp_hook_object_preparation(d)
         class_name = d.pop('_class')
         module_name = d.pop('_module')
         fs = from_serializable_registry(obj, d, net)
@@ -464,7 +463,7 @@ class from_serializable_registry():
             self.net.update(self.obj)
             return self.net
 
-    @from_serializable.register(module_name="networkx")
+    @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
         return json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
 
@@ -474,7 +473,7 @@ class from_serializable_registry():
         # class_ = getattr(module, obj) # doesn't work
         return self.obj
 
-    @from_serializable.register(class_name='function')
+    @from_serializable.register(class_name='function', module_name='pandapower.run')
     def function(self):
         module = importlib.import_module(self.module_name)
         class_ = getattr(module, self.obj)  # works
@@ -486,8 +485,8 @@ class from_serializable_registry():
         class_ = getattr(module, self.class_name)
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
-                obj = json.loads(self.obj, cls=PPJSONDecoder)  # backwards compatibility
-            return class_.from_dict(obj, self.net)
+                self.obj = json.loads(self.obj, cls=PPJSONDecoder)  # backwards compatibility
+            return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
             return class_(self.obj, **self.d)
