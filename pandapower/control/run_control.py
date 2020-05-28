@@ -63,6 +63,9 @@ def check_for_initial_run(controllers):
 
     for order in controllers:
         for ctrl in order:
+            if hasattr(ctrl, 'initial_powerflow'):
+                ctrl.initial_run = ctrl.initial_powerflow
+                del ctrl.initial_powerflow
             if ctrl.initial_run:
                 return True
     return False
