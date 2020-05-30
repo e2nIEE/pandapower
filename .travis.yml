@@ -18,7 +18,6 @@ install:
 
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas=0 networkx numpydoc numba xlsxwriter xlrd
   - source activate test-environment
-  - pip install -e .
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
          conda uninstall numba --yes;
     fi
