@@ -122,6 +122,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("scaling", "f8"),
                 ("slack", "bool"),
                 ("in_service", 'bool'),
+                ("contribution_factor", 'f8'),
                 ("type", dtype(object))],
         "switch": [("bus", "i8"),
                    ("element", "i8"),
@@ -142,6 +143,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
+                     ("contribution_factor", 'f8'),
                      ("in_service", 'bool')],
         "line": [("name", dtype(object)),
                  ("std_type", dtype(object)),
@@ -1488,7 +1490,8 @@ def _create_column_and_set_value(net, index, variable, column, element, default_
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
+               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True,
+               contribution_factor=0.0):
     """
     Adds a generator to the network.
 
@@ -1520,6 +1523,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
                                         False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                                         defaults to True if "controllable" column exists in DataFrame
+
+        **contribution_factor** (float, default 0.0) - Slack power contribution factor
+
         powerflow
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
@@ -1566,8 +1572,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     dtypes = net.gen.dtypes
 
     columns = ["name", "bus", "p_mw", "vm_pu", "sn_mva", "type", "slack", "in_service",
-               "scaling"]
-    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling]
+               "scaling", "contribution_factor"]
+    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service),
+                 scaling, contribution_factor]
     net.gen.loc[index, columns] = variables
 
     # and preserve dtypes
@@ -1609,7 +1616,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None,r0x0_max=nan,x0x_max=nan, **kwargs):
+                    index=None,r0x0_max=nan,x0x_max=nan, contribution_factor=1.0,
+                    **kwargs):
     """
     Creates an external grid connection.
 
@@ -1656,6 +1664,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
+        **contribution_factor** (float, default 1.0) - Slack power contribution factor
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     EXAMPLE:
@@ -1677,8 +1687,9 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     # store dtypes
     dtypes = net.ext_grid.dtypes
 
-    net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
-        [bus, name, vm_pu, va_degree, bool(in_service)]
+    net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service",
+                             "contribution_factor"]] = \
+        [bus, name, vm_pu, va_degree, bool(in_service), contribution_factor]
 
     if not isnan(s_sc_max_mva):
         if "s_sc_max_mva" not in net.ext_grid.columns:

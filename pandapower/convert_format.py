@@ -212,6 +212,11 @@ def _add_missing_columns(net):
     if "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
 
+    if "contribution_factor" not in net.ext_grid:
+        net.ext_grid['contribution_factor'] = 1.0
+    if "contribution_factor" not in net.gen:
+        net.gen['contribution_factor'] = 0.0
+
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
