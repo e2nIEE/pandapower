@@ -91,8 +91,11 @@ def prepare_run_ctrl(net, ctrl_variables):
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net)
 
+    if not "error_repair" in ctrl_variables:
+        ctrl_variables["error_repair"] = (LoadflowNotConverged, OPFNotConverged)
+
     return ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
-           ctrl_variables["run"]
+           ctrl_variables["run"], ctrl_variables["error_repair"]
 
 
 def check_final_convergence(net, run_count, max_iter):
@@ -142,7 +145,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
 
     """
 
-    controller_order, initial_run, run = prepare_run_ctrl(net, ctrl_variables)
+    controller_order, initial_run, run, error_repair = prepare_run_ctrl(net, ctrl_variables)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     # initialize each controller prior to the first power flow
@@ -179,7 +182,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
                 run_count += 1
                 try:
                     run(net, **kwargs)  # run can be runpp, runopf or whatever
-                except (LoadflowNotConverged, OPFNotConverged) as error:
+                except error_repair as error:
                     if continue_on_lf_divergence:
                         # give a chance to controllers to "repair" the control step if load flow
                         # didn't converge
