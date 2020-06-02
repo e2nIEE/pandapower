@@ -1,5 +1,8 @@
 Change Log
 =============
+- [CHANGED] OPF calculate_voltage_angles defaults to True instead of False
+- [ADDED] lightsim2grid interface in NR power flow thanks to @BDonnot https://github.com/BDonnot/lightsim2grid
+- [FIXED] PowerModels.jl solver interface call functions
 
 [2.2.2]- 2020-03-17
 ----------------------
