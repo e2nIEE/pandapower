@@ -8,7 +8,7 @@ import numpy as np
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
-from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE
+from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, CON_FAC
 
 try:
     import pplog as logging
@@ -64,9 +64,10 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, 21), dtype=float)
+    ppc["gen"] = np.zeros(shape=(nr_gens, 26), dtype=float)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
-                              1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                              1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0])
     q_lim_default = net._options["p_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
@@ -101,6 +102,7 @@ def _build_pp_ext_grid(net, ppc, f, t):
     eg_buses = bus_lookup[net["ext_grid"]["bus"].values[eg_is]]
     ppc["gen"][f:t, GEN_BUS] = eg_buses
     ppc["gen"][f:t, VG] = net["ext_grid"]["vm_pu"].values[eg_is]
+    ppc["gen"][f:t, CON_FAC] = net["ext_grid"]["contribution_factor"].values[eg_is]
 
     # set bus values for external grid buses
     if calculate_voltage_angles:
@@ -189,6 +191,7 @@ def _build_pp_gen(net, ppc, f, t):
     ppc["gen"][f:t, GEN_BUS] = gen_buses
     ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is])
     ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
+    ppc["gen"][f:t, CON_FAC] = net["gen"]["contribution_factor"].values[gen_is]
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
