@@ -41,6 +41,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     numba = options["numba"]
     iwamoto = options["algorithm"] == "iwamoto_nr"
     voltage_depend_loads = options["voltage_depend_loads"]
+    dist_slack = options["distributed_slack"]
     v_debug = options["v_debug"]
     use_umfpack = options["use_umfpack"]
     permc_spec = options["permc_spec"]

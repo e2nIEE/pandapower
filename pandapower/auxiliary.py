@@ -493,7 +493,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
                      switch_rx_ratio, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
                      init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
-                     neglect_open_switch_branches=False, consider_line_temperature=False):
+                     neglect_open_switch_branches=False, consider_line_temperature=False,
+                     distributed_slack=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -513,6 +514,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "consider_line_temperature": consider_line_temperature,
+        "distributed_slack": distributed_slack,
         "delta": delta,
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
@@ -883,7 +885,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         max_iteration, tolerance_mva, trafo_model,
                         trafo_loading, enforce_q_lims, check_connectivity,
                         voltage_depend_loads, passed_parameters=None,
-                        consider_line_temperature=False, **kwargs):
+                        consider_line_temperature=False,
+                        distributed_slack=False, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -970,6 +973,13 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_vm_pu = init
         init_va_degree = init
 
+    if distributed_slack:
+        # TODO: distributed_slack: check some stuff.
+        #       Does it work with islands?
+        #       perhaps check weights are reasonable
+        #       idk
+        pass
+
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -979,7 +989,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
-                     consider_line_temperature=consider_line_temperature)
+                     consider_line_temperature=consider_line_temperature,
+                     distributed_slack=distributed_slack)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
