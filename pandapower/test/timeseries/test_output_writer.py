@@ -15,7 +15,6 @@ import pytest
 
 import pandapower as pp
 import pandapower.control as ct
-import pandapower.control as ctrl
 import pandapower.networks as nw
 import pandapower.timeseries as ts
 from pandapower.control import ConstControl
@@ -306,7 +305,7 @@ def test_equal_eval_name_warning():
     net = nw.case5()
     df = pd.DataFrame({0: [200, 300, 400, 500], 1: [400, 300, 100, 50], 2: [100, 300, 200, 100]})
     ds = ts.DFData(df.astype(np.float64))
-    _ = ctrl.ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
+    _ = ct.ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
                            data_source=ds)
     ow = ts.OutputWriter(net, output_path=None)
     ow.log_variable("res_sgen", "p_mw", None, np.max, 'warnme')
