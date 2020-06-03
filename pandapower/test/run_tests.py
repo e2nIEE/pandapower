@@ -41,7 +41,7 @@ def run_all_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu)])
+        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu), "-log_cli=false"])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
                          "Please make sure that pytest-xdist is installed correctly.")
