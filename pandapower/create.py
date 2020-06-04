@@ -5,14 +5,14 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, zeros, isin, float64, all as np_all, any as np_any, \
+from numpy import nan, isnan, arange, dtype, isin, float64, all as np_all, any as np_any, \
     zeros
 from packaging import version
 
+from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower import __version__
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
@@ -62,45 +62,45 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("type", dtype(object)),
                  ("current_source", "bool")],
         "asymmetric_load": [("name", dtype(object)),
-                 ("bus", "u4"),
-                 ("p_a_mw", "f8"),
-                 ("q_a_mvar", "f8"),
-                 ("p_b_mw", "f8"),
-                 ("q_b_mvar", "f8"),
-                 ("p_c_mw", "f8"),
-                 ("q_c_mvar", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object))],
+                            ("bus", "u4"),
+                            ("p_a_mw", "f8"),
+                            ("q_a_mvar", "f8"),
+                            ("p_b_mw", "f8"),
+                            ("q_b_mvar", "f8"),
+                            ("p_c_mw", "f8"),
+                            ("q_c_mvar", "f8"),
+                            ("sn_mva", "f8"),
+                            ("scaling", "f8"),
+                            ("in_service", 'bool'),
+                            ("type", dtype(object))],
 
         "asymmetric_sgen": [("name", dtype(object)),
-                 ("bus", "i8"),
-                 ("p_a_mw", "f8"),
-                 ("q_a_mvar", "f8"),
-                 ("p_b_mw", "f8"),
-                 ("q_b_mvar", "f8"),
-                 ("p_c_mw", "f8"),
-                 ("q_c_mvar", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object)),
-                 ("current_source", "bool")],
-# =============================================================================
-#         "impedance_load": [("name", dtype(object)),
-#                  ("bus", "u4"),
-#                  ("r_A", "f8"),
-#                  ("r_B", "f8"),
-#                  ("r_C", "f8"),
-#                  ("x_A", "f8"),
-#                  ("x_B", "f8"),
-#                  ("x_C", "f8"),
-#                  ("sn_mva", "f8"),
-#                  ("scaling", "f8"),
-#                  ("in_service", 'bool'),
-#                  ("type", dtype(object))],
-# =============================================================================
+                            ("bus", "i8"),
+                            ("p_a_mw", "f8"),
+                            ("q_a_mvar", "f8"),
+                            ("p_b_mw", "f8"),
+                            ("q_b_mvar", "f8"),
+                            ("p_c_mw", "f8"),
+                            ("q_c_mvar", "f8"),
+                            ("sn_mva", "f8"),
+                            ("scaling", "f8"),
+                            ("in_service", 'bool'),
+                            ("type", dtype(object)),
+                            ("current_source", "bool")],
+        # =============================================================================
+        #         "impedance_load": [("name", dtype(object)),
+        #                  ("bus", "u4"),
+        #                  ("r_A", "f8"),
+        #                  ("r_B", "f8"),
+        #                  ("r_C", "f8"),
+        #                  ("x_A", "f8"),
+        #                  ("x_B", "f8"),
+        #                  ("x_C", "f8"),
+        #                  ("sn_mva", "f8"),
+        #                  ("scaling", "f8"),
+        #                  ("in_service", 'bool'),
+        #                  ("type", dtype(object))],
+        # =============================================================================
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_mw", "f8"),
@@ -349,35 +349,35 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_internal_pu", "f8")],
 
         "_empty_res_trafo_3ph": [("p_a_hv_mw", "f8"),
-                            ("q_a_hv_mvar", "f8"),
-                            ("p_b_hv_mw", "f8"),
-                            ("q_b_hv_mvar", "f8"),
-                            ("p_c_hv_mw", "f8"),
-                            ("q_c_hv_mvar", "f8"),
-                            ("p_a_lv_mw", "f8"),
-                            ("q_a_lv_mvar", "f8"),
-                            ("p_b_lv_mw", "f8"),
-                            ("q_b_lv_mvar", "f8"),
-                            ("p_c_lv_mw", "f8"),
-                            ("q_c_lv_mvar", "f8"),
-                            ("p_a_l_mw", "f8"),
-                            ("q_a_l_mvar", "f8"),
-                            ("p_b_l_mw", "f8"),
-                            ("q_b_l_mvar", "f8"),
-                            ("p_c_l_mw", "f8"),
-                            ("q_c_l_mvar", "f8"),
-                            ("i_a_hv_ka", "f8"),
-                            ("i_a_lv_ka", "f8"),
-                            ("i_b_hv_ka", "f8"),
-                            ("i_b_lv_ka", "f8"),
-                            ("i_c_hv_ka", "f8"),
-                            ("i_c_lv_ka", "f8"),
-                            ("i_n_hv_ka", "f8"),
-                            ("i_n_lv_ka", "f8"),
-                            ("loading_percentA", "f8"),
-                            ("loading_percentB", "f8"),
-                            ("loading_percentC", "f8"),
-                            ("loading_percent", "f8")],
+                                 ("q_a_hv_mvar", "f8"),
+                                 ("p_b_hv_mw", "f8"),
+                                 ("q_b_hv_mvar", "f8"),
+                                 ("p_c_hv_mw", "f8"),
+                                 ("q_c_hv_mvar", "f8"),
+                                 ("p_a_lv_mw", "f8"),
+                                 ("q_a_lv_mvar", "f8"),
+                                 ("p_b_lv_mw", "f8"),
+                                 ("q_b_lv_mvar", "f8"),
+                                 ("p_c_lv_mw", "f8"),
+                                 ("q_c_lv_mvar", "f8"),
+                                 ("p_a_l_mw", "f8"),
+                                 ("q_a_l_mvar", "f8"),
+                                 ("p_b_l_mw", "f8"),
+                                 ("q_b_l_mvar", "f8"),
+                                 ("p_c_l_mw", "f8"),
+                                 ("q_c_l_mvar", "f8"),
+                                 ("i_a_hv_ka", "f8"),
+                                 ("i_a_lv_ka", "f8"),
+                                 ("i_b_hv_ka", "f8"),
+                                 ("i_b_lv_ka", "f8"),
+                                 ("i_c_hv_ka", "f8"),
+                                 ("i_c_lv_ka", "f8"),
+                                 ("i_n_hv_ka", "f8"),
+                                 ("i_n_lv_ka", "f8"),
+                                 ("loading_percentA", "f8"),
+                                 ("loading_percentB", "f8"),
+                                 ("loading_percentC", "f8"),
+                                 ("loading_percent", "f8")],
         "_empty_res_trafo3w": [("p_hv_mw", "f8"),
                                ("q_hv_mvar", "f8"),
                                ("p_mv_mw", "f8"),
@@ -399,71 +399,71 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                ("vm_internal_pu", "f8"),
                                ("loading_percent", "f8")],
         "_empty_res_bus_3ph": [("vm_a_pu", "f8"),
-                           ("va_a_degree", "f8"),
-                           ("vm_b_pu", "f8"),
-                           ("va_b_degree", "f8"),
-                           ("vm_c_pu", "f8"),
-                           ("va_c_degree", "f8"),
-                           ("p_a_mw", "f8"),
-                           ("q_a_mvar", "f8"),
-                           ("p_b_mw", "f8"),
-                           ("q_b_mvar", "f8"),
-                           ("p_c_mw", "f8"),
-                           ("q_c_mvar", "f8")],
+                               ("va_a_degree", "f8"),
+                               ("vm_b_pu", "f8"),
+                               ("va_b_degree", "f8"),
+                               ("vm_c_pu", "f8"),
+                               ("va_c_degree", "f8"),
+                               ("p_a_mw", "f8"),
+                               ("q_a_mvar", "f8"),
+                               ("p_b_mw", "f8"),
+                               ("q_b_mvar", "f8"),
+                               ("p_c_mw", "f8"),
+                               ("q_c_mvar", "f8")],
         "_empty_res_ext_grid_3ph": [("p_a_mw", "f8"),
-                                ("q_a_mvar", "f8"),
-                                ("p_b_mw", "f8"),
-                                ("q_b_mvar", "f8"),
-                                ("p_c_mw", "f8"),
-                                ("q_c_mvar", "f8")],
+                                    ("q_a_mvar", "f8"),
+                                    ("p_b_mw", "f8"),
+                                    ("q_b_mvar", "f8"),
+                                    ("p_c_mw", "f8"),
+                                    ("q_c_mvar", "f8")],
         "_empty_res_line_3ph": [("p_a_from_mw", "f8"),
-                            ("q_a_from_mvar", "f8"),
-                            ("p_b_from_mw", "f8"),
-                            ("q_b_from_mvar", "f8"),
-                            ("q_c_from_mvar", "f8"),
-                            ("p_a_to_mw", "f8"),
-                            ("q_a_to_mvar", "f8"),
-                            ("p_b_to_mw", "f8"),
-                            ("q_b_to_mvar", "f8"),
-                            ("p_c_to_mw", "f8"),
-                            ("q_c_to_mvar", "f8"),
-                            ("p_a_l_mw", "f8"),
-                            ("q_a_l_mvar", "f8"),
-                            ("p_b_l_mw", "f8"),
-                            ("q_b_l_mvar", "f8"),
-                            ("p_c_l_mw", "f8"),
-                            ("q_c_l_mvar", "f8"),
-                            ("i_a_from_ka", "f8"),
-                            ("i_a_to_ka", "f8"),
-                            ("i_b_from_ka", "f8"),
-                            ("i_b_to_ka", "f8"),
-                            ("i_c_from_ka", "f8"),
-                            ("i_c_to_ka", "f8"),
-                            ("i_a_ka", "f8"),
-                            ("i_b_ka", "f8"),
-                            ("i_c_ka", "f8"),
-                            ("i_n_from_ka", "f8"),
-                            ("i_n_to_ka", "f8"),
-                            ("i_n_ka", "f8"),
-                            ("loading_percentA", "f8"),
-                            ("loading_percentB", "f8"),
-                            ("loading_percentC", "f8")],
+                                ("q_a_from_mvar", "f8"),
+                                ("p_b_from_mw", "f8"),
+                                ("q_b_from_mvar", "f8"),
+                                ("q_c_from_mvar", "f8"),
+                                ("p_a_to_mw", "f8"),
+                                ("q_a_to_mvar", "f8"),
+                                ("p_b_to_mw", "f8"),
+                                ("q_b_to_mvar", "f8"),
+                                ("p_c_to_mw", "f8"),
+                                ("q_c_to_mvar", "f8"),
+                                ("p_a_l_mw", "f8"),
+                                ("q_a_l_mvar", "f8"),
+                                ("p_b_l_mw", "f8"),
+                                ("q_b_l_mvar", "f8"),
+                                ("p_c_l_mw", "f8"),
+                                ("q_c_l_mvar", "f8"),
+                                ("i_a_from_ka", "f8"),
+                                ("i_a_to_ka", "f8"),
+                                ("i_b_from_ka", "f8"),
+                                ("i_b_to_ka", "f8"),
+                                ("i_c_from_ka", "f8"),
+                                ("i_c_to_ka", "f8"),
+                                ("i_a_ka", "f8"),
+                                ("i_b_ka", "f8"),
+                                ("i_c_ka", "f8"),
+                                ("i_n_from_ka", "f8"),
+                                ("i_n_to_ka", "f8"),
+                                ("i_n_ka", "f8"),
+                                ("loading_percentA", "f8"),
+                                ("loading_percentB", "f8"),
+                                ("loading_percentC", "f8")],
         "_empty_res_asymmetric_load_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],
+                                           ("q_a_mvar", "f8"),
+                                           ("p_b_mw", "f8"),
+                                           ("q_b_mvar", "f8"),
+                                           ("p_c_mw", "f8"),
+                                           ("q_c_mvar", "f8")],
         "_empty_res_asymmetric_sgen_3ph": [("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8")],
+                                           ("q_a_mvar", "f8"),
+                                           ("p_b_mw", "f8"),
+                                           ("q_b_mvar", "f8"),
+                                           ("p_c_mw", "f8"),
+                                           ("q_c_mvar", "f8")],
         "_empty_res_storage": [("p_mw", "f8"),
                                ("q_mvar", "f8")],
-        "_empty_res_storage_3ph": [("p_a_mw", "f8"),("p_b_mw", "f8"),("p_c_mw", "f8"),
-                               ("q_a_mvar", "f8"),("q_b_mvar", "f8"),("q_c_mvar", "f8")],
+        "_empty_res_storage_3ph": [("p_a_mw", "f8"), ("p_b_mw", "f8"), ("p_c_mw", "f8"),
+                                   ("q_a_mvar", "f8"), ("q_b_mvar", "f8"), ("q_c_mvar", "f8")],
         "_empty_res_gen": [("p_mw", "f8"),
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
@@ -646,7 +646,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                                                               columns=net.bus_geodata.columns))
         net["bus_geodata"].loc[index, "coords"] = coords
 
-    min_vm_pu = min_vm_pu if hasattr(min_vm_pu, "__iter__") else [min_vm_pu]*nr_buses
+    min_vm_pu = min_vm_pu if hasattr(min_vm_pu, "__iter__") else [min_vm_pu] * nr_buses
     min_vm_pu = pd.Series(min_vm_pu, dtype=float)
 
     if not min_vm_pu.isnull().all():
@@ -655,7 +655,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         net.bus.loc[index, "min_vm_pu"] = min_vm_pu
 
-    max_vm_pu = max_vm_pu if hasattr(max_vm_pu, "__iter__") else [max_vm_pu]*nr_buses
+    max_vm_pu = max_vm_pu if hasattr(max_vm_pu, "__iter__") else [max_vm_pu] * nr_buses
     max_vm_pu = pd.Series(max_vm_pu, dtype=float)
 
     if not max_vm_pu.isnull().all():
@@ -787,10 +787,10 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
-def create_asymmetric_load(net, bus, p_a_mw=0 , p_b_mw=0 , p_c_mw=0,q_a_mvar=0,\
-                q_b_mvar=0, q_c_mvar=0, sn_mva=nan, name=None, scaling=1.,\
-                    index=None, in_service=True, type="wye"):
 
+def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, \
+                           q_b_mvar=0, q_c_mvar=0, sn_mva=nan, name=None, scaling=1., \
+                           index=None, in_service=True, type="wye"):
     """
 
     Adds one 3 phase load in table net["asymmetric_load"].
@@ -853,15 +853,16 @@ def create_asymmetric_load(net, bus, p_a_mw=0 , p_b_mw=0 , p_c_mw=0,q_a_mvar=0,\
     # store dtypes
     dtypes = net.asymmetric_load.dtypes
 
-    net.asymmetric_load.loc[index, ["name", "bus", "p_a_mw","p_b_mw","p_c_mw", "scaling",
-                         "q_a_mvar","q_b_mvar","q_c_mvar", "sn_mva", "in_service", "type"]] = \
-        [name, bus, p_a_mw,p_b_mw,p_c_mw, scaling,
-         q_a_mvar,q_b_mvar,q_c_mvar, sn_mva, bool(in_service), type]
+    net.asymmetric_load.loc[index, ["name", "bus", "p_a_mw", "p_b_mw", "p_c_mw", "scaling",
+                                    "q_a_mvar", "q_b_mvar", "q_c_mvar", "sn_mva", "in_service", "type"]] = \
+        [name, bus, p_a_mw, p_b_mw, p_c_mw, scaling,
+         q_a_mvar, q_b_mvar, q_c_mvar, sn_mva, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.asymmetric_load, dtypes)
 
     return index
+
 
 # =============================================================================
 # def create_impedance_load(net, bus, r_A , r_B , r_C, x_A=0, x_B=0, x_C=0,
@@ -1052,7 +1053,6 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
 
 def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
-
     """
     Creates a load element from rated power and power factor cos(phi).
 
@@ -1220,13 +1220,14 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     return index
 
+
 # =============================================================================
 # Create 3ph Sgen
 # =============================================================================
 
-def create_asymmetric_sgen(net, bus, p_a_mw=0,p_b_mw=0,p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
-                    name=None, index=None, scaling=1., type='wye', in_service=True,
-                     k=nan, rx=nan):
+def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
+                           name=None, index=None, scaling=1., type='wye', in_service=True,
+                           k=nan, rx=nan):
     """create_asymmetric_sgen(net, bus, p_a_mw=0, q_a_mvar=0,p_b_mw=0, q_b_mvar=0,\
 				p_c_mw=0, q_c_mvar=0,sn_kva=nan, name=None, index=None, \
                 scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_kw=nan, \
@@ -1297,8 +1298,8 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0,p_b_mw=0,p_c_mw=0, q_a_mvar=0, q_b
     # store dtypes
     dtypes = net.asymmetric_sgen.dtypes
 
-    net.asymmetric_sgen.loc[index, ["name", "bus", "p_a_mw","p_b_mw","p_c_mw", "scaling",
-                         "q_a_mvar", "q_b_mvar", "q_c_mvar","sn_mva", "in_service", "type"]] = \
+    net.asymmetric_sgen.loc[index, ["name", "bus", "p_a_mw", "p_b_mw", "p_c_mw", "scaling",
+                                    "q_a_mvar", "q_b_mvar", "q_c_mvar", "sn_mva", "in_service", "type"]] = \
         [name, bus, p_a_mw, p_b_mw, p_c_mw, scaling, q_a_mvar, q_b_mvar, q_c_mvar, sn_mva, bool(in_service), type]
 
     # and preserve dtypes
@@ -1317,6 +1318,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0,p_b_mw=0,p_c_mw=0, q_a_mvar=0, q_b
         net.asymmetric_sgen.loc[index, "rx"] = float(rx)
 
     return index
+
 
 def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     """
@@ -1609,7 +1611,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None,r0x0_max=nan,x0x_max=nan, **kwargs):
+                    index=None, r0x0_max=nan, x0x_max=nan, **kwargs):
     """
     Creates an external grid connection.
 
@@ -1867,8 +1869,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 parallel=1, g_us_per_km=0.,
                                 max_loading_percent=nan, alpha=None,
                                 temperature_degree_celsius=None,
-                                r0_ohm_per_km= nan, x0_ohm_per_km=nan,
-                                c0_nf_per_km=nan,g0_us_per_km=0, **kwargs):
+                                r0_ohm_per_km=nan, x0_ohm_per_km=nan,
+                                c0_nf_per_km=nan, g0_us_per_km=0, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1971,9 +1973,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     # and preserve dtypes
     _preserve_dtypes(net.line, dtypes)
-
-
-
 
     if geodata is not None:
         net["line_geodata"].loc[index, "coords"] = None
@@ -2248,10 +2247,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        tap_side=None, tap_neutral=nan, tap_max=nan,
                                        tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
                                        tap_pos=nan, tap_phase_shifter=False, in_service=True,
-                                       name=None, vector_group=nan,index=None,
+                                       name=None, vector_group=None, index=None,
                                        max_loading_percent=nan, parallel=1,
-                                       df=1.,vk0_percent=nan, vkr0_percent=nan,
-                                       mag0_percent=nan,mag0_rx=nan,
+                                       df=1., vk0_percent=nan, vkr0_percent=nan,
+                                       mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
@@ -2366,7 +2365,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
         "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
-        "pfe_kw": pfe_kw, "i0_percent": i0_percent,"tap_neutral": tap_neutral,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
         "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
         "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
@@ -2380,8 +2379,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
     net.trafo.loc[index, list(v.keys())] = list(v.values())
 
-    if not(isnan(vk0_percent) and isnan(vkr0_percent)and isnan(mag0_percent) \
-           and isnan(mag0_rx)and isnan(si0_hv_partial)and isnan(vector_group)):
+    if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent) \
+            and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
         if "vk0_percent" not in net.trafo.columns:
             net.trafo.loc[:, "vk0_percent"] = pd.Series()
 

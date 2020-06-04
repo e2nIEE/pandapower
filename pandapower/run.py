@@ -81,7 +81,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - "fdbx" fast-decoupled (pypower implementation)
                 - "fdxb" fast-decoupled (pypower implementation)
 
-        **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
+        **calculate_voltage_angles** (str or bool, "auto") - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
@@ -98,8 +98,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         pandapower supports four methods for initializing the loadflow:
 
             - "auto" - init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
-            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
-            - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.
+            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution, the slack bus is initialized with the values provided in net["ext_grid"]
+            - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow. Note that the DC loadflow only calculates voltage angles at PQ and PV buses, voltage magnitudes are still flat started.
             - "results" - voltage vector of last loadflow from net.res_bus is used as initial solution. This can be useful to accelerate convergence in iterative loadflows like time series calculations.
 
         Considering the voltage angles might lead to non-convergence of the power flow in flat start.
@@ -267,7 +267,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
+def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity=True,
            suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, init="flat", numba=True,
            trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
     """

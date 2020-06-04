@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import argparse
 import os
 from multiprocessing import cpu_count
 
@@ -13,15 +14,19 @@ import pandapower as pp
 
 try:
     import pplog as logging
+    # logger = logging.getLogger()
+    # for handler in logger.handlers:
+    #     logger.removeHandler(handler)
 except ImportError:
     import logging
 test_dir = os.path.abspath(os.path.join(pp.pp_dir, "test"))
 
-
-def _create_logger():
-    logger = logging.getLogger()
+logger = logging.getLogger()
+for handler in logger.handlers:
+    logger.removeHandler(handler)
     logger.setLevel(logging.CRITICAL)
-    return logger
+
+
 
 
 def _get_cpus():
@@ -36,15 +41,14 @@ def run_all_tests(parallel=False, n_cpu=None):
     parallel (bool, False) - If true and pytest-xdist is installed, tests are run in parallel
     n_cpu (int, None) - number of CPUs to run the tests on in parallel. Only relevant for parallel runs.
     """
-    logger = _create_logger()
 
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu)])
+        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu), "-log_cli=false"])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
-                         "Please make sure that pytest-xdist is installed correctly.")
+                                      "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
@@ -60,7 +64,6 @@ def run_fast_tests(parallel=False, n_cpu=None):
     n_cpu (int, None) - number of CPUs to run the tests on in parallel. Only relevant for parallel runs.
 
     """
-    logger = _create_logger()
 
     if parallel:
         if n_cpu is None:
@@ -68,7 +71,7 @@ def run_fast_tests(parallel=False, n_cpu=None):
         err = pytest.main([test_dir, "-xs", "-m", "not slow", "-n", str(n_cpu)])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
-                         "Please make sure that pytest-xdist is installed correctly.")
+                                      "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
@@ -82,7 +85,6 @@ def run_slow_tests(parallel=False, n_cpu=None):
     parallel (bool, False) - If true and pytest-xdist is installed, tests are run in parallel
     n_cpu (int, None) - number of CPUs to run the tests on in parallel. Only relevant for parallel runs.
     """
-    logger = _create_logger()
 
     if parallel:
         if n_cpu is None:
@@ -90,12 +92,37 @@ def run_slow_tests(parallel=False, n_cpu=None):
         err = pytest.main([test_dir, "-xs", "-m", "slow", "-n", str(n_cpu)])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
-                         "Please make sure that pytest-xdist is installed correctly.")
+                                      "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
         pytest.main([test_dir, "-xs", "-m", "slow"])
 
 
+def get_command_line_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-which', type=str, default="all", help="run 'fast' or 'all' tests")
+    parser.add_argument('-n_cpu', type=int, default=1, help="runs the tests in parallel if n_cpu > 1")
+
+    args = parser.parse_args()
+    # return as dict
+    return vars(args)
+
+
+def start_tests(**settings):
+    n_cpu = settings["n_cpu"]
+    parallel = False if n_cpu < 2 else True
+    # run either fast or all tests
+    if settings["which"] == "fast":
+        run_fast_tests(parallel=parallel, n_cpu=n_cpu)
+    elif settings["which"] == "slow":
+        run_slow_tests(parallel=parallel, n_cpu=n_cpu)
+    else:
+        run_all_tests(parallel=parallel, n_cpu=n_cpu)
+
+
 if __name__ == "__main__":
-    run_all_tests(True)
+    # get some command line options
+    settings = get_command_line_args()
+    start_tests(**settings)
