@@ -257,8 +257,10 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
-    line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
+    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths,
+                                 **kwargs)
+    line_coll = LineCollection(lines, color=line_color, picker=picker, linewidth=linewidths,
+                               **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
     return patch_coll, line_coll
