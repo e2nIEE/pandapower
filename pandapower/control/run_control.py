@@ -70,6 +70,7 @@ def check_for_initial_run(controllers):
                 return True
     return False
 
+
 def ctrl_variables_default(net):
     ctrl_variables = dict()
     ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net)
@@ -78,7 +79,8 @@ def ctrl_variables_default(net):
         ctrl_variables["controller_order"])
     return ctrl_variables
 
-def prepare_run_ctrl(net, ctrl_variables):
+
+def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     """
     Prepares run control functions. Internal variables needed:
 
@@ -91,21 +93,20 @@ def prepare_run_ctrl(net, ctrl_variables):
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net)
 
-    if not "error_repair" in ctrl_variables:
-        ctrl_variables["error_repair"] = (LoadflowNotConverged, OPFNotConverged)
+    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged)
 
-    return ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
-           ctrl_variables["run"], ctrl_variables["error_repair"]
+    kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
+
+    return ctrl_variables, kwargs
 
 
-def check_final_convergence(net, run_count, max_iter):
+def check_final_convergence(run_count, max_iter, errors, net_convergence):
     if run_count > max_iter:
         raise ControllerNotConverged("Maximum number of iterations per controller is reached. "
                                      "Some controller did not converge after %i power flows!"
                                      % run_count)
-    if not net["converged"]:
-        raise pp.LoadflowNotConverged("Controller did not converge because Loadflow did not"
-                                      "converge!")
+    if not net_convergence:
+        raise errors[0]("Controller did not converge because the grid did not converge!")
     else:
         logger.debug("Converged after %i power flows" % run_count)
 
@@ -118,6 +119,76 @@ def get_recycle(ctrl_variables):
         if isinstance(recycle, dict):
             only_v_results = recycle.get("only_v_results", False)
     return recycle, only_v_results
+
+
+def net_initialization(net, initial_run, run, **kwargs):
+    # initial power flow (takes time, but is not needed for every kind of controller)
+    if initial_run:
+        run(net, **kwargs)  # run can be runpp, runopf or whatever
+    else:
+        net["converged"] = True  # assume that the initial state is valid
+
+
+def control_initialization(controller_order):
+    for levelorder in controller_order:
+        for ctrl in levelorder:
+            ctrl.initialize_control()
+
+
+def control_implementation(controller_order, net, run, errors, max_iter, continue_on_lf_divergence, **kwargs):
+    for levelorder in controller_order:
+        # converged gives status about convergence of a controller. Is initialized as False
+        converged = False
+        # run_count is 0 before entering the loop. Is incremented in each controller loop
+        run_count = 0
+        while not converged and run_count <= max_iter and net["converged"]:
+            converged = _control_step(run_count, levelorder)
+
+            # call to run function (usually runpp) after each controller was called
+            # this function is called at least once per level
+            if not converged:
+                run_count += 1
+                _control_repair(net, run, continue_on_lf_divergence, levelorder, errors, **kwargs)
+        # raises controller not converged
+        check_final_convergence(run_count, max_iter, errors, net['converged'])
+
+
+def _control_step(run_count, levelorder):
+    # keep track of stopping criteria
+    converged = True
+    logger.debug("Controller Iteration #%i" % run_count)
+    # run each controller until all are converged
+    for ctrl in levelorder:
+        # call control step while controller ist not converged yet
+        if not ctrl.is_converged():
+            ctrl.control_step()
+            converged = False
+    return converged
+
+
+def _control_repair(net, run, continue_on_lf_divergence, levelorder, errors, **kwargs):
+    try:
+        run(net, **kwargs)  # run can be runpp, runopf or whatever
+    except errors as error:
+        if continue_on_lf_divergence:
+            # give a chance to controllers to "repair" the control step if load flow
+            # didn't converge
+            # either implement this in a controller that is likely to cause the error,
+            # or define a special "load flow police" controller for your use case
+            for ctrl in levelorder:
+                ctrl.repair_control()
+            # this will raise the error if repair_control did't work
+            # it means that repair control has only 1 try
+            try:
+                run(net, **kwargs)
+            except errors:
+                pass
+
+
+def control_finalization(controller_order):
+    for levelorder in controller_order:
+        for ctrl in levelorder:
+            ctrl.finalize_control()
 
 
 def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence=False, **kwargs):
@@ -135,7 +206,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
     Runs controller until each one converged or max_iter is hit.
 
     1. Call initialize_control() on each controller
-    2. Calculate an inital power flow (if it is enabled)
+    2. Calculate an inital power flow (if it is enabled, i.e. setting the initial_run veriable to True)
     3. Repeats the following steps in ascending order of controller_order until total convergence of all
        controllers for each level:
         a) Evaluate individual convergence for all controllers in the level
@@ -144,62 +215,20 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
     4. Call finalize_control() on each controller
 
     """
+    ctrl_variables, kwargs = prepare_run_ctrl(net, ctrl_variables, **kwargs)
 
-    controller_order, initial_run, run, error_repair = prepare_run_ctrl(net, ctrl_variables)
-    kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
-
-    # initialize each controller prior to the first power flow
-    for levelorder in controller_order:
-        for ctrl in levelorder:
-            ctrl.initialize_control()
+    controller_order, initial_run, run, errors = \
+        ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
+        ctrl_variables["run"], ctrl_variables["errors"],
 
     # initial power flow (takes time, but is not needed for every kind of controller)
-    if initial_run:
-        run(net, **kwargs)  # run can be runpp, runopf or whatever
-    else:
-        net["converged"] = True  # assume that the initial state is valid
+    net_initialization(net, initial_run, run, **kwargs)
 
-    run_count = 0
-    for levelorder in controller_order:
-        # converged gives status about convergence of a controller. Is initialized as False
-        converged = False
-        # run_count is 0 before entering the loop. Is incremented in each controller loop
-        run_count = 0
-        while not converged and run_count <= max_iter and net["converged"]:
-            # keep track of stopping criteria
-            converged = True
-            logger.debug("Controller Iteration #%i" % run_count)
-            # run each controller until all are converged
-            for ctrl in levelorder:
-                # call control step while controller ist not converged yet
-                if not ctrl.is_converged():
-                    ctrl.control_step()
-                    converged = False
+    # initialize each controller prior to the first power flow
+    control_initialization(controller_order)
 
-            # call to run function (usually runpp) after each controller was called
-            # this function is called at least once per level
-            if not converged:
-                run_count += 1
-                try:
-                    run(net, **kwargs)  # run can be runpp, runopf or whatever
-                except error_repair as error:
-                    if continue_on_lf_divergence:
-                        # give a chance to controllers to "repair" the control step if load flow
-                        # didn't converge
-                        # either implement this in a controller that is likely to cause the error,
-                        # or define a special "load flow police" controller for your use case
-                        for ctrl in levelorder:
-                            ctrl.repair_control()
-                        # this will raise the error if repair_control did't work
-                        # it means that repair control has only 1 try
-                        try:
-                            run(net, **kwargs)
-                        except (LoadflowNotConverged, OPFNotConverged):
-                            pass
+    # run each controller step in given controller order
+    control_implementation(controller_order, net, run, errors, max_iter, continue_on_lf_divergence, **kwargs)
+
     # call finalize function of each controller
-    for levelorder in controller_order:
-        for ctrl in levelorder:
-            ctrl.finalize_control()
-
-    # raises controller not converged
-    check_final_convergence(net, run_count, max_iter)
+    control_finalization(controller_order)
