@@ -130,12 +130,14 @@ def net_initialization(net, initial_run, run, **kwargs):
 
 
 def control_initialization(controller_order):
+    # initialize each controller prior to the first power flow
     for levelorder in controller_order:
         for ctrl in levelorder:
             ctrl.initialize_control()
 
 
 def control_implementation(controller_order, net, run, errors, max_iter, continue_on_lf_divergence, **kwargs):
+    # run each controller step in given controller order
     for levelorder in controller_order:
         # converged gives status about convergence of a controller. Is initialized as False
         converged = False
@@ -186,6 +188,7 @@ def _control_repair(net, run, continue_on_lf_divergence, levelorder, errors, **k
 
 
 def control_finalization(controller_order):
+    # call finalize function of each controller
     for levelorder in controller_order:
         for ctrl in levelorder:
             ctrl.finalize_control()
