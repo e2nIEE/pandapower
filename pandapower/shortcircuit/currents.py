@@ -86,7 +86,7 @@ def _calc_branch_currents(net, ppc):
     case = net._options["case"]
     Zbus = ppc["internal"]["Zbus"]
     Yf = ppc["internal"]["Yf"]
-    Yt = ppc["internal"]["Yf"]
+    Yt = ppc["internal"]["Yt"]
     baseI = ppc["internal"]["baseI"]
     n = ppc["bus"].shape[0]
     fb = np.real(ppc["branch"][:, 0]).astype(int)
@@ -96,8 +96,8 @@ def _calc_branch_currents(net, ppc):
     V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
     ikss1_all_t = np.conj(Yt.dot(V_ikss))
-    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = np.nan
-    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = np.nan
+    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
+    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
     current_sources = any(ppc["bus"][:, IKCV]) > 0
