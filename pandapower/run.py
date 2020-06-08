@@ -81,7 +81,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - "fdbx" fast-decoupled (pypower implementation)
                 - "fdxb" fast-decoupled (pypower implementation)
 
-        **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
+        **calculate_voltage_angles** (str or bool, "auto") - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
@@ -272,7 +272,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
+def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity=True,
            suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, init="flat", numba=True,
            trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
     """
