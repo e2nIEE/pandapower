@@ -87,11 +87,11 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 .. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/e2n.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
-    :width: 25em
+    :width: 300em
 
 .. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/iee.png
     :target: https://www.iee.fraunhofer.de/en.html
-    :width: 25em
+    :width: 300em
 
 |
 
