@@ -2,7 +2,7 @@
 """
 Created on Wed May  2 17:06:25 2018
 Tests 3 phase power flow algorithm
-@author: sghosh
+@author: gbanerjee
 """
 import pandapower as pp
 import numpy as np
@@ -36,6 +36,7 @@ def net():
 def test_check_it(net):
     pp.runpp_3ph(net)
 
+
     line_pp = np.abs(net.res_line_3ph[~np.isnan(net.res_line_3ph.i_a_from_ka)]
                      [['i_a_from_ka', 'i_a_to_ka', 'i_b_from_ka', 'i_b_to_ka',
                        'i_c_from_ka', 'i_c_to_ka', 'i_n_from_ka', 'i_n_to_ka',
@@ -51,7 +52,7 @@ def test_check_it(net):
                           0.2000966, (-0.2), (-0.0206405), (-0.002),
                           0.0999835, (-0.1), (-0.0218763), (-0.001),
                           5.25625]]))
-    assert np.max(np.abs(line_pp - line_pf)) < 1.1e-4
+    assert np.max(np.abs(line_pp - line_pf)) < 1.1e-5
    
 
  
@@ -60,3 +61,4 @@ def test_check_it(net):
 
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph_n_line.py"])
+    
