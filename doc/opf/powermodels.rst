@@ -36,6 +36,6 @@ The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/p
 
 .. autofunction:: pandapower.runpm
 
-The TNEP optimization is explained in the `PowerModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/tnep_powermodels.ipynb>`_. Additional packages including "juniper" 
+The TNEP optimization is explained in the `PowerModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/tnep_powermodels.ipynb>`_. Additional packages including "juniper"
 
 .. autofunction:: pandapower.runpm_tnep
