@@ -321,17 +321,17 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     else:
         Pabcl_mw = np.zeros_like(Pabc_hv_mw)
         Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
+        
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
     
-#    #geting complex values of the sequence current    
+    #geting complex values of the sequence current    
 #    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
 #    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
 #    
 #    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
 #    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
-#
-#    
+#   
 #    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
 #    In_hv_ka = np.abs(In_hv_ka_complex)
 #    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
