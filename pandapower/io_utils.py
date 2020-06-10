@@ -371,19 +371,22 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None):
-    if "_object" in d:
-        obj = d.pop('_object')
-    elif "_state" in d:
-        obj = d['_state']
-        if d['has_net']:
-            obj['net'] = 'net'
-        if '_init' in obj:
-            del obj['_init']
-        return obj  # backwards compatibility
+    if '_module' in d and '_class' in d:
+        if "_object" in d:
+            obj = d.pop('_object')
+        elif "_state" in d:
+            obj = d['_state']
+            if d['has_net']:
+                obj['net'] = 'net'
+            if '_init' in obj:
+                del obj['_init']
+            return obj  # backwards compatibility
+        else:
+            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+        return pp_hook_serialization(obj, d, net=net)
     else:
-        # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-        obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-    return pp_hook_serialization(obj, d, net=net)
+        return d
 
 
 def pp_hook_serialization(obj, d, net):
@@ -392,15 +395,12 @@ def pp_hook_serialization(obj, d, net):
     #     if isinstance(d[key], dict):
     #         d[key] = pp_hook(d[key], net=net)
 
-    if '_module' in d and '_class' in d:
-        class_name = d.pop('_class')
-        module_name = d.pop('_module')
-        fs = from_serializable_registry(obj, d, net)
-        fs.class_name = class_name
-        fs.module_name = module_name
-        return fs.from_serializable()
-    else:
-        return d
+    class_name = d.pop('_class')
+    module_name = d.pop('_module')
+    fs = from_serializable_registry(obj, d, net, pp_hook)
+    fs.class_name = class_name
+    fs.module_name = module_name
+    return fs.from_serializable()
 
 
 class from_serializable:
@@ -431,10 +431,11 @@ class from_serializable_registry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, net):
+    def __init__(self, obj, d, net, pp_hook_funct):
         self.obj = obj
         self.d = d
         self.net = net
+        self.pp_hook = pp_hook_funct
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
@@ -449,8 +450,8 @@ class from_serializable_registry():
             logger.debug("failed setting int64 index")
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if col in df.columns:
-                df[col] = df[col].apply(pp_hook, args=(self.net,))
+            if (col in df.columns):
+                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
