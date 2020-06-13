@@ -408,7 +408,7 @@ class OutputWriter(JSONSerializableClass):
                         "eval_name is neglected.")
             eval_name = None
         if eval_name is not None and eval_function is not None:
-            if type(eval_function) == FunctionType:
+            if isinstance(eval_function, FunctionType):
                 if "n_columns" in eval_function.__code__.co_varnames:
                     logger.info("'eval_name' is to give a name in case of single value evaluation functions. Since " +
                                 "n_columns is given as a parameter of the evaluation function, the given for eval_name "
@@ -500,7 +500,7 @@ class OutputWriter(JSONSerializableClass):
             np_name = self._get_np_name(partial_func.args)
             columns = index
             if eval_name is not None and eval_func is not None:
-                if type(eval_func) == FunctionType:
+                if isinstance(eval_func, FunctionType):
                     if "n_columns" not in eval_func.__code__.co_varnames:
                         columns = [eval_name]
                 else:
@@ -545,7 +545,7 @@ class OutputWriter(JSONSerializableClass):
         n_columns = len(index)
         if eval_function is not None:
             n_columns = 1
-            if type(eval_function) == FunctionType:
+            if isinstance(eval_function, FunctionType):
                 if "n_columns" in eval_function.__code__.co_varnames:
                     n_columns = eval_function.__defaults__[0]
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
