@@ -4,6 +4,7 @@ Change Log
 - [ADDED] lightsim2grid interface in NR power flow thanks to @BDonnot https://github.com/BDonnot/lightsim2grid
 - [FIXED] PowerModels.jl solver interface call functions
 - [FIXED] pandas 1.0.4 support
+- [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
 ----------------------

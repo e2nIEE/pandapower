@@ -27,6 +27,7 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia import Main
+    julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
     print(e)
