@@ -243,7 +243,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     init_default_outputwriter(net, time_steps, **kwargs)
     level, order = get_controller_order(net)
     # get run function
-    run = kwargs.get("run", pp.runpp)
+    run = kwargs.pop("run", pp.runpp)
     recycle_options = None
     if hasattr(run, "__name__") and run.__name__ == "runpp":
         # use faster runpp options if possible
