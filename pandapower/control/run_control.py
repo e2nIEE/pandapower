@@ -224,11 +224,11 @@ def run_control(net, ctrl_variables=None, max_iter=30, continue_on_lf_divergence
         ctrl_variables["controller_order"], ctrl_variables["initial_run"], \
         ctrl_variables["run"], ctrl_variables["errors"],
 
-    # initial power flow (takes time, but is not needed for every kind of controller)
-    net_initialization(net, initial_run, run_funct, **kwargs)
-
     # initialize each controller prior to the first power flow
     control_initialization(controller_order)
+
+    # initial power flow (takes time, but is not needed for every kind of controller)
+    net_initialization(net, initial_run, run_funct, **kwargs)
 
     # run each controller step in given controller order
     control_implementation(controller_order, net, run_funct, errors, max_iter, continue_on_lf_divergence, **kwargs)
