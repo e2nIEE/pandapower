@@ -73,10 +73,23 @@ def controller_not_converged(time_step, ts_variables):
 
 
 def pf_not_converged(time_step, ts_variables):
-    logger.error('LoadflowNotConverged at time step %s' % time_step)
+    logger.error('CalculationNotConverged at time step %s' % time_step)
     if not ts_variables["continue_on_divergence"]:
-        raise LoadflowNotConverged
+        raise ts_variables['errors'][0]
 
+
+def control_time_step(controller_order, time_step):
+    for levelorder in controller_order:
+        for ctrl in levelorder:
+            ctrl.time_step(time_step)
+
+def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
+    output_writer = net["output_writer"].iat[0, 0]
+    # update time step for output writer
+    output_writer.time_step = time_step
+    # save
+    output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
+                               recycle_options=recycle_options)
 
 def run_time_step(net, time_step, ts_variables, **kwargs):
     """
@@ -92,13 +105,9 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     """
     ctrl_converged = True
     pf_converged = True
-    output_writer = net["output_writer"].iat[0, 0]
-    # update time step for output writer
-    output_writer.time_step = time_step
     # run time step function for each controller
-    for levelorder in ts_variables["controller_order"]:
-        for ctrl in levelorder:
-            ctrl.time_step(time_step)
+
+    control_time_step(ts_variables['controller_order'], time_step)
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
@@ -107,14 +116,12 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
         ctrl_converged = False
         # If controller did not converge do some stuff
         controller_not_converged(time_step, ts_variables)
-    except (LoadflowNotConverged, OPFNotConverged):
+    except ts_variables['errors']:
         # If power flow did not converge simulation aborts or continues if continue_on_divergence is True
         pf_converged = False
         pf_not_converged(time_step, ts_variables)
 
-    # save
-    output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
-                               recycle_options=ts_variables["recycle_options"])
+    output_writer_routine(net, time_step, pf_converged, ctrl_converged, ts_variables['recycle_options'])
 
 
 def _check_controller_recyclability(net):
@@ -253,10 +260,12 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["recycle_options"] = recycle_options
     # time steps to be calculated (list or range)
     ts_variables["time_steps"] = time_steps
-    # If True, a diverged power flow is ignored and the next step is calculated
+    # If True, a diverged run is ignored and the next step is calculated
     ts_variables["continue_on_divergence"] = continue_on_divergence
     # print settings
     ts_variables["verbose"] = verbose
+    # errors to be considered as exception
+    ts_variables["errors"] = (LoadflowNotConverged, OPFNotConverged)
 
     if logger.level != 10 and verbose:
         # simple progress bar
