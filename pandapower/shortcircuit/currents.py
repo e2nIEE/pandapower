@@ -96,24 +96,24 @@ def _calc_branch_currents(net, ppc):
     V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
     ikss1_all_t = np.conj(Yt.dot(V_ikss))
-    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = np.nan
-    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = np.nan
+#    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = np.nan
+#    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = np.nan
 
     # add current source branch current if there is one
     current_sources = any(ppc["bus"][:, IKCV]) > 0
-    if current_sources:
-        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
-        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
-        V = np.dot((current * baseI), Zbus).T
-        fb = np.real(ppc["branch"][:, 0]).astype(int)
-        tb = np.real(ppc["branch"][:, 1]).astype(int)
-        ikss2_all_f = np.conj(Yf.dot(V))
-        ikss2_all_t = np.conj(Yt.dot(V))
-        ikss_all_f = abs(ikss1_all_f + ikss2_all_f)
-        ikss_all_t = abs(ikss1_all_t + ikss2_all_t)
-    else:
-        ikss_all_f = abs(ikss1_all_f)
-        ikss_all_t = abs(ikss1_all_t)
+#    if current_sources:
+#        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
+#        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
+#        V = np.dot((current * baseI), Zbus).T
+#        fb = np.real(ppc["branch"][:, 0]).astype(int)
+#        tb = np.real(ppc["branch"][:, 1]).astype(int)
+#        ikss2_all_f = np.conj(Yf.dot(V))
+#        ikss2_all_t = np.conj(Yt.dot(V))
+#        ikss_all_f = abs(ikss1_all_f + ikss2_all_f)
+#        ikss_all_t = abs(ikss1_all_t + ikss2_all_t)
+#    else:
+    ikss_all_f = abs(ikss1_all_f)
+    ikss_all_t = abs(ikss1_all_t)
 
     ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
     ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
