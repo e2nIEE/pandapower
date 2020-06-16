@@ -5,9 +5,6 @@
 
 import math
 import numpy as np
-import copy
-import pandas as pd
-from packaging import version
 import pandapower.auxiliary as aux
 from pandapower.pd2ppc import _init_ppc
 from pandapower.build_bus import _build_bus_ppc
@@ -16,7 +13,7 @@ from pandapower.pd2ppc import _ppc2ppci
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
-from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 
 def _pd2ppc_zero(net, sequence=0):
     """
@@ -77,7 +74,7 @@ def _build_branch_ppc_zero(net, ppc):
     _add_line_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc)
     if "trafo3w" in lookup:
-        raise NotImplemented("Three winding transformers are not implemented for unbalanced calculations")
+        raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
 
 
 def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
@@ -98,9 +95,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
             continue
-
+        
         vk_percent = trafos["vk_percent"].values.astype(float)
         vkr_percent = trafos["vkr_percent"].values.astype(float)
+        vk0_percent = trafos["vk0_percent"].values.astype(float)
         sn_mva = trafos["sn_mva"].values.astype(float)
         vk0_percent = trafos["vk0_percent"].values.astype(float)
         vkr0_percent = trafos["vkr0_percent"].values.astype(float)
@@ -275,6 +273,10 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, F_BUS] = fb
     ppc["branch"][f:t, T_BUS] = tb
     ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
+    if mode == "sc":
+        # temperature correction
+        if net["_options"]["case"] == "min":
+            ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)

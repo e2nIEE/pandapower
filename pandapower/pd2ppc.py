@@ -19,7 +19,7 @@ from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_sam
 from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, branch_cols, \
-    TAP, SHIFT, BR_R, BR_X, BR_B
+    TAP, SHIFT, BR_R, BR_X
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE, BASE_KV, GS, BS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
@@ -550,107 +550,3 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
     del net.trafo["_ppc_idx"]
-
-
-def _add_ext_grid_sc_impedance_zero(net, ppc):
-    mode = net["_options"]["mode"]
-
-    if mode == "sc":
-        from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
-        case = net._options["case"]
-    else:
-        case = "max"
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    eg = net["ext_grid"][net._is_elements["ext_grid"]]
-    if len(eg) == 0:
-        return
-    eg_buses = eg.bus.values
-    eg_buses_ppc = bus_lookup[eg_buses]
-
-    if mode == "sc":
-        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else \
-            ppc["bus"][eg_buses_ppc, C_MIN]
-    else:
-        c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("Short Circuit apparent power s_sc_%s_mva for zero sequence needs to be specified for "% case +
-                         "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
-    else:
-        s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
-    if not "rx_%s" % case in eg:
-        raise ValueError("Positive sequence short circuit R/X rate rx_%s needs to be specified\
-                         for external grid \n Try: net.ext_grid['rx_max'] = 0.1" % case)
-    rx = eg["rx_%s" % case].values
-    z_grid = c / s_sc
-    if mode == 'pf_3ph':
-        z_grid = c / (s_sc / 3)
-    x_grid = z_grid / np.sqrt(rx ** 2 + 1)
-    r_grid = rx * x_grid
-    eg["r"] = r_grid
-    eg["x"] = x_grid
-
-    if not "x0x_%s" % case in eg:
-        raise ValueError("Zero sequence to positive sequence reactance ratio x0x_%s needs to be specified for "% case +
-                         "external grid \n Try : net.ext_grid[\"x0x_max\"] = 1.0" )
-    if not "r0x0_%s" % case in eg:
-        raise ValueError("Zero sequence short circuit R0/X0 rate r0x0_%s needs to be specified\
-                         for external grid \n Try : net.ext_grid[\"r0x0_max\"] = 0.1" % case )
-
-    # ext_grid zero sequence impedance
-    if case == "max":
-        x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
-    elif case == "min":
-        x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
-    y0_grid = 1 / (r0_grid + x0_grid * 1j)
-    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, np.real(np.array(y0_grid)), np.imag(np.array(y0_grid)))
-    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
-    ppc["bus"][buses, BS] = bs * ppc['baseMVA']   
-
-def _add_line_sc_impedance_zero(net, ppc):
-    branch_lookup = net["_pd2ppc_lookups"]["branch"]
-    mode = net["_options"]["mode"]
-    if not "line" in branch_lookup:
-        return
-#    line = net["line"].loc[net._is_elements["line_is_idx"].values.tolist()]
-    line = net["line"]
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    length = line["length_km"].values
-    parallel = line["parallel"].values
-
-    fb = bus_lookup[line["from_bus"].values]
-    tb = bus_lookup[line["to_bus"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
-    if mode == 'pf_3ph':
-        baseR = np.square(ppc["bus"][fb, BASE_KV]) / (3 * net.sn_mva)
-    f, t = branch_lookup["line"]
-    # line zero sequence impedance
-    ppc["branch"][f:t, F_BUS] = fb
-    ppc["branch"][f:t, T_BUS] = tb
-    # Just putting pos seq resistance if zero seq resistance is zero 
-    if not "r0_ohm_per_km" in line:
-        raise ValueError("Zero sequence resistance R0 needs to be specified\
-                         for line \n Try : net.line[\"r0_ohm_per_km\"] = net.line[\"r_ohm_per_km\"].values * 4" )
-    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel if \
-            line["r0_ohm_per_km"].values.all() != 0 else \
-            line["r_ohm_per_km"].values * 4 * length / baseR / parallel 
-    # Just putting pos seq inducatance if zero seq inductance is zero
-    if not "x0_ohm_per_km" in line:
-        raise ValueError("Zero sequence reactance X0 needs to be specified\
-                         for line \n Try : net.line[\"x0_ohm_per_km\"] = net.line[\"x_ohm_per_km\"].values * 4" )
-    ppc["branch"][f:t, BR_X] = \
-        line["x0_ohm_per_km"].values * length / baseR / parallel if \
-            line["x0_ohm_per_km"].values.all() != 0 else \
-            line["x_ohm_per_km"].values * 4 *  length / baseR / parallel
-    # Just putting pos seq capacitance if zero seq capacitance is zero
-    if not "c0_nf_per_km" in line:
-        raise ValueError("Zero sequence capacitance C0 needs to be specified\
-                         for line \n Try : net.line[\"c0_nf_per_km\"] = net.line[\"c_nf_per_km\"].values * 0.25" )
-    ppc["branch"][f:t, BR_B] = \
-        (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR \
-         * length * parallel) if \
-            line["c0_nf_per_km"].values.all() != 0 else \
-            (2 * net["f_hz"] * math.pi * (line["c_nf_per_km"].values * 0.25) * 1e-9 \
-             * baseR * length * parallel)
-    ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
