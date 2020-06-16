@@ -86,6 +86,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         return
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net["_options"]["mode"]
+    trafo_model = net["_options"]["trafo_model"]
     f, t = branch_lookup["trafo"]
     trafo_df["_ppc_idx"] = range(f, t)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -208,7 +209,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            if mode == "sc":
+            if trafo_model == "pi":
                 y = y0_k # pi model
             else:
                 y = (YAB + YBN).astype(complex) * int(ppc["baseMVA"])  # T model
@@ -217,7 +218,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            if mode == "sc":
+            if trafo_model == "pi":
                 y = y0_k # pi model
             else:
                 y = (YAB_BN + YAN).astype(complex) * int(ppc["baseMVA"]) #T model
@@ -226,7 +227,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            if mode == "sc":
+            if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"]) #pi model
             else:
                 y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"]) #T model
@@ -253,7 +254,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            if mode == "sc":
+            if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#pi model
             else:
                 y = (YAB_BN + YAN).astype(complex) * int(ppc["baseMVA"])  # pi model
