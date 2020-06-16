@@ -69,6 +69,3 @@ def test_wind_park(wind_park_example):
 
 if __name__ == '__main__':
     pytest.main(["test_sgen.py"])
-
-
-

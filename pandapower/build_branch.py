@@ -178,7 +178,6 @@ def _calc_trafo_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
     branch = ppc["branch"]
-    temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
     trafo = net["trafo"]
     parallel = trafo["parallel"].values
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
