@@ -125,8 +125,6 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     if fault == "2ph":
         _calc_sc(net)
     if fault == "1ph":
-        if case == "min":
-            raise NotImplementedError("Minimum 1ph short-circuits are not yet implemented")
         _calc_sc_1ph(net)
 
 
