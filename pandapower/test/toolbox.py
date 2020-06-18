@@ -8,7 +8,7 @@ import os
 from math import isnan
 
 import numpy as np
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 import pytest
 import pandapower as pp
 

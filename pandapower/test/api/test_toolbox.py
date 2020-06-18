@@ -456,25 +456,25 @@ def test_select_subnet():
     # Should keep all trafo ('t') switches when buses are included
     hv_buses = set(net.trafo.hv_bus)
     lv_buses = set(net.trafo.lv_bus)
-    trafo_switch_buses = set(net.switch[net.switch.et=='t'].bus)
+    trafo_switch_buses = set(net.switch[net.switch.et == 't'].bus)
     subnet = pp.select_subnet(net, hv_buses | lv_buses | trafo_switch_buses)
-    assert net.switch[net.switch.et=='t'].index.isin(subnet.switch.index).all()
+    assert net.switch[net.switch.et == 't'].index.isin(subnet.switch.index).all()
 
     # Should keep all line ('l') switches when buses are included
     from_bus = set(net.line.from_bus)
     to_bus = set(net.line.to_bus)
-    line_switch_buses = set(net.switch[net.switch.et=='l'].bus)
+    line_switch_buses = set(net.switch[net.switch.et == 'l'].bus)
     subnet = pp.select_subnet(net, from_bus | to_bus | line_switch_buses)
-    assert net.switch[net.switch.et=='l'].index.isin(subnet.switch.index).all()
+    assert net.switch[net.switch.et == 'l'].index.isin(subnet.switch.index).all()
 
     # This network has switches of type 'b'
     net2 = nw.create_cigre_network_lv()
 
     # Should keep all bus-to-bus ('b') switches when buses are included
-    buses = set(net2.switch[net2.switch.et=='b'].bus)
-    elements = set(net2.switch[net2.switch.et=='b'].element)
+    buses = set(net2.switch[net2.switch.et == 'b'].bus)
+    elements = set(net2.switch[net2.switch.et == 'b'].element)
     subnet = pp.select_subnet(net2, buses | elements)
-    assert net2.switch[net2.switch.et=='b'].index.isin(subnet.switch.index).all()
+    assert net2.switch[net2.switch.et == 'b'].index.isin(subnet.switch.index).all()
 
 
 def test_overloaded_lines():
@@ -534,7 +534,6 @@ def test_add_zones_to_elements():
 
 
 def test_drop_inner_branches():
-
     def check_elm_number(net1, net2, excerpt_elms=None):
         excerpt_elms = set() if excerpt_elms is None else set(excerpt_elms)
         for elm in set(pp.pp_elements()) - excerpt_elms:
@@ -1109,6 +1108,27 @@ def test_replace_xward_by_internal_elements():
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+
+def test_repl_to_line():
+    net = nw.simple_four_bus_system()
+    idx = 0
+    std_type = "NAYY 4x150 SE"
+    new_idx = tb.repl_to_line(net, idx, std_type, in_service=True)
+    pp.runpp(net)
+
+    vm1 = net.res_bus.vm_pu.values
+    va1 = net.res_bus.va_degree.values
+
+    net.line.at[new_idx, "in_service"] = False
+    pp.change_std_type(net, idx, std_type)
+    pp.runpp(net)
+
+    vm0 = net.res_bus.vm_pu.values
+    va0 = net.res_bus.va_degree.values
+
+    assert np.allclose(vm1, vm0)
+    assert np.allclose(va1, va0)
 
 
 if __name__ == '__main__':
