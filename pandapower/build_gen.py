@@ -329,11 +329,11 @@ def _normalise_slack_weights(ppc):
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
     for subnet in subnets:
-        subnet_gen_idx = np.isin(gen_buses, subnet)
-        sum_dist_weights = np.sum(ppc['gen'][subnet_gen_idx, CON_FAC])
+        subnet_gen_mask = np.isin(gen_buses, subnet)
+        sum_dist_weights = np.sum(ppc['gen'][subnet_gen_mask, CON_FAC])
         if np.isclose(sum_dist_weights, 0):
-            # ppc['gen'][subnet_gen_idx, CON_FAC] = 0
+            # ppc['gen'][subnet_gen_mask, CON_FAC] = 0
             raise ValueError('Distributed slack contribution factors in an '
                              'island sum to zero.')
         else:
-            ppc['gen'][subnet_gen_idx, CON_FAC] /= sum_dist_weights
+            ppc['gen'][subnet_gen_mask, CON_FAC] /= sum_dist_weights
