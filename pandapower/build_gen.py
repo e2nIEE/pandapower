@@ -9,6 +9,7 @@ import numpy as np
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, CON_FAC
+from pandapower.auxiliary import _subnetworks
 
 try:
     import pplog as logging
@@ -30,6 +31,7 @@ def _build_gen_ppc(net, ppc):
     '''
 
     mode = net["_options"]["mode"]
+    distributed_slack = net["_options"]["distributed_slack"]
 
     if mode == "estimate":
         return
@@ -52,6 +54,9 @@ def _build_gen_ppc(net, ppc):
     for element, (f, t) in gen_order.items():
         add_element_to_gen(net, ppc, element, f, t)
     net._gen_order = gen_order
+
+    if distributed_slack:
+        _normalise_slack_weights(ppc)
 
 
 def add_gen_order(gen_order, element, _is_elements, f):
@@ -317,3 +322,18 @@ def _different_values_at_one_bus(buses, values):
     values_equal = first_values[buses]
 
     return not np.allclose(values, values_equal)
+
+
+def _normalise_slack_weights(ppc):
+    """ Unitise the slack contribution factors in each island to sum to 1. """
+    subnets = _subnetworks(ppc)
+    gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
+    for subnet in subnets:
+        subnet_gen_idx = np.isin(gen_buses, subnet)
+        sum_dist_weights = np.sum(ppc['gen'][subnet_gen_idx, CON_FAC])
+        if np.isclose(sum_dist_weights, 0):
+            # ppc['gen'][subnet_gen_idx, CON_FAC] = 0
+            raise ValueError('Distributed slack contribution factors in an '
+                             'island sum to zero.')
+        else:
+            ppc['gen'][subnet_gen_idx, CON_FAC] /= sum_dist_weights

@@ -37,7 +37,7 @@ import six
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV, REF
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -430,6 +430,40 @@ def _check_connectivity(ppc):
     bus_not_reachable[reachable] = False
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
+
+
+def _subnetworks(ppc):
+    """
+    Return a list of lists of the connected buses of the network
+    :param ppc: pypower case file
+    :return:
+    """
+    br_status = ppc['branch'][:, BR_STATUS] == True
+    oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
+    nobranch = ppc['branch'][br_status, :].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    # Note BUS_TYPE is never REF when the generator is out of service.
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
+
+    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
+                                      shape=(nobus, nobus))
+
+    # Set out of service buses to have no connections.
+    adj_matrix[oos_bus, :] = 0
+    adj_matrix[:, oos_bus] = 0
+
+    traversed_buses = set()
+    subnets = []
+    for slack in slacks:
+        if slack in traversed_buses:
+            continue
+        reachable = sp.sparse.csgraph.breadth_first_order(
+            adj_matrix, slack, directed=False, return_predecessors=False)
+        traversed_buses |= set(reachable)
+        subnets.append(list(reachable))
+    return subnets
 
 
 def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
