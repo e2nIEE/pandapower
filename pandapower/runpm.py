@@ -52,6 +52,8 @@ def runpm(net, sysimage_file=None, julia_file=None, pp_to_pm_callback=None, calc
         **net** - The pandapower format network
 
     OPTIONAL:
+        **sysimage_file** (str, None) - path to a custom julia sysimage file
+
         **julia_file** (str, None) - path to a custom julia optimization file
 
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
@@ -126,6 +128,8 @@ def runpm_dc_opf(net, sysimage_file=None, pp_to_pm_callback=None, calculate_volt
         **net** - The pandapower format network
 
     OPTIONAL:
+        **sysimage_file** (str, None) - path to a custom julia sysimage file
+
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
         **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
@@ -232,6 +236,8 @@ def runpm_tnep(net, sysimage_file=None, pp_to_pm_callback=None, calculate_voltag
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
 
     OPTIONAL:
+        **sysimage_file** (str, None) - path to a custom julia sysimage file
+
         **julia_file** (str, None) - path to a custom julia optimization file
 
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
@@ -283,6 +289,8 @@ def runpm_ots(net, sysimage_file=None, pp_to_pm_callback=None, calculate_voltage
     Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
 
     OPTIONAL:
+        **sysimage_file** (str, None) - path to a custom julia sysimage file
+
         **julia_file** (str, None) - path to a custom julia optimization file
 
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
