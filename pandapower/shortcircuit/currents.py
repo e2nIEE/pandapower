@@ -86,7 +86,7 @@ def _calc_branch_currents(net, ppc):
     case = net._options["case"]
     Zbus = ppc["internal"]["Zbus"]
     Yf = ppc["internal"]["Yf"]
-    Yt = ppc["internal"]["Yf"]
+    Yt = ppc["internal"]["Yt"]
     baseI = ppc["internal"]["baseI"]
     n = ppc["bus"].shape[0]
     fb = np.real(ppc["branch"][:, 0]).astype(int)
