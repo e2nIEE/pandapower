@@ -171,7 +171,7 @@ def create_pm_lookups(net, pm_lookup):
             pm_val = dict()
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple((v + 1 for v in subval))
-        elif isinstance(val, int):
+        elif isinstance(val, int) or isinstance(val, np.ndarray):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
