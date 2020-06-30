@@ -60,7 +60,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print('\r%s |%s| %s%% %s\n' % (prefix, bar, percent, suffix), end="")
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
     # Print New Line on Complete
     if iteration == total:
         print("\n")
