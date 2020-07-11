@@ -235,6 +235,109 @@ def test_create_lines():
     assert net.line.at[l[1], "parallel"] == 1
 
 
+def test_create_lines_from_parameters():
+    # standard
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                        r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 0
+    assert len(net.line.x_ohm_per_km) == 2
+    assert len(net.line.r_ohm_per_km) == 2
+    assert len(net.line.c_nf_per_km) == 2
+    assert len(net.line.max_i_ka) == 2
+    assert len(net.line.df) == 2
+
+    # with geodata
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                        r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100],
+                                        geodata=[[(1,1),(2,2),(3,3)], [(1,1),(1,2)]])
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line_geodata.at[l[0], "coords"] == [(1,1),(2,2),(3,3)]
+    assert net.line_geodata.at[l[1], "coords"] == [(1,1),(1,2)]
+
+    # setting params as single value
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=5, x_ohm_per_km=1,
+                                        r_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=100, df=0.8, in_service=False,
+                                        geodata=[(10, 10), (20, 20)], parallel=1, max_loading_percent=90, name='test',
+                                        r0_ohm_per_km=0.1)
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line.length_km.at[l[0]] == 5
+    assert net.line.length_km.at[l[1]] == 5
+    assert net.line.x_ohm_per_km.at[l[0]] == 1
+    assert net.line.x_ohm_per_km.at[l[1]] == 1
+    assert net.line.r_ohm_per_km.at[l[0]] == 0.2
+    assert net.line.r_ohm_per_km.at[l[1]] == 0.2
+    assert net.line.r0_ohm_per_km.at[l[0]] == 0.1
+    assert net.line.r0_ohm_per_km.at[l[1]] == 0.1
+    assert net.line.at[l[0], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
+    assert net.line_geodata.at[l[1], "coords"] == [(10,10), (20,20)]
+    assert net.line.at[l[0], "name"] == "test"
+    assert net.line.at[l[1], "name"] == "test"
+    assert net.line.at[l[0], "max_loading_percent"] == 90
+    assert net.line.at[l[1], "max_loading_percent"] == 90
+    assert net.line.at[l[0], "parallel"] == 1
+    assert net.line.at[l[1], "parallel"] == 1
+
+    # setting params as array
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=[1, 5], r_ohm_per_km=[1, 2],
+                                        x_ohm_per_km=[0.3, 0.5], c_nf_per_km=[0., 0.1], r0_ohm_per_km=[0.1, 0.15],
+                                        x0_ohm_per_km=[0.2, 0.25], df=[0.8, 0.7], in_service=[True, False],
+                                        geodata=[[(10, 10), (20, 20)], [(100, 10), (200, 20)]], parallel=[2, 1],
+                                        max_loading_percent=[80, 90], name=["test1", "test2"], max_i_ka=[100, 200])
+
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 2
+    assert net.line.at[l[0], "length_km"] == 1
+    assert net.line.at[l[1], "length_km"] == 5
+    assert net.line.at[l[0], "r_ohm_per_km"] == 1
+    assert net.line.at[l[1], "r_ohm_per_km"] == 2
+    assert net.line.at[l[0], "x_ohm_per_km"] == 0.3
+    assert net.line.at[l[1], "x_ohm_per_km"] == 0.5
+    assert net.line.at[l[0], "c_nf_per_km"] == 0.
+    assert net.line.at[l[1], "c_nf_per_km"] == 0.1
+    assert net.line.at[l[0], "r0_ohm_per_km"] == 0.1
+    assert net.line.at[l[1], "r0_ohm_per_km"] == 0.15
+    assert net.line.at[l[0], "x0_ohm_per_km"] == 0.2
+    assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
+    assert net.line.at[l[0], "in_service"] == True  # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
+    assert net.line_geodata.at[l[1], "coords"] == [(100,10), (200,20)]
+    assert net.line.at[l[0], "name"] == "test1"
+    assert net.line.at[l[1], "name"] == "test2"
+    assert net.line.at[l[0], "max_loading_percent"] == 80
+    assert net.line.at[l[1], "max_loading_percent"] == 90
+    assert net.line.at[l[0], "parallel"] == 2
+    assert net.line.at[l[1], "parallel"] == 1
+    assert net.line.at[l[0], "max_i_ka"] == 100
+    assert net.line.at[l[1], "max_i_ka"] == 200
+
+    # non existent bus
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    with pytest.raises(Exception):  # exception has to be raised since bus doesn't exist
+        l = pp.create_lines_from_parameters(net, [b1, b1, b2], [b2, b2, 3], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                            r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
+
 def test_create_line_alpha_temperature():
     net=pp.create_empty_network()
     b = pp.create_buses(net, 5, 110)

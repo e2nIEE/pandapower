@@ -1997,6 +1997,189 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     return index
 
 
+def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
+                                 c_nf_per_km, max_i_ka,
+                                 name=None, index=None, type=None,
+                                 geodata=None, in_service=True, df=1.,
+                                 parallel=1, g_us_per_km=0.,
+                                 max_loading_percent=nan, alpha=None,
+                                 temperature_degree_celsius=None,
+                                 r0_ohm_per_km=nan, x0_ohm_per_km=nan,
+                                 c0_nf_per_km=nan, g0_us_per_km=nan, **kwargs):
+    """
+    Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values.
+
+    INPUT:
+        **net** - The net within this line should be created
+
+        **from_bus** (list of int) - ID of the bus on one side which the line will be connected with
+
+        **to_bus** (list of int) - ID of the bus on the other side which the line will be connected with
+
+        **length_km** (list of float) - The line length in km
+
+        **r_ohm_per_km** (list of float) - line resistance in ohm per km
+
+        **x_ohm_per_km** (list of float) - line reactance in ohm per km
+
+        **c_nf_per_km** (list of float) - line capacitance in nano Farad per km
+
+        **r0_ohm_per_km** (list of float) - zero sequence line resistance in ohm per km
+
+        **x0_ohm_per_km** (list of float) - zero sequence line reactance in ohm per km
+
+        **c0_nf_per_km** (list of float) - zero sequence line capacitance in nano Farad per km
+
+        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
+
+    OPTIONAL:
+        **name** (string, None) - A custom name for this line
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (boolean, True) - True for in_service or False for out of service
+
+        **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
+
+        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
+            of line (from 0 to 1)
+
+        **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
+
+        **g0_us_per_km** (float, 0) - zero sequence dielectric conductance in micro Siemens per km
+
+        **parallel** (integer, 1) - number of parallel line systems
+
+        **geodata**
+        (array, default None, shape= (,2L)) -
+        The linegeodata of the line. The first row should be the coordinates
+        of bus a and the last should be the coordinates of bus b. The points
+        in the middle represent the bending points of the line
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created line
+
+    EXAMPLE:
+        create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
+        r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
+        max_i_ka = 0.4)
+
+    """
+    nr_lines = len(from_buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.line.index:
+                raise UserWarning("A line with index %s already exists" % index)
+    else:
+        lid = get_free_id(net["line"])
+        index = arange(lid, lid + nr_lines, 1)
+
+    dtypes = net.line.dtypes
+
+    dd = pd.DataFrame(index=index, columns=net.line.columns)
+
+    # user defined params
+    dd["from_bus"] = from_buses
+    dd["to_bus"] = to_buses
+    dd["length_km"] = length_km
+    dd["type"] = type
+    dd["r_ohm_per_km"] = r_ohm_per_km
+    dd["x_ohm_per_km"] = x_ohm_per_km
+    dd["c_nf_per_km"] = c_nf_per_km
+    dd["max_i_ka"] = max_i_ka
+    dd["g_us_per_km"] = g_us_per_km
+
+    # optional params
+    dd["name"] = name
+    dd["df"] = df
+    dd["parallel"] = parallel
+    dd["in_service"] = in_service
+
+    if hasattr(r0_ohm_per_km, '__iter__'):
+        dd["r0_ohm_per_km"] = r0_ohm_per_km
+        dd["r0_ohm_per_km"] = dd["r0_ohm_per_km"].astype(float)
+    elif not isnan(r0_ohm_per_km):
+        dd["r0_ohm_per_km"] = r0_ohm_per_km
+        dd["r0_ohm_per_km"] = dd["r0_ohm_per_km"].astype(float)
+
+    if hasattr(x0_ohm_per_km, '__iter__'):
+        dd["x0_ohm_per_km"] = x0_ohm_per_km
+        dd["x0_ohm_per_km"] = dd["x0_ohm_per_km"].astype(float)
+    elif not isnan(x0_ohm_per_km):
+        dd["x0_ohm_per_km"] = x0_ohm_per_km
+        dd["x0_ohm_per_km"] = dd["x0_ohm_per_km"].astype(float)
+
+    if hasattr(c0_nf_per_km, '__iter__'):
+        dd["c0_nf_per_km"] = c0_nf_per_km
+        dd["c0_nf_per_km"] = dd["c0_nf_per_km"].astype(float)
+    elif not isnan(c0_nf_per_km):
+        dd["c0_nf_per_km"] = c0_nf_per_km
+        dd["c0_nf_per_km"] = dd["c0_nf_per_km"].astype(float)
+
+    if hasattr(g0_us_per_km, '__iter__'):
+        dd["g0_us_per_km"] = g0_us_per_km
+        dd["g0_us_per_km"] = dd["g0_us_per_km"].astype(float)
+    elif not isnan(g0_us_per_km):
+        dd["g0_us_per_km"] = float(g0_us_per_km)
+        dd["g0_us_per_km"] = dd["g0_us_per_km"].astype(float)
+
+    if hasattr(max_loading_percent, '__iter__'):
+        dd["max_loading_percent"] = max_loading_percent
+        dd["max_loading_percent"] = dd["max_loading_percent"].astype(float)
+    elif not isnan(max_loading_percent):
+        dd["max_loading_percent"] = max_loading_percent
+        dd["max_loading_percent"] = dd["max_loading_percent"].astype(float)
+
+    if hasattr(temperature_degree_celsius, '__iter__'):
+        dd["temperature_degree_celsius"] = temperature_degree_celsius
+        dd["temperature_degree_celsius"] = dd["temperature_degree_celsius"].astype(float)
+    elif temperature_degree_celsius is not None:
+        dd["temperature_degree_celsius"] = temperature_degree_celsius
+        dd["temperature_degree_celsius"] = dd["temperature_degree_celsius"].astype(float)
+
+    if hasattr(alpha, '__iter__'):
+        dd["alpha"] = alpha
+        dd["alpha"] = dd["alpha"].astype(float)
+    elif alpha is not None:
+        dd["alpha"] = alpha
+        dd["alpha"] = dd["alpha"].astype(float)
+
+    # extend the lines by the frame we just created
+    if version.parse(pd.__version__) >= version.parse("0.23"):
+        net["line"] = net["line"].append(dd, sort=False)
+    else:
+        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+        net["line"] = net["line"].append(dd)
+
+    _preserve_dtypes(net.line, dtypes)
+
+    if geodata is not None:
+        dtypes = net.line_geodata.dtypes
+        df = pd.DataFrame(index=index, columns=net.line_geodata.columns)
+        # works with single or multiple lists of coordinates
+        if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
+            # geodata is a single list of coordinates
+            df["coords"] = [geodata] * len(index)
+        else:
+            # geodata is multiple lists of coordinates
+            df["coords"] = geodata
+
+        if version.parse(pd.__version__) >= version.parse("0.23"):
+            net.line_geodata = net.line_geodata.append(df, sort=False)
+        else:
+            # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+            net.line_geodata = net.line_geodata.append(df)
+
+        _preserve_dtypes(net.line_geodata, dtypes)
+
+    return index
+
+
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None, geodata=None,
                  df=1., parallel=1, in_service=True, max_loading_percent=nan):
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
