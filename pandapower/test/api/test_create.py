@@ -330,6 +330,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[0], "max_i_ka"] == 100
     assert net.line.at[l[1], "max_i_ka"] == 200
 
+
 def test_create_line_alpha_temperature():
     net=pp.create_empty_network()
     b = pp.create_buses(net, 5, 110)
@@ -346,6 +347,72 @@ def test_create_line_alpha_temperature():
     assert net.line.loc[l2, 'temperature_degree_celsius'] == 80
     assert all(net.line.loc[[l1,l3,l4,l5], 'temperature_degree_celsius'].isnull())
 
+
+def test_create_transformers_from_parameters():
+    # standard
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 15)
+    b2 = pp.create_bus(net, 0.4)
+    t = pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                               i0_percent=0.3)
+    assert len(net.trafo) == 2
+    assert len(net.trafo.vk_percent) == 2
+    assert len(net.trafo.vkr_percent) == 2
+    assert len(net.trafo.pfe_kw) == 2
+    assert len(net.trafo.i0_percent) == 2
+    assert len(net.trafo.df) == 2
+
+    # setting params as single value
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 15)
+    b2 = pp.create_bus(net, 0.4)
+    t = pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45,
+                                               sn_mva= 0.5, vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3,
+                                               vk0_percent=0.4, mag0_rx=0.4, mag0_percent=0.3, tap_neutral=0.)
+    assert len(net.trafo) == 2
+    assert all(net.trafo.hv_bus == 0)
+    assert all(net.trafo.lv_bus == 1)
+    assert all(net.trafo.sn_mva == 0.5)
+    assert all(net.trafo.vn_hv_kv == 15.)
+    assert all(net.trafo.vn_lv_kv == 0.45)
+    assert all(net.trafo.vk_percent == 1.)
+    assert all(net.trafo.vkr_percent == 0.3)
+    assert all(net.trafo.pfe_kw == 0.2)
+    assert all(net.trafo.i0_percent == 0.3)
+    assert all(net.trafo.vk0_percent == 0.4)
+    assert all(net.trafo.mag0_rx == 0.4)
+    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.tap_neutral == 0.)
+    assert all(net.trafo.tap_pos == 0.)
+
+    # setting params as array
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    t = pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=[15., 15.], sn_mva=[0.6, 0.6],
+                                               vn_lv_kv=[0.45, 0.45], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3],
+                                               pfe_kw=[0.2, 0.2], i0_percent=[0.3, 0.3],  vk0_percent=[0.4, 0.4],
+                                               mag0_rx=[0.4, 0.4], mag0_percent=[0.3, 0.3], tap_neutral=[0., 1.],
+                                               tap_pos=[-1, 4])
+    print(net.trafo.tap_neutral)
+    assert len(net.trafo) == 2
+    assert all(net.trafo.hv_bus == 0)
+    assert all(net.trafo.lv_bus == 1)
+    assert all(net.trafo.vn_hv_kv == 15.)
+    assert all(net.trafo.vn_lv_kv == 0.45)
+    assert all(net.trafo.sn_mva == 0.6)
+    assert all(net.trafo.vk_percent == 1.)
+    assert all(net.trafo.vkr_percent == 0.3)
+    assert all(net.trafo.pfe_kw == 0.2)
+    assert all(net.trafo.i0_percent == 0.3)
+    assert all(net.trafo.vk0_percent == 0.4)
+    assert all(net.trafo.mag0_rx == 0.4)
+    assert all(net.trafo.mag0_percent == 0.3)
+    assert net.trafo.tap_neutral.at[t[0]] == 0
+    assert net.trafo.tap_neutral.at[t[1]] == 1
+    assert net.trafo.tap_pos.at[t[0]] == -1
+    assert net.trafo.tap_pos.at[t[1]] == 4
 
 
 if __name__ == '__main__':

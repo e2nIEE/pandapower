@@ -2599,6 +2599,164 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     return index
 
 
+def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_kv, vn_lv_kv,
+                                       vkr_percent, vk_percent, pfe_kw, i0_percent,
+                                       shift_degree=0,
+                                       tap_side=None, tap_neutral=nan, tap_max=nan,
+                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
+                                       tap_pos=nan, tap_phase_shifter=False, in_service=True,
+                                       name=None, vector_group=None, index=None,
+                                       max_loading_percent=None, parallel=1,
+                                       df=1., vk0_percent=None, vkr0_percent=None,
+                                       mag0_percent=None, mag0_rx=None,
+                                       si0_hv_partial=None, **kwargs):
+    """
+    Creates a two-winding transformer in table net["trafo"].
+    The trafo parameters are defined through the standard type library.
+
+    INPUT:
+        **net** - The net within this transformer should be created
+
+        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will be \
+            connected to
+
+        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will be \
+            connected to
+
+        **sn_mva** (list of float) - rated apparent power
+
+        **vn_hv_kv** (list of float) - rated voltage on high voltage side
+
+        **vn_lv_kv** (list of float) - rated voltage on low voltage side
+
+        **vkr_percent** (list of float) - real part of relative short-circuit voltage
+
+        **vk_percent** (list of float) - relative short-circuit voltage
+
+        **pfe_kw** (list of float)  - iron losses in kW
+
+        **i0_percent** (list of float) - open loop losses in percent of rated current
+
+        **vector_group** (list of String) - Vector group of the transformer
+
+            HV side is Uppercase letters
+            and LV side is lower case
+
+        **vk0_percent** (list of float) - zero sequence relative short-circuit voltage
+
+        **vkr0_percent** - (list of float) real part of zero sequence relative short-circuit voltage
+
+        **mag0_percent** - (list of float)  zero sequence magnetizing impedance/ vk0
+
+        **mag0_rx**  - (list of float)  zero sequence magnitizing R/X ratio
+
+        **si0_hv_partial** - (list of float)  Distribution of zero sequence leakage impedances for HV side
+
+
+    OPTIONAL:
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **parallel** (integer) - number of parallel transformers
+
+        **name** (string) - A custom name for this transformer
+
+        **shift_degree** (float) - Angle shift over the transformer*
+
+        **tap_side** (string) - position of tap changer ("hv", "lv")
+
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
+            position (tap_neutral)
+
+        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the ration of \
+            the rated voltages
+
+        **tap_max** (int, nan) - maximal allowed tap position
+
+        **tap_min** (int, nan):  minimal allowed tap position
+
+        **tap_step_percent** (float) - tap step size for voltage magnitude in percent
+
+        **tap_step_degree** (float) - tap step size for voltage angle in degree*
+
+        **tap_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+            current of transformer (from 0 to 1)
+
+        ** only considered in loadflow if calculate_voltage_angles = True
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created transformer
+
+    EXAMPLE:
+        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
+            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
+            i0_percent=0.1, shift_degree=30)
+    """
+
+    nr_trafo = len(hv_buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.trafo.index:
+                raise UserWarning("A trafo with index %s already exists" % index)
+    else:
+        tid = get_free_id(net["trafo"])
+        index = arange(tid, tid + nr_trafo, 1)
+
+    dtypes = net.trafo.dtypes
+
+    new_trafos = pd.DataFrame(index=index, columns=net.trafo.columns)
+
+    # store dtypes
+    dtypes = net.trafo.dtypes
+
+    parameters = {
+        "name": name, "hv_bus": hv_buses, "lv_bus": lv_buses,
+        "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
+        "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
+        "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree, "tap_pos": tap_pos,
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
+    }
+
+    new_trafos = new_trafos.assign(**parameters)
+    new_trafos["tap_pos"] = new_trafos["tap_pos"].fillna(new_trafos.tap_neutral).astype(float)
+
+    if vk0_percent is not None:
+        new_trafos["vk0_percent"] = vk0_percent
+        new_trafos["vk0_percent"] = new_trafos["vk0_percent"].astype(float)
+    if vkr0_percent is not None:
+        new_trafos["vkr0_percent"] = vk0_percent
+        new_trafos["vkr0_percent"] = new_trafos["vkr0_percent"].astype(float)
+    if mag0_percent is not None:
+        new_trafos["mag0_percent"] = mag0_percent
+        new_trafos["mag0_percent"] = new_trafos["mag0_percent"].astype(float)
+    if mag0_rx is not None:
+        new_trafos["mag0_rx"] = mag0_rx
+        new_trafos["mag0_rx"] = new_trafos["mag0_rx"].astype(float)
+    if si0_hv_partial is not None:
+        new_trafos["si0_hv_partial"] = si0_hv_partial
+        new_trafos["si0_hv_partial"] = new_trafos["si0_hv_partial"].astype(float)
+    if vector_group is not None:
+        new_trafos["vector_group"] = vector_group
+        new_trafos["vector_group"] = new_trafos["vector_group"].astype(str)
+    if max_loading_percent is not None:
+        new_trafos["max_loading_percent"] = max_loading_percent
+        new_trafos["max_loading_percent"] = new_trafos["max_loading_percent"].astype(float)
+
+    net["trafo"] = net["trafo"].append(new_trafos)
+    # and preserve dtypes
+    _preserve_dtypes(net.trafo, dtypes)
+
+    return index
+
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
                          tap_at_star_point=False):
