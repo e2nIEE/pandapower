@@ -330,14 +330,6 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[0], "max_i_ka"] == 100
     assert net.line.at[l[1], "max_i_ka"] == 200
 
-    # non existent bus
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    with pytest.raises(Exception):  # exception has to be raised since bus doesn't exist
-        l = pp.create_lines_from_parameters(net, [b1, b1, b2], [b2, b2, 3], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
-                                            r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
-
 def test_create_line_alpha_temperature():
     net=pp.create_empty_network()
     b = pp.create_buses(net, 5, 110)
