@@ -355,13 +355,14 @@ def test_create_transformers_from_parameters():
     b2 = pp.create_bus(net, 0.4)
     t = pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
                                                sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3)
+                                               i0_percent=0.3, foo=2)
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
     assert len(net.trafo.pfe_kw) == 2
     assert len(net.trafo.i0_percent) == 2
     assert len(net.trafo.df) == 2
+    assert len(net.trafo.foo) == 2
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -414,6 +415,79 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[0]] == -1
     assert net.trafo.tap_pos.at[t[1]] == 4
 
+
+def test_create_transformers3w_from_parameters():
+
+    # setting params as single value
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 15)
+    b2 = pp.create_bus(net, 0.4)
+    b3 = pp.create_bus(net, 0.9)
+    t = pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
+                                               vn_hv_kv=15., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5,
+                                               sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
+                                               vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
+                                               pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
+                                               mag0_rx=0.4, mag0_percent=0.3)
+    assert len(net.trafo3w) == 2
+    assert all(net.trafo3w.hv_bus == 0)
+    assert all(net.trafo3w.lv_bus == 1)
+    assert all(net.trafo3w.mv_bus == 2)
+    assert all(net.trafo3w.sn_hv_mva == 0.6)
+    assert all(net.trafo3w.sn_mv_mva == 0.5)
+    assert all(net.trafo3w.sn_lv_mva == 0.4)
+    assert all(net.trafo3w.vn_hv_kv == 15.)
+    assert all(net.trafo3w.vn_mv_kv == 0.9)
+    assert all(net.trafo3w.vn_lv_kv == 0.45)
+    assert all(net.trafo3w.vk_hv_percent == 1.)
+    assert all(net.trafo3w.vk_mv_percent == 1.)
+    assert all(net.trafo3w.vk_lv_percent == 1.)
+    assert all(net.trafo3w.vkr_hv_percent == 0.3)
+    assert all(net.trafo3w.vkr_mv_percent == 0.3)
+    assert all(net.trafo3w.vkr_lv_percent == 0.3)
+    assert all(net.trafo3w.pfe_kw == 0.2)
+    assert all(net.trafo3w.i0_percent == 0.3)
+    assert all(net.trafo3w.mag0_rx == 0.4)
+    assert all(net.trafo3w.mag0_percent == 0.3)
+    assert all(net.trafo3w.tap_neutral == 0.)
+    assert all(net.trafo3w.tap_pos == 0.)
+
+    # setting params as array
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 0.4)
+    b3 = pp.create_bus(net, 0.9)
+    t = pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
+                                                 vn_hv_kv=[15., 14.5], vn_mv_kv=[0.9, 0.7], vn_lv_kv=[0.45, 0.5],
+                                                 sn_hv_mva= [0.6, 0.7], sn_mv_mva=[0.5, 0.4], sn_lv_mva=[0.4, 0.3],
+                                                 vk_hv_percent=[1., 1.], vk_mv_percent=[1., 1.], vk_lv_percent=[1.,1.],
+                                                 vkr_hv_percent=[0.3, 0.3], vkr_mv_percent=[0.3, 0.3],
+                                                 vkr_lv_percent=[0.3, 0.3], pfe_kw=[0.2, 0.1], i0_percent=[0.3, 0.2],
+                                                 tap_neutral=[0., 5.], tap_pos=[1, 2], in_service=[True, False],
+                                                 custom_arg= ['foo', 'bar']
+                                                 )
+    assert len(net.trafo3w) == 2
+    assert all(net.trafo3w.hv_bus == 0)
+    assert all(net.trafo3w.lv_bus == 1)
+    assert all(net.trafo3w.mv_bus == 2)
+    assert all(net.trafo3w.sn_hv_mva == [0.6, 0.7])
+    assert all(net.trafo3w.sn_mv_mva == [0.5, 0.4])
+    assert all(net.trafo3w.sn_lv_mva == [0.4, 0.3])
+    assert all(net.trafo3w.vn_hv_kv == [15., 14.5])
+    assert all(net.trafo3w.vn_mv_kv == [0.9, 0.7])
+    assert all(net.trafo3w.vn_lv_kv == [0.45, 0.5])
+    assert all(net.trafo3w.vk_hv_percent == 1.)
+    assert all(net.trafo3w.vk_mv_percent == 1.)
+    assert all(net.trafo3w.vk_lv_percent == 1.)
+    assert all(net.trafo3w.vkr_hv_percent == 0.3)
+    assert all(net.trafo3w.vkr_mv_percent == 0.3)
+    assert all(net.trafo3w.vkr_lv_percent == 0.3)
+    assert all(net.trafo3w.pfe_kw == [0.2, 0.1])
+    assert all(net.trafo3w.i0_percent == [0.3, 0.2])
+    assert all(net.trafo3w.tap_neutral == [0., 5.])
+    assert all(net.trafo3w.tap_pos == [1, 2])
+    assert all(net.trafo3w.in_service == [True, False])
+    assert all(net.trafo3w.custom_arg == ['foo', 'bar'])
 
 if __name__ == '__main__':
     test_create_lines()

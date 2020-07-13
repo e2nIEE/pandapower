@@ -2709,8 +2709,6 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
 
-    dtypes = net.trafo.dtypes
-
     new_trafos = pd.DataFrame(index=index, columns=net.trafo.columns)
 
     # store dtypes
@@ -2750,6 +2748,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     if max_loading_percent is not None:
         new_trafos["max_loading_percent"] = max_loading_percent
         new_trafos["max_loading_percent"] = new_trafos["max_loading_percent"].astype(float)
+
+    for label, value in kwargs.items():
+        new_trafos[label] = value
 
     net["trafo"] = net["trafo"].append(new_trafos)
     # and preserve dtypes
@@ -3002,6 +3003,147 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
             net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
 
         net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    return index
+
+
+def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_hv_kv, vn_mv_kv, vn_lv_kv,
+                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
+                                         vk_mv_percent, vk_lv_percent, vkr_hv_percent,
+                                         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
+                                         shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
+                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
+                                         tap_neutral=nan, tap_max=nan,
+                                         tap_min=nan, name=None, in_service=True, index=None,
+                                         max_loading_percent=None, tap_at_star_point=False, **kwargs):
+    """
+    Adds a three-winding transformer in table net["trafo3w"].
+
+    Input:
+        **net** (pandapowerNet) - The net within this transformer should be created
+
+        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
+            connected to
+
+        **mv_bus** (int) - The bus on the middle-voltage side on which the transformer will be \
+            connected to
+
+        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
+            connected to
+
+        **vn_hv_kv** (float) rated voltage on high voltage side
+
+        **vn_mv_kv** (float) rated voltage on medium voltage side
+
+        **vn_lv_kv** (float) rated voltage on low voltage side
+
+        **sn_hv_mva** (float) - rated apparent power on high voltage side
+
+        **sn_mv_mva** (float) - rated apparent power on medium voltage side
+
+        **sn_lv_mva** (float) - rated apparent power on low voltage side
+
+        **vk_hv_percent** (float) - short circuit voltage from high to medium voltage
+
+        **vk_mv_percent** (float) - short circuit voltage from medium to low voltage
+
+        **vk_lv_percent** (float) - short circuit voltage from high to low voltage
+
+        **vkr_hv_percent** (float) - real part of short circuit voltage from high to medium voltage
+
+        **vkr_mv_percent** (float) - real part of short circuit voltage from medium to low voltage
+
+        **vkr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
+
+        **pfe_kw** (float) - iron losses in kW
+
+        **i0_percent** (float) - open loop losses
+
+    OPTIONAL:
+        **shift_mv_degree** (float, 0) - angle shift to medium voltage side*
+
+        **shift_lv_degree** (float, 0) - angle shift to low voltage side*
+
+        **tap_step_percent** (float) - Tap step in percent
+
+        **tap_step_degree** (float) - Tap phase shift angle in degrees
+
+        **tap_side** (string, None) - "hv", "mv", "lv"
+
+        **tap_neutral** (int, nan) - default tap position
+
+        **tap_min** (int, nan) - Minimum tap position
+
+        **tap_max** (int, nan) - Maximum tap position
+
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
+            medium position (tap_neutral)
+
+        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
+            3W-transformer or at the bus
+
+        **name** (string, None) - Name of the 3-winding transformer
+
+        **in_service** (boolean, True) - True for in_service or False for out of service
+
+        ** only considered in loadflow if calculate_voltage_angles = True
+        **The model currently only supports one tap-changer per 3W Transformer.
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+    OUTPUT:
+        **trafo_id** - The unique trafo_id of the created 3W transformer
+
+    Example:
+        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
+        sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
+        vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
+        vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
+        shift_lv_degree=30)
+
+    """
+    nr_trafo = len(hv_buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.trafo.index:
+                raise UserWarning("A three winding transformer with index %s already exists" % index)
+    else:
+        tid = get_free_id(net["trafo"])
+        index = arange(tid, tid + nr_trafo, 1)
+
+    new_trafos = pd.DataFrame(index=index, columns=net.trafo3w.columns)
+
+    # store dtypes
+    dtypes = net.trafo3w.dtypes
+
+    parameters = {
+        "lv_bus":lv_buses, "mv_bus":mv_buses, "hv_bus":hv_buses, "vn_hv_kv":vn_hv_kv, "vn_mv_kv":vn_mv_kv,
+        "vn_lv_kv":vn_lv_kv, "sn_hv_mva":sn_hv_mva, "sn_mv_mva":sn_mv_mva, "sn_lv_mva":sn_lv_mva,
+        "vk_hv_percent":vk_hv_percent, "vk_mv_percent":vk_mv_percent, "vk_lv_percent":vk_lv_percent,
+        "vkr_hv_percent":vkr_hv_percent, "vkr_mv_percent":vkr_mv_percent, "vkr_lv_percent":vkr_lv_percent,
+        "pfe_kw":pfe_kw, "i0_percent":i0_percent, "shift_mv_degree":shift_mv_degree, "shift_lv_degree":shift_lv_degree,
+        "tap_side":tap_side, "tap_step_percent":tap_step_percent, "tap_step_degree":tap_step_degree,
+        "tap_pos":tap_pos, "tap_neutral":tap_neutral, "tap_max":tap_max, "tap_min":tap_min, "in_service":in_service,
+        "name":name,  "tap_at_star_point":tap_at_star_point, "std_type":None
+    }
+
+    new_trafos = new_trafos.assign(**parameters)
+    new_trafos["tap_pos"] = new_trafos["tap_pos"].fillna(new_trafos.tap_neutral).astype(float)
+
+    if max_loading_percent is not None:
+        new_trafos['max_loading_percent'] = max_loading_percent
+        new_trafos['max_loading_percent'] = new_trafos['max_loading_percent'].astype(float)
+
+    for label, value in kwargs.items():
+        new_trafos[label] = value
+
+    # store dtypes
+    dtypes = net.trafo3w.dtypes
+
+    net["trafo3w"] = net["trafo3w"].append(new_trafos)
+
+    # and preserve dtypes
+    _preserve_dtypes(net.trafo3w, dtypes)
 
     return index
 
