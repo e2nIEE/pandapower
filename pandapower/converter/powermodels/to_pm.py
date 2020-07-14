@@ -171,12 +171,15 @@ def create_pm_lookups(net, pm_lookup):
             pm_val = dict()
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple((v + 1 for v in subval))
-        else:
+        elif isinstance(val, int) or isinstance(val, np.ndarray):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
             # restore -1 for not existing elements
             pm_val[pm_val == 0] = -1
+        else:
+            # val not supported
+            continue
         pm_lookup[key] = pm_val
     net._pd2pm_lookups = pm_lookup
     return net
