@@ -13,7 +13,7 @@
 from numpy import ones, r_, pi, flatnonzero as find, real
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
-from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import csc_matrix as sparse
 
 try:
     import pplog as logging
@@ -84,3 +84,4 @@ def makeBdc(bus, branch):
     Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
 
     return Bbus, Bf, Pbusinj, Pfinj
+

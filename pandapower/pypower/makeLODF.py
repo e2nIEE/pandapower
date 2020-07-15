@@ -42,7 +42,7 @@ def makeLODF(branch, PTDF):
     # Avoid zero division error 
     # Implies a N-1 contingency (No backup branch)
     den = (ones((nl, nl)) - ones((nl, 1)) * h.T)
-    den[den == 0] = 1e-100
+    #den[den == 0] = 1e-100
     LODF = (H / den)
     LODF = LODF - diag(diag(LODF)) - eye(nl, nl)
 
