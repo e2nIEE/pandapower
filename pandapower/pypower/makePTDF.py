@@ -61,18 +61,15 @@ def makePTDF(baseMVA, bus, branch, slack=None, using_sparse_solver=False):
     if any(bus[:, BUS_I] != arange(nb)):
         stderr.write('makePTDF: buses must be numbered consecutively')
 
+    H = zeros((nbr, nb))
+    # compute PTDF for single slack_bus
     if using_sparse_solver:
-        # compute PTDF for single slack_bus
         Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
         Bbus, Bf = Bbus.real, Bf.real.toarray()
-
-        H = zeros((nbr, nb))
         H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
     else:
-        # compute PTDF for single slack_bus
         Bbus, Bf, _, _ = makeBdc(bus, branch)
         Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
-        H = zeros((nbr, nb))
         H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
 
 

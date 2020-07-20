@@ -14,8 +14,7 @@ from numpy import ones, r_, pi, flatnonzero as find, real
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
 
-from scipy.sparse import csr_matrix
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix, csc_matrix
 
 try:
     import pplog as logging
@@ -23,6 +22,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
 
 def makeBdc(bus, branch, return_csr=True):
     """Builds the B matrices and phase shift injections for DC power flow.
@@ -45,7 +45,7 @@ def makeBdc(bus, branch, return_csr=True):
     """
     ## Select csc/csr B matrix
     sparse = csr_matrix if return_csr else csc_matrix
-    
+
     ## constants
     nb = bus.shape[0]          ## number of buses
     nl = branch.shape[0]       ## number of lines
@@ -89,4 +89,3 @@ def makeBdc(bus, branch, return_csr=True):
     Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
 
     return Bbus, Bf, Pbusinj, Pfinj
-
