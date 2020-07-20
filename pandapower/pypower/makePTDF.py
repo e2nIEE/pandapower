@@ -20,7 +20,7 @@ from numpy.linalg import solve
 from .idx_bus import BUS_TYPE, REF, BUS_I
 from .makeBdc import makeBdc
 
-from scipy.sparse.linalg import spsolve 
+from scipy.sparse.linalg import spsolve
 
 
 def makePTDF(baseMVA, bus, branch, slack=None):
@@ -124,7 +124,7 @@ def makePTDF_sparse(baseMVA, bus, branch, slack=None):
         stderr.write('makePTDF: buses must be numbered consecutively')
 
     ## compute PTDF for single slack_bus
-    Bbus, Bf, _, _ = makeBdc(bus, branch)
+    Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
     Bbus, Bf = Bbus.real, Bf.real.toarray()
 
     H = zeros((nbr, nb))
