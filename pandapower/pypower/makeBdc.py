@@ -15,7 +15,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATU
 from pandapower.pypower.idx_bus import BUS_I
 
 from scipy.sparse import csr_matrix
-from scipy.sparse import csc_matrix 
+from scipy.sparse import csc_matrix
 
 try:
     import pplog as logging
