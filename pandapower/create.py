@@ -3241,7 +3241,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None, z_ohm=0):
+def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None, z_ohm=0, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3306,10 +3306,12 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     switches_df['name'] = name
     switches_df['z_ohm'] = z_ohm
 
+    switches_df = switches_df.assign(**kwargs)
+
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.append(switches_df)
+    net['switch'] = net['switch'].append(switches_df)
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)

@@ -499,7 +499,7 @@ def test_create_switches():
     l1 = pp.create_line(net, b1, b2,  length_km=1, std_type="48-AL1/8-ST1A 10.0")
     t1 = pp.create_transformer(net, b2, b3, std_type='160 MVA 380/110 kV')
 
-    sw = pp.create_switches(net, [b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
+    sw = pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0., foo='aaa')
 
     assert(net.switch.bus.at[0] == b1)
     assert(net.switch.bus.at[1] == b2)
@@ -510,7 +510,12 @@ def test_create_switches():
     assert(net.switch.et.at[0] == "l")
     assert(net.switch.et.at[1] == "t")
     assert(net.switch.et.at[2] == "b")
-
+    assert(net.switch.z_ohm.at[0] == 0)
+    assert(net.switch.z_ohm.at[1] == 0)
+    assert(net.switch.z_ohm.at[2] == 0)
+    assert(net.switch.foo.at[0] == 'aaa')
+    assert(net.switch.foo.at[1] == 'aaa')
+    assert(net.switch.foo.at[2] == 'aaa')
 
 if __name__ == '__main__':
     test_create_lines()
