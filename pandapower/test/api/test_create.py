@@ -517,6 +517,28 @@ def test_create_switches():
     assert(net.switch.foo.at[1] == 'aaa')
     assert(net.switch.foo.at[2] == 'aaa')
 
+
+def test_create_sgens():
+    net = pp.create_empty_network()
+    # standard
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    sg = pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False])
+
+    assert(net.sgen.bus.at[0] == b1)
+    assert(net.sgen.bus.at[1] == b2)
+    assert(net.sgen.bus.at[2] == b3)
+    assert(net.sgen.p_mw.at[0] == 0)
+    assert(net.sgen.p_mw.at[1] == 0)
+    assert(net.sgen.p_mw.at[2] == 1)
+    assert(net.sgen.q_mvar.at[0] == 0)
+    assert(net.sgen.q_mvar.at[1] == 0)
+    assert(net.sgen.q_mvar.at[2] == 0)
+    assert(net.sgen.controllable.at[0] == True)
+    assert(net.sgen.controllable.at[1] == False)
+    assert(net.sgen.controllable.at[2] == False)
+
 if __name__ == '__main__':
     test_create_lines()
     # pytest.main(["test_create.py"])

@@ -1221,6 +1221,123 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     return index
 
 
+def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
+                scaling=1., type='wye', in_service=True, max_p_mw=None, min_p_mw=None,
+                max_q_mvar=None, min_q_mvar=None, controllable=None, k=None, rx=None,
+                current_source=True, **kwargs):
+    """
+     Adds a number of sgens in table net["sgen"].
+ 
+    Static generators are modelled as positive and constant PQ power. This element is used to model generators
+    with a constant active and reactive power feed-in. If you want to model a voltage controlled
+    generator, use the generator element instead.
+ 
+     INPUT:
+         **net** - The net within this load should be created
+ 
+         **buses** (list of int) - A list of bus ids to which the loads are connected
+ 
+     OPTIONAL:
+         **p_mw** (list of floats) - The real power of the sgens
+ 
+         - postive value   -> generation
+         - negative value  -> load
+ 
+         **q_mvar** (list of floats, default 0) - The reactive power of the sgens
+
+         **sn_mva** (list of floats, default None) - Nominal power of the sgens
+ 
+         **name** (list of strings, default None) - The name for this sgen
+ 
+         **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+ 
+         **type** (string, None) -  type variable to classify the sgen
+ 
+         **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
+             is set to a range between one higher than the highest already existing index and the \
+             length of sgens that shall be created.
+ 
+         **in_service** (list of boolean) - True for in_service or False for out of service
+ 
+         **max_p_mw** (list of floats, default NaN) - Maximum active power sgen - necessary for \
+             controllable sgens in for OPF
+ 
+         **min_p_mw** (list of floats, default NaN) - Minimum active power sgen - necessary for \
+             controllable sgens in for OPF
+ 
+         **max_q_mvar** (list of floats, default NaN) - Maximum reactive power sgen - necessary for \
+             controllable sgens in for OPF
+ 
+         **min_q_mvar** (list of floats, default NaN) - Minimum reactive power sgen - necessary for \
+             controllable sgens in OPF
+ 
+         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
+             or not. Only respected for OPF
+             Defaults to False if "controllable" column exists in DataFrame
+ 
+     OUTPUT:
+         **index** (int) - The unique IDs of the created elements
+ 
+     EXAMPLE:
+         create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
+ 
+     """
+    if np_any(~isin(buses, net["bus"].index.values)):
+        raise UserWarning("Cannot attach to buses %s, they does not exist"
+                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+
+    if index is None:
+        bid = get_free_id(net["sgen"])
+        index = arange(bid, bid + len(buses), 1)
+    elif np_any(isin(index, net["sgen"].index.values)):
+        raise UserWarning("Loads with the ids %s already exists"
+                          % net["sgen"].index.values[isin(net["sgen"].index.values, index)])
+
+    # store dtypes
+    dtypes = net.sgen.dtypes
+    
+    dd = pd.DataFrame(index=index, columns=net.sgen.columns)
+
+    dd["bus"] = buses
+    dd["p_mw"] = p_mw
+    dd["q_mvar"] = q_mvar
+    dd["sn_mva"] = sn_mva
+    dd["scaling"] = scaling
+    dd["in_service"] = in_service
+    dd["name"] = name
+    dd["type"] = type
+    dd['current_source'] = current_source
+
+    if min_p_mw is not None:
+        dd["min_p_mw"] = min_p_mw
+        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
+    if max_p_mw is not None:
+        dd["max_p_mw"] =max_p_mw
+        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
+    if min_q_mvar is not None:
+        dd["min_q_mvar"] = min_q_mvar
+        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
+    if max_q_mvar is not None:
+        dd["max_q_mvar"] = max_q_mvar
+        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
+    if controllable is not None:
+        dd["controllable"] = controllable
+        dd["controllable"] = dd["controllable"].astype(bool)
+    if k is not None:
+        dd["k"] = k
+        dd["k"] = dd["k"].astype(float)
+    if rx is not None:
+        dd["rx"] = rx
+        dd["rx"] = dd["rx"].astype(float)
+
+    dd = dd.assign(**kwargs)
+    net["sgen"] = net["sgen"].append(dd)
+
+    # and preserve dtypes
+    _preserve_dtypes(net.sgen, dtypes)
+
+    return index
+
 # =============================================================================
 # Create 3ph Sgen
 # =============================================================================
@@ -3022,51 +3139,51 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     Input:
         **net** (pandapowerNet) - The net within this transformer should be created
 
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
+        **hv_bus** (list) - The bus on the high-voltage side on which the transformer will be \
             connected to
 
-        **mv_bus** (int) - The bus on the middle-voltage side on which the transformer will be \
+        **mv_bus** (list) - The bus on the middle-voltage side on which the transformer will be \
             connected to
 
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
+        **lv_bus** (list) - The bus on the low-voltage side on which the transformer will be \
             connected to
 
-        **vn_hv_kv** (float) rated voltage on high voltage side
+        **vn_hv_kv** (float or list) rated voltage on high voltage side
 
-        **vn_mv_kv** (float) rated voltage on medium voltage side
+        **vn_mv_kv** (float or list) rated voltage on medium voltage side
 
-        **vn_lv_kv** (float) rated voltage on low voltage side
+        **vn_lv_kv** (float or list) rated voltage on low voltage side
 
-        **sn_hv_mva** (float) - rated apparent power on high voltage side
+        **sn_hv_mva** (float or list) - rated apparent power on high voltage side
 
-        **sn_mv_mva** (float) - rated apparent power on medium voltage side
+        **sn_mv_mva** (float or list) - rated apparent power on medium voltage side
 
-        **sn_lv_mva** (float) - rated apparent power on low voltage side
+        **sn_lv_mva** (float or list) - rated apparent power on low voltage side
 
-        **vk_hv_percent** (float) - short circuit voltage from high to medium voltage
+        **vk_hv_percent** (float or list) - short circuit voltage from high to medium voltage
 
-        **vk_mv_percent** (float) - short circuit voltage from medium to low voltage
+        **vk_mv_percent** (float or list) - short circuit voltage from medium to low voltage
 
-        **vk_lv_percent** (float) - short circuit voltage from high to low voltage
+        **vk_lv_percent** (float or list) - short circuit voltage from high to low voltage
 
-        **vkr_hv_percent** (float) - real part of short circuit voltage from high to medium voltage
+        **vkr_hv_percent** (float or list) - real part of short circuit voltage from high to medium voltage
 
-        **vkr_mv_percent** (float) - real part of short circuit voltage from medium to low voltage
+        **vkr_mv_percent** (float or list) - real part of short circuit voltage from medium to low voltage
 
-        **vkr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
+        **vkr_lv_percent** (float or list) - real part of short circuit voltage from high to low voltage
 
-        **pfe_kw** (float) - iron losses in kW
+        **pfe_kw** (float or list) - iron losses in kW
 
-        **i0_percent** (float) - open loop losses
+        **i0_percent** (float or list) - open loop losses
 
     OPTIONAL:
-        **shift_mv_degree** (float, 0) - angle shift to medium voltage side*
+        **shift_mv_degree** (float or list, 0) - angle shift to medium voltage side*
 
-        **shift_lv_degree** (float, 0) - angle shift to low voltage side*
+        **shift_lv_degree** (float or list, 0) - angle shift to low voltage side*
 
-        **tap_step_percent** (float) - Tap step in percent
+        **tap_step_percent** (float or list) - Tap step in percent
 
-        **tap_step_degree** (float) - Tap phase shift angle in degrees
+        **tap_step_degree** (float or list) - Tap phase shift angle in degrees
 
         **tap_side** (string, None) - "hv", "mv", "lv"
 
@@ -3092,7 +3209,7 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **trafo_id** - The unique trafo_id of the created 3W transformer
+        **trafo_id** - List of trafo_ids of the created 3W transformers
 
     Example:
         create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
@@ -3257,12 +3374,12 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     INPUT:
         **net** (pandapowerNet) - The net within which this switch should be created
 
-        **bus** - The bus that the switch is connected to
+        **buses** (list)- The bus that the switch is connected to
 
-        **element** - index of the element: bus id if et == "b", line id if et == "l", trafo id if \
+        **element** (list)- index of the element: bus id if et == "b", line id if et == "l", trafo id if \
             et == "t"
 
-        **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
+        **et** - (list) element type: "l" = switch between bus and line, "t" = switch between
             bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
             two buses
 
