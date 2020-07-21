@@ -67,7 +67,6 @@ def test_convenience_create_functions():
         pp.runpp(net)
 
 
-
 def test_nonexistent_bus():
     from functools import partial
     net = pp.create_empty_network()
@@ -488,6 +487,30 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.tap_pos == [1, 2])
     assert all(net.trafo3w.in_service == [True, False])
     assert all(net.trafo3w.custom_arg == ['foo', 'bar'])
+
+
+def test_create_switches():
+    net = pp.create_empty_network()
+    # standard
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 15)
+    b4 = pp.create_bus(net, 15)
+    l1 = pp.create_line(net, b1, b2,  length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    t1 = pp.create_transformer(net, b2, b3, std_type='160 MVA 380/110 kV')
+
+    sw = pp.create_switches(net, [b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
+
+    assert(net.switch.bus.at[0] == b1)
+    assert(net.switch.bus.at[1] == b2)
+    assert(net.switch.bus.at[2] == b3)
+    assert(net.switch.element.at[0] == l1)
+    assert(net.switch.element.at[1] == t1)
+    assert(net.switch.element.at[2] == b4)
+    assert(net.switch.et.at[0] == "l")
+    assert(net.switch.et.at[1] == "t")
+    assert(net.switch.et.at[2] == "b")
+
 
 if __name__ == '__main__':
     test_create_lines()

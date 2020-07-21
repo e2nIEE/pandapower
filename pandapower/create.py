@@ -3241,6 +3241,82 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
+def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None, z_ohm=0):
+    """
+    Adds a switch in the net["switch"] table.
+
+    Switches can be either between two buses (bus-bus switch) or at the end of a line or transformer
+    element (bus-element switch).
+
+    Two buses that are connected through a closed bus-bus switches are fused in the power flow if
+    the switch is closed or separated if the switch is open.
+
+    An element that is connected to a bus through a bus-element switch is connected to the bus
+    if the switch is closed or disconnected if the switch is open.
+
+    INPUT:
+        **net** (pandapowerNet) - The net within which this switch should be created
+
+        **bus** - The bus that the switch is connected to
+
+        **element** - index of the element: bus id if et == "b", line id if et == "l", trafo id if \
+            et == "t"
+
+        **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
+            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
+            two buses
+
+    OPTIONAL:
+        **closed** (boolean, True) - switch position: False = open, True = closed
+
+        **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
+            Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
+
+        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
+            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
+            0 a branch will be created for the switch which has also effects on the bus mapping
+
+        **name** (string, default None) - The name for this switch
+
+    OUTPUT:
+        **sid** - The unique switch_id of the created switch
+
+    EXAMPLE:
+        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
+
+        create_switch(net, bus = 0, element = 1, et = 'l')
+
+    """
+
+    nr_switches = len(buses)
+    if index is not None:
+        for idx in index:
+            if idx in net.line.index:
+                raise UserWarning("A switch with index %s already exists" % index)
+    else:
+        swid = get_free_id(net["switch"])
+        index = arange(swid, swid + nr_switches, 1)
+
+    switches_df = pd.DataFrame(index = index, columns=net.switch.columns)
+    switches_df['bus'] = buses
+    switches_df['element'] = elements
+    switches_df['et'] = et
+    switches_df['closed'] = closed
+    switches_df['type'] = type
+    switches_df['name'] = name
+    switches_df['z_ohm'] = z_ohm
+
+    # store dtypes
+    dtypes = net.switch.dtypes
+
+    net.switch.append(switches_df)
+
+    # and preserve dtypes
+    _preserve_dtypes(net.switch, dtypes)
+
+    return index
+
+
 def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
                  in_service=True, index=None):
     """
