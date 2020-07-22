@@ -575,7 +575,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None):
+                 zone=None, in_service=True, max_vm_pu=None, min_vm_pu=None, coords=None, **kwargs):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -631,7 +631,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    net["bus"] = net["bus"].append(dd)[net["bus"].columns.tolist()]
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
@@ -646,24 +645,15 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                                                               columns=net.bus_geodata.columns))
         net["bus_geodata"].loc[index, "coords"] = coords
 
-    min_vm_pu = min_vm_pu if hasattr(min_vm_pu, "__iter__") else [min_vm_pu] * nr_buses
-    min_vm_pu = pd.Series(min_vm_pu, dtype=float)
+    if min_vm_pu is not None:
+        dd['min_vm_pu'] = min_vm_pu
+        dd['min_vm_pu'] = dd['min_vm_pu'].astype(float)
+    if max_vm_pu is not None:
+        dd['max_vm_pu'] = max_vm_pu
+        dd['max_vm_pu'] = dd['max_vm_pu'].astype(float)
 
-    if not min_vm_pu.isnull().all():
-        if "min_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "min_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "min_vm_pu"] = min_vm_pu
-
-    max_vm_pu = max_vm_pu if hasattr(max_vm_pu, "__iter__") else [max_vm_pu] * nr_buses
-    max_vm_pu = pd.Series(max_vm_pu, dtype=float)
-
-    if not max_vm_pu.isnull().all():
-        if "max_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "max_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "max_vm_pu"] = max_vm_pu
-
+    dd = dd.assign(**kwargs)
+    net["bus"] = net["bus"].append(dd)
     return index
 
 
@@ -921,8 +911,8 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, \
 
 
 def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
+                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=None, min_p_mw=None,
+                 max_q_mvar=None, min_q_mvar=None, controllable=None, **kwargs):
     """
     Adds a number of loads in table net["load"].
 
@@ -1011,44 +1001,29 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     dd["in_service"] = in_service
     dd["name"] = name
     dd["type"] = type
-    net["load"] = net["load"].append(dd)[net["load"].columns.tolist()]
+
+    if min_p_mw is not None:
+        dd["min_p_mw"] = min_p_mw
+        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
+    if max_p_mw is not None:
+        dd["max_p_mw"] =max_p_mw
+        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
+    if min_q_mvar is not None:
+        dd["min_q_mvar"] = min_q_mvar
+        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
+    if max_q_mvar is not None:
+        dd["max_q_mvar"] = max_q_mvar
+        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
+    if controllable is not None:
+        dd["controllable"] = controllable
+        dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
+        net["load"] = net["load"].append(dd)[net["load"].columns.tolist()]
 
     # and preserve dtypes
+    dd = dd.assign(**kwargs)
+    net["load"] = net["load"].append(dd)
+
     _preserve_dtypes(net.load, dtypes)
-
-    if not isnan(min_p_mw):
-        if "min_p_mw" not in net.load.columns:
-            net.load.loc[:, "min_p_mw"] = pd.Series()
-
-        net.load.loc[index, "min_p_mw"] = min_p_mw.astype(float64)
-
-    if not isnan(max_p_mw):
-        if "max_p_mw" not in net.load.columns:
-            net.load.loc[:, "max_p_mw"] = pd.Series()
-
-        net.load.loc[index, "max_p_mw"] = max_p_mw.astype(float64)
-
-    if not isnan(min_q_mvar):
-        if "min_q_mvar" not in net.load.columns:
-            net.load.loc[:, "min_q_mvar"] = pd.Series()
-
-        net.load.loc[index, "min_q_mvar"] = min_q_mvar.astype(float64)
-
-    if not isnan(max_q_mvar):
-        if "max_q_mvar" not in net.load.columns:
-            net.load.loc[:, "max_q_mvar"] = pd.Series()
-
-        net.load.loc[index, "max_q_mvar"] = max_q_mvar.astype(float64)
-
-    if not np_all(isnan(controllable)):
-        if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = False
-
-        net.load.loc[index, "controllable"] = controllable.astype(bool)
-    else:
-        if "controllable" in net.load.columns:
-            net.load.loc[index, "controllable"] = False
-
     return index
 
 
@@ -2265,6 +2240,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     elif alpha is not None:
         dd["alpha"] = alpha
         dd["alpha"] = dd["alpha"].astype(float)
+
+    dd = dd.assign(**kwargs)
 
     # extend the lines by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
