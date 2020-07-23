@@ -10,10 +10,10 @@ import os
 import pickle
 import sys
 import types
+import weakref
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
-import weakref
 
 import networkx
 import numpy
@@ -371,11 +371,6 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None):
-    # keys = copy.deepcopy(list(d.keys()))
-    # for key in keys:
-    #     if isinstance(d[key], dict):
-    #         d[key] = pp_hook(d[key], net=net)
-
     if '_module' in d and '_class' in d:
         if "_object" in d:
             obj = d.pop('_object')
@@ -389,24 +384,119 @@ def pp_hook(d, net=None):
         else:
             # obj = {"_init": d, "_state": dict()}  # backwards compatibility
             obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-        class_name = d.pop('_class')
-        module_name = d.pop('_module')
+        return pp_hook_serialization(obj, d, net=net)
+    else:
+        return d
 
-        if class_name == 'Series':
-            return pd.read_json(obj, precise_float=True, **d)
-        elif class_name == "DataFrame":
-            df = pd.read_json(obj, precise_float=True, convert_axes=False, **d)
-            try:
-                df.set_index(df.index.astype(numpy.int64), inplace=True)
-            except (ValueError, TypeError, AttributeError):
-                logger.debug("failed setting int64 index")
-            # recreate jsoned objects
-            for col in ('object', 'controller'):  # "controller" for backwards compatibility
-                if col in df.columns:
-                    df[col] = df[col].apply(pp_hook, args=(net,))
-            return df
-        elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
-            df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs']).astype(d['dtype'])
+
+def pp_hook_serialization(obj, d, net):
+    # keys = copy.deepcopy(list(d.keys()))
+    # for key in keys:
+    #     if isinstance(d[key], dict):
+    #         d[key] = pp_hook(d[key], net=net)
+
+    class_name = d.pop('_class')
+    module_name = d.pop('_module')
+    fs = from_serializable_registry(obj, d, net, pp_hook)
+    fs.class_name = class_name
+    fs.module_name = module_name
+    return fs.from_serializable()
+
+
+class from_serializable:
+    def __init__(self):
+        self.class_name = 'class_name'
+        self.module_name = 'module_name'
+        self.registry = {}
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
+        if not class_module in self.registry:
+            class_module = ('', '')
+        method = self.registry[class_module]
+        return method.__get__(instance, owner)
+
+    def register(self, class_name='', module_name=''):
+        def decorator(method):
+            self.registry[(class_name, module_name)] = method
+            return method
+
+        return decorator
+
+
+class from_serializable_registry():
+    from_serializable = from_serializable()
+    class_name = ''
+    module_name = ''
+
+    def __init__(self, obj, d, net, pp_hook_funct):
+        self.obj = obj
+        self.d = d
+        self.net = net
+        self.pp_hook = pp_hook_funct
+
+    @from_serializable.register(class_name='Series', module_name='pandas.core.series')
+    def Series(self):
+        return pd.read_json(self.obj, precise_float=True, **self.d)
+
+    @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
+    def DataFrame(self):
+        df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
+        try:
+            df.set_index(df.index.astype(numpy.int64), inplace=True)
+        except (ValueError, TypeError, AttributeError):
+            logger.debug("failed setting int64 index")
+        # recreate jsoned objects
+        for col in ('object', 'controller'):  # "controller" for backwards compatibility
+            if (col in df.columns):
+                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+        return df
+
+    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
+    def pandapowerNet(self):
+        if isinstance(self.obj, str):  # backwards compatibility
+            from pandapower import from_json_string
+            return from_json_string(self.obj)
+        else:
+            # net = create_empty_network()
+            self.net.update(self.obj)
+            return self.net
+
+    @from_serializable.register(class_name="MultiGraph", module_name="networkx")
+    def networkx(self):
+        return json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+
+    @from_serializable.register(class_name="method")
+    def method(self):
+        logger.warning('deserializing of method not implemented')
+        # class_ = getattr(module, obj) # doesn't work
+        return self.obj
+
+    @from_serializable.register(class_name='function', module_name='pandapower.run')
+    def function(self):
+        module = importlib.import_module(self.module_name)
+        class_ = getattr(module, self.obj)  # works
+        return class_
+
+    @from_serializable.register()
+    def rest(self):
+        module = importlib.import_module(self.module_name)
+        class_ = getattr(module, self.class_name)
+        if isclass(class_) and issubclass(class_, JSONSerializableClass):
+            if isinstance(self.obj, str):
+                self.obj = json.loads(self.obj, cls=PPJSONDecoder)  # backwards compatibility
+            return class_.from_dict(self.obj, self.net)
+        else:
+            # for non-pp objects, e.g. tuple
+            return class_(self.obj, **self.d)
+
+    if GEOPANDAS_INSTALLED:
+        @from_serializable.register(class_name='GeoDataFrame')
+        def GeoDataFrame(self):
+            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
+                                                      crs=self.d['crs']).astype(self.d['dtype'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
@@ -414,39 +504,13 @@ def pp_hook(d, net=None):
                 # df['coords'] = df.coords.apply(json.loads)
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
-            df = df.reindex(columns=d['columns'])
+            df = df.reindex(columns=self.d['columns'])
             return df
-        elif SHAPELY_INSTALLED and module_name == "shapely":
-            return shapely.geometry.shape(obj)
-        elif class_name == "pandapowerNet":
-            if isinstance(obj, str):  # backwards compatibility
-                from pandapower import from_json_string
-                return from_json_string(obj)
-            else:
-                # net = create_empty_network()
-                net.update(obj)
-                return net
-        elif module_name == "networkx":
-            return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
-        else:
-            module = importlib.import_module(module_name)
-            if class_name == "method":
-                logger.warning('deserializing of method not implemented')
-                # class_ = getattr(module, obj) # doesn't work
-                return obj
-            elif class_name == "function":
-                class_ = getattr(module, obj)  # works
-                return class_
-            class_ = getattr(module, class_name)
-            if isclass(class_) and issubclass(class_, JSONSerializableClass):
-                if isinstance(obj, str):
-                    obj = json.loads(obj, cls=PPJSONDecoder)  # backwards compatibility
-                return class_.from_dict(obj, net)
-            else:
-                # for non-pp objects, e.g. tuple
-                return class_(obj, **d)
-    else:
-        return d
+
+    if SHAPELY_INSTALLED:
+        @from_serializable.register(module_name='shapely')
+        def shapely(self):
+            return shapely.geometry.shape(self.obj)
 
 
 def encrypt_string(s, key, compress=True):
@@ -456,7 +520,7 @@ def encrypt_string(s, key, compress=True):
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
-    
+
     s = s.encode()
     if compress:
         import zlib
@@ -473,7 +537,7 @@ def decrypt_string(s, key):
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
-    
+
     s = s.encode()
     s = cipher_suite.decrypt(s)
     try:
