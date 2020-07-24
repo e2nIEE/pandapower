@@ -1700,6 +1700,143 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     return index
 
 
+def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
+               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
+               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
+               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
+    """
+    Adds a generator to the network.
+
+    Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
+    is active power and a voltage set point. If you want to model a generator as PQ load with fixed
+    reactive power and variable voltage, please use a static generator instead.
+
+    INPUT:
+        **net** - The net within this generator should be created
+
+        **bus** (int) - The bus id to which the generator is connected
+
+    OPTIONAL:
+        **p_mw** (float, default 0) - The real power of the generator (positive for generation!)
+
+        **vm_pu** (float, default 0) - The voltage set point of the generator.
+
+        **sn_mva** (float, None) - Nominal power of the generator
+
+        **name** (string, None) - The name for this generator
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+
+        **type** (string, None) - type variable to classify generators
+
+        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
+                                        False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
+                                        defaults to True if "controllable" column exists in DataFrame
+        powerflow
+
+        **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
+
+        **xdss_pu** (float, NaN) - Subtransient generator reactance for short-circuit calculation
+
+        **rdss_pu** (float, NaN) - Subtransient generator resistance for short-circuit calculation
+
+        **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **max_p_mw** (float, default NaN) - Maximum active power injection - necessary for OPF
+
+        **min_p_mw** (float, default NaN) - Minimum active power injection - necessary for OPF
+
+        **max_q_mvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
+
+        **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
+
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage limit is taken.
+                                           - necessary for OPF.
+
+        **max_vm_pur** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage limit is taken.
+                                            - necessary for OPF
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created generator
+
+    EXAMPLE:
+        create_gen(net, 1, p_mw = 120, vm_pu = 1.02)
+
+    """
+    if np_any(~isin(buses, net["bus"].index.values)):
+        raise UserWarning("Cannot attach to buses %s, they does not exist"
+                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+
+    if index is None:
+        bid = get_free_id(net["gen"])
+        index = arange(bid, bid + len(buses), 1)
+    elif np_any(isin(index, net["gen"].index.values)):
+        raise UserWarning("gens with the ids %s already exists"
+                          % net["gen"].index.values[isin(net["gen"].index.values, index)])
+    
+    # store dtypes
+    dtypes = net.gen.dtypes
+
+    dd = pd.DataFrame(index=index, columns=net.gen.columns)
+    dd["bus"] = buses
+    dd["p_mw"] = p_mw
+    dd["vm_pu"] = vm_pu
+    dd["sn_mva"] = sn_mva
+    dd["scaling"] = scaling
+    dd["in_service"] = in_service
+    dd["name"] = name
+    dd["type"] = type
+    dd["slack"] = slack
+    
+    if min_p_mw is not None:
+        dd["min_p_mw"] = min_p_mw
+        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
+    if max_p_mw is not None:
+        dd["max_p_mw"] = max_p_mw
+        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
+    if min_q_mvar is not None:
+        dd["min_q_mvar"] = min_q_mvar
+        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
+    if max_q_mvar is not None:
+        dd["max_q_mvar"] = max_q_mvar
+        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
+    if min_vm_pu is not None:
+        dd["min_vm_pu"] = min_vm_pu
+        dd["min_vm_pu"] = dd["min_vm_pu"].astype(float)
+    if max_vm_pu is not None:
+        dd["max_vm_pu"] = max_vm_pu
+        dd["max_vm_pu"] = dd["max_vm_pu"].astype(float)
+    if vn_kv is not None:
+        dd["vn_kv"] = vn_kv
+        dd["vn_kv"] = dd["vn_kv"].astype(float)
+    if cos_phi is not None:
+        dd["cos_phi"] = cos_phi
+        dd["cos_phi"] = dd["cos_phi"].astype(float)
+    if xdss_pu is not None:
+        dd["xdss_pu"] = xdss_pu
+        dd["xdss_pu"] = dd["xdss_pu"].astype(float)
+    if rdss_pu is not None:
+        dd["rdss_pu"] = rdss_pu
+        dd["rdss_pu"] = dd["rdss_pu"].astype(float)
+    if controllable is not None:
+        dd["controllable"] = controllable
+        dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
+        
+    
+    # and preserve dtypes
+    dd = dd.assign(**kwargs)
+    net["gen"] = net["gen"].append(dd)
+    
+    _preserve_dtypes(net.gen, dtypes)
+
+    return index
+
+
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
