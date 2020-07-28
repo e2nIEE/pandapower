@@ -368,9 +368,11 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    t = pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45,
+    pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45,
                                                sn_mva= 0.5, vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3,
-                                               vk0_percent=0.4, mag0_rx=0.4, mag0_percent=0.3, tap_neutral=0.)
+                                               vk0_percent=0.4, vkr0_percent=1.7,  mag0_rx=0.4, mag0_percent=0.3,
+                                               tap_neutral=0., vector_group='Dyn', si0_hv_partial=0.1,
+                                               max_loading_percent=80)
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
@@ -386,6 +388,9 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_percent == 0.3)
     assert all(net.trafo.tap_neutral == 0.)
     assert all(net.trafo.tap_pos == 0.)
+    assert all(net.trafo.vector_group == 'Dyn')
+    assert all(net.trafo.max_loading_percent == 80.)
+    assert all(net.trafo.si0_hv_partial == 0.1)
 
     # setting params as array
     net = pp.create_empty_network()
