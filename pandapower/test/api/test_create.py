@@ -552,7 +552,6 @@ def test_create_loads():
     assert(all(net.load.min_q_mvar.values == [0, 0.1, 0]))
 
 
-
 def test_create_sgens():
     net = pp.create_empty_network()
     # standard
