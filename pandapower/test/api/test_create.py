@@ -554,6 +554,38 @@ def test_create_sgens():
     assert(all(net.sgen.rx.values == 0.4))
     assert(all(net.sgen.current_source))
 
+
+def test_create_gens():
+    net = pp.create_empty_network()
+    # standard
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    pp.create_gens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
+                   max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
+                   min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.
+                )
+    assert(net.gen.bus.at[0] == b1)
+    assert(net.gen.bus.at[1] == b2)
+    assert(net.gen.bus.at[2] == b3)
+    assert(net.gen.p_mw.at[0] == 0)
+    assert(net.gen.p_mw.at[1] == 0)
+    assert(net.gen.p_mw.at[2] == 1)
+    assert(net.gen.controllable.at[0] == True)
+    assert(net.gen.controllable.at[1] == False)
+    assert(net.gen.controllable.at[2] == False)
+    assert(all(net.gen.max_p_mw.values == 0.2))
+    assert(all(net.gen.min_p_mw.values == [0, 0.1, 0]))
+    assert(all(net.gen.max_q_mvar.values == 0.2))
+    assert(all(net.gen.min_q_mvar.values == [0, 0.1, 0]))
+    assert(all(net.gen.min_vm_pu.values == 0.85))
+    assert(all(net.gen.max_vm_pu.values == 1.15))
+    assert(all(net.gen.vn_kv.values == 0.4))
+    assert(all(net.gen.xdss_pu.values == 0.1))
+    assert(all(net.gen.rdss_pu.values == 0.1))
+    assert(all(net.gen.cos_phi.values == 1.))
+
+
 if __name__ == '__main__':
     test_create_lines()
     # pytest.main(["test_create.py"])

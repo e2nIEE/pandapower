@@ -1700,10 +1700,10 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     return index
 
 
-def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
-               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
+def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=None,
+               min_q_mvar=None, min_p_mw=None, max_p_mw=None, min_vm_pu=None, max_vm_pu=None,
+               scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
+               xdss_pu=None, rdss_pu=None, cos_phi=None, in_service=True, **kwargs):
     """
     Adds a generator to the network.
 
