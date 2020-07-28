@@ -4,6 +4,8 @@ Change Log
 - [ADDED] lightsim2grid interface in NR power flow thanks to @BDonnot https://github.com/BDonnot/lightsim2grid
 - [FIXED] PowerModels.jl solver interface call functions
 - [FIXED] pandas 1.0.4 support
+- [CHANGED] revision of toolbox function drop_out_of_service_elements()
+- [ADDED] toolbox function drop_measurements_at_elements()
 
 [2.2.2]- 2020-03-17
 ----------------------

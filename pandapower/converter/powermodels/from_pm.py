@@ -50,9 +50,14 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
 
     for i, bus in sol["bus"].items():
         bus_idx = int(i) - 1
-        ppci["bus"][bus_idx, VM] = bus["vm"]
-        # replace nans with 0.(in case of SOCWR model for example
-        ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+        if "vm" in bus:
+            ppci["bus"][bus_idx, VM] = bus["vm"]
+        if "va" in bus:
+            # replace nans with 0.(in case of SOCWR model for example
+            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+        if "w" in bus:
+            # SOCWR model has only w instead of vm values
+            ppci["bus"][bus_idx, VM] = bus["w"]
 
     for i, gen in sol["gen"].items():
         gen_idx = int(i) - 1

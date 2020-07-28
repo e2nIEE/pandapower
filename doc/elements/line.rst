@@ -171,6 +171,8 @@ The power flow results in the net.res_line_3ph table are defined as:
     i\_from\_ka_{phase} &= i_{from_{phase}} \\
     i\_to\_ka_{phase} &= i_{to_{phase}} \\
     i\_ka &= max(i_{from}, i_{to}) \\
+    i\_from\_ka_{neutral} &= |i_{from_{phaseA}}| + |i_{from_{phaseB}}| + |i_{from_{phaseC}}|\\
+    i\_to\_ka_{neutral} &= |i_{to_{phaseA}}| + |i_{to_{phaseB}}| + |i_{to_{phaseC}}| \\
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
 
