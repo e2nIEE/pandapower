@@ -1017,7 +1017,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     if controllable is not None:
         dd["controllable"] = controllable
         dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
-        net["load"] = net["load"].append(dd)[net["load"].columns.tolist()]
+
 
     # and preserve dtypes
     dd = dd.assign(**kwargs)

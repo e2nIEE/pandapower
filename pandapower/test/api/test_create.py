@@ -462,14 +462,14 @@ def test_create_transformers3w_from_parameters():
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 0.4)
     b3 = pp.create_bus(net, 0.9)
-    t = pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
+    pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
                                                  vn_hv_kv=[15., 14.5], vn_mv_kv=[0.9, 0.7], vn_lv_kv=[0.45, 0.5],
                                                  sn_hv_mva= [0.6, 0.7], sn_mv_mva=[0.5, 0.4], sn_lv_mva=[0.4, 0.3],
                                                  vk_hv_percent=[1., 1.], vk_mv_percent=[1., 1.], vk_lv_percent=[1.,1.],
                                                  vkr_hv_percent=[0.3, 0.3], vkr_mv_percent=[0.3, 0.3],
                                                  vkr_lv_percent=[0.3, 0.3], pfe_kw=[0.2, 0.1], i0_percent=[0.3, 0.2],
                                                  tap_neutral=[0., 5.], tap_pos=[1, 2], in_service=[True, False],
-                                                 custom_arg= ['foo', 'bar']
+                                                 custom_arg=['foo', 'bar']
                                                  )
     assert len(net.trafo3w) == 2
     assert all(net.trafo3w.hv_bus == 0)
@@ -510,9 +510,9 @@ def test_create_switches():
     assert(net.switch.bus.at[0] == b1)
     assert(net.switch.bus.at[1] == b2)
     assert(net.switch.bus.at[2] == b3)
-    assert(net.switch.element.at[0] == l1)
-    assert(net.switch.element.at[1] == t1)
-    assert(net.switch.element.at[2] == b4)
+    assert(net.switch.element.at[sw[0]] == l1)
+    assert(net.switch.element.at[sw[1]] == t1)
+    assert(net.switch.element.at[sw[2]] == b4)
     assert(net.switch.et.at[0] == "l")
     assert(net.switch.et.at[1] == "t")
     assert(net.switch.et.at[2] == "b")
@@ -522,6 +522,35 @@ def test_create_switches():
     assert(net.switch.foo.at[0] == 'aaa')
     assert(net.switch.foo.at[1] == 'aaa')
     assert(net.switch.foo.at[2] == 'aaa')
+
+
+def test_create_loads():
+    net = pp.create_empty_network()
+    # standard
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    pp.create_loads(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
+                    max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
+                    )
+
+    assert(net.load.bus.at[0] == b1)
+    assert(net.load.bus.at[1] == b2)
+    assert(net.load.bus.at[2] == b3)
+    assert(net.load.p_mw.at[0] == 0)
+    assert(net.load.p_mw.at[1] == 0)
+    assert(net.load.p_mw.at[2] == 1)
+    assert(net.load.q_mvar.at[0] == 0)
+    assert(net.load.q_mvar.at[1] == 0)
+    assert(net.load.q_mvar.at[2] == 0)
+    assert(net.load.controllable.at[0] == True)
+    assert(net.load.controllable.at[1] == False)
+    assert(net.load.controllable.at[2] == False)
+    assert(all(net.load.max_p_mw.values == 0.2))
+    assert(all(net.load.min_p_mw.values == [0, 0.1, 0]))
+    assert(all(net.load.max_q_mvar.values == 0.2))
+    assert(all(net.load.min_q_mvar.values == [0, 0.1, 0]))
+
 
 
 def test_create_sgens():
