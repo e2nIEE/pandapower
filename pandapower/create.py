@@ -2231,10 +2231,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
                                  name=None, index=None, type=None,
                                  geodata=None, in_service=True, df=1.,
                                  parallel=1, g_us_per_km=0.,
-                                 max_loading_percent=nan, alpha=None,
+                                 max_loading_percent=None, alpha=None,
                                  temperature_degree_celsius=None,
-                                 r0_ohm_per_km=nan, x0_ohm_per_km=nan,
-                                 c0_nf_per_km=nan, g0_us_per_km=nan, **kwargs):
+                                 r0_ohm_per_km=None, x0_ohm_per_km=None,
+                                 c0_nf_per_km=None, g0_us_per_km=None, **kwargs):
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -2329,52 +2329,31 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     dd["parallel"] = parallel
     dd["in_service"] = in_service
 
-    if hasattr(r0_ohm_per_km, '__iter__'):
-        dd["r0_ohm_per_km"] = r0_ohm_per_km
-        dd["r0_ohm_per_km"] = dd["r0_ohm_per_km"].astype(float)
-    elif not isnan(r0_ohm_per_km):
+    if r0_ohm_per_km is not None:
         dd["r0_ohm_per_km"] = r0_ohm_per_km
         dd["r0_ohm_per_km"] = dd["r0_ohm_per_km"].astype(float)
 
-    if hasattr(x0_ohm_per_km, '__iter__'):
-        dd["x0_ohm_per_km"] = x0_ohm_per_km
-        dd["x0_ohm_per_km"] = dd["x0_ohm_per_km"].astype(float)
-    elif not isnan(x0_ohm_per_km):
+    if x0_ohm_per_km is not None:
         dd["x0_ohm_per_km"] = x0_ohm_per_km
         dd["x0_ohm_per_km"] = dd["x0_ohm_per_km"].astype(float)
 
-    if hasattr(c0_nf_per_km, '__iter__'):
-        dd["c0_nf_per_km"] = c0_nf_per_km
-        dd["c0_nf_per_km"] = dd["c0_nf_per_km"].astype(float)
-    elif not isnan(c0_nf_per_km):
+    if c0_nf_per_km is not None:
         dd["c0_nf_per_km"] = c0_nf_per_km
         dd["c0_nf_per_km"] = dd["c0_nf_per_km"].astype(float)
 
-    if hasattr(g0_us_per_km, '__iter__'):
+    if g0_us_per_km is not None:
         dd["g0_us_per_km"] = g0_us_per_km
         dd["g0_us_per_km"] = dd["g0_us_per_km"].astype(float)
-    elif not isnan(g0_us_per_km):
-        dd["g0_us_per_km"] = float(g0_us_per_km)
-        dd["g0_us_per_km"] = dd["g0_us_per_km"].astype(float)
 
-    if hasattr(max_loading_percent, '__iter__'):
-        dd["max_loading_percent"] = max_loading_percent
-        dd["max_loading_percent"] = dd["max_loading_percent"].astype(float)
-    elif not isnan(max_loading_percent):
+    if max_loading_percent is not None:
         dd["max_loading_percent"] = max_loading_percent
         dd["max_loading_percent"] = dd["max_loading_percent"].astype(float)
 
-    if hasattr(temperature_degree_celsius, '__iter__'):
-        dd["temperature_degree_celsius"] = temperature_degree_celsius
-        dd["temperature_degree_celsius"] = dd["temperature_degree_celsius"].astype(float)
-    elif temperature_degree_celsius is not None:
+    if temperature_degree_celsius is not None:
         dd["temperature_degree_celsius"] = temperature_degree_celsius
         dd["temperature_degree_celsius"] = dd["temperature_degree_celsius"].astype(float)
 
-    if hasattr(alpha, '__iter__'):
-        dd["alpha"] = alpha
-        dd["alpha"] = dd["alpha"].astype(float)
-    elif alpha is not None:
+    if alpha is not None:
         dd["alpha"] = alpha
         dd["alpha"] = dd["alpha"].astype(float)
 

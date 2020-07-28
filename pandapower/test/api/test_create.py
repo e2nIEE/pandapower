@@ -269,28 +269,26 @@ def test_create_lines_from_parameters():
     l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=5, x_ohm_per_km=1,
                                         r_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=100, df=0.8, in_service=False,
                                         geodata=[(10, 10), (20, 20)], parallel=1, max_loading_percent=90, name='test',
-                                        r0_ohm_per_km=0.1)
+                                        r0_ohm_per_km=0.1, g0_us_per_km=0., c0_nf_per_km=0.,
+                                        temperature_degree_celsius=20, alpha=0.04)
 
     assert len(net.line) == 2
     assert len(net.line_geodata) == 2
-    assert net.line.length_km.at[l[0]] == 5
-    assert net.line.length_km.at[l[1]] == 5
-    assert net.line.x_ohm_per_km.at[l[0]] == 1
-    assert net.line.x_ohm_per_km.at[l[1]] == 1
-    assert net.line.r_ohm_per_km.at[l[0]] == 0.2
-    assert net.line.r_ohm_per_km.at[l[1]] == 0.2
-    assert net.line.r0_ohm_per_km.at[l[0]] == 0.1
-    assert net.line.r0_ohm_per_km.at[l[1]] == 0.1
+    assert all(net.line['length_km'].values == 5)
+    assert all(net.line['x_ohm_per_km'].values == 1)
+    assert all(net.line['r_ohm_per_km'].values == 0.2)
+    assert all(net.line["r0_ohm_per_km"].values == 0.1)
+    assert all(net.line["g0_us_per_km"].values == 0)
+    assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.at[l[0], "in_service"] == False  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
     assert net.line_geodata.at[l[1], "coords"] == [(10,10), (20,20)]
-    assert net.line.at[l[0], "name"] == "test"
-    assert net.line.at[l[1], "name"] == "test"
-    assert net.line.at[l[0], "max_loading_percent"] == 90
-    assert net.line.at[l[1], "max_loading_percent"] == 90
-    assert net.line.at[l[0], "parallel"] == 1
-    assert net.line.at[l[1], "parallel"] == 1
+    assert all(net.line["name"].values == "test")
+    assert all(net.line["max_loading_percent"].values == 90)
+    assert all(net.line["parallel"].values == 1)
+    assert all(net.line["temperature_degree_celsius"].values == 20.)
+    assert all(net.line["alpha"].values == 0.04)
 
     # setting params as array
     net = pp.create_empty_network()
@@ -298,7 +296,8 @@ def test_create_lines_from_parameters():
     b2 = pp.create_bus(net, 10)
     l = pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=[1, 5], r_ohm_per_km=[1, 2],
                                         x_ohm_per_km=[0.3, 0.5], c_nf_per_km=[0., 0.1], r0_ohm_per_km=[0.1, 0.15],
-                                        x0_ohm_per_km=[0.2, 0.25], df=[0.8, 0.7], in_service=[True, False],
+                                        x0_ohm_per_km=[0.2, 0.25], g0_us_per_km=[0., 0.], c0_nf_per_km=[0., 0.],
+                                        df=[0.8, 0.7], in_service=[True, False],
                                         geodata=[[(10, 10), (20, 20)], [(100, 10), (200, 20)]], parallel=[2, 1],
                                         max_loading_percent=[80, 90], name=["test1", "test2"], max_i_ka=[100, 200])
 
@@ -316,6 +315,8 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "r0_ohm_per_km"] == 0.15
     assert net.line.at[l[0], "x0_ohm_per_km"] == 0.2
     assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
+    assert all(net.line["g0_us_per_km"].values == 0)
+    assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.at[l[0], "in_service"] == True  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10,10), (20,20)]
@@ -524,7 +525,9 @@ def test_create_sgens():
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
-    sg = pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False])
+    pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
+                    max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
+                    k=1.3, rx=0.4, current_source=True)
 
     assert(net.sgen.bus.at[0] == b1)
     assert(net.sgen.bus.at[1] == b2)
@@ -538,6 +541,13 @@ def test_create_sgens():
     assert(net.sgen.controllable.at[0] == True)
     assert(net.sgen.controllable.at[1] == False)
     assert(net.sgen.controllable.at[2] == False)
+    assert(all(net.sgen.max_p_mw.values == 0.2))
+    assert(all(net.sgen.min_p_mw.values == [0, 0.1, 0]))
+    assert(all(net.sgen.max_q_mvar.values == 0.2))
+    assert(all(net.sgen.min_q_mvar.values == [0, 0.1, 0]))
+    assert(all(net.sgen.k.values == 1.3))
+    assert(all(net.sgen.rx.values == 0.4))
+    assert(all(net.sgen.current_source))
 
 if __name__ == '__main__':
     test_create_lines()
