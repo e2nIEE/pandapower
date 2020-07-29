@@ -58,7 +58,7 @@ def test_branch_max_motor(motor_three_bus_example):
 def test_branch_min_motor(motor_three_bus_example):
     net = motor_three_bus_example
     sc.calc_sc(net, case="min", branch_results=True)
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.0447011, 0.         ]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.0447011, 0.21003042]))
 
 if __name__ == '__main__':
     pytest.main([__file__])

@@ -85,17 +85,17 @@ def test_min_branch_results_small_sgen(three_bus_example):
     #assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.39171613,  0.40431286]))
     #assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.72795118,  0.74576565]))
     #assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.39340278,  0.40605375]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.01259673,  0.]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.]))
-    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.01259673,  0.40431286]))
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.74576565]))
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.40605375]))
 
 def test_min_branch_results_big_sgen(big_sgen_three_bus_example):
     net = big_sgen_three_bus_example
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([1.67956442, 1.65864191, 1.62941387]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.36974055, 0.]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.69687302,   0.]))
-    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.37133258,  0.]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.36974055, 1.62941387]))
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.69687302,   2.47832011]))
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.37133258,  1.63642978]))
 
 def test_wind_park(wind_park_example):
     net = wind_park_example

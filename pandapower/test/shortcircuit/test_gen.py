@@ -68,7 +68,7 @@ def test_min_gen(one_line_one_generator):
 def test_branch_min_gen(gen_three_bus_example):
     net = gen_three_bus_example
     sc.calc_sc(net, case="min", branch_results=True)
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 0.]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]))
 
 def test_max_gen_fault_impedance(one_line_one_generator):
     net = one_line_one_generator
