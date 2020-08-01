@@ -81,10 +81,6 @@ def test_min_branch_results_small_sgen(three_bus_example):
     net = three_bus_example
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([ 0.43248784,  0.41156533,  0.40431286]))
-    # These are not technically correct
-    #assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.39171613,  0.40431286]))
-    #assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.72795118,  0.74576565]))
-    #assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.39340278,  0.40605375]))
     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.01259673,  0.40431286]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.74576565]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.40605375]))
