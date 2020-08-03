@@ -647,7 +647,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net["bus_geodata"].loc[index, "coords"] = coords
 
     min_vm_pu = min_vm_pu if hasattr(min_vm_pu, "__iter__") else [min_vm_pu] * nr_buses
-    min_vm_pu = pd.Series(min_vm_pu, dtype=float)
+    min_vm_pu = pd.Series(min_vm_pu, dtype=float, index=index)
 
     if not min_vm_pu.isnull().all():
         if "min_vm_pu" not in net.bus.columns:
@@ -656,7 +656,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus.loc[index, "min_vm_pu"] = min_vm_pu
 
     max_vm_pu = max_vm_pu if hasattr(max_vm_pu, "__iter__") else [max_vm_pu] * nr_buses
-    max_vm_pu = pd.Series(max_vm_pu, dtype=float)
+    max_vm_pu = pd.Series(max_vm_pu, dtype=float, index=index)
 
     if not max_vm_pu.isnull().all():
         if "max_vm_pu" not in net.bus.columns:
@@ -778,7 +778,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = False
+            net.load["controllable"] = False
 
         net.load.loc[index, "controllable"] = bool(controllable)
     else:
