@@ -1249,7 +1249,16 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
          **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
              or not. Only respected for OPF
              Defaults to False if "controllable" column exists in DataFrame
- 
+
+        **k** (list of floats, None) - Ratio of nominal current to short circuit current
+
+        **rx** (list of floats, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor
+
+        **current_source** (list of bool, True) - Model this sgen as a current source during short-\
+            circuit calculations; useful in some cases, for example the simulation of full-\
+            size converters per IEC 60909-0:2016.
+
      OUTPUT:
          **index** (int) - The unique IDs of the created elements
  
@@ -1705,7 +1714,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
                xdss_pu=None, rdss_pu=None, cos_phi=None, in_service=True, **kwargs):
     """
-    Adds a generator to the network.
+    Adds generators to the specified buses network.
 
     Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
     is active power and a voltage set point. If you want to model a generator as PQ load with fixed
@@ -1714,51 +1723,51 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     INPUT:
         **net** - The net within this generator should be created
 
-        **bus** (int) - The bus id to which the generator is connected
+        **buses** (list of int) - The bus ids to which the generators are connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the generator (positive for generation!)
+        **p_mw** (list of float, default 0) - The real power of the generator (positive for generation!)
 
-        **vm_pu** (float, default 0) - The voltage set point of the generator.
+        **vm_pu** (list of float, default 0) - The voltage set point of the generator.
 
-        **sn_mva** (float, None) - Nominal power of the generator
+        **sn_mva** (list of float, None) - Nominal power of the generator
 
-        **name** (string, None) - The name for this generator
+        **name** (list of string, None) - The name for this generator
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+        **scaling** (list of float, 1.0) - scaling factor which for the active power of the generator
 
-        **type** (string, None) - type variable to classify generators
+        **type** (list of string, None) - type variable to classify generators
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
                                         False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                                         defaults to True if "controllable" column exists in DataFrame
         powerflow
 
-        **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
+        **vn_kv** (list of float, NaN) - Rated voltage of the generator for short-circuit calculation
 
-        **xdss_pu** (float, NaN) - Subtransient generator reactance for short-circuit calculation
+        **xdss_pu** (list of float, NaN) - Subtransient generator reactance for short-circuit calculation
 
-        **rdss_pu** (float, NaN) - Subtransient generator resistance for short-circuit calculation
+        **rdss_pu** (list of float, NaN) - Subtransient generator resistance for short-circuit calculation
 
-        **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
+        **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
-        **max_p_mw** (float, default NaN) - Maximum active power injection - necessary for OPF
+        **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for OPF
 
-        **min_p_mw** (float, default NaN) - Minimum active power injection - necessary for OPF
+        **min_p_mw** (list of float, default NaN) - Minimum active power injection - necessary for OPF
 
-        **max_q_mvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
+        **max_q_mvar** (list of float, default NaN) - Maximum reactive power injection - necessary for OPF
 
-        **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
+        **min_q_mvar** (list of float, default NaN) - Minimum reactive power injection - necessary for OPF
 
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage limit is taken.
+        **min_vm_pu** (list of float, default NaN) - Minimum voltage magnitude. If not set the bus voltage limit is taken.
                                            - necessary for OPF.
 
-        **max_vm_pur** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage limit is taken.
+        **max_vm_pur** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus voltage limit is taken.
                                             - necessary for OPF
 
     OUTPUT:
@@ -3501,13 +3510,13 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     nr_switches = len(buses)
     if index is not None:
         for idx in index:
-            if idx in net.line.index:
+            if idx in net.switch.index:
                 raise UserWarning("A switch with index %s already exists" % index)
     else:
         swid = get_free_id(net["switch"])
         index = arange(swid, swid + nr_switches, 1)
 
-    switches_df = pd.DataFrame(index = index, columns=net.switch.columns)
+    switches_df = pd.DataFrame(index=index, columns=net.switch.columns)
     switches_df['bus'] = buses
     switches_df['element'] = elements
     switches_df['et'] = et
