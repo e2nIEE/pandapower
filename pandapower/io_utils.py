@@ -397,13 +397,13 @@ def pp_hook_serialization(obj, d, net):
 
     class_name = d.pop('_class')
     module_name = d.pop('_module')
-    fs = from_serializable_registry(obj, d, net, pp_hook)
+    fs = FromSerializableRegistry(obj, d, net, pp_hook)
     fs.class_name = class_name
     fs.module_name = module_name
     return fs.from_serializable()
 
 
-class from_serializable:
+class FromSerializable:
     def __init__(self):
         self.class_name = 'class_name'
         self.module_name = 'module_name'
@@ -426,8 +426,8 @@ class from_serializable:
         return decorator
 
 
-class from_serializable_registry():
-    from_serializable = from_serializable()
+class FromSerializableRegistry():
+    from_serializable = FromSerializable()
     class_name = ''
     module_name = ''
 
