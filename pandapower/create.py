@@ -768,7 +768,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load.loc[:, "controllable"] = False
+            net.load["controllable"] = False
 
         net.load.loc[index, "controllable"] = bool(controllable)
     else:
