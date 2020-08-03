@@ -18,8 +18,8 @@ from pandapower.estimation.results import eppci2pp
 from copy import deepcopy
 
 
-def test_case30_compare_classical_wls_opt_wls():
-    net = nw.case30()
+def test_case9_compare_classical_wls_opt_wls():
+    net = nw.case9()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
     
@@ -44,7 +44,7 @@ def test_case30_compare_classical_wls_opt_wls():
 
 
 def test_lp_lav():
-    net = nw.case14()
+    net = nw.case9()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
 
