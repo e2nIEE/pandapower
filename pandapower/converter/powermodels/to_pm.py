@@ -110,9 +110,14 @@ def dump_pm_json(pm, buffer_file=None):
     return buffer_file
 
 
-def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
+def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
+                      max_bus_id_on_ppci):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
+    max_bus_id_on_pm = max_bus_id_on_ppci + 1
+
+    pm_lookup = np.ones(max(net[element].index) + 1, dtype=int) * -1 if len(net[element].index) \
+        else np.array([], dtype=int)
     for idx in net[element].index:
         if "controllable" in net[element] and net[element].at[idx, "controllable"]:
             continue
@@ -120,26 +125,29 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
         pp_bus = net[element].at[idx, "bus"]
         pm_bus = bus_lookup[pp_bus] + 1
 
-        scaling = net[element].at[idx, "scaling"]
-        if element == "sgen":
-            pd = -net[element].at[idx, "p_mw"] * scaling
-            qd = -net[element].at[idx, "q_mvar"] * scaling
-        else:
-            pd = net[element].at[idx, "p_mw"] * scaling
-            qd = net[element].at[idx, "q_mvar"] * scaling
-        in_service = net[element].at[idx, "in_service"]
+        # testing if the bus in which the element is conn is ON
+        if pm_bus <= max_bus_id_on_pm:
+            scaling = net[element].at[idx, "scaling"]
+            if element == "sgen":
+                pd = -net[element].at[idx, "p_mw"] * scaling
+                qd = -net[element].at[idx, "q_mvar"] * scaling
+            else:
+                pd = net[element].at[idx, "p_mw"] * scaling
+                qd = net[element].at[idx, "q_mvar"] * scaling
+            in_service = net[element].at[idx, "in_service"]
 
-        pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
-                                     "status": int(in_service), "index": load_idx}
-        if pm_bus not in pd_bus:
-            pd_bus[pm_bus] = pd
-            qd_bus[pm_bus] = qd
-        else:
-            pd_bus[pm_bus] += pd
-            qd_bus[pm_bus] += qd
+            pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
+                                        "status": int(in_service), "index": load_idx}
+            if pm_bus not in pd_bus:
+                pd_bus[pm_bus] = pd
+                qd_bus[pm_bus] = qd
+            else:
+                pd_bus[pm_bus] += pd
+                qd_bus[pm_bus] += qd
 
-        load_idx += 1
-    return load_idx
+            pm_lookup[idx] = load_idx
+            load_idx += 1
+    return load_idx, pm_lookup
 
 
 def get_branch_angles(row, correct_pm_network_data):
@@ -161,6 +169,27 @@ def get_branch_angles(row, correct_pm_network_data):
     return angmin, angmax
 
 
+def create_pm_lookups(net, pm_lookup):
+    for key, val in net._pd2ppc_lookups.items():
+        if isinstance(val, dict):
+            # lookup is something like "branch" with dict as val -> iterate over the subdicts
+            pm_val = dict()
+            for subkey, subval in val.items():
+                pm_val[subkey] = tuple((v + 1 for v in subval))
+        elif isinstance(val, int) or isinstance(val, np.ndarray):
+            # lookup is a numpy array
+            # julia starts counting at 1 instead of 0
+            pm_val = val + 1
+            # restore -1 for not existing elements
+            pm_val[pm_val == 0] = -1
+        else:
+            # val not supported
+            continue
+        pm_lookup[key] = pm_val
+    net._pd2pm_lookups = pm_lookup
+    return net
+
+
 def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
@@ -174,9 +203,17 @@ def ppc_to_pm(net, ppci):
     # temp dicts which hold the sum of p, q of loads + sgens
     pd_bus = dict()
     qd_bus = dict()
-    load_idx = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
-    load_idx = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
-    load_idx = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
+
+    # BUG: Pandapower was inserting in _pp_element_to_pm elements connected to 
+    # buses off (beyond max_bus_id_on)
+    max_bus_id_on_ppci = ppci['bus'].shape[0] - 1
+
+    load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
+    load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
+    load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
+    pm_lookup = {"load": load_lookup, "sgen": sgen_lookup, "storage": storage_lookup}
+    net = create_pm_lookups(net, pm_lookup)
+
     correct_pm_network_data = net._options["correct_pm_network_data"]
 
     for row in ppci["bus"]:
