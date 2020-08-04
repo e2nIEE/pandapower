@@ -331,6 +331,23 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "max_i_ka"] == 200
 
 
+def test_create_lines_raise_except():
+    # standard
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                    r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
+
+    with pytest.raises(UserWarning, match="Lines trying to attach .*"):
+        pp.create_lines_from_parameters(net, [b1, 2], [2, b2], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                        r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
+
+    with pytest.raises(UserWarning, match="Lines with indexes .*"):
+        pp.create_lines_from_parameters(net, [b1, b1], [b2, b2], index=[0, 0], length_km=[10., 5.], x_ohm_per_km=[1., 1.],
+                                        r_ohm_per_km=[0.2, 0.2], c_nf_per_km=[0, 0], max_i_ka=[100, 100])
+
+
 def test_create_line_alpha_temperature():
     net=pp.create_empty_network()
     b = pp.create_buses(net, 5, 110)
@@ -615,5 +632,4 @@ def test_create_gens():
 
 
 if __name__ == '__main__':
-    test_create_lines()
-    # pytest.main(["test_create.py"])
+    pytest.main(["test_create.py"])

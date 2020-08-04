@@ -2310,12 +2310,19 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     """
     nr_lines = len(from_buses)
     if index is not None:
-        for idx in index:
-            if idx in net.line.index:
-                raise UserWarning("A line with index %s already exists" % index)
+        if any(isin(index, net.line.index)):
+            index_in = set(index) & set(net.line.index)
+            raise UserWarning(f"Lines with indexes {index_in} already exists")
     else:
         lid = get_free_id(net["line"])
         index = arange(lid, lid + nr_lines, 1)
+
+    if not(all(isin(from_buses, net.bus.index)))>0:
+        bus_not_exist = set(from_buses) - set(net.bus.index)
+        raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
+    if not(all(isin(to_buses, net.bus.index)))>0:
+        bus_not_exist = set(to_buses) - set(net.bus.index)
+        raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
 
     dtypes = net.line.dtypes
 
