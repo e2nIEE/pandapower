@@ -663,10 +663,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
         bus_geodata = net["bus_geodata"]
 
     in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
-                  net.trafo.mv_bus.loc[trafos].isin(bus_geodata.index) &
                   net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
     trafos = trafos[in_geodata]
-    trafo_table = net.trafo3w.loc[trafos]
+    trafo_table = net.trafo.loc[trafos]
 
     coords, trafos_with_geo = coords_from_node_geodata(
         trafos, trafo_table.hv_bus.values, trafo_table.lv_bus.values, bus_geodata, "trafo")
