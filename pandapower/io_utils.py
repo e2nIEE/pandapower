@@ -361,15 +361,6 @@ class PPJSONEncoder(json.JSONEncoder):
             return s
 
 
-class PPJSONDecoder(json.JSONDecoder):
-    def __init__(self, **kwargs):
-        # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net)}
-        super_kwargs.update(kwargs)
-        super().__init__(**super_kwargs)
-
-
 class FromSerializable:
     def __init__(self):
         self.class_name = 'class_name'
@@ -454,7 +445,9 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      register_class=FromSerializableRegistry)  # backwards compatibility
+                                      object_hook=partial(pp_hook, net=self.net,
+                                                          registry_class=FromSerializableRegistry))
+                                      # backwards compatibility
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
@@ -479,6 +472,15 @@ class FromSerializableRegistry():
         @from_serializable.register(module_name='shapely')
         def shapely(self):
             return shapely.geometry.shape(self.obj)
+
+
+class PPJSONDecoder(json.JSONDecoder):
+    def __init__(self, **kwargs):
+        # net = pandapowerNet.__new__(pandapowerNet)
+        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+        super_kwargs.update(kwargs)
+        super().__init__(**super_kwargs)
 
 
 def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
