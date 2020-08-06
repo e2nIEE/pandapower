@@ -171,7 +171,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
         z0_k = (r_sc + x_sc * 1j) / parallel
-        if mode == "sc":
+        y0_k = 1 / z0_k #adding admittance for "pi" model
+        if mode == "sc":# or trafo_model == "pi":
             from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vk_percent, vkr_percent, \
@@ -197,13 +198,20 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         z1 = si0_hv_partial * z0_k
         z2 = (1 - si0_hv_partial) * z0_k
         z3 = z0_mag
-        z_temp = z1 * z2 + z2 * z3 + z1 * z3
+        z_temp = z1 * z2 + z2 * z3 + z1 * z3 
         za = z_temp / z2
+#        za = z_temp / (z2+z3)
         zb = z_temp / z1
+#        zb = z_temp / (z1+z3)
         zc = z_temp / z3  # ZAB  Transfer impedance
+#        zc = z_temp / (z1+z2)  # ZAB  Transfer impedance
         YAB = 1 / zc.astype(complex)
         YAN = 1 / za.astype(complex)
         YBN = 1 / zb.astype(complex)
+        
+#        YAB_AN = (zc + za) /(zc * za).astype(complex)  # Series conn YAB and YAN
+#        YAB_BN = (zc + zb) / (zc * zb).astype(complex)  # Series conn YAB and YBN
+
         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
 
@@ -230,9 +238,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"]) #pi model
             else:
-                y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"]) #T model
+#                y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"]) #T model
+                print(YAB, YAB_AN, YAB_BN, YBN)
+                y = (YAB + YAB_BN + YBN).astype(complex)* int(ppc["baseMVA"])  # T model
+
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
+            
 
         elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
@@ -257,7 +269,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) * int(ppc["baseMVA"])  # pi model
+                y = (YAB_BN + YAN).astype(complex) * int(ppc["baseMVA"])  #T model
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
@@ -265,7 +277,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
             #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
-            y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"])  # pi model
+            y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"])  #T model
             gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service \
                                 * int(ppc["baseMVA"])])
             bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service \
