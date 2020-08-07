@@ -82,7 +82,7 @@ def case5():
     Studies" Its data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
 
     OUTPUT:
-         **net** - Returns the required ieee network case4gs
+         **net** - Returns the required ieee network case5
 
     EXAMPLE:
          import pandapower.networks as pn

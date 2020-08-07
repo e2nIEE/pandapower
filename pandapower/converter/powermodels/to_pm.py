@@ -166,7 +166,7 @@ def ppc_to_pm(net, ppci):
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
           "ne_branch": dict(), "switch": dict(),
           "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
-          "sourcetype": "matpower", "per_unit": True, "name": net.name}
+          "sourcetype": "matpower", "per_unit": False, "name": net.name}
     load_idx = 1
     shunt_idx = 1
     # PowerModels has a load model -> add loads and sgens to pm["load"]
@@ -227,9 +227,28 @@ def ppc_to_pm(net, ppci):
         branch["g_to"] = - row[BR_B].imag / 2.0
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
-        branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-        branch["rate_b"] = row[RATE_B].real
-        branch["rate_c"] = row[RATE_C].real
+
+        if net._options["opf_flow_lim"] == "S": # or branch["transformer"]:
+            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["rate_b"] = row[RATE_B].real
+            branch["rate_c"] = row[RATE_C].real
+        elif net._options["opf_flow_lim"] == "I":
+            # todo bei ne_branch auch machen
+            f, t = net._pd2ppc_lookups["branch"]["line"]
+            f = int(row[F_BUS].real) # from bus of this line
+            vr = ppci["bus"][f][BASE_KV]
+#            factor = 35 #np.sqrt(1000) #31.9215
+#            row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3)) * factor
+#            row[RATE_B] = row[RATE_B] / (vr * np.sqrt(3)) * factor *10
+#            row[RATE_C] = row[RATE_C] / (vr * np.sqrt(3)) * factor *10
+
+            branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["c_rating_b"] = row[RATE_B].real
+            branch["c_rating_c"] = row[RATE_C].real
+
+        else:
+            logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
+
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
@@ -263,9 +282,21 @@ def ppc_to_pm(net, ppci):
             branch["g_to"] = - row[BR_B].imag / 2.0
             branch["b_fr"] = row[BR_B].real / 2.0
             branch["b_to"] = row[BR_B].real / 2.0
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
+
+            if net._options["opf_flow_lim"] == "S":
+                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["rate_b"] = row[RATE_B].real
+                branch["rate_c"] = row[RATE_C].real
+            elif net._options["opf_flow_lim"] == "I":
+                f, t = net._pd2ppc_lookups["branch"]["line"]
+                f = int(row[F_BUS].real)  # from bus of this line
+                vr = ppci["bus"][f][BASE_KV]
+                row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
+
+                branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["c_rating_b"] = row[RATE_B].real
+                branch["c_rating_c"] = row[RATE_C].real
+
             branch["f_bus"] = int(row[F_BUS].real) + 1
             branch["t_bus"] = int(row[T_BUS].real) + 1
             branch["br_status"] = int(row[BR_STATUS].real)

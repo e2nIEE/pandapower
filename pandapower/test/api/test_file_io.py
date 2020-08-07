@@ -2,8 +2,6 @@
 
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import copy
 import json
 import os
@@ -284,4 +282,4 @@ def test_deepcopy_controller():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-s"])

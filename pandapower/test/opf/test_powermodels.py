@@ -27,6 +27,7 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia import Main
+
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -554,4 +555,5 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    test_pwl()
+    # pytest.main([__file__])
