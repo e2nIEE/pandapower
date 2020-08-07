@@ -22,10 +22,14 @@ from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net
 
 try:
+    from julia.core import UnsupportedPythonError
+except ImportError:
+    UnsupportedPythonError = Exception
+try:
     from julia import Main
 
     julia_installed = True
-except (ImportError, RuntimeError) as e:
+except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
     print(e)
 
@@ -156,14 +160,14 @@ def test_pwl():
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g2], 0)
     assert np.isclose(net.res_gen.p_mw.at[g3], 0)
-    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1])
+    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1], atol=1e-4)
 
     net.load.p_mw = 3
     pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g3], 0)
     assert np.isclose(net.res_gen.p_mw.at[g1], 2)
-    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2)
+    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2, atol=1e-4)
 
     net.load.p_mw = 5
     pp.runpm_ac_opf(net)
@@ -171,7 +175,7 @@ def test_pwl():
     assert np.isclose(net.res_gen.p_mw.at[g1], 2)
     assert np.isclose(net.res_gen.p_mw.at[g2], 3)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2 +
-                      net.res_gen.p_mw.at[g3] * 3)
+                      net.res_gen.p_mw.at[g3] * 3, atol=1e-4)
 
 
 @pytest.mark.slow

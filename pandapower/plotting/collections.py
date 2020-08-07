@@ -260,8 +260,10 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
-    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
-    line_coll = LineCollection(lines, color=line_color, picker=picker, **kwargs)
+    patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths,
+                                 **kwargs)
+    line_coll = LineCollection(lines, color=line_color, picker=picker, linewidth=linewidths,
+                               **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
     return patch_coll, line_coll
@@ -381,6 +383,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     pc = _create_node_collection(buses, coords, size, patch_type, color, picker, infos, **kwargs)
 
     if cmap is not None:
+        if z is None:
+            z = net.res_bus.vm_pu.loc[buses]
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
 
     return pc
@@ -547,10 +551,14 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
         **lc** - line collection
     """
     trafos = get_index_array(trafos, net.trafo.index)
-    trafo_table = net.trafo.loc[trafos]
 
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
+
+    in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
+                  net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
+    trafos = trafos[in_geodata]
+    trafo_table = net.trafo.loc[trafos]
 
     hv_geo = list(zip(bus_geodata.loc[trafo_table["hv_bus"], "x"].values,
                       bus_geodata.loc[trafo_table["hv_bus"], "y"].values))
@@ -594,10 +602,15 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
         **lc** - line collection
     """
     trafos = get_index_array(trafos, net.trafo3w.index)
-    trafo_table = net.trafo3w.loc[trafos]
 
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
+
+    in_geodata = (net.trafo3w.hv_bus.loc[trafos].isin(bus_geodata.index) &
+                  net.trafo3w.mv_bus.loc[trafos].isin(bus_geodata.index) &
+                  net.trafo3w.lv_bus.loc[trafos].isin(bus_geodata.index))
+    trafos = trafos[in_geodata]
+    trafo_table = net.trafo3w.loc[trafos]
 
     hv_geo, mv_geo, lv_geo = (list(zip(*(bus_geodata.loc[trafo_table[column], var].values
                                          for var in ['x', 'y'])))
@@ -645,11 +658,17 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
         **pc** - patch collection
     """
     trafos = get_index_array(trafos, net.trafo.index)
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
+                  net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
+    trafos = trafos[in_geodata]
     trafo_table = net.trafo.loc[trafos]
 
     coords, trafos_with_geo = coords_from_node_geodata(
-        trafos, trafo_table.hv_bus.values, trafo_table.lv_bus.values,
-        bus_geodata if bus_geodata is not None else net["bus_geodata"], "trafo")
+        trafos, trafo_table.hv_bus.values, trafo_table.lv_bus.values, bus_geodata, "trafo")
 
     if len(trafos_with_geo) == 0:
         return None
@@ -678,7 +697,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 # noinspection PyArgumentList
 def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, cmap=None, norm=None,
                               z=None, clim=None, cbar_title="3W-Transformer Loading",
-                              plot_colormap=True, **kwargs):
+                              plot_colormap=True, bus_geodata=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -701,7 +720,16 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
         **pc** - patch collection
     """
     trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    in_geodata = (net.trafo3w.hv_bus.loc[trafo3ws].isin(bus_geodata.index) &
+                  net.trafo3w.mv_bus.loc[trafo3ws].isin(bus_geodata.index) &
+                  net.trafo3w.lv_bus.loc[trafo3ws].isin(bus_geodata.index))
+    trafo3ws = trafo3ws[in_geodata]
     trafo3w_table = net.trafo3w.loc[trafo3ws]
+
     lines = []
     circles = []
     infos = []
@@ -1051,7 +1079,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
                 # check, which end of the line is nearer to the switch bus
-                intersection = position_on_busbar(net, target_bus, busbar_coords=line_coords)
+                intersection = position_on_busbar(net, sb, busbar_coords=line_coords)
                 if intersection is not None:
                     pos_sb = intersection
                 if len(line_coords) >= 2:

@@ -50,7 +50,7 @@ class ConstControl(Controller):
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=True, order=0, level=0,
-                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None, initial_powerflow=False,
+                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None, initial_run=False,
                  **kwargs):
         # just calling init of the parent
         if matching_params is None:
@@ -58,7 +58,7 @@ class ConstControl(Controller):
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_powerflow = initial_powerflow,
+                         matching_params=matching_params, initial_run = initial_run,
                          **kwargs)
         self.matching_params = {"element": element, "variable": variable,
                                 "element_index": element_index}
@@ -77,7 +77,7 @@ class ConstControl(Controller):
             logger.error("Parameter set_q_from_cosphi deprecated!")
             raise ValueError
         self.applied = False
-        self.initial_powerflow = initial_powerflow
+        self.initial_run = initial_run
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
@@ -100,14 +100,16 @@ class ConstControl(Controller):
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=False, gen=False, bus_pq=False)
-        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar"]:
+        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar", "scaling"]:
             recycle["bus_pq"] = True
-        if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu"] \
+        if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu", "scaling"] \
                 or self.element in ["ext_grid"] and self.variable in ["vm_pu", "va_degree"]:
             recycle["gen"] = True
         if self.element in ["trafo", "trafo3w", "line"]:
             recycle["trafo"] = True
-        self.recycle = recycle
+        # recycle is either the dict what should be recycled
+        # or False if the element + variable combination is not supported
+        self.recycle = recycle if not any(list(recycle.values())) else False
 
     def write_to_net(self):
         """
