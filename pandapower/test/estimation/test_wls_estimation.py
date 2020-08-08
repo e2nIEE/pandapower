@@ -203,7 +203,7 @@ def test_3bus_with_transformer():
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
                                    max_i_ka=1)
-    
+
     pp.create_std_type(net, {"sn_mva": 25, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
             "vkr_percent": 0.276, "pfe_kw": 28.51, "i0_percent": 0.073, "shift_degree": 150,
             "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
@@ -646,7 +646,7 @@ def test_network_with_trafo3w_with_disabled_branch():
     assert (np.nanmax(np.abs(net.res_bus.va_degree.values- net.res_bus_est.va_degree.values)) < 0.006)
 
 
-def create_net_with_bb_switch():  
+def create_net_with_bb_switch():
     net = pp.create_empty_network()
     bus1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     bus2 = pp.create_bus(net, name="bus2", vn_kv=10.)
@@ -689,7 +689,7 @@ def create_net_with_bb_switch():
     pp.create_measurement(net, "q", "line", r2(net.res_line.q_from_mvar.iloc[0], .002), .002, 0, side='from')
 
     pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .001), .01,
-                          side="hv", element=0)  
+                          side="hv", element=0)
     pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
                           side="hv", element=0) 
     return net
@@ -887,7 +887,7 @@ def test_net_unobserved_island():
 
 def test_net_oos_line():
     net = nw.case9()
-    net.line.in_service.iat[4] = False 
+    net.line.in_service.iat[4] = False
     pp.runpp(net)
     
     for line_ix in net.line.index.to_numpy():

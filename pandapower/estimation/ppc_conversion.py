@@ -10,9 +10,8 @@ import numpy as np
 import pandas as pd
 
 import pandapower.pypower.idx_bus as idx_bus
-from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
-from pandapower.estimation.idx_brch import *
-from pandapower.estimation.idx_bus import *
+from pandapower.auxiliary import (_select_is_elements_numba,
+                                  _add_ppc_options, _add_auxiliary_elements)
 from pandapower.estimation.results import _copy_power_flow_results
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
@@ -20,6 +19,21 @@ from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.idx_bus import bus_cols
 from pandapower.pypower.makeYbus import makeYbus
+
+from pandapower.estimation.idx_bus import (VM, VM_IDX, VM_STD,
+                                           VA, VA_IDX, VA_STD,
+                                           P, P_IDX, P_STD,
+                                           Q, Q_IDX, Q_STD,
+                                           ZERO_INJ_FLAG, bus_cols_se)
+from pandapower.estimation.idx_brch import (P_FROM, P_FROM_IDX, P_FROM_STD,
+                                            Q_FROM, Q_FROM_IDX, Q_FROM_STD,
+                                            IM_FROM, IM_FROM_IDX, IM_FROM_STD,
+                                            IA_FROM, IA_FROM_IDX, IA_FROM_STD,
+                                            P_TO, P_TO_IDX, P_TO_STD,
+                                            Q_TO, Q_TO_IDX, Q_TO_STD,
+                                            IM_TO, IM_TO_IDX, IM_TO_STD,
+                                            IA_TO, IA_TO_IDX, IA_TO_STD,
+                                            branch_cols_se)
 
 try:
     import pplog as logging
@@ -80,6 +94,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
 
 def _add_measurements_to_ppci(net, ppci, zero_injection):
     """
+
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
     :param ppci: generated ppci
@@ -127,7 +142,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     if not net.line.empty:
         line_is_mask = br_is_mask[np.arange(*net["_pd2ppc_lookups"]["branch"]["line"])]
         num_line_is = np.sum(line_is_mask)
-        map_line = pd.Series(index=net.line.index.to_numpy(copy=True)[line_is_mask],
+        map_line = pd.Series(index=net.line.index.values[line_is_mask],
                              data=np.arange(num_line_is))
 
     if not net.trafo.empty:
@@ -135,11 +150,11 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         trafo_is_mask = br_is_mask[np.arange(trafo_ix_start, trafo_ix_end)]
         num_trafo_is = np.sum(trafo_is_mask)
         trafo_ix_offset = np.sum(br_is_mask[:trafo_ix_start])
-        map_trafo = pd.Series(index=net.trafo.index.to_numpy(copy=True)[trafo_is_mask], 
+        map_trafo = pd.Series(index=net.trafo.index.values[trafo_is_mask],
                               data=np.arange(trafo_ix_offset, trafo_ix_offset+num_trafo_is))
 
     if not net.trafo3w.empty:
-        trafo3w_ix_start, trafo3w_ix_end = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
+        trafo3w_ix_start = net["_pd2ppc_lookups"]["branch"]["trafo3w"][0]
         num_trafo3w = net.trafo3w.shape[0]
         # Only the HV side branch is needed to evaluate is/os status
         trafo3w_is_mask = br_is_mask[np.arange(trafo3w_ix_start,
@@ -151,7 +166,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                                     'mv': br_ix + num_trafo3w_is,
                                     'lv': br_ix + 2 * num_trafo3w_is}
                        for trafo3w_ix, br_ix in
-                        zip(net.trafo3w.index.to_numpy(copy=True)[trafo3w_is_mask],
+                        zip(net.trafo3w.index.values[trafo3w_is_mask],
                             np.arange(trafo3w_ix_offset,
                                       trafo3w_ix_offset+num_trafo3w_is))}
 
@@ -228,8 +243,8 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
         if br_map is None:
             continue
         for meas_type in ("p", "q", "i", "ia"):
-            this_meas = meas[(meas.measurement_type == meas_type) & 
-                             (meas.element_type == br_type) & \
+            this_meas = meas[(meas.measurement_type == meas_type) &
+                             (meas.element_type == br_type) &
                               meas.element.isin(br_map.index)]
             if len(this_meas):
                 for br_side in ("f", "t"):
@@ -428,6 +443,7 @@ def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True,
 
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
+        # Initialize ppci with measurements
         self.data = ppci
 
         # Measurement relevant parameters
