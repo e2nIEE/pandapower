@@ -215,18 +215,19 @@ def get_voltage_init_vector(net, init_v, mode):
                 res_table = "res_bus"
             else:
                 # cannot init from results, since sorting of results is different from element table
-                UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
+                # TO BE REVIEWED! Why there was no raise before this?
+                raise UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
                             "You should sort res_bus before calling runpp.")
                 return None
 
             if mode == "magnitude":
                 # Avoid nan in results
                 return net[res_table]["vm_pu"].values.copy()
-            elif mode == "va_degree":
+            elif mode == "angle":
                 # Avoid nan in results
                 return net[res_table]["va_degree"].values.copy()
             else:
-                UserWarning(str(mode)+" for initialization not available!")
+                raise UserWarning(str(mode)+" for initialization not available!")
         if init_v == "flat":
             if mode == "magnitude":
                 net["_options"]["init_vm_pu"] = 0.
@@ -348,7 +349,8 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
 
     # res_table for warm start
     res_table = "res_%s" % element
-    if np.all(np.isnan(net[res_table].values)):
+    if "res_%s_power_flow" % element in net and\
+        np.all(np.isnan(net[res_table].values)):
         res_table = "res_%s_power_flow" % element
 
     if net._options["init_vm_pu"] == "results":
