@@ -36,8 +36,10 @@ def test_case9_compare_classical_wls_opt_wls():
 
     net_wls = deepcopy(net)
     estimate(net_wls)
-    assert np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=1e-2)
+
+    if not np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=1e-2):
+        raise AssertionError("Estimation failed!")
 
 
 def test_lp_lav():
@@ -47,9 +49,9 @@ def test_lp_lav():
 
     estimate(net, algorithm="lp")
 
-    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2)
-
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+        raise AssertionError("Estimation failed!")
 
 def test_opt_lav():
     net = nw.case9()
@@ -62,11 +64,12 @@ def test_opt_lav():
 
     eppci = estimation_wls.estimate(eppci)
     eppci = estimation_opt.estimate(eppci, estimator="lav")
-    assert estimation_opt.successful
+
     net = eppci2pp(net, ppc, eppci)
 
-    assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2)
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+        raise AssertionError("Estimation failed!")
 
 
 def test_ql_qc():
@@ -91,8 +94,9 @@ def test_ql_qc():
 
     net = eppci2pp(net, ppc, eppci)
 
-    assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+        raise AssertionError("Estimation failed!")
 
     # give it a warm start
     net, ppc, eppci = pp2eppci(net)
@@ -105,8 +109,9 @@ def test_ql_qc():
         eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, opt_method="Newton-CG")
     net = eppci2pp(net, ppc, eppci)
 
-    assert np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2)
-    assert np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2)
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+        raise AssertionError("Estimation failed!")
 
 
 if __name__ == '__main__':

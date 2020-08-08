@@ -10,8 +10,7 @@ import numpy as np
 import pandas as pd
 
 import pandapower.pypower.idx_bus as idx_bus
-from pandapower.auxiliary import (_select_is_elements_numba,
-                                  _add_ppc_options, _add_auxiliary_elements)
+from pandapower.auxiliary import _add_ppc_options
 from pandapower.estimation.results import _copy_power_flow_results
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
@@ -48,11 +47,11 @@ BR_SIDE = {"line": {"f": "from", "t": "to"},
 BR_MEAS_PPCI_IX = {("p", "f"): {"VALUE": P_FROM, "IDX": P_FROM_IDX, "STD": P_FROM_STD},
                    ("q", "f"): {"VALUE": Q_FROM, "IDX": Q_FROM_IDX, "STD": Q_FROM_STD},
                    ("i", "f"): {"VALUE": IM_FROM, "IDX": IM_FROM_IDX, "STD": IM_FROM_STD},
-                   ("ia", "f"):{"VALUE": IA_FROM, "IDX": IA_FROM_IDX, "STD": IA_FROM_STD},
+                   ("ia", "f"): {"VALUE": IA_FROM, "IDX": IA_FROM_IDX, "STD": IA_FROM_STD},
                    ("p", "t"): {"VALUE": P_TO, "IDX": P_TO_IDX, "STD": P_TO_STD},
                    ("q", "t"): {"VALUE": Q_TO, "IDX": Q_TO_IDX, "STD": Q_TO_STD},
                    ("i", "t"): {"VALUE": IM_TO, "IDX": IM_TO_IDX, "STD": IM_TO_STD},
-                   ("ia", "t"):{"VALUE": IA_TO, "IDX": IA_TO_IDX, "STD": IA_TO_STD}}
+                   ("ia", "t"): {"VALUE": IA_TO, "IDX": IA_TO_IDX, "STD": IA_TO_STD}}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -72,12 +71,10 @@ def _initialize_voltage(net, init, calculate_voltage_angles):
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
-    _add_ppc_options(net, check_connectivity=False, init_vm_pu=v_start, init_va_degree=delta_start,
+    _add_ppc_options(net, check_connectivity=True, init_vm_pu=v_start, init_va_degree=delta_start,
                      trafo_model="pi", mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, switch_rx_ratio=2,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
-    net["_is_elements"] = _select_is_elements_numba(net)
-    _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
 
     # do dc power flow for phase shifting transformers
@@ -131,7 +128,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
     if (map_bus[meas_bus['element'].values.astype(int)] >= ppci["bus"].shape[0]).any():
-        std_logger.warning("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
+        std_logger.warning("Measurement defined in pp-grid does not exist in ppci, will be deleted!")
         meas_bus = meas_bus[map_bus[meas_bus['element'].values.astype(int)] < ppci["bus"].shape[0]]
 
     # mapping to dict instead of np array ensures good performance for large indices
@@ -251,7 +248,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                     meas_this_side = this_meas[(this_meas.side.values.astype(int) ==
                                                 net[br_type][BR_SIDE[br_type][br_side]+"_bus"]
                                                 [this_meas.element]).values]
-                    ix_side = br_map[meas_this_side.element.to_numpy()].to_numpy()
+                    ix_side = br_map[meas_this_side.element.values].values
                     branch_append[ix_side,
                                   BR_MEAS_PPCI_IX[(meas_type, br_side)]["VALUE"]] =\
                         meas_this_side.value.values
@@ -269,15 +266,15 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                                      (meas.element_type == "trafo3w") &
                                       meas.element.isin(map_trafo3w)]
             if len(this_trafo3w_meas):
-                meas_hv = this_trafo3w_meas[(this_trafo3w_meas.side.to_numpy() ==
-                                             net.trafo3w.hv_bus[this_trafo3w_meas.element]).to_numpy()]
-                meas_mv = this_trafo3w_meas[(this_trafo3w_meas.side.to_numpy() ==
-                                             net.trafo3w.mv_bus[this_trafo3w_meas.element]).to_numpy()]
-                meas_lv = this_trafo3w_meas[(this_trafo3w_meas.side.to_numpy() ==
-                                             net.trafo3w.lv_bus[this_trafo3w_meas.element]).to_numpy()]
-                ix_hv = [map_trafo3w[t]['hv'] for t in meas_hv.element.to_numpy()]
-                ix_mv = [map_trafo3w[t]['mv'] for t in meas_mv.element.to_numpy()]
-                ix_lv = [map_trafo3w[t]['lv'] for t in meas_lv.element.to_numpy()]
+                meas_hv = this_trafo3w_meas[(this_trafo3w_meas.side.values ==
+                                             net.trafo3w.hv_bus[this_trafo3w_meas.element]).values]
+                meas_mv = this_trafo3w_meas[(this_trafo3w_meas.side.values ==
+                                             net.trafo3w.mv_bus[this_trafo3w_meas.element]).values]
+                meas_lv = this_trafo3w_meas[(this_trafo3w_meas.side.values ==
+                                             net.trafo3w.lv_bus[this_trafo3w_meas.element]).values]
+                ix_hv = [map_trafo3w[t]['hv'] for t in meas_hv.element.values]
+                ix_mv = [map_trafo3w[t]['mv'] for t in meas_mv.element.values]
+                ix_lv = [map_trafo3w[t]['lv'] for t in meas_lv.element.values]
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["VALUE"]] = meas_hv.value.values
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["STD"]] = meas_hv.std_dev.values
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["IDX"]] = meas_hv.index.values
@@ -423,7 +420,8 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
         return z
 
 
-def pp2eppci(net, v_start=None, delta_start=None, calculate_voltage_angles=True, zero_injection="aux_bus",
+def pp2eppci(net, v_start=None, delta_start=None,
+             calculate_voltage_angles=True, zero_injection="aux_bus",
              ppc=None, eppci=None):
     # initialize result tables if not existent
     _copy_power_flow_results(net)
@@ -474,7 +472,8 @@ class ExtendedPPCI(UserDict):
 
     def _initialize_meas(self):
         # calculate relevant vectors from ppci measurements
-        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask, self.any_i_meas, self.any_degree_meas = \
+        self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask,\
+            self.any_i_meas, self.any_degree_meas =\
             _build_measurement_vectors(self, update_meas_only=False)
         self.non_nan_meas_selector = np.flatnonzero(self.non_nan_meas_mask)
 
@@ -486,7 +485,8 @@ class ExtendedPPCI(UserDict):
         return self.v * np.exp(1j * self.delta)
 
     def reset(self):
-        self.v, self.delta, self.E = self.v_init.copy(), self.delta_init.copy(), self.E_init.copy()
+        self.v, self.delta, self.E =\
+            self.v_init.copy(), self.delta_init.copy(), self.E_init.copy()
 
     def update_E(self, E):
         self.E = E

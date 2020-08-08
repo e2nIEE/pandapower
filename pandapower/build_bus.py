@@ -207,14 +207,26 @@ def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
             # init voltage possible if bus results are available
-            if net.res_bus.index.equals(net.bus.index):
+            if "res_bus_power_flow" in net and net.res_bus_power_flow.index.equals(net.bus.index):
+                # In state estimation mode res_bus can be renamed to res_bus_power_flow
+                res_table = "res_bus_power_flow"
+            elif "res_bus" in net and net.res_bus.index.equals(net.bus.index):
                 # init bus voltages from results if the sorting is correct
-                return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
+                res_table = "res_bus"
             else:
                 # cannot init from results, since sorting of results is different from element table
                 UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
                             "You should sort res_bus before calling runpp.")
                 return None
+
+            if mode == "magnitude":
+                # Avoid nan in results
+                return net[res_table]["vm_pu"].values.copy()
+            elif mode == "va_degree":
+                # Avoid nan in results
+                return net[res_table]["va_degree"].values.copy()
+            else:
+                UserWarning(str(mode)+" for initialization not available!")
         if init_v == "flat":
             if mode == "magnitude":
                 net["_options"]["init_vm_pu"] = 0.
@@ -333,12 +345,18 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     if net._options["mode"] == "opf":
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
+
+    # res_table for warm start
+    res_table = "res_%s" % element
+    if np.all(np.isnan(net[res_table].values)):
+        res_table = "res_%s_power_flow" % element
+
     if net._options["init_vm_pu"] == "results":
-        ppc["bus"][aux_idx, VM] = net["res_%s" % element]["vm_internal_pu"].values
+        ppc["bus"][aux_idx, VM] = net[res_table]["vm_internal_pu"].values
     else:
         ppc["bus"][aux_idx, VM] = ppc["bus"][element_bus_idx, VM]
     if net._options["init_va_degree"] == "results":
-        ppc["bus"][aux_idx, VA] = net["res_%s" % element]["va_internal_degree"].values
+        ppc["bus"][aux_idx, VA] = net[res_table]["va_internal_degree"].values
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
