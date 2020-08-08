@@ -100,14 +100,16 @@ class ConstControl(Controller):
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=False, gen=False, bus_pq=False)
-        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar"]:
+        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar", "scaling"]:
             recycle["bus_pq"] = True
-        if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu"] \
+        if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu", "scaling"] \
                 or self.element in ["ext_grid"] and self.variable in ["vm_pu", "va_degree"]:
             recycle["gen"] = True
         if self.element in ["trafo", "trafo3w", "line"]:
             recycle["trafo"] = True
-        self.recycle = recycle
+        # recycle is either the dict what should be recycled
+        # or False if the element + variable combination is not supported
+        self.recycle = recycle if not any(list(recycle.values())) else False
 
     def write_to_net(self):
         """
