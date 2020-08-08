@@ -6,7 +6,8 @@ Change Log
 - [FIXED] pandas 1.0.4 support
 - [CHANGED] revision of toolbox function drop_out_of_service_elements()
 - [ADDED] toolbox function drop_measurements_at_elements()
-- [FIXED] Bugs in converting measurements of out-of-service branch in estimation
+- [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
+- [FIXED] Bug in using initialization option "results" in state estimation #859
 
 [2.2.2]- 2020-03-17
 ----------------------

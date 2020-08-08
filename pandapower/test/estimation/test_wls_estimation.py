@@ -902,13 +902,13 @@ def test_net_oos_line():
     net.line.in_service.iat[4] = False
     pp.runpp(net)
     
-    for line_ix in net.line.index.to_numpy():
+    for line_ix in net.line.index:
         pp.create_measurement(net, "p", "line", net.res_line.at[line_ix, "p_from_mw"],
                               0.01, element=line_ix, side="from")
         pp.create_measurement(net, "q", "line", net.res_line.at[line_ix, "q_from_mvar"],
                               0.01, element=line_ix, side="from")
     
-    for bus_ix in net.bus.index.to_numpy():
+    for bus_ix in net.bus.index:
         pp.create_measurement(net, "v", "bus", net.res_bus.at[bus_ix, "vm_pu"],
                               0.01, element=bus_ix)
         

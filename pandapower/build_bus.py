@@ -208,23 +208,21 @@ def get_voltage_init_vector(net, init_v, mode):
         if init_v == "results":
             # init voltage possible if bus results are available
             if "res_bus_power_flow" in net and net.res_bus_power_flow.index.equals(net.bus.index):
-                # In state estimation mode res_bus can be renamed to res_bus_power_flow
+                # After state estimation mode res_bus is renamed to res_bus_power_flow
                 res_table = "res_bus_power_flow"
             elif "res_bus" in net and net.res_bus.index.equals(net.bus.index):
                 # init bus voltages from results if the sorting is correct
                 res_table = "res_bus"
             else:
                 # cannot init from results, since sorting of results is different from element table
-                # TO BE REVIEWED! Why there was no raise before this?
+                # TO BE REVIEWED! Why there was no raise before this commit?
                 raise UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
                             "You should sort res_bus before calling runpp.")
                 return None
 
             if mode == "magnitude":
-                # Avoid nan in results
                 return net[res_table]["vm_pu"].values.copy()
             elif mode == "angle":
-                # Avoid nan in results
                 return net[res_table]["va_degree"].values.copy()
             else:
                 raise UserWarning(str(mode)+" for initialization not available!")
