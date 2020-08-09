@@ -11,6 +11,12 @@ import pandapower.networks as nw
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_pmu_meas_from_loadflow
 
+def run_se_lp_verify(net):
+    estimate(net, algorithm="lp", maximum_iterations=10)
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
+       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
+        raise AssertionError("Estimation failed!")
+
 
 def test_pmu_case14():
     net = nw.case14()
@@ -18,11 +24,7 @@ def test_pmu_case14():
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
 
-    estimate(net, algorithm="lp", maximum_iterations=20)
-
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
-        raise AssertionError("Estimation failed!")
+    run_se_lp_verify(net)
 
 
 def test_pmu_with_trafo3w():
@@ -46,11 +48,7 @@ def test_pmu_with_trafo3w():
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net, with_random_error=False)
 
-    estimate(net, algorithm="lp", maximum_iterations=10)
-    pp.runpp(net)
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
-        raise AssertionError("Estimation failed!")
+    run_se_lp_verify(net)
 
 
 if __name__ == '__main__':

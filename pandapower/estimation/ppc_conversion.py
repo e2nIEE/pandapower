@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 import pandapower.pypower.idx_bus as idx_bus
-from pandapower.run import set_user_pf_options
+from pandapower.auxiliary import _init_runse_options
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
@@ -69,7 +69,8 @@ def _initialize_voltage(net, init, calculate_voltage_angles):
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
-    set_user_pf_options(net)
+    _init_runse_options(net, v_start=v_start, delta_start=delta_start,
+                        calculate_voltage_angles=calculate_voltage_angles)
     ppc, ppci = _pd2ppc(net)
 
     # do dc power flow for phase shifting transformers
