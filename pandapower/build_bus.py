@@ -207,10 +207,7 @@ def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
             # init voltage possible if bus results are available
-            if "res_bus_power_flow" in net and net.res_bus_power_flow.index.equals(net.bus.index):
-                # After state estimation mode res_bus is renamed to res_bus_power_flow
-                res_table = "res_bus_power_flow"
-            elif "res_bus" in net and net.res_bus.index.equals(net.bus.index):
+            if "res_bus" in net and net.res_bus.index.equals(net.bus.index):
                 # init bus voltages from results if the sorting is correct
                 res_table = "res_bus"
             else:
@@ -345,18 +342,12 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
 
-    # res_table for warm start
-    res_table = "res_%s" % element
-    if "res_%s_power_flow" % element in net and\
-        np.all(np.isnan(net[res_table].values)):
-        res_table = "res_%s_power_flow" % element
-
     if net._options["init_vm_pu"] == "results":
-        ppc["bus"][aux_idx, VM] = net[res_table]["vm_internal_pu"].values
+        ppc["bus"][aux_idx, VM] = net["res_%s" % element]["vm_internal_pu"].values
     else:
         ppc["bus"][aux_idx, VM] = ppc["bus"][element_bus_idx, VM]
     if net._options["init_va_degree"] == "results":
-        ppc["bus"][aux_idx, VA] = net[res_table]["va_internal_degree"].values
+        ppc["bus"][aux_idx, VA] = net["res_%s" % element]["va_internal_degree"].values
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 

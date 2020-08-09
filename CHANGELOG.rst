@@ -8,6 +8,7 @@ Change Log
 - [ADDED] toolbox function drop_measurements_at_elements()
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
+- [CHANGED] In state estimation power flow results will not be renamed anymore 
 
 [2.2.2]- 2020-03-17
 ----------------------

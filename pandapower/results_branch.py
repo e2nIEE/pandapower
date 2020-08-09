@@ -294,7 +294,6 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
-
 def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]

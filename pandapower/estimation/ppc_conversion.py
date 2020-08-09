@@ -10,8 +10,7 @@ import numpy as np
 import pandas as pd
 
 import pandapower.pypower.idx_bus as idx_bus
-from pandapower.auxiliary import _add_ppc_options
-from pandapower.estimation.results import _copy_power_flow_results
+from pandapower.run import set_user_pf_options
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
@@ -70,11 +69,7 @@ def _initialize_voltage(net, init, calculate_voltage_angles):
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
-    net._options = {}
-    _add_ppc_options(net, check_connectivity=True, init_vm_pu=v_start, init_va_degree=delta_start,
-                     trafo_model="pi", mode="pf", enforce_q_lims=False,
-                     calculate_voltage_angles=calculate_voltage_angles, switch_rx_ratio=2,
-                     recycle=dict(_is_elements=False, ppc=False, Ybus=False))
+    set_user_pf_options(net)
     ppc, ppci = _pd2ppc(net)
 
     # do dc power flow for phase shifting transformers
@@ -423,8 +418,6 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
 def pp2eppci(net, v_start=None, delta_start=None,
              calculate_voltage_angles=True, zero_injection="aux_bus",
              ppc=None, eppci=None):
-    # initialize result tables if not existent
-    _copy_power_flow_results(net)
     if isinstance(eppci, ExtendedPPCI):
         eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection)
         eppci.update_meas()
@@ -502,7 +495,7 @@ class ExtendedPPCI(UserDict):
         if "Ybus" in self["internal"] and self["internal"]["Ybus"].size:
             Ybus, Yf, Yt = self["internal"]['Ybus'], self["internal"]['Yf'], self["internal"]['Yt']
         else:
-            ## build admittance matrices
+            # build admittance matrices
             Ybus, Yf, Yt = makeYbus(self['baseMVA'], self['bus'], self['branch'])
             self["internal"]['Ybus'], self["internal"]['Yf'], self["internal"]['Yt'] = Ybus, Yf, Yt
         return Ybus, Yf, Yt
