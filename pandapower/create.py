@@ -976,7 +976,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     """
     if np_any(~isin(buses, net["bus"].index.values)):
         bus_not_exist = set(buses) - set(net["bus"].index.values)
-        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
+        raise UserWarning("Cannot attach to buses %s, they does not exist" % bus_not_exist)
 
     if index is None:
         bid = get_free_id(net["load"])
@@ -1266,7 +1266,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
      """
     if np_any(~isin(buses, net["bus"].index.values)):
         bus_not_exist = set(buses) - set(net["bus"].index.values)
-        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
+        raise UserWarning("Cannot attach to buses %s, they does not exist" % bus_not_exist)
 
     if index is None:
         bid = get_free_id(net["sgen"])
@@ -1777,7 +1777,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     """
     if np_any(~isin(buses, net["bus"].index.values)):
         bus_not_exist = set(buses) - set(net["bus"].index.values)
-        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
+        raise UserWarning("Cannot attach to buses %s, they does not exist" % bus_not_exist)
 
     if index is None:
         bid = get_free_id(net["gen"])
@@ -2310,17 +2310,17 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     if index is not None:
         if any(isin(index, net.line.index)):
             index_in = set(index) & set(net.line.index)
-            raise UserWarning(f"Lines with indexes {index_in} already exists")
+            raise UserWarning("Lines with indexes %s already exists" % index_in)
     else:
         lid = get_free_id(net["line"])
         index = arange(lid, lid + nr_lines, 1)
 
     if not(all(isin(from_buses, net.bus.index))) > 0:
         bus_not_exist = set(from_buses) - set(net.bus.index)
-        raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
+        raise UserWarning("Lines trying to attach to non existing buses %s" % bus_not_exist)
     if not(all(isin(to_buses, net.bus.index))) > 0:
         bus_not_exist = set(to_buses) - set(net.bus.index)
-        raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
+        raise UserWarning("Lines trying to attach to non existing buses %s" % bus_not_exist)
 
     dtypes = net.line.dtypes
 
@@ -2928,17 +2928,19 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     if index is not None:
         for idx in index:
             if idx in net.trafo.index:
-                raise UserWarning(f"A trafo with index {idx} already exists")
+                raise UserWarning("A trafo with index %s already exists" % idx)
     else:
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
 
     if not(all(isin(hv_buses, net.bus.index))) > 0:
         bus_not_exist = set(hv_buses) - set(net.bus.index)
-        raise UserWarning(f"Transformer trying to attach to non existing buses {list(bus_not_exist)}")
+        raise UserWarning("Transformer trying to attach to non existing buses %s"
+                          % list(bus_not_exist))
     if not(all(isin(lv_buses, net.bus.index))) > 0:
         bus_not_exist = set(lv_buses) - set(net.bus.index)
-        raise UserWarning(f"Transformer trying to attach to non existing buses {list(bus_not_exist)}")
+        raise UserWarning("Transformer trying to attach to non existing buses %s"
+                          % list(bus_not_exist))
 
     new_trafos = pd.DataFrame(index=index, columns=net.trafo.columns)
 
@@ -3337,20 +3339,20 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     if index is not None:
         for idx in index:
             if idx in net.trafo3w.index:
-                raise UserWarning(f"A three winding transformer with index {idx} already exists")
+                raise UserWarning("A three winding transformer with index %s already exists" % idx)
     else:
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
 
     if not(all(isin(hv_buses, net.bus.index))) > 0:
         bus_not_exist = set(hv_buses) - set(net.bus.index)
-        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
+        raise UserWarning("Transformer trying to attach to non existing buses %s" % bus_not_exist)
     if not(all(isin(mv_buses, net.bus.index))) > 0:
         bus_not_exist = set(mv_buses) - set(net.bus.index)
-        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
+        raise UserWarning("Transformer trying to attach to non existing buses %s" % bus_not_exist)
     if not(all(isin(lv_buses, net.bus.index))) > 0:
         bus_not_exist = set(lv_buses) - set(net.bus.index)
-        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
+        raise UserWarning("Transformer trying to attach to non existing buses %s" % bus_not_exist)
 
     new_trafos = pd.DataFrame(index=index, columns=net.trafo3w.columns)
 
@@ -3532,41 +3534,41 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     if index is not None:
         for idx in index:
             if idx in net.switch.index:
-                raise UserWarning(f"A switch with index {idx} already exists")
+                raise UserWarning("A switch with index %s already exists" % idx)
     else:
         swid = get_free_id(net["switch"])
         index = arange(swid, swid + nr_switches, 1)
 
     if not(all(isin(buses, net.bus.index))) > 0:
         bus_not_exist = set(buses) - set(net.bus.index)
-        raise UserWarning(f"Buses {bus_not_exist} do not exist")
+        raise UserWarning("Buses %s do not exist" % bus_not_exist)
 
     for element, elm_type, bus in zip(elements, et, buses):
         if elm_type == "l":
             elm_tab = 'line'
             if element not in net[elm_tab].index:
-                raise UserWarning(f"Line {element} does not exist")
+                raise UserWarning("Line %s does not exist" % element)
             if (not net[elm_tab]["from_bus"].loc[element] == bus and
                 not net[elm_tab]["to_bus"].loc[element] == bus):
-                raise UserWarning(f"Line {element} not connected to bus {bus}")
+                raise UserWarning("Line %s not connected to bus %s" % (element, bus))
         elif elm_type == "t":
             elm_tab = 'trafo'
             if element not in net[elm_tab].index:
-                raise UserWarning(f"Trafo {element} does not exist")
+                raise UserWarning("Trafo %s does not exist" % element)
             if (not net[elm_tab]["hv_bus"].loc[element] == bus and
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
-                raise UserWarning(f"Trafo {element} not connected to bus {bus}")
+                raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
         elif elm_type == "t3":
             elm_tab = 'trafo3w'
             if element not in net[elm_tab].index:
-                raise UserWarning(f"Trafo3w {element} does not exist")
+                raise UserWarning("Trafo3w %s does not exist" % element)
             if (not net[elm_tab]["hv_bus"].loc[element] == bus and
                 not net[elm_tab]["mv_bus"].loc[element] == bus and
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
-                raise UserWarning(f"Trafo3w {element} not connected to bus {bus}")
+                raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
         elif elm_type == "b":
             if element not in net["bus"].index:
-                raise UserWarning(f"Unknown bus index {element}")
+                raise UserWarning("Unknown bus index %s" % element)
         else:
             raise UserWarning("Unknown element type")
 
