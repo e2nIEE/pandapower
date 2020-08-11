@@ -659,7 +659,7 @@ def test_create_switches_raise_except():
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.)
     with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 1], et=["l", "t", "t3"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Trafo3w %s not connected to bus %s" % (t3w1, b3)):
+    with pytest.raises(UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, t3w1], et=["l", "t", "t3"], z_ohm=0.)
 
 
@@ -706,7 +706,7 @@ def test_create_loads_raise_except():
     l = pp.create_loads(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         )
-    with pytest.raises(UserWarning, match=f"Loads with the ids \[0 1 2\] already exists"):
+    with pytest.raises(UserWarning, match="Loads with the ids \[0 1 2\] already exists"):
         pp.create_loads(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         index = l)
@@ -758,7 +758,7 @@ def test_create_sgens_raise_except():
     sg = pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         k=1.3, rx=0.4, current_source=True)
-    with pytest.raises(UserWarning, match=f"Sgens with the ids \[0 1 2\] already exists"):
+    with pytest.raises(UserWarning, match="Sgens with the ids \[0 1 2\] already exists"):
         pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         k=1.3, rx=0.4, current_source=True, index=sg)
@@ -812,7 +812,7 @@ def test_create_gens_raise_except():
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.
                         )
-    with pytest.raises(UserWarning, match=f"gens with the ids \[0 1 2\] already exists"):
+    with pytest.raises(UserWarning, match="gens with the ids \[0 1 2\] already exists"):
         pp.create_gens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
                        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                        min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.,
