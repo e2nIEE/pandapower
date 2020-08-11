@@ -361,48 +361,6 @@ class PPJSONEncoder(json.JSONEncoder):
             return s
 
 
-class PPJSONDecoder(json.JSONDecoder):
-    def __init__(self, **kwargs):
-        # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net)}
-        super_kwargs.update(kwargs)
-        super().__init__(**super_kwargs)
-
-
-def pp_hook(d, net=None):
-    if '_module' in d and '_class' in d:
-        if "_object" in d:
-            obj = d.pop('_object')
-        elif "_state" in d:
-            obj = d['_state']
-            if d['has_net']:
-                obj['net'] = 'net'
-            if '_init' in obj:
-                del obj['_init']
-            return obj  # backwards compatibility
-        else:
-            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-        return pp_hook_serialization(obj, d, net=net)
-    else:
-        return d
-
-
-def pp_hook_serialization(obj, d, net):
-    # keys = copy.deepcopy(list(d.keys()))
-    # for key in keys:
-    #     if isinstance(d[key], dict):
-    #         d[key] = pp_hook(d[key], net=net)
-
-    class_name = d.pop('_class')
-    module_name = d.pop('_module')
-    fs = FromSerializableRegistry(obj, d, net, pp_hook)
-    fs.class_name = class_name
-    fs.module_name = module_name
-    return fs.from_serializable()
-
-
 class FromSerializable:
     def __init__(self):
         self.class_name = 'class_name'
@@ -486,7 +444,10 @@ class FromSerializableRegistry():
         class_ = getattr(module, self.class_name)
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
-                self.obj = json.loads(self.obj, cls=PPJSONDecoder)  # backwards compatibility
+                self.obj = json.loads(self.obj, cls=PPJSONDecoder,
+                                      object_hook=partial(pp_hook, net=self.net,
+                                                          registry_class=FromSerializableRegistry))
+                                      # backwards compatibility
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
@@ -511,6 +472,37 @@ class FromSerializableRegistry():
         @from_serializable.register(module_name='shapely')
         def shapely(self):
             return shapely.geometry.shape(self.obj)
+
+
+class PPJSONDecoder(json.JSONDecoder):
+    def __init__(self, **kwargs):
+        # net = pandapowerNet.__new__(pandapowerNet)
+        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+        super_kwargs.update(kwargs)
+        super().__init__(**super_kwargs)
+
+
+def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
+    if '_module' in d and '_class' in d:
+        if "_object" in d:
+            obj = d.pop('_object')
+        elif "_state" in d:
+            obj = d['_state']
+            if d['has_net']:
+                obj['net'] = 'net'
+            if '_init' in obj:
+                del obj['_init']
+            return obj  # backwards compatibility
+        else:
+            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+        fs = registry_class(obj, d, net, pp_hook)
+        fs.class_name = d.pop('_class', '')
+        fs.module_name = d.pop('_module', '')
+        return fs.from_serializable()
+    else:
+        return d
 
 
 def encrypt_string(s, key, compress=True):
