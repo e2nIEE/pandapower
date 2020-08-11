@@ -9,6 +9,8 @@ Change Log
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
 - [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
+
 
 [2.2.2]- 2020-03-17
 ----------------------
