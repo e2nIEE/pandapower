@@ -3530,15 +3530,47 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
         create_switch(net, bus = 0, element = 1, et = 'l')
 
     """
-
     nr_switches = len(buses)
     if index is not None:
         for idx in index:
             if idx in net.switch.index:
-                raise UserWarning("A switch with index %s already exists" % index)
+                raise UserWarning(f"A switch with index {idx} already exists")
     else:
         swid = get_free_id(net["switch"])
         index = arange(swid, swid + nr_switches, 1)
+
+    if not(all(isin(buses, net.bus.index))) > 0:
+        bus_not_exist = set(buses) - set(net.bus.index)
+        raise UserWarning(f"Buses {bus_not_exist} do not exist")
+
+    for element, elm_type, bus in zip(elements, et, buses):
+        if elm_type == "l":
+            elm_tab = 'line'
+            if element not in net[elm_tab].index:
+                raise UserWarning(f"Line {element} does not exist")
+            if (not net[elm_tab]["from_bus"].loc[element] == bus and
+                not net[elm_tab]["to_bus"].loc[element] == bus):
+                raise UserWarning(f"Line {element} not connected to bus {bus}")
+        elif elm_type == "t":
+            elm_tab = 'trafo'
+            if element not in net[elm_tab].index:
+                raise UserWarning("Unknown bus index")
+            if (not net[elm_tab]["hv_bus"].loc[element] == bus and
+                not net[elm_tab]["lv_bus"].loc[element] == bus):
+                raise UserWarning(f"Trafo {element} not connected to bus {bus}")
+        elif et == "t3":
+            elm_tab = 'trafo3w'
+            if element not in net[elm_tab].index:
+                raise UserWarning("Unknown trafo3w index")
+            if (not net[elm_tab]["hv_bus"].loc[element] == bus and
+                not net[elm_tab]["mv_bus"].loc[element] == bus and
+                not net[elm_tab]["lv_bus"].loc[element] == bus):
+                raise UserWarning(f"Trafo3w {element} not connected to bus {bus}")
+        elif et == "b":
+            if element not in net["bus"].index:
+                raise UserWarning(f"Unknown bus index {bus}")
+        else:
+            raise UserWarning("Unknown element type")
 
     switches_df = pd.DataFrame(index=index, columns=net.switch.columns)
     switches_df['bus'] = buses
