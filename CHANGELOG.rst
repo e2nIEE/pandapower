@@ -1,5 +1,6 @@
 [2.3.0]- 2020-08-11
 ----------------------
+- [ADDED] Create functions for multiple gens, sgens, lines, trafos and switches
 - [ADDED] Unbalanced power flow runpp_3ph
 - [ADDED] Zero sequence power flow models for ext_grid, transformer, line, asymmetric_load, asymmetric_sgen
 - [ADDED] Minimal 1ph fault calculation according to IEC 60909
