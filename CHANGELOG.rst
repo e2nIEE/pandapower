@@ -6,6 +6,7 @@ Change Log
 - [FIXED] pandas 1.0.4 support
 - [CHANGED] revision of toolbox function drop_out_of_service_elements()
 - [ADDED] toolbox function drop_measurements_at_elements()
+- [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
 ----------------------
