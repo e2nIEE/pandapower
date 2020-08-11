@@ -3554,21 +3554,21 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
         elif elm_type == "t":
             elm_tab = 'trafo'
             if element not in net[elm_tab].index:
-                raise UserWarning("Unknown bus index")
+                raise UserWarning(f"Trafo {element} does not exist")
             if (not net[elm_tab]["hv_bus"].loc[element] == bus and
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
                 raise UserWarning(f"Trafo {element} not connected to bus {bus}")
-        elif et == "t3":
+        elif elm_type == "t3":
             elm_tab = 'trafo3w'
             if element not in net[elm_tab].index:
-                raise UserWarning("Unknown trafo3w index")
+                raise UserWarning(f"Trafo3w {element} does not exist")
             if (not net[elm_tab]["hv_bus"].loc[element] == bus and
                 not net[elm_tab]["mv_bus"].loc[element] == bus and
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
                 raise UserWarning(f"Trafo3w {element} not connected to bus {bus}")
-        elif et == "b":
+        elif elm_type == "b":
             if element not in net["bus"].index:
-                raise UserWarning(f"Unknown bus index {bus}")
+                raise UserWarning(f"Unknown bus index {element}")
         else:
             raise UserWarning("Unknown element type")
 
