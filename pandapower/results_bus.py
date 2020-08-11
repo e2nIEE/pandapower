@@ -24,13 +24,15 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_v_results(net, ppc):
+def _get_bus_v_results(net, ppc, suffix=None):
     ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
+
+    res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
     if ac:
-        net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
+        net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
-    net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+    net[res_table]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
 def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
@@ -63,6 +65,8 @@ def _V012_from_ppc012(net, ppc0, ppc1, ppc2):
     V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
     V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
     return V012_pu
+
+
 def _get_bus_idx(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     ppi = net["bus"].index.values
@@ -91,7 +95,6 @@ def _get_bus_results(net, ppc, bus_pq):
 
     # update index in res bus bus
     net["res_bus"].index = net["bus"].index
-
 
 
 def _get_bus_results_3ph(net, bus_pq):

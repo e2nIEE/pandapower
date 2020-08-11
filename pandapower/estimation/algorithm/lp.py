@@ -5,6 +5,7 @@
 
 import numpy as np
 from scipy.optimize import linprog
+import warnings
 
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
@@ -57,8 +58,10 @@ class LPAlgorithm(BaseAlgorithm):
         c_T = np.r_[zero_n, zero_n, one_m, one_m]
         A = np.c_[H, -H, Im, -Im]
 
-        res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
-                      method="simplex", options={'tol': 1e-5, 'disp': True, 'maxiter': 20000})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
+                          method="simplex", options={'tol': 1e-5, 'disp': False, 'maxiter': 20000})
         if res.success:
             d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2 * n]).ravel()
             return d_x
