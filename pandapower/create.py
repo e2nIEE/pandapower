@@ -977,8 +977,8 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
     """
     if np_any(~isin(buses, net["bus"].index.values)):
-        raise UserWarning("Cannot attach to buses %s, they does not exist"
-                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+        bus_not_exist = set(buses) - set(net["bus"].index.values)
+        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
 
     if index is None:
         bid = get_free_id(net["load"])
@@ -1267,14 +1267,14 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
  
      """
     if np_any(~isin(buses, net["bus"].index.values)):
-        raise UserWarning("Cannot attach to buses %s, they does not exist"
-                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+        bus_not_exist = set(buses) - set(net["bus"].index.values)
+        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
 
     if index is None:
         bid = get_free_id(net["sgen"])
         index = arange(bid, bid + len(buses), 1)
     elif np_any(isin(index, net["sgen"].index.values)):
-        raise UserWarning("Loads with the ids %s already exists"
+        raise UserWarning("Sgens with the ids %s already exists"
                           % net["sgen"].index.values[isin(net["sgen"].index.values, index)])
 
     # store dtypes
@@ -1778,8 +1778,8 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     """
     if np_any(~isin(buses, net["bus"].index.values)):
-        raise UserWarning("Cannot attach to buses %s, they does not exist"
-                          % net["bus"].index.values[~isin(net["bus"].index.values, buses)])
+        bus_not_exist = set(buses) - set(net["bus"].index.values)
+        raise UserWarning(f"Cannot attach to buses {bus_not_exist}, they does not exist")
 
     if index is None:
         bid = get_free_id(net["gen"])
