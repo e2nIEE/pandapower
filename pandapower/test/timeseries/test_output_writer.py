@@ -301,23 +301,36 @@ def test_ow_index():
     assert np.all(ow.output["res_line.loading_percent"].index == p_data.index)
 
 
-def test_equal_eval_name_warning():
+
+def test_equal_eval_name_warning_and_costs():
     net = nw.case5()
+    pp.create_pwl_cost(net, 0, "sgen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 1, "gen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 2, "gen", [[0, 20, 1], [20, 30, 2]])
     df = pd.DataFrame({0: [200, 300, 400, 500], 1: [400, 300, 100, 50], 2: [100, 300, 200, 100]})
     ds = ts.DFData(df.astype(np.float64))
     _ = ct.ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
-                           data_source=ds)
+                        data_source=ds)
     ow = ts.OutputWriter(net, output_path=None)
     ow.log_variable("res_sgen", "p_mw", None, np.max, 'warnme')
     ow.log_variable("res_load", "p_mw", None, np.max, 'warnme')
+    ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
     ow.remove_log_variable("res_bus", "vm_pu")
     ow.remove_log_variable("res_line", "loading_percent")
     ts.run_timeseries(net, verbose=False)
 
     p_sgen = ow.output["res_sgen.p_mw"]
     p_load = ow.output["res_load.p_mw"]
+    cost = ow.output["pwl_cost.points"]
     assert not np.all(p_sgen.values == p_load.values)
-    assert len(ow.np_results) == 2
+    assert cost.shape == (4, 4)
+    assert len(ow.np_results) == 3
+
+
+def cost_logging(result, n_columns=4):
+    return np.array([result[i][0][2] for i in range(len(result))])
 
 
 if __name__ == '__main__':
