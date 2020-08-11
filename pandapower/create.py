@@ -3338,8 +3338,8 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     nr_trafo = len(hv_buses)
     if index is not None:
         for idx in index:
-            if idx in net.trafo.index:
-                raise UserWarning("A three winding transformer with index %s already exists" % index)
+            if idx in net.trafo3w.index:
+                raise UserWarning(f"A three winding transformer with index {idx} already exists")
     else:
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
