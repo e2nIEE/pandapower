@@ -438,6 +438,36 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[1]] == 4
 
 
+def test_create_transformers_raise_except():
+    # standard
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                           i0_percent=0.3, foo=2)
+
+    with pytest.raises(UserWarning, match="A trafo with index 1 already exists"):
+        pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                               i0_percent=0.3, index=[2, 1])
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                           i0_percent=0.3, foo=2)
+    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \[2\]"):
+        pp.create_transformers_from_parameters(net, [b1, 2], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                               i0_percent=0.3, foo=2)
+
+    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \[3\]"):
+        pp.create_transformers_from_parameters(net, [b1, b1], [b2, 3], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
+                                                sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
+                                                i0_percent=0.3, foo=2)
+
+
 def test_create_transformers3w_from_parameters():
 
     # setting params as single value

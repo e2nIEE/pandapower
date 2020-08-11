@@ -2317,10 +2317,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         lid = get_free_id(net["line"])
         index = arange(lid, lid + nr_lines, 1)
 
-    if not(all(isin(from_buses, net.bus.index)))>0:
+    if not(all(isin(from_buses, net.bus.index))) > 0:
         bus_not_exist = set(from_buses) - set(net.bus.index)
         raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
-    if not(all(isin(to_buses, net.bus.index)))>0:
+    if not(all(isin(to_buses, net.bus.index))) > 0:
         bus_not_exist = set(to_buses) - set(net.bus.index)
         raise UserWarning(f"Lines trying to attach to non existing buses {bus_not_exist}")
 
@@ -2930,10 +2930,17 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     if index is not None:
         for idx in index:
             if idx in net.trafo.index:
-                raise UserWarning("A trafo with index %s already exists" % index)
+                raise UserWarning(f"A trafo with index {idx} already exists")
     else:
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
+
+    if not(all(isin(hv_buses, net.bus.index))) > 0:
+        bus_not_exist = set(hv_buses) - set(net.bus.index)
+        raise UserWarning(f"Transformer trying to attach to non existing buses {list(bus_not_exist)}")
+    if not(all(isin(lv_buses, net.bus.index))) > 0:
+        bus_not_exist = set(lv_buses) - set(net.bus.index)
+        raise UserWarning(f"Transformer trying to attach to non existing buses {list(bus_not_exist)}")
 
     new_trafos = pd.DataFrame(index=index, columns=net.trafo.columns)
 
@@ -3336,6 +3343,16 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     else:
         tid = get_free_id(net["trafo"])
         index = arange(tid, tid + nr_trafo, 1)
+
+    if not(all(isin(hv_buses, net.bus.index))) > 0:
+        bus_not_exist = set(hv_buses) - set(net.bus.index)
+        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
+    if not(all(isin(mv_buses, net.bus.index))) > 0:
+        bus_not_exist = set(mv_buses) - set(net.bus.index)
+        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
+    if not(all(isin(lv_buses, net.bus.index))) > 0:
+        bus_not_exist = set(lv_buses) - set(net.bus.index)
+        raise UserWarning(f"Transformer trying to attach to non existing buses {bus_not_exist}")
 
     new_trafos = pd.DataFrame(index=index, columns=net.trafo3w.columns)
 
