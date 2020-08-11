@@ -40,6 +40,8 @@ class OutputWriter(JSONSerializableClass):
     More sophisticated outputs can be added as well since for each value to be stored a function is
     added to the *output_list* which is called at the end of each time step.
     The function reads the calculation results and returns the desired values to store.
+    The function is expected to return scalar value by default. If more values are returned, the function should have
+    "n_columns" as a paramter (see example below for logging of cost function values).
     These values are then stored in the *output* DataFrame in a column named after the function you implemented.
     Such a function can be used to store only some information of the power flow results, like the highest values
     of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
@@ -67,6 +69,7 @@ class OutputWriter(JSONSerializableClass):
         with ow.log_variable or removed with ow.remove_log_variable
 
 
+
     EXAMPLE:
         >>> from pandapower.timeseries.output_writer import OutputWriter
         >>> from pandapower.networks as nw
@@ -74,6 +77,12 @@ class OutputWriter(JSONSerializableClass):
         >>> ow = OutputWriter(net) # create an OutputWriter
         >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
         >>> ow.log_variable('res_line', 'loading_percent') # add logging for line loadings in percent
+        >>>  # Getting the cost function slope for each time step:
+        >>> def cost_logging(result, n_columns=2):
+        >>>      return array([result[i][0][2] for i in range(len(result))])
+        >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
+
 
     """
 
