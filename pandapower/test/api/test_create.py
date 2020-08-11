@@ -647,19 +647,19 @@ def test_create_switches_raise_except():
     with pytest.raises(UserWarning, match="Buses \{6\} do not exist"):
         pp.create_switches(net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
 
-    with pytest.raises(UserWarning, match=f"Line 1 does not exist"):
+    with pytest.raises(UserWarning, match="Line 1 does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Line {l1} not connected to bus {b3}"):
+    with pytest.raises(UserWarning, match="Line %s not connected to bus %s" % (l1, b3)):
         pp.create_switches(net, buses=[b3, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
     with pytest.raises(UserWarning, match="Trafo 1 does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Trafo {t1} not connected to bus {b1}"):
+    with pytest.raises(UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)):
         pp.create_switches(net, buses=[b1, b1, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Unknown bus index 6"):
+    with pytest.raises(UserWarning, match="Unknown bus index 6"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Trafo3w 1 does not exist"):
+    with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 1], et=["l", "t", "t3"], z_ohm=0.)
-    with pytest.raises(UserWarning, match=f"Trafo3w {t3w1} not connected to bus {b3}"):
+    with pytest.raises(UserWarning, match=f"Trafo3w %s not connected to bus %s" % (t3w1, b3)):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, t3w1], et=["l", "t", "t3"], z_ohm=0.)
 
 
