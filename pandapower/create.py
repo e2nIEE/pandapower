@@ -1872,7 +1872,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percen
 
         **bus** (int) - The bus id to which the motor is connected
         
-        **pn_mech_mw** (float, default 0) - Mechanical rated power of the motor
+        **pn_mech_mw** (float) - Mechanical rated power of the motor
 
 
     OPTIONAL:
