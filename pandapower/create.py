@@ -640,6 +640,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata = net.bus_geodata.append(pd.DataFrame(
             zeros((len(index), len(net.bus_geodata.columns)), dtype=int), index=index,
             columns=net.bus_geodata.columns))
+        net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
         net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
