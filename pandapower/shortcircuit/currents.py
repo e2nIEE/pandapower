@@ -96,8 +96,8 @@ def _calc_branch_currents(net, ppc):
     V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
     ikss1_all_t = np.conj(Yt.dot(V_ikss))
-    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = np.nan
-    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = np.nan
+    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
+    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
     current_sources = any(ppc["bus"][:, IKCV]) > 0
@@ -115,6 +115,8 @@ def _calc_branch_currents(net, ppc):
         ikss_all_f = abs(ikss1_all_f)
         ikss_all_t = abs(ikss1_all_t)
 
+    ikss_all_f[ikss_all_f < 1e-10] = np.nan
+    ikss_all_t[ikss_all_t < 1e-10] = np.nan
     ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
     ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
 
@@ -127,6 +129,8 @@ def _calc_branch_currents(net, ppc):
             ip_all_f = np.sqrt(2) * ikss1_all_f * kappa
             ip_all_t = np.sqrt(2) * ikss1_all_t * kappa
 
+        ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
+        ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
         ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
         ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
 
@@ -211,6 +215,7 @@ def _calc_ib_generator(net, ppci):
 def _calc_single_bus_sc(net, ppc, bus):
     case = net._options["case"]
     bus_idx = net._pd2ppc_lookups["bus"][bus]
+    n = ppc["bus"].shape[0]
     Zbus = ppc["internal"]["Zbus"]
     #    Yf = ppc["internal"]["Yf"]
     #    Yt = ppc["internal"]["Yf"]
@@ -224,7 +229,12 @@ def _calc_single_bus_sc(net, ppc, bus):
     V = V_ikss[:, bus_idx]
     #    ikss_all_f = np.conj(Yf.dot(V_ikss))
     #    ikss_all_t = np.conj(Yt.dot(V_ikss))
-
+    current_sources = any(ppc["bus"][:, IKCV]) > 0
+    if current_sources:
+        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
+        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
+        V_source = np.dot((current * baseI), Zbus).T
+        V = V + V_source[:, bus_idx]
     # add current source branch current if there is one
     #    ppc["branch"][:, IKSS_F] = abs(ikss_all_f[:, bus_idx] / baseI[fb])
     #    ppc["branch"][:, IKSS_T] = abs(ikss_all_t[:, bus_idx] / baseI[tb])
