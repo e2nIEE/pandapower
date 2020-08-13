@@ -5,8 +5,7 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, float64, all as np_all, any as np_any, \
-    zeros
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros
 from packaging import version
 
 from pandapower import __version__
@@ -61,6 +60,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
+        "motor": [("name", dtype(object)),
+                 ("bus", "i8"),
+                 ("pn_mech_mw", "f8"),
+                 ("loading_percent", "f8"),
+                 ("cos_phi", "f8"),
+                 ("cos_phi_n", "f8"),
+                 ("efficiency_percent", "f8"),
+                 ("lrc_pu", "f8"),
+                 ("vn_kv", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("rx", 'f8')
+                 ],
         "asymmetric_load": [("name", dtype(object)),
                             ("bus", "u4"),
                             ("p_a_mw", "f8"),
@@ -316,6 +328,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("va_lv_degree", "f8"),
                              ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
+                            ("q_mvar", "f8")],
+        "_empty_res_motor": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
@@ -1841,6 +1855,78 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     
     _preserve_dtypes(net.gen, dtypes)
 
+    return index
+
+def create_motor(net, bus, pn_mech_mw, cos_phi, vn_kv=nan, efficiency_percent=100.,
+                 loading_percent=100., name=None, lrc_pu=nan, scaling=1.0,
+                 rx=nan, index=None, in_service=True, cos_phi_n=nan):
+    """
+    Adds a motor to the network.
+
+
+    INPUT:
+        **net** - The net within this motor should be created
+
+        **bus** (int) - The bus id to which the motor is connected
+        
+        **pn_mech_mw** (float, default 0) - Mechanical rated power of the motor
+
+        **cos_phi** (float) - cosine phi of the motor
+
+
+    OPTIONAL:
+
+        **name** (string, None) - The name for this motor
+
+        **efficiency_percent** (float, 100) - Efficiency in percent
+
+        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated power
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
+
+        **cos_phi_n** (float) - cosine phi at rated power of the motor for short-circuit calculation
+
+        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.0) - scaling factor which for the active power of the motor
+
+        **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
+        
+        **in_service** (bool, True) - True for in_service or False for out of service
+        
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created motor
+
+    EXAMPLE:
+        create_motor(net, 1, p_mech_mw = 0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["motor"])
+
+    if index in net["motor"].index:
+        raise UserWarning("A motor with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.motor.dtypes
+
+    columns = ["name", "bus", "pn_mech_mw", "cos_phi", "vn_kv", "rx",
+               "efficiency_percent", "loading_percent", "lrc_pu", "scaling",
+                "in_service"]
+    variables = [name, bus, pn_mech_mw, cos_phi, vn_kv, rx, efficiency_percent,
+                 loading_percent, lrc_pu, scaling, bool(in_service)]
+    net.motor.loc[index, columns] = variables
+
+    # and preserve dtypes
+    _preserve_dtypes(net.motor, dtypes)
+    
     return index
 
 

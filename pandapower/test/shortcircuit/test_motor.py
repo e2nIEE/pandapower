@@ -16,17 +16,27 @@ def motor_net():
     b1 = pp.create_bus(net, vn_kv=0.4)
     b2 = pp.create_bus(net, vn_kv=0.4)
     pp.create_ext_grid(net, b1, s_sc_max_mva=10., rx_max=0.1)
-    pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1., r_ohm_per_km=0.3211,
-                                   x_ohm_per_km=0.06911504, c_nf_per_km=0, max_i_ka=1)
-    pp.create_sgen(net, b2, p_mw=0.11, sn_mva=0.5, type="motor", k=7, rx=0.6, current_source=False)
+    pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1.,
+                                   r_ohm_per_km=0.32, c_nf_per_km=0,
+                                   x_ohm_per_km=0.07, max_i_ka=1)
+    pp.create_motor(net, b2, pn_mech_mw=0.5, lrc_pu=7., vn_kv=0.45, rx=0.4,
+                    efficiency_percent=95, cos_phi_n=0.9)
     return net
 
 def test_motor(motor_net):
     net = motor_net
+    
+    net.motor.in_service = False
     sc.calc_sc(net)
-    np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.724523289, rtol=1e-4)
-    np.isclose(net.res_bus_sc.ikss_ka.at[1], 6.1263193169, rtol=1e-4)
-    #TODO: ip, ith, Ib, Ik with motors
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.433757337, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[1], 0.7618582511, rtol=1e-4)
+
+
+    net.motor.in_service = True    
+    sc.calc_sc(net)
+
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.743809197, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[1], 5.626994278, rtol=1e-4)
 
 if __name__ == '__main__':
     pytest.main([__file__])
