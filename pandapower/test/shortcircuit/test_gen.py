@@ -34,9 +34,9 @@ def gen_three_bus_example():
     b3 = pp.create_bus(net, vn_kv=10.)
     #pp.create_bus(net, vn_kv=0.4, in_service=False)
     pp.create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-    l1 = pp.create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29,
+    pp.create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29,
                                         r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-    l2 = pp.create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29,
+    pp.create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29,
                                         r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
     net.line["endtemp_degree"] = 165
     pp.create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
