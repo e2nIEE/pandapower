@@ -9,8 +9,6 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
-from packaging import version
-from numpy import complex128
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, \
@@ -373,7 +371,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
     mode = net["_options"]["mode"]
-    pq_elements = ["load", "motor", "sgen", "storage", "ward", "xward"] 
+    pq_elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
     for element in pq_elements:
         tab = net[element]
         if len(tab):
@@ -413,7 +411,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
-     
+
     l_3ph = net["asymmetric_load"]
     if len(l_3ph) > 0 and mode == "pf":
             # TODO: Voltage dependent loads
@@ -444,9 +442,9 @@ def _get_motor_pq(net):
     scale = tab["loading_percent"].values/100 *tab["scaling"].values*active
 
     efficiency = tab["efficiency_percent"].values
-    p_mech = tab["pn_mech_mw"].values 
+    p_mech = tab["pn_mech_mw"].values
     cos_phi = tab["cos_phi"].values
-    
+
     p_mw = p_mech / efficiency * 100 * scale
     s_mvar = p_mw / cos_phi
     q_mvar = np.sqrt(s_mvar**2 - p_mw**2)
@@ -543,7 +541,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     z_grid = c / s_sc
     if mode == 'pf_3ph':
-        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power                        
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -610,7 +608,7 @@ def _add_motor_impedances_ppc(net, ppc):
     vn_kv = motor.vn_kv.values
     lrc = motor.lrc_pu.values
     rx = motor.rx.values
-    
+
     s_motor = p_mech / (efficiency/100 * cos_phi)
     z_motor_ohm = 1 / lrc * vn_kv**2 / s_motor
     z_motor_pu = z_motor_ohm / (vn_net**2 / net.sn_mva)

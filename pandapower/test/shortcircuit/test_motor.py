@@ -25,14 +25,14 @@ def motor_net():
 
 def test_motor(motor_net):
     net = motor_net
-    
+
     net.motor.in_service = False
     sc.calc_sc(net)
     assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.433757337, rtol=1e-4)
     assert np.isclose(net.res_bus_sc.ikss_ka.at[1], 0.7618582511, rtol=1e-4)
 
 
-    net.motor.in_service = True    
+    net.motor.in_service = True
     sc.calc_sc(net)
 
     assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.743809197, rtol=1e-4)

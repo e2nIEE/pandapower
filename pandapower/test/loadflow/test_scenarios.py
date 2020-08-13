@@ -526,7 +526,7 @@ def test_motor():
     assert p == p_mech / efficiency * 100
     assert p/s == cos_phi
     res_bus_motor = net.res_bus.copy()
-    
+
     pp.create_load(net, b2, p_mw=net.res_motor.p_mw.values[0],
                    q_mvar=net.res_motor.q_mvar.values[0])
     net.motor.in_service = False
