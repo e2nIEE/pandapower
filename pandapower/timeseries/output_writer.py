@@ -6,6 +6,7 @@ import copy
 import functools
 import os
 from time import time
+from types import FunctionType
 
 import numpy as np
 import pandas as pd
@@ -39,6 +40,8 @@ class OutputWriter(JSONSerializableClass):
     More sophisticated outputs can be added as well since for each value to be stored a function is
     added to the *output_list* which is called at the end of each time step.
     The function reads the calculation results and returns the desired values to store.
+    The function is expected to return scalar value by default. If more values are returned, the function should have
+    "n_columns" as a paramter (see example below for logging of cost function values).
     These values are then stored in the *output* DataFrame in a column named after the function you implemented.
     Such a function can be used to store only some information of the power flow results, like the highest values
     of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
@@ -66,6 +69,7 @@ class OutputWriter(JSONSerializableClass):
         with ow.log_variable or removed with ow.remove_log_variable
 
 
+
     EXAMPLE:
         >>> from pandapower.timeseries.output_writer import OutputWriter
         >>> from pandapower.networks as nw
@@ -73,6 +77,12 @@ class OutputWriter(JSONSerializableClass):
         >>> ow = OutputWriter(net) # create an OutputWriter
         >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
         >>> ow.log_variable('res_line', 'loading_percent') # add logging for line loadings in percent
+        >>>  # Getting the cost function slope for each time step:
+        >>> def cost_logging(result, n_columns=2):
+        >>>      return array([result[i][0][2] for i in range(len(result))])
+        >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
+
 
     """
 
@@ -332,6 +342,11 @@ class OutputWriter(JSONSerializableClass):
             >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
             >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
 
+            # Getting the cost function slope for each time step:
+            >>> def cost_logging(result, n_columns=2):
+            >>>      return array([result[i][0][2] for i in range(len(result))])
+            >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
         """
         del_indices = list()
         append_args = set()
@@ -401,6 +416,13 @@ class OutputWriter(JSONSerializableClass):
                         "no function is given for eval_name '%s', " % eval_name +
                         "eval_name is neglected.")
             eval_name = None
+        if eval_name is not None and eval_function is not None:
+            if isinstance(eval_function, FunctionType):
+                if "n_columns" in eval_function.__code__.co_varnames:
+                    logger.info("'eval_name' is to give a name in case of single value evaluation functions. Since " +
+                                "n_columns is given as a parameter of the evaluation function, the given for eval_name "
+                                "'%s', " % eval_name + "eval_name is neglected.")
+                    eval_name = None
 
         # var_name = self._get_hash((table, variable, index, eval_function))
         var_name = self._get_output_name(table, variable)
@@ -486,8 +508,13 @@ class OutputWriter(JSONSerializableClass):
             res_name = self._get_output_name(table, variable)
             np_name = self._get_np_name(partial_func.args)
             columns = index
-            if eval_name is not None:
-                columns = [eval_name]
+            if eval_name is not None and eval_func is not None:
+                if isinstance(eval_func, FunctionType):
+                    if "n_columns" not in eval_func.__code__.co_varnames:
+                        columns = [eval_name]
+                else:
+                    columns = [eval_name]
+
             res_df = pd.DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
             if res_name in self.output and eval_name is not None:
                 try:
@@ -527,6 +554,9 @@ class OutputWriter(JSONSerializableClass):
         n_columns = len(index)
         if eval_function is not None:
             n_columns = 1
+            if isinstance(eval_function, FunctionType):
+                if "n_columns" in eval_function.__code__.co_varnames:
+                    n_columns = eval_function.__defaults__[0]
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
 
     def get_batch_outputs(self, recycle_options):
