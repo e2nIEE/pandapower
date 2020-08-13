@@ -20,7 +20,7 @@ def motor_net():
                                    r_ohm_per_km=0.32, c_nf_per_km=0,
                                    x_ohm_per_km=0.07, max_i_ka=1)
     pp.create_motor(net, b2, pn_mech_mw=0.5, lrc_pu=7., vn_kv=0.45, rx=0.4,
-                    efficiency_percent=95, cos_phi_n=0.9)
+                    efficiency_n_percent=95, cos_phi_n=0.9)
     return net
 
 def test_motor(motor_net):

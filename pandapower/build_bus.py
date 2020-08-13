@@ -597,14 +597,14 @@ def _add_motor_impedances_ppc(net, ppc):
     motor = net["motor"][net._is_elements["motor"]]
     if motor.empty:
         return
-    for par in ["vn_kv", "lrc_pu"]:
+    for par in ["vn_kv", "lrc_pu", "efficiency_n_percent", "cos_phi_n", "rx", "pn_mech_mw"]:
         if any(pd.isnull(motor[par])):
             raise UserWarning("%s needs to be specified for all motors in net.motor.%s" % (par, par))
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     motor_buses_ppc = bus_lookup[motor.bus.values]
     vn_net = ppc["bus"][motor_buses_ppc, BASE_KV]
 
-    efficiency = motor.efficiency_percent.values
+    efficiency = motor.efficiency_n_percent.values
     cos_phi = motor.cos_phi_n.values
     p_mech = motor.pn_mech_mw.values
     vn_kv = motor.vn_kv.values

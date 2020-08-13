@@ -67,6 +67,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("cos_phi", "f8"),
                  ("cos_phi_n", "f8"),
                  ("efficiency_percent", "f8"),
+                 ("efficiency_n_percent", "f8"),
                  ("lrc_pu", "f8"),
                  ("vn_kv", "f8"),
                  ("scaling", "f8"),
@@ -1858,9 +1859,10 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     return index
 
-def create_motor(net, bus, pn_mech_mw, cos_phi, vn_kv=nan, efficiency_percent=100.,
+def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percent=100.,
                  loading_percent=100., name=None, lrc_pu=nan, scaling=1.0,
-                 rx=nan, index=None, in_service=True, cos_phi_n=nan):
+                 rx=nan, index=None, in_service=True, cos_phi_n=nan,
+                 efficiency_n_percent=nan):
     """
     Adds a motor to the network.
 
@@ -1872,32 +1874,33 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, vn_kv=nan, efficiency_percent=10
         
         **pn_mech_mw** (float, default 0) - Mechanical rated power of the motor
 
-        **cos_phi** (float) - cosine phi of the motor
-
 
     OPTIONAL:
 
         **name** (string, None) - The name for this motor
 
-        **efficiency_percent** (float, 100) - Efficiency in percent
-
-        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated power
-
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
+        **cos_phi** (float, nan) - cosine phi at current operating point
 
         **cos_phi_n** (float) - cosine phi at rated power of the motor for short-circuit calculation
 
-        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
+        **efficiency_percent** (float, 100) - Efficiency in percent at current operating point
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for short-circuit calculation
+
+        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated mechanical power
 
         **scaling** (float, 1.0) - scaling factor which for the active power of the motor
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
+
+        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
 
         **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
         
         **in_service** (bool, True) - True for in_service or False for out of service
         
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
 
     OUTPUT:
         **index** (int) - The unique ID of the created motor
@@ -1918,11 +1921,11 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, vn_kv=nan, efficiency_percent=10
     # store dtypes
     dtypes = net.motor.dtypes
 
-    columns = ["name", "bus", "pn_mech_mw", "cos_phi", "vn_kv", "rx",
-               "efficiency_percent", "loading_percent", "lrc_pu", "scaling",
-                "in_service"]
-    variables = [name, bus, pn_mech_mw, cos_phi, vn_kv, rx, efficiency_percent,
-                 loading_percent, lrc_pu, scaling, bool(in_service)]
+    columns = ["name", "bus", "pn_mech_mw", "cos_phi", "cos_phi_n", "vn_kv", "rx",
+               "efficiency_n_percent", "efficiency_percent", "loading_percent",
+               "lrc_pu", "scaling", "in_service"]
+    variables = [name, bus, pn_mech_mw, cos_phi, cos_phi_n, vn_kv, rx, efficiency_n_percent,
+                 efficiency_percent, loading_percent, lrc_pu, scaling, bool(in_service)]
     net.motor.loc[index, columns] = variables
 
     # and preserve dtypes
