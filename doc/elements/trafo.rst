@@ -114,8 +114,8 @@ The short-circuit impedance is calculated as:
    :nowrap:
 
    \begin{align*}
-   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
-   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
+   z_k &= \frac{vk\_percent}{100} \cdot \frac{net.sn\_mva}{sn\_mva} \\
+   r_k &= \frac{vkr\_percent}{100} \cdot \frac{net.sn\_mva}{sn\_mva} \\
    x_k &= \sqrt{z^2 - r^2} \\
    \underline{z}_k &= r_k + j \cdot x_k
    \end{align*}    
@@ -127,7 +127,7 @@ The magnetising admittance is calculated as:
 
    \begin{align*}
    y_m &= \frac{i0\_percent}{100} \\
-   g_m &= \frac{pfe\_mw}{sn\_mva \cdot 1000} \cdot \frac{1000}{sn\_mva} \\
+   g_m &= \frac{pfe\_kw}{sn\_mva \cdot 1000} \cdot \frac{net.sn\_mva}{sn\_mva} \\
    b_m &= \sqrt{y_m^2 - g_m^2} \\
    \underline{y_m} &= g_m - j \cdot b_m
    \end{align*}    
@@ -139,7 +139,7 @@ The values calculated in that way are relative to the rated values of the transf
 
    \begin{align*}
     Z_{N} &= \frac{V_{N}^2}{S_{N}} \\
-    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot 1000}{sn\_mva} \\
+    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot net.sn\_mva}{sn\_mva} \\
     \underline{z} &= \underline{z}_k \cdot \frac{Z_{ref, trafo}}{Z_{N}} \\
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
