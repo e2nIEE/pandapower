@@ -70,7 +70,7 @@ def verify_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         res_element, res_empty_element = get_result_tables(element, suffix)
-        if len(net[element]) != len(net[res_element]):
+        if res_element not in net or len(net[element]) != len(net[res_element]):
             init_element(net, element)
             if element == "bus":
                 net._options["init_vm_pu"] = "auto"
