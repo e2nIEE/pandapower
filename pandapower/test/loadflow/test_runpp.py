@@ -913,10 +913,11 @@ def test_equal_indices_res():
     pp.runpp(net)
     net["bus"] = net["bus"].sort_index()
     try:
+        # This should raise a UserWarning since index has changed!!
         pp.runpp(net, init_vm_pu="results", init_va_degree="results")
-        assert True
-    except LoadflowNotConverged:
         assert False
+    except UserWarning:
+        pass
 
 
 def test_ext_grid_and_gen_at_one_bus(**kwargs):

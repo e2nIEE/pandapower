@@ -7,14 +7,14 @@
 import numpy as np
 import pandas as pd
 
-
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
     _get_bus_results_3ph
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
-suffix_mode = {"sc": "sc", "se": "se", "pf_3ph": "3ph"}
+suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
+
 
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)
@@ -42,14 +42,14 @@ def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
     _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
     _get_bus_results_3ph(net, bus_pq)
-    
+
 
 def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
-    _get_bus_v_results(net, ppc)
+    _get_bus_v_results(net, ppc, suffix="_est")
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 
 def _get_costs(net, ppc):
@@ -79,9 +79,13 @@ def verify_results(net, mode="pf"):
 
 def get_result_tables(element, suffix=None):
     res_element = "res_" + element
-    if suffix is not None:
-        res_element += "_%s"%suffix
-    return res_element, "_empty_%s"%res_element
+    res_element_with_suffix = res_element if suffix is None else res_element + "_%s" % suffix
+
+    if suffix == suffix_mode.get("se", None):
+        # State estimation used default result table
+        return res_element_with_suffix, "_empty_%s" % res_element
+    else:
+        return res_element_with_suffix, "_empty_%s" % res_element_with_suffix
 
 
 def empty_res_element(net, element, suffix=None):
@@ -102,9 +106,10 @@ def init_element(net, element, suffix=None):
             net[res_element] = pd.DataFrame(np.nan, index=index,
                                             columns=columns, dtype='float')
         else:
-            net[res_element] = pd.DataFrame(index=index, dtype='float')            
+            net[res_element] = pd.DataFrame(index=index, dtype='float')
     else:
         empty_res_element(net, element, suffix)
+
 
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
@@ -114,19 +119,19 @@ def get_relevant_elements(mode="pf"):
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
-                "dcline", "measurement"]        
+        return ["bus", "line", "trafo", "trafo3w"]        
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
-                "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]  
-        
+                "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
+
+
 def init_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         init_element(net, element, suffix)
-        
+
+
 def reset_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
     suffix = suffix_mode.get(mode, None)

@@ -43,7 +43,7 @@ def check_it(net):
                        'p_a_from_mw', 'p_a_to_mw', 'q_a_from_mvar', 'q_a_to_mvar',
                        'p_b_from_mw', 'p_b_to_mw', 'q_b_from_mvar', 'q_b_to_mvar',
                        'p_c_from_mw', 'p_c_to_mw', 'q_c_from_mvar', 'q_c_to_mvar',
-                       'loading_percentA', 'loading_percentB', 'loading_percentC',
+                       'loading_a_percent', 'loading_b_percent', 'loading_c_percent',
                        'loading_percent'
                        ]].values)
     line_pf = np.abs(np.array(
@@ -167,7 +167,7 @@ def test_4bus_network():
              'q_a_from_mvar', 'q_b_from_mvar', 'q_c_from_mvar',
              'p_a_to_mw', 'p_b_to_mw', 'p_c_to_mw',
              'q_a_to_mvar', 'q_b_to_mvar', 'q_c_to_mvar',
-             'loading_percentA', 'loading_percentB', 'loading_percentC',
+             'loading_a_percent', 'loading_b_percent', 'loading_c_percent',
              'loading_percent']].values)
     line_pf = np.abs(np.array(
             [[0.98898804851	,	0.68943734	,	0.19848961	,
@@ -243,7 +243,7 @@ def test_3ph_bus_mapping_order():
     assert np.allclose(net.res_line.p_from_mw, net.res_line_3ph.p_a_from_mw +
                        net.res_line_3ph.p_b_from_mw +
                        net.res_line_3ph.p_c_from_mw)
-    assert np.allclose(net.res_line.loading_percent, net.res_line_3ph.loading_percentA)  
+    assert np.allclose(net.res_line.loading_percent, net.res_line_3ph.loading_a_percent)  
 
     
 def test_3ph_two_bus_line_powerfactory():
@@ -291,7 +291,7 @@ def test_3ph_two_bus_line_powerfactory():
     assert np.max(np.abs(line_pp - line_pf)) < 1e-5
     
     line_load_pp = np.abs(net.res_line_3ph[
-            ['loading_percentA', 'loading_percentB', 'loading_percentC',
+            ['loading_a_percent', 'loading_b_percent', 'loading_c_percent',
              'loading_percent']].values)  
     line_load_pf = np.abs(np.array(
                           [[27.1525	,	20.0299	,	31.98878	,
