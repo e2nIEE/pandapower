@@ -1216,50 +1216,50 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 current_source=True, **kwargs):
     """
      Adds a number of sgens in table net["sgen"].
- 
+
     Static generators are modelled as positive and constant PQ power. This element is used to model generators
     with a constant active and reactive power feed-in. If you want to model a voltage controlled
     generator, use the generator element instead.
- 
+
      INPUT:
          **net** - The net within this load should be created
- 
+
          **buses** (list of int) - A list of bus ids to which the loads are connected
- 
+
      OPTIONAL:
          **p_mw** (list of floats) - The real power of the sgens
- 
+
          - postive value   -> generation
          - negative value  -> load
- 
+
          **q_mvar** (list of floats, default 0) - The reactive power of the sgens
 
          **sn_mva** (list of floats, default None) - Nominal power of the sgens
- 
+
          **name** (list of strings, default None) - The name for this sgen
- 
+
          **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
- 
+
          **type** (string, None) -  type variable to classify the sgen
- 
+
          **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
              is set to a range between one higher than the highest already existing index and the \
              length of sgens that shall be created.
- 
+
          **in_service** (list of boolean) - True for in_service or False for out of service
- 
+
          **max_p_mw** (list of floats, default NaN) - Maximum active power sgen - necessary for \
              controllable sgens in for OPF
- 
+
          **min_p_mw** (list of floats, default NaN) - Minimum active power sgen - necessary for \
              controllable sgens in for OPF
- 
+
          **max_q_mvar** (list of floats, default NaN) - Maximum reactive power sgen - necessary for \
              controllable sgens in for OPF
- 
+
          **min_q_mvar** (list of floats, default NaN) - Minimum reactive power sgen - necessary for \
              controllable sgens in OPF
- 
+
          **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
              or not. Only respected for OPF
              Defaults to False if "controllable" column exists in DataFrame
@@ -1275,10 +1275,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
      OUTPUT:
          **index** (int) - The unique IDs of the created elements
- 
+
      EXAMPLE:
          create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
- 
+
      """
     if np_any(~isin(buses, net["bus"].index.values)):
         bus_not_exist = set(buses) - set(net["bus"].index.values)
@@ -1293,7 +1293,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     # store dtypes
     dtypes = net.sgen.dtypes
-    
+
     dd = pd.DataFrame(index=index, columns=net.sgen.columns)
 
     dd["bus"] = buses
@@ -1801,7 +1801,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     elif np_any(isin(index, net["gen"].index.values)):
         raise UserWarning("gens with the ids %s already exists"
                           % net["gen"].index.values[isin(net["gen"].index.values, index)])
-    
+
     # store dtypes
     dtypes = net.gen.dtypes
 
@@ -1815,7 +1815,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     dd["name"] = name
     dd["type"] = type
     dd["slack"] = slack
-    
+
     if min_p_mw is not None:
         dd["min_p_mw"] = min_p_mw
         dd["min_p_mw"] = dd["min_p_mw"].astype(float)
@@ -1849,19 +1849,20 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     if controllable is not None:
         dd["controllable"] = controllable
         dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
-        
-    
+
+
     # and preserve dtypes
     dd = dd.assign(**kwargs)
     net["gen"] = net["gen"].append(dd)
-    
+
     _preserve_dtypes(net.gen, dtypes)
 
     return index
 
-def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percent=100.,
+def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100.,
                  loading_percent=100., name=None, lrc_pu=nan, scaling=1.0,
-                 rx=nan, index=None, in_service=True, cos_phi_n=nan,
+				 vn_kv=nan, rx=nan, index=None, in_service=True,
+				 cos_phi_n=nan,
                  efficiency_n_percent=nan):
     """
     Adds a motor to the network.
@@ -1871,34 +1872,33 @@ def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percen
         **net** - The net within this motor should be created
 
         **bus** (int) - The bus id to which the motor is connected
-        
+
         **pn_mech_mw** (float) - Mechanical rated power of the motor
-
-
-    OPTIONAL:
-
-        **name** (string, None) - The name for this motor
 
         **cos_phi** (float, nan) - cosine phi at current operating point
 
-        **cos_phi_n** (float) - cosine phi at rated power of the motor for short-circuit calculation
+    OPTIONAL:
+
+		**name** (string, None) - The name for this motor
 
         **efficiency_percent** (float, 100) - Efficiency in percent at current operating point
-
-        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for short-circuit calculation
 
         **loading_percent** (float, 100) - The mechanical loading in percentage of the rated mechanical power
 
         **scaling** (float, 1.0) - scaling factor which for the active power of the motor
+
+		**cos_phi_n** (float, nan) - cosine phi at rated power of the motor for short-circuit calculation
+
+        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for short-circuit calculation
 
         **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
 
         **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
 
         **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
-        
+
         **in_service** (bool, True) - True for in_service or False for out of service
-        
+
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
@@ -1906,7 +1906,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percen
         **index** (int) - The unique ID of the created motor
 
     EXAMPLE:
-        create_motor(net, 1, p_mech_mw = 0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0)
+        create_motor(net, 1, pn_mech_mw = 0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0)
 
     """
     if bus not in net["bus"].index.values:
@@ -1930,7 +1930,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi=nan, vn_kv=nan, efficiency_percen
 
     # and preserve dtypes
     _preserve_dtypes(net.motor, dtypes)
-    
+
     return index
 
 
@@ -2196,7 +2196,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 max_loading_percent=nan, alpha=None,
                                 temperature_degree_celsius=None,
                                 r0_ohm_per_km=nan, x0_ohm_per_km=nan,
-                                c0_nf_per_km=nan, g0_us_per_km=0, **kwargs):
+                                c0_nf_per_km=nan, g0_us_per_km=0,
+                                endtemp_degree=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -2319,6 +2320,11 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         if "temperature_degree_celsius" not in net.line.columns:
             net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
         net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
+    if endtemp_degree is not None:
+        if "endtemp_degree" not in net.line.columns:
+            net.line.loc[:, "endtemp_degree"] = pd.Series()
+        net.line.loc[index, "endtemp_degree"] = endtemp_degree
 
     return index
 

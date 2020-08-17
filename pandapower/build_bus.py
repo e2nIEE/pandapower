@@ -592,6 +592,8 @@ def _add_gen_sc_impedance(net, ppc):
 
 
 def _add_motor_impedances_ppc(net, ppc):
+    if net._options["case"] == "min":
+        return
     motor = net["motor"][net._is_elements["motor"]]
     if motor.empty:
         return
