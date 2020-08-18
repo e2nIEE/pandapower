@@ -21,9 +21,10 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
+from pandas.testing import assert_series_equal, assert_frame_equal
+
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandas.testing import assert_series_equal, assert_frame_equal
 
 try:
     from functools import singledispatch
@@ -409,8 +410,8 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                from pandapower.control.basic_controller import Controller
-                df[col] = df[col].apply(lambda x: x if ((x is None) | (type(x) == float)) else self.pp_hook(x, self.net))
+                df[col] = df[col].apply(
+                    lambda x: x if ((x is None) | (type(x) == float)) else self.pp_hook(x, self.net))
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -448,7 +449,7 @@ class FromSerializableRegistry():
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
                                       object_hook=partial(pp_hook, net=self.net,
                                                           registry_class=FromSerializableRegistry))
-                                      # backwards compatibility
+                # backwards compatibility
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
