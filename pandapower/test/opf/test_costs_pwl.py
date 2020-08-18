@@ -96,7 +96,7 @@ def test_get_costs():
 
     assert net["OPF_converged"]
     assert net.res_gen.p_mw.values[0] - net.gen.min_p_mw.values[0] < 1e-2
-    assert net.res_cost == 2 * net.res_gen.p_mw.values
+    assert np.isclose(net.res_cost == 2 * net.res_gen.p_mw.values[0])
     # check and assert result
 
 
