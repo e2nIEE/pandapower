@@ -48,7 +48,7 @@ setup(
                       "packaging",
 					  "xlsxwriter",
 					  "xlrd",
-					  "crpytography"],
+					  "cryptography"],
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
 		"plotting": ["plotly", "matplotlib", "python-igraph"],
