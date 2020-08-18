@@ -411,7 +411,7 @@ class FromSerializableRegistry():
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
                 df[col] = df[col].apply(
-                    lambda x: x if ((x is None) | (type(x) == float)) else self.pp_hook(x, self.net))
+                    lambda x: x if ((x is None) | isinstance(x, float)) else self.pp_hook(x, self.net))
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
