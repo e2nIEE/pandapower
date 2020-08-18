@@ -409,7 +409,8 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+                from pandapower.control.basic_controller import Controller
+                df[col] = df[col].apply(lambda x: x if ((x is None) | (type(x) == float)) else self.pp_hook(x, self.net))
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -484,9 +485,7 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
-    if (d is None) | (type(d) == float):
-        return d
-    elif '_module' in d and '_class' in d:
+    if '_module' in d and '_class' in d:
         if "_object" in d:
             obj = d.pop('_object')
         elif "_state" in d:
