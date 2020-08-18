@@ -70,7 +70,15 @@ def verify_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         res_element, res_empty_element = get_result_tables(element, suffix)
-        if len(net[element]) != len(net[res_element]):
+
+        index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
+        if not index_equal:
+            if net["_options"]["init_results"] and element == "bus":
+                # if the indices of bus and res_bus are not equal, but init_results is set, the voltage vector
+                # is wrong. A UserWarning is raised in this case. For all other elements the result table is emptied.
+                raise UserWarning("index of result table '{}' is not equal to the element table '{}'. The init result"
+                                  " option may lead to a non-converged power flow.".format(res_element, element))
+            # init result table for
             init_element(net, element)
             if element == "bus":
                 net._options["init_vm_pu"] = "auto"
