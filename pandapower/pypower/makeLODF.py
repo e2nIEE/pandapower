@@ -15,14 +15,14 @@ import numpy as np
 from scipy.sparse import csr_matrix as sparse
 try:
     from numba import jit
-except ImportError:
+except ImportError: # pragma: no cover
     from pandapower.pf.no_numba import jit
 
 from .idx_brch import F_BUS, T_BUS
 
 
 @jit
-def update_LODF_diag(LODF):
+def update_LODF_diag(LODF): # pragma: no cover
     for ix in range(LODF.shape[0]):
         # To preserve the data type of diagnol elments
         LODF[ix, ix] -= (LODF[ix, ix] + 1.)
