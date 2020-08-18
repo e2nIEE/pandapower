@@ -1,3 +1,9 @@
+[2.3.1]- 2020-08-18
+----------------------
+- [ADDED] Missing dependencies xlswriter, xlrd, cryptography
+- [FIXED] Bug in rundcpp result table initialization
+- [CHANGED] PTDF/LODF calculation to improve performance
+
 [2.3.0]- 2020-08-11
 ----------------------
 - [ADDED] Create functions for multiple gens, sgens, lines, trafos and switches
