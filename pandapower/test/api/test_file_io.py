@@ -19,6 +19,7 @@ import pandapower.topology as topology
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
+from pandapower import pp_dir
 
 
 @pytest.fixture(params=[1])
@@ -67,6 +68,11 @@ def test_json_basic(net_in, tmp_path):
 
     assert_net_equal(net_in, net_out)
 
+def test_json_controller_none():
+    try:
+        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'))
+    except:
+        raise(UserWarning("empty net with a controller containing Nan/None can't be loaded"))
 
 def test_json(net_in, tmp_path):
     filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
