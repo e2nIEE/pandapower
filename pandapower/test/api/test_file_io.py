@@ -72,7 +72,7 @@ def test_json_controller_none():
     try:
         pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'))
     except:
-        raise(UserWarning("empty net with a controller containing Nan/None can't be loaded"))
+        raise(UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
 def test_json(net_in, tmp_path):
     filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
