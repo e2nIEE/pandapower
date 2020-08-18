@@ -484,7 +484,9 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
-    if '_module' in d and '_class' in d:
+    if d is None:
+        return d
+    elif '_module' in d and '_class' in d:
         if "_object" in d:
             obj = d.pop('_object')
         elif "_state" in d:
