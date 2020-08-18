@@ -9,7 +9,6 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
-#from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.makePTDF import makePTDF
 from pandapower.pypower.makeLODF import makeLODF
@@ -25,6 +24,8 @@ def test_PTDF():
 
     ptdf = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
                     using_sparse_solver=False)
+    _ = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
+                 result_side=1, using_sparse_solver=False)
     ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
                            using_sparse_solver=True)
 
