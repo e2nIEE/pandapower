@@ -1323,12 +1323,9 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 # =============================================================================
 
 def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
-                           name=None, index=None, scaling=1., type='wye', in_service=True,
-                           k=nan, rx=nan):
-    """create_asymmetric_sgen(net, bus, p_a_mw=0, q_a_mvar=0,p_b_mw=0, q_b_mvar=0,\
-				p_c_mw=0, q_c_mvar=0,sn_kva=nan, name=None, index=None, \
-                scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_kw=nan, \
-                max_q_mvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
+                           name=None, index=None, scaling=1., type='wye', in_service=True):
+    """create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
+                           name=None, index=None, scaling=1., type='wye', in_service=True)
     Adds one static generator in table net["asymmetric_sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -1347,7 +1344,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **p_a_mw** (float) - The real power of the static generator : Phase A (negative for generation!)
 
-        **p_b_mw** (float) - The real power of the static generator : Phase B(negative for generation!)
+        **p_b_mw** (float) - The real power of the static generator : Phase B (negative for generation!)
 
         **p_c_mw** (float) - The real power of the static generator : Phase C (negative for generation!)
 
@@ -1359,7 +1356,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power of the sgen : Phase C
 
-        **sn_kva** (float, default None) - Nominal power of the sgen
+        **sn_mva** (float, default None) - Nominal power of the sgen
 
         **name** (string, default None) - The name for this sgen
 
@@ -1397,18 +1394,6 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
     # and preserve dtypes
     _preserve_dtypes(net.asymmetric_sgen, dtypes)
-
-    if not isnan(k):
-        if "k" not in net.asymmetric_sgen.columns:
-            net.asymmetric_sgen.loc[:, "k"] = pd.Series()
-
-        net.asymmetric_sgen.loc[index, "k"] = float(k)
-
-    if not isnan(rx):
-        if "rx" not in net.asymmetric_sgen.columns:
-            net.asymmetric_sgen.loc[:, "rx"] = pd.Series()
-
-        net.asymmetric_sgen.loc[index, "rx"] = float(rx)
 
     return index
 
