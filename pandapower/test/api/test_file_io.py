@@ -70,7 +70,7 @@ def test_json_basic(net_in, tmp_path):
 
 def test_json_controller_none():
     try:
-        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'))
+        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'), convert=False)
     except:
         raise(UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
