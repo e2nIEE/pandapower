@@ -16,6 +16,7 @@ import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
 import pandapower.topology as topology
+from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
@@ -66,6 +67,13 @@ def test_json_basic(net_in, tmp_path):
         pp.convert_format(net_out)
 
     assert_net_equal(net_in, net_out)
+
+
+def test_json_controller_none():
+    try:
+        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'), convert=False)
+    except:
+        raise (UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
 
 def test_json(net_in, tmp_path):
