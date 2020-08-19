@@ -1,8 +1,10 @@
-[2.3.1]- 2020-08-18
+[2.3.1]- 2020-08-19
 ----------------------
 - [ADDED] Missing dependencies xlswriter, xlrd, cryptography
 - [FIXED] Bug in rundcpp result table initialization
 - [CHANGED] PTDF/LODF calculation to improve performance
+- [FIXED] Signing system for P/Q values in net.res_bus_3ph
+- [FIXED] JSON I/O handling of controllers with NaN values
 
 [2.3.0]- 2020-08-11
 ----------------------
