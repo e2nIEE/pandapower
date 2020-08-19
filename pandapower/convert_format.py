@@ -3,12 +3,13 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from packaging import version
+
+from pandapower import __version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower import __version__
 
 
 def convert_format(net):
