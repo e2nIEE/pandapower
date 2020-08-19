@@ -410,8 +410,7 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(
-                    lambda x: x  else self.pp_hook(x, self.net))
+                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
