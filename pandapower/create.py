@@ -673,7 +673,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
         **bus** (int) - The bus id to which the load is connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the load
+        **p_mw** (float, default 0) - The active power of the load
 
         - postive value   -> load
         - negative value  -> generation
@@ -794,11 +794,11 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, \
         **bus** (int) - The bus id to which the load is connected
 
     OPTIONAL:
-        **p_a_mw** (float, default 0) - The real power for Phase A load
+        **p_a_mw** (float, default 0) - The active power for Phase A load
 
-		**p_b_mw** (float, default 0) - The real power for Phase B load
+		**p_b_mw** (float, default 0) - The active power for Phase B load
 
-		**p_c_mw** (float, default 0) - The real power for Phase C load
+		**p_c_mw** (float, default 0) - The active power for Phase C load
 
         **q_a_mvar** float, default 0) - The reactive power for Phase A load
 
@@ -922,7 +922,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
         **buses** (list of int) - A list of bus ids to which the loads are connected
 
     OPTIONAL:
-        **p_mw** (list of floats) - The real power of the loads
+        **p_mw** (list of floats) - The active power of the loads
 
         - postive value   -> load
         - negative value  -> generation
@@ -1073,7 +1073,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_mw** (float) - The real power of the static generator  (positive for generation!)
+        **p_mw** (float) - The active power of the static generator  (positive for generation!)
 
     OPTIONAL:
 
@@ -1209,10 +1209,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
          **buses** (list of int) - A list of bus ids to which the loads are connected
 
      OPTIONAL:
-         **p_mw** (list of floats) - The real power of the sgens
+         **p_mw** (list of floats) - The active power of the sgens
 
-         - postive value   -> generation
-         - negative value  -> load
+			 - postive value   -> generation
+			 - negative value  -> load
 
          **q_mvar** (list of floats, default 0) - The reactive power of the sgens
 
@@ -1329,26 +1329,20 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
     Adds one static generator in table net["asymmetric_sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
-    with a constant active and reactive power feed-in. If you want to model a voltage controlled
-    generator, use the generator element instead.
-
-    All elements in the grid are modelled in the consumer system, including generators!
-    If you want to model the generation of power, you have to assign a negative active power
-    to the generator. Please pay attention to the correct signing of the
-    reactive power as well.
+    with a constant active and reactive power feed-in. Positive active power means generation.
 
     INPUT:
         **net** - The net within this static generator should be created
 
         **bus** (int) - The bus id to which the static generator is connected
 
-        **p_a_mw** (float) - The real power of the static generator : Phase A (negative for generation!)
-
-        **p_b_mw** (float) - The real power of the static generator : Phase B (negative for generation!)
-
-        **p_c_mw** (float) - The real power of the static generator : Phase C (negative for generation!)
-
     OPTIONAL:
+
+        **p_a_mw** (float, default 0) - The active power of the static generator : Phase A
+
+        **p_b_mw** (float, default 0) - The active power of the static generator : Phase B
+
+        **p_c_mw** (float, default 0) - The active power of the static generator : Phase C 
 
         **q_a_mvar** (float, default 0) - The reactive power of the sgen : Phase A
 
@@ -1448,7 +1442,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
         **bus** (int) - The bus id to which the storage is connected
 
-        **p_mw** (float) - The momentary real power of the storage \
+        **p_mw** (float) - The momentary active power of the storage \
             (positive for charging, negative for discharging)
 
         **max_e_mwh** (float) - The maximum energy content of the storage \
@@ -1582,7 +1576,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **bus** (int) - The bus id to which the generator is connected
 
     OPTIONAL:
-        **p_mw** (float, default 0) - The real power of the generator (positive for generation!)
+        **p_mw** (float, default 0) - The active power of the generator (positive for generation!)
 
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
@@ -1703,7 +1697,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **buses** (list of int) - The bus ids to which the generators are connected
 
     OPTIONAL:
-        **p_mw** (list of float, default 0) - The real power of the generator (positive for generation!)
+        **p_mw** (list of float, default 0) - The active power of the generator (positive for generation!)
 
         **vm_pu** (list of float, default 0) - The voltage set point of the generator.
 
