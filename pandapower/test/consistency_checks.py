@@ -189,12 +189,12 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
         bus_q_c.at[tab.bus] += net.res_asymmetric_load_3ph.q_c_mvar.at[idx]
 
     for idx, tab in net.asymmetric_sgen.iterrows():
-        bus_p_a.at[tab.bus] -= net.res_asymmetric_load_3ph.p_a_mw.at[idx]
-        bus_q_a.at[tab.bus] -= net.res_asymmetric_load_3ph.q_a_mvar.at[idx]
-        bus_p_b.at[tab.bus] -= net.res_asymmetric_load_3ph.p_b_mw.at[idx]
-        bus_q_b.at[tab.bus] -= net.res_asymmetric_load_3ph.q_b_mvar.at[idx]
-        bus_p_c.at[tab.bus] -= net.res_asymmetric_load_3ph.p_c_mw.at[idx]
-        bus_q_c.at[tab.bus] -= net.res_asymmetric_load_3ph.q_c_mvar.at[idx]
+        bus_p_a.at[tab.bus] -= net.res_asymmetric_sgen_3ph.p_a_mw.at[idx]
+        bus_q_a.at[tab.bus] -= net.res_asymmetric_sgen_3ph.q_a_mvar.at[idx]
+        bus_p_b.at[tab.bus] -= net.res_asymmetric_sgen_3ph.p_b_mw.at[idx]
+        bus_q_b.at[tab.bus] -= net.res_asymmetric_sgen_3ph.q_b_mvar.at[idx]
+        bus_p_c.at[tab.bus] -= net.res_asymmetric_sgen_3ph.p_c_mw.at[idx]
+        bus_q_c.at[tab.bus] -= net.res_asymmetric_sgen_3ph.q_c_mvar.at[idx]
 
     for idx, tab in net.sgen.iterrows():
         bus_p_a.at[tab.bus] -= net.res_sgen_3ph.p_mw.at[idx] / 3
