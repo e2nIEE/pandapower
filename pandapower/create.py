@@ -825,7 +825,6 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, \
 
     EXAMPLE:
 		**create_asymmetric_load(net, bus=0, p_c_mw = 9., q_c_mvar = 1.8)**
-        Creates a single phase wye type load
 
     """
     if bus not in net["bus"].index.values:
@@ -1324,8 +1323,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
                            name=None, index=None, scaling=1., type='wye', in_service=True):
-    """create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0, q_c_mvar=0, sn_mva=nan,
-                           name=None, index=None, scaling=1., type='wye', in_service=True)
+    """
+
     Adds one static generator in table net["asymmetric_sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -1342,7 +1341,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **p_b_mw** (float, default 0) - The active power of the static generator : Phase B
 
-        **p_c_mw** (float, default 0) - The active power of the static generator : Phase C 
+        **p_c_mw** (float, default 0) - The active power of the static generator : Phase C
 
         **q_a_mvar** (float, default 0) - The reactive power of the sgen : Phase A
 
