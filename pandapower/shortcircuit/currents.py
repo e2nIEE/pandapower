@@ -117,7 +117,7 @@ def _calc_branch_currents(net, ppc):
         ikss_all_t = abs(ikss1_all_t)
 
     if net._options["return_all_currents"]:
-            ppc["internal"]["branch_ikss_all"] = minmax_all(ikss2_all_f, ikss_all_t)
+            ppc["internal"]["branch_ikss_all"] = minmax_all(ikss_all_f, ikss_all_t)
 
     ikss_all_f[ikss_all_f < 1e-10] = np.nan
     ikss_all_t[ikss_all_t < 1e-10] = np.nan
