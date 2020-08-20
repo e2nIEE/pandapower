@@ -1,3 +1,6 @@
+- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
+- [FIXED] json load for broken geom columns in bus_geodata
+
 [2.3.1]- 2020-08-19
 ----------------------
 - [ADDED] Missing dependencies xlswriter, xlrd, cryptography
