@@ -6,8 +6,8 @@ Asymmetric Load
 
 .. note::
 
-    Loads should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.
-    With Asymmetric Load three phase load values can be supplied seperately
+    Loads should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (asymmetric_sgen element) instead of a negative load.
+	
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
