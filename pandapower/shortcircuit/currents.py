@@ -92,6 +92,7 @@ def _calc_branch_currents(net, ppc):
     fb = np.real(ppc["branch"][:, 0]).astype(int)
     tb = np.real(ppc["branch"][:, 1]).astype(int)
     minmax = np.nanmin if case == "min" else np.nanmax
+    minmax_all = np.minimum if case =='min' else np.maximum
     # calculate voltage source branch current
     V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
@@ -115,6 +116,9 @@ def _calc_branch_currents(net, ppc):
         ikss_all_f = abs(ikss1_all_f)
         ikss_all_t = abs(ikss1_all_t)
 
+    if net._options["return_all_currents"]:
+            ppc["internal"]["branch_ikss_all"] = minmax_all(ikss2_all_f, ikss_all_t)
+
     ikss_all_f[ikss_all_f < 1e-10] = np.nan
     ikss_all_t[ikss_all_t < 1e-10] = np.nan
     ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
@@ -129,6 +133,9 @@ def _calc_branch_currents(net, ppc):
             ip_all_f = np.sqrt(2) * ikss1_all_f * kappa
             ip_all_t = np.sqrt(2) * ikss1_all_t * kappa
 
+        if net._options["return_all_currents"]:
+            ppc["internal"]["branch_ip_all"] = minmax_all(ip_all_f, ip_all_t)
+
         ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
         ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
         ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
@@ -141,6 +148,10 @@ def _calc_branch_currents(net, ppc):
         ith_all_t = ikss_all_t * np.sqrt(m + n)
         ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+
+        if net._options["return_all_currents"]:
+            ppc["internal"]["branch_ith_all"] = minmax_all(ith_all_f, ith_all_t)
+
 
 
 def _calc_ib_generator(net, ppci):

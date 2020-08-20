@@ -26,7 +26,7 @@ from pandapower.results import init_results
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False, check_connectivity=True):
+            branch_results=False, check_connectivity=True, return_all_currents=False):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -118,7 +118,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    branch_results=branch_results)
+                    branch_results=branch_results, return_all_currents=return_all_currents)
     init_results(net, "sc")
     if fault == "3ph":
         _calc_sc(net)
@@ -231,8 +231,13 @@ def _calc_sc(net):
         _calc_ith(net, ppci)
     if net._options["branch_results"]:
         _calc_branch_currents(net, ppci)
+
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc, ppc_0=None)
+
+    if net["_options"]["return_all_currents"]:
+        _extract_results(net, ppc, ppc_0=None)
+    else:
+        _extract_results(net, ppc, ppc_0=None)
     _clean_up(net)
 
 
