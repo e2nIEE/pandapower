@@ -134,7 +134,8 @@ def _calc_branch_currents(net, ppc):
             ip_all_t = np.sqrt(2) * ikss1_all_t * kappa
 
         if net._options["return_all_currents"]:
-            ppc["internal"]["branch_ip_all"] = minmax_all(ip_all_f / baseI[fb, None], ip_all_t / baseI[tb, None])
+            ppc["internal"]["branch_ip_all"] = minmax_all(abs(ip_all_f) / baseI[fb, None],
+                                                          abs(ip_all_t) / baseI[tb, None])
         else:
             ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
             ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
