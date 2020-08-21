@@ -92,7 +92,7 @@ def _calc_branch_currents(net, ppc):
     fb = np.real(ppc["branch"][:, 0]).astype(int)
     tb = np.real(ppc["branch"][:, 1]).astype(int)
     minmax = np.nanmin if case == "min" else np.nanmax
-    minmax_all = np.minimum if case =='min' else np.maximum
+
     # calculate voltage source branch current
     V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
