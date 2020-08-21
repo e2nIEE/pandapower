@@ -115,7 +115,7 @@ def _get_trafo_all_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
 
     multindex = pd.MultiIndex.from_product([net.res_trafo_sc.index, ppc_index], names=['trafo', 'bus'])
-    net.res_trafo_sc = net.res_line_sc.reindex(multindex)
+    net.res_trafo_sc = net.res_trafo_sc.reindex(multindex)
 
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
@@ -141,7 +141,7 @@ def _get_trafo3w_all_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
 
     multindex = pd.MultiIndex.from_product([net.res_trafo3w_sc.index, ppc_index], names=['trafo3w', 'bus'])
-    net.res_trafo3w_sc = net.res_line_sc.reindex(multindex)
+    net.res_trafo3w_sc = net.res_trafo3w_sc.reindex(multindex)
 
     if "trafo3w" in branch_lookup:
         f, t = branch_lookup["trafo3w"]
