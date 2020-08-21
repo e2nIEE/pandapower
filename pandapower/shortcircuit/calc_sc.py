@@ -82,6 +82,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **branch_results** (bool, False) defines if short-circuit results should also be generated for branches
 
+        **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
+        each (branch, bus) tuple is returned otherwise only the max/min is returned
+
 
     OUTPUT:
 
