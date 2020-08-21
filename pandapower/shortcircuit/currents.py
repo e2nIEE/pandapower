@@ -117,12 +117,12 @@ def _calc_branch_currents(net, ppc):
         ikss_all_t = abs(ikss1_all_t)
 
     if net._options["return_all_currents"]:
-            ppc["internal"]["branch_ikss_all"] = minmax_all(ikss_all_f / baseI[fb, None], ikss_all_t / baseI[tb, None])
-
-    ikss_all_f[ikss_all_f < 1e-10] = np.nan
-    ikss_all_t[ikss_all_t < 1e-10] = np.nan
-    ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
-    ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
+        ppc["internal"]["branch_ikss_all"] = minmax_all(ikss_all_f / baseI[fb, None], ikss_all_t / baseI[tb, None])
+    else:
+        ikss_all_f[ikss_all_f < 1e-10] = np.nan
+        ikss_all_t[ikss_all_t < 1e-10] = np.nan
+        ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
+        ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
 
     if net._options["ip"]:
         kappa = ppc["bus"][:, KAPPA]
@@ -135,22 +135,25 @@ def _calc_branch_currents(net, ppc):
 
         if net._options["return_all_currents"]:
             ppc["internal"]["branch_ip_all"] = minmax_all(ip_all_f / baseI[fb, None], ip_all_t / baseI[tb, None])
-
-        ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
-        ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
-        ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
-        ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
+        else:
+            ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
+            ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
+            ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
+            ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
 
     if net._options["ith"]:
         n = 1
         m = ppc["bus"][:, M]
         ith_all_f = ikss_all_f * np.sqrt(m + n)
         ith_all_t = ikss_all_t * np.sqrt(m + n)
-        ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
-        ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
 
         if net._options["return_all_currents"]:
             ppc["internal"]["branch_ith_all"] = minmax_all(ith_all_f / baseI[fb, None], ith_all_t / baseI[tb, None])
+        else:
+            ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
+            ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+
+
 
 
 
