@@ -59,6 +59,21 @@ def gen_three_bus_example():
     #pp.create_switch(net, b3, b1, et="b")
     return net
 
+@pytest.fixture
+def net_transformer():
+    net = pp.create_empty_network(sn_mva=2)
+    b1a = pp.create_bus(net, vn_kv=10.)
+    b1b = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=.4)
+    pp.create_bus(net, vn_kv=0.4, in_service=False) #add out of service bus to test oos indexing
+    pp.create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    pp.create_switch(net, b1a, b1b, et="b")
+    pp.create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6.,
+                                          vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
+                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2,
+                                          tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
+    pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500) #adding a shunt shouldn't change the result
+    return net
 
 def test_all_currents_sgen(three_bus_example):
     #
@@ -100,6 +115,23 @@ def test_with_permuted_index(three_bus_permuted_index):
                        np.array([0.01259673, 0.3989686, 0.39170662, 0., 0., 0.40431286]), atol=1e-5)
 
 
+def test_all_currents_with_oos_elements(three_bus_example):
+
+    net = three_bus_example
+    net.bus.in_service.loc[2] = False
+    net.line.in_service.loc[1] = False
+    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
+
+    assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
+                       np.array([0.01259673, 0.49593036]), atol=1e-5)
+    assert all(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].isnull())
+
+    sc.calc_sc(net, case="min", branch_results=True, return_all_currents=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
+                       np.array([0.01259673, 0.3989686]), atol=1e-5)
+    assert all(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].isnull())
+
+
 def test_branch_all_currents_gen(gen_three_bus_example):
     net = gen_three_bus_example
     sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
@@ -109,6 +141,19 @@ def test_branch_all_currents_gen(gen_three_bus_example):
     sc.calc_sc(net, case="min", branch_results=True, return_all_currents=True)
     assert np.allclose(net.res_line_sc.ikss_ka.values,
                        np.array([0.69255026, 0.45574755, 0.44487882, 0., 0., 1.10747517]))
+
+
+def test_branch_all_currents_trafo(net_transformer):
+    net = net_transformer
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., branch_results=True, return_all_currents=True)
+
+    assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0,0)] - 0.) <1e-5)
+    assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0,1)] - 0.) <1e-5)
+    assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0,2)] - 16.992258758) <1e-5)
+
+    assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,0)] - 0.) <1e-5)
+    assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,1)] - 0.) <1e-5)
+    assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,2)] - 0.648795) <1e-5)
 
 
 if __name__ == '__main__':
