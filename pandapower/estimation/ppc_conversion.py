@@ -171,7 +171,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
     # pandapower measurement indices V, P, Q
     bus_append = np.full((ppci["bus"].shape[0], bus_cols_se), np.nan, dtype=ppci["bus"].dtype)
-    
+
     # Add measurements for bus
     for meas_type in ("v", "va", "p", "q"):
         this_meas = meas_bus[(meas_bus.measurement_type == meas_type)]
