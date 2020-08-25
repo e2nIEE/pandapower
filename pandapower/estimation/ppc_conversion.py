@@ -189,7 +189,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                         bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
                         bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
                     continue
-                
+
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas.value.values
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas.std_dev.values
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas.index.values
