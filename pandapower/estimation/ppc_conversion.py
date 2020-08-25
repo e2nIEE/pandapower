@@ -186,8 +186,8 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                     for bus in unique_bus_positions:
                         this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
                         bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas_on_bus.value.sum()
-                        bus_append[bus, P_STD] = this_meas_on_bus.std_dev.max()
-                        bus_append[bus, P_IDX] = this_meas_on_bus.index[0]
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
                     continue
                 
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas.value.values

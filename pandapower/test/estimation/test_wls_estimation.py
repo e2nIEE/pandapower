@@ -300,13 +300,11 @@ def test_3bus_with_2_slacks():
     delta_result = net.res_bus_est.va_degree.values
 
     target_v = np.array([0.9996, 0.9741, 0.9438, np.nan, 0.9996, 0.9741, 0.9438])
-    diff_v = target_v - v_result
     target_delta = np.array([0.0, -1.2475469989322963, -2.7457167371166862, np.nan, 0.0,
                               -1.2475469989322963, -2.7457167371166862])
-    diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or\
-        not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if not np.allclose(v_result, target_v, atol=1e-4, equal_nan=True) or\
+       not np.allclose(delta_result, target_delta, atol=1e-4, equal_nan=True):
         raise AssertionError("Estimation failed!")
 
 
