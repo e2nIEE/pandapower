@@ -3915,7 +3915,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Generation is a positive bus power injection, consumption negative
+        "kA" for I. Generation is a positive bus power consumption, injection negative
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
@@ -3940,7 +3940,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     EXAMPLES:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", 0, -2., 0.05.)
+        create_measurement(net, "p", "bus", 0, 2., 0.05.)
 
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
