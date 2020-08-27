@@ -52,7 +52,9 @@ def test_motor_max_branch(motor_net):
 
     net.motor.in_service = True
     sc.calc_sc(net, case="max", branch_results=True)
-
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.743809197, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[1], 5.626994278, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[2], 0.370730612, rtol=1e-4)
     # The maximum current through the first branch is the short-circuit current
     # at the second bus without the motor contribution, which does not flow
     # through the line
@@ -70,6 +72,14 @@ def test_motor_min_branch(motor_net):
     net.motor.in_service = True
     sc.calc_sc(net, case="min", branch_results=True)
     assert np.allclose(ikss_without_motor, net.res_line_sc.ikss_ka.values)
+
+def test_large_motor(motor_net):
+    net = motor_net
+    net.motor.pn_mech_mw = 10
+    sc.calc_sc(net, case="max")
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[0], 14.695869025, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[1], 103.16722971, rtol=1e-4)
+    assert np.isclose(net.res_bus_sc.ikss_ka.at[2], 0.38693418116, rtol=1e-4)
 
 if __name__ == '__main__':
     pytest.main([__file__])
