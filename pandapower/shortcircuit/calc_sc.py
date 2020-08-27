@@ -191,6 +191,7 @@ def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10, check_c
                     topology="auto", r_fault_ohm=0., kappa_method="C",
                     x_fault_ohm=0., kappa=False, ip=False, ith=False,
                     branch_results=True, return_all_currents=False)
+    init_results(net, "sc")
     if fault == "3ph" or fault == "2ph":
         _calc_sc_single(net, bus)
     elif fault == "1ph":
