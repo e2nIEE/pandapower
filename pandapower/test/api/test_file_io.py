@@ -153,15 +153,16 @@ def test_to_json_dtypes(tmp_path):
 
 def test_json_encoding_decoding():
     net = networks.mv_oberrhein()
+    small_net = networks.case5()
     net.tuple = (1, "4")
     net.mg = topology.create_nxgraph(net)
     s = set(['1', 4])
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
-    d = {"a": net, "b": f}
-    json_string = json.dumps([s, t, f, net, a, d], cls=PPJSONEncoder)
-    s1, t1, f1, net1, a1, d1 = json.loads(json_string, cls=PPJSONDecoder)
+    d = {"a": net, "b": f, "c": small_net}
+    json_string = json.dumps([s, t, f, net, a, d, small_net], cls=PPJSONEncoder)
+    s1, t1, f1, net1, a1, d1, small_net1 = json.loads(json_string, cls=PPJSONDecoder)
 
     assert s == s1
     assert t == t1

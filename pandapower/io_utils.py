@@ -25,7 +25,7 @@ from packaging import version
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandas.testing import assert_series_equal, assert_frame_equal
-from json.decoder import WHITESPACE
+from json.decoder import WHITESPACE, WHITESPACE_STR, JSONArray
 
 try:
     from functools import singledispatch
@@ -556,6 +556,7 @@ class PPJSONDecoder(json.JSONDecoder):
         super_kwargs = {"object_hook": self.pp_hook}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
+        self.parse_array = self.from_json_list
 
     def decode(self, s, _w=WHITESPACE.match):
         """Return the Python representation of ``s`` (a ``str`` instance
@@ -563,6 +564,11 @@ class PPJSONDecoder(json.JSONDecoder):
 
         """
         obj = super().decode(s, _w)
+        typ = type(obj)
+        if typ == list:
+            add_obj_key_addr_list(obj, self.addresses_to_fill)
+        elif typ == dict:
+            add_obj_key_addr_dict(obj, self.addresses_to_fill)
         if self.set_addresses:
             for addr, fill_list in self.addresses_to_fill.items():
                 for obj_to_fill, setfunc, key in fill_list:
@@ -595,10 +601,14 @@ class PPJSONDecoder(json.JSONDecoder):
                 self.addresses_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
             return obj
         else:
-            # print()
-            # print(type(d))
-            # print(d)
+            add_obj_key_addr_dict(d, self.addresses_to_fill)
             return d
+
+    def from_json_list(self, s_and_end, scan_once, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
+        value, end = JSONArray(s_and_end=s_and_end, scan_once=scan_once, _w=_w, _ws=_ws)
+        if isinstance(value, list):
+            add_obj_key_addr_list(value, self.addresses_to_fill)
+        return value, end
 
 
 def get_setter_method(obj):
@@ -609,6 +619,20 @@ def get_setter_method(obj):
     if hasattr(obj, "__setitem__"):
         return type(obj).__setitem__
     return setattr
+
+
+def add_obj_key_addr_dict(d, addresses_to_fill):
+    for k, v in d.items():
+        if check_object_at_address(v):
+            addresses_to_fill[v["_object_with_address"]].append(
+                (d, dict.__setitem__, k))
+
+
+def add_obj_key_addr_list(l, addresses_to_fill):
+    if isinstance(l, list):
+        for i, val in enumerate(l):
+            if check_object_at_address(val):
+                addresses_to_fill[val["_object_with_address"]].append((l, list.__setitem__, i))
 
 
 # def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
