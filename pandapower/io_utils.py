@@ -11,6 +11,7 @@ import pickle
 import sys
 import types
 import weakref
+from collections import defaultdict
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
@@ -24,6 +25,7 @@ from packaging import version
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandas.testing import assert_series_equal, assert_frame_equal
+from json.decoder import WHITESPACE
 
 try:
     from functools import singledispatch
@@ -301,9 +303,10 @@ def isinstance_partial(obj, cls):
 
 
 class PPJSONEncoder(json.JSONEncoder):
-    def __init__(self, isinstance_func=isinstance_partial, **kwargs):
+    def __init__(self, isinstance_func=isinstance_partial, obj_memo=None, **kwargs):
         super(PPJSONEncoder, self).__init__(**kwargs)
         self.isinstance_func = isinstance_func
+        self.obj_memo = list() if obj_memo is None else obj_memo
 
     def iterencode(self, o, _one_shot=False):
         """Encode the given object and yield each string
@@ -353,12 +356,48 @@ class PPJSONEncoder(json.JSONEncoder):
 
     def default(self, o):
         try:
-            s = to_serializable(o)
+            s = to_serializable(o, self.obj_memo)
         except TypeError:
             # Let the base class default method raise the TypeError
             return json.JSONEncoder.default(self, o)
         else:
             return s
+
+
+def check_object_at_address(o):
+    return isinstance(o, dict) and "_object_with_address" in o.keys()
+
+
+check_obj_vect = numpy.vectorize(check_object_at_address)
+
+
+def get_idx_addr_series(s):
+    return [(idx, oa["_object_with_address"]) for idx, oa in s[check_obj_vect(s.values)].items()]
+
+
+def get_idx_addr_iterator(iterator):
+    return [(k, v["_object_with_address"]) for k, v in iterator if check_object_at_address(v)]
+
+
+def get_idx_addr_array(a):
+    idx_addr = list()
+
+    if a.shape == (0,):
+        return idx_addr
+
+    if len(a.shape) == 1:
+        has_obj = check_obj_vect(a)
+        return list(zip(numpy.where(has_obj)[0], [v["_object_with_address"] for v in a[has_obj]]))
+
+    shapelist = [list(range(dim)) for dim in a.shape[1:]]
+    all_idx_combinations = [[]]
+    for x in shapelist:
+        all_idx_combinations = [i + [y] for y in x for i in all_idx_combinations]
+    for idx_comb in all_idx_combinations:
+        current_slice = tuple([slice(None, None, None)] + idx_comb)
+        has_obj = check_obj_vect(a[current_slice])
+        current_idx = [tuple([ho] + idx_comb) for ho in numpy.where(has_obj)[0]]
+        idx_addr.extend([(ho, a[ho]["_object_with_address"]) for ho in current_idx])
 
 
 class FromSerializable:
@@ -389,15 +428,21 @@ class FromSerializableRegistry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, net, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct, memo_pp, addresses_to_fill):
         self.obj = obj
         self.d = d
-        self.net = net
         self.pp_hook = pp_hook_funct
+        self.memo_pp = memo_pp
+        self.addresses_to_fill = addresses_to_fill
+        self.underlying_objects = list()
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
-        return pd.read_json(self.obj, precise_float=True, **self.d)
+        s = pd.read_json(self.obj, precise_float=True, **self.d)
+        if s.dtype == "O" and len(s) > 0:
+            self.underlying_objects = get_idx_addr_series(s)
+            s = s.apply(lambda obj: self.pp_hook(obj) if isinstance(obj, dict) else obj)
+        return s
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
     def DataFrame(self):
@@ -406,21 +451,30 @@ class FromSerializableRegistry():
             df.set_index(df.index.astype(numpy.int64), inplace=True)
         except (ValueError, TypeError, AttributeError):
             logger.debug("failed setting int64 index")
+        for col, dt in  df.dtypes.items():
+            if dt != "O" or len(df[col]) == 0:
+                continue
+            self.underlying_objects.extend([((idx, col), addr)
+                                            for idx, addr in get_idx_addr_series(df[col])])
+            df[col] = [self.pp_hook(obj) if isinstance(obj, dict) else obj for obj in df[col]]
+            # df[col] = df[col].apply(lambda obj: self.pp_hook(obj) if isinstance(obj, dict) else obj)
         # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+        # for col in ('object', 'controller'):  # "controller" for backwards compatibility
+        #     if col in df.columns:
+        #         df[col] = [self.pp_hook(d) for d in df[col]]
+        #         # df[col] = df[col].apply(self.pp_hook, args=(self.net,), memo_pp=self.memo)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
     def pandapowerNet(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
-            return from_json_string(self.obj)
+            net = from_json_string(self.obj)
         else:
-            # net = create_empty_network()
-            self.net.update(self.obj)
-            return self.net
+            net = create_empty_network()
+            net.update(self.obj)
+        self.underlying_objects = get_idx_addr_iterator(net.items())
+        return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
@@ -444,14 +498,25 @@ class FromSerializableRegistry():
         class_ = getattr(module, self.class_name)
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
-                self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(pp_hook, net=self.net,
-                                                          registry_class=FromSerializableRegistry))
-                                      # backwards compatibility
-            return class_.from_dict(self.obj, self.net)
+                self.obj = json.loads(self.obj, cls=PPJSONDecoder, memo_pp=self.memo_pp,
+                                      addresses_to_fill=self.addresses_to_fill, set_addresses=False)
+                # backwards compatibility
+            js_obj = class_.from_dict(self.obj)
+            self.underlying_objects = get_idx_addr_iterator(js_obj.__dict__.items())
         else:
             # for non-pp objects, e.g. tuple
-            return class_(self.obj, **self.d)
+            js_obj = class_(self.obj, **self.d)
+            typ = type(js_obj)
+            if typ in [list, tuple]:
+                self.underlying_objects = get_idx_addr_iterator(enumerate(js_obj))
+            elif typ == dict:
+                self.underlying_objects = get_idx_addr_iterator(js_obj.items())
+            elif typ == numpy.ndarray:
+                self.underlying_objects = get_idx_addr_array(js_obj)
+            else:
+                logger.warning("The object of type %s cannot be checked for underlying objects!"
+                               % type(js_obj))
+        return js_obj
 
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame')
@@ -466,6 +531,12 @@ class FromSerializableRegistry():
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
+            for col, dt in df.dtypes.items():
+                if dt != "O":
+                    continue
+                self.underlying_objects.extend([((idx, col), addr)
+                                                for idx, addr in get_idx_addr_series(df[col])])
+                df[col] = df[col].apply(self.pp_hook)
             return df
 
     if SHAPELY_INSTALLED:
@@ -477,32 +548,89 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+        # net = create_empty_network()
+        self.memo_pp = kwargs.pop("memo_pp", dict())
+        self.addresses_to_fill = kwargs.pop("addresses_to_fill", defaultdict(list))
+        self.set_addresses = kwargs.pop("set_addresses", True)
+        self.currently_to_fill = list()
+        super_kwargs = {"object_hook": self.pp_hook}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
+    def decode(self, s, _w=WHITESPACE.match):
+        """Return the Python representation of ``s`` (a ``str`` instance
+        containing a JSON document).
 
-def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
-    if '_module' in d and '_class' in d:
-        if "_object" in d:
-            obj = d.pop('_object')
-        elif "_state" in d:
-            obj = d['_state']
-            if d['has_net']:
-                obj['net'] = 'net'
-            if '_init' in obj:
-                del obj['_init']
-            return obj  # backwards compatibility
+        """
+        obj = super().decode(s, _w)
+        if self.set_addresses:
+            for addr, fill_list in self.addresses_to_fill.items():
+                for obj_to_fill, setfunc, key in fill_list:
+                    setfunc(obj_to_fill, key, self.memo_pp[addr])
+        return obj
+
+    def pp_hook(self, d, registry_class=FromSerializableRegistry):
+        if '_module' in d and '_class' in d:
+            if "_object" in d:
+                obj = d.pop('_object')
+            elif "_state" in d:
+                obj = d['_state']
+                if d['has_net']:
+                    obj['net'] = 'net'
+                if '_init' in obj:
+                    del obj['_init']
+                return obj  # backwards compatibility
+            else:
+                # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+                obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+            fs = registry_class(obj, d, self.pp_hook, self.memo_pp, self.addresses_to_fill)
+            fs.class_name = d.pop('_class', '')
+            fs.module_name = d.pop('_module', '')
+            obj = fs.from_serializable()
+            if len(fs.underlying_objects) > 0:
+                print(fs.underlying_objects)
+            if "_address" in d:
+                self.memo_pp[str(d["_address"])] = obj
+            for key, addr in fs.underlying_objects:
+                self.addresses_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
+            return obj
         else:
-            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-        fs = registry_class(obj, d, net, pp_hook)
-        fs.class_name = d.pop('_class', '')
-        fs.module_name = d.pop('_module', '')
-        return fs.from_serializable()
-    else:
-        return d
+            # print()
+            # print(type(d))
+            # print(d)
+            return d
+
+
+def get_setter_method(obj):
+    if isinstance(obj, pd.Series):
+        return pd.Series._set_value
+    if isinstance(obj, pd.DataFrame):
+        return pd.DataFrame._set_value
+    if hasattr(obj, "__setitem__"):
+        return type(obj).__setitem__
+    return setattr
+
+
+# def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
+#     if '_module' in d and '_class' in d:
+#         if "_object" in d:
+#             obj = d.pop('_object')
+#         elif "_state" in d:
+#             obj = d['_state']
+#             if d['has_net']:
+#                 obj['net'] = 'net'
+#             if '_init' in obj:
+#                 del obj['_init']
+#             return obj  # backwards compatibility
+#         else:
+#             # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+#             obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+#         fs = registry_class(obj, d, net, pp_hook)
+#         fs.class_name = d.pop('_class', '')
+#         fs.module_name = d.pop('_module', '')
+#         return fs.from_serializable()
+#     else:
+#         return d
 
 
 def encrypt_string(s, key, compress=True):
@@ -542,18 +670,19 @@ def decrypt_string(s, key):
 
 
 class JSONSerializableClass(object):
-    json_excludes = ["net", "_net", "self", "__class__"]
+    # json_excludes = ["net", "_net", "self", "__class__"]
+    json_excludes = ["self", "__class__"]
 
     def __init__(self, **kwargs):
         pass
 
-    @property
-    def net(self):
-        return self._net()
-
-    @net.setter
-    def net(self, net):
-        self._net = weakref.ref(net)
+    # @property
+    # def net(self):
+    #     return self._net()
+    #
+    # @net.setter
+    # def net(self, net):
+    #     self._net = weakref.ref(net)
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -566,13 +695,13 @@ class JSONSerializableClass(object):
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
 
-    def to_json(self):
+    def to_json(self, obj_memo=None):
         """
         Each controller should have this method implemented. The resulting json string should be
         readable by the controller's from_json function and by the function add_ctrl_from_json in
         control_handler.
         """
-        return json.dumps(self.to_dict(), cls=PPJSONEncoder)
+        return json.dumps(self.to_dict(), cls=PPJSONEncoder, obj_memo=obj_memo)
 
     def to_dict(self):
         def consider_callable(value):
@@ -584,8 +713,8 @@ class JSONSerializableClass(object):
 
         d = {key: consider_callable(val) for key, val in self.__dict__.items()
              if key not in self.json_excludes}
-        if "net" in signature(self.__init__).parameters.keys():
-            d.update({'net': 'net'})
+        # if "net" in signature(self.__init__).parameters.keys():
+        #     d.update({'net': 'net'})
         return d
 
     def add_to_net(self, element, index, column="object", overwrite=False):
@@ -666,11 +795,8 @@ class JSONSerializableClass(object):
             return False
 
     @classmethod
-    def from_dict(cls, d, net):
+    def from_dict(cls, d):
         obj = JSONSerializableClass.__new__(cls)
-        if 'net' in d:
-            d.pop('net')
-            obj.net = net
         obj.__dict__.update(d)
         return obj
 
@@ -680,35 +806,46 @@ class JSONSerializableClass(object):
         return cls.from_dict(d)
 
 
-def with_signature(obj, val, obj_module=None, obj_class=None):
+def with_signature(obj, val, obj_module=None, obj_class=None, with_address=False):
     if obj_module is None:
         obj_module = obj.__module__.__str__()
     if obj_class is None:
         obj_class = obj.__class__.__name__
     d = {'_module': obj_module, '_class': obj_class, '_object': val}
+    if with_address:
+        d.update({'_address': id(obj)})
     if hasattr(obj, 'dtype'):
         d.update({'dtype': str(obj.dtype)})
     return d
 
 
+def address_string(obj):
+    return {'_object_with_address': str(id(obj))}
+
+
 @singledispatch
-def to_serializable(obj):
+def to_serializable(obj, memo=None):
     logger.debug('standard case')
     return str(obj)
 
 
 @to_serializable.register(pandapowerNet)
-def json_pandapowernet(obj):
+def json_pandapowernet(obj, memo=None):
+    if memo is not None:
+        if obj in memo:
+            return address_string(obj)
+        memo.append(obj)
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
-    d = with_signature(obj, net_dict)
+    d = with_signature(obj, net_dict, with_address=True)
     return d
 
 
 @to_serializable.register(pd.DataFrame)
-def json_dataframe(obj):
+def json_dataframe(obj, memo=None):
     logger.debug('DataFrame')
     orient = "split"
-    json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
+    json_string = obj.to_json(
+        orient=orient, default_handler=partial(to_serializable, memo=memo), double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
     if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
@@ -718,50 +855,50 @@ def json_dataframe(obj):
 
 if GEOPANDAS_INSTALLED:
     @to_serializable.register(geopandas.GeoDataFrame)
-    def json_geodataframe(obj):
+    def json_geodataframe(obj, memo=None):
         logger.debug('GeoDataFrame')
-        d = with_signature(obj, obj.to_json())
+        d = with_signature(obj, obj.to_json(default_handler=partial(to_serializable, memo=memo)))
         d.update({'dtype': obj.dtypes.astype('str').to_dict(),
                   'crs': obj.crs, 'columns': obj.columns})
         return d
 
 
 @to_serializable.register(pd.Series)
-def json_series(obj):
+def json_series(obj, memo=None):
     logger.debug('Series')
-    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable,
-                                        double_precision=15))
+    d = with_signature(obj, obj.to_json(
+        orient='split', default_handler=partial(to_serializable, memo=memo), double_precision=15))
     d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
     return d
 
 
 @to_serializable.register(numpy.ndarray)
-def json_array(obj):
+def json_array(obj, memo=None):
     logger.debug("ndarray")
     d = with_signature(obj, list(obj), obj_module='numpy', obj_class='array')
     return d
 
 
 @to_serializable.register(numpy.integer)
-def json_npint(obj):
+def json_npint(obj, memo=None):
     logger.debug("integer")
     return int(obj)
 
 
 @to_serializable.register(numpy.floating)
-def json_npfloat(obj):
+def json_npfloat(obj, memo=None):
     logger.debug("floating")
     return float(obj)
 
 
 @to_serializable.register(numbers.Number)
-def json_num(obj):
+def json_num(obj, memo=None):
     logger.debug("numbers.Number")
     return str(obj)
 
 
 @to_serializable.register(complex)
-def json_complex(obj):
+def json_complex(obj, memo=None):
     logger.debug("complex")
     d = with_signature(obj, str(obj), obj_module='builtins', obj_class='complex')
     d.pop('dtype')
@@ -769,40 +906,40 @@ def json_complex(obj):
 
 
 @to_serializable.register(pd.Index)
-def json_pdindex(obj):
+def json_pdindex(obj, memo=None):
     logger.debug("pd.Index")
     return with_signature(obj, list(obj), obj_module='pandas')
 
 
 @to_serializable.register(bool)
-def json_bool(obj):
+def json_bool(obj, memo=None):
     logger.debug("bool")
     return "true" if obj else "false"
 
 
 @to_serializable.register(tuple)
-def json_tuple(obj):
+def json_tuple(obj, memo=None):
     logger.debug("tuple")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='tuple')
     return d
 
 
 @to_serializable.register(set)
-def json_set(obj):
+def json_set(obj, memo=None):
     logger.debug("set")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
     return d
 
 
 @to_serializable.register(frozenset)
-def json_frozenset(obj):
+def json_frozenset(obj, memo=None):
     logger.debug("frozenset")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='frozenset')
     return d
 
 
 @to_serializable.register(networkx.Graph)
-def json_networkx(obj):
+def json_networkx(obj, memo=None):
     logger.debug("nx graph")
     json_string = json_graph.adjacency_data(obj, attrs={'id': 'json_id', 'key': 'json_key'})
     d = with_signature(obj, json_string, obj_module="networkx")
@@ -810,9 +947,13 @@ def json_networkx(obj):
 
 
 @to_serializable.register(JSONSerializableClass)
-def controller_to_serializable(obj):
+def controller_to_serializable(obj, memo=None):
     logger.debug('JSONSerializableClass')
-    d = with_signature(obj, obj.to_json())
+    if memo is not None:
+        if obj in memo:
+            return address_string(obj)
+        memo.append(obj)
+    d = with_signature(obj, obj.to_json(memo), with_address=True)
     return d
 
 
@@ -824,7 +965,7 @@ def mkdirs_if_not_existent(dir_to_create):
 
 if SHAPELY_INSTALLED:
     @to_serializable.register(shapely.geometry.LineString)
-    def json_linestring(obj):
+    def json_linestring(obj, memo=None):
         logger.debug("shapely linestring")
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
@@ -832,7 +973,7 @@ if SHAPELY_INSTALLED:
 
 
     @to_serializable.register(shapely.geometry.Point)
-    def json_point(obj):
+    def json_point(obj, memo=None):
         logger.debug("shapely Point")
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
@@ -840,7 +981,7 @@ if SHAPELY_INSTALLED:
 
 
     @to_serializable.register(shapely.geometry.Polygon)
-    def json_polygon(obj):
+    def json_polygon(obj, memo=None):
         logger.debug("shapely Polygon")
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
