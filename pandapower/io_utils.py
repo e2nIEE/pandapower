@@ -459,12 +459,6 @@ class FromSerializableRegistry():
             self.underlying_objects.extend([((idx, col), addr)
                                             for idx, addr in get_idx_addr_series(df[col])])
             df[col] = [self.pp_hook(obj) if isinstance(obj, dict) else obj for obj in df[col]]
-            # df[col] = df[col].apply(lambda obj: self.pp_hook(obj) if isinstance(obj, dict) else obj)
-        # recreate jsoned objects
-        # for col in ('object', 'controller'):  # "controller" for backwards compatibility
-        #     if col in df.columns:
-        #         df[col] = [self.pp_hook(d) for d in df[col]]
-        #         # df[col] = df[col].apply(self.pp_hook, args=(self.net,), memo_pp=self.memo)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -683,14 +677,6 @@ class JSONSerializableClass(object):
 
     def __init__(self, **kwargs):
         pass
-
-    # @property
-    # def net(self):
-    #     return self._net()
-    #
-    # @net.setter
-    # def net(self, net):
-    #     self._net = weakref.ref(net)
 
     def __deepcopy__(self, memo):
         cls = self.__class__

@@ -24,6 +24,8 @@ def convert_format(net):
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
+    if isinstance(net.version, str) and version.parse(net.version) < version.parse("2.2"):
+        _add_net_to_objects(net)
     if isinstance(net.version, float) and net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
@@ -305,3 +307,15 @@ def _convert_objects(net):
             _update_object_attributes(obj)
             if not hasattr(obj, 'net'):
                 obj.__init__(net, overwrite=True, **obj.__dict__)
+
+
+def _add_net_to_objects(net):
+    """
+    In older versions, the "net" reference in controllers was set specifically without reference. In
+    the JSON object, it was just denoted as "net" (i.e. ctrl.net = "net"). The reference to the
+    network has to be reset.
+    """
+    if "controller" in net.keys():
+        for obj in net["controller"].object.values:
+            if hasattr(obj, 'net') and obj.net == "net":
+                obj.__setattr__("net", net)
