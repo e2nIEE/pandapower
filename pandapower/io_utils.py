@@ -881,7 +881,7 @@ if GEOPANDAS_INSTALLED:
     @to_serializable.register(geopandas.GeoDataFrame)
     def json_geodataframe(obj, memo=None):
         logger.debug('GeoDataFrame')
-        d = with_signature(obj, obj.to_json(default_handler=partial(to_serializable, memo=memo)))
+        d = with_signature(obj, obj.to_json())
         d.update({'dtype': obj.dtypes.astype('str').to_dict(),
                   'crs': obj.crs, 'columns': obj.columns})
         return d
