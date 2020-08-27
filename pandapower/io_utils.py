@@ -22,6 +22,8 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
+from pandas.testing import assert_series_equal, assert_frame_equal
+
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandas.testing import assert_series_equal, assert_frame_equal
@@ -576,32 +578,36 @@ class PPJSONDecoder(json.JSONDecoder):
         return obj
 
     def pp_hook(self, d, registry_class=FromSerializableRegistry):
-        if '_module' in d and '_class' in d:
-            if "_object" in d:
-                obj = d.pop('_object')
-            elif "_state" in d:
-                obj = d['_state']
-                if d['has_net']:
-                    obj['net'] = 'net'
-                if '_init' in obj:
-                    del obj['_init']
-                return obj  # backwards compatibility
+        try:
+            if '_module' in d and '_class' in d:
+                if "_object" in d:
+                    obj = d.pop('_object')
+                elif "_state" in d:
+                    obj = d['_state']
+                    if d['has_net']:
+                        obj['net'] = 'net'
+                    if '_init' in obj:
+                        del obj['_init']
+                    return obj  # backwards compatibility
+                else:
+                    # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+                    obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+                fs = registry_class(obj, d, self.pp_hook, self.memo_pp, self.addresses_to_fill)
+                fs.class_name = d.pop('_class', '')
+                fs.module_name = d.pop('_module', '')
+                obj = fs.from_serializable()
+                if len(fs.underlying_objects) > 0:
+                    print(fs.underlying_objects)
+                if "_address" in d:
+                    self.memo_pp[str(d["_address"])] = obj
+                for key, addr in fs.underlying_objects:
+                    self.addresses_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
+                return obj
             else:
-                # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-                obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, self.pp_hook, self.memo_pp, self.addresses_to_fill)
-            fs.class_name = d.pop('_class', '')
-            fs.module_name = d.pop('_module', '')
-            obj = fs.from_serializable()
-            if len(fs.underlying_objects) > 0:
-                print(fs.underlying_objects)
-            if "_address" in d:
-                self.memo_pp[str(d["_address"])] = obj
-            for key, addr in fs.underlying_objects:
-                self.addresses_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
-            return obj
-        else:
-            add_obj_key_addr_dict(d, self.addresses_to_fill)
+                add_obj_key_addr_dict(d, self.addresses_to_fill)
+                return d
+        except TypeError:
+            logger.debug('Loading your grid raised a TypeError. %s raised this exception' % d)
             return d
 
     def from_json_list(self, s_and_end, scan_once, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
@@ -633,28 +639,6 @@ def add_obj_key_addr_list(l, addresses_to_fill):
         for i, val in enumerate(l):
             if check_object_at_address(val):
                 addresses_to_fill[val["_object_with_address"]].append((l, list.__setitem__, i))
-
-
-# def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
-#     if '_module' in d and '_class' in d:
-#         if "_object" in d:
-#             obj = d.pop('_object')
-#         elif "_state" in d:
-#             obj = d['_state']
-#             if d['has_net']:
-#                 obj['net'] = 'net'
-#             if '_init' in obj:
-#                 del obj['_init']
-#             return obj  # backwards compatibility
-#         else:
-#             # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-#             obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-#         fs = registry_class(obj, d, net, pp_hook)
-#         fs.class_name = d.pop('_class', '')
-#         fs.module_name = d.pop('_module', '')
-#         return fs.from_serializable()
-#     else:
-#         return d
 
 
 def encrypt_string(s, key, compress=True):

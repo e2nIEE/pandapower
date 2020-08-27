@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 import pandapower as pp
+import pandapower.networks as nw
+import copy
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
@@ -98,6 +100,15 @@ def test_single_bus_network():
 
     pp.rundcpp(net)
     assert net.converged
+
+
+def test_missing_gen():
+    net = nw.case4gs()
+    pp.rundcpp(net)
+    res_gen = copy.deepcopy(net.res_gen.values)
+    net.pop("res_gen")
+    pp.rundcpp(net)
+    assert np.allclose(net.res_gen.values, res_gen, equal_nan=True)
 
 
 if __name__ == "__main__":
