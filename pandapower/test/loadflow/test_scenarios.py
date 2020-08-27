@@ -507,5 +507,33 @@ def test_transformer_with_two_open_switches():
     assert net.res_trafo.vm_lv_pu.at[t] != net.res_bus.vm_pu.at[b2]
 
 
+def test_motor():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 0.4)
+    b2 = pp.create_bus(net, 0.4)
+    pp.create_line(net, b1, b2, length_km=0.1, std_type="NAYY 4x50 SE")
+    pp.create_ext_grid(net, b1)
+    p_mech = 0.1
+    cos_phi = 0.98
+    efficiency = 95
+    pp.create_motor(net, b2, pn_mech_mw=0.1, cos_phi=cos_phi,
+                    efficiency_percent=efficiency)
+
+    pp.runpp(net)
+    p = net.res_motor.p_mw.iloc[0]
+    q = net.res_motor.q_mvar.iloc[0]
+    s = np.sqrt(p**2+q**2)
+    assert p == p_mech / efficiency * 100
+    assert p/s == cos_phi
+    res_bus_motor = net.res_bus.copy()
+
+    pp.create_load(net, b2, p_mw=net.res_motor.p_mw.values[0],
+                   q_mvar=net.res_motor.q_mvar.values[0])
+    net.motor.in_service = False
+
+    pp.runpp(net)
+    assert net.res_bus.equals(res_bus_motor)
+
+
 if __name__ == "__main__":
     pytest.main(["-xs", __file__])
