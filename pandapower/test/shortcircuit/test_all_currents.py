@@ -155,6 +155,34 @@ def test_branch_all_currents_trafo(net_transformer):
     assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,1)] - 0.) <1e-5)
     assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,2)] - 0.648795) <1e-5)
 
+def test_against_single_sc_results_line(three_bus_permuted_index):
+    net = three_bus_permuted_index
+
+    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
+    multi_results = net.res_line_sc.copy()
+
+    for bus in net.bus.index:
+        sc.calc_single_sc(net, bus=bus)
+        line_bus_indices = [(line, bus) for line in net.line.index]
+        single_result = net.res_line_sc.i_ka.values
+        multi_result = multi_results.ikss_ka.loc[line_bus_indices].values
+        assert np.allclose(single_result, multi_result)
+
+def test_against_single_sc_results_trafo(net_transformer):
+    net = net_transformer
+    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
+    multi_results = net.res_trafo_sc.copy()
+
+    for bus in net.bus.index[net.bus.in_service]:
+        sc.calc_single_sc(net, bus=bus)
+        trafo_bus_indices = [(trafo, bus) for trafo in net.trafo.index]
+        single_result_lv = net.res_trafo_sc.i_lv_ka.values
+        multi_result_lv = multi_results.ikss_lv_ka.loc[trafo_bus_indices].values
+        assert np.allclose(single_result_lv, multi_result_lv)
+
+        single_result_hv = net.res_trafo_sc.i_hv_ka.values
+        multi_result_hv = multi_results.ikss_hv_ka.loc[trafo_bus_indices].values
+        assert np.allclose(single_result_hv, multi_result_hv)
 
 if __name__ == '__main__':
     pytest.main(["test_all_currents.py"])
