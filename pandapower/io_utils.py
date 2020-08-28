@@ -331,7 +331,7 @@ class PPJSONEncoder(json.JSONEncoder):
             # internals.
 
             if o != o:
-                text = 'NaN'
+                text = 'null'
             elif o == _inf:
                 text = 'Infinity'
             elif o == _neginf:
@@ -793,6 +793,9 @@ def json_set(obj):
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
     return d
 
+@to_serializable.register(numpy.nan)
+def json_nan(obj):
+    return None
 
 @to_serializable.register(frozenset)
 def json_frozenset(obj):
