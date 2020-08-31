@@ -1,3 +1,7 @@
+Change Log
+=============
+- [CHANGED] In estimation, the sign system of bus p,q measurement changed to consumption reference
+
 [2.3.1]- 2020-08-19
 ----------------------
 - [ADDED] Missing dependencies xlswriter, xlrd, cryptography
