@@ -269,9 +269,15 @@ def ppc_to_pm(net, ppci):
         branch["g_to"] = - row[BR_B].imag / 2.0
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
-        branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
-        branch["rate_b"] = row[RATE_B].real / sn_mva
-        branch["rate_c"] = row[RATE_C].real / sn_mva
+
+        # branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
+        # branch["rate_b"] = row[RATE_B].real / sn_mva
+        # branch["rate_c"] = row[RATE_C].real / sn_mva
+
+        branch["rate_a"] = 99999.
+        branch["rate_b"] = 99999.
+        branch["rate_c"] = 99999.
+
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
