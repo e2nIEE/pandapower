@@ -116,6 +116,8 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
 
     max_bus_id_on_pm = max_bus_id_on_ppci + 1
 
+    sn_mva = net.sn_mva
+
     pm_lookup = np.ones(max(net[element].index) + 1, dtype=int) * -1 if len(net[element].index) \
         else np.array([], dtype=int)
     for idx in net[element].index:
@@ -129,11 +131,11 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
         if pm_bus <= max_bus_id_on_pm:
             scaling = net[element].at[idx, "scaling"]
             if element == "sgen":
-                pd = -net[element].at[idx, "p_mw"] * scaling
-                qd = -net[element].at[idx, "q_mvar"] * scaling
+                pd = -net[element].at[idx, "p_mw"] * scaling / sn_mva
+                qd = -net[element].at[idx, "q_mvar"] * scaling / sn_mva
             else:
-                pd = net[element].at[idx, "p_mw"] * scaling
-                qd = net[element].at[idx, "q_mvar"] * scaling
+                pd = net[element].at[idx, "p_mw"] * scaling / sn_mva
+                qd = net[element].at[idx, "q_mvar"] * scaling / sn_mva
             in_service = net[element].at[idx, "in_service"]
 
             pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
@@ -200,6 +202,9 @@ def ppc_to_pm(net, ppci):
     shunt_idx = 1
     # PowerModels has a load model -> add loads and sgens to pm["load"]
 
+    # baseMVA for transforming power quantities to p.u. (required by P.M.)
+    sn_mva = net.sn_mva
+
     # temp dicts which hold the sum of p, q of loads + sgens
     pd_bus = dict()
     qd_bus = dict()
@@ -229,8 +234,8 @@ def ppc_to_pm(net, ppci):
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
 
-        pd = row[PD]
-        qd = row[QD]
+        pd = row[PD] / sn_mva
+        qd = row[QD] / sn_mva
 
         # pd and qd are the PQ values in the ppci, if they are equal to the sum in load data is consistent
         if idx in pd_bus:
@@ -240,13 +245,13 @@ def ppc_to_pm(net, ppci):
         pq_mismatch = not np.allclose(pd, 0.) or not np.allclose(qd, 0.)
         if pq_mismatch:
             # This will be called if ppc PQ != sum at bus.
-            logger.info("PQ mismatch. Adding another load at idx {}".format(load_idx))
+            logger.warning("PQ mismatch. Adding another load at idx {}".format(load_idx))
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
                                          "status": True, "index": load_idx}
             load_idx += 1
         # if bs or gs != 0. -> shunt element at this bus
-        bs = row[BS]
-        gs = row[GS]
+        bs = row[BS] / sn_mva
+        gs = row[GS] / sn_mva
         if not np.allclose(bs, 0.) or not np.allclose(gs, 0.):
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
                                            "status": True, "index": shunt_idx}
@@ -264,9 +269,9 @@ def ppc_to_pm(net, ppci):
         branch["g_to"] = - row[BR_B].imag / 2.0
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
-        branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-        branch["rate_b"] = row[RATE_B].real
-        branch["rate_c"] = row[RATE_C].real
+        branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
+        branch["rate_b"] = row[RATE_B].real / sn_mva
+        branch["rate_c"] = row[RATE_C].real / sn_mva
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
@@ -277,15 +282,15 @@ def ppc_to_pm(net, ppci):
 
     for idx, row in enumerate(ppci["gen"], start=1):
         gen = dict()
-        gen["pg"] = row[PG]
-        gen["qg"] = row[QG]
+        gen["pg"] = row[PG] / sn_mva
+        gen["qg"] = row[QG] / sn_mva
         gen["gen_bus"] = int(row[GEN_BUS]) + 1
         gen["vg"] = row[VG]
         gen["qmax"] = row[QMAX]
         gen["gen_status"] = int(row[GEN_STATUS])
-        gen["qmin"] = row[QMIN]
-        gen["pmin"] = row[PMIN]
-        gen["pmax"] = row[PMAX]
+        gen["qmin"] = row[QMIN] / sn_mva
+        gen["pmin"] = row[PMIN] / sn_mva
+        gen["pmax"] = row[PMAX] / sn_mva
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
@@ -300,9 +305,9 @@ def ppc_to_pm(net, ppci):
             branch["g_to"] = - row[BR_B].imag / 2.0
             branch["b_fr"] = row[BR_B].real / 2.0
             branch["b_to"] = row[BR_B].real / 2.0
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
+            branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
+            branch["rate_b"] = (row[RATE_B].real) / sn_mva
+            branch["rate_c"] = (row[RATE_C].real) / sn_mva
             branch["f_bus"] = int(row[F_BUS].real) + 1
             branch["t_bus"] = int(row[T_BUS].real) + 1
             branch["br_status"] = int(row[BR_STATUS].real)
