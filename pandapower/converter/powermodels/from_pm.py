@@ -145,7 +145,7 @@ def _convert_pm_units_to_pp_units(result_pm, sn_mva):
             sol["bus"]["i"]["va"] = rad2degree(x)
 
         for i, gen in sol["gen"].items():
-            for field in ["pg", "qg"]
+            for field in ["pg", "qg"]:
                 sol["gen"]["i"][field] = pu2mva(gen[field])
 
         for element in ["branch", "dcline"]:
