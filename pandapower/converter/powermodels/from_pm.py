@@ -127,7 +127,7 @@ def _deep_copy_pm_results(result_pm):
     """Deep copy pm solution, to keep the original output of PowerModels."""
     
     pm = {key: (val if key != "solution" else copy.deepcopy(val))
-          for key, val in result_pm.items}
+          for key, val in result_pm.items()}
 
     return pm
 
@@ -142,16 +142,17 @@ def _convert_pm_units_to_pp_units(result_pm, sn_mva):
     # verifying if the solution is there
     if "bus" in sol:
         for i, bus in sol["bus"].items():
-            sol["bus"]["i"]["va"] = rad2degree(x)
+            sol["bus"][i]["va"] = rad2degree(bus["va"])
 
         for i, gen in sol["gen"].items():
             for field in ["pg", "qg"]:
-                sol["gen"]["i"][field] = pu2mva(gen[field])
+                sol["gen"][i][field] = pu2mva(gen[field])
 
         for element in ["branch", "dcline"]:
-            for i, ele in sol[element].items():
-                for field in ["pf", "pt", "qf", "qt"]:
-                    sol[element][i][field] = pu2mva(ele[field])
+            if element in sol:
+                for i, ele in sol[element].items():
+                    for field in ["pf", "pt", "qf", "qt"]:
+                        sol[element][i][field] = pu2mva(ele[field])
 
     result_pm["solution"] = sol
 
