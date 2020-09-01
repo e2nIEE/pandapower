@@ -1,6 +1,12 @@
 Change Log
 =============
-- [CHANGED] In estimation, the sign system of bus p,q measurement changed to consumption reference
+
+[2.4.0]- 2020-09-01
+----------------------
+- [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893
+- [ADDED] new element "net.motor" to model asynchronous machines #244
+- [ADDED] possibility to calculate all branch currents in short-circuit calculations #862
+- [ADDED] more flexibility in the create_generic_geodata function
 
 [2.3.1]- 2020-08-19
 ----------------------
