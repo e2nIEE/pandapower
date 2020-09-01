@@ -332,7 +332,7 @@ class PPJSONEncoder(json.JSONEncoder):
             # internals.
 
             if o != o:
-                text = 'null'
+                text = 'NaN'
             elif o == _inf:
                 text = 'Infinity'
             elif o == _neginf:
