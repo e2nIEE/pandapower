@@ -39,7 +39,7 @@ def test_convert_format(version):
 
 def test_convert_format_pq_bus_meas():
     try:
-        net = pp.from_json(folder+"\\example_2.3.1", convert=False)
+        net = pp.from_json(folder+"\\example_2.3.1.json", convert=False)
     except:
         raise UserWarning("Can not load network for pq bus meas test")
     net = pp.convert_format(net)
