@@ -59,6 +59,10 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+OBJ_ADDR = "_object_with_address"
+WEAKREF_ADDR = "_weakref_to_address"
+
+
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
     geo = pd.DataFrame(columns=columns, index=value.index)
@@ -367,29 +371,44 @@ class PPJSONEncoder(json.JSONEncoder):
 
 
 def check_object_at_address(o):
-    return isinstance(o, dict) and "_object_with_address" in o.keys()
+    return isinstance(o, dict) and OBJ_ADDR in o.keys()
+
+
+def check_weakref_at_address(o):
+    return isinstance(o, dict) and WEAKREF_ADDR in o.keys()
 
 
 check_obj_vect = numpy.vectorize(check_object_at_address)
+check_weakref_vect = numpy.vectorize(check_weakref_at_address)
 
 
-def get_idx_addr_series(s):
-    return [(idx, oa["_object_with_address"]) for idx, oa in s[check_obj_vect(s.values)].items()]
+def get_obj_idx_addr_series(s):
+    return [(idx, oa[OBJ_ADDR]) for idx, oa in s[check_obj_vect(s.values)].items()]
 
 
-def get_idx_addr_iterator(iterator):
-    return [(k, v["_object_with_address"]) for k, v in iterator if check_object_at_address(v)]
+def get_weakref_idx_addr_series(s):
+    return [(idx, oa[WEAKREF_ADDR]) for idx, oa in s[check_obj_vect(s.values)].items()]
 
 
-def get_idx_addr_array(a):
+def get_obj_idx_addr_iterator(iterator):
+    return [(k, v[OBJ_ADDR]) for k, v in iterator if check_object_at_address(v)]
+
+
+def get_weakref_idx_addr_iterator(iterator):
+    return [(k, v[WEAKREF_ADDR]) for k, v in iterator if check_weakref_at_address(v)]
+
+
+def get_idx_addr_array(a, ref_type=OBJ_ADDR):
     idx_addr = list()
 
     if a.shape == (0,):
         return idx_addr
 
+    check_func = check_weakref_vect if "weakref" in ref_type else check_obj_vect
+
     if len(a.shape) == 1:
-        has_obj = check_obj_vect(a)
-        return list(zip(numpy.where(has_obj)[0], [v["_object_with_address"] for v in a[has_obj]]))
+        has_obj = check_func(a)
+        return list(zip(numpy.where(has_obj)[0], [v[ref_type] for v in a[has_obj]]))
 
     shapelist = [list(range(dim)) for dim in a.shape[1:]]
     all_idx_combinations = [[]]
@@ -397,9 +416,9 @@ def get_idx_addr_array(a):
         all_idx_combinations = [i + [y] for y in x for i in all_idx_combinations]
     for idx_comb in all_idx_combinations:
         current_slice = tuple([slice(None, None, None)] + idx_comb)
-        has_obj = check_obj_vect(a[current_slice])
+        has_obj = check_func(a[current_slice])
         current_idx = [tuple([ho] + idx_comb) for ho in numpy.where(has_obj)[0]]
-        idx_addr.extend([(ho, a[ho]["_object_with_address"]) for ho in current_idx])
+        idx_addr.extend([(ho, a[ho][ref_type]) for ho in current_idx])
 
 
 class FromSerializable:
@@ -425,24 +444,26 @@ class FromSerializable:
         return decorator
 
 
-class FromSerializableRegistry():
+class FromSerializableRegistry:
     from_serializable = FromSerializable()
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, pp_hook_funct, memo_pp, addresses_to_fill):
+    def __init__(self, obj, d, pp_hook_funct, memo_pp, addresses_to_fill, weakrefs_to_fill):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
         self.memo_pp = memo_pp
         self.addresses_to_fill = addresses_to_fill
+        self.weakrefs_to_fill = weakrefs_to_fill
         self.underlying_objects = list()
+        self.weakrefs = list()
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
         s = pd.read_json(self.obj, precise_float=True, **self.d)
         if s.dtype == "O" and len(s) > 0:
-            self.underlying_objects = get_idx_addr_series(s)
+            self.underlying_objects = get_obj_idx_addr_series(s)
             s = s.apply(lambda obj: self.pp_hook(obj) if isinstance(obj, dict) else obj)
         return s
 
@@ -457,7 +478,7 @@ class FromSerializableRegistry():
             if dt != "O" or len(df[col]) == 0:
                 continue
             self.underlying_objects.extend([((idx, col), addr)
-                                            for idx, addr in get_idx_addr_series(df[col])])
+                                            for idx, addr in get_obj_idx_addr_series(df[col])])
             df[col] = [self.pp_hook(obj) if isinstance(obj, dict) else obj for obj in df[col]]
         return df
 
@@ -469,7 +490,8 @@ class FromSerializableRegistry():
         else:
             net = create_empty_network()
             net.update(self.obj)
-        self.underlying_objects = get_idx_addr_iterator(net.items())
+        self.underlying_objects = get_obj_idx_addr_iterator(net.items())
+        self.weakrefs = get_weakref_idx_addr_iterator(net.items())
         return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
@@ -494,21 +516,27 @@ class FromSerializableRegistry():
         class_ = getattr(module, self.class_name)
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
-                self.obj = json.loads(self.obj, cls=PPJSONDecoder, memo_pp=self.memo_pp,
-                                      addresses_to_fill=self.addresses_to_fill, set_addresses=False)
+                self.obj = json.loads(
+                    self.obj, cls=PPJSONDecoder, memo_pp=self.memo_pp,
+                    addresses_to_fill=self.addresses_to_fill,
+                    weakrefs_to_fill=self.weakrefs_to_fill, set_addresses=False)
                 # backwards compatibility
             js_obj = class_.from_dict(self.obj)
-            self.underlying_objects = get_idx_addr_iterator(js_obj.__dict__.items())
+            self.underlying_objects = get_obj_idx_addr_iterator(js_obj.__dict__.items())
+            self.weakrefs = get_weakref_idx_addr_iterator(js_obj.__dict__.items())
         else:
             # for non-pp objects, e.g. tuple
             js_obj = class_(self.obj, **self.d)
             typ = type(js_obj)
             if typ in [list, tuple]:
-                self.underlying_objects = get_idx_addr_iterator(enumerate(js_obj))
+                self.underlying_objects = get_obj_idx_addr_iterator(enumerate(js_obj))
+                self.weakrefs = get_weakref_idx_addr_iterator(enumerate(js_obj))
             elif typ == dict:
-                self.underlying_objects = get_idx_addr_iterator(js_obj.items())
+                self.underlying_objects = get_obj_idx_addr_iterator(js_obj.items())
+                self.weakrefs = get_weakref_idx_addr_iterator(js_obj.items())
             elif typ == numpy.ndarray:
                 self.underlying_objects = get_idx_addr_array(js_obj)
+                self.weakrefs = get_idx_addr_array(js_obj, ref_type=WEAKREF_ADDR)
             else:
                 logger.warning("The object of type %s cannot be checked for underlying objects!"
                                % type(js_obj))
@@ -531,7 +559,9 @@ class FromSerializableRegistry():
                 if dt != "O":
                     continue
                 self.underlying_objects.extend([((idx, col), addr)
-                                                for idx, addr in get_idx_addr_series(df[col])])
+                                                for idx, addr in get_obj_idx_addr_series(df[col])])
+                self.weakrefs.extend([((idx, col), addr)
+                                      for idx, addr in get_weakref_idx_addr_series(df[col])])
                 df[col] = df[col].apply(self.pp_hook)
             return df
 
@@ -547,6 +577,7 @@ class PPJSONDecoder(json.JSONDecoder):
         # net = create_empty_network()
         self.memo_pp = kwargs.pop("memo_pp", dict())
         self.addresses_to_fill = kwargs.pop("addresses_to_fill", defaultdict(list))
+        self.weakrefs_to_fill = kwargs.pop("weakrefs_to_fill", defaultdict(list))
         self.set_addresses = kwargs.pop("set_addresses", True)
         self.currently_to_fill = list()
         super_kwargs = {"object_hook": self.pp_hook}
@@ -562,13 +593,16 @@ class PPJSONDecoder(json.JSONDecoder):
         obj = super().decode(s, _w)
         typ = type(obj)
         if typ == list:
-            add_obj_key_addr_list(obj, self.addresses_to_fill)
+            add_obj_weakref_key_addr_list(obj, self.addresses_to_fill, self.weakrefs_to_fill)
         elif typ == dict:
-            add_obj_key_addr_dict(obj, self.addresses_to_fill)
+            add_obj_weakref_key_addr_dict(obj, self.addresses_to_fill, self.weakrefs_to_fill)
         if self.set_addresses:
             for addr, fill_list in self.addresses_to_fill.items():
                 for obj_to_fill, setfunc, key in fill_list:
                     setfunc(obj_to_fill, key, self.memo_pp[addr])
+            for addr, fill_list in self.weakrefs_to_fill.items():
+                for obj_to_fill, setfunc, key in fill_list:
+                    setfunc(obj_to_fill, key, weakref.ref(self.memo_pp[addr]))
         return obj
 
     def pp_hook(self, d, registry_class=FromSerializableRegistry):
@@ -586,7 +620,8 @@ class PPJSONDecoder(json.JSONDecoder):
                 else:
                     # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                     obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-                fs = registry_class(obj, d, self.pp_hook, self.memo_pp, self.addresses_to_fill)
+                fs = registry_class(obj, d, self.pp_hook, self.memo_pp, self.addresses_to_fill,
+                                    self.weakrefs_to_fill)
                 fs.class_name = d.pop('_class', '')
                 fs.module_name = d.pop('_module', '')
                 obj = fs.from_serializable()
@@ -596,9 +631,11 @@ class PPJSONDecoder(json.JSONDecoder):
                     self.memo_pp[str(d["_address"])] = obj
                 for key, addr in fs.underlying_objects:
                     self.addresses_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
+                for key, addr in fs.weakrefs:
+                    self.weakrefs_to_fill[str(addr)].append((obj, get_setter_method(obj), key))
                 return obj
             else:
-                add_obj_key_addr_dict(d, self.addresses_to_fill)
+                add_obj_weakref_key_addr_dict(d, self.addresses_to_fill, self.weakrefs_to_fill)
                 return d
         except TypeError:
             logger.debug('Loading your grid raised a TypeError. %s raised this exception' % d)
@@ -607,7 +644,7 @@ class PPJSONDecoder(json.JSONDecoder):
     def from_json_list(self, s_and_end, scan_once, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
         value, end = JSONArray(s_and_end=s_and_end, scan_once=scan_once, _w=_w, _ws=_ws)
         if isinstance(value, list):
-            add_obj_key_addr_list(value, self.addresses_to_fill)
+            add_obj_weakref_key_addr_list(value, self.addresses_to_fill, self.weakrefs_to_fill)
         return value, end
 
 
@@ -621,18 +658,21 @@ def get_setter_method(obj):
     return setattr
 
 
-def add_obj_key_addr_dict(d, addresses_to_fill):
+def add_obj_weakref_key_addr_dict(d, addresses_to_fill, weakrefs_to_fill):
     for k, v in d.items():
         if check_object_at_address(v):
-            addresses_to_fill[v["_object_with_address"]].append(
-                (d, dict.__setitem__, k))
+            addresses_to_fill[v[OBJ_ADDR]].append((d, dict.__setitem__, k))
+        elif check_weakref_at_address(v):
+            weakrefs_to_fill[v[WEAKREF_ADDR]].append((d, dict.__setitem__, k))
 
 
-def add_obj_key_addr_list(l, addresses_to_fill):
+def add_obj_weakref_key_addr_list(l, addresses_to_fill, weakrefs_to_fill):
     if isinstance(l, list):
         for i, val in enumerate(l):
             if check_object_at_address(val):
-                addresses_to_fill[val["_object_with_address"]].append((l, list.__setitem__, i))
+                addresses_to_fill[val[OBJ_ADDR]].append((l, list.__setitem__, i))
+            elif check_weakref_at_address(val):
+                weakrefs_to_fill[val[WEAKREF_ADDR]].append((l, list.__setitem__, i))
 
 
 def encrypt_string(s, key, compress=True):
@@ -673,10 +713,19 @@ def decrypt_string(s, key):
 
 class JSONSerializableClass(object):
     # json_excludes = ["net", "_net", "self", "__class__"]
-    json_excludes = ["self", "__class__"]
+    json_excludes = ["self", "__class__", "_net"]
+    json_to_addr = ["net"]
 
     def __init__(self, **kwargs):
         pass
+
+    @property
+    def net(self):
+        return self._net()
+
+    @net.setter
+    def net(self, net):
+        self._net = weakref.ref(net)
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -706,9 +755,9 @@ class JSONSerializableClass(object):
             return value
 
         d = {key: consider_callable(val) for key, val in self.__dict__.items()
-             if key not in self.json_excludes}
-        # if "net" in signature(self.__init__).parameters.keys():
-        #     d.update({'net': 'net'})
+             if key not in self.json_excludes and key not in self.json_to_addr}
+        if hasattr(self, "net"):
+            d.update({'net': address_string(self.net)})
         return d
 
     def add_to_net(self, element, index, column="object", overwrite=False):
@@ -814,7 +863,11 @@ def with_signature(obj, val, obj_module=None, obj_class=None, with_address=False
 
 
 def address_string(obj):
-    return {'_object_with_address': str(id(obj))}
+    return {OBJ_ADDR: str(id(obj))}
+
+
+def weakref_string(obj):
+    return {WEAKREF_ADDR: str(id(obj))}
 
 
 @singledispatch
@@ -949,6 +1002,14 @@ def controller_to_serializable(obj, memo=None):
         memo.append(obj)
     d = with_signature(obj, obj.to_json(memo), with_address=True)
     return d
+
+
+@to_serializable.register(weakref.ReferenceType)
+def json_weakref(obj, memo=None):
+    logger.debug('weakref')
+    # d = with_signature(obj, json.dumps(weakref_string(obj())), obj_module="weakref",
+    #                    obj_class="ReferenceType")
+    return weakref_string(obj)
 
 
 def mkdirs_if_not_existent(dir_to_create):

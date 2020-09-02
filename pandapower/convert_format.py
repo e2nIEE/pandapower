@@ -317,5 +317,5 @@ def _add_net_to_objects(net):
     """
     if "controller" in net.keys():
         for obj in net["controller"].object.values:
-            if hasattr(obj, 'net') and obj.net == "net":
+            if "net" in obj.__dict__ and obj.__dict__["net"] == "net":
                 obj.__setattr__("net", net)
