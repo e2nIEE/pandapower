@@ -378,8 +378,13 @@ def check_weakref_at_address(o):
     return isinstance(o, dict) and WEAKREF_ADDR in o.keys()
 
 
+def check_dict(o):
+    return isinstance(o, dict)
+
+
 check_obj_vect = numpy.vectorize(check_object_at_address)
 check_weakref_vect = numpy.vectorize(check_weakref_at_address)
+check_dict_vect = numpy.vectorize(check_dict)
 
 
 def get_obj_idx_addr_series(s):
@@ -421,6 +426,17 @@ def get_idx_addr_array(a, ref_type=OBJ_ADDR):
         idx_addr.extend([(ho, a[ho][ref_type]) for ho in current_idx])
 
 
+def change_objects_series(s, hook):
+    if s.dtype == "O" and len(s) > 0:
+        if numpy.any(check_dict_vect(s)):
+            underlying_objects = get_obj_idx_addr_series(s)
+            weakrefs = get_weakref_idx_addr_series(s)
+            s = s.apply(lambda obj: hook(obj) if isinstance(obj, dict) else obj)
+            s = s.astype("O")
+            return s, underlying_objects, weakrefs
+    return s, [], []
+
+
 class FromSerializable:
     def __init__(self):
         self.class_name = 'class_name'
@@ -460,30 +476,26 @@ class FromSerializableRegistry:
         self.weakrefs = list()
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
-    def Series(self):
+    def series(self):
         s = pd.read_json(self.obj, precise_float=True, **self.d)
-        if s.dtype == "O" and len(s) > 0:
-            self.underlying_objects = get_obj_idx_addr_series(s)
-            s = s.apply(lambda obj: self.pp_hook(obj) if isinstance(obj, dict) else obj)
+        s, self.underlying_objects, self.weakrefs = change_objects_series(s, self.pp_hook)
         return s
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
-    def DataFrame(self):
+    def dataframe(self):
         df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
         try:
             df.set_index(df.index.astype(numpy.int64), inplace=True)
         except (ValueError, TypeError, AttributeError):
             logger.debug("failed setting int64 index")
-        for col, dt in  df.dtypes.items():
-            if dt != "O" or len(df[col]) == 0:
-                continue
-            self.underlying_objects.extend([((idx, col), addr)
-                                            for idx, addr in get_obj_idx_addr_series(df[col])])
-            df[col] = [self.pp_hook(obj) if isinstance(obj, dict) else obj for obj in df[col]]
+        for col, dt in df.dtypes.items():
+            df[col], uo, wr = change_objects_series(df[col], self.pp_hook)
+            self.underlying_objects.extend(uo)
+            self.weakrefs.extend(wr)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
-    def pandapowerNet(self):
+    def pandapower_net(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
             net = from_json_string(self.obj)
@@ -544,7 +556,7 @@ class FromSerializableRegistry:
 
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame')
-        def GeoDataFrame(self):
+        def geodataframe(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
                                                       crs=self.d['crs']).astype(self.d['dtype'])
             if "id" in df:
@@ -556,13 +568,9 @@ class FromSerializableRegistry:
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
             for col, dt in df.dtypes.items():
-                if dt != "O":
-                    continue
-                self.underlying_objects.extend([((idx, col), addr)
-                                                for idx, addr in get_obj_idx_addr_series(df[col])])
-                self.weakrefs.extend([((idx, col), addr)
-                                      for idx, addr in get_weakref_idx_addr_series(df[col])])
-                df[col] = df[col].apply(self.pp_hook)
+                df[col], uo, wr = change_objects_series(df[col], self.pp_hook)
+                self.underlying_objects.extend(uo)
+                self.weakrefs.extend(wr)
             return df
 
     if SHAPELY_INSTALLED:
