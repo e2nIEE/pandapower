@@ -465,7 +465,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
-    elements = ["load", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
+    elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
         , "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
@@ -577,7 +577,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method):
+                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method, return_all_currents):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -593,7 +593,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "ip": ip,
         "ith": ith,
         "branch_results": branch_results,
-        "kappa_method": kappa_method
+        "kappa_method": kappa_method,
+        "return_all_currents": return_all_currents
     }
     _add_options(net, options)
 

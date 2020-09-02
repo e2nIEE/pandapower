@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
                    include_dclines=True, include_trafos=True, include_trafo3ws=True,
                    nogobuses=None, notravbuses=None, multi=True,
-                   calc_branch_impedances=False, branch_impedance_unit="ohm", library="networkx"):
+                   calc_branch_impedances=False, branch_impedance_unit="ohm",
+                   library="networkx", include_out_of_service=False):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -91,6 +92,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             calc_branch_impedances=True. If it is set to "ohm", the parameters 'r_ohm',
             'x_ohm' and 'z_ohm' are added to each branch. If it is set to "pu", the
             parameters are 'r_pu', 'x_pu' and 'z_pu'.
+            
+        **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
 
      OUTPUT:
         **mg** - Returns the required NetworkX graph
@@ -267,8 +270,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
                     del mg._adj[b][i]  # networkx versions 2.0
 
     # remove out of service buses
-    for b in net.bus.index[~net.bus.in_service.values]:
-        mg.remove_node(b)
+    if not include_out_of_service:
+        for b in net.bus.index[~net.bus.in_service.values]:
+            mg.remove_node(b)
 
     return mg
 
@@ -297,8 +301,8 @@ def get_edge_table(net, table_name, include_edges):
     return table
 
 
-def add_edges(mg, indices, parameter, in_service, net, element, calc_branch_impedances,
-              branch_impedance_unit):
+def add_edges(mg, indices, parameter, in_service, net, element, calc_branch_impedances=False,
+              branch_impedance_unit="ohm"):
     # this function is optimized for maximum perfomance, because the loops are called for every
     # branch element. That is why the loop over the numpy array is copied for each use case instead
     # of making a more generalized function or checking the different use cases inside the loop
@@ -324,7 +328,7 @@ def get_baseR(net, ppc, buses):
     return np.square(base_kv) / net.sn_mva
 
 
-def init_par(tab, calc_branch_impedances):
+def init_par(tab, calc_branch_impedances=False):
     n = tab.shape[0]
     indices = np.zeros((n, 3), dtype=np.int)
     indices[:, INDEX] = tab.index
