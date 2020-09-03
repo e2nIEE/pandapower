@@ -17,24 +17,25 @@ def convert_format(net):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
+    net_version = version.parse(str(net.version))
+    if net_version >= version.parse(__version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
-    if isinstance(net.version, str) and version.parse(net.version) < version.parse("2.5.0"):
+    if net_version < version.parse("2.5.0"):
         _add_net_to_objects(net)
-    if version.parse(str(net.version)) < version.parse("2.4.0"):
+    if net_version < version.parse("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net)
-    if isinstance(net.version, float) and net.version < 2:
+    if net_version < version.parse("2.0.0"):
         _convert_to_generation_system(net)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net)
         reset_results(net)
-    if isinstance(net.version, float) and net.version < 1.6:
+    if net_version < version.parse("1.6.0"):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net)
     net.version = __version__
