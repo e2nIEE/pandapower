@@ -13,7 +13,8 @@ import types
 import weakref
 from collections import defaultdict
 from functools import partial
-from inspect import isclass, signature, _findclass
+from inspect import isclass, _findclass
+from json.decoder import WHITESPACE, WHITESPACE_STR, JSONArray
 from warnings import warn
 
 import networkx
@@ -22,12 +23,9 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
-from pandas.testing import assert_series_equal, assert_frame_equal
-
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandas.testing import assert_series_equal, assert_frame_equal
-from json.decoder import WHITESPACE, WHITESPACE_STR, JSONArray
 
 try:
     from functools import singledispatch
@@ -488,7 +486,7 @@ class FromSerializableRegistry:
             df.set_index(df.index.astype(numpy.int64), inplace=True)
         except (ValueError, TypeError, AttributeError):
             logger.debug("failed setting int64 index")
-        for col, dt in df.dtypes.items():
+        for col in df.columns:
             df[col], uo, wr = change_objects_series(df[col], self.pp_hook)
             self.underlying_objects.extend(uo)
             self.weakrefs.extend(wr)
@@ -567,7 +565,7 @@ class FromSerializableRegistry:
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
-            for col, dt in df.dtypes.items():
+            for col in df.columns:
                 df[col], uo, wr = change_objects_series(df[col], self.pp_hook)
                 self.underlying_objects.extend(uo)
                 self.weakrefs.extend(wr)
@@ -581,8 +579,6 @@ class FromSerializableRegistry:
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        # net = pandapowerNet.__new__(pandapowerNet)
-        # net = create_empty_network()
         self.memo_pp = kwargs.pop("memo_pp", dict())
         self.addresses_to_fill = kwargs.pop("addresses_to_fill", defaultdict(list))
         self.weakrefs_to_fill = kwargs.pop("weakrefs_to_fill", defaultdict(list))
@@ -594,10 +590,6 @@ class PPJSONDecoder(json.JSONDecoder):
         self.parse_array = self.from_json_list
 
     def decode(self, s, _w=WHITESPACE.match):
-        """Return the Python representation of ``s`` (a ``str`` instance
-        containing a JSON document).
-
-        """
         obj = super().decode(s, _w)
         typ = type(obj)
         if typ == list:
