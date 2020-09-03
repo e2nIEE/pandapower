@@ -37,6 +37,7 @@ def _calc_ikss_1ph(net, ppc, ppc_0):
                   (ppc_0["bus"][:, R_EQUIV] + ppc_0["bus"][:, X_EQUIV] * 1j))
     if fault == "1ph":
         ppc_0["bus"][:, IKSS1] = c / z_equiv / ppc_0["bus"][:, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
+        ppc["bus"][:, IKSS1] = c / z_equiv / ppc_0["bus"][:, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
         _current_source_current(net, ppc)
 
 
