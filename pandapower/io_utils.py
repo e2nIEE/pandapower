@@ -308,6 +308,25 @@ def isinstance_partial(obj, cls):
 
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, obj_memo=None, **kwargs):
+        """
+        Special JSON Encoder for pandapower. Differences from normal encoding:
+          - the default function is overwritten so that a to_serializable function can be defined\
+            for different classes
+          - the isinstance function includes pandapower networks and tuples, because they shall be\
+            saved in a special format (not normal list or dict) if possible
+          - an onj_memo dict collects objects that have already been serialized to avoid duplicated\
+            serialization and deserialization of two distinct objects of which one is just a\
+            reference
+
+        :param isinstance_func: function to be handed to the encoder (to identify lists/ dicts)
+        :type isinstance_func: function
+        :param obj_memo: object memory dictionary (can be filled if an upper level encoder has\
+                         already collected objects and wants to hand them over to a lower level\
+                         encoder)
+        :type obj_memo: dict
+        :param kwargs: keyword arguments handed to json.JSONEncoder
+        :type kwargs: dict
+        """
         super(PPJSONEncoder, self).__init__(**kwargs)
         self.isinstance_func = isinstance_func
         self.obj_memo = list() if obj_memo is None else obj_memo
@@ -464,6 +483,24 @@ class FromSerializableRegistry:
     module_name = ''
 
     def __init__(self, obj, d, pp_hook_funct, memo_pp, addresses_to_fill, weakrefs_to_fill):
+        """
+        Class containing all registered function for deserialization.
+
+        :param obj: object to be deserialized (usually string)
+        :type obj: str
+        :param d: dictionary with additional information
+        :type d: dict
+        :param pp_hook_funct: the object hook to be handed to underlying decoders
+        :type pp_hook_funct: function
+        :param memo_pp: object memory dict to be filled with the object if necessary
+        :type memo_pp: dict
+        :param addresses_to_fill: dict mapping addresses to setter functions where to insert the\
+                                  objects restored for these addresses (saved in memo_pp)
+        :type addresses_to_fill: defaultdict
+        :param weakrefs_to_fill: dict mapping addresses to setter functions where to insert the\
+                                 weakrefs of objects restored for these addresses (saved in memo_pp)
+        :type weakrefs_to_fill: defaultdict
+        """
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
