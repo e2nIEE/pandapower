@@ -24,6 +24,8 @@ def convert_format(net):
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
+    if version.parse(str(net.version)) < version.parse("2.4.0"):
+        _convert_bus_pq_meas_to_load_reference(net)
     if isinstance(net.version, float) and net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
@@ -35,6 +37,12 @@ def convert_format(net):
     _convert_objects(net)
     net.version = __version__
     return net
+
+
+def _convert_bus_pq_meas_to_load_reference(net):
+    bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"])&\
+        (net.measurement.element_type=="bus")
+    net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
 def _convert_to_generation_system(net):
