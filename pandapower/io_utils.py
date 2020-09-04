@@ -590,7 +590,7 @@ class FromSerializableRegistry:
     def rest(self):
         module = importlib.import_module(self.module_name)
         class_ = getattr(module, self.class_name)
-        return self.extract_object(module, class_)
+        return self.extract_object(class_)
 
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame')
