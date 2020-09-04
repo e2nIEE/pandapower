@@ -3,3 +3,4 @@ exclude_paths:
   - 'pandapower/test/**'
   - 'doc/**'
   - 'tutorials/**'
+  - '**.json'
