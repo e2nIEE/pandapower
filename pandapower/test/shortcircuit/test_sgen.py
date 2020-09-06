@@ -53,11 +53,9 @@ def three_bus_example():
 
 @pytest.fixture
 def big_sgen_three_bus_example():
-
     # ext_grid-bus1--line0--bus2--line1--bus3
     #                        |
     #                       sgen0
-
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
@@ -117,6 +115,8 @@ def test_min_3ph_branch_results_big_sgen(big_sgen_three_bus_example):
 
 
 def test_max_1ph_branch_small_sgen(three_bus_example):
+    # This test just check coherence between branch ikss_ka results and bus ikss_ka results
+
     # With generator
     net = three_bus_example
     sc.calc_sc(net, case="max", fault='1ph', branch_results=True)
@@ -136,6 +136,8 @@ def test_max_1ph_branch_small_sgen(three_bus_example):
 
 
 def test_max_1ph_branch_big_sgen(big_sgen_three_bus_example):
+    # This test just check coherence between branch ikss_ka results and bus ikss_ka results
+
     # With generator
     net = big_sgen_three_bus_example
     sc.calc_sc(net, case="max", fault='1ph', branch_results=True)
@@ -148,6 +150,7 @@ def test_max_1ph_branch_big_sgen(big_sgen_three_bus_example):
     sc.calc_sc(net, case="max", fault='1ph', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
+    # Isolate sgen contribution
     i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
 
     # Check coherence between bus result and branch results
@@ -157,6 +160,7 @@ def test_max_1ph_branch_big_sgen(big_sgen_three_bus_example):
 
 
 def test_min_1ph_branch_small_sgen(three_bus_example):
+    # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = three_bus_example
@@ -170,6 +174,7 @@ def test_min_1ph_branch_small_sgen(three_bus_example):
     sc.calc_sc(net, case="min", fault='1ph', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
+    # Isolate sgen contribution
     i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
 
     # Check coherence between bus result and branch results
@@ -178,6 +183,7 @@ def test_min_1ph_branch_small_sgen(three_bus_example):
 
 
 def test_min_1ph_branch_big_sgen(big_sgen_three_bus_example):
+    # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = big_sgen_three_bus_example
@@ -191,6 +197,7 @@ def test_min_1ph_branch_big_sgen(big_sgen_three_bus_example):
     sc.calc_sc(net, case="min", fault='1ph', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
+    # Isolate sgen contribution
     i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
 
     # Applying current divider: when sc is on bus 2 a small portion sgen ikss_ka flows along line_0 in the opposite
