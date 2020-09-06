@@ -13,6 +13,13 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     """
@@ -4011,7 +4018,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Generation is a positive bus power injection, consumption negative
+        "kA" for I. Generation is a positive bus power consumption, injection negative
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
@@ -4036,11 +4043,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     EXAMPLES:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", 0, -2., 0.05.)
+        create_measurement(net, "p", "bus", 0, 2., 0.05.)
 
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
+    if meas_type in ("p", "q") and element_type == "bus":
+        logger.warning("Attention! Signing system of P,Q measurement of buses now changed to load reference (match pandapower res_bus pq)!")   
 
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
