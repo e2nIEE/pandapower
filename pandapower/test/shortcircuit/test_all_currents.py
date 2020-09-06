@@ -156,7 +156,6 @@ def test_all_currents_1ph_min(three_bus_example):
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
-    net = three_bus_example
     net.sgen.in_service = False
     sc.calc_sc(net, case="min", fault='1ph', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
