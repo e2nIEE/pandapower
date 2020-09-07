@@ -134,5 +134,4 @@ def test_discrete_tap_control_hv():
 
 
 if __name__ == '__main__':
-    # test_discrete_tap_control_hv()
     pytest.main(['-xs', __file__])

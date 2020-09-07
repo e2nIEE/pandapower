@@ -552,25 +552,6 @@ class JSONSerializableClass(object):
     def __init__(self, **kwargs):
         pass
 
-    @property
-    def net(self):
-        return self._net()
-
-    @net.setter
-    def net(self, net):
-        self._net = weakref.ref(net)
-
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'net':
-                setattr(result, k, memo[id(self.net)])
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
-
     def to_json(self):
         """
         Each controller should have this method implemented. The resulting json string should be
@@ -593,16 +574,16 @@ class JSONSerializableClass(object):
             d.update({'net': 'net'})
         return d
 
-    def add_to_net(self, element, index, column="object", overwrite=False):
-        if element not in self.net:
-            self.net[element] = pd.DataFrame(columns=[column])
-        if index in self.net[element].index.values:
-            obj = self.net[element].object.at[index]
+    def add_to_net(self, net, element, index, column="object", overwrite=False):
+        if element not in net:
+            net[element] = pd.DataFrame(columns=[column])
+        if index in net[element].index.values:
+            obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
                 logger.info("Updating %s with index %s" % (element, index))
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
-        self.net[element].at[index, column] = self
+        net[element].at[index, column] = self
 
     def __eq__(self, other):
 
