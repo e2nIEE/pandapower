@@ -78,10 +78,10 @@ def pf_not_converged(time_step, ts_variables):
         raise ts_variables['errors'][0]
 
 
-def control_time_step(controller_order, time_step):
+def control_time_step(net, controller_order, time_step):
     for levelorder in controller_order:
         for ctrl in levelorder:
-            ctrl.time_step(time_step)
+            ctrl.time_step(net, time_step)
 
 def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
     output_writer = net["output_writer"].iat[0, 0]
@@ -107,7 +107,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     pf_converged = True
     # run time step function for each controller
 
-    control_time_step(ts_variables['controller_order'], time_step)
+    control_time_step(net, ts_variables['controller_order'], time_step)
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
