@@ -491,8 +491,6 @@ def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
                 obj = d.pop('_object')
             elif "_state" in d:
                 obj = d['_state']
-                if d['has_net']:
-                    obj['net'] = 'net'
                 if '_init' in obj:
                     del obj['_init']
                 return obj  # backwards compatibility
@@ -547,7 +545,7 @@ def decrypt_string(s, key):
 
 
 class JSONSerializableClass(object):
-    json_excludes = ["net", "_net", "self", "__class__"]
+    json_excludes = ["self", "__class__"]
 
     def __init__(self, **kwargs):
         pass
@@ -570,8 +568,6 @@ class JSONSerializableClass(object):
 
         d = {key: consider_callable(val) for key, val in self.__dict__.items()
              if key not in self.json_excludes}
-        if "net" in signature(self.__init__).parameters.keys():
-            d.update({'net': 'net'})
         return d
 
     def add_to_net(self, net, element, index, column="object", overwrite=False):
@@ -654,10 +650,9 @@ class JSONSerializableClass(object):
     @classmethod
     def from_dict(cls, d, net):
         obj = JSONSerializableClass.__new__(cls)
-        if 'net' in d:
-            d.pop('net')
-            obj.net = net
         obj.__dict__.update(d)
+        if hasattr(obj, "net"):
+            del obj.net
         return obj
 
     @classmethod
