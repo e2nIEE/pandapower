@@ -459,6 +459,8 @@ class FromSerializableRegistry():
                                       object_hook=partial(pp_hook, net=self.net,
                                                           registry_class=FromSerializableRegistry))
                 # backwards compatibility
+            if "net" in self.obj:
+                del self.obj["net"]
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
@@ -661,8 +663,6 @@ class JSONSerializableClass(object):
     def from_dict(cls, d, net):
         obj = JSONSerializableClass.__new__(cls)
         obj.__dict__.update(d)
-        if hasattr(obj, "net"):
-            del obj.net
         return obj
 
     @classmethod
