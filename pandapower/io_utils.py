@@ -373,7 +373,17 @@ class FromSerializable:
             return self
         class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
         if not class_module in self.registry:
-            class_module = ('', '')
+            _class = (class_module[0], '')
+            _module = ('', class_module[1])
+            if ((_class in self.registry) and (_module in self.registry)):
+                logger.error('the saved object %s is ambiguous. There are at least two possibilites to decode'
+                             'the object' % class_module)
+            elif _class in self.registry:
+                class_module = _class
+            elif _module in self.registry:
+                class_module = _module
+            else:
+                class_module = ('', '')
         method = self.registry[class_module]
         return method.__get__(instance, owner)
 
@@ -849,3 +859,8 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
+
+
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.from_json('test.json')
