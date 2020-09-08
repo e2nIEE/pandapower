@@ -808,6 +808,7 @@ def json_set(obj):
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
     return d
 
+
 @to_serializable.register(frozenset)
 def json_frozenset(obj):
     logger.debug("frozenset")
@@ -859,8 +860,3 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
-
-
-if __name__ == '__main__':
-    import pandapower as pp
-    net = pp.from_json('test.json')
