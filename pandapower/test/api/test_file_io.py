@@ -285,13 +285,12 @@ def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
     control.ContinuousTapControl(net, 114, 1.01)
     net2 = copy.deepcopy(net)
-    net2.controller.object.iloc[0].vm_set_pu = 1.02
-    assert net.controller.object.iloc[0] != net2.controller.object.iloc[0]
+    ct1 = net.controller.object.iloc[0]
+    ct2 = net2.controller.object.iloc[0]
+    assert ct1 != ct2
+    assert ct1.equals(ct2)
+    ct2.vm_set_pu=1.02
+    assert not ct1.equals(ct2)
 
 if __name__ == "__main__":
-    net = pp.networks.mv_oberrhein()
-    control.ContinuousTapControl(net, 114, 1.01)
-    ct2 = copy.deepcopy(net.controller.object.iloc[0])
-    ct2.vm_set_pu = 1.02
-    print(net.controller.object.iloc[0] == ct2)
-#    pytest.main([__file__])
+    pytest.main([__file__])
