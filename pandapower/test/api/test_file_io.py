@@ -230,8 +230,8 @@ def test_new_pp_object_io():
     obj1 = net1.controller.object.at[0]
     obj2 = net1.controller.object.at[1]
 
-    assert obj1.net is net1
-    assert obj2.net is net1
+    assert isinstance(obj1, control.ConstControl)
+    assert isinstance(obj2, control.ContinuousTapControl)
     assert obj1.run is pp.runpp
     assert isinstance(obj1.data_source, DFData)
     assert isinstance(obj1.data_source.df, pd.DataFrame)
@@ -273,19 +273,25 @@ def test_json_io_same_net(net_in, tmp_path):
 
     s = pp.to_json(net_in)
     net1 = pp.from_json_string(s)
-    assert net1.controller.object.at[0].net is net1
+    assert isinstance(net1.controller.object.at[0], control.ConstControl)
 
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename)
     net2 = pp.from_json(filename)
-    assert net2.controller.object.at[0].net is net2
+    assert isinstance(net2.controller.object.at[0], control.ConstControl)
 
 
 def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
     control.ContinuousTapControl(net, 114, 1.01)
     net2 = copy.deepcopy(net)
-#    assert net.controller.object.iloc[0] != net2.controller.object.iloc[0]
+    net2.controller.object.iloc[0].vm_set_pu = 1.02
+    assert net.controller.object.iloc[0] != net2.controller.object.iloc[0]
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    net = pp.networks.mv_oberrhein()
+    control.ContinuousTapControl(net, 114, 1.01)
+    ct2 = copy.deepcopy(net.controller.object.iloc[0])
+    ct2.vm_set_pu = 1.02
+    print(net.controller.object.iloc[0] == ct2)
+#    pytest.main([__file__])
