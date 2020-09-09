@@ -21,9 +21,10 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
+from pandas.testing import assert_series_equal, assert_frame_equal
+
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandas.testing import assert_series_equal, assert_frame_equal
 
 try:
     from functools import singledispatch
@@ -372,7 +373,17 @@ class FromSerializable:
             return self
         class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
         if not class_module in self.registry:
-            class_module = ('', '')
+            _class = (class_module[0], '')
+            _module = ('', class_module[1])
+            if ((_class in self.registry) and (_module in self.registry)):
+                logger.error('the saved object %s is ambiguous. There are at least two possibilites to decode'
+                             'the object' % class_module)
+            elif _class in self.registry:
+                class_module = _class
+            elif _module in self.registry:
+                class_module = _module
+            else:
+                class_module = ('', '')
         method = self.registry[class_module]
         return method.__get__(instance, owner)
 
@@ -447,7 +458,7 @@ class FromSerializableRegistry():
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
                                       object_hook=partial(pp_hook, net=self.net,
                                                           registry_class=FromSerializableRegistry))
-                                      # backwards compatibility
+                # backwards compatibility
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
@@ -484,24 +495,28 @@ class PPJSONDecoder(json.JSONDecoder):
 
 
 def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
-    if '_module' in d and '_class' in d:
-        if "_object" in d:
-            obj = d.pop('_object')
-        elif "_state" in d:
-            obj = d['_state']
-            if d['has_net']:
-                obj['net'] = 'net'
-            if '_init' in obj:
-                del obj['_init']
-            return obj  # backwards compatibility
+    try:
+        if '_module' in d and '_class' in d:
+            if "_object" in d:
+                obj = d.pop('_object')
+            elif "_state" in d:
+                obj = d['_state']
+                if d['has_net']:
+                    obj['net'] = 'net'
+                if '_init' in obj:
+                    del obj['_init']
+                return obj  # backwards compatibility
+            else:
+                # obj = {"_init": d, "_state": dict()}  # backwards compatibility
+                obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+            fs = registry_class(obj, d, net, pp_hook)
+            fs.class_name = d.pop('_class', '')
+            fs.module_name = d.pop('_module', '')
+            return fs.from_serializable()
         else:
-            # obj = {"_init": d, "_state": dict()}  # backwards compatibility
-            obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-        fs = registry_class(obj, d, net, pp_hook)
-        fs.class_name = d.pop('_class', '')
-        fs.module_name = d.pop('_module', '')
-        return fs.from_serializable()
-    else:
+            return d
+    except TypeError:
+        logger.debug('Loading your grid raised a TypeError. %s raised this exception' % d)
         return d
 
 
