@@ -48,7 +48,7 @@ def init_output_writer(net, time_steps):
     # init output writer before time series calculation
     output_writer = net.output_writer.iat[0, 0]
     output_writer.time_steps = time_steps
-    output_writer.init_all()
+    output_writer.init_all(net)
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
@@ -88,7 +88,7 @@ def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_
     # update time step for output writer
     output_writer.time_step = time_step
     # save
-    output_writer.save_results(time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
+    output_writer.save_results(net, time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
                                recycle_options=recycle_options)
 
 def run_time_step(net, time_step, ts_variables, **kwargs):
