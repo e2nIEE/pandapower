@@ -293,4 +293,15 @@ def test_deepcopy_controller():
     assert not ct1.equals(ct2)
 
 if __name__ == "__main__":
+#    net = networks.mv_oberrhein()
+#    net2 = networks.simple_four_bus_system()
+#    net.tuple = (1, "4")
+#    net.mg = topology.create_nxgraph(net)
+#    s = set(['1', 4])
+#    t = tuple(['2', 3])
+#    f = frozenset(['12', 3])
+#    a = np.array([1., 2.])
+#    d = {"a": net2, "b": f}
+#    json_string = json.dumps([net, net2], cls=PPJSONEncoder)
+#    [net, net2] = json.loads(json_string, cls=PPJSONDecoder)
     pytest.main([__file__])

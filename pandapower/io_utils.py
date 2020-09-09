@@ -403,7 +403,6 @@ class FromSerializableRegistry():
     def __init__(self, obj, d, net, pp_hook_funct):
         self.obj = obj
         self.d = d
-        self.net = net
         self.pp_hook = pp_hook_funct
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
@@ -420,7 +419,7 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+                df[col] = df[col].apply(self.pp_hook)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -429,9 +428,9 @@ class FromSerializableRegistry():
             from pandapower import from_json_string
             return from_json_string(self.obj)
         else:
-            # net = create_empty_network()
-            self.net.update(self.obj)
-            return self.net
+            net = create_empty_network()
+            net.update(self.obj)
+            return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
@@ -456,12 +455,12 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(pp_hook, net=self.net,
+                                      object_hook=partial(pp_hook,
                                                           registry_class=FromSerializableRegistry))
                 # backwards compatibility
             if "net" in self.obj:
                 del self.obj["net"]
-            return class_.from_dict(self.obj, self.net)
+            return class_.from_dict(self.obj)
         else:
             # for non-pp objects, e.g. tuple
             return class_(self.obj, **self.d)
@@ -490,8 +489,8 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+#        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
@@ -660,7 +659,7 @@ class JSONSerializableClass(object):
             return False
 
     @classmethod
-    def from_dict(cls, d, net):
+    def from_dict(cls, d):
         obj = JSONSerializableClass.__new__(cls)
         obj.__dict__.update(d)
         return obj
