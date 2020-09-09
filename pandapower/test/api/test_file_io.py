@@ -285,13 +285,23 @@ def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
     control.ContinuousTapControl(net, 114, 1.01)
     net2 = copy.deepcopy(net)
-    net2.controller.object.iloc[0].vm_set_pu = 1.02
-    assert net.controller.object.iloc[0] != net2.controller.object.iloc[0]
+    ct1 = net.controller.object.iloc[0]
+    ct2 = net2.controller.object.iloc[0]
+    assert ct1 != ct2
+    assert ct1.equals(ct2)
+    ct2.vm_set_pu=1.02
+    assert not ct1.equals(ct2)
 
 if __name__ == "__main__":
-    net = pp.networks.mv_oberrhein()
-    control.ContinuousTapControl(net, 114, 1.01)
-    ct2 = copy.deepcopy(net.controller.object.iloc[0])
-    ct2.vm_set_pu = 1.02
-    print(net.controller.object.iloc[0] == ct2)
-#    pytest.main([__file__])
+#    net = networks.mv_oberrhein()
+#    net2 = networks.simple_four_bus_system()
+#    net.tuple = (1, "4")
+#    net.mg = topology.create_nxgraph(net)
+#    s = set(['1', 4])
+#    t = tuple(['2', 3])
+#    f = frozenset(['12', 3])
+#    a = np.array([1., 2.])
+#    d = {"a": net2, "b": f}
+#    json_string = json.dumps([net, net2], cls=PPJSONEncoder)
+#    [net, net2] = json.loads(json_string, cls=PPJSONDecoder)
+    pytest.main([__file__])

@@ -373,7 +373,17 @@ class FromSerializable:
             return self
         class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
         if not class_module in self.registry:
-            class_module = ('', '')
+            _class = (class_module[0], '')
+            _module = ('', class_module[1])
+            if ((_class in self.registry) and (_module in self.registry)):
+                logger.error('the saved object %s is ambiguous. There are at least two possibilites to decode'
+                             'the object' % class_module)
+            elif _class in self.registry:
+                class_module = _class
+            elif _module in self.registry:
+                class_module = _module
+            else:
+                class_module = ('', '')
         method = self.registry[class_module]
         return method.__get__(instance, owner)
 
@@ -393,7 +403,6 @@ class FromSerializableRegistry():
     def __init__(self, obj, d, net, pp_hook_funct):
         self.obj = obj
         self.d = d
-        self.net = net
         self.pp_hook = pp_hook_funct
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
@@ -410,7 +419,7 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+                df[col] = df[col].apply(self.pp_hook)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -419,9 +428,9 @@ class FromSerializableRegistry():
             from pandapower import from_json_string
             return from_json_string(self.obj)
         else:
-            # net = create_empty_network()
-            self.net.update(self.obj)
-            return self.net
+            net = create_empty_network()
+            net.update(self.obj)
+            return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
@@ -446,10 +455,12 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(pp_hook, net=self.net,
+                                      object_hook=partial(pp_hook,
                                                           registry_class=FromSerializableRegistry))
                 # backwards compatibility
-            return class_.from_dict(self.obj, self.net)
+            if "net" in self.obj:
+                del self.obj["net"]
+            return class_.from_dict(self.obj)
         else:
             # for non-pp objects, e.g. tuple
             return class_(self.obj, **self.d)
@@ -478,8 +489,8 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+#        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
@@ -581,7 +592,7 @@ class JSONSerializableClass(object):
                 raise UserWarning("%s with index %s already exists" % (element, index))
         net[element].at[index, column] = self
 
-    def __eq__(self, other):
+    def equals(self, other):
 
         class UnequalityFound(Exception):
             pass
@@ -642,17 +653,15 @@ class JSONSerializableClass(object):
             try:
                 check_equality(self.__dict__, other.__dict__)
                 return True
-            except UnequalityFound as e:
+            except UnequalityFound:
                 return False
         else:
             return False
 
     @classmethod
-    def from_dict(cls, d, net):
+    def from_dict(cls, d):
         obj = JSONSerializableClass.__new__(cls)
         obj.__dict__.update(d)
-        if hasattr(obj, "net"):
-            del obj.net
         return obj
 
     @classmethod
@@ -773,6 +782,7 @@ def json_set(obj):
     logger.debug("set")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
     return d
+
 
 @to_serializable.register(frozenset)
 def json_frozenset(obj):
