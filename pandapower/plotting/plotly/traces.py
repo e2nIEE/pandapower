@@ -174,23 +174,24 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     """
     node_element = 'bus'
     branch_element = 'line'
-    return _create_node_trace(net, buses, cbar_title, cmap, cmap_vals, cmax, cmin, color,
-                              colormap_column,
-                              cpos, infofunc, legendgroup, patch_type, size, trace_name,
-                              node_element, branch_element)
+    return _create_node_trace(net, buses, size, patch_type, color, infofunc, trace_name,
+                              legendgroup, cmap, cmap_vals, cbar_title, cmin, cmax, cpos,
+                              colormap_column, node_element, branch_element)
 
 
-def _create_node_trace(net, nodes, cbar_title, cmap, cmap_vals, cmax, cmin, color, colormap_column,
-                       cpos, infofunc, legendgroup, patch_type, size, trace_name, node_element,
-                       branch_element):
+def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue', infofunc=None,
+                       trace_name='nodes', legendgroup=None, cmap=None, cmap_vals=None,
+                       cbar_title=None, cmin=None, cmax=None, cpos=1.0, colormap_column='vm_pu',
+                       node_element='bus', branch_element='line'):
     color = get_plotly_color(color)
     node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
-    node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net.bus_geodata.index))]
+    node_geodata = node_element + "_geodata"
+    node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_geodata].index))]
     node_trace['x'], node_trace['y'] = \
-        (net[node_element+"_geodata"].loc[node_plot_index,'x'].tolist(),
-         net[node_element+"_geodata"].loc[node_plot_index, 'y'].tolist())
+        (net[node_geodata].loc[node_plot_index,'x'].tolist(),
+         net[node_geodata].loc[node_plot_index, 'y'].tolist())
     if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
             len(infofunc) == len(nodes):
         infofunc = pd.Series(index=nodes, data=infofunc)
@@ -243,12 +244,13 @@ def _create_node_trace(net, nodes, cbar_title, cmap, cmap_vals, cmax, cmin, colo
     return [node_trace]
 
 
-def _get_line_geodata_plotly(net, lines, use_line_geodata):
+def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element='line',
+                               node_element='bus'):
     xs = []
     ys = []
-    if use_line_geodata:
-        for line_ind, _ in lines.iterrows():
-            line_coords = net.line_geodata.loc[line_ind, 'coords']
+    if use_branch_geodata:
+        for line_ind, _ in branches.iterrows():
+            line_coords = net[branch_element+'_geodata'].loc[line_ind, 'coords']
             linex, liney = list(zip(*line_coords))
             xs += linex
             xs += [None]
@@ -256,20 +258,23 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
             ys += [None]
     else:
         # getting x and y values from bus_geodata for from and to side of each line
-
-        from_bus = net.bus_geodata.loc[lines.from_bus, 'x'].tolist()
-        to_bus = net.bus_geodata.loc[lines.to_bus, 'x'].tolist()
+        n = node_element
+        n_geodata = n +  "_geodata"
+        from_n = 'from_'+n
+        to_n = 'to_'+n
+        from_node = net[n_geodata].loc[branches[from_n], 'x'].tolist()
+        to_node = net[n_geodata].loc[branches[to_n], 'x'].tolist()
         # center point added because of the hovertool
-        center = (np.array(from_bus) + np.array(to_bus)) / 2
-        none_list = [None] * len(from_bus)
-        xs = np.array([from_bus, center, to_bus, none_list]).T.flatten().tolist()
+        center = (np.array(from_node) + np.array(to_node)) / 2
+        none_list = [None] * len(from_node)
+        xs = np.array([from_node, center, to_node, none_list]).T.flatten().tolist()
 
-        from_bus = net.bus_geodata.loc[lines.from_bus, 'y'].tolist()
-        to_bus = net.bus_geodata.loc[lines.to_bus, 'y'].tolist()
+        from_node = net[n_geodata].loc[branches[from_n], 'y'].tolist()
+        to_node = net[n_geodata].loc[branches[to_n], 'y'].tolist()
         # center point added because of the hovertool
-        center = (np.array(from_bus) + np.array(to_bus)) / 2
-        none_list = [None] * len(from_bus)
-        ys = np.array([from_bus, center, to_bus, none_list]).T.flatten().tolist()
+        center = (np.array(from_node) + np.array(to_node)) / 2
+        none_list = [None] * len(from_node)
+        ys = np.array([from_node, center, to_node, none_list]).T.flatten().tolist()
 
     # [:-1] is because the trace will not appear on maps if None is at the end
     return xs[:-1], ys[:-1]
@@ -324,16 +329,18 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     node_element = "bus"
     separator_element = "switch"
 
-    return _create_branch_traces(net, lines, use_line_geodata, respect_switches, width, color,
-                                 infofunc, trace_name, legendgroup, cmap, cbar_title, show_colorbar,
-                                 cmap_vals, cmin, cmax, cpos, branch_element, separator_element,
-                                 node_element)
+    return _create_branch_trace(net, lines, use_line_geodata, respect_switches, width, color,
+                                infofunc, trace_name, legendgroup, cmap, cbar_title, show_colorbar,
+                                cmap_vals, cmin, cmax, cpos, branch_element, separator_element,
+                                node_element)
 
 
-def _create_branch_traces(net, branches, use_branch_geodata, respect_separators, width, color, infofunc,
-                          trace_name, legendgroup, cmap, cbar_title, show_colorbar, cmap_vals, cmin,
-                          cmax, cpos, branch_element, separator_element, node_element,
-                          cmap_vals_category='loading_percent'):
+def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_separators=False,
+                         width=1.0, color='grey', infofunc=None, trace_name='lines',
+                         legendgroup=None, cmap=None, cbar_title=None, show_colorbar=True,
+                         cmap_vals=None, cmin=None, cmax=None, cpos=1.1, branch_element='line',
+                         separator_element='switch', node_element='bus',
+                         cmap_vals_category='loading_percent'):
     
     
     color = get_plotly_color(color)
@@ -371,9 +378,9 @@ def _create_branch_traces(net, branches, use_branch_geodata, respect_separators,
         branches_to_plot = branches_to_plot.loc[set(branches_to_plot.index) &
                                                 set(net[branch_geodata].index)]
     else:
-        branches_with_geodata = branches_to_plot['from_'+branch_element].isin(
+        branches_with_geodata = branches_to_plot['from_'+node_element].isin(
                                                     net[node_geodata].index) & \
-                                branches_to_plot['to_'+branch_element].isin(net[node_geodata].index)
+                                branches_to_plot['to_'+node_element].isin(net[node_geodata].index)
         branches_to_plot = branches_to_plot.loc[branches_with_geodata]
     cmap_branches = None
     if cmap is not None:
@@ -419,8 +426,10 @@ def _create_branch_traces(net, branches, use_branch_geodata, respect_separators,
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
 
-        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, branches_to_plot.loc[idx:idx],
-                                                                    use_branch_geodata)
+        line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
+                                                                      branches_to_plot.loc[idx:idx],
+                                                                      use_branch_geodata,
+                                                                      branch_element, node_element)
 
         line_trace['line']['color'] = line_color
 
@@ -462,8 +471,11 @@ def _create_branch_traces(net, branches, use_branch_geodata, respect_separators,
                               text=[], hoverinfo='text', mode='lines', name='disconnected branches',
                               line=Line(width=width / 2, color='grey', dash='dot'))
 
-            line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(
-                net, no_go_branches_to_plot.loc[idx:idx], use_branch_geodata)
+            line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
+                                                                          no_go_branches_to_plot.loc[
+                                                                          idx:idx],
+                                                                          use_branch_geodata,
+                                                                          branch_element, node_element)
 
             line_trace['line']['color'] = line_color
             try:
