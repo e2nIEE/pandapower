@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check
+    create_trafo_trace, draw_traces, version_check, create_node_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -75,7 +75,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
             plotted as an example
 
     OPTIONAL:
-        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
+        **respect_separators** (bool, True) - Respect switches when artificial geodata is created
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
             or on net.bus_geodata of the connected buses (False)
@@ -100,17 +100,17 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
             any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
-        **line_width** (float, 1.0) - width of lines
+        **branch_width** (float, 1.0) - width of lines
 
-        **bus_size** (float, 10.0) -  size of buses to plot.
+        **node_size** (float, 10.0) -  size of buses to plot.
 
         **ext_grid_size** (float, 20.0) - size of ext_grids to plot.
 
             See bus sizes for details. Note: ext_grids are plotted as rectangles
 
-        **bus_color** (String, "blue") - Bus Color. Init as first value of color palette.
+        **node_color** (String, "blue") - Bus Color. Init as first value of color palette.
 
-        **line_color** (String, 'grey') - Line Color. Init is grey
+        **branch_color** (String, 'grey') - Line Color. Init is grey
 
         **trafo_color** (String, 'green') - Trafo Color. Init is green
 
@@ -119,54 +119,71 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
+    node_element = "bus"
+    branch_element = "line"
+    trans_element = "trafo"
+    separator_element = "switch"
+    return simple_plotly_generic(net, respect_switches, use_line_geodata, on_map, projection,
+                                 map_style, figsize, aspectratio, line_width, bus_size,
+                                 ext_grid_size, bus_color, line_color, trafo_color, ext_grid_color,
+                                 node_element, branch_element, trans_element, separator_element)
+
+
+def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
+                          figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
+                          branch_color, trafo_color, ext_grid_color, node_element, branch_element,
+                          trans_element, separator_element):
     version_check()
     # create geocoord if none are available
-    if 'line_geodata' not in net:
-        net.line_geodata = pd.DataFrame(columns=['coords'])
-    if 'bus_geodata' not in net:
-        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
-    if len(net.bus_geodata) == 0:
+    branch_geodata = branch_element + "_geodata"
+    node_geodata = node_element + "_geodata"
+
+    if branch_geodata not in net:
+        net[branch_geodata] = pd.DataFrame(columns=['coords'])
+    if node_geodata not in net:
+        net[node_geodata] = pd.DataFrame(columns=["x", "y"])
+    if len(net[node_geodata]) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
-        create_generic_coordinates(net, respect_switches=respect_switches)
+        create_generic_coordinates(net, respect_switches=respect_separators)
         if on_map:
-            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
+            logger.warning(
+                "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
-
-    # ----- Buses ------
-    # initializating bus trace
-    hoverinfo = get_hoverinfo(net, element="bus")
-    bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, color=bus_color, infofunc=hoverinfo)
-
-    # ----- Lines ------
-    # if bus geodata is available, but no line geodata
-    if use_line_geodata is None:
-        use_line_geodata = False if len(net.line_geodata) == 0 else True
-    elif use_line_geodata and len(net.line_geodata) == 0:
-        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
-        use_line_geodata = False
-
-    hoverinfo = get_hoverinfo(net, element="line")
-    line_traces = create_line_trace(net, net.line.index, respect_switches=respect_switches,
-                                    color=line_color, width=line_width,
-                                    use_line_geodata=use_line_geodata, infofunc=hoverinfo)
-
+    # ----- Nodes (Buses) ------
+    # initializating node trace
+    hoverinfo = get_hoverinfo(net, element=node_element)
+    node_trace = create_node_trace(net, net[node_element].index, size=node_size, color=node_color,
+                                  infofunc=hoverinfo, node_element=node_element,
+                                  branch_element=branch_element)
+    # ----- branches (Lines) ------
+    # if node geodata is available, but no branch geodata
+    if use_branch_geodata is None:
+        use_branch_geodata = False if len(net[branch_geodata]) == 0 else True
+    elif use_branch_geodata and len(net[branch_geodata]) == 0:
+        logger.warning(
+            "No or insufficient line geodata available --> only bus geodata will be used.")
+        use_branch_geodata = False
+    hoverinfo = get_hoverinfo(net, element=branch_element)
+    branch_traces = create_line_trace(net, net[branch_element].index,
+                                      respect_switches=respect_separators,
+                                      color=branch_color, width=branch_width,
+                                      use_line_geodata=use_branch_geodata, infofunc=hoverinfo)
     # ----- Trafos ------
-    hoverinfo = get_hoverinfo(net, element="trafo")
-    trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5, infofunc=hoverinfo,
-                                     use_line_geodata=use_line_geodata)
-
+    hoverinfo = get_hoverinfo(net, element=trans_element)
+    trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
+                                     infofunc=hoverinfo,
+                                     use_line_geodata=use_branch_geodata)
     # ----- Ext grid ------
-    # get external grid from create_bus_trace
+    # get external grid from create_node_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
     hoverinfo = get_hoverinfo(net, element="ext_grid")
-    ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
+    ext_grid_trace = create_node_trace(net, nodes=net.ext_grid[node_element],
                                       color=ext_grid_color, size=ext_grid_size,
-                                      patch_type=marker_type, trace_name='external_grid', infofunc=hoverinfo)
-
-    return draw_traces(line_traces + trafo_trace + ext_grid_trace + bus_trace,
+                                      patch_type=marker_type, trace_name='external_grid',
+                                      infofunc=hoverinfo)
+    return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
                        aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
