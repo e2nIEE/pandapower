@@ -174,15 +174,15 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     """
     node_element = 'bus'
     branch_element = 'line'
-    return create_node_trace(net, buses, cbar_title, cmap, cmap_vals, cmax, cmin, color,
-                             colormap_column,
-                             cpos, infofunc, legendgroup, patch_type, size, trace_name,
-                             node_element, branch_element)
+    return _create_node_trace(net, buses, cbar_title, cmap, cmap_vals, cmax, cmin, color,
+                              colormap_column,
+                              cpos, infofunc, legendgroup, patch_type, size, trace_name,
+                              node_element, branch_element)
 
 
-def create_node_trace(net, nodes, cbar_title, cmap, cmap_vals, cmax, cmin, color, colormap_column,
-                      cpos, infofunc, legendgroup, patch_type, size, trace_name, node_element,
-                      branch_element):
+def _create_node_trace(net, nodes, cbar_title, cmap, cmap_vals, cmax, cmin, color, colormap_column,
+                       cpos, infofunc, legendgroup, patch_type, size, trace_name, node_element,
+                       branch_element):
     color = get_plotly_color(color)
     node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
@@ -320,39 +320,62 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         """
 
+    branch_element = "line"
+    node_element = "bus"
+    separator_element = "switch"
+
+    return _create_branch_traces(net, lines, use_line_geodata, respect_switches, width, color,
+                                 infofunc, trace_name, legendgroup, cmap, cbar_title, show_colorbar,
+                                 cmap_vals, cmin, cmax, cpos, branch_element, separator_element,
+                                 node_element)
+
+
+def _create_branch_traces(net, branches, use_branch_geodata, respect_separators, width, color, infofunc,
+                          trace_name, legendgroup, cmap, cbar_title, show_colorbar, cmap_vals, cmin,
+                          cmax, cpos, branch_element, separator_element, node_element,
+                          cmap_vals_category='loading_percent'):
+    
+    
     color = get_plotly_color(color)
 
-    # defining lines to be plot
-    lines = net.line.index.tolist() if lines is None else list(lines)
-    if len(lines) == 0:
+    # defining branches (lines) to be plot
+    branches = net[branch_element].index.tolist() if branches is None else list(branches)
+    if len(branches) == 0:
         return []
 
     if infofunc is not None:
         if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
-                len(infofunc) == len(lines):
-            infofunc = pd.Series(index=lines, data=infofunc)
-        if len(infofunc) != len(lines) and len(infofunc) != len(net.line):
-            raise UserWarning("Different amount of hover info than lines to plot")
+                len(infofunc) == len(branches):
+            infofunc = pd.Series(index=branches, data=infofunc)
+        if len(infofunc) != len(branches) and len(infofunc) != len(net[branch_element]):
+            raise UserWarning("Different amount of hover info than {}s to "
+                              "plot".format(branch_element))
         assert isinstance(infofunc, pd.Series), \
-            "infofunc should be a pandas series with the net.line.index to the infofunc contents"
-
-    no_go_lines = set()
-    if respect_switches:
-        no_go_lines = set(lines) & set(net.switch.element[(net.switch.et == "l") &
-                                                          (net.switch.closed == 0)])
-
-    lines_to_plot = net.line.loc[set(net.line.index) & (set(lines) - no_go_lines)]
-    no_go_lines_to_plot = None
-    use_line_geodata = use_line_geodata if net.line_geodata.shape[0] > 0 else False
-
-    if use_line_geodata:
-        lines_to_plot = lines_to_plot.loc[set(lines_to_plot.index) & set(net.line_geodata.index)]
+            "infofunc should be a pandas series with the net.{}.index to the infofunc " \
+            "contents".format(branch_element)
+    no_go_branches = set()
+    if respect_separators:
+        if separator_element == "switch":
+            no_go_branches = set(branches) & \
+                             set(net[separator_element].element[(net[separator_element].et == "l") &
+                                                             (net[separator_element].closed == 0)])
+        else:
+            raise NotImplementedError("respect separtors is only implements for switches, "
+                                      "not for {}s.".format(separator_element))
+    branches_to_plot = net[branch_element].loc[set(net[branch_element].index) & (set(branches) - no_go_branches)]
+    no_go_branches_to_plot = None
+    branch_geodata = branch_element + "_geodata"
+    node_geodata = node_element + "_geodata"
+    use_branch_geodata = use_branch_geodata if net[branch_geodata].shape[0] > 0 else False
+    if use_branch_geodata:
+        branches_to_plot = branches_to_plot.loc[set(branches_to_plot.index) &
+                                                set(net[branch_geodata].index)]
     else:
-        lines_with_geodata = lines_to_plot.from_bus.isin(net.bus_geodata.index) & \
-                             lines_to_plot.to_bus.isin(net.bus_geodata.index)
-        lines_to_plot = lines_to_plot.loc[lines_with_geodata]
-
-    cmap_lines = None
+        branches_with_geodata = branches_to_plot['from_'+branch_element].isin(
+                                                    net[node_geodata].index) & \
+                                branches_to_plot['to_'+branch_element].isin(net[node_geodata].index)
+        branches_to_plot = branches_to_plot.loc[branches_with_geodata]
+    cmap_branches = None
     if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
@@ -364,44 +387,46 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             if not isinstance(cmap_vals, np.ndarray):
                 cmap_vals = np.asarray(cmap_vals)
         else:
-            if net.res_line.shape[0] == 0:
-                logger.error("There are no power flow results for lines which are default for line colormap coloring..."
-                             "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_line.loc[lines_to_plot.index, 'loading_percent'].values
+            if net['res_'+branch_element].shape[0] == 0:
+                logger.error(
+                    "There are no simulation results for branches which are default for {} } "
+                    "colormap coloring..."
+                    "set cmap_vals input argument if you want colormap according to some specific "
+                    "values...".format(branch_element))
+            cmap_vals = net['res_'+branch_element].loc[branches_to_plot.index,
+                                                       cmap_vals_category].values
 
-        cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
-        if len(cmap_lines) == len(net.line):
-            # some lines are not plotted although cmap_value were provided for all lines
-            line_idx_map = dict(zip(net.line.loc[lines].index.tolist(), range(len(lines))))
-            cmap_lines = [cmap_lines[line_idx_map[idx]] for idx in lines_to_plot.index]
+        cmap_branches = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
+        if len(cmap_branches) == len(net[branch_element]):
+            # some branches are not plotted although cmap_value were provided for all branches
+            branch_idx_map = dict(zip(net[branch_element].loc[branches].index.tolist(), range(len(branches))))
+            cmap_branches = [cmap_branches[branch_idx_map[idx]] for idx in branches_to_plot.index]
         else:
-            assert len(cmap_lines) == len(lines_to_plot), \
-                "Different amounts of cmap values and lines to plot were supplied"
-
-    line_traces = []
-    for col_i, (idx, line) in enumerate(lines_to_plot.iterrows()):
+            assert len(cmap_branches) == len(branches_to_plot), \
+                "Different amounts of cmap values and branches to plot were supplied"
+    branch_traces = []
+    for col_i, (idx, branch) in enumerate(branches_to_plot.iterrows()):
         line_color = color
-        line_info = line['name']
+        line_info = branch['name']
         if cmap is not None:
             try:
-                line_color = cmap_lines[col_i]
-                line_info = line['name'] if infofunc is None else infofunc.loc[idx]
+                line_color = cmap_branches[col_i]
+                line_info = branch['name'] if infofunc is None else infofunc.loc[idx]
             except IndexError:
-                logger.warning("No color and info for line {:d} (name: {}) available".format(
-                    idx, line['name']))
+                logger.warning("No color and info for {} {:d} (name: {}) available".format(
+                    branch_element, idx, branch['name']))
 
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
 
-        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines_to_plot.loc[idx:idx],
-                                                                    use_line_geodata)
+        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, branches_to_plot.loc[idx:idx],
+                                                                    use_branch_geodata)
 
         line_trace['line']['color'] = line_color
 
         line_trace['text'] = line_info
 
-        line_traces.append(line_trace)
-
+        branch_traces.append(line_trace)
     if show_colorbar and cmap is not None:
 
         cmin = cmap_vals.min() if cmin is None else cmin
@@ -409,11 +434,11 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         try:
             # TODO for custom colormaps
             cbar_cmap_name = 'Jet' if cmap == 'jet' else cmap
-            # workaround to get colorbar for lines (an unvisible node is added)
+            # workaround to get colorbar for branches (an unvisible node is added)
             # get x and y of first line.from_bus:
-            x = [net.bus_geodata.x[net.line.from_bus[net.line.index[0]]]]
-            y = [net.bus_geodata.y[net.line.from_bus[net.line.index[0]]]]
-            lines_cbar = dict(type='scatter', x=x, y=y, mode='markers',
+            x = [net[node_geodata].x[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
+            y = [net[node_geodata].y[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
+            branches_cbar = dict(type='scatter', x=x, y=y, mode='markers',
                               marker=Marker(size=0, cmin=cmin, cmax=cmax,
                                             color='rgb(255,255,255)',
                                             opacity=0,
@@ -422,52 +447,50 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                                                               x=cpos),
                                             ))
             if cbar_title:
-                lines_cbar['marker']['colorbar']['title'] = cbar_title
+                branches_cbar['marker']['colorbar']['title'] = cbar_title
 
-            lines_cbar['marker']['colorbar']['title']['side'] = 'right'
+            branches_cbar['marker']['colorbar']['title']['side'] = 'right'
 
-            line_traces.append(lines_cbar)
+            branch_traces.append(branches_cbar)
         except:
             pass
-
-    if len(no_go_lines) > 0:
-        no_go_lines_to_plot = net.line.loc[no_go_lines]
-        for idx, line in no_go_lines_to_plot.iterrows():
+    if len(no_go_branches) > 0:
+        no_go_branches_to_plot = net[branch_element].loc[no_go_branches]
+        for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
             line_trace = dict(type='scatter',
-                              text=[], hoverinfo='text', mode='lines', name='disconnected lines',
+                              text=[], hoverinfo='text', mode='lines', name='disconnected branches',
                               line=Line(width=width / 2, color='grey', dash='dot'))
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(
-                net, no_go_lines_to_plot.loc[idx:idx], use_line_geodata)
+                net, no_go_branches_to_plot.loc[idx:idx], use_branch_geodata)
 
             line_trace['line']['color'] = line_color
             try:
                 line_trace['text'] = infofunc.loc[idx]
             except (KeyError, IndexError, AttributeError):
-                line_trace["text"] = line['name']
+                line_trace["text"] = branch['name']
 
-            line_traces.append(line_trace)
+            branch_traces.append(line_trace)
 
             if legendgroup:
                 line_trace['legendgroup'] = legendgroup
-
     # sort infofunc so that it is the correct order lines_to_plot + no_go_lines_to_plot
     if infofunc is not None:
         if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
-                len(infofunc) == len(net.line):
-            infofunc = pd.Series(index=net.line.index, data=infofunc)
+                len(infofunc) == len(net[branch_element]):
+            infofunc = pd.Series(index=net[branch_element].index, data=infofunc)
         assert isinstance(infofunc, pd.Series), \
-            "infofunc should be a pandas series with the net.line.index to the infofunc contents"
-        sorted_idx = lines_to_plot.index.tolist()
-        if no_go_lines_to_plot is not None:
-            sorted_idx += no_go_lines_to_plot.index.tolist()
+            "infofunc should be a pandas series with the net.{}.index to the infofunc contents" \
+            .format(branch_element)
+        sorted_idx = branches_to_plot.index.tolist()
+        if no_go_branches_to_plot is not None:
+            sorted_idx += no_go_branches_to_plot.index.tolist()
         infofunc = infofunc.loc[sorted_idx]
-
-    center_trace = create_edge_center_trace(line_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_line_geodata)
-    line_traces.append(center_trace)
-    return line_traces
+    center_trace = create_edge_center_trace(branch_traces, color=color, infofunc=infofunc,
+                                            use_line_geodata=use_branch_geodata)
+    branch_traces.append(center_trace)
+    return branch_traces
 
 
 def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, cmap=None,
