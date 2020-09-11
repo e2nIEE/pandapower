@@ -172,27 +172,32 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
         **colormap_column** (str, "vm_pu") - set color of bus according to this variable
 
     """
+    node_element = 'bus'
+    branch_element = 'line'
+    return create_node_trace(net, buses, cbar_title, cmap, cmap_vals, cmax, cmin, color,
+                             colormap_column,
+                             cpos, infofunc, legendgroup, patch_type, size, trace_name,
+                             node_element, branch_element)
+
+
+def create_node_trace(net, nodes, cbar_title, cmap, cmap_vals, cmax, cmin, color, colormap_column,
+                      cpos, infofunc, legendgroup, patch_type, size, trace_name, node_element,
+                      branch_element):
     color = get_plotly_color(color)
-
-    bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
+    node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
-
-    buses = net.bus.index.tolist() if buses is None else list(buses)
-    bus_plot_index = [b for b in buses if b in list(set(buses) & set(net.bus_geodata.index))]
-
-    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
-                                      net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
-
+    nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
+    node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net.bus_geodata.index))]
+    node_trace['x'], node_trace['y'] = \
+        (net[node_element+"_geodata"].loc[node_plot_index,'x'].tolist(),
+         net[node_element+"_geodata"].loc[node_plot_index, 'y'].tolist())
     if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
-            len(infofunc) == len(buses):
-        infofunc = pd.Series(index=buses, data=infofunc)
-
-    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else \
-        infofunc.loc[buses]
-
+            len(infofunc) == len(nodes):
+        infofunc = pd.Series(index=nodes, data=infofunc)
+    node_trace['text'] = net[node_element].loc[node_plot_index, 'name'] if infofunc is None else \
+        infofunc.loc[nodes]
     if legendgroup:
-        bus_trace['legendgroup'] = legendgroup
-
+        node_trace['legendgroup'] = legendgroup
     # if color map is set
     if cmap is not None:
         # TODO introduce discrete colormaps (see contour plots in plotly)
@@ -203,18 +208,27 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
         if cmap_vals is not None:
             cmap_vals = cmap_vals
         else:
-            if net.res_line.shape[0] == 0:
-                logger.error("There are no power flow results for buses voltage magnitudes which are default for bus "
-                             "colormap coloring..."
-                             "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column].values
+            if net["res_"+branch_element].shape[0] == 0:
+                if branch_element == "line":
+                    logger.error(
+                        "There are no power flow results for buses voltage magnitudes which are"
+                        "default for bus colormap coloring..."
+                        "set cmap_vals input argument if you want colormap according to some "
+                        "specific values...")
+                else:
+                    logger.error(
+                     "There are no simulation results which are default for %s colormap coloring..."
+                     "set cmap_vals input argument if you want colormap according to some "
+                     "specific values..." %node_element)
+            cmap_vals = net["res_"+node_element].loc[node_plot_index, colormap_column].values
 
-        cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column] if cmap_vals is None else cmap_vals
+        cmap_vals = net["res_"+node_element].loc[
+            node_plot_index, colormap_column] if cmap_vals is None else cmap_vals
 
         cmin = cmap_vals.min() if cmin is None else cmin
         cmax = cmap_vals.max() if cmax is None else cmax
 
-        bus_trace['marker'] = Marker(size=size,
+        node_trace['marker'] = Marker(size=size,
                                      color=cmap_vals, cmin=cmin, cmax=cmax,
                                      colorscale=cmap,
                                      colorbar=ColorBar(thickness=10,
@@ -223,11 +237,10 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                                      )
 
         if cbar_title:
-            bus_trace['marker']['colorbar']['title'] = cbar_title
+            node_trace['marker']['colorbar']['title'] = cbar_title
 
-        bus_trace['marker']['colorbar']['title']['side'] = 'right'
-
-    return [bus_trace]
+        node_trace['marker']['colorbar']['title']['side'] = 'right'
+    return [node_trace]
 
 
 def _get_line_geodata_plotly(net, lines, use_line_geodata):
@@ -278,7 +291,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         **width** (int, 1) - line width
 
-        **respect_switches** (bool, False) - flag for consideration of disconnected lines
 
         **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
             the pandapower element indices
