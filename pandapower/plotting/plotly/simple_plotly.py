@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check, create_node_trace
+    create_trafo_trace, draw_traces, version_check, _create_node_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -156,9 +156,9 @@ def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, p
     # ----- Nodes (Buses) ------
     # initializating node trace
     hoverinfo = get_hoverinfo(net, element=node_element)
-    node_trace = create_node_trace(net, net[node_element].index, size=node_size, color=node_color,
-                                  infofunc=hoverinfo, node_element=node_element,
-                                  branch_element=branch_element)
+    node_trace = _create_node_trace(net, net[node_element].index, size=node_size, color=node_color,
+                                    infofunc=hoverinfo, node_element=node_element,
+                                    branch_element=branch_element)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
@@ -178,12 +178,12 @@ def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, p
                                      infofunc=hoverinfo,
                                      use_line_geodata=use_branch_geodata)
     # ----- Ext grid ------
-    # get external grid from create_node_trace
+    # get external grid from _create_node_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
     hoverinfo = get_hoverinfo(net, element="ext_grid")
-    ext_grid_trace = create_node_trace(net, nodes=net.ext_grid[node_element],
-                                      color=ext_grid_color, size=ext_grid_size,
-                                      patch_type=marker_type, trace_name='external_grid',
-                                      infofunc=hoverinfo)
+    ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element],
+                                        color=ext_grid_color, size=ext_grid_size,
+                                        patch_type=marker_type, trace_name='external_grid',
+                                        infofunc=hoverinfo)
     return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
                        aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
