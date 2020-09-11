@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check, _create_node_trace
+    create_trafo_trace, draw_traces, version_check, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -123,16 +123,18 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     branch_element = "line"
     trans_element = "trafo"
     separator_element = "switch"
-    return simple_plotly_generic(net, respect_switches, use_line_geodata, on_map, projection,
-                                 map_style, figsize, aspectratio, line_width, bus_size,
-                                 ext_grid_size, bus_color, line_color, trafo_color, ext_grid_color,
-                                 node_element, branch_element, trans_element, separator_element)
+    return _simple_plotly_generic(net, respect_switches, use_line_geodata, on_map, projection,
+                                  map_style, figsize, aspectratio, line_width, bus_size,
+                                  ext_grid_size, bus_color, line_color, trafo_color, ext_grid_color,
+                                  node_element, branch_element, trans_element, separator_element,
+                                  create_line_trace, create_bus_trace, get_hoverinfo)
 
 
-def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
-                          figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
-                          branch_color, trafo_color, ext_grid_color, node_element, branch_element,
-                          trans_element, separator_element):
+def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
+                           figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
+                           branch_color, trafo_color, ext_grid_color, node_element, branch_element,
+                           trans_element, separator_element, branch_trace_func, node_trace_func,
+                           hoverinfo_func):
     version_check()
     # create geocoord if none are available
     branch_geodata = branch_element + "_geodata"
@@ -155,10 +157,9 @@ def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, p
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
     # initializating node trace
-    hoverinfo = get_hoverinfo(net, element=node_element)
-    node_trace = _create_node_trace(net, net[node_element].index, size=node_size, color=node_color,
-                                    infofunc=hoverinfo, node_element=node_element,
-                                    branch_element=branch_element)
+    hoverinfo = hoverinfo_func(net, element=node_element)
+    node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
+                                    infofunc=hoverinfo)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
@@ -167,23 +168,26 @@ def simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, p
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
-    hoverinfo = get_hoverinfo(net, element=branch_element)
-    branch_traces = create_line_trace(net, net[branch_element].index,
-                                      respect_switches=respect_separators,
+    hoverinfo = hoverinfo_func(net, element=branch_element)
+    branch_traces = branch_trace_func(net, net[branch_element].index, use_branch_geodata,
+                                      respect_separators,
                                       color=branch_color, width=branch_width,
-                                      use_line_geodata=use_branch_geodata, infofunc=hoverinfo)
+                                      infofunc=hoverinfo)
     # ----- Trafos ------
-    hoverinfo = get_hoverinfo(net, element=trans_element)
-    trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
-                                     infofunc=hoverinfo,
-                                     use_line_geodata=use_branch_geodata)
+    if 'trafo' in net:
+        hoverinfo = hoverinfo_func(net, element=trans_element)
+        trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
+                                         infofunc=hoverinfo,
+                                         use_line_geodata=use_branch_geodata)
+    else:
+        trans_trace = []
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
-    hoverinfo = get_hoverinfo(net, element="ext_grid")
-    ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element],
-                                        color=ext_grid_color, size=ext_grid_size,
-                                        patch_type=marker_type, trace_name='external_grid',
-                                        infofunc=hoverinfo)
+    hoverinfo = hoverinfo_func(net, element="ext_grid")
+    ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
+                                        patch_type=marker_type, color=ext_grid_color,
+                                        infofunc=hoverinfo, trace_name='external_grid',
+                                        node_element=node_element, branch_element=branch_element)
     return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
                        aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
