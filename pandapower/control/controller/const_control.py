@@ -109,7 +109,7 @@ class ConstControl(Controller):
             recycle["trafo"] = True
         # recycle is either the dict what should be recycled
         # or False if the element + variable combination is not supported
-        self.recycle = recycle if not any(list(recycle.values())) else False
+        self.recycle = recycle if any(list(recycle.values())) else False
 
     def write_to_net(self):
         """
