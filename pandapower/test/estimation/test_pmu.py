@@ -19,7 +19,7 @@ def run_se_lp_verify(net):
 
 
 def test_pmu_case14():
-    net = nw.case14()
+    net = nw.case9()
 
     pp.runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)

@@ -20,6 +20,7 @@ information about the definition and interpretation of the parameters in the fol
     elements/line
     elements/switch
     elements/load
+    elements/motor
     elements/asymmetric_load	
     elements/sgen
     elements/asymmetric_sgen
