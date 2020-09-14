@@ -1,6 +1,9 @@
 Change Log
 =============
 
+- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
+- [FIXED] json load for broken geom columns in bus_geodata
+
 [2.4.0]- 2020-09-01
 ----------------------
 - [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893

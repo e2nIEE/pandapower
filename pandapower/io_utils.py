@@ -462,7 +462,18 @@ class FromSerializableRegistry():
             return class_.from_dict(self.obj, self.net)
         else:
             # for non-pp objects, e.g. tuple
-            return class_(self.obj, **self.d)
+            try:
+                return class_(self.obj, **self.d)
+            except ValueError:
+                data = json.loads(self.obj)
+                df = pd.DataFrame(columns=self.d["columns"])
+                for d in data["features"]:
+                    idx = int(d["id"])
+                    for prop, val in d["properties"].items():
+                        df.at[idx, prop] = val
+                    # for geom, val in d["geometry"].items():
+                    #     df.at[idx, geom] = val
+                return df
 
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame')
