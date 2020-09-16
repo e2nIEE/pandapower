@@ -603,7 +603,7 @@ class JSONSerializableClass(object):
                 raise UserWarning("%s with index %s already exists" % (element, index))
         net[element].at[index, column] = self
 
-    def __eq__(self, other):
+    def equals(self, other):
 
         class UnequalityFound(Exception):
             pass
