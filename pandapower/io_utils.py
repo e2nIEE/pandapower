@@ -400,10 +400,9 @@ class FromSerializableRegistry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, net, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct):
         self.obj = obj
         self.d = d
-        self.net = net
         self.pp_hook = pp_hook_funct
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
@@ -420,7 +419,7 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook, args=(self.net,))
+                df[col] = df[col].apply(self.pp_hook)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -429,9 +428,9 @@ class FromSerializableRegistry():
             from pandapower import from_json_string
             return from_json_string(self.obj)
         else:
-            # net = create_empty_network()
-            self.net.update(self.obj)
-            return self.net
+            net = create_empty_network()
+            net.update(self.obj)
+            return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
@@ -456,13 +455,26 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(pp_hook, net=self.net,
+                                      object_hook=partial(pp_hook,
                                                           registry_class=FromSerializableRegistry))
                 # backwards compatibility
-            return class_.from_dict(self.obj, self.net)
+            if "net" in self.obj:
+                del self.obj["net"]
+            return class_.from_dict(self.obj)
         else:
             # for non-pp objects, e.g. tuple
-            return class_(self.obj, **self.d)
+            try:
+                return class_(self.obj, **self.d)
+            except ValueError:
+                data = json.loads(self.obj)
+                df = pd.DataFrame(columns=self.d["columns"])
+                for d in data["features"]:
+                    idx = int(d["id"])
+                    for prop, val in d["properties"].items():
+                        df.at[idx, prop] = val
+                    # for geom, val in d["geometry"].items():
+                    #     df.at[idx, geom] = val
+                return df
 
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame')
@@ -488,28 +500,26 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
-        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, net=net, registry_class=FromSerializableRegistry)}
+#        net = create_empty_network()
+        super_kwargs = {"object_hook": partial(pp_hook, registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
+def pp_hook(d, registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
             if "_object" in d:
                 obj = d.pop('_object')
             elif "_state" in d:
                 obj = d['_state']
-                if d['has_net']:
-                    obj['net'] = 'net'
                 if '_init' in obj:
                     del obj['_init']
                 return obj  # backwards compatibility
             else:
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, net, pp_hook)
+            fs = registry_class(obj, d, pp_hook)
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             return fs.from_serializable()
@@ -557,29 +567,10 @@ def decrypt_string(s, key):
 
 
 class JSONSerializableClass(object):
-    json_excludes = ["net", "_net", "self", "__class__"]
+    json_excludes = ["self", "__class__"]
 
     def __init__(self, **kwargs):
         pass
-
-    @property
-    def net(self):
-        return self._net()
-
-    @net.setter
-    def net(self, net):
-        self._net = weakref.ref(net)
-
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'net':
-                setattr(result, k, memo[id(self.net)])
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
 
     def to_json(self):
         """
@@ -599,22 +590,20 @@ class JSONSerializableClass(object):
 
         d = {key: consider_callable(val) for key, val in self.__dict__.items()
              if key not in self.json_excludes}
-        if "net" in signature(self.__init__).parameters.keys():
-            d.update({'net': 'net'})
         return d
 
-    def add_to_net(self, element, index, column="object", overwrite=False):
-        if element not in self.net:
-            self.net[element] = pd.DataFrame(columns=[column])
-        if index in self.net[element].index.values:
-            obj = self.net[element].object.at[index]
+    def add_to_net(self, net, element, index, column="object", overwrite=False):
+        if element not in net:
+            net[element] = pd.DataFrame(columns=[column])
+        if index in net[element].index.values:
+            obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
                 logger.info("Updating %s with index %s" % (element, index))
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
-        self.net[element].at[index, column] = self
+        net[element].at[index, column] = self
 
-    def __eq__(self, other):
+    def equals(self, other):
 
         class UnequalityFound(Exception):
             pass
@@ -675,17 +664,14 @@ class JSONSerializableClass(object):
             try:
                 check_equality(self.__dict__, other.__dict__)
                 return True
-            except UnequalityFound as e:
+            except UnequalityFound:
                 return False
         else:
             return False
 
     @classmethod
-    def from_dict(cls, d, net):
+    def from_dict(cls, d):
         obj = JSONSerializableClass.__new__(cls)
-        if 'net' in d:
-            d.pop('net')
-            obj.net = net
         obj.__dict__.update(d)
         return obj
 
