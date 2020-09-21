@@ -1,6 +1,7 @@
 Change Log
 =============
 
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver
 - [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
 - [FIXED] json load for broken geom columns in bus_geodata
 
