@@ -46,8 +46,9 @@ before_script:
   - python ./.install_pycall.py
 
 script:
-  - python-jl ./pandapower/test/opf/test_powermodels.py
-  - py.test --cov=pandapower --cov-config .coveragerc
+#  - python-jl ./pandapower/test/opf/test_powermodels.py
+#  - py.test --cov=pandapower --cov-config .coveragerc
+  - python-jl -m pytest --cov=pandapower --cov-config .coveragerc
     
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
