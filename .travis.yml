@@ -5,7 +5,6 @@ env:
 
 matrix:
   include:
-    - JULIA_VERSION=1.5
     - python: 3.5
     - python: 3.6
     - python: 3.7
@@ -39,12 +38,12 @@ install:
 
 before_script:
   # this is needed to test PowerModels and julia code
-  - echo .install_julia.sh "$JULIA_VERSION"
-  - .install_julia.sh "$JULIA_VERSION"
+  - echo ./.install_julia.sh "$JULIA_VERSION"
+  - ./.install_julia.sh "$JULIA_VERSION"
   - which python
   - python -m pip install julia
   - python -m pip --version
-  - python .install_pycall.py
+  - python ./.install_pycall.py
 
 script:
     py.test --cov=pandapower --cov-config .coveragerc
