@@ -1,4 +1,8 @@
 language: python
+env:
+  matrix:
+    - JULIA_VERSION=1.5
+
 matrix:
   include:
     - python: 3.5
@@ -31,6 +35,15 @@ install:
   - python setup.py install
   - conda list
   - conda info -a
+
+before_script:
+  # this is needed to test PowerModels and julia code
+  - echo .install_julia.sh "$JULIA_VERSION"
+  - .install_julia.sh "$JULIA_VERSION"
+  - which python
+  - python -m pip install julia
+  - python -m pip --version
+  - python .install_pycall.py
 
 script:
     py.test --cov=pandapower --cov-config .coveragerc
