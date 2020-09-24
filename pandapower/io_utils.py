@@ -400,7 +400,7 @@ class FromSerializableRegistry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, net, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
@@ -506,7 +506,7 @@ class PPJSONDecoder(json.JSONDecoder):
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
+def pp_hook(d, registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
             if "_object" in d:
@@ -519,7 +519,7 @@ def pp_hook(d, net=None, registry_class=FromSerializableRegistry):
             else:
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, net, pp_hook)
+            fs = registry_class(obj, d, pp_hook)
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             return fs.from_serializable()
