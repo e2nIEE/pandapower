@@ -5,6 +5,7 @@ env:
 
 matrix:
   include:
+    - JULIA_VERSION=1.5
     - python: 3.5
     - python: 3.6
     - python: 3.7
