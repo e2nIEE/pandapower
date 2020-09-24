@@ -1,9 +1,7 @@
 language: python
 env:
   matrix:
-    - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
-         JULIA_VERSION=1.5
-      fi
+    - JULIA_VERSION=1.5
 
 matrix:
   include:
