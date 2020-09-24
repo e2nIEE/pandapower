@@ -48,7 +48,12 @@ before_script:
 script:
 #  - python-jl ./pandapower/test/opf/test_powermodels.py
 #  - py.test --cov=pandapower --cov-config .coveragerc
-  - python-jl -m pytest --cov=pandapower --cov-config .coveragerc
+  # test with julia in python 3.6
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+         python-jl -m pytest --cov=pandapower --cov-config .coveragerc
+    else
+         py.test --cov=pandapower --cov-config .coveragerc
+    fi  
     
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
