@@ -38,12 +38,14 @@ install:
 
 before_script:
   # this is needed to test PowerModels and julia code
-  - echo ./.install_julia.sh "$JULIA_VERSION"
-  - ./.install_julia.sh "$JULIA_VERSION"
-  - which python
-  - python -m pip install julia
-  - python -m pip --version
-  - python ./.install_pycall.py
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+      - echo ./.install_julia.sh "$JULIA_VERSION"
+      - ./.install_julia.sh "$JULIA_VERSION"
+      - which python
+      - python -m pip install julia
+      - python -m pip --version
+      - python ./.install_pycall.py
+    fi  
 
 script:
 #  - python-jl ./pandapower/test/opf/test_powermodels.py
@@ -51,7 +53,9 @@ script:
   # test with julia in python 3.6
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
          python-jl -m pytest --cov=pandapower --cov-config .coveragerc
-    else
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+         py.test --cov=pandapower --cov-config .coveragerc
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then
          py.test --cov=pandapower --cov-config .coveragerc
     fi  
     
