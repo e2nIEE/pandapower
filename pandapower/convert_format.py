@@ -88,7 +88,7 @@ def _convert_costs(net):
 def _add_nominal_power(net):
     if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
-    
+
     # Reset sn_mva only if sn_mva not available
     if "sn_mva" not in net:
         net.sn_mva = 1.0
