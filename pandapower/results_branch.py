@@ -510,16 +510,16 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impediance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
 
-    res_impediance_df["p_from_mw"].values[:] = p_from_mw
-    res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
-    res_impediance_df["p_to_mw"].values[:] = p_to_mw
-    res_impediance_df["q_to_mvar"].values[:] = q_to_mvar
-    res_impediance_df["pl_mw"].values[:] = pl_mw
-    res_impediance_df["ql_mvar"].values[:] = ql_mvar
-    res_impediance_df["i_from_ka"].values[:] = i_from_ka
-    res_impediance_df["i_to_ka"].values[:] = i_to_ka
+    res_impedance_df["p_from_mw"].values[:] = p_from_mw
+    res_impedance_df["q_from_mvar"].values[:] = q_from_mvar
+    res_impedance_df["p_to_mw"].values[:] = p_to_mw
+    res_impedance_df["q_to_mvar"].values[:] = q_to_mvar
+    res_impedance_df["pl_mw"].values[:] = pl_mw
+    res_impedance_df["ql_mvar"].values[:] = ql_mvar
+    res_impedance_df["i_from_ka"].values[:] = i_from_ka
+    res_impedance_df["i_to_ka"].values[:] = i_to_ka
 
 
 
