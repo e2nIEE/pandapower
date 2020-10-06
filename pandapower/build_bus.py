@@ -205,14 +205,14 @@ def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
             # init voltage possible if bus results are available
-            if "res_bus" in net and net.res_bus.index.equals(net.bus.index):
+            if "res_bus_est" in net and net.res_bus_est.index.equals(net.bus.index):
                 # init bus voltages from results if the sorting is correct
-                res_table = "res_bus"
+                res_table = "res_bus_est"
             else:
                 # cannot init from results, since sorting of results is different from element table
                 # TO BE REVIEWED! Why there was no raise before this commit?
-                raise UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
-                            "You should sort res_bus before calling runpp.")
+                raise UserWarning("Init from results not possible. Index of res_bus_est do not match with bus. "
+                            "You should sort res_bus_est before calling runpp.")
                 return None
 
             if mode == "magnitude":
