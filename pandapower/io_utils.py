@@ -372,12 +372,12 @@ class FromSerializable:
         if instance is None:
             return self
         class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
-        if not class_module in self.registry:
+        if class_module not in self.registry:
             _class = (class_module[0], '')
             _module = ('', class_module[1])
-            if ((_class in self.registry) and (_module in self.registry)):
-                logger.error('the saved object %s is ambiguous. There are at least two possibilites to decode'
-                             'the object' % class_module)
+            if (_class in self.registry) and (_module in self.registry):
+                logger.error('the saved object %s is ambiguous. There are at least two possibilites'
+                             ' to decode the object' % class_module)
             elif _class in self.registry:
                 class_module = _class
             elif _module in self.registry:
