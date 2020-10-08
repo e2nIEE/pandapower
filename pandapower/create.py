@@ -5,14 +5,20 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, float64, all as np_all, any as np_any, \
-    zeros
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros
 from packaging import version
 
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
@@ -61,6 +67,20 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
+        "motor": [("name", dtype(object)),
+                 ("bus", "i8"),
+                 ("pn_mech_mw", "f8"),
+                 ("loading_percent", "f8"),
+                 ("cos_phi", "f8"),
+                 ("cos_phi_n", "f8"),
+                 ("efficiency_percent", "f8"),
+                 ("efficiency_n_percent", "f8"),
+                 ("lrc_pu", "f8"),
+                 ("vn_kv", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("rx", 'f8')
+                 ],
         "asymmetric_load": [("name", dtype(object)),
                             ("bus", "u4"),
                             ("p_a_mw", "f8"),
@@ -316,6 +336,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("va_lv_degree", "f8"),
                              ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
+                            ("q_mvar", "f8")],
+        "_empty_res_motor": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
@@ -1208,6 +1230,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
          **buses** (list of int) - A list of bus ids to which the loads are connected
 
      OPTIONAL:
+
          **p_mw** (list of floats) - The active power of the sgens
 
 			 - postive value   -> generation
@@ -1815,6 +1838,80 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     return index
 
+def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100.,
+                 loading_percent=100., name=None, lrc_pu=nan, scaling=1.0,
+				 vn_kv=nan, rx=nan, index=None, in_service=True,
+				 cos_phi_n=nan,
+                 efficiency_n_percent=nan):
+    """
+    Adds a motor to the network.
+
+
+    INPUT:
+        **net** - The net within this motor should be created
+
+        **bus** (int) - The bus id to which the motor is connected
+
+        **pn_mech_mw** (float) - Mechanical rated power of the motor
+
+        **cos_phi** (float, nan) - cosine phi at current operating point
+
+    OPTIONAL:
+
+		**name** (string, None) - The name for this motor
+
+        **efficiency_percent** (float, 100) - Efficiency in percent at current operating point
+
+        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated mechanical power
+
+        **scaling** (float, 1.0) - scaling factor which for the active power of the motor
+
+		**cos_phi_n** (float, nan) - cosine phi at rated power of the motor for short-circuit calculation
+
+        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for short-circuit calculation
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
+
+        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
+
+        **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created motor
+
+    EXAMPLE:
+        create_motor(net, 1, pn_mech_mw = 0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["motor"])
+
+    if index in net["motor"].index:
+        raise UserWarning("A motor with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.motor.dtypes
+
+    columns = ["name", "bus", "pn_mech_mw", "cos_phi", "cos_phi_n", "vn_kv", "rx",
+               "efficiency_n_percent", "efficiency_percent", "loading_percent",
+               "lrc_pu", "scaling", "in_service"]
+    variables = [name, bus, pn_mech_mw, cos_phi, cos_phi_n, vn_kv, rx, efficiency_n_percent,
+                 efficiency_percent, loading_percent, lrc_pu, scaling, bool(in_service)]
+    net.motor.loc[index, columns] = variables
+
+    # and preserve dtypes
+    _preserve_dtypes(net.motor, dtypes)
+
+    return index
+
 
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
@@ -2093,7 +2190,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 max_loading_percent=nan, alpha=None,
                                 temperature_degree_celsius=None,
                                 r0_ohm_per_km=nan, x0_ohm_per_km=nan,
-                                c0_nf_per_km=nan, g0_us_per_km=0, **kwargs):
+                                c0_nf_per_km=nan, g0_us_per_km=0,
+                                endtemp_degree=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -2216,6 +2314,11 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         if "temperature_degree_celsius" not in net.line.columns:
             net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
         net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
+    if endtemp_degree is not None:
+        if "endtemp_degree" not in net.line.columns:
+            net.line.loc[:, "endtemp_degree"] = pd.Series()
+        net.line.loc[index, "endtemp_degree"] = endtemp_degree
 
     return index
 
@@ -3930,7 +4033,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Generation is a positive bus power injection, consumption negative
+        "kA" for I. Generation is a positive bus power consumption, injection negative
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
@@ -3955,11 +4058,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     EXAMPLES:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", 0, -2., 0.05.)
+        create_measurement(net, "p", "bus", 0, 2., 0.05.)
 
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
+    if meas_type in ("p", "q") and element_type == "bus":
+        logger.warning("Attention! Signing system of P,Q measurement of buses now changed to load reference (match pandapower res_bus pq)!")   
 
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
