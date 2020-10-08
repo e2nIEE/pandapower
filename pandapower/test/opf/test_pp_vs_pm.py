@@ -144,53 +144,30 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
     assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
 
+    assert np.isclose(net_old.res_cost, 17082.8)
+    assert np.isclose(net_new.res_cost, 17015.5635)
 
-# def test_case5_pm_constrain_ext_grid_vm_pu():
-#
-#     net = case5_pm_matfile_I()
-#     pp.runpp(net)
-#
-#
-#     pp.runpm_ac_opf(net, calculate_voltage_angles=True, correct_pm_network_data=False,
-#             delete_buffer_file=False,
-#             pm_file_path="case5_clm_matfile_va.json", opf_flow_lim="I",
-#             constrain_ext_grid_vm_pu = True)
-#
-#
-#     assert np.isclose(net.res_cost, 17082.8)
-#
-#
-#     pp.runpm_ac_opf(net, calculate_voltage_angles=True, correct_pm_network_data=False,
-#                     delete_buffer_file=False,
-#                     pm_file_path="case5_clm_matfile_va.json", opf_flow_lim="I",
-#                     constrain_ext_grid_vm_pu = False)
-#
-#
-#     assert np.isclose(net.res_cost, 17015.5635)
-#
-#
-# def test_case5_pm_vs_pp():
-#
-#     net = case5_pm_matfile_I()
-#     pp.runpp(net)
-#
-#
-#     pp.runpm_ac_opf(net, calculate_voltage_angles=True, correct_pm_network_data=False,
-#             delete_buffer_file=False,
-#             pm_file_path="case5_clm_matfile_va.json", opf_flow_lim="I")
-#
-#
-#     assert np.isclose(net.res_cost, 17082.8)
-#
-#     pp.runopp(net)
-#
-#     assert np.isclose(net.res_cost, 17082.8)
-        
 
+def test_opf_ext_grid_controllable_pm():
+    # load net
+    net = case5_pm_matfile_I()
+    net_old = copy.deepcopy((net))
+    net_new = copy.deepcopy((net))
+    # run pd2ppc with ext_grid controllable = False
+    pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False,
+            delete_buffer_file=False,
+            pm_file_path="case5_clm_matfile_va.json", opf_flow_lim="I")
+    net_new.ext_grid["controllable"] = True
+    pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
+            delete_buffer_file=False,
+            pm_file_path="case5_clm_matfile_va.json", opf_flow_lim="I")
+
+    assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
+    assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
+
+    assert np.isclose(net_old.res_cost, 17082.8)
+    assert np.isclose(net_new.res_cost, 17015.5635)
 
 if __name__ == "__main__":
-    # test_case5_pm_constrain_ext_grid_vm_pu()
-    # test_case5_pm_pd2ppc()
-    test_opf_ext_grid_controllable()
-   # pytest.main([__file__, "-xs"])
-#     test_case5_pm_matfile_I()
+   pytest.main([__file__, "-xs"])
+
