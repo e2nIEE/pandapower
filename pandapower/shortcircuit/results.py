@@ -13,16 +13,26 @@ from pandapower.pypower.idx_bus import VM, VA
 from pandapower.results_bus import _get_bus_idx, _set_buses_out_of_service
 from pandapower.results import _get_aranged_lookup, _get_branch_results
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
-from pandapower.results import reset_results
+
 
 def _extract_results(net, ppc, ppc_0):
     _get_bus_results(net, ppc, ppc_0)
     if net._options["branch_results"]:
-        _get_line_results(net, ppc)
-        _get_trafo_results(net, ppc)
-        _get_trafo3w_results(net, ppc)
+        if net._options['return_all_currents']:
+            _get_line_all_results(net, ppc)
+            _get_trafo_all_results(net, ppc)
+            _get_trafo3w_all_results(net, ppc)
+        else:
+            _get_line_results(net, ppc)
+            _get_trafo_results(net, ppc)
+            _get_trafo3w_results(net, ppc)
+
 
 def _extract_single_results(net, ppc):
+    for element in ["line", "trafo"]:
+        net["res_%s_sc"%element] = pd.DataFrame(np.nan, index=net[element].index,
+                                                columns=net["_empty_res_%s"%element].columns,
+                                                dtype='float')
     _get_single_bus_results(net, ppc)
     net["_options"]["ac"] = True
     net["_options"]["trafo_loading"] = "current"
@@ -68,12 +78,49 @@ def _get_line_results(net, ppc):
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 
+def _get_line_all_results(net, ppc):
+    case = net._options["case"]
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    ppc_index = bus_lookup[net.bus.index]
+    branch_lookup = net._pd2ppc_lookups["branch"]
+
+    multindex = pd.MultiIndex.from_product([net.res_line_sc.index, net.bus.index], names=['line','bus'])
+    net.res_line_sc = net.res_line_sc.reindex(multindex)
+
+    if "line" in branch_lookup:
+        f, t = branch_lookup["line"]
+        minmax = np.maximum if case == "max" else np.minimum
+
+        net.res_line_sc["ikss_ka"] = minmax(ppc["internal"]["branch_ikss_f"][f:t, ppc_index].real.reshape(-1, 1),
+                                            ppc["internal"]["branch_ikss_t"][f:t, ppc_index].real.reshape(-1, 1))
+        if net._options["ip"]:
+            net.res_line_sc["ip_ka"] = minmax(ppc["internal"]["branch_ip_f"][f:t, ppc_index].real.reshape(-1, 1),
+                                              ppc["internal"]["branch_ip_t"][f:t, ppc_index].real.reshape(-1, 1))
+        if net._options["ith"]:
+            net.res_line_sc["ith_ka"] = minmax(ppc["internal"]["branch_ith_f"][f:t, ppc_index].real.reshape(-1, 1),
+                                               ppc["internal"]["branch_ith_t"][f:t, ppc_index].real.reshape(-1, 1))
+
+
 def _get_trafo_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
         net.res_trafo_sc["ikss_hv_ka"] = ppc["branch"][f:t, IKSS_F].real
         net.res_trafo_sc["ikss_lv_ka"] = ppc["branch"][f:t, IKSS_T].real
+
+
+def _get_trafo_all_results(net, ppc):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    ppc_index = bus_lookup[net.bus.index]
+    branch_lookup = net._pd2ppc_lookups["branch"]
+
+    multindex = pd.MultiIndex.from_product([net.res_trafo_sc.index, net.bus.index], names=['trafo', 'bus'])
+    net.res_trafo_sc = net.res_trafo_sc.reindex(multindex)
+
+    if "trafo" in branch_lookup:
+        f, t = branch_lookup["trafo"]
+        net.res_trafo_sc["ikss_hv_ka"] = ppc["internal"]["branch_ikss_f"][f:t, ppc_index].real.reshape(-1, 1)
+        net.res_trafo_sc["ikss_lv_ka"] = ppc["internal"]["branch_ikss_t"][f:t, ppc_index].real.reshape(-1, 1)
 
 
 def _get_trafo3w_results(net, ppc):
@@ -86,3 +133,21 @@ def _get_trafo3w_results(net, ppc):
         net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real
         net.res_trafo3w_sc["ikss_mv_ka"] = ppc["branch"][hv:mv, IKSS_T].real
         net.res_trafo3w_sc["ikss_lv_ka"] = ppc["branch"][mv:lv, IKSS_T].real
+
+
+def _get_trafo3w_all_results(net, ppc):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    ppc_index = bus_lookup[net.bus.index]
+    branch_lookup = net._pd2ppc_lookups["branch"]
+
+    multindex = pd.MultiIndex.from_product([net.res_trafo3w_sc.index, net.bus.index], names=['trafo3w', 'bus'])
+    net.res_trafo3w_sc = net.res_trafo3w_sc.reindex(multindex)
+
+    if "trafo3w" in branch_lookup:
+        f, t = branch_lookup["trafo3w"]
+        hv = int(f + (t - f) / 3)
+        mv = int(f + 2 * (t - f) / 3)
+        lv = t
+        net.res_trafo3w_sc["ikss_hv_ka"] = ppc["internal"]["branch_ikss_f"][f:hv, ppc_index].real.reshape(-1, 1)
+        net.res_trafo3w_sc["ikss_mv_ka"] = ppc["internal"]["branch_ikss_t"][hv:mv, ppc_index].real.reshape(-1, 1)
+        net.res_trafo3w_sc["ikss_lv_ka"] = ppc["internal"]["branch_ikss_t"][mv:lv, ppc_index].real.reshape(-1, 1)

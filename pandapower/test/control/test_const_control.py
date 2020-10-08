@@ -21,10 +21,10 @@ def test_write():
     c1 = pp.control.ConstControl(net, 'sgen', 'p_mw', element_index=[0, 1], profile_name=[0, 1], data_source=ds)
     pp.create_sgen(net, 0, 0)
     c2 = pp.control.ConstControl(net, 'sgen', 'p_mw', element_index=[2], profile_name=[2], data_source=ds)
-    c1.time_step(0)
-    c1.control_step()
-    c2.time_step(0)
-    c2.control_step()
+    c1.time_step(net, 0)
+    c1.control_step(net)
+    c2.time_step(net, 0)
+    c2.control_step(net)
 
 
 if __name__ == '__main__':

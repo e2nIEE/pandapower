@@ -19,6 +19,7 @@ from pandapower.create import create_switch, create_line_from_parameters, \
     create_load, create_shunt, create_bus, create_sgen
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
+from pandapower.std_types import change_std_type
 
 try:
     import pplog as logging
@@ -57,7 +58,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
                 res_elements=False):
     """
-    Returns the list of pandapower elements.
+    Returns a set of pandapower elements.
     """
     pp_elms = set(["bus"]) if bus else set()
     pp_elms |= set([el[0] for el in element_bus_tuples(
@@ -334,7 +335,7 @@ def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
         **data** (dict) - to store flexibilities information
 
         **delta_pq** (float) - if (abs(max - min) <= delta_pq) the variable is not assumed as
-            flexible, since the range is as small as delta_pq (should be small, too).
+        flexible, since the range is as small as delta_pq (should be small, too).
 
     OPTIONAL:
         **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
@@ -394,10 +395,10 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
         **df** (DataFrame)
 
         **column1** (str) - name of first column within df to compare.
-            The values of df[column1] must be numericals.
+        The values of df[column1] must be numericals.
 
         **column2** (str) - name of second column within df to compare.
-            The values of df[column2] must be numericals.
+        The values of df[column2] must be numericals.
 
         **delta** (numerical) - value which defines whether indices are returned or not
 
@@ -405,11 +406,11 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
         **idx** (iterable, None) - list of indices which should be considered only
 
         **equal_nan** (bool, False) - if False, indices are included where at least one value in
-            df[column1] and df[column2] is NaN
+        df[column1] and df[column2] is NaN
 
     OUTPUT:
         **index** (pandas.Index) - index within idx where df[column1] and df[column2] deviates by
-            at least delta or, if equal_na is True, one value is NaN
+        at least delta or, if equal_na is True, one value is NaN
     """
     idx = idx if idx is not None else df.index
     idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
@@ -465,7 +466,7 @@ def _determine_costs_dict(net, opf_task_overview):
         **net** - panpdapower net
 
         **opf_task_overview** (dict of dicts) - both, "flexibilities_without_costs" and
-            "flexibilities" must be in opf_task_overview.keys()
+        "flexibilities" must be in opf_task_overview.keys()
     """
 
     cost_dfs = [df for df in ["poly_cost", "pwl_cost"] if net[df].shape[0]]
@@ -728,15 +729,15 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
         **net** (pandapowerNet) - the pandapower net that will be changed
 
         **column** (string) - name of column that should be copied from the bus table to the element
-            table
+        table
 
         **replace** (boolean) - if True, an existing column in the element table will be overwritten
 
         **elements** (list) - list of elements that should get the column values from the bus table
 
         **branch_bus** (list) - defines which bus should be considered for branch elements.
-            'branch_bus' must have the length of 2. One entry must be 'from_bus' or 'to_bus', the
-            other 'hv_bus' or 'lv_bus'
+        'branch_bus' must have the length of 2. One entry must be 'from_bus' or 'to_bus', the
+        other 'hv_bus' or 'lv_bus'
 
     EXAMPLE:
         compare to add_zones_to_elements()
@@ -788,14 +789,14 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         **replace** (boolean) - if True, an existing column will be overwritten
 
         **elements** (list) - list of elements that should get the column values from the linked
-            element tables. If None, all elements with the columns "element" and "element_type" or
-            "et" are considered (these are currently "measurement" and "switch").
+        element tables. If None, all elements with the columns "element" and "element_type" or
+        "et" are considered (these are currently "measurement" and "switch").
 
         **continue_on_missing_column** (Boolean, True) - If False, a error will be raised in case of
-            an element table has no column 'column' although this element is refered in 'elements'.
-            E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
-            in net.trafo there is no column 'name' although column=='name' - ni this case
-            'continue_on_missing_column' acts.
+        an element table has no column 'column' although this element is refered in 'elements'.
+        E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
+        in net.trafo there is no column 'name' although column=='name' - ni this case
+        'continue_on_missing_column' acts.
 
     EXAMPLE:
         import pandapower as pp
@@ -916,7 +917,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
 
     OPTIONAL:
       **old_indices** (iterable) - list of old/previous indices which will be replaced.
-          If None, all indices are considered.
+      If None, all indices are considered.
     """
     old_indices = old_indices if old_indices is not None else net[element].index
     if not len(new_indices) or not net[element].shape[0]:
@@ -958,7 +959,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         element_in_cost_df = net[cost_df].et == element
         if sum(element_in_cost_df):
             net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
-                element_in_cost_df], lookup)
+                                                                           element_in_cost_df], lookup)
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
@@ -973,7 +974,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
       **start** - index begins with "start"
 
       **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
-          selected. Customized DataFrames can also be considered here.
+      selected. Customized DataFrames can also be considered here.
 
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
@@ -1000,8 +1001,6 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                 reindex_elements(net, elm, new_index)
         else:
             logger.debug("No indices could be changed for element '%s'." % elm)
-
-    return net
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
@@ -1084,13 +1083,14 @@ def close_switch_at_line_with_two_open_switches(net):
             len(closed_switches), closed_switches))
 
 
-def fuse_buses(net, b1, b2, drop=True):
+def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     """
     Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
     if drop=True (default).
     """
     b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
 
+    # --- reroute element connections from b2 to b1
     for element, value in element_bus_tuples():
         i = net[element][net[element][value].isin(b2)].index
         net[element].loc[i, value] = b1
@@ -1098,17 +1098,23 @@ def fuse_buses(net, b1, b2, drop=True):
     i = net["switch"][(net["switch"]["et"] == 'b') & (
         net["switch"]["element"].isin(b2))].index
     net["switch"].loc[i, "element"] = b1
-    net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
-                                     (net["switch"]["et"] == "b")].index, inplace=True)
-    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
-    net.measurement.loc[bus_meas, "element"] = b1
+
+    # --- reroute bus measurements from b2 to b1
+    if fuse_bus_measurements:
+        bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+        bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
+        net.measurement.loc[bus_meas, "element"] = b1
+
+    # --- drop b2
     if drop:
-        # drop_elements=False because the elements must be connected to new buses now
+        # drop_elements=True is not needed because the elements must be connected to new buses now:
         drop_buses(net, b2, drop_elements=False)
+        # branch elements which connected b1 with b2 are now connecting b1 with b1. these branch
+        # can now be dropped:
+        drop_inner_branches(net, buses=[b1])
         # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        drop_duplicated_measurements(net, buses=[b1])
-    return net
+        if fuse_bus_measurements:
+            drop_duplicated_measurements(net, buses=[b1])
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -1122,6 +1128,7 @@ def drop_buses(net, buses, drop_elements=True):
     net["res_bus"].drop(res_buses, inplace=True)
     if drop_elements:
         drop_elements_at_buses(net, buses)
+        drop_measurements_at_elements(net, "bus", idx=buses)
 
 
 def drop_switches_at_buses(net, buses):
@@ -1131,7 +1138,8 @@ def drop_switches_at_buses(net, buses):
     logger.info("dropped %d switches" % len(i))
 
 
-def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True):
+def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
+                           drop_measurements=True):
     """
     drop elements connected to given buses
     """
@@ -1155,6 +1163,8 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True):
                     net[res_element].drop(res_eid, inplace=True)
                 if net[element].shape[0] < n_el:
                     logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
+    if drop_measurements:
+        drop_measurements_at_elements(net, "bus", idx=buses)
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -1172,6 +1182,9 @@ def drop_trafos(net, trafos, table="trafo"):
         net["switch"].drop(i, inplace=True)
         num_switches = len(i)
 
+    # drop measurements
+    drop_measurements_at_elements(net, table, idx=trafos)
+
     # drop the trafos
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
@@ -1188,6 +1201,9 @@ def drop_lines(net, lines):
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     net["switch"].drop(i, inplace=True)
 
+    # drop measurements
+    drop_measurements_at_elements(net, "line", idx=lines)
+
     # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
@@ -1196,9 +1212,21 @@ def drop_lines(net, lines):
     logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
 
 
+def drop_measurements_at_elements(net, element_type, idx=None, side=None):
+    """
+    Drop measurements of given element_type and (if given) given elements (idx) and side.
+    """
+    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
+    bool1 = net.measurement.element_type == element_type
+    bool2 = net.measurement.element.isin(idx)
+    bool3 = net.measurement.side == side if side is not None else [True]*net.measurement.shape[0]
+    to_drop = net.measurement.index[bool1 & bool2 & bool3]
+    net.measurement.drop(to_drop, inplace=True)
+
+
 def drop_duplicated_measurements(net, buses=None, keep="first"):
     """
-    Drops duplicated measurements at given set buses. If buses is None, all buses are considered.
+    Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
     """
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
@@ -1206,10 +1234,35 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
     if not analyzed_meas.duplicated(subset=[
-       "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
+
+
+def drop_inner_branches(net, buses, branch_elements=None):
+    """
+    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
+    'to_bus').
+    """
+    branch_dict = branch_element_bus_dict(include_switch=True)
+    if branch_elements is not None:
+        branch_dict = {key: branch_dict[key] for key in branch_elements}
+
+    for elm, bus_types in branch_dict.items():
+        inner = pd.Series(True, index=net[elm].index)
+        for bus_type in bus_types:
+            inner &= net[elm][bus_type].isin(buses)
+        if elm == "switch":
+            inner &= net[elm]["element"].isin(buses)
+            inner &= net[elm]["et"] == "b"  # bus-bus-switches
+
+        if elm == "line":
+            drop_lines(net, net[elm].index[inner])
+        elif "trafo" in elm:
+            drop_trafos(net, net[elm].index[inner])
+        else:
+            net[elm].drop(net[elm].index[inner], inplace=True)
 
 
 def set_element_status(net, buses, in_service):
@@ -1254,57 +1307,73 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         net.switch.loc[oos_switches, "closed"] = True
 
         for idx, bus in net.switch[
-          ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
+            ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
         logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
 
 
+def drop_elements_simple(net, element, idx):
+    """
+    Drop elements and result entries from pandapower net.
+    """
+    idx = ensure_iterability(idx)
+    net[element].drop(idx, inplace=True)
+
+    # res_element
+    res_element = "res_" + element
+    if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
+        drop_res_idx = net[res_element].index.intersection(idx)
+        net[res_element].drop(drop_res_idx, inplace=True)
+
+    # logging
+    if len(idx) > 0:
+        logger.debug("dropped %d %s elements!" % (len(idx), element))
+
+
 def drop_out_of_service_elements(net):
-    # removes inactive lines and its switches and geodata
+    """
+    Drop all elements (including corresponding dataframes such as switches, measurements,
+    result tables, geodata) with "in_service" is False. Buses that are connected to in-service
+    branches are not deleted.
+    """
+
+    # --- drop inactive branches
     inactive_lines = net.line[~net.line.in_service].index
     drop_lines(net, inactive_lines)
-    inactive_res_lines = net.res_line.index.intersection(inactive_lines)
-    net.res_line.drop(inactive_res_lines, inplace=True)
 
     inactive_trafos = net.trafo[~net.trafo.in_service].index
     drop_trafos(net, inactive_trafos, table='trafo')
-    inactive_res_trafos = net.res_trafo.index.intersection(inactive_trafos)
-    net.res_trafo.drop(inactive_res_trafos, inplace=True)
 
     inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
     drop_trafos(net, inactive_trafos3w, table='trafo3w')
-    inactive_res_trafos3w = net.res_trafo3w.index.intersection(inactive_trafos3w)
-    net.res_trafo3w.drop(inactive_res_trafos3w, inplace=True)
 
-    do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
-        set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-        set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
-        set(net.trafo3w.lv_bus.values)
+    other_branch_elms = pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                                    other_elements=False) - {"line", "trafo", "trafo3w", "switch"}
+    for elm in other_branch_elms:
+        drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
 
-    # removes inactive buses safely
+    # --- drop inactive buses (safely)
+    # do not delete buses connected to branches
+    do_not_delete = set()
+    for elm, bus_col in element_bus_tuples(bus_elements=False):
+        if elm != "switch":
+            do_not_delete |= set(net[elm][bus_col].values)
+
+    # remove inactive buses (safely)
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
     drop_buses(net, inactive_buses, drop_elements=True)
-    inactive_res_buses = net.res_bus.index.intersection(inactive_buses)
-    net.res_bus.drop(inactive_res_buses, inplace=True)
 
-    # removes inactive elements other than buses, trafos and lines
-    for element in net.keys():
-        if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
-                and isinstance(net[element], pd.DataFrame) \
-                and "in_service" in net[element].columns:
-            drop_idx = net[element].query("not in_service").index
-            net[element].drop(drop_idx, inplace=True)
-
-            # res_element
-            res_element = "res_" + element
-            if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
-                drop_res_idx = net[res_element].index.intersection(drop_idx)
-                net[res_element].drop(drop_res_idx, inplace=True)
-
-            if len(drop_idx) > 0:
-                logger.debug("dropped %d %s elements!" % (len(drop_idx), element))
+    # --- drop inactive elements other than branches and buses
+    for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
+                           other_elements=True):
+        if "in_service" not in net[elm].columns:
+            if elm not in ["measurement", "switch"]:
+                logger.info("Out-of-service elements cannot be dropped since 'in_service' is " +
+                            "not in net[%s].columns" % elm)
+        else:
+            drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
 
 
 def drop_inactive_elements(net, respect_switches=True):
@@ -1317,7 +1386,7 @@ def drop_inactive_elements(net, respect_switches=True):
 
 
 def _select_cost_df(net, p2, cost_type):
-    isin = np.array([False]*net[cost_type].shape[0])
+    isin = np.array([False] * net[cost_type].shape[0])
     for et in net[cost_type].et.unique():
         isin_et = net[cost_type].element.isin(p2[et].index)
         is_et = net[cost_type].et == et
@@ -1348,7 +1417,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if keep_everything_else:
         p2 = copy.deepcopy(net)
-        include_results = True  # assumption: the user doesn't want to old results without selection
+        if not include_results:
+            clear_result_tables(p2)
+        # include_results = True  # assumption: the user doesn't want to old results without selection
     else:
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
@@ -1385,7 +1456,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
-               net[table].shape[0]):
+            net[table].shape[0]):
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
@@ -1398,12 +1469,13 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
 
     # switches
-    si = [i for i, s in net["switch"].iterrows()
-          if s["bus"] in buses and
-          ((s["et"] == "b" and s["element"] in p2["bus"].index) or
-           (s["et"] == "l" and s["element"] in p2["line"].index) or
-           (s["et"] == "t" and s["element"] in p2["trafo"].index))]
-    p2["switch"] = net["switch"].loc[si]
+    p2["switch"] = net.switch[
+        net.switch.bus.isin(p2.bus.index) & pd.concat([
+            net.switch[net.switch.et == 'b'].element.isin(p2.bus.index),
+            net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
+            net.switch[net.switch.et == 't'].element.isin(p2.trafo.index),
+        ], sort=False)
+        ]
 
     return pandapowerNet(p2)
 
@@ -1573,7 +1645,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
     return replaced
 
 
-def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_max=False):
+def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
     Creates lines by given impedances data, while the impedances are dropped.
     INPUT:
@@ -1581,19 +1653,20 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
 
     OPTIONAL:
         **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
-            will be replaced.
+        will be replaced.
 
         **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
-            replacement leads to equal power flow results. If False, unsymmetric impedances will
-            be replaced by symmetric lines.
+        replacement leads to equal power flow results. If False, unsymmetric impedances will
+        be replaced by symmetric lines.
 
-        **sn_as_max** (bool, False) - Flag to set whether sn_kva of impedances should be assumed
-            for max_i_ka of lines.
+        **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
+        given, the sn_mva values of the impedances are considered.
     """
-    index = index or net.impedance.index
+    index = ensure_iterability(index) if index is not None else net.line.index
+    max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
-    for _, imp in net.impedance.loc[index].iterrows():
-        if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
+    for (_, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
+        if not np.isclose(imp.rft_pu, imp.rtf_pu) or not np.isclose(imp.xft_pu, imp.xtf_pu):
             if only_valid_replace:
                 continue
             logger.error("impedance differs in from or to bus direction. lines always " +
@@ -1601,9 +1674,10 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
                          "to_bus parameters are considered.")
         vn = net.bus.vn_kv.at[imp.from_bus]
         Zni = vn ** 2 / imp.sn_mva
-        max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
+        if max_i == 'imp.sn_mva':
+            max_i = imp.sn_mva / vn / np.sqrt(3)
         new_index.append(create_line_from_parameters(
-            net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni, imp.xft_pu * Zni, 0, max_i_ka,
+            net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni, imp.xft_pu * Zni, 0, max_i,
             name=imp.name, in_service=imp.in_service))
     net.impedance.drop(index, inplace=True)
     return new_index
@@ -1617,16 +1691,16 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
 
     OPTIONAL:
         **index** (index, None) - Index of all lines to be replaced. If None, all lines
-            will be replaced.
+        will be replaced.
 
         **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
-            the net.sn_kva is assumed
+        the net.sn_kva is assumed
 
         **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
-            leads to equal power flow results. If False, capacitance and dielectric conductance will
-            be neglected.
+        leads to equal power flow results. If False, capacitance and dielectric conductance will
+        be neglected.
     """
-    index = index or net.line.index
+    index = ensure_iterability(index) if index is not None else net.line.index
     sn_mva = sn_mva or net.sn_mva
     sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
     sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
@@ -1644,7 +1718,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         Zni = vn ** 2 / sn_mva[i]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
-            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+                                               line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
             in_service=line_.in_service))
         i += 1
     drop_lines(net, index)
@@ -1665,15 +1739,15 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         **gen_indices** (iterable) - required indices of new generators
 
         **slack** (bool, False) - indicates which value is set to net.gen.slack for the new
-            generators
+        generators
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-            ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
-            "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+        ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
-            'cols_to_keep' to be kept while replacing ext_grids.
+        'cols_to_keep' to be kept while replacing ext_grids.
     """
     # --- determine ext_grid index
     if ext_grids is None:
@@ -1681,7 +1755,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
     else:
         ext_grids = ensure_iterability(ext_grids)
     if gen_indices is None:
-        gen_indices = [None]*len(ext_grids)
+        gen_indices = [None] * len(ext_grids)
     elif len(gen_indices) != len(ext_grids):
         raise ValueError("The length of 'gen_indices' must be the same as 'ext_grids' but is " +
                          "%i instead of %i" % (len(gen_indices), len(ext_grids)))
@@ -1754,12 +1828,12 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         **ext_grid_indices** (iterable) - required indices of new external grids
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-            gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
-            "bus", "vm_pu", "va_degree", "name", "in_service"
+        gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "bus", "vm_pu", "va_degree", "name", "in_service"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
-            'cols_to_keep' to be kept while replacing gens.
+        'cols_to_keep' to be kept while replacing gens.
     """
     # --- determine gen index
     if gens is None:
@@ -1767,7 +1841,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
     else:
         gens = ensure_iterability(gens)
     if ext_grid_indices is None:
-        ext_grid_indices = [None]*len(gens)
+        ext_grid_indices = [None] * len(gens)
     elif len(ext_grid_indices) != len(gens):
         raise ValueError("The length of 'ext_grid_indices' must be the same as 'gens' but is " +
                          "%i instead of %i" % (len(ext_grid_indices), len(gens)))
@@ -1836,12 +1910,12 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         **sgen_indices** (iterable) - required indices of new static generators
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-            gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
-            "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+        gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
-            'cols_to_keep' to be kept while replacing gens.
+        'cols_to_keep' to be kept while replacing gens.
     """
     # --- determine gen index
     if gens is None:
@@ -1849,7 +1923,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
     else:
         gens = ensure_iterability(gens)
     if sgen_indices is None:
-        sgen_indices = [None]*len(gens)
+        sgen_indices = [None] * len(gens)
     elif len(sgen_indices) != len(gens):
         raise ValueError("The length of 'sgen_indices' must be the same as 'gens' but is " +
                          "%i instead of %i" % (len(sgen_indices), len(gens)))
@@ -1920,12 +1994,12 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         **gen_indices** (iterable) - required indices of new generators
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-            sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-            "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
-            "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+        sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
-            'cols_to_keep' to be kept while replacing sgens.
+        'cols_to_keep' to be kept while replacing sgens.
     """
     # --- determine sgen index
     if sgens is None:
@@ -1933,7 +2007,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     else:
         sgens = ensure_iterability(sgens)
     if gen_indices is None:
-        gen_indices = [None]*len(sgens)
+        gen_indices = [None] * len(sgens)
     elif len(gen_indices) != len(sgens):
         raise ValueError("The length of 'gen_indices' must be the same as 'sgens' but is " +
                          "%i instead of %i" % (len(gen_indices), len(sgens)))
@@ -2042,16 +2116,16 @@ def replace_ward_by_internal_elements(net, wards=None):
         sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards] != 0, 1)
         to_add_load = net.res_ward.loc[wards, ["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
-        to_add_load.p_mw = net.ward.ps_mw[wards].values*sign_in_service*sign_not_isolated
-        to_add_load.q_mvar = net.ward.qs_mvar[wards].values*sign_in_service*sign_not_isolated
+        to_add_load.p_mw = net.ward.ps_mw[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.q_mvar = net.ward.qs_mvar[wards].values * sign_in_service * sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
 
         to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
-        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values**2*net.ward.pz_mw[wards].values * \
-            sign_in_service*sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values**2*net.ward.qz_mvar[wards].values * \
-            sign_in_service*sign_not_isolated
+        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values ** 2 * net.ward.pz_mw[wards].values * \
+                            sign_in_service * sign_not_isolated
+        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[wards].values * \
+                              sign_in_service * sign_not_isolated
         to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
@@ -2092,7 +2166,7 @@ def replace_xward_by_internal_elements(net, xwards=None):
                      in_service=xward.in_service, name=xward.name)
         create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
                    name=xward.name)
-        create_impedance(net, xward.bus, bus_idx, xward.r_ohm/(bus_v**2), xward.x_ohm/(bus_v**2),
+        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2), xward.x_ohm / (bus_v ** 2),
                          net.sn_mva, in_service=xward.in_service, name=xward.name)
 
     # --- result data
@@ -2190,7 +2264,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == [
-            'b']:  # Raises error if switch is not a bus-bus switch
+        'b']:  # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
@@ -2353,9 +2427,9 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     if "i" in consider:
         in_service_constr = net.impedance.in_service if respect_in_service else True
         connected_fb_impedances = set(net.impedance.index[
-                                     (net.impedance.from_bus.isin(buses)) & (in_service_constr)])
+                                          (net.impedance.from_bus.isin(buses)) & (in_service_constr)])
         connected_tb_impedances = set(net.impedance.index[
-                                     (net.impedance.to_bus.isin(buses)) & (in_service_constr)])
+                                          (net.impedance.to_bus.isin(buses)) & (in_service_constr)])
         cb |= set(net.impedance[net.impedance.index.isin(connected_tb_impedances)].from_bus)
         cb |= set(net.impedance[net.impedance.index.isin(connected_fb_impedances)].to_bus)
 
@@ -2498,3 +2572,77 @@ def get_gc_objects_dict():
         _type = type(obj)
         nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
     return nums_by_types
+
+
+def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+    """
+    creates a power line in parallel to the existing power line based on the values of the new std_type.
+    The new parallel line has an impedance value, which is chosen so that the resulting impedance of the new line
+    and the already existing line is equal to the impedance of the replaced line. Or for electrical engineers:
+
+    Z0 = impedance of the existing line
+    Z1 = impedance of the replaced line
+    Z2 = impedance of the created line
+
+        --- Z2 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+
+    Parameters
+    ----------
+    net - pandapower net
+    idx (int) - idx of the existing line
+    std_type (str) - pandapower standard type
+    name (str, None) - name of the new power line
+    in_service (bool, False) - if the new power line is in service
+    **kwargs - additional line parameters you want to set for the new line
+
+    Returns
+    -------
+    new_idx (int) - index of the created power line
+
+    """
+    # impedance before changing the standard type
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+    bak = net.line.loc[idx, :].values
+
+    change_std_type(net, idx, std_type)
+
+    # impedance after changing the standard type
+    r1 = net.line.at[idx, "r_ohm_per_km"]
+    p1 = net.line.at[idx, "parallel"]
+    x1 = net.line.at[idx, "x_ohm_per_km"]
+    c1 = net.line.at[idx, "c_nf_per_km"]
+    g1 = net.line.at[idx, "g_us_per_km"]
+    i_ka1 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line parallel to the existing line
+    y1 = p1 / complex(r1, x1)
+    y0 = p0 / complex(r0, x0)
+    z2 = 1 / (y1 - y0)
+
+    # required parameters
+    c_nf_per_km = c1 * p1 - c0 * p0
+    r_ohm_per_km = z2.real
+    x_ohm_per_km = z2.imag
+    g_us_per_km = g1 * p1 - g0 * p0
+    max_i_ka = i_ka1 - i_ka0
+    name = "repl_" + str(idx) if name is None else name
+
+    # if this line is in service to the existing line, the power flow result should be the same as when replacing the
+    # existing line with the desired standard type
+    new_idx = create_line_from_parameters(net, from_bus=net.line.at[idx, "from_bus"],
+                                          to_bus=net.line.at[idx, "to_bus"],
+                                          length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
+                                          x_ohm_per_km=x_ohm_per_km,
+                                          c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka, g_us_per_km=g_us_per_km,
+                                          in_service=in_service, name=name, **kwargs)
+    # restore the previous line parameters before changing the standard type
+    net.line.loc[idx, :] = bak
+    return new_idx

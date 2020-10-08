@@ -15,11 +15,14 @@ import pytest
 
 import pandapower as pp
 import pandapower.control as ct
+import pandapower.networks as nw
+import pandapower.timeseries as ts
 from pandapower.control import ConstControl
+from pandapower.networks import simple_four_bus_system
 from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
 from pandapower.timeseries import DFData, OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-from pandapower.networks import simple_four_bus_system
+
 logger = logging.getLogger(__name__)
 ow_logger = logging.getLogger("hp.control.output_writer")
 logger.setLevel(logging.ERROR)
@@ -272,30 +275,63 @@ def test_ppc_log(simple_test_net):
 
 def test_ow_index():
     net = simple_four_bus_system()
-    steps = [3,5,7]
-    p_data = pd.DataFrame(index=steps, columns=["0", "1"], data=[[0.01, 0.02], 
+    steps = [3, 5, 7]
+    p_data = pd.DataFrame(index=steps, columns=["0", "1"], data=[[0.01, 0.02],
                                                                  [0.03, 0.04],
                                                                  [0.05, 0.06],
                                                                  ])
     v_data = pd.DataFrame(index=steps, columns=["0"], data=[1.01, 1.03, 1.02])
-        
+
     ds_p = DFData(p_data)
     ds_v = DFData(v_data)
-    
+
     ct.ConstControl(net, element='load', variable='p_mw',
-                 element_index=net.load.index.tolist(), data_source=ds_p,
-                 profile_name=p_data.columns)
-    ct.ConstControl(net, element='ext_grid', variable='vm_pu', 
-                 element_index=0, data_source=ds_v, 
-                 profile_name='0')
-    
+                    element_index=net.load.index.tolist(), data_source=ds_p,
+                    profile_name=p_data.columns)
+    ct.ConstControl(net, element='ext_grid', variable='vm_pu',
+                    element_index=0, data_source=ds_v,
+                    profile_name='0')
+
     ow = OutputWriter(net)
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'loading_percent')
-    
+
     run_timeseries(net, time_steps=p_data.index, verbose=False)
-    
+
     assert np.all(ow.output["res_line.loading_percent"].index == p_data.index)
-    
+
+
+
+def test_equal_eval_name_warning_and_costs():
+    net = nw.case5()
+    pp.create_pwl_cost(net, 0, "sgen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 1, "gen", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net, 2, "gen", [[0, 20, 1], [20, 30, 2]])
+    df = pd.DataFrame({0: [200, 300, 400, 500], 1: [400, 300, 100, 50], 2: [100, 300, 200, 100]})
+    ds = ts.DFData(df.astype(np.float64))
+    _ = ct.ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
+                        data_source=ds)
+    ow = ts.OutputWriter(net, output_path=None)
+    ow.log_variable("res_sgen", "p_mw", None, np.max, 'warnme')
+    ow.log_variable("res_load", "p_mw", None, np.max, 'warnme')
+    ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
+    ow.remove_log_variable("res_bus", "vm_pu")
+    ow.remove_log_variable("res_line", "loading_percent")
+    ts.run_timeseries(net, verbose=False)
+
+    p_sgen = ow.output["res_sgen.p_mw"]
+    p_load = ow.output["res_load.p_mw"]
+    cost = ow.output["pwl_cost.points"]
+    assert not np.all(p_sgen.values == p_load.values)
+    assert cost.shape == (4, 4)
+    assert len(ow.np_results) == 3
+
+
+def cost_logging(result, n_columns=4):
+    return np.array([result[i][0][2] for i in range(len(result))])
+
+
 if __name__ == '__main__':
     pytest.main(['-s', __file__])

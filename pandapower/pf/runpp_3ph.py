@@ -80,7 +80,7 @@ def _get_elements(params,net,element,phase,typ):
     active = (net["_is_elements"][element]) & (elm[:,typ_col] == typ)
     bus = [net[element].columns.get_loc("bus")]
     if len(elm):
-        if element == 'load' or element == 'sgen':          
+        if element == 'load' or element == 'sgen':
             vl = elm[active,scaling].ravel()
             p_mw = [net[element].columns.get_loc("p_mw")]
             q_mvar = [net[element].columns.get_loc("q_mvar")]
@@ -100,7 +100,7 @@ def _get_elements(params,net,element,phase,typ):
             q = {'a' : net[element].columns.get_loc("q_a_mvar")
          ,'b' : net[element].columns.get_loc("q_b_mvar")
          ,'c' : net[element].columns.get_loc("q_c_mvar")
-            }    
+            }
 
             params['p'+phase+typ] = np.hstack([params['p'+phase+typ],
                                              elm[active,p[phase]] * vl * sign])
@@ -117,7 +117,7 @@ def _load_mapping(net, ppci1):
     sums them up for each bus
     maps them in ppc bus order and forms s_abc matrix
     """
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]    
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     params = dict()
     phases = ['a', 'b', 'c']
     load_types = ['wye', 'delta']
@@ -155,48 +155,48 @@ def _load_mapping(net, ppci1):
 # =============================================================================
 # 3 phase algorithm function
 # =============================================================================
-def runpp_3ph(net, calculate_voltage_angles=True, init="auto", 
+def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
               max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
-              trafo_loading="current", enforce_q_lims=False, numba=True, 
+              trafo_loading="current", enforce_q_lims=False, numba=True,
               recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
               delta_q=0, v_debug=False, **kwargs):
     """
  runpp_3ph: Performs Unbalanced/Asymmetric/Three Phase Load flow
- 
+
     INPUT:
         **net** - The pandapower format network
 
     OPTIONAL:
-        **algorithm** (str, "nr") - algorithm that is used to solve the power 
+        **algorithm** (str, "nr") - algorithm that is used to solve the power
         flow problem.
 
             The following algorithms are available:
 
-                - "nr" Newton-Raphson (pypower implementation with numba 
+                - "nr" Newton-Raphson (pypower implementation with numba
                 accelerations)
-                
-                Used only for positive sequence network
-                
-                Zero and Negative sequence networks use Current Injection method
-                
-                Vnew = Y.inv * Ispecified ( from s_abc/v_abc old)
-                
-                Icalculated = Y * Vnew
-                
 
-        **calculate_voltage_angles** (bool, "auto") - consider voltage angles 
+                Used only for positive sequence network
+
+                Zero and Negative sequence networks use Current Injection method
+
+                Vnew = Y.inv * Ispecified ( from s_abc/v_abc old)
+
+                Icalculated = Y * Vnew
+
+
+        **calculate_voltage_angles** (bool, "auto") - consider voltage angles
         in loadflow calculation
 
-            If True, voltage angles of ext_grids and transformer shifts are 
-            considered in the loadflow calculation. Considering the voltage 
-            angles is only necessary in meshed networks that are usually 
+            If True, voltage angles of ext_grids and transformer shifts are
+            considered in the loadflow calculation. Considering the voltage
+            angles is only necessary in meshed networks that are usually
             found in higher voltage levels. calculate_voltage_angles
             in "auto" mode defaults to:
 
                 - True, if the network voltage level is above 70 kV
                 - False otherwise
 
-            The network voltage level is defined as the maximum rated voltage 
+            The network voltage level is defined as the maximum rated voltage
             of any bus in the network that is connected to a line.
 
 
@@ -209,109 +209,109 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
             For three phase calculations, its extended to 3 * max_iteration
 
-        **tolerance_mva** (float, 1e-8) - loadflow termination condition 
+        **tolerance_mva** (float, 1e-8) - loadflow termination condition
         referring to P / Q mismatch of node power in MVA
 
         **trafo_model**
         - transformer equivalent models
 
             - "t" - transformer is modeled as equivalent with the T-model.
-            - "pi" - This is not recommended, since it is less exact than the T-model. 
+            - "pi" - This is not recommended, since it is less exact than the T-model.
              So, for three phase load flow, its not
             implemented
-        
-        **trafo_loading** (str, "current") - mode of calculation for 
+
+        **trafo_loading** (str, "current") - mode of calculation for
         transformer loading
 
-            Transformer loading can be calculated relative to the rated 
-            current or the rated power. In both cases the overall transformer 
-            loading is defined as the maximum loading on the two sides of 
+            Transformer loading can be calculated relative to the rated
+            current or the rated power. In both cases the overall transformer
+            loading is defined as the maximum loading on the two sides of
             the transformer.
 
-            - "current"- transformer loading is given as ratio of current 
-            flow and rated current of the transformer. This is the recommended 
-            setting, since thermal as well as magnetic effects in the 
+            - "current"- transformer loading is given as ratio of current
+            flow and rated current of the transformer. This is the recommended
+            setting, since thermal as well as magnetic effects in the
             transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent 
+            - "power" - transformer loading is given as ratio of apparent
             power flow to the rated apparent power of the transformer.
 
-        **enforce_q_lims** (bool, False) 
-        
-        (Not tested with 3 Phase load flow) - respect generator reactive power 
+        **enforce_q_lims** (bool, False)
+
+        (Not tested with 3 Phase load flow) - respect generator reactive power
         limits
 
             If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar
-            are respected in the loadflow. This is done by running a second 
-            loadflow if reactive power limits are violated at any generator, 
+            are respected in the loadflow. This is done by running a second
+            loadflow if reactive power limits are violated at any generator,
             so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
 
             Note: enforce_q_lims only works if algorithm="nr"!
 
 
-        **check_connectivity** (bool, True) - Perform an extra connectivity 
+        **check_connectivity** (bool, True) - Perform an extra connectivity
         test after the conversion from pandapower to PYPOWER
 
-            If True, an extra connectivity test based on SciPy Compressed 
+            If True, an extra connectivity test based on SciPy Compressed
             Sparse Graph Routines is perfomed. If check finds unsupplied buses,
             they are set out of service in the ppc
 
         **voltage_depend_loads** (bool, True)
-        
-        (Not tested with 3 Phase load flow)  - consideration of 
-        voltage-dependent loads. If False, net.load.const_z_percent and 
-        net.load.const_i_percent are not considered, i.e. net.load.p_mw and 
+
+        (Not tested with 3 Phase load flow)  - consideration of
+        voltage-dependent loads. If False, net.load.const_z_percent and
+        net.load.const_i_percent are not considered, i.e. net.load.p_mw and
         net.load.q_mvar are considered as constant-power loads.
 
-        **consider_line_temperature** (bool, False) 
-        
-        (Not tested with 3 Phase load flow) - adjustment of line 
-        impedance based on provided line temperature. If True, net.line must 
-        contain a column "temperature_degree_celsius". The temperature 
+        **consider_line_temperature** (bool, False)
+
+        (Not tested with 3 Phase load flow) - adjustment of line
+        impedance based on provided line temperature. If True, net.line must
+        contain a column "temperature_degree_celsius". The temperature
         dependency coefficient alpha must be provided in the net.line.alpha
             column, otherwise the default value of 0.004 is used
 
 
         **KWARGS:
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the 
+        **numba** (bool, True) - Activation of numba JIT compiler in the
         newton solver
 
             If set to True, the numba JIT compiler is used to generate
-            matrices for the powerflow, which leads to significant speed 
+            matrices for the powerflow, which leads to significant speed
             improvements.
 
-        **switch_rx_ratio** (float, 2) 
-        
-        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches. 
-        If impedance is zero, buses connected by a closed bus-bus switch 
-        are fused to model an ideal bus. Otherwise, they are modelled 
-        as branches with resistance defined as z_ohm column in switch 
+        **switch_rx_ratio** (float, 2)
+
+        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches.
+        If impedance is zero, buses connected by a closed bus-bus switch
+        are fused to model an ideal bus. Otherwise, they are modelled
+        as branches with resistance defined as z_ohm column in switch
         table and this parameter
 
-        **delta_q** 
-        
-        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims" 
+        **delta_q**
+
+        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims"
         in kvar - helps convergence in some cases.
 
-        **trafo3w_losses** 
-        
+        **trafo3w_losses**
+
         (Not tested with 3 Phase load flow) - defines where open loop losses of three-winding
-        transformers are considered. Valid options are "hv", "mv", "lv" 
+        transformers are considered. Valid options are "hv", "mv", "lv"
         for HV/MV/LV side or "star" for the star point.
 
-        **v_debug** (bool, False) 
-        
-        (Not tested with 3 Phase load flow) - if True, voltage values in each 
+        **v_debug** (bool, False)
+
+        (Not tested with 3 Phase load flow) - if True, voltage values in each
         newton-raphson iteration are logged in the ppc
 
-        **init_vm_pu** (string/float/array/Series, None) 
-        
-        (Not tested with 3 Phase load flow) - Allows to define 
-        initialization specifically for voltage magnitudes. 
+        **init_vm_pu** (string/float/array/Series, None)
+
+        (Not tested with 3 Phase load flow) - Allows to define
+        initialization specifically for voltage magnitudes.
         Only works with init == "auto"!
 
-            - "auto": all buses are initialized with the mean value of all 
+            - "auto": all buses are initialized with the mean value of all
             voltage controlled elements in the grid
             - "flat" for flat start from 1.0
             - "results": voltage magnitude vector is taken from result table
@@ -321,53 +321,53 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
             - a pandas Series with a voltage magnitude value for each bus
             (indexes have to match the indexes in net.bus)
 
-         **init_va_degree** (string/float/array/Series, None) 
-         
+         **init_va_degree** (string/float/array/Series, None)
+
          (Not tested with 3 Phase load flow)-
-        Allows to define initialization specifically for voltage angles. 
+        Allows to define initialization specifically for voltage angles.
         Only works with init == "auto"!
 
-            - "auto": voltage angles are initialized from DC power flow 
+            - "auto": voltage angles are initialized from DC power flow
             if angles are calculated or as 0 otherwise
             - "dc": voltage angles are initialized from DC power flow
             - "flat" for flat start from 0
             - "results": voltage angle vector is taken from result table
             - a float with which all voltage angles are initialized
-            - an iterable with a voltage angle value for each bus (length 
+            - an iterable with a voltage angle value for each bus (length
             and order has to match with the buses in net.bus)
-            - a pandas Series with a voltage angle value for each bus (indexes 
+            - a pandas Series with a voltage angle value for each bus (indexes
             have to match the indexes in net.bus)
 
         **recycle** (dict, none)
-        
-        (Not tested with 3 Phase load flow) - Reuse of internal powerflow variables for 
+
+        (Not tested with 3 Phase load flow) - Reuse of internal powerflow variables for
         time series calculation
 
             Contains a dict with the following parameters:
             _is_elements: If True in service elements are not filtered again
             and are taken from the last result in net["_is_elements"]
-            ppc: If True the ppc is taken from net["_ppc"] and gets updated 
+            ppc: If True the ppc is taken from net["_ppc"] and gets updated
             instead of reconstructed entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from 
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from
             ppc["internal"] and not reconstructed
 
-        **neglect_open_switch_branches** (bool, False) 
-        
-        (Not tested with 3 Phase load flow) - If True no auxiliary 
+        **neglect_open_switch_branches** (bool, False)
+
+        (Not tested with 3 Phase load flow) - If True no auxiliary
         buses are created for branches when switches are opened at the branch.
         Instead branches are set out of service
 
     Return values:
     ---------------
     **count(int)** No of iterations taken to reach convergence
-    
+
     **v_012_it(complex)**   - Sequence voltages
-    
-    **i012_it(complex)**   - Sequence currents 
+
+    **i012_it(complex)**   - Sequence currents
 
     See Also:
     ----------
-    pp.add_zero_impedance_parameters(net): 
+    pp.add_zero_impedance_parameters(net):
     To add zero sequence parameters into network from the standard type
 
     Examples:
@@ -378,10 +378,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
     Notes:
     --------
-    - Three phase load flow uses Sequence Frame for power flow solution. 
-    - Three phase system is modelled with earth return. 
+    - Three phase load flow uses Sequence Frame for power flow solution.
+    - Three phase system is modelled with earth return.
     - PH-E load type is called as wye since Neutral and Earth are considered same
-    - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups) 
+    - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
     """
     # =============================================================================
     # pandapower settings
@@ -414,12 +414,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
     if init == "auto":
-        init = "dc" if calculate_voltage_angles else "flat"   
+        init = "dc" if calculate_voltage_angles else "flat"
     default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
-    
+
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
     only_v_results = kwargs.get("only_v_results", False)
     if (recycle is not None and recycle is not False):
@@ -451,7 +451,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     gs_eg, bs_eg = _add_ext_grid_sc_impedance(net, ppci2)
 
     _, ppci0 = _pd2ppc(net, 0)
-    
+
     _,       bus0, gen0, branch0,      _,      _,      _, _, _,\
         v00, ref_gens = _get_pf_variables_from_ppci(ppci0)
     base_mva, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, \
@@ -467,7 +467,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # =========================================================================
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =========================================================================
-    
+
     ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, y_2_f,\
         y_0_t, y_1_t, y_2_t = _get_y_bus(ppci0, ppci1, ppci2, recycle)
     # =========================================================================
@@ -492,7 +492,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                            [-1, 1, 0],
                            [0, -1, 1]])
     v_abc_it = sequence_to_phase(v_012_it)
-    
+
     # =========================================================================
     #             Iteration using Power mismatch criterion
     # =========================================================================
@@ -506,11 +506,11 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         # =====================================================================
         s_abc_pu = -np.divide(s_abc, ppci1["baseMVA"])
         s_abc_delta_pu = -np.divide(s_abc_delta, ppci1["baseMVA"])
-        
+
         i_abc_it_wye = (np.divide(s_abc_pu, v_abc_it)).conjugate()
         i_abc_it_delta = np.matmul(i_del_xfmn, (np.divide(s_abc_delta_pu, np.matmul
                                                           (v_del_xfmn, v_abc_it))).conjugate())
-        
+
         # For buses with both delta and wye loads we need to sum of their currents
         # to sum up the currents
         i_abc_it = i_abc_it_wye + i_abc_it_delta
@@ -538,7 +538,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v0_pu_it = V_from_I(y_0_pu, i0_pu_it)
         v2_pu_it = V_from_I(y_2_pu, i2_pu_it)
         # =============================================================================
-        #    Evaluate Positive Sequence Power Mismatch     
+        #    Evaluate Positive Sequence Power Mismatch
         # =============================================================================
         i1_from_v_it = I1_from_V012(v_012_it, y_1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(v1_for_s1, i1_from_v_it)
@@ -571,7 +571,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                                  sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
-    ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)   
+    ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
     ppci0["internal"]["Ybus"] = y_0_pu
     ppci1["internal"]["Ybus"] = y_1_pu
     ppci2["internal"]["Ybus"] = y_2_pu
@@ -589,14 +589,14 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
-    
+
     ppci0["gen"][eg_idx_ppc, PG] = s_012_res[0, eg_bus_idx_ppc].real
     ppci1["gen"][eg_idx_ppc, PG] = s_012_res[1, eg_bus_idx_ppc].real
     ppci2["gen"][eg_idx_ppc, PG] = s_012_res[2, eg_bus_idx_ppc].real
     ppci0["gen"][eg_idx_ppc, QG] = s_012_res[0, eg_bus_idx_ppc].imag
     ppci1["gen"][eg_idx_ppc, QG] = s_012_res[1, eg_bus_idx_ppc].imag
     ppci2["gen"][eg_idx_ppc, QG] = s_012_res[2, eg_bus_idx_ppc].imag
-    
+
     ppc0 = net["_ppc0"]
     ppc1 = net["_ppc1"]
     ppc2 = net["_ppc2"]

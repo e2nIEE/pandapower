@@ -10,11 +10,22 @@
 """Builds the line outage distribution factor matrix.
 """
 
-from numpy import ones, diag, eye, r_, arange
+from numpy import ones, diag, r_, arange
 import numpy as np
 from scipy.sparse import csr_matrix as sparse
+try:
+    from numba import jit
+except ImportError: # pragma: no cover
+    from pandapower.pf.no_numba import jit
 
 from .idx_brch import F_BUS, T_BUS
+
+
+@jit
+def update_LODF_diag(LODF): # pragma: no cover
+    for ix in range(LODF.shape[0]):
+        # To preserve the data type of diagnol elments
+        LODF[ix, ix] -= (LODF[ix, ix] + 1.)
 
 
 def makeLODF(branch, PTDF):
@@ -39,11 +50,15 @@ def makeLODF(branch, PTDF):
 
     H = PTDF * Cft
     h = diag(H, 0)
-    # Avoid zero division error 
+    # Avoid zero division error
     # Implies a N-1 contingency (No backup branch)
-    den = (ones((nl, nl)) - ones((nl, 1)) * h.T)
-    den[den == 0] = 1e-100
-    LODF = (H / den)
-    LODF = LODF - diag(diag(LODF)) - eye(nl, nl)
+    den = (ones((nl, 1)) * h.T * -1 + 1.)
+
+    # Silence warning caused by np.NaN
+    with np.errstate(divide='ignore', invalid='ignore'):
+        LODF = (H / den)
+
+    # LODF = LODF - diag(diag(LODF)) - eye(nl, nl)
+    update_LODF_diag(LODF)
 
     return LODF

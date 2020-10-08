@@ -1,4 +1,8 @@
 language: python
+env:
+  matrix:
+    - JULIA_VERSION=1.5
+
 matrix:
   include:
     - python: 3.5
@@ -16,7 +20,7 @@ install:
   #- conda update -q conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas=0 networkx numpydoc numba xlsxwriter xlrd
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
   - source activate test-environment
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
          conda uninstall numba --yes;
@@ -32,8 +36,28 @@ install:
   - conda list
   - conda info -a
 
+before_script:
+  # this is needed to test PowerModels and julia code
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+      echo ./.install_julia.sh "$JULIA_VERSION";
+      ./.install_julia.sh "$JULIA_VERSION";
+      which python;
+      python -m pip install julia;
+      python -m pip --version;
+      python ./.install_pycall.py;
+    fi  
+
 script:
-    py.test --cov=pandapower --cov-config .coveragerc
+#  - python-jl ./pandapower/test/opf/test_powermodels.py
+#  - py.test --cov=pandapower --cov-config .coveragerc
+  # test with julia in python 3.6
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+         python-jl -m pytest --cov=pandapower --cov-config .coveragerc;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+         py.test --cov=pandapower --cov-config .coveragerc;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then
+         py.test --cov=pandapower --cov-config .coveragerc;
+    fi  
     
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then

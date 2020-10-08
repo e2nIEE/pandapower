@@ -225,9 +225,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"]["i_n_from_ka"] = In_f_ka
     net["res_line_3ph"]["i_n_to_ka"] = In_t_ka
     net["res_line_3ph"]["i_n_ka"] = In_ka
-    net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :] / i_max_phase * 100
-    net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :] / i_max_phase * 100
-    net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_a_percent"] = Iabc_ka[0, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_b_percent"] = Iabc_ka[1, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_c_percent"] = Iabc_ka[2, :] / i_max_phase * 100
     net["res_line_3ph"]["loading_percent"] = Iabc_ka.max(axis=0) / i_max_phase * 100
     net["res_line_3ph"].index = net["line"].index
 
@@ -294,7 +294,6 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
-
 def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
@@ -321,17 +320,17 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     else:
         Pabcl_mw = np.zeros_like(Pabc_hv_mw)
         Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
+        
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
     
-#    #geting complex values of the sequence current    
+    #geting complex values of the sequence current    
 #    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
 #    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
 #    
 #    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
 #    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
-#
-#    
+#   
 #    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
 #    In_hv_ka = np.abs(In_hv_ka_complex)
 #    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
@@ -384,9 +383,9 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     res_trafo_df["i_b_lv_ka"] = Iabc_lv_ka[1, :].flatten()
     res_trafo_df["i_c_lv_ka"] = Iabc_lv_ka[2, :].flatten()
 #    res_trafo_df["i_n_lv_ka"] = In_lv_ka.flatten()
-    res_trafo_df["loading_percentA"] = loading_percent[0, :]
-    res_trafo_df["loading_percentB"] = loading_percent[1, :]
-    res_trafo_df["loading_percentC"] = loading_percent[2, :]
+    res_trafo_df["loading_a_percent"] = loading_percent[0, :]
+    res_trafo_df["loading_b_percent"] = loading_percent[1, :]
+    res_trafo_df["loading_c_percent"] = loading_percent[2, :]
     res_trafo_df["loading_percent"] = loading_percent.max(axis=0)
     res_trafo_df.index = net["trafo"].index.values
 
@@ -511,16 +510,16 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impediance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
 
-    res_impediance_df["p_from_mw"].values[:] = p_from_mw
-    res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
-    res_impediance_df["p_to_mw"].values[:] = p_to_mw
-    res_impediance_df["q_to_mvar"].values[:] = q_to_mvar
-    res_impediance_df["pl_mw"].values[:] = pl_mw
-    res_impediance_df["ql_mvar"].values[:] = ql_mvar
-    res_impediance_df["i_from_ka"].values[:] = i_from_ka
-    res_impediance_df["i_to_ka"].values[:] = i_to_ka
+    res_impedance_df["p_from_mw"].values[:] = p_from_mw
+    res_impedance_df["q_from_mvar"].values[:] = q_from_mvar
+    res_impedance_df["p_to_mw"].values[:] = p_to_mw
+    res_impedance_df["q_to_mvar"].values[:] = q_to_mvar
+    res_impedance_df["pl_mw"].values[:] = pl_mw
+    res_impedance_df["ql_mvar"].values[:] = ql_mvar
+    res_impedance_df["i_from_ka"].values[:] = i_from_ka
+    res_impedance_df["i_to_ka"].values[:] = i_to_ka
 
 
 

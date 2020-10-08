@@ -5,8 +5,8 @@ p_to_mw;float;"active power flow into the line at ""to"" bus [MW]"
 q_to_mvar;float;"reactive power flow into the line at ""to"" bus [MVar]"
 pl_mw;float;active power losses of the line [MW]
 ql_mvar;float;reactive power consumption of the line [MVar]
-i_from_ka;float;Current at to bus [kA]
-i_to_ka;float;Current at from bus [kA]
+i_from_ka;float;Current at from bus [kA]
+i_to_ka;float;Current at to bus [kA]
 i_ka;float;Maximum of i_from_ka and i_to_ka [kA]
 vm_from_pu;float;voltage magnitude at from bus
 vm_to_pu;float;voltage magnitude at to bus
