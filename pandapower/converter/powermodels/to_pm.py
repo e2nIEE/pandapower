@@ -29,7 +29,7 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt"):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
 
@@ -71,7 +71,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -83,7 +83,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net):
+def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)

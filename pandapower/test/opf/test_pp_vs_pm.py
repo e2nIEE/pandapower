@@ -148,6 +148,24 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net_new.res_cost, 17015.5635)
 
 
+# def test_opf_S_lim():
+#     # load net
+#     net = case5_pm_matfile_I()
+#     net_old = copy.deepcopy(net)
+#     net_new = copy.deepcopy(net)
+#     # run pd2ppc with ext_grid controllable = False
+#     net_new.ext_grid["controllable"] = True
+#     # pp.runopp(net_new)
+#     pp.runpm_ac_opf(net_new)#, calculate_voltage_angles=True, correct_pm_network_data=False,
+#             # delete_buffer_file=False)
+#
+#     assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
+#     assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
+#
+#     assert np.isclose(net_old.res_cost, 17082.8)
+#     assert np.isclose(net_new.res_cost, 17015.5635)
+#
+
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case5_pm_matfile_I()
