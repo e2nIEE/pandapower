@@ -1,7 +1,7 @@
 
 .. image:: https://www.pandapower.org/images/pp.svg
    :target: https://www.pandapower.org
-   :alt: logo 
+   :alt: logo
 
 |
 

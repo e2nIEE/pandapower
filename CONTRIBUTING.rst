@@ -4,7 +4,7 @@ Get in Touch!
 You have found a bug in pandapower or have a suggestion for a new functionality? Then get in touch with us by opening up an issue on the pandapower issue board to discuss possible new developments with the community and the maintainers.
 
 
-Setup your git repository 
+Setup your git repository
 ==============================
 
 **Note**: *The following setup is just a suggestion of how to setup your repository and is supposed to make contributing easier, especially for newcomers. If you have a different setup that you are more comfortable with, you do not have to adopt this setup.*

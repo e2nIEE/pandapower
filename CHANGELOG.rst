@@ -254,7 +254,7 @@ Change Log
 
 [1.2.1] - 2017-03-21
 --------------------
-- [FIXED] Readme for PyPi 
+- [FIXED] Readme for PyPi
 
 [1.2.0] - 2017-03-21
 --------------------

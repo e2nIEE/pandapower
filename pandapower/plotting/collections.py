@@ -251,6 +251,10 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
+    linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
+
     lines, polys, popped_keywords = patch_maker(
         node_coords, size, angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
