@@ -1,0 +1,17 @@
+{"gen": {"1": {"pg": 80.0, "qg": 0.0, "gen_bus": 1, "vg": 1.01, "qmax": 1000000000.0, "gen_status": 1, 
+"qmin": -1000000000.0, "pmin": -1e-08, "pmax": 80.00000001, "index": 1, "model": 1, "ncost": 3, "cost": [0.0, 0.0, 2.0, 4.0, 80.0, 394.0]}, 
+"2": {"pg": 80.0, "qg": 0.0, "gen_bus": 3, "vg": 1.01, "qmax": 1000000000.0, "gen_status": 1, 
+"qmin": -1000000000.0, "pmin": -1e-08, "pmax": 80.00000001, "index": 2, "model": 1, "ncost": 3, "cost": [0.0, 0.0, 2.0, 4.0, 80.0, 394.0]}}, 
+
+"branch": {"1": {"index": 1, "transformer": false, "br_r": 0.0008016528925619836, "br_x": 0.0016942148760330578, "g_fr": -0.0, "g_to": -0.0, "b_fr": 0.8315403054970485, "b_to": 0.8315403054970485, 
+"rate_a": 250.0, "rate_b": 250.0, "rate_c": 250.0, "f_bus": 1, "t_bus": 2, "br_status": 1, "angmin": -1.0471975511965976, "angmax": 1.0471975511965976, "tap": 1.0, "shift": 0.0}, 
+"2": {"index": 2, "transformer": false, "br_r": 0.0008016528925619836, "br_x": 0.0016942148760330578, "g_fr": -0.0, "g_to": -0.0, "b_fr": 0.8315403054970485, "b_to": 0.8315403054970485, 
+"rate_a": 250.0, "rate_b": 250.0, "rate_c": 250.0, "f_bus": 2, "t_bus": 3, "br_status": 1, "angmin": -1.0471975511965976, "angmax": 1.0471975511965976, "tap": 1.0, "shift": 0.0}}, 
+
+"bus": {"1": {"index": 1, "bus_i": 1, "zone": 1, "bus_type": 3, "vmax": 1.1, "vmin": 0.9, "va": 0.0, "vm": 1.01, "base_kv": 110.0}, 
+"2": {"index": 2, "bus_i": 2, "zone": 1, "bus_type": 1, "vmax": 1.1, "vmin": 0.9, "va": 0.0, "vm": 1.0, "base_kv": 110.0}, 
+"3": {"index": 3, "bus_i": 3, "zone": 1, "bus_type": 2, "vmax": 1.1, "vmin": 0.9, "va": 0.0, "vm": 1.01, "base_kv": 110.0}}, 
+
+"dcline": {}, "load": {"1": {"pd": 80.0, "qd": 0.0, "load_bus": 2, "status": 1, "index": 1}}, "storage": {}, "ne_branch": {}, "switch": {}, "baseMVA": 1, "source_version": "2.0.0", 
+"shunt": {}, "sourcetype": "matpower", "per_unit": false, "name": "", "pm_solver": "ipopt", "pm_mip_solver": "cbc", "pm_nl_solver": "ipopt", 
+"pm_model": "ACPPowerModel", "pm_log_level": 0, "pm_time_limit": Infinity, "pm_nl_time_limit": Infinity, "pm_mip_time_limit": Infinity, "correct_pm_network_data": true}

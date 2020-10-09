@@ -143,7 +143,7 @@ def test_pwl():
     pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 2], [2, 80, 5]])
     pp.create_pwl_cost(net, g2, 'gen', [[0, 2, 2], [2, 80, 5]])
 
-    pp.runpm_ac_opf(net)
+    pp.runpm_ac_opf(net,  pm_file_path="failing_test_pwl.json", delete_buffer_file=False)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.iloc[0], net.res_gen.p_mw.iloc[1])
     assert np.isclose(net.res_gen.q_mvar.iloc[0], net.res_gen.q_mvar.iloc[1])
