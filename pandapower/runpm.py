@@ -92,7 +92,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
-                 pm_time_limits=None, pm_log_level=0):  # pragma: no cover
+                 pm_time_limits=None, pm_log_level=0, opf_flow_lim="S"):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
 
@@ -153,7 +153,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
                      correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
-                     pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
+                     pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
     _runpm(net)
 
 

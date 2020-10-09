@@ -190,7 +190,7 @@ def ppc_to_pm(net, ppci):
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
           "ne_branch": dict(), "switch": dict(),
           "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
-          "sourcetype": "matpower", "per_unit": False, "name": net.name}
+          "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
     shunt_idx = 1
     # PowerModels has a load model -> add loads and sgens to pm["load"]
