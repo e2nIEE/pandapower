@@ -35,19 +35,19 @@ def test_convert_format(version):
     if not np.allclose(vm_pu_old.values, net.res_bus.vm_pu.values):
         raise UserWarning("Power flow results mismatch "
                           "with pandapower version %s" % version)
-        
 
 def test_convert_format_pq_bus_meas():
-    try:
-        net = pp.from_json(os.path.join(folder, "example_2.3.1.json"), convert=False)
-    except:
-        raise UserWarning("Can not load network for pq bus meas test")
+    net = pp.from_json(os.path.join(folder, "example_2.3.1.json"), convert=False)
     net = pp.convert_format(net)
     pp.runpp(net)
-    
+
     bus_p_meas = net.measurement.query("element_type=='bus' and measurement_type=='p'").set_index("element", drop=True)
     assert np.allclose(net.res_bus.p_mw, bus_p_meas["value"])
 
+def test_convert_format_controller():
+    net = pp.from_json(os.path.join(folder, "example_2.3.0.json"), convert=True)
+    controller = net.controller.object.iloc[0]
+    assert not hasattr(controller, "net")
 
 if __name__ == '__main__':
     pytest.main([__file__])

@@ -52,22 +52,22 @@ class TrafoController(Controller):
         else:
             raise UserWarning("unknown trafo type, received %s" % trafotype)
 
-        self.element_in_service = self.net[self.trafotable].at[self.tid, "in_service"]
+        self.element_in_service = net[self.trafotable].at[self.tid, "in_service"]
 
         self.side = side
-        self.controlled_bus = self.net[self.trafotable].at[tid, side + "_bus"]
-        if self.controlled_bus in self.net.ext_grid.loc[self.net.ext_grid.in_service, 'bus'].values:
+        self.controlled_bus = net[self.trafotable].at[tid, side + "_bus"]
+        if self.controlled_bus in net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values:
             logger.warning("Controlled Bus is Slack Bus - deactivating controller")
             self.set_active(False)
-        elif self.controlled_bus in self.net.ext_grid.loc[
-            ~self.net.ext_grid.in_service, 'bus'].values:
+        elif self.controlled_bus in net.ext_grid.loc[
+            ~net.ext_grid.in_service, 'bus'].values:
             logger.warning("Controlled Bus is Slack Bus with slack out of service - "
                            "not deactivating controller")
 
-        self.tap_min = self.net[self.trafotable].at[tid, "tap_min"]
-        self.tap_max = self.net[self.trafotable].at[tid, "tap_max"]
-        self.tap_step_percent = self.net[self.trafotable].at[tid, "tap_step_percent"]
-        self.tap_step_degree = self.net[self.trafotable].at[tid, "tap_step_degree"]
+        self.tap_min = net[self.trafotable].at[tid, "tap_min"]
+        self.tap_max = net[self.trafotable].at[tid, "tap_max"]
+        self.tap_step_percent = net[self.trafotable].at[tid, "tap_step_percent"]
+        self.tap_step_degree = net[self.trafotable].at[tid, "tap_step_degree"]
         if not np.isnan(self.tap_step_degree):
             self.tap_sign = np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
         else:
@@ -75,9 +75,9 @@ class TrafoController(Controller):
         if self.tap_sign == 0 or np.isnan(self.tap_sign):
             # 0 is very unprobable case because of numpy, but still checking to be 100 % sure
             self.tap_sign = 1
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
         if np.isnan(self.tap_pos):
-            self.tap_pos = self.net[self.trafotable].at[tid, "tap_neutral"]
+            self.tap_pos = net[self.trafotable].at[tid, "tap_neutral"]
 
         if np.isnan(self.tap_min) or \
                 np.isnan(self.tap_max) or \
@@ -86,7 +86,7 @@ class TrafoController(Controller):
                          "net.trafo.tap_pos etc. if they are set correctly!")
 
         self.tol = tol
-        tap_side = self.net[self.trafotable].tap_side.at[tid]
+        tap_side = net[self.trafotable].tap_side.at[tid]
         if trafotype == "2W":
             if tap_side == "hv":
                 self.tap_side_coeff = 1
@@ -105,7 +105,7 @@ class TrafoController(Controller):
                 raise ValueError("Trafo tap side (in net.%s) has to be either hv, mv or lv, "
                                  "but received %s for trafo %s" % (self.trafotable, tap_side,
                                                                    self.tid))
-        if self.net[self.trafotable].at[self.tid, "tap_step_percent"] < 0:
+        if net[self.trafotable].at[self.tid, "tap_step_percent"] < 0:
             self.tap_side_coeff *= -1
         self.set_recycle()
 
@@ -119,9 +119,9 @@ class TrafoController(Controller):
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=True, gen=False, bus_pq=False)
         self.recycle = recycle
-            
-    def timestep(self):
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+
+    def timestep(self, net):
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
     def __repr__(self):
         s = '%s of %s %d' % (self.__class__.__name__, self.trafotable, self.tid)
