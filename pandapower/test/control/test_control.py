@@ -33,13 +33,13 @@ class DummyController(Controller):
         self.matching_params = matching_params
         self.applied = False
 
-    def initialize_control(self):
+    def initialize_control(self, net):
         self.applied = False
 
-    def control_step(self):
+    def control_step(self, net):
         self.applied = True
 
-    def is_converged(self):
+    def is_converged(self, net):
         return self.applied
 
 
@@ -83,10 +83,10 @@ def test_ctrl_unconverged(net):
         def __init__(self, net):
             super().__init__(net)
 
-        def time_step(self, time):
+        def time_step(self, net, time):
             self.convergent = True if time % 2 == 0 else False
 
-        def is_converged(self):
+        def is_converged(self, net):
             return self.convergent
 
     DivergentController(net)
@@ -159,9 +159,9 @@ def test_level(net):
 
     pp.runpp(net, run_control=True)
 
-    assert c1.is_converged()
-    assert c2.is_converged()
-    assert c3.is_converged()
+    assert c1.is_converged(net)
+    assert c2.is_converged(net)
+    assert c3.is_converged(net)
 
 
 def test_level_in_service(net):

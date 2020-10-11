@@ -14,14 +14,15 @@ from sys import stderr
 
 from numpy import zeros, arange, isscalar, dot, ix_, flatnonzero as find
 import numpy as np
-
 from numpy.linalg import solve
+from scipy.sparse.linalg import spsolve
 
 from .idx_bus import BUS_TYPE, REF, BUS_I
 from .makeBdc import makeBdc
 
 
-def makePTDF(baseMVA, bus, branch, slack=None):
+def makePTDF(baseMVA, bus, branch, slack=None,
+             result_side=0, using_sparse_solver=False):
     """Builds the DC PTDF matrix for a given choice of slack.
 
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
@@ -59,12 +60,20 @@ def makePTDF(baseMVA, bus, branch, slack=None):
     if any(bus[:, BUS_I] != arange(nb)):
         stderr.write('makePTDF: buses must be numbered consecutively')
 
-    ## compute PTDF for single slack_bus
-    Bbus, Bf, _, _ = makeBdc(bus, branch)
-    Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
     H = zeros((nbr, nb))
-    H[:, noslack] = solve( Bbus[ix_(noslack, noref)].T, Bf[:, noref].T ).T
-    #             = Bf[:, noref] * inv(Bbus[ix_(noslack, noref)])
+    # compute PTDF for single slack_bus
+    if using_sparse_solver:
+        Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
+        Bbus, Bf = Bbus.real, Bf.real.toarray()
+        if result_side == 1:
+            Bf *= -1
+        H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
+    else:
+        Bbus, Bf, _, _ = makeBdc(bus, branch)
+        Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
+        if result_side == 1:
+            Bf *= -1
+        H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
 
     ## distribute slack, if requested
     if not isscalar(slack):

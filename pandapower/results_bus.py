@@ -10,9 +10,8 @@ import pandas as pd
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV,NONE
 
-from pandapower.auxiliary import _sum_by_group
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
 from pandapower.pypower.idx_gen import PG, QG
+from pandapower.build_bus import _get_motor_pq
 
 
 def _set_buses_out_of_service(ppc):
@@ -24,19 +23,19 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_v_results(net, ppc):
+def _get_bus_v_results(net, ppc, suffix=None):
     ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
+
+    res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
     if ac:
-        net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
+        net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
-    net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+    net[res_table]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
 def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     ac = net["_options"]["ac"]
-    bus_idx = _get_bus_idx(net)
-
     V012_pu = _V012_from_ppc012(net, ppc0, ppc1, ppc2)
     # Uncomment for results in kV instead of pu
     # bus_base_kv = ppc0["bus"][:,BASE_KV]/np.sqrt(3)
@@ -63,6 +62,8 @@ def _V012_from_ppc012(net, ppc0, ppc1, ppc2):
     V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
     V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
     return V012_pu
+
+
 def _get_bus_idx(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     ppi = net["bus"].index.values
@@ -93,10 +94,8 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"].index = net["bus"].index
 
 
-
 def _get_bus_results_3ph(net, bus_pq):
     ac = net["_options"]["ac"]
-    mode = net["_options"]["mode"]
 
     # write sum of p and q values to bus
     net["res_bus_3ph"]["p_a_mw"] = bus_pq[:, 0]
@@ -164,7 +163,6 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     :param element: element name (str)
     :return:
     """
-
     # info from net
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
@@ -182,6 +180,12 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
         gen_sign = 1 if element == "sgen" else -1
         is_controllable = True
+
+    if element == "motor":
+        p_mw, q_mvar = _get_motor_pq(net)
+        net[res_]["p_mw"].values[:] = p_mw
+        net[res_]["q_mvar"].values[:] = q_mvar
+        return net
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
@@ -228,11 +232,11 @@ def write_pq_results_to_element_3ph(net, element):
     net[res_]["p_a_mw"] = pd.Series((el_data["p_mw"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"] else\
     pd.Series(el_data["p_a_mw"].values * scaling * element_in_service)
-    
+
     net[res_]["p_b_mw"] = pd.Series((el_data["p_mw"].values/3) \
     * scaling * element_in_service)if element in[ "load","sgen"]  else\
     pd.Series(el_data["p_b_mw"].values * scaling * element_in_service)
-    
+
     net[res_]["p_c_mw"] = pd.Series((el_data["p_mw"].values/3) \
        * scaling * element_in_service) if element in[ "load","sgen"]  else\
        pd.Series(el_data["p_c_mw"].values * scaling * element_in_service)
@@ -241,11 +245,11 @@ def write_pq_results_to_element_3ph(net, element):
         net[res_]["q_a_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
     pd.Series(el_data["q_a_mvar"].values * scaling * element_in_service)
-        
+
         net[res_]["q_b_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
     pd.Series(el_data["q_b_mvar"].values * scaling * element_in_service)
-        
+
         net[res_]["q_c_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
     * scaling * element_in_service) if element in[ "load","sgen"]  else\
     pd.Series(el_data["q_c_mvar"].values * scaling * element_in_service)
@@ -291,9 +295,9 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
         # voltage dependend loads need special treatment here
 
         p, q, b = write_voltage_dependend_load_results(net, p, q, b)
-        elements = ["sgen", "storage", "ward", "xward"]
+        elements = ["sgen", "motor", "storage", "ward", "xward"]
     else:
-        elements = ["load", "sgen", "storage", "ward", "xward"]
+        elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
 
     for element in elements:
         if len(net[element]):
@@ -328,7 +332,7 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
     elements = ["storage", "sgen", "load"]
     elements_3ph = ["asymmetric_load", "asymmetric_sgen"]
     for element in elements:
-        sign = 1 if element in ['sgen','asymmetric_sgen'] else -1
+        sign = -1 if element in ['sgen','asymmetric_sgen'] else 1
         if len(net[element]):
             write_pq_results_to_element(net, net._ppc1, element, suffix="3ph")
             p_el, q_el, bus_el = get_p_q_b(net, element, suffix="3ph")
@@ -340,6 +344,7 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
             qC = np.hstack([qC, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
             b = np.hstack([b, bus_el])
     for element in elements_3ph:
+        sign = -1 if element in ['sgen','asymmetric_sgen'] else 1
         if len(net[element]):
             write_pq_results_to_element_3ph(net, element)
             p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(net, element)
@@ -360,7 +365,7 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
     bus_pq[b_ppc, 3] = vq_B
     bus_pq[b_ppc, 4] = vp_C
     bus_pq[b_ppc, 5] = vq_C
-    return bus_pq                                                 
+    return bus_pq
 
 def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     ac = net["_options"]["ac"]

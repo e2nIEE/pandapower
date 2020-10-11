@@ -60,10 +60,8 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
-    try:
-        pp.rundcpp(net)
-    except:
-        pass
+    pp.rundcpp(net)
+
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
@@ -82,19 +80,19 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
 def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
     """
      Assuming a substation with multiple buses connected to each other with bb switch
-     if multiple of them have an element (load, sgen usw.) then it caused problem on 
+     if multiple of them have an element (load, sgen usw.) then it caused problem on
      e.g. State Estimation, since they will be automatically fused in ppc
      A possiblity would be to properly seperate the substation to multiple clusters (ppc) bus
-     according to the number of buses with elements, in order to estimate the p, q on all 
-     the busses. 
+     according to the number of buses with elements, in order to estimate the p, q on all
+     the busses.
      These method implemented a forward and backward substitution:
      1. Find the mapping of pd2ppc bus, and identify the ppc bus, which contains multiple bus with elements
      2. Skip the first bus with elements with the same ppc bus, and finding all the switch connected to the
        rest pandapower bus and set impedance
      3. Update the pd2ppc lookup
-     4. if it caused some bus without elements to detach from any of the bus with connected element, then the 
+     4. if it caused some bus without elements to detach from any of the bus with connected element, then the
        switch caused it will be reset to fuse mode
-     5. Iterate this process until all buses with elements are seperated to their own ppc bus, while no bus is 
+     5. Iterate this process until all buses with elements are seperated to their own ppc bus, while no bus is
        detached in order to get the voltage on bus right
     :param net: pandapower net
     :param z_ohm: float z_ohm to be setted for the switch
@@ -105,10 +103,10 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
 
     lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
     for _ in range(int(lookup.elements_in_cluster.max()) - 1):
-        bus_to_be_handled = lookup[((lookup['elements_in_cluster'] >= 2) & \
+        bus_to_be_handled = lookup[((lookup['elements_in_cluster'] >= 2) &
                                     lookup['bus_with_elements']) & (~lookup['bus_to_be_fused'])]
         bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')].index
-        imp_switch_sel = (net.switch.et == 'b') & (net.switch.closed) & \
+        imp_switch_sel = (net.switch.et == 'b') & (net.switch.closed) &\
                          (net.switch.bus.isin(bus_to_be_handled) | net.switch.element.isin(bus_to_be_handled))
         net.switch.loc[imp_switch_sel, 'z_ohm'] = z_ohm
 
@@ -129,7 +127,7 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
 
 def reset_bb_switch_impedance(net):
     """
-    Reset the z_ohm of the switch to its original state, undo the operation by set_bb_switch_impedance 
+    Reset the z_ohm of the switch to its original state, undo the operation by set_bb_switch_impedance
     :param net: pandapower net
     :return: None
     """
@@ -153,7 +151,6 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                meas_value *= -1
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:
@@ -174,7 +171,8 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
 
 
 def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
-                                       p_std_dev=0.01, q_std_dev=0.01, dg_std_dev=0.1, seed=14, with_random_error=True):
+                                       p_std_dev=0.01, q_std_dev=0.01, dg_std_dev=0.1,
+                                       seed=14, with_random_error=True):
     np.random.seed(seed)
 
     bus_meas_types = {'v': 'vm_pu', "va": "va_degree", 'p': 'p_mw', 'q': 'q_mvar'}
@@ -185,7 +183,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
                         'trafo3w': {'side': ('hv', 'mv', 'lv'),
                                     'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')}}
 
-    # Added degree result for branches              
+    # Added degree result for branches    
     for br_type in branch_meas_type.keys():
         for side in branch_meas_type[br_type]['side']:
             p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
@@ -201,7 +199,6 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                meas_value *= -1
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:
@@ -224,7 +221,8 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
 
 def add_virtual_meas_error(net, v_std_dev=0.001, i_std_dev=0.01,
                            p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1, with_random_error=True):
-    assert not net.measurement.empty
+    if net.measurement.empty:
+        raise AssertionError("Measurement cannot be empty!")
 
     r = np.random.normal(0, 1, net.measurement.shape[0])  # random error in range from -1, 1
     p_meas_mask = net.measurement.measurement_type == "p"
@@ -234,10 +232,10 @@ def add_virtual_meas_error(net, v_std_dev=0.001, i_std_dev=0.01,
     dg_meas_mask = net.measurement.measurement_type.isin(("ia", "va"))
 
     if with_random_error:
-        net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev * net.measurement.loc[
-            p_meas_mask, 'value'].abs()
-        net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev * net.measurement.loc[
-            q_meas_mask, 'value'].abs()
+        net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev *\
+            net.measurement.loc[p_meas_mask, 'value'].abs()
+        net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev *\
+            net.measurement.loc[q_meas_mask, 'value'].abs()
         net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
         net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev / 10000
         net.measurement.loc[dg_meas_mask, 'value'] += r[dg_meas_mask.values] * dg_std_dev

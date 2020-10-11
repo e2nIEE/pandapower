@@ -499,7 +499,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
-    elements = ["load", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
+    elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
         , "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
@@ -613,7 +613,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method):
+                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method, return_all_currents):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -629,7 +629,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "ip": ip,
         "ith": ith,
         "branch_results": branch_results,
-        "kappa_method": kappa_method
+        "kappa_method": kappa_method,
+        "return_all_currents": return_all_currents
     }
     _add_options(net, options)
 
@@ -1117,6 +1118,25 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac, only_v_results=only_v_results,
                      use_umfpack=use_umfpack, permc_spec=permc_spec)
+
+
+def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
+                        **kwargs):
+
+    check_connectivity = kwargs.get("check_connectivity", True)
+    trafo_model = kwargs.get("trafo_model", "t")
+    trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
+    switch_rx_ratio = kwargs.get("switch_rx_ratio", 2)
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="pf", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
+                     init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
+                     voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
+    _add_pf_options(net, tolerance_mva="1e-8", trafo_loading="power",
+                    numba=False, ac=True, algorithm="nr", max_iteration="auto",
+                    only_v_results=False)
 
 
 def _internal_stored(net):
