@@ -150,7 +150,6 @@ def test_pwl():
 
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
     g3 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
-    g3 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
 
     pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 1.], [2, 80, 8.]])
     pp.create_pwl_cost(net, g2, 'gen', [[0, 3, 2.], [3, 80, 14]])
