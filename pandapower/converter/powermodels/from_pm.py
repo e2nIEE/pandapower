@@ -6,7 +6,7 @@ import numpy as np
 from pandapower.auxiliary import _clean_up
 from pandapower.converter import logger
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
-from pandapower.pypower.idx_bus import VA, VM
+from pandapower.pypower.idx_bus import VA, VM, LAM_P
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
@@ -67,6 +67,8 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
             if "w" in bus:
                 # SOCWR model has only w instead of vm values
                 ppci["bus"][bus_idx, VM] = bus["w"]
+            if "lam_kcl_r" in bus:
+                ppci["bus"][bus_idx, LAM_P] = bus["lam_kcl_r"]
 
         for i, gen in sol["gen"].items():
             gen_idx = int(i) - 1
@@ -143,6 +145,9 @@ def _convert_pm_units_to_pp_units(result_pm, sn_mva):
     if "bus" in sol:
         for i, bus in sol["bus"].items():
             sol["bus"][i]["va"] = rad2degree(bus["va"])
+            # converting the unit of shadow prices (lagrange multiplier)
+            if "lam_kcl_r" in bus:
+                sol["bus"][i]["lam_kcl_r"] = -1 * bus["lam_kcl_r"] / sn_mva
 
         for i, gen in sol["gen"].items():
             for field in ["pg", "qg"]:
