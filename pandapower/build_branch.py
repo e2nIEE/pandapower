@@ -53,7 +53,7 @@ def _build_branch_ppc(net, ppc):
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
         _calc_trafo_parameter(net, ppc)
-    if "trafo3w" in lookup:¨
+    if "trafo3w" in lookup:
         _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
         _calc_impedance_parameter(net, ppc)
