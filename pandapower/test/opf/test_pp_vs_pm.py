@@ -136,6 +136,18 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net_new.res_cost, 17015.5635)
 
 
+def test_opf_ext_grid_controllable():
+    # load net
+    net = case5_pm_matfile_I()
+    # run pd2ppc with ext_grid controllable = False
+    pp.create_ext_grid(net, bus=0, controllable=True)
+    pp.runopp(net)
+    assert np.isclose(net.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0641399999827315)
+
+
+
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_opf_ext_grid_controllable_pm():
@@ -157,4 +169,5 @@ def test_opf_ext_grid_controllable_pm():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    test_opf_ext_grid_controllable()
+    # pytest.main([__file__, "-xs"])
