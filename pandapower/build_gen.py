@@ -66,7 +66,7 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"] = np.zeros(shape=(nr_gens, 21), dtype=float)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    q_lim_default = net._options["p_lim_default"]
+    q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
     ppc["gen"][:, PMIN] = -p_lim_default
