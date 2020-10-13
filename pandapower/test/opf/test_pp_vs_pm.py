@@ -120,8 +120,6 @@ def test_case5_pm_pd2ppc():
     assert net.ext_grid.vm_pu.values[1] == vmax1
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_opf_ext_grid_controllable():
     # load net
     net = case5_pm_matfile_I()
