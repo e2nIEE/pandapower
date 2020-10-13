@@ -261,7 +261,7 @@ def ppc_to_pm(net, ppci):
             branch["rate_c"] = row[RATE_C].real
         elif net._options["opf_flow_lim"] == "I":
             # todo bei ne_branch auch machen
-            f, t = net._pd2ppc_lookups["branch"]["line"]
+            f = net._pd2ppc_lookups["branch"]["line"][0]
             f = int(row[F_BUS].real) # from bus of this line
             vr = ppci["bus"][f][BASE_KV]
 #            factor = 35 #np.sqrt(1000) #31.9215
