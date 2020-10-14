@@ -145,9 +145,6 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0641399999827315)
 
 
-
-
-
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_opf_ext_grid_controllable_pm():
