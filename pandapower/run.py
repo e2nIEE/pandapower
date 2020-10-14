@@ -274,7 +274,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load / net.storage
+    Flexibilities can be defined in net.sgen / net.gen /net.load / net.storage /net.ext_grid
     net.sgen.controllable if a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
@@ -300,6 +300,9 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
+
+     If the external grid ist controllable, the voltage setpoint of the external grid can be optimized within the
+    voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator elements.
 
     How these costs are combined into a cost function depends on the cost_function parameter.
 
