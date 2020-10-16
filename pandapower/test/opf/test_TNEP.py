@@ -57,7 +57,7 @@ def test_pm_tnep_cigre():
     assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
     # run power models tnep optimization
-    pp.runpm_tnep(net)
+    pp.runpm_tnep(net, pm_solver= "juniper") # gurobi is a better option, but not for travis
     # print the information about the newly built lines
     print("These lines are to be built:")
     print(net["res_ne_line"])
