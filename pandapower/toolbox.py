@@ -42,14 +42,14 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                      ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
-                     ("storage", "bus")])
+                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                      ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
                      ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
                      ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
     if res_elements:
-        elements_without_res = ["switch", "measurement"]
+        elements_without_res = ["switch", "measurement", "asymmetric_load", "asymmetric_sgen"]
         ebts.update(
             [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
     return ebts
@@ -2324,7 +2324,8 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage"]:
+    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage",
+                     "asymmetric_load", "asymmetric_sgen"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element == "measurement":
