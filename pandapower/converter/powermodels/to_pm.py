@@ -29,7 +29,7 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt"):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
 
@@ -71,7 +71,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -83,7 +83,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net):
+def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -254,9 +254,21 @@ def ppc_to_pm(net, ppci):
         branch["g_to"] = - row[BR_B].imag / 2.0
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
-        branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-        branch["rate_b"] = row[RATE_B].real
-        branch["rate_c"] = row[RATE_C].real
+
+        if net._options["opf_flow_lim"] == "S": # or branch["transformer"]:
+            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["rate_b"] = row[RATE_B].real
+            branch["rate_c"] = row[RATE_C].real
+        elif net._options["opf_flow_lim"] == "I":
+            f = net._pd2ppc_lookups["branch"]["line"][0]
+            f = int(row[F_BUS].real) # from bus of this line
+            vr = ppci["bus"][f][BASE_KV]
+            branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["c_rating_b"] = row[RATE_B].real
+            branch["c_rating_c"] = row[RATE_C].real
+        else:
+            logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
+
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
@@ -290,9 +302,21 @@ def ppc_to_pm(net, ppci):
             branch["g_to"] = - row[BR_B].imag / 2.0
             branch["b_fr"] = row[BR_B].real / 2.0
             branch["b_to"] = row[BR_B].real / 2.0
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
+
+            if net._options["opf_flow_lim"] == "S":
+                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["rate_b"] = row[RATE_B].real
+                branch["rate_c"] = row[RATE_C].real
+            elif net._options["opf_flow_lim"] == "I":
+                f, t = net._pd2ppc_lookups["branch"]["line"]
+                f = int(row[F_BUS].real)  # from bus of this line
+                vr = ppci["bus"][f][BASE_KV]
+                row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
+
+                branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["c_rating_b"] = row[RATE_B].real
+                branch["c_rating_c"] = row[RATE_C].real
+
             branch["f_bus"] = int(row[F_BUS].real) + 1
             branch["t_bus"] = int(row[T_BUS].real) + 1
             branch["br_status"] = int(row[BR_STATUS].real)
