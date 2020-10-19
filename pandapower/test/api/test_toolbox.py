@@ -431,6 +431,18 @@ def test_merge_and_split_nets():
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 
+def test_merge_asymmetric():
+    """Test that merging nets properly handles bus IDs for asymmetric elements
+    """
+    net1 = nw.ieee_european_lv_asymmetric()
+    net2 = nw.ieee_european_lv_asymmetric()
+    n_load_busses = len(net1.asymmetric_load.bus.unique())
+    n_sgen_busses = len(net1.asymmetric_sgen.bus.unique())
+    net3 = pp.merge_nets(net1, net2)
+    assert len(net3.asymmetric_load.bus.unique()) == 2 * n_load_busses
+    assert len(net3.asymmetric_sgen.bus.unique()) == 2 * n_sgen_busses
+
+
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
