@@ -13,6 +13,7 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.pf.run_newton_raphson_pf import _run_fast_decoupled_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -55,7 +56,7 @@ def _powerflow(net, **kwargs):
         reset_results(net)
 
     # TODO remove this when zip loads are integrated for all PF algorithms
-    if algorithm not in ['nr', 'bfsw']:
+    if algorithm not in ['nr', 'bfsw', 'fdbx', 'fdxb']:
         net["_options"]["voltage_depend_loads"] = False
 
     # convert pandapower net to ppc
@@ -139,7 +140,10 @@ def _run_pf_algorithm(ppci, options, **kwargs):
             result = _run_bfswpf(ppci, options, **kwargs)[0]
         elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
-        elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
+        elif algorithm in ['fdbx', 'fdxb']:  # fdbx/xb new algos
+            # this implematation will much like be the newton_raphson
+            result = _run_fast_decoupled_pf(ppci, options)
+        elif algorithm == 'gs':  # last algorithm imported from pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
