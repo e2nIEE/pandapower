@@ -1480,7 +1480,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
+               create_continuous_bus_index=True, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1488,7 +1489,8 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     net = copy.deepcopy(net1)
     net1 = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
-    create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
+    if create_continuous_bus_index:
+        create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     if validate:
         runpp(net1, **kwargs)
         runpp(net2, **kwargs)
