@@ -16,6 +16,7 @@ from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
+from pandapower.pypower.decoupledpf import decoupledpf
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pypower.pfsoln import _update_v
 
@@ -54,6 +55,30 @@ def _run_newton_raphson_pf(ppci, options):
     et = time() - t0
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci
+
+
+def _run_fast_decoupled_pf(ppci, options):
+    """
+    This is a modified version of _run_newton_raphson to run fast decoupled
+    algorithms.
+    """
+
+    t0 = time()
+
+    if options["init_va_degree"] == "dc":
+        ppci = _run_dc_pf(ppci)
+    if options["enforce_q_lims"]:
+        ppci, success, iterations, bus, gen, branch = \
+            _run_ac_pf_with_qlims_enforced(ppci, options)
+    else:
+        ppci, success, iterations = \
+            _run_ac_pf_without_qlims_enforced(ppci, options)
+        # update data matrices with the solution stores in ppci
+        bus, gen, branch = ppci_to_pfsoln(ppci, options)
+    et = time() - t0
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success,
+                                          iterations, et)
+    return ppci    
 
 
 def ppci_to_pfsoln(ppci, options):
@@ -125,13 +150,28 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     # compute complex bus power injections [generation - load]
     Sbus = _get_Sbus(ppci, options["recycle"])
 
-    # run the newton power  flow
-    V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+
+    if options["algorithm"] in ["nr", "iwamoto_nr"]:
+        # run the newton power  flow
+        V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+        Bp, Bpp = None, None
+    elif options["algorithm"] in ["fdbx", "fdxb"]:
+        V, success, iterations, Bp, Bpp, Vm_it, Va_it = \
+            decoupledpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+        J = None
+    else:
+        alg = options["algorithm"]
+        raise AlgorithmUnknown(f"Algorithm {alg} is not implemented in this"
+                                " module.")
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
-    ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
-                                  "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt})
+    # J or Bp, Bpp can be None, depending on which method is being used
+    ppci = _store_internal(ppci, {
+        "J": J, "Bp": Bp, "Bpp": Bpp, "Vm_it": Vm_it, "Va_it": Va_it,
+        "bus": bus, "gen": gen, "branch": branch, "baseMVA": baseMVA, "V": V,
+        "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus, "ref_gens": ref_gens,
+        "Ybus": Ybus, "Yf": Yf, "Yt": Yt
+        })
 
     return ppci, success, iterations
 
