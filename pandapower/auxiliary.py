@@ -714,7 +714,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 or np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
-    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
+    if ((algorithm not in ['nr', 'bfsw', 'iwamoto_nr', 'fdbx', 'fdxb'])
+        and (voltage_depend_loads == True)):
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
 
