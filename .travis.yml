@@ -8,6 +8,7 @@ matrix:
     - python: 3.5
     - python: 3.6
     - python: 3.7
+    - python: 3.8
       dist: xenial
       sudo: true
   
@@ -56,6 +57,8 @@ script:
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
          py.test --cov=pandapower --cov-config .coveragerc;
     elif [[ "$TRAVIS_PYTHON_VERSION" == "3.7" ]]; then
+         py.test --cov=pandapower --cov-config .coveragerc;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.8" ]]; then
          py.test --cov=pandapower --cov-config .coveragerc;
     fi  
     
