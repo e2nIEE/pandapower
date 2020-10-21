@@ -120,8 +120,8 @@ class Controller(JSONSerializableClass):
 
         columns = ['object', 'in_service', 'recycle']
         self.net.controller.loc[index, columns] = self, in_service, recycle
-        net.controller['order'][index] = order
-        net.controller['level'][index] = level
+        self.net.controller['order'][index] = order
+        self.net.controller['level'][index] = level
 
         _preserve_dtypes(self.net.controller, dtypes)
 
