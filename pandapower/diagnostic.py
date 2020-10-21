@@ -520,15 +520,15 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
     implausible_elements = {}
 
     line = net.line[((net.line.r_ohm_per_km * net.line.length_km) <= min_r_ohm)
-                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm)].index
+                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm) & net.line.in_service].index
 
     xward = net.xward[(net.xward.r_ohm <= min_r_ohm)
-                      | (net.xward.x_ohm <= min_x_ohm)].index
+                      | (net.xward.x_ohm <= min_x_ohm) & net.xward.in_service].index
 
     impedance = net.impedance[(net.impedance.rft_pu <= min_r_pu)
                               | (net.impedance.xft_pu <= min_x_pu)
                               | (net.impedance.rtf_pu <= min_r_pu)
-                              | (net.impedance.xtf_pu <= min_x_pu)].index
+                              | (net.impedance.xtf_pu <= min_x_pu) & net.impedance.in_service].index
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
