@@ -459,8 +459,7 @@ def missing_bus_indices(net):
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
                 if row[bus_name] not in bus_indices:
-                    if not ((element == "switch") and (bus_name == "element") and (
-                                row.et in ['l', 't'])):
+                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't', 't3'])):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
