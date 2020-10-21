@@ -217,7 +217,7 @@ def check_greater_zero_less_equal_one(element, element_index, column):
 
 
 def check_switch_type(element, element_index, column):
-    valid_values = ['b', 'l', 't']
+    valid_values = ['b', 'l', 't', 't3']
     if element[column] not in valid_values:
         return element_index
 
