@@ -100,7 +100,41 @@ def test_pm_tnep_cigre_only_conversion():
     convert_pp_to_pm(net)
 
 
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_pm_tnep_cigre_ac():
+    # get the grid
+    net = cigre_grid()
+    # add the possible new lines
+    define_possible_new_lines(net)
+    # check if max line loading percent is violated (should be)
+    pp.runpp(net)
+    print("Max line loading prior to optimization:")
+    print(net.res_line.loading_percent.max())
+    assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+
+    # run power models tnep optimization
+    pp.runpm_tnep(net, pm_solver= "juniper", pm_model="ACPPowerModel", opf_flow_lim="I") # gurobi is a better option, but not for travis
+    # print the information about the newly built lines
+    print("These lines are to be built:")
+    print(net["res_ne_line"])
+
+    # set lines to be built in service
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    net["line"].loc[lines_to_built, "in_service"] = True
+
+    # run a power flow calculation again and check if max_loading percent is still violated
+    pp.runpp(net)
+
+    # check max line loading results
+    assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
+
+    print("Max line loading after the optimization:")
+    print(net.res_line.loading_percent.max())
+
+
 if __name__ == '__main__':
-    pytest.main([__file__])
+    # pytest.main([__file__])
+    test_pm_tnep_cigre_ac()
     # test_pm_tnep_cigre()
     # test_pm_tnep_cigre_only_conversion()
