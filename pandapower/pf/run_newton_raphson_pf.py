@@ -161,8 +161,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         J = None
     else:
         alg = options["algorithm"]
-        raise AlgorithmUnknown(f"Algorithm {alg} is not implemented in this"
-                                " module.")
+        raise AlgorithmUnknown("Algorithm {} is not implemented in this"
+                               " module.".format(alg))
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     # J or Bp, Bpp can be None, depending on which method is being used
