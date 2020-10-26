@@ -260,19 +260,12 @@ def ppc_to_pm(net, ppci):
             branch["rate_b"] = row[RATE_B].real
             branch["rate_c"] = row[RATE_C].real
         elif net._options["opf_flow_lim"] == "I":
-            # todo bei ne_branch auch machen
             f = net._pd2ppc_lookups["branch"]["line"][0]
             f = int(row[F_BUS].real) # from bus of this line
             vr = ppci["bus"][f][BASE_KV]
-#            factor = 35 #np.sqrt(1000) #31.9215
-#            row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3)) * factor
-#            row[RATE_B] = row[RATE_B] / (vr * np.sqrt(3)) * factor *10
-#            row[RATE_C] = row[RATE_C] / (vr * np.sqrt(3)) * factor *10
-
             branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
             branch["c_rating_b"] = row[RATE_B].real
             branch["c_rating_c"] = row[RATE_C].real
-
         else:
             logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
 
