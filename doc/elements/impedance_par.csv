@@ -7,4 +7,4 @@ xft_pu*;float;:math:`>` 0;reactance of the impedance from 'from' to 'to' bus [p.
 rtf_pu*;float;:math:`>` 0;resistance of the impedance from 'to' to 'from' bus [p.u]
 xtf_pu*;float;:math:`>` 0;reactance of the impedance from 'to' to 'from' bus [p.u]
 sn_mva*;float;:math:`>` 0;reference apparent power for the impedance per unit values [MVA]
-in_service*;boolean;True / False;specifies if the imepdance is in service.
+in_service*;boolean;True / False;specifies if the impedance is in service.
