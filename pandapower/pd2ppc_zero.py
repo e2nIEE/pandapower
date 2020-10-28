@@ -239,7 +239,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
                 y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"]) #pi model
             else:
 #                y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"]) #T model
-                print(YAB, YAB_AN, YAB_BN, YBN)
                 y = (YAB + YAB_BN + YBN).astype(complex)* int(ppc["baseMVA"])  # T model
 
             gs_all = np.hstack([gs_all, y.real * in_service])
