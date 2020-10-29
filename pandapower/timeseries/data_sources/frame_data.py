@@ -7,7 +7,7 @@ from pandapower.timeseries.data_source import DataSource
 
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)

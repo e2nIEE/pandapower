@@ -1,3 +1,29 @@
+Change Log
+=============
+
+- [ADDED] travis CI tests for PowerModels.jl interface (julia tests)
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver
+- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
+- [FIXED] json load for broken geom columns in bus_geodata
+- [ADDED] The voltage setpoint of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] The Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I")
+- [ADDED] For easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json")
+
+[2.4.0]- 2020-09-01
+----------------------
+- [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893
+- [ADDED] new element "net.motor" to model asynchronous machines #244
+- [ADDED] possibility to calculate all branch currents in short-circuit calculations #862
+- [ADDED] more flexibility in the create_generic_geodata function
+
+[2.3.1]- 2020-08-19
+----------------------
+- [ADDED] Missing dependencies xlswriter, xlrd, cryptography
+- [FIXED] Bug in rundcpp result table initialization
+- [CHANGED] PTDF/LODF calculation to improve performance
+- [FIXED] Signing system for P/Q values in net.res_bus_3ph
+- [FIXED] JSON I/O handling of controllers with NaN values
+
 [2.3.0]- 2020-08-11
 ----------------------
 - [ADDED] Create functions for multiple gens, sgens, lines, trafos and switches

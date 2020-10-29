@@ -7,8 +7,6 @@ Asymmetric Static Generator
 .. note::
 
    Static generators should always have a positive p_mw value, since all power values are given in the generator convention. If you want to model constant power consumption, it is recommended to use a load element instead of a static generator with negative active power value.
-   If you want to model a voltage controlled generator, use the generator element.
-
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`

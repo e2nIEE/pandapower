@@ -7,17 +7,17 @@
 import json
 import os
 import pickle
-from packaging import version
 from warnings import warn
 
-import pandas as pd
-
 import numpy
+import pandas as pd
+from packaging import version
 
-from pandapower.auxiliary import pandapowerNet
-from pandapower.create import create_empty_network
-from pandapower.convert_format import convert_format
 import pandapower.io_utils as io_utils
+from pandapower.auxiliary import pandapowerNet
+from pandapower.convert_format import convert_format
+from pandapower.create import create_empty_network
+
 
 def to_pickle(net, filename):
     """
@@ -67,7 +67,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     dict_net = io_utils.to_dict_of_dfs(net, include_results=include_results,
-                              include_empty_tables=include_empty_tables)
+                                       include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
@@ -314,7 +314,7 @@ def from_json_dict(json_dict):
         if key == 'dtypes':
             continue
         if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict) \
-             or key == "piecewise_linear_cost" or key == "polynomial_cost":
+                or key == "piecewise_linear_cost" or key == "polynomial_cost":
             net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:

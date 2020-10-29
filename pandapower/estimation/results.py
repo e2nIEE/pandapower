@@ -22,8 +22,8 @@ def _calc_power_flow(ppci, V):
 
     # calculate bus power injections
     Sbus = np.multiply(V, np.conj(Ybus * V)) * baseMVA
-    ppci["bus"][:, PD] = -Sbus.real  # saved in per unit, injection -> demand
-    ppci["bus"][:, QD] = -Sbus.imag  # saved in per unit, injection -> demand
+    ppci["bus"][:, PD] = -Sbus.real  # saved in MW, injection -> demand
+    ppci["bus"][:, QD] = -Sbus.imag  # saved in Mvar, injection -> demand
     return ppci
 
 

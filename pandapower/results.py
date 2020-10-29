@@ -70,7 +70,15 @@ def verify_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         res_element, res_empty_element = get_result_tables(element, suffix)
-        if len(net[element]) != len(net[res_element]):
+
+        index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
+        if not index_equal:
+            if net["_options"]["init_results"] and element == "bus":
+                # if the indices of bus and res_bus are not equal, but init_results is set, the voltage vector
+                # is wrong. A UserWarning is raised in this case. For all other elements the result table is emptied.
+                raise UserWarning("index of result table '{}' is not equal to the element table '{}'. The init result"
+                                  " option may lead to a non-converged power flow.".format(res_element, element))
+            # init result table for
             init_element(net, element)
             if element == "bus":
                 net._options["init_vm_pu"] = "auto"
@@ -114,12 +122,12 @@ def init_element(net, element, suffix=None):
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
-                "dcline"]
+                "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
+                "xward", "dcline"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w"]        
+        return ["bus", "line", "trafo", "trafo3w", "impedance"]
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
@@ -166,7 +174,6 @@ def _ppci_gen_to_ppc(result, ppc):
 
 
 def _ppci_other_to_ppc(result, ppc, mode):
-    ppc['internal'] = result['internal']
 
     if mode != "sc" and mode != "se":
         ppc['success'] = result['success']
@@ -178,6 +185,20 @@ def _ppci_other_to_ppc(result, ppc, mode):
 
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
+
+
+def _ppci_internal_to_ppc(result, ppc):
+    for key, value in result["internal"].items():
+        # if branch current matrices have been stored they need to include out of service elements
+        if key in ["branch_ikss_f", "branch_ikss_t", "branch_ip_f", "branch_ip_t", "branch_ith_f", "branch_ith_t"]:
+            n_buses = np.shape(ppc['bus'])[0]
+            n_branches = np.shape(ppc['branch'])[0]
+            n_rows_result = np.shape(result['bus'])[0]
+            update_matrix = np.empty((n_branches, n_buses)) * np.nan
+            update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
+            ppc['internal'][key] = np.copy(update_matrix)
+        else:
+            ppc["internal"][key] = value
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
@@ -206,6 +227,7 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     _ppci_bus_to_ppc(result, ppc)
     _ppci_branch_to_ppc(result, ppc)
     _ppci_gen_to_ppc(result, ppc)
+    _ppci_internal_to_ppc(result, ppc)
     _ppci_other_to_ppc(result, ppc, mode)
 
     result = ppc

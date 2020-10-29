@@ -40,14 +40,14 @@ class DiscreteTapControl(TrafoController):
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
-        self.tap_pos = self.net[self.trafotable].at[tid, "tap_pos"]
+        self.tap_pos = net[self.trafotable].at[tid, "tap_pos"]
 
-    def control_step(self):
+    def control_step(self, net):
         """
         Implements one step of the Discrete controller, always stepping only one tap position up or down
         """
-        vm_pu = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
         if self.tap_side_coeff * self.tap_sign == 1:
             if vm_pu < self.vm_lower_pu and self.tap_pos > self.tap_min:
@@ -61,17 +61,17 @@ class DiscreteTapControl(TrafoController):
                 self.tap_pos -= 1
 
         # WRITE TO NET
-        self.net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
+        net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
-    def is_converged(self):
+    def is_converged(self, net):
         """
         Checks if the voltage is within the desired voltage band, then returns True
         """
-        if not self.tid in self.net[self.trafotable].index or \
-           not self.net[self.trafotable].at[self.tid, 'in_service']:
+        if not self.tid in net[self.trafotable].index or \
+           not net[self.trafotable].at[self.tid, 'in_service']:
             return True
-        vm_pu = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
         # render this controller converged if he cant reach the desired point
         if self.tap_side_coeff * self.tap_sign == 1:
