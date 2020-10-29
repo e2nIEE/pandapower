@@ -178,7 +178,7 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
         Pabcl_mw = np.zeros_like(Pabcf_mw)
         Qabcl_mvar = np.zeros_like(Qabct_mvar)
     
-    #geting complex values of the sequence current    
+    #getting complex values of the sequence current line   
     Iabc_f_ka_complex = sequence_to_phase(I012_from_ka)
     Iabc_t_ka_complex = sequence_to_phase(I012_to_ka)
     
@@ -188,9 +188,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     
     In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
     In_f_ka = np.abs(In_f_ka_complex)
-    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
+#    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
     In_t_ka_complex = Iabc_t_ka_complex.sum(axis=0)
-    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
+#    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
     In_t_ka = np.abs(In_t_ka_complex)
     In_ka = np.maximum.reduce([In_t_ka, In_f_ka])
 
