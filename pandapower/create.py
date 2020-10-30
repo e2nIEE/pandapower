@@ -394,6 +394,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("i_b_lv_ka", "f8"),
                             ("i_c_hv_ka", "f8"),
                             ("i_c_lv_ka", "f8"),
+#                            ("i_n_hv_ka", "f8"),
+#                            ("i_n_lv_ka", "f8"),
                             ("loading_a_percent", "f8"),
                             ("loading_b_percent", "f8"),
                             ("loading_c_percent", "f8"),
@@ -1916,7 +1918,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100.,
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None, r0x0_max=nan, x0x_max=nan, **kwargs):
+                    index=None, r0x0_max=nan, x0x_max=nan, controllable=nan, **kwargs):
     """
     Creates an external grid connection.
 
@@ -1965,6 +1967,12 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
+        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the ext_grid in OPF.
+                                             The voltage limits set in the ext_grid bus are enforced.
+                                       False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
+                                              The vm_pu setpoint is enforced and limits of the bus table are ignored.
+                                       defaults to False if "controllable" column exists in DataFrame
+
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
 
@@ -1983,6 +1991,15 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     # store dtypes
     dtypes = net.ext_grid.dtypes
+
+    # OPF limits
+    if not isnan(controllable):
+        if "controllable" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "controllable"] = False
+        net.ext_grid.at[index, "controllable"] = bool(controllable)
+    elif "controllable" in net.ext_grid.columns:
+        net.ext_grid.at[index, "controllable"] = False
+
 
     net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
         [bus, name, vm_pu, va_degree, bool(in_service)]

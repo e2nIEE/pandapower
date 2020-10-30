@@ -431,6 +431,18 @@ def test_merge_and_split_nets():
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 
+def test_merge_asymmetric():
+    """Test that merging nets properly handles bus IDs for asymmetric elements
+    """
+    net1 = nw.ieee_european_lv_asymmetric()
+    net2 = nw.ieee_european_lv_asymmetric()
+    n_load_busses = len(net1.asymmetric_load.bus.unique())
+    n_sgen_busses = len(net1.asymmetric_sgen.bus.unique())
+    net3 = pp.merge_nets(net1, net2)
+    assert len(net3.asymmetric_load.bus.unique()) == 2 * n_load_busses
+    assert len(net3.asymmetric_sgen.bus.unique()) == 2 * n_sgen_busses
+
+
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
@@ -864,29 +876,30 @@ def test_get_connected_buses():
     bus4 = pp.create_bus(net, vn_kv=0.4)
     bus5 = pp.create_bus(net, vn_kv=20)
 
-    trafo0 = pp.create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
-                                     std_type='63/25/38 MVA 110/20/10 kV')
+    trafo0 = pp.create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = pp.create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
+    line1 = pp.create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1, std_type='24-AL1/4-ST1A 0.4')
 
-    line1 = pp.create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
-                           std_type='24-AL1/4-ST1A 0.4', name='line1')
-
-    # switch0=pp.create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable
+    switch0a = pp.create_switch(net, bus=bus0, element=trafo0, et='t3')
+    switch0b = pp.create_switch(net, bus=bus2, element=trafo0, et='t3')
     switch1 = pp.create_switch(net, bus=bus1, element=bus5, et='b')
     switch2 = pp.create_switch(net, bus=bus2, element=trafo1, et='t')
     switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
 
-    assert list(tb.get_connected_buses(net, [bus0])) == [bus1, bus2]  # trafo3w has not been implemented in the function
-    assert list(tb.get_connected_buses(net, [bus1])) == [bus0, bus2,
-                                                         bus5]  # trafo3w has not been implemented in the function
-    assert list(tb.get_connected_buses(net, [bus2])) == [bus0, bus1,
-                                                         bus3]  # trafo3w has not been implemented in the function
+    assert list(tb.get_connected_buses(net, [bus0])) == [bus1, bus2]
+    assert list(tb.get_connected_buses(net, [bus1])) == [bus0, bus2, bus5]
+    assert list(tb.get_connected_buses(net, [bus2])) == [bus0, bus1, bus3]
     assert list(tb.get_connected_buses(net, [bus3])) == [bus2, bus4]
     assert list(tb.get_connected_buses(net, [bus4])) == [bus3]
     assert list(tb.get_connected_buses(net, [bus5])) == [bus1]
-
     assert list(tb.get_connected_buses(net, [bus0, bus1])) == [bus2, bus5]
     assert list(tb.get_connected_buses(net, [bus2, bus3])) == [bus0, bus1, bus4]
+
+    net.switch.loc[[switch0b, switch1, switch2, switch3], 'closed'] = False
+    assert list(tb.get_connected_buses(net, [bus0])) == [bus1]
+    assert list(tb.get_connected_buses(net, [bus1])) == [bus0]
+    assert list(tb.get_connected_buses(net, [bus3])) == []
+    assert list(tb.get_connected_buses(net, [bus4])) == []
 
 
 def test_drop_elements_at_buses():
@@ -899,43 +912,39 @@ def test_drop_elements_at_buses():
     bus4 = pp.create_bus(net, vn_kv=0.4)
     bus5 = pp.create_bus(net, vn_kv=20)
 
+    pp.create_ext_grid(net, 0)
+
     trafo0 = pp.create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
                                      std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = pp.create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
 
     line1 = pp.create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
                            std_type='24-AL1/4-ST1A 0.4', name='line1')
+    pp.create_sgen(net, 1, 0)
 
-    # switch0=pp.create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
+    switch0a = pp.create_switch(net, bus=bus0, element=trafo0, et='t3')
+    switch0b = pp.create_switch(net, bus=bus1, element=trafo0, et='t3')
+    switch0c = pp.create_switch(net, bus=bus2, element=trafo0, et='t3')
     switch1 = pp.create_switch(net, bus=bus1, element=bus5, et='b')
-    switch2 = pp.create_switch(net, bus=bus2, element=trafo1, et='t')
-    switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
+    switch2a = pp.create_switch(net, bus=bus2, element=trafo1, et='t')
+    switch2b = pp.create_switch(net, bus=bus3, element=trafo1, et='t')
+    switch3a = pp.create_switch(net, bus=bus3, element=line1, et='l')
+    switch3b = pp.create_switch(net, bus=bus4, element=line1, et='l')
     # bus id needs to be entered as iterable, not done in the function
-    tb.drop_elements_at_buses(net, [bus5])
-    assert len(net.switch) == 2
-    assert len(net.trafo) == 1
-    assert len(net.trafo3w) == 1
-    assert len(net.line) == 1
-    tb.drop_elements_at_buses(net, [bus4])
-    assert len(net.switch) == 1
-    assert len(net.line) == 0
-    assert len(net.trafo) == 1
-    assert len(net.trafo3w) == 1
-    tb.drop_elements_at_buses(net, [bus3])
-    assert len(net.switch) == 0
-    assert len(net.line) == 0
-    assert len(net.trafo) == 0
-    assert len(net.trafo3w) == 1
-    tb.drop_elements_at_buses(net, [bus2])
-    assert len(net.switch) == 0
-    assert len(net.line) == 0
-    assert len(net.trafo) == 0
-    assert len(net.trafo3w) == 0
-    tb.drop_elements_at_buses(net, [bus1])
-    assert len(net.switch) == 0
-    assert len(net.line) == 0
-    assert len(net.trafo) == 0
-    assert len(net.trafo3w) == 0
+
+    for b in net.bus.index.values:
+        net1 = net.deepcopy()
+        cd = tb.get_connected_elements_dict(net1, b, connected_buses=False)
+        swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) & (net1.switch.et=='t3')].index)
+        swt = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo', [1000])) & (net1.switch.et=='t')].index)
+        swl = set(net1.switch.loc[net1.switch.element.isin(cd.get('line', [1000])) & (net1.switch.et=='l')].index)
+        sw = swt3w | swt | swl
+        tb.drop_elements_at_buses(net1, [b])
+        assert b not in net1.switch.bus.values
+        assert b not in net1.switch.query("et=='b'").element.values
+        assert sw.isdisjoint(set(net1.switch.index))
+        for elm, id in cd.items():
+            assert len(net1[elm].loc[net1[elm].index.isin(id)]) == 0
 
 
 def test_impedance_line_replacement():

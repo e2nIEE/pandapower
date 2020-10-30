@@ -142,7 +142,7 @@ def control_implementation(controller_order, net, run_funct, errors, max_iter, c
         converged = False
         # run_count is 0 before entering the loop. Is incremented in each controller loop
         run_count = 0
-        while not converged and run_count <= max_iter and net["converged"]:
+        while not converged and run_count <= max_iter and (net["converged"] or net["OPF_converged"]):
             converged = _control_step(net, run_count, levelorder)
 
             # call to run function (usually runpp) after each controller was called
@@ -151,7 +151,7 @@ def control_implementation(controller_order, net, run_funct, errors, max_iter, c
                 run_count += 1
                 _control_repair(net, run_funct, continue_on_lf_divergence, levelorder, errors, **kwargs)
         # raises controller not converged
-        check_final_convergence(run_count, max_iter, errors, net['converged'])
+        check_final_convergence(run_count, max_iter, errors, (net['converged'] or net["OPF_converged"]))
 
 
 def _control_step(net, run_count, levelorder):
