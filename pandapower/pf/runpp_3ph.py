@@ -357,31 +357,20 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         buses are created for branches when switches are opened at the branch.
         Instead branches are set out of service
 
-    Return values:
-    ---------------
-    **count(int)** No of iterations taken to reach convergence
+    SEE ALSO:
+         pp.add_zero_impedance_parameters(net):
+         To add zero sequence parameters into network from the standard type
 
-    **v_012_it(complex)**   - Sequence voltages
+    EXAMPLES:
+        >>> from pandapower.pf.runpp_3ph import runpp_3ph
 
-    **i012_it(complex)**   - Sequence currents
+        >>> runpp_3ph(net)
 
-    See Also:
-    ----------
-    pp.add_zero_impedance_parameters(net):
-    To add zero sequence parameters into network from the standard type
-
-    Examples:
-    ----------
-    >>> from pandapower.pf.runpp_3ph import runpp_3ph
-
-    >>> runpp_3ph(net)
-
-    Notes:
-    --------
-    - Three phase load flow uses Sequence Frame for power flow solution.
-    - Three phase system is modelled with earth return.
-    - PH-E load type is called as wye since Neutral and Earth are considered same
-    - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
+    NOTES:
+        - Three phase load flow uses Sequence Frame for power flow solution.
+        - Three phase system is modelled with earth return.
+        - PH-E load type is called as wye since Neutral and Earth are considered same
+        - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
     """
     # =============================================================================
     # pandapower settings
