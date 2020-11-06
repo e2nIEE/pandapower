@@ -16,7 +16,8 @@ from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-          pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0):  # pragma: no cover
+          pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
+          report_duals=False, branch_limits="hard", objective="cost"):  # pragma: no cover
     """
     Runs a power system optimization using PowerModels.jl. with a custom julia file.
     
@@ -71,6 +72,19 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                                           
         **pm_log_level** (int, 0) - solver log level in power models
 
+        ** report_duals ** (bool, False) - whether or not the dual variables should be reported 
+
+        ** branch_limits ** (str, "hard") - how the power flow of the branches should be imposed
+                - "hard": impose hard limits on the branch flows. any violation means divergence
+                - "soft": violates the power flow restrictions in the branches as little as possible
+                - "none": impose no restrictions on the branch power flows
+        
+        ** objective ** (str, "cost") - the objective function to be used in the DC optimal power flow
+                - "cost": minimize the overall generation costs
+                - "flow": minimize the sum of squares of branch flows
+                - "cost-flow": minimize "cost" + "flow" (no weights are added)
+                - "cost-fuel": minimize PowerModels.objective_min_fuel_and_cost_polynomial
+
      """
     net._options = {}
     ac = True if "DC" not in pm_model else False
@@ -83,7 +97,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level)
+                     pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
+                     report_duals=report_duals, branch_limits=branch_limits, objective=objective)
     _runpm(net)
 
 
