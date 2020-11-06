@@ -270,13 +270,9 @@ def ppc_to_pm(net, ppci):
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
 
-        # branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
-        # branch["rate_b"] = row[RATE_B].real / sn_mva
-        # branch["rate_c"] = row[RATE_C].real / sn_mva
-
-        branch["rate_a"] = 99999.
-        branch["rate_b"] = 99999.
-        branch["rate_c"] = 99999.
+        branch["rate_a"] = (row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real) / sn_mva
+        branch["rate_b"] = row[RATE_B].real / sn_mva
+        branch["rate_c"] = row[RATE_C].real / sn_mva
 
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
@@ -358,6 +354,17 @@ def add_pm_options(pm, net):
     else:
         pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"] = np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
+
+    # add report_duals, branch_limits and/or objective options, if present
+    if "report_duals" in net._options:
+        pm["report_duals"] = net._options["report_duals"]
+
+    if "branch_limits" in net._options:
+        pm["branch_limits"] = net._options["branch_limits"]
+    
+    if "objective" in net._options:
+        pm["objective"] = net._options["objective"]
+
     return pm
 
 
