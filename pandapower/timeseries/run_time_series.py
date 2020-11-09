@@ -78,9 +78,9 @@ def pf_not_converged(time_step, ts_variables):
         raise ts_variables['errors'][0]
 
 
-def control_time_step(net, controller_order, time_step):
+def control_time_step(controller_order, time_step):
     for levelorder in controller_order:
-        for ctrl in levelorder:
+        for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
 
 def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
@@ -91,7 +91,12 @@ def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_
     output_writer.save_results(net, time_step, pf_converged=pf_converged, ctrl_converged=ctrl_converged,
                                recycle_options=recycle_options)
 
-def run_time_step(net, time_step, ts_variables, **kwargs):
+
+def _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variables):
+    output_writer_routine(net, time_step, pf_converged, ctrl_converged, ts_variables['recycle_options'])
+
+
+def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs):
     """
     Time Series step function
     Is called to run the PANDAPOWER AC power flows with the timeseries module
@@ -107,11 +112,11 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
     pf_converged = True
     # run time step function for each controller
 
-    control_time_step(net, ts_variables['controller_order'], time_step)
+    control_time_step(ts_variables['controller_order'], time_step)
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control(net, run_control=False, ctrl_variables=ts_variables, **kwargs)
+        run_control_fct(net, run_control=False, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
@@ -121,7 +126,7 @@ def run_time_step(net, time_step, ts_variables, **kwargs):
         pf_converged = False
         pf_not_converged(time_step, ts_variables)
 
-    output_writer_routine(net, time_step, pf_converged, ctrl_converged, ts_variables['recycle_options'])
+    output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables)
 
 
 def _check_controller_recyclability(net):
@@ -241,7 +246,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables = dict()
 
     init_default_outputwriter(net, time_steps, **kwargs)
-    level, order = get_controller_order(net)
+    level, order = get_controller_order(net, net.controller)
     # get run function
     run = kwargs.pop("run", pp.runpp)
     recycle_options = None
@@ -295,7 +300,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         func = kwargs["progress_function"]
         func(i, time_step, time_steps, **kwargs)
 
-def run_loop(net, ts_variables, **kwargs):
+def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs):
     """
     runs the time series loop which calls pp.runpp (or another run function) in each iteration
 
@@ -307,7 +312,7 @@ def run_loop(net, ts_variables, **kwargs):
     """
     for i, time_step in enumerate(ts_variables["time_steps"]):
         print_progress(i, time_step, ts_variables["time_steps"], ts_variables["verbose"], **kwargs)
-        run_time_step(net, time_step, ts_variables, **kwargs)
+        run_time_step(net, time_step, ts_variables, run_control_fct, output_writer_fct, **kwargs)
 
 
 def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, **kwargs):

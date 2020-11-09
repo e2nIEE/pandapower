@@ -66,7 +66,7 @@ def test_add_get_controller(net):
         def control_step(self, net):
             pass
 
-        def is_converged(self):
+        def is_converged(self, net):
             return True
 
     # creating a test controller
@@ -139,14 +139,14 @@ def test_multiple_levels(net):
     TrafoController(net, 0, side="lv", trafotype="2W", level=1, tol=1e-6, in_service=True)
     Controller(net, gid=2, level=[1, 2])
     Controller(net, gid=2, level=[1, 2])
-    level, order = get_controller_order(net)
+    level, order = get_controller_order(net, net.controller)
     # three levels with unspecific controller order => in order of appearance
     # assert order == [[0, 1], [1,2]]
     assert len(order) == 2
-    assert order[0][0].index == 0
-    assert order[0][1].index == 1
-    assert order[1][0].index == 1
-    assert order[1][1].index == 2
+    assert order[0][0][0].index == 0
+    assert order[0][1][0].index == 1
+    assert order[1][0][0].index == 1
+    assert order[1][1][0].index == 2
 
     assert level == [1, 2]
     pp.runpp(net, run_control=True)
@@ -177,12 +177,12 @@ def test_level_in_service(net):
     assert c3.applied
     assert not c4.applied
 
-    level, order = get_controller_order(net)
+    level, order = get_controller_order(net, net.controller)
 
     assert len(level) == 2
     assert len(order[0]) == 0
     assert len(order[1]) == 2
-    assert order[1][0] == c3 and order[1][1] == c2
+    assert order[1][0][0] == c3 and order[1][1][0] == c2
 
 
 if __name__ == '__main__':
