@@ -22,6 +22,7 @@ class ControllerNotConverged(ppException):
     """
     pass
 
+
 class NetCalculationNotConverged(ppException):
     """
     Exception being raised in case a controller does not converge.
@@ -53,7 +54,7 @@ def get_controller_order(nets, controller):
     for l in level_list:
         to_add = controller.in_service.values & [*map(lambda x: l in x, level)]
         rel_controller, order = controller['object'].values[to_add], controller['order'].values[to_add]
-        controller_order.append([*zip(rel_controller[order.argsort()],nets[to_add][order.argsort()])])
+        controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
         # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
     logger.debug("levellist: " + str(level_list))
@@ -107,22 +108,18 @@ def prepare_run_ctrl(net, ctrl_variables):
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net)
 
-    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged)
+    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     return ctrl_variables
 
 
-def _net_check_convergence():
-    raise NetCalculationNotConverged("Controller did not converge because the calculation did not converge!")
-
-
-def check_final_convergence(run_count, max_iter, net_converged, net_check_fct=_net_check_convergence):
+def check_final_convergence(run_count, max_iter, net_converged):
     if run_count > max_iter:
         raise ControllerNotConverged("Maximum number of iterations per controller is reached. "
                                      "Some controller did not converge after %i calculations!"
                                      % run_count)
     if not net_converged:
-        net_check_fct()
+        raise NetCalculationNotConverged("Controller did not converge because the calculation did not converge!")
     else:
         logger.debug("Converged after %i calculations" % run_count)
 
@@ -145,6 +142,8 @@ def net_initialization(net, ctrl_variables, **kwargs):
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
     else:
         net["converged"] = True  # assume that the initial state is valid
+    ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
+    return ctrl_variables
 
 
 def control_initialization(controller_order):
@@ -173,19 +172,21 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 run_funct(net, **kwargs)
             except errors:
                 pass
-    converged = net['converged'] or net['OPF_converged']
-    return converged
+    ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
+    return ctrl_variables
 
 
 def control_implementation(net, controller_order, ctrl_variables, max_iter,
-                           evaluate_net_fct=_evaluate_net, net_check_fct=_net_check_convergence, **kwargs):
+                           evaluate_net_fct=_evaluate_net, **kwargs):
     # run each controller step in given controller order
     for i, levelorder in enumerate(controller_order):
+        # level_index is not required for pandapower, however, essential for multinet simulations with pandapipes.
+        # Don't delete it!
         kwargs['level_index'] = i
         # converged gives status about convergence of a controller. Is initialized as False
         ctrl_converged = False
         # run_count is 0 before entering the loop. Is incremented in each controller loop
-        converged = True
+        converged = ctrl_variables['converged']
         run_count = 0
         while not ctrl_converged and run_count <= max_iter and converged:
             ctrl_converged = _control_step(levelorder, run_count)
@@ -193,9 +194,9 @@ def control_implementation(net, controller_order, ctrl_variables, max_iter,
             # this function is called at least once per level
             if not ctrl_converged:
                 run_count += 1
-                converged = evaluate_net_fct(net, levelorder, ctrl_variables, **kwargs)
+                ctrl_variables = evaluate_net_fct(net, levelorder, ctrl_variables, **kwargs)
         # raises controller not converged
-        check_final_convergence(run_count, max_iter, converged, net_check_fct)
+        check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
 
 
 def _control_step(levelorder, run_count):
@@ -256,7 +257,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     control_initialization(controller_order)
 
     # initial power flow (takes time, but is not needed for every kind of controller)
-    net_initialization(net, ctrl_variables, **kwargs)
+    ctrl_variables = net_initialization(net, ctrl_variables, **kwargs)
 
     # run each controller step in given controller order
     control_implementation(net, controller_order, ctrl_variables, max_iter, **kwargs)

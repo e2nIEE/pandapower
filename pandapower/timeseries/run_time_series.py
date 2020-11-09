@@ -3,14 +3,14 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
+from collections.abc import Iterable
 
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
 from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
-    check_for_initial_run, run_control
+    check_for_initial_run, run_control, NetCalculationNotConverged
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
-from collections.abc import Iterable
 
 try:
     import pplog
@@ -270,7 +270,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # print settings
     ts_variables["verbose"] = verbose
     # errors to be considered as exception
-    ts_variables["errors"] = (LoadflowNotConverged, OPFNotConverged)
+    ts_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     if logger.level != 10 and verbose:
         # simple progress bar
