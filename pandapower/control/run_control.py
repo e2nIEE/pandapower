@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandapower as pp
+import numpy as np
 
 try:
     import pplog
