@@ -37,20 +37,23 @@ def get_controller_order(nets, controller):
     :return: level_list - list of levels to be run
     :return: controller_order - list of controller order lists per level
     """
-    if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
-        # if no controllers are in the net, we have no levels and no order lists
-        return [0], [[]]
-
     # let level be float so that a new level can be added in between of existing ones
-    level = net.controller.level.fillna(0).apply(asarray)
+    if not hasattr(nets, '__len__') or (isinstance(nets, dict)):
+        nets = [nets] * len(controller)
+        nets = np.array(nets)
+    if nets is not np.ndarray:
+        nets = np.array(nets)
+    level = controller.level.fillna(0).apply(asarray).values
     # list of sorted unique levels
-    level_list = sorted(set(v for l in level for v in l))
+    level_list = sorted(set(np.concatenate(level)))
 
     # identify the levels to be run
     controller_order = []
     for l in level_list:
-        to_add = level.apply(lambda x: l in x) & net.controller.in_service
-        controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
+        to_add = controller.in_service.values & [*map(lambda x: l in x, level)]
+        rel_controller, order = controller['object'].values[to_add], controller['order'].values[to_add]
+        controller_order.append([*zip(rel_controller[order.argsort()],nets[to_add][order.argsort()])])
+        # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
     logger.debug("levellist: " + str(level_list))
     logger.debug("order: " + str(controller_order))
