@@ -46,7 +46,7 @@ def version_check():
 
 def _in_ipynb():
     """
-    an auxiliary function which checks if plot is called from a jupyter-notebook or not
+    An auxiliary function which checks if plot is called from a jupyter-notebook or not
     """
     from IPython import get_ipython
     return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
@@ -190,7 +190,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
     node_geodata = node_element + "_geodata"
     node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_geodata].index))]
     node_trace['x'], node_trace['y'] = \
-        (net[node_geodata].loc[node_plot_index,'x'].tolist(),
+        (net[node_geodata].loc[node_plot_index, 'x'].tolist(),
          net[node_geodata].loc[node_plot_index, 'y'].tolist())
     if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
             len(infofunc) == len(nodes):
@@ -259,7 +259,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     else:
         # getting x and y values from bus_geodata for from and to side of each line
         n = node_element
-        n_geodata = n +  "_geodata"
+        n_geodata = n + "_geodata"
         from_n = 'from_'+n
         to_n = 'to_'+n
         from_node = net[n_geodata].loc[branches[from_n], 'x'].tolist()
@@ -341,8 +341,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                          cmap_vals=None, cmin=None, cmax=None, cpos=1.1, branch_element='line',
                          separator_element='switch', node_element='bus',
                          cmap_vals_category='loading_percent'):
-    
-    
+
     color = get_plotly_color(color)
 
     # defining branches (lines) to be plot
@@ -396,7 +395,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         else:
             if net['res_'+branch_element].shape[0] == 0:
                 logger.error(
-                    "There are no simulation results for branches which are default for {} } "
+                    "There are no simulation results for branches which are default for {}"
                     "colormap coloring..."
                     "set cmap_vals input argument if you want colormap according to some specific "
                     "values...".format(branch_element))
@@ -606,7 +605,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
 
 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
-                aspectratio='auto', filename="temp-plot.html"):
+                aspectratio='auto', filename='temp-plot.html'):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
     :func:`create_trafo_trace`)
@@ -677,7 +676,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                  layout=Layout(
                      titlefont=dict(size=16),
                      showlegend=showlegend,
-                     autosize=True if aspectratio is 'auto' else False,
+                     autosize=(aspectratio == 'auto'),
                      hovermode='closest',
                      margin=dict(b=5, l=5, r=5, t=5),
                      # annotations=[dict(
@@ -690,7 +689,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      # legend=dict(x=0, y=1.0)
                  ), )
 
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
 
     if on_map:
         try:
@@ -711,10 +710,10 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                                        zoom=11)
 
     # default aspectratio: if on_map use auto, else use 'original'
-    aspectratio = 'original' if not on_map and aspectratio is 'auto' else aspectratio
+    aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
 
-    if aspectratio is not 'auto':
-        if aspectratio is 'original':
+    if aspectratio != 'auto':
+        if aspectratio == 'original':
             # TODO improve this workaround for getting original aspectratio
             xs = []
             ys = []
