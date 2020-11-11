@@ -179,10 +179,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
 def control_implementation(net, controller_order, ctrl_variables, max_iter,
                            evaluate_net_fct=_evaluate_net, **kwargs):
     # run each controller step in given controller order
-    for i, levelorder in enumerate(controller_order):
-        # level_index is not required for pandapower, however, essential for multinet simulations with pandapipes.
-        # Don't delete it!
-        kwargs['level_index'] = i
+    for levelorder in controller_order:
         # converged gives status about convergence of a controller. Is initialized as False
         ctrl_converged = False
         # run_count is 0 before entering the loop. Is incremented in each controller loop
