@@ -7,8 +7,8 @@ from collections.abc import Iterable
 
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
-from pandapower.control.run_control import ControllerNotConverged, get_controller_order, \
-    check_for_initial_run, run_control, NetCalculationNotConverged
+from pandapower.control.run_control import ControllerNotConverged, prepare_run_ctrl, \
+    run_control, NetCalculationNotConverged
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -83,6 +83,7 @@ def control_time_step(controller_order, time_step):
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
 
+
 def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
     output_writer = net["output_writer"].iat[0, 0]
     # update time step for output writer
@@ -96,7 +97,8 @@ def _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variabl
     output_writer_routine(net, time_step, pf_converged, ctrl_converged, ts_variables['recycle_options'])
 
 
-def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs):
+def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer,
+                  **kwargs):
     """
     Time Series step function
     Is called to run the PANDAPOWER AC power flows with the timeseries module
@@ -217,7 +219,12 @@ def init_time_steps(net, time_steps, **kwargs):
         else:
             logger.warning("No time steps to calculate are specified. "
                            "I'll check the datasource of the first controller for avaiable time steps")
-            max_timestep = net.controller.object.at[0].data_source.get_time_steps_len()
+            ds = net.controller.object.at[0].data_source
+            if ds is None:
+                raise UserWarning("No time steps are specified and the first controller doesn't have a data source"
+                                  "the time steps could be retrieved from")
+            else:
+                max_timestep = ds.get_time_steps_len()
             time_steps = range(max_timestep)
     return time_steps
 
@@ -246,7 +253,6 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables = dict()
 
     init_default_outputwriter(net, time_steps, **kwargs)
-    level, order = get_controller_order(net, net.controller)
     # get run function
     run = kwargs.pop("run", pp.runpp)
     recycle_options = None
@@ -255,10 +261,8 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
         recycle_options = get_recycle_settings(net, **kwargs)
 
     init_output_writer(net, time_steps)
-    # True at default. Initial power flow is calculated before each control step (some controllers need inits)
-    ts_variables["initial_run"] = check_for_initial_run(order)
-    # order of controller (controllers are called in a for loop.)
-    ts_variables["controller_order"] = order
+    # as base take everything considered when preparing run_control
+    ts_variables = prepare_run_ctrl(net, None)
     # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
     ts_variables["run"] = run
     # recycle options, which define what can be recycled
@@ -299,6 +303,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
     if "progress_function" in kwargs:
         func = kwargs["progress_function"]
         func(i, time_step, time_steps, **kwargs)
+
 
 def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs):
     """
