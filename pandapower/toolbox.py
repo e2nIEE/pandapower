@@ -2274,9 +2274,10 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
     """
-    if et == 'line':
+    # todo: what to do with trafo3w?
+    if et == 'line' or et == 'l':
         bc = ["from_bus", "to_bus"]
-    elif et == 'trafo':
+    elif et == 'trafo' or et == 't':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == ['b']:
         # Raises error if switch is not a bus-bus switch
@@ -2397,7 +2398,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         buses = [buses]
 
     cb = set()
-    if "l" in consider:
+    if "l" in consider or 'line' in consider:
         in_service_constr = net.line.in_service if respect_in_service else True
         opened_lines = set(net.switch.loc[(~net.switch.closed) &
                                           (net.switch.et == "l")].element.unique()) if respect_switches else set()
@@ -2408,13 +2409,13 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         cb |= set(net.line[net.line.index.isin(connected_tb_lines)].from_bus)
         cb |= set(net.line[net.line.index.isin(connected_fb_lines)].to_bus)
 
-    if "s" in consider:
+    if "s" in consider or 'switch' in consider:
         cs = get_connected_switches(net, buses, consider='b',
                                     status="closed" if respect_switches else "all")
         cb |= set(net.switch[net.switch.index.isin(cs)].element)
         cb |= set(net.switch[net.switch.index.isin(cs)].bus)
 
-    if "t" in consider:
+    if "t" in consider or 'trafo' in consider:
         in_service_constr = net.trafo.in_service if respect_in_service else True
         opened_trafos = set(net.switch.loc[(~net.switch.closed) &
                                            (net.switch.et == "t")].element.unique()) if respect_switches else set()
@@ -2426,7 +2427,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
 
     # Gives the lv mv and hv buses of a 3 winding transformer
-    if "t3" in consider:
+    if "t3" in consider or 'trafo3w' in consider:
         in_service_constr3w = net.trafo3w.in_service if respect_in_service else True
         if respect_switches:
             opened_buses_hv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
@@ -2452,7 +2453,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(net.trafo3w.loc[lvb_trafos3w].mv_bus) -
                opened_buses_hv - opened_buses_mv)
 
-    if "i" in consider:
+    if "i" in consider or 'impedance' in consider:
         in_service_constr = net.impedance.in_service if respect_in_service else True
         connected_fb_impedances = set(net.impedance.index[
                                           (net.impedance.from_bus.isin(buses)) & in_service_constr])
@@ -2478,9 +2479,11 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
         **element** (integer)
 
         **et** (string)                             - Type of the source element:
-                                                      l: line
-                                                      s: switch
-                                                      t: trafo
+                                                      l, line: line
+                                                      s, switch: switch
+                                                      t, trafo: trafo
+                                                      t3, trafo3w: trafo3w
+                                                      i, impedance: impedance
 
      OPTIONAL:
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
@@ -2492,17 +2495,23 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
     """
 
     cb = set()
-    if et == 'l':
+    if et == 'l' or et == 'line':
         cb.add(net.line.from_bus.at[element])
         cb.add(net.line.to_bus.at[element])
-
-    elif et == 's':
+    elif et == 's' or et == 'switch':
         cb.add(net.switch.bus.at[element])
         if net.switch.et.at[element] == 'b':
             cb.add(net.switch.element.at[element])
-    elif et == 't':
+    elif et == 't' or et == 'trafo':
         cb.add(net.trafo.hv_bus.at[element])
         cb.add(net.trafo.lv_bus.at[element])
+    elif et == 't3' or et == 'trafo3w':
+        cb.add(net.trafo3w.hv_bus.at[element])
+        cb.add(net.trafo3w.mv_bus.at[element])
+        cb.add(net.trafo3w.lv_bus.at[element])
+    elif et == 'i' or et == 'impedance':
+        cb.add(net.impedance.from_bus.at[element])
+        cb.add(net.impedance.to_bus.at[element])
 
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)
