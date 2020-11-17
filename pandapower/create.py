@@ -5,7 +5,8 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, all as np_all
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
+    all as np_all, float64
 from packaging import version
 
 from pandapower import __version__
@@ -569,7 +570,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
                        [name, vn_kv, type, zone, bool(in_service)]))
 
-    _set_entries(net, "bus", index, True, **entries)
+    _set_entries(net, "bus", index, True, **entries, **kwargs)
 
     if geodata is not None:
         if len(geodata) != 2:
@@ -627,18 +628,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    # TODO: not needed when concating anyways?
-    # store dtypes
-    # dtypes = net.bus.dtypes
-
-    dd = pd.DataFrame(index=index, columns=net.bus.columns)
-    dd["vn_kv"] = vn_kv
-    dd["type"] = type
-    dd["zone"] = zone
-    dd["in_service"] = in_service
-    dd["name"] = name
-    # and preserve dtypes
-    # _preserve_dtypes(net.bus, dtypes)
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    _add_series_to_entries(entries, index, "min_vm_pu", min_vm_pu)
+    _add_series_to_entries(entries, index, "max_vm_pu", max_vm_pu)
+    _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
     if geodata is not None:
         # works with a 2-tuple or a matching array
@@ -651,16 +644,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
                                                               columns=net.bus_geodata.columns))
         net["bus_geodata"].loc[index, "coords"] = coords
-
-    if min_vm_pu is not None:
-        dd['min_vm_pu'] = min_vm_pu
-        dd['min_vm_pu'] = dd['min_vm_pu'].astype(float)
-    if max_vm_pu is not None:
-        dd['max_vm_pu'] = max_vm_pu
-        dd['max_vm_pu'] = dd['max_vm_pu'].astype(float)
-
-    dd = dd.assign(**kwargs)
-    net["bus"] = net["bus"].append(dd)
     return index
 
 
@@ -753,6 +736,92 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     else:
         if "controllable" in net.load.columns:
             net.load.at[index, "controllable"] = False
+
+    return index
+
+
+def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
+                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=None,
+                 min_p_mw=None, max_q_mvar=None, min_q_mvar=None, controllable=None, **kwargs):
+    """
+    Adds a number of loads in table net["load"].
+
+    All loads are modelled in the consumer system, meaning load is positive and generation is
+    negative active power. Please pay attention to the correct signing of the reactive power as
+    well.
+
+    INPUT:
+        **net** - The net within this load should be created
+
+        **buses** (list of int) - A list of bus ids to which the loads are connected
+
+    OPTIONAL:
+        **p_mw** (list of floats) - The active power of the loads
+
+        - postive value   -> load
+        - negative value  -> generation
+
+        **q_mvar** (list of floats, default 0) - The reactive power of the loads
+
+        **const_z_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+            be associated to constant impedance loads at rated voltage
+
+        **const_i_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+            be associated to constant current load at rated voltage
+
+        **sn_mva** (list of floats, default None) - Nominal power of the loads
+
+        **name** (list of strings, default None) - The name for this load
+
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the load
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
+            is set to a range between one higher than the highest already existing index and the \
+            length of loads that shall be created.
+
+        **in_service** (list of boolean) - True for in_service or False for out of service
+
+        **max_p_mw** (list of floats, default NaN) - Maximum active power load - necessary for \
+            controllable loads in for OPF
+
+        **min_p_mw** (list of floats, default NaN) - Minimum active power load - necessary for \
+            controllable loads in for OPF
+
+        **max_q_mvar** (list of floats, default NaN) - Maximum reactive power load - necessary for \
+            controllable loads in for OPF
+
+        **min_q_mvar** (list of floats, default NaN) - Minimum reactive power load - necessary for \
+            controllable loads in OPF
+
+        **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
+            or not. Only respected for OPF
+            Defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique IDs of the created elements
+
+    EXAMPLE:
+        create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
+
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "load", index, len(buses))
+
+    entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
+               "const_z_percent": const_z_percent, "const_i_percent": const_i_percent,
+               "scaling": scaling, "in_service": in_service, "name": name, "type": type}
+
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
+
+    _set_multiple_entries(net, "load", index, **entries, **kwargs)
 
     return index
 
@@ -873,115 +942,6 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 #     return index
 #
 # =============================================================================
-
-
-def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=None,
-                 min_p_mw=None, max_q_mvar=None, min_q_mvar=None, controllable=None, **kwargs):
-    """
-    Adds a number of loads in table net["load"].
-
-    All loads are modelled in the consumer system, meaning load is positive and generation is
-    negative active power. Please pay attention to the correct signing of the reactive power as
-    well.
-
-    INPUT:
-        **net** - The net within this load should be created
-
-        **buses** (list of int) - A list of bus ids to which the loads are connected
-
-    OPTIONAL:
-        **p_mw** (list of floats) - The active power of the loads
-
-        - postive value   -> load
-        - negative value  -> generation
-
-        **q_mvar** (list of floats, default 0) - The reactive power of the loads
-
-        **const_z_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
-            be associated to constant impedance loads at rated voltage
-
-        **const_i_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
-            be associated to constant current load at rated voltage
-
-        **sn_mva** (list of floats, default None) - Nominal power of the loads
-
-        **name** (list of strings, default None) - The name for this load
-
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
-
-        **type** (string, None) -  type variable to classify the load
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
-            is set to a range between one higher than the highest already existing index and the \
-            length of loads that shall be created.
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (list of floats, default NaN) - Maximum active power load - necessary for \
-            controllable loads in for OPF
-
-        **min_p_mw** (list of floats, default NaN) - Minimum active power load - necessary for \
-            controllable loads in for OPF
-
-        **max_q_mvar** (list of floats, default NaN) - Maximum reactive power load - necessary for \
-            controllable loads in for OPF
-
-        **min_q_mvar** (list of floats, default NaN) - Minimum reactive power load - necessary for \
-            controllable loads in OPF
-
-        **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
-            or not. Only respected for OPF
-            Defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique IDs of the created elements
-
-    EXAMPLE:
-        create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
-
-    """
-    _check_multiple_node_elements(net, buses)
-
-    index = _get_multiple_index_with_check(net, "load", index, len(buses))
-
-    # store dtypes
-    dtypes = net.load.dtypes
-
-    dd = pd.DataFrame(index=index, columns=net.load.columns)
-    dd["bus"] = buses
-    dd["p_mw"] = p_mw
-    dd["q_mvar"] = q_mvar
-    dd["sn_mva"] = sn_mva
-    dd["const_z_percent"] = const_z_percent
-    dd["const_i_percent"] = const_i_percent
-    dd["scaling"] = scaling
-    dd["in_service"] = in_service
-    dd["name"] = name
-    dd["type"] = type
-
-    if min_p_mw is not None:
-        dd["min_p_mw"] = min_p_mw
-        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
-    if max_p_mw is not None:
-        dd["max_p_mw"] = max_p_mw
-        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
-    if min_q_mvar is not None:
-        dd["min_q_mvar"] = min_q_mvar
-        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
-    if max_q_mvar is not None:
-        dd["max_q_mvar"] = max_q_mvar
-        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
-    if controllable is not None:
-        dd["controllable"] = controllable
-        dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
-
-    # and preserve dtypes
-    dd = dd.assign(**kwargs)
-    net["load"] = net["load"].append(dd)
-
-    _preserve_dtypes(net.load, dtypes)
-    return index
 
 
 def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
@@ -1189,48 +1149,20 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
-    # store dtypes
-    dtypes = net.sgen.dtypes
+    entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
+               "in_service": in_service, "name": name, "type": type,
+               'current_source': current_source}
 
-    dd = pd.DataFrame(index=index, columns=net.sgen.columns)
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "k", k)
+    _add_series_to_entries(entries, index, "rx", rx)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
 
-    dd["bus"] = buses
-    dd["p_mw"] = p_mw
-    dd["q_mvar"] = q_mvar
-    dd["sn_mva"] = sn_mva
-    dd["scaling"] = scaling
-    dd["in_service"] = in_service
-    dd["name"] = name
-    dd["type"] = type
-    dd['current_source'] = current_source
-
-    if min_p_mw is not None:
-        dd["min_p_mw"] = min_p_mw
-        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
-    if max_p_mw is not None:
-        dd["max_p_mw"] = max_p_mw
-        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
-    if min_q_mvar is not None:
-        dd["min_q_mvar"] = min_q_mvar
-        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
-    if max_q_mvar is not None:
-        dd["max_q_mvar"] = max_q_mvar
-        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
-    if controllable is not None:
-        dd["controllable"] = controllable
-        dd["controllable"] = dd["controllable"].astype(bool)
-    if k is not None:
-        dd["k"] = k
-        dd["k"] = dd["k"].astype(float)
-    if rx is not None:
-        dd["rx"] = rx
-        dd["rx"] = dd["rx"].astype(float)
-
-    dd = dd.assign(**kwargs)
-    net["sgen"] = net["sgen"].append(dd)
-
-    # and preserve dtypes
-    _preserve_dtypes(net.sgen, dtypes)
+    _set_multiple_entries(net, "sgen", index, **entries, **kwargs)
 
     return index
 
@@ -1632,59 +1564,23 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
-    # store dtypes
-    dtypes = net.gen.dtypes
+    entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
+               "in_service": in_service, "name": name, "type": type, "slack": slack}
 
-    dd = pd.DataFrame(index=index, columns=net.gen.columns)
-    dd["bus"] = buses
-    dd["p_mw"] = p_mw
-    dd["vm_pu"] = vm_pu
-    dd["sn_mva"] = sn_mva
-    dd["scaling"] = scaling
-    dd["in_service"] = in_service
-    dd["name"] = name
-    dd["type"] = type
-    dd["slack"] = slack
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "min_vm_pu", min_vm_pu)
+    _add_series_to_entries(entries, index, "max_vm_pu", max_vm_pu)
+    _add_series_to_entries(entries, index, "vn_kv", vn_kv)
+    _add_series_to_entries(entries, index, "cos_phi", cos_phi)
+    _add_series_to_entries(entries, index, "xdss_pu", xdss_pu)
+    _add_series_to_entries(entries, index, "rdss_pu", rdss_pu)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
 
-    if min_p_mw is not None:
-        dd["min_p_mw"] = min_p_mw
-        dd["min_p_mw"] = dd["min_p_mw"].astype(float)
-    if max_p_mw is not None:
-        dd["max_p_mw"] = max_p_mw
-        dd["max_p_mw"] = dd["max_p_mw"].astype(float)
-    if min_q_mvar is not None:
-        dd["min_q_mvar"] = min_q_mvar
-        dd["min_q_mvar"] = dd["min_q_mvar"].astype(float)
-    if max_q_mvar is not None:
-        dd["max_q_mvar"] = max_q_mvar
-        dd["max_q_mvar"] = dd["max_q_mvar"].astype(float)
-    if min_vm_pu is not None:
-        dd["min_vm_pu"] = min_vm_pu
-        dd["min_vm_pu"] = dd["min_vm_pu"].astype(float)
-    if max_vm_pu is not None:
-        dd["max_vm_pu"] = max_vm_pu
-        dd["max_vm_pu"] = dd["max_vm_pu"].astype(float)
-    if vn_kv is not None:
-        dd["vn_kv"] = vn_kv
-        dd["vn_kv"] = dd["vn_kv"].astype(float)
-    if cos_phi is not None:
-        dd["cos_phi"] = cos_phi
-        dd["cos_phi"] = dd["cos_phi"].astype(float)
-    if xdss_pu is not None:
-        dd["xdss_pu"] = xdss_pu
-        dd["xdss_pu"] = dd["xdss_pu"].astype(float)
-    if rdss_pu is not None:
-        dd["rdss_pu"] = rdss_pu
-        dd["rdss_pu"] = dd["rdss_pu"].astype(float)
-    if controllable is not None:
-        dd["controllable"] = controllable
-        dd["controllable"] = dd["controllable"].astype(bool).fillna(False)
-
-    # and preserve dtypes
-    dd = dd.assign(**kwargs)
-    net["gen"] = net["gen"].append(dd)
-
-    _preserve_dtypes(net.gen, dtypes)
+    _set_multiple_entries(net, "gen", index, **entries, **kwargs)
 
     return index
 
@@ -1821,7 +1717,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     entries = dict(zip(["bus", "name", "vm_pu", "va_degree", "in_service"],
                        [bus, name, vm_pu, va_degree, bool(in_service)]))
-    _set_entries(net, "ext_grid", index, **entries)
+    _set_entries(net, "ext_grid", index, **entries, **kwargs)
 
     _create_column_and_set_value(net, index, s_sc_max_mva, "s_sc_max_mva", "ext_grid")
     _create_column_and_set_value(net, index, s_sc_min_mva, "s_sc_min_mva", "ext_grid")
@@ -1929,6 +1825,83 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     return index
 
 
+def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
+                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=None):
+    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values. In any case the line parameters are defined through a single standard
+        type, so all lines have the same standard type.
+
+
+        INPUT:
+            **net** - The net within this line should be created
+
+            **from_buses** (list of int) - ID of the bus on one side which the line will be \
+                connected with
+
+            **to_buses** (list of int) - ID of the bus on the other side which the line will be \
+                connected with
+
+            **length_km** (list of float) - The line length in km
+
+            **std_type** (string) - The linetype of the lines.
+
+        OPTIONAL:
+            **name** (list of string, None) - A custom name for this line
+
+            **index** (list of int, None) - Force a specified ID if it is available. If None, the\
+                index one higher than the highest already existing index is selected.
+
+            **geodata**
+            (list of arrays, default None, shape of arrays (,2L)) -
+            The linegeodata of the line. The first row should be the coordinates
+            of bus a and the last should be the coordinates of bus b. The points
+            in the middle represent the bending points of the line
+
+            **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+            **df** (list of float, 1) - derating factor: maximal current of line in relation to \
+                nominal current of line (from 0 to 1)
+
+            **parallel** (list of integer, 1) - number of parallel line systems
+
+            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+        OUTPUT:
+            **index** (list of int) - The unique ID of the created line
+
+        EXAMPLE:
+            create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
+
+    """
+    _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
+
+    index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
+
+    entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km,
+               "std_type": std_type, "name": name, "df": df, "parallel": parallel,
+               "in_service": in_service}
+
+    # add std type data
+    lineparam = load_std_type(net, std_type, "line")
+    entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+    entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+    entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
+    entries["max_i_ka"] = lineparam["max_i_ka"]
+    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+    if "type" in lineparam:
+        entries["type"] = lineparam["type"]
+
+    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+
+    _set_multiple_entries(net, "line", index, **entries)
+
+    if geodata is not None:
+        _add_multiple_branch_geodata(net, "line", geodata, index)
+
+    return index
+
+
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
@@ -2004,8 +1977,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     index = _get_index_with_check(net, "line", index)
 
-    # store dtypes
-    dtypes = net.line.dtypes
     v = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
@@ -2014,7 +1985,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "g_us_per_km": g_us_per_km
     }
 
-    _set_entries(net, "line", index, **v)
+    _set_entries(net, "line", index, **v, **kwargs)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2116,170 +2087,20 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
 
-    dtypes = net.line.dtypes
+    entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km, "type": type,
+               "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
+               "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
+               "name": name, "df": df, "parallel": parallel, "in_service": in_service}
 
-    dd = pd.DataFrame(index=index, columns=net.line.columns)
+    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+    _add_series_to_entries(entries, index, "r0_ohm_per_km", r0_ohm_per_km)
+    _add_series_to_entries(entries, index, "x0_ohm_per_km", x0_ohm_per_km)
+    _add_series_to_entries(entries, index, "c0_nf_per_km", c0_nf_per_km)
+    _add_series_to_entries(entries, index, "g0_us_per_km", g0_us_per_km)
+    _add_series_to_entries(entries, index, "temperature_degree_celsius", temperature_degree_celsius)
+    _add_series_to_entries(entries, index, "alpha", alpha)
 
-    # user defined params
-    dd["from_bus"] = from_buses
-    dd["to_bus"] = to_buses
-    dd["length_km"] = length_km
-    dd["type"] = type
-    dd["r_ohm_per_km"] = r_ohm_per_km
-    dd["x_ohm_per_km"] = x_ohm_per_km
-    dd["c_nf_per_km"] = c_nf_per_km
-    dd["max_i_ka"] = max_i_ka
-    dd["g_us_per_km"] = g_us_per_km
-
-    # optional params
-    dd["name"] = name
-    dd["df"] = df
-    dd["parallel"] = parallel
-    dd["in_service"] = in_service
-
-    if r0_ohm_per_km is not None:
-        dd["r0_ohm_per_km"] = r0_ohm_per_km
-        dd["r0_ohm_per_km"] = dd["r0_ohm_per_km"].astype(float)
-
-    if x0_ohm_per_km is not None:
-        dd["x0_ohm_per_km"] = x0_ohm_per_km
-        dd["x0_ohm_per_km"] = dd["x0_ohm_per_km"].astype(float)
-
-    if c0_nf_per_km is not None:
-        dd["c0_nf_per_km"] = c0_nf_per_km
-        dd["c0_nf_per_km"] = dd["c0_nf_per_km"].astype(float)
-
-    if g0_us_per_km is not None:
-        dd["g0_us_per_km"] = g0_us_per_km
-        dd["g0_us_per_km"] = dd["g0_us_per_km"].astype(float)
-
-    if max_loading_percent is not None:
-        dd["max_loading_percent"] = max_loading_percent
-        dd["max_loading_percent"] = dd["max_loading_percent"].astype(float)
-
-    if temperature_degree_celsius is not None:
-        dd["temperature_degree_celsius"] = temperature_degree_celsius
-        dd["temperature_degree_celsius"] = dd["temperature_degree_celsius"].astype(float)
-
-    if alpha is not None:
-        dd["alpha"] = alpha
-        dd["alpha"] = dd["alpha"].astype(float)
-
-    dd = dd.assign(**kwargs)
-
-    # extend the lines by the frame we just created
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net["line"] = net["line"].append(dd, sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net["line"] = net["line"].append(dd)
-
-    _preserve_dtypes(net.line, dtypes)
-
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
-
-    return index
-
-
-def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
-                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values. In any case the line parameters are defined through a single standard
-        type, so all lines have the same standard type.
-
-
-        INPUT:
-            **net** - The net within this line should be created
-
-            **from_buses** (list of int) - ID of the bus on one side which the line will be \
-                connected with
-
-            **to_buses** (list of int) - ID of the bus on the other side which the line will be \
-                connected with
-
-            **length_km** (list of float) - The line length in km
-
-            **std_type** (string) - The linetype of the lines.
-
-        OPTIONAL:
-            **name** (list of string, None) - A custom name for this line
-
-            **index** (list of int, None) - Force a specified ID if it is available. If None, the\
-                index one higher than the highest already existing index is selected.
-
-            **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the line. The first row should be the coordinates
-            of bus a and the last should be the coordinates of bus b. The points
-            in the middle represent the bending points of the line
-
-            **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-            **df** (list of float, 1) - derating factor: maximal current of line in relation to \
-                nominal current of line (from 0 to 1)
-
-            **parallel** (list of integer, 1) - number of parallel line systems
-
-            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-        OUTPUT:
-            **index** (list of int) - The unique ID of the created line
-
-        EXAMPLE:
-            create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
-
-    """
-    _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
-
-    index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
-
-    dtypes = net.line.dtypes
-
-    dd = pd.DataFrame(index=index, columns=net.line.columns)
-
-    # user defined params
-    dd["from_bus"] = from_buses
-    dd["to_bus"] = to_buses
-    dd["length_km"] = length_km
-    dd["std_type"] = std_type
-
-    # add std type data
-    lineparam = load_std_type(net, std_type, "line")
-    dd["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-    dd["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-    dd["c_nf_per_km"] = lineparam["c_nf_per_km"]
-    dd["max_i_ka"] = lineparam["max_i_ka"]
-    dd["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
-    if "type" in lineparam:
-        dd["type"] = lineparam["type"]
-
-    # optional params
-    dd["name"] = name
-    dd["df"] = df
-    dd["parallel"] = parallel
-    dd["in_service"] = in_service
-
-    # extend the lines by the frame we just created
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net["line"] = net["line"].append(dd, sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net["line"] = net["line"].append(dd)
-
-    if hasattr(max_loading_percent, "__iter__"):
-        if "max_loading_percent" not in net.line.columns:
-            net.line["max_loading_percent"] = pd.Series(index=net.line.index)
-        net.line.loc[index, "max_loading_percent"] = [0 if isnan(ml) else float(ml) for ml in
-                                                      max_loading_percent]
-    else:
-        if not isnan(max_loading_percent):
-            if "max_loading_percent" not in net.line.columns:
-                net.line["max_loading_percent"] = pd.Series(index=net.line.index)
-            net.line.loc[index, "max_loading_percent"] = max_loading_percent
-
-    _preserve_dtypes(net.line, dtypes)
+    _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, "line", geodata, index)
@@ -2503,7 +2324,6 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     if tap_pos is nan:
         tap_pos = tap_neutral
         # store dtypes
-    dtypes = net.trafo.dtypes
 
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
@@ -2522,41 +2342,20 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         v["tap_pos"] = tap_pos
         if type(tap_pos) == float:
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
-    net.trafo.loc[index, list(v.keys())] = list(v.values())
 
-    if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent) \
+    _set_entries(net, "trafo", index, **v, **kwargs)
+
+    if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
-        if "vk0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "vk0_percent"] = pd.Series()
-
-        net.trafo.loc[index, "vk0_percent"] = float(vk0_percent)
-        if "vkr0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "vkr0_percent"] = pd.Series()
-
-        net.trafo.loc[index, "vkr0_percent"] = float(vkr0_percent)
-        if "mag0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "mag0_percent"] = pd.Series()
-
-        net.trafo.loc[index, "mag0_percent"] = float(mag0_percent)
-        if "mag0_rx" not in net.trafo.columns:
-            net.trafo.loc[:, "mag0_rx"] = pd.Series()
-
-        net.trafo.loc[index, "mag0_rx"] = float(mag0_rx)
-        if "si0_hv_partial" not in net.trafo.columns:
-            net.trafo.loc[:, "si0_hv_partial"] = pd.Series()
-
-        net.trafo.loc[index, "si0_hv_partial"] = float(si0_hv_partial)
+        _create_column_and_set_value(net, index, vk0_percent, "vk0_percent", "trafo")
+        _create_column_and_set_value(net, index, vkr0_percent, "vkr0_percent", "trafo")
+        _create_column_and_set_value(net, index, mag0_percent, "mag0_percent", "trafo")
+        _create_column_and_set_value(net, index, mag0_rx, "mag0_rx", "trafo")
+        _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
         if "vector_group" not in net.trafo.columns:
-            net.trafo.loc[:, "vector_group"] = pd.Series()
-
+            net.trafo.loc[:, "vector_group"] = pd.Series(dtype=str)
         net.trafo.loc[index, "vector_group"] = str(vector_group)
-    if not isnan(max_loading_percent):
-        if "max_loading_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "max_loading_percent"] = pd.Series()
-
-        net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
-    # and preserve dtypes
-    _preserve_dtypes(net.trafo, dtypes)
+    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
     return index
 
@@ -2664,71 +2463,26 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
     index = _get_multiple_index_with_check(net, "trafo", index, len(hv_buses))
 
-    nr_trafo = len(hv_buses)
-    if index is not None:
-        for idx in index:
-            if idx in net.trafo.index:
-                raise UserWarning("A trafo with index %s already exists" % idx)
-    else:
-        tid = get_free_id(net["trafo"])
-        index = arange(tid, tid + nr_trafo, 1)
+    tp_neutral = pd.Series(tap_neutral, index=index, dtype=float64)
+    tp_pos = pd.Series(tap_pos, index=index, dtype=float64).fillna(tp_neutral)
+    entries = {"name": name, "hv_bus": hv_buses, "lv_bus": lv_buses,
+               "in_service": array(in_service).astype(bool_), "std_type": None, "sn_mva": sn_mva,
+               "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+               "tap_neutral": tp_neutral, "tap_max": tap_max, "tap_min": tap_min,
+               "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
+               "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+               "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
-    if not np_all(isin(hv_buses, net.bus.index)):
-        bus_not_exist = set(hv_buses) - set(net.bus.index)
-        raise UserWarning("Transformer trying to attach to non existing buses %s"
-                          % list(bus_not_exist))
-    if not np_all(isin(lv_buses, net.bus.index)):
-        bus_not_exist = set(lv_buses) - set(net.bus.index)
-        raise UserWarning("Transformer trying to attach to non existing buses %s"
-                          % list(bus_not_exist))
+    _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
+    _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
+    _add_series_to_entries(entries, index, "mag0_percent", mag0_percent)
+    _add_series_to_entries(entries, index, "mag0_rx", mag0_rx)
+    _add_series_to_entries(entries, index, "si0_hv_partial", si0_hv_partial)
+    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+    _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
 
-    new_trafos = pd.DataFrame(index=index, columns=net.trafo.columns)
-
-    # store dtypes
-    dtypes = net.trafo.dtypes
-
-    parameters = {
-        "name": name, "hv_bus": hv_buses, "lv_bus": lv_buses,
-        "in_service": array(in_service).astype(bool_), "std_type": None, "sn_mva": sn_mva,
-        "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
-        "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
-        "tap_neutral": tap_neutral, "tap_max": tap_max, "tap_min": tap_min,
-        "shift_degree": shift_degree, "tap_pos": tap_pos, "tap_side": tap_side,
-        "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
-    }
-
-    new_trafos = new_trafos.assign(**parameters)
-    new_trafos["tap_pos"] = new_trafos["tap_pos"].fillna(new_trafos.tap_neutral).astype(float)
-
-    if vk0_percent is not None:
-        new_trafos["vk0_percent"] = vk0_percent
-        new_trafos["vk0_percent"] = new_trafos["vk0_percent"].astype(float)
-    if vkr0_percent is not None:
-        new_trafos["vkr0_percent"] = vk0_percent
-        new_trafos["vkr0_percent"] = new_trafos["vkr0_percent"].astype(float)
-    if mag0_percent is not None:
-        new_trafos["mag0_percent"] = mag0_percent
-        new_trafos["mag0_percent"] = new_trafos["mag0_percent"].astype(float)
-    if mag0_rx is not None:
-        new_trafos["mag0_rx"] = mag0_rx
-        new_trafos["mag0_rx"] = new_trafos["mag0_rx"].astype(float)
-    if si0_hv_partial is not None:
-        new_trafos["si0_hv_partial"] = si0_hv_partial
-        new_trafos["si0_hv_partial"] = new_trafos["si0_hv_partial"].astype(float)
-    if vector_group is not None:
-        new_trafos["vector_group"] = vector_group
-        new_trafos["vector_group"] = new_trafos["vector_group"].astype(str)
-    if max_loading_percent is not None:
-        new_trafos["max_loading_percent"] = max_loading_percent
-        new_trafos["max_loading_percent"] = new_trafos["max_loading_percent"].astype(float)
-
-    for label, value in kwargs.items():
-        new_trafos[label] = value
-
-    net["trafo"] = net["trafo"].append(new_trafos)
-    # and preserve dtypes
-    _preserve_dtypes(net.trafo, dtypes)
+    _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
 
     return index
 
@@ -2956,8 +2710,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
                             "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min",
-                            "in_service",
-                            "name", "std_type", "tap_at_star_point"]] = \
+                            "in_service", "name", "std_type", "tap_at_star_point"]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, vk_mv_percent,
          vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent,
@@ -3088,46 +2841,24 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
         bus_not_exist = set(lv_buses) - set(net.bus.index)
         raise UserWarning("Transformers trying to attach to non existing buses %s" % bus_not_exist)
 
-    new_trafos = pd.DataFrame(index=index, columns=net.trafo3w.columns)
+    tp_neutral = pd.Series(tap_neutral, index=index, dtype=float64)
+    tp_pos = pd.Series(tap_pos, index=index, dtype=float64).fillna(tp_neutral)
+    entries = {"lv_bus": lv_buses, "mv_bus": mv_buses, "hv_bus": hv_buses, "vn_hv_kv": vn_hv_kv,
+               "vn_mv_kv": vn_mv_kv, "vn_lv_kv": vn_lv_kv, "sn_hv_mva": sn_hv_mva,
+               "sn_mv_mva": sn_mv_mva, "sn_lv_mva": sn_lv_mva, "vk_hv_percent": vk_hv_percent,
+               "vk_mv_percent": vk_mv_percent, "vk_lv_percent": vk_lv_percent,
+               "vkr_hv_percent": vkr_hv_percent, "vkr_mv_percent": vkr_mv_percent,
+               "vkr_lv_percent": vkr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+               "shift_mv_degree": shift_mv_degree, "shift_lv_degree": shift_lv_degree,
+               "tap_side": tap_side, "tap_step_percent": tap_step_percent,
+               "tap_step_degree": tap_step_degree, "tap_pos": tp_pos, "tap_neutral": tp_neutral,
+               "tap_max": tap_max, "tap_min": tap_min,
+               "in_service": array(in_service).astype(bool_), "name": name,
+               "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None}
 
-    # store dtypes
-    dtypes = net.trafo3w.dtypes
+    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
-    parameters = {
-        "lv_bus": lv_buses, "mv_bus": mv_buses, "hv_bus": hv_buses, "vn_hv_kv": vn_hv_kv,
-        "vn_mv_kv": vn_mv_kv,
-        "vn_lv_kv": vn_lv_kv, "sn_hv_mva": sn_hv_mva, "sn_mv_mva": sn_mv_mva,
-        "sn_lv_mva": sn_lv_mva,
-        "vk_hv_percent": vk_hv_percent, "vk_mv_percent": vk_mv_percent,
-        "vk_lv_percent": vk_lv_percent,
-        "vkr_hv_percent": vkr_hv_percent, "vkr_mv_percent": vkr_mv_percent,
-        "vkr_lv_percent": vkr_lv_percent,
-        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "shift_mv_degree": shift_mv_degree,
-        "shift_lv_degree": shift_lv_degree,
-        "tap_side": tap_side, "tap_step_percent": tap_step_percent,
-        "tap_step_degree": tap_step_degree,
-        "tap_pos": tap_pos, "tap_neutral": tap_neutral, "tap_max": tap_max, "tap_min": tap_min,
-        "in_service": in_service,
-        "name": name, "tap_at_star_point": tap_at_star_point, "std_type": None
-    }
-
-    new_trafos = new_trafos.assign(**parameters)
-    new_trafos["tap_pos"] = new_trafos["tap_pos"].fillna(new_trafos.tap_neutral).astype(float)
-
-    if max_loading_percent is not None:
-        new_trafos['max_loading_percent'] = max_loading_percent
-        new_trafos['max_loading_percent'] = new_trafos['max_loading_percent'].astype(float)
-
-    for label, value in kwargs.items():
-        new_trafos[label] = value
-
-    # store dtypes
-    dtypes = net.trafo3w.dtypes
-
-    net["trafo3w"] = net["trafo3w"].append(new_trafos)
-
-    # and preserve dtypes
-    _preserve_dtypes(net.trafo3w, dtypes)
+    _set_multiple_entries(net, "trafo3w", index, **entries, **kwargs)
 
     return index
 
@@ -3234,8 +2965,8 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
 
         **buses** (list)- The bus that the switch is connected to
 
-        **element** (list)- index of the element: bus id if et == "b", line id if et == "l", trafo id if \
-            et == "t"
+        **element** (list)- index of the element: bus id if et == "b", line id if et == "l", \
+            trafo id if et == "t"
 
         **et** - (list) element type: "l" = switch between bus and line, "t" = switch between
             bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
@@ -3293,24 +3024,10 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
         else:
             raise UserWarning("Unknown element type")
 
-    switches_df = pd.DataFrame(index=index, columns=net.switch.columns)
-    switches_df['bus'] = buses
-    switches_df['element'] = elements
-    switches_df['et'] = et
-    switches_df['closed'] = closed
-    switches_df['type'] = type
-    switches_df['name'] = name
-    switches_df['z_ohm'] = z_ohm
+    entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
+               "name": name, "z_ohm": z_ohm}
 
-    switches_df = switches_df.assign(**kwargs)
-
-    # store dtypes
-    dtypes = net.switch.dtypes
-
-    net['switch'] = net['switch'].append(switches_df)
-
-    # and preserve dtypes
-    _preserve_dtypes(net.switch, dtypes)
+    _set_multiple_entries(net, "switch", index, **entries, **kwargs)
 
     return index
 
@@ -3415,8 +3132,6 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
 
-    # store dtypes
-    dtypes = net.impedance.dtypes
     if rtf_pu is None:
         rtf_pu = rft_pu
     if xtf_pu is None:
@@ -3440,7 +3155,6 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     :param r_ohm: (float) - real part of the impedance in Ohm
     :param x_ohm: (float) - imaginary part of the impedance in Ohm
     :param sn_mva: (float) - rated power of the series reactor in kVA
-    :param vn_kv: (float) - rated voltage of the series reactor in kV
     :param name:
     :type name:
     :param in_service:
@@ -3861,6 +3575,14 @@ def _create_column_and_set_value(net, index, variable, column, element, default_
     return net
 
 
+def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
+    if values is not None:
+        if not isnan(default_val):
+            entries[column] = pd.Series(values, index=index, dtype=dtyp).fillna(default_val)
+        else:
+            entries[column] = pd.Series(values, index=index, dtype=dtyp)
+
+
 def _add_multiple_branch_geodata(net, table, geodata, index):
     geo_table = "%s_geodata" % table
     dtypes = net[geo_table].dtypes
@@ -3894,23 +3616,32 @@ def _set_entries(net, table, index, preserve_dtypes=True, **entries):
     if preserve_dtypes:
         _preserve_dtypes(net[table], dtypes)
 
-#
-# def _add_entries_to_table(net, table, index, entries, preserve_dtypes=True):
-#     dtypes = None
-#     if preserve_dtypes:
-#         # store dtypes
-#         dtypes = net[table].dtypes
-#
-#     dd = pd.DataFrame(index=index, columns=net[table].columns)
-#     dd = dd.assign(**entries)
-#
-#     # extend the table by the frame we just created
-#     if version.parse(pd.__version__) >= version.parse("0.23"):
-#         net[table] = net[table].append(dd, sort=False)
-#     else:
-#         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-#         net[table] = net[table].append(dd)
-#
-#     # and preserve dtypes
-#     if preserve_dtypes:
-#         _preserve_dtypes(net[table], dtypes)
+
+def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
+    dtypes = None
+    if preserve_dtypes:
+        # store dtypes
+        dtypes = net[table].dtypes
+
+    def check_entry(val):
+        if isinstance(val, pd.Series) and not np_all(isin(val.index, index)):
+            return val.values
+        elif isinstance(val, set) and len(val) == len(index):
+            return list(val)
+        return val
+
+    entries = {k: check_entry(v) for k, v in entries.items()}
+
+    dd = pd.DataFrame(index=index, columns=net[table].columns)
+    dd = dd.assign(**entries)
+
+    # extend the table by the frame we just created
+    if version.parse(pd.__version__) >= version.parse("0.23"):
+        net[table] = net[table].append(dd, sort=False)
+    else:
+        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
+        net[table] = net[table].append(dd)
+
+    # and preserve dtypes
+    if preserve_dtypes:
+        _preserve_dtypes(net[table], dtypes)
