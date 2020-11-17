@@ -48,14 +48,15 @@ end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
     log_level::Int=0, time_limit::Float64=Inf, nl_time_limit::Float64=Inf, 
-    mip_time_limit::Float64=Inf)
+    mip_time_limit::Float64=Inf, ipopt_tol::Float64=1e-8)
     
     if optimizer == "gurobi"
             solver = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => time_limit, "OutputFlag" => log_level)
     end
 
     if optimizer == "ipopt"
-                solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level" => log_level, "max_cpu_time" => time_limit)
+                solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level" => log_level, "max_cpu_time" => time_limit,
+                "tol" => ipopt_tol)
     end
 
     if optimizer == "juniper" && nl == "ipopt" && mip == "cbc"

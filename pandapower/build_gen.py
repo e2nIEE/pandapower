@@ -109,8 +109,27 @@ def _build_pp_ext_grid(net, ppc, f, t):
     if net._options["mode"] == "opf":
         add_q_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
         add_p_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
-        ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
-        ppc["bus"][eg_buses, VMIN] = net["ext_grid"]["vm_pu"].values[eg_is] - delta
+
+
+        if "controllable" in net["ext_grid"]:
+            #     if we do and one of them is false, do this only for the ones, where it is false
+            eg_constrained = net.ext_grid[eg_is][net.ext_grid.controllable==False]
+            if len(eg_constrained):
+                eg_constrained_bus = eg_constrained.bus
+                ppc["bus"][eg_constrained_bus, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
+                ppc["bus"][eg_constrained_bus, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
+        else:
+            # if we dont:
+            ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
+            ppc["bus"][eg_buses, VMIN] = net["ext_grid"]["vm_pu"].values[eg_is] - delta
+
+
+
+
+
+
+
+
     else:
         ppc["gen"][f:t, QMIN] = 0
         ppc["gen"][f:t, QMAX] = 0
@@ -213,8 +232,8 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
     xw_is = net["_is_elements"]['xward']
     ppc["gen"][f:t, GEN_BUS] = bus_lookup[aux_buses[xw_is]]
     ppc["gen"][f:t, VG] = xw["vm_pu"][xw_is].values
-    ppc["gen"][f:t, PMIN] = + delta
-    ppc["gen"][f:t, PMAX] = - delta
+    ppc["gen"][f:t, PMIN] = - delta
+    ppc["gen"][f:t, PMAX] = + delta
     ppc["gen"][f:t, QMIN] = -q_lim_default
     ppc["gen"][f:t, QMAX] = q_lim_default
 
