@@ -5,7 +5,7 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, float64
 from packaging import version
 
 from pandapower import __version__
@@ -767,31 +767,31 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(min_p_mw):
         if "min_p_mw" not in net.load.columns:
-            net.load.loc[:, "min_p_mw"] = pd.Series()
+            net.load.loc[:, "min_p_mw"] = pd.Series(dtype=float64)
 
         net.load.loc[index, "min_p_mw"] = float(min_p_mw)
 
     if not isnan(max_p_mw):
         if "max_p_mw" not in net.load.columns:
-            net.load.loc[:, "max_p_mw"] = pd.Series()
+            net.load.loc[:, "max_p_mw"] = pd.Series(dtype=float64)
 
         net.load.loc[index, "max_p_mw"] = float(max_p_mw)
 
     if not isnan(min_q_mvar):
         if "min_q_mvar" not in net.load.columns:
-            net.load.loc[:, "min_q_mvar"] = pd.Series()
+            net.load.loc[:, "min_q_mvar"] = pd.Series(dtype=float64)
 
         net.load.loc[index, "min_q_mvar"] = float(min_q_mvar)
 
     if not isnan(max_q_mvar):
         if "max_q_mvar" not in net.load.columns:
-            net.load.loc[:, "max_q_mvar"] = pd.Series()
+            net.load.loc[:, "max_q_mvar"] = pd.Series(dtype=float64)
 
         net.load.loc[index, "max_q_mvar"] = float(max_q_mvar)
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load["controllable"] = False
+            net.load["controllable"] = pd.Series(dtype=bool, data=False)
 
         net.load.loc[index, "controllable"] = bool(controllable)
     else:
@@ -801,8 +801,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     return index
 
 
-def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, \
-                           q_b_mvar=0, q_c_mvar=0, sn_mva=nan, name=None, scaling=1., \
+def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0,
+                           q_b_mvar=0, q_c_mvar=0, sn_mva=nan, name=None, scaling=1.,
                            index=None, in_service=True, type="wye"):
     """
 
@@ -1169,31 +1169,31 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     if not isnan(min_p_mw):
         if "min_p_mw" not in net.sgen.columns:
-            net.sgen.loc[:, "min_p_mw"] = pd.Series()
+            net.sgen.loc[:, "min_p_mw"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "min_p_mw"] = float(min_p_mw)
 
     if not isnan(max_p_mw):
         if "max_p_mw" not in net.sgen.columns:
-            net.sgen.loc[:, "max_p_mw"] = pd.Series()
+            net.sgen.loc[:, "max_p_mw"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "max_p_mw"] = float(max_p_mw)
 
     if not isnan(min_q_mvar):
         if "min_q_mvar" not in net.sgen.columns:
-            net.sgen.loc[:, "min_q_mvar"] = pd.Series()
+            net.sgen.loc[:, "min_q_mvar"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "min_q_mvar"] = float(min_q_mvar)
 
     if not isnan(max_q_mvar):
         if "max_q_mvar" not in net.sgen.columns:
-            net.sgen.loc[:, "max_q_mvar"] = pd.Series()
+            net.sgen.loc[:, "max_q_mvar"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "max_q_mvar"] = float(max_q_mvar)
 
     if not isnan(controllable):
         if "controllable" not in net.sgen.columns:
-            net.sgen.loc[:, "controllable"] = False
+            net.sgen.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
 
         net.sgen.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1202,13 +1202,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     if not isnan(k):
         if "k" not in net.sgen.columns:
-            net.sgen.loc[:, "k"] = pd.Series()
+            net.sgen.loc[:, "k"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "k"] = float(k)
 
     if not isnan(rx):
         if "rx" not in net.sgen.columns:
-            net.sgen.loc[:, "rx"] = pd.Series()
+            net.sgen.loc[:, "rx"] = pd.Series(dtype=float64)
 
         net.sgen.loc[index, "rx"] = float(rx)
 
@@ -1539,31 +1539,31 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     # check for OPF parameters and add columns to network table
     if not isnan(min_p_mw):
         if "min_p_mw" not in net.storage.columns:
-            net.storage.loc[:, "min_p_mw"] = pd.Series()
+            net.storage.loc[:, "min_p_mw"] = pd.Series(dtype=float64)
 
         net.storage.loc[index, "min_p_mw"] = float(min_p_mw)
 
     if not isnan(max_p_mw):
         if "max_p_mw" not in net.storage.columns:
-            net.storage.loc[:, "max_p_mw"] = pd.Series()
+            net.storage.loc[:, "max_p_mw"] = pd.Series(dtype=float64)
 
         net.storage.loc[index, "max_p_mw"] = float(max_p_mw)
 
     if not isnan(min_q_mvar):
         if "min_q_mvar" not in net.storage.columns:
-            net.storage.loc[:, "min_q_mvar"] = pd.Series()
+            net.storage.loc[:, "min_q_mvar"] = pd.Series(dtype=float64)
 
         net.storage.loc[index, "min_q_mvar"] = float(min_q_mvar)
 
     if not isnan(max_q_mvar):
         if "max_q_mvar" not in net.storage.columns:
-            net.storage.loc[:, "max_q_mvar"] = pd.Series()
+            net.storage.loc[:, "max_q_mvar"] = pd.Series(dtype=float64)
 
         net.storage.loc[index, "max_q_mvar"] = float(max_q_mvar)
 
     if not isnan(controllable):
         if "controllable" not in net.storage.columns:
-            net.storage.loc[:, "controllable"] = False
+            net.storage.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
 
         net.storage.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1674,7 +1674,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = True
+            net.gen.loc[:, "controllable"] = pd.Series(dtype=bool, data=True)
         net.gen.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
@@ -1694,9 +1694,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "xdss_pu"] = pd.Series()
+            net.gen.loc[:, "xdss_pu"] = pd.Series(dtype=float64)
         if "rdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "rdss_pu"] = pd.Series()
+            net.gen.loc[:, "rdss_pu"] = pd.Series(dtype=float64)
         net.gen.at[index, "xdss_pu"] = float(xdss_pu)
 
     net = _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
@@ -1995,7 +1995,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "controllable"] = False
+            net.ext_grid.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
         net.ext_grid.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.ext_grid.columns:
         net.ext_grid.at[index, "controllable"] = False
@@ -2006,59 +2006,59 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     if not isnan(s_sc_max_mva):
         if "s_sc_max_mva" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series()
+            net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series(dtype=float64)
 
         net.ext_grid.at[index, "s_sc_max_mva"] = float(s_sc_max_mva)
 
     if not isnan(s_sc_min_mva):
         if "s_sc_min_mva" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "s_sc_min_mva"] = pd.Series()
+            net.ext_grid.loc[:, "s_sc_min_mva"] = pd.Series(dtype=float64)
 
         net.ext_grid.at[index, "s_sc_min_mva"] = float(s_sc_min_mva)
 
     if not isnan(rx_min):
         if "rx_min" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "rx_min"] = pd.Series()
+            net.ext_grid.loc[:, "rx_min"] = pd.Series(dtype=float64)
 
         net.ext_grid.at[index, "rx_min"] = float(rx_min)
 
     if not isnan(rx_max):
         if "rx_max" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "rx_max"] = pd.Series()
+            net.ext_grid.loc[:, "rx_max"] = pd.Series(dtype=float64)
 
         net.ext_grid.at[index, "rx_max"] = float(rx_max)
 
     if not isnan(min_p_mw):
         if "min_p_mw" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "min_p_mw"] = pd.Series()
+            net.ext_grid.loc[:, "min_p_mw"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "min_p_mw"] = float(min_p_mw)
 
     if not isnan(max_p_mw):
         if "max_p_mw" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "max_p_mw"] = pd.Series()
+            net.ext_grid.loc[:, "max_p_mw"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "max_p_mw"] = float(max_p_mw)
 
     if not isnan(min_q_mvar):
         if "min_q_mvar" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "min_q_mvar"] = pd.Series()
+            net.ext_grid.loc[:, "min_q_mvar"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "min_q_mvar"] = float(min_q_mvar)
 
     if not isnan(max_q_mvar):
         if "max_q_mvar" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "max_q_mvar"] = pd.Series()
+            net.ext_grid.loc[:, "max_q_mvar"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "max_q_mvar"] = float(max_q_mvar)
     if not isnan(x0x_max):
         if "x0x_max" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "x0x_max"] = pd.Series()
+            net.ext_grid.loc[:, "x0x_max"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "x0x_max"] = float(x0x_max)
     if not isnan(r0x0_max):
         if "r0x0_max" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "r0x0_max"] = pd.Series()
+            net.ext_grid.loc[:, "r0x0_max"] = pd.Series(dtype=float64)
 
         net.ext_grid.loc[index, "r0x0_max"] = float(r0x0_max)
         # and preserve dtypes
@@ -2167,19 +2167,21 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
-            net.line.loc[:, "max_loading_percent"] = pd.Series()
+            net.line.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
     if alpha is not None:
         if "alpha" not in net.line.columns:
-            net.line.loc[:, "alpha"] = pd.Series()
-        net.line.loc[index, "alpha"] = alpha
+            net.line.loc[:, "alpha"] = pd.Series(dtype=float64)
+
+        net.line.loc[index, "alpha"] = float(alpha)
 
     if temperature_degree_celsius is not None:
         if "temperature_degree_celsius" not in net.line.columns:
-            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
-        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series(dtype=float64)
+
+        net.line.loc[index, "temperature_degree_celsius"] = float(temperature_degree_celsius)
 
     return index
 
@@ -2282,15 +2284,15 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     if not (isnan(r0_ohm_per_km) and isnan(x0_ohm_per_km) and isnan(c0_nf_per_km)):
         if "r0_ohm_per_km" not in net.line.columns:
-            net.line.loc[:, "r0_ohm_per_km"] = pd.Series()
+            net.line.loc[:, "r0_ohm_per_km"] = pd.Series(dtype=float64)
 
         net.line.loc[index, "r0_ohm_per_km"] = float(r0_ohm_per_km)
         if "x0_ohm_per_km" not in net.line.columns:
-            net.line.loc[:, "x0_ohm_per_km"] = pd.Series()
+            net.line.loc[:, "x0_ohm_per_km"] = pd.Series(dtype=float64)
 
         net.line.loc[index, "x0_ohm_per_km"] = float(x0_ohm_per_km)
         if "c0_nf_per_km" not in net.line.columns:
-            net.line.loc[:, "c0_nf_per_km"] = pd.Series()
+            net.line.loc[:, "c0_nf_per_km"] = pd.Series(dtype=float64)
 
         net.line.loc[index, "c0_nf_per_km"] = float(c0_nf_per_km)
 
@@ -2303,24 +2305,24 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
-            net.line.loc[:, "max_loading_percent"] = pd.Series()
+            net.line.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
     if alpha is not None:
         if "alpha" not in net.line.columns:
-            net.line.loc[:, "alpha"] = pd.Series()
-        net.line.loc[index, "alpha"] = alpha
+            net.line.loc[:, "alpha"] = pd.Series(dtype=float64)
+        net.line.loc[index, "alpha"] = float(alpha)
 
     if temperature_degree_celsius is not None:
         if "temperature_degree_celsius" not in net.line.columns:
-            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
-        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series(dtype=float64)
+        net.line.loc[index, "temperature_degree_celsius"] = float(temperature_degree_celsius)
 
     if endtemp_degree is not None:
         if "endtemp_degree" not in net.line.columns:
-            net.line.loc[:, "endtemp_degree"] = pd.Series()
-        net.line.loc[index, "endtemp_degree"] = endtemp_degree
+            net.line.loc[:, "endtemp_degree"] = pd.Series(dtype=float64)
+        net.line.loc[index, "endtemp_degree"] = float(endtemp_degree)
 
     return index
 
@@ -2727,7 +2729,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "max_loading_percent"] = pd.Series()
+            net.trafo.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
@@ -2878,35 +2880,35 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
     net.trafo.loc[index, list(v.keys())] = list(v.values())
 
-    if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent) \
+    if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
         if "vk0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "vk0_percent"] = pd.Series()
+            net.trafo.loc[:, "vk0_percent"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "vk0_percent"] = float(vk0_percent)
         if "vkr0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "vkr0_percent"] = pd.Series()
+            net.trafo.loc[:, "vkr0_percent"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "vkr0_percent"] = float(vkr0_percent)
         if "mag0_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "mag0_percent"] = pd.Series()
+            net.trafo.loc[:, "mag0_percent"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "mag0_percent"] = float(mag0_percent)
         if "mag0_rx" not in net.trafo.columns:
-            net.trafo.loc[:, "mag0_rx"] = pd.Series()
+            net.trafo.loc[:, "mag0_rx"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "mag0_rx"] = float(mag0_rx)
         if "si0_hv_partial" not in net.trafo.columns:
-            net.trafo.loc[:, "si0_hv_partial"] = pd.Series()
+            net.trafo.loc[:, "si0_hv_partial"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "si0_hv_partial"] = float(si0_hv_partial)
         if "vector_group" not in net.trafo.columns:
-            net.trafo.loc[:, "vector_group"] = pd.Series()
+            net.trafo.loc[:, "vector_group"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "vector_group"] = str(vector_group)
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
-            net.trafo.loc[:, "max_loading_percent"] = pd.Series()
+            net.trafo.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
     # and preserve dtypes
@@ -3186,7 +3188,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
-            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
+            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
@@ -3325,7 +3327,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
-            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
+            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series(dtype=float64)
 
         net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
