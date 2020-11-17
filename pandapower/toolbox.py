@@ -1233,21 +1233,22 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
     if not analyzed_meas.duplicated(subset=[
-        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+            "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
-def drop_inner_branches(net, buses, branch_elements=None):
+def get_inner_branches(net, buses, branch_elements=None):
     """
-    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
-    'to_bus').
+    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
+    'from_bus' and 'to_bus').
     """
     branch_dict = branch_element_bus_dict(include_switch=True)
     if branch_elements is not None:
         branch_dict = {key: branch_dict[key] for key in branch_elements}
 
+    inner_branches = dict()
     for elm, bus_types in branch_dict.items():
         inner = pd.Series(True, index=net[elm].index)
         for bus_type in bus_types:
@@ -1256,12 +1257,24 @@ def drop_inner_branches(net, buses, branch_elements=None):
             inner &= net[elm]["element"].isin(buses)
             inner &= net[elm]["et"] == "b"  # bus-bus-switches
 
+        if any(inner):
+            inner_branches[elm] = net[elm].index[inner]
+    return inner_branches
+
+
+def drop_inner_branches(net, buses, branch_elements=None):
+    """
+    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
+    'to_bus').
+    """
+    inner_branches = get_inner_branches(net, buses, branch_elements=branch_elements)
+    for elm, idx in inner_branches.items():
         if elm == "line":
-            drop_lines(net, net[elm].index[inner])
+            drop_lines(net, idx)
         elif "trafo" in elm:
-            drop_trafos(net, net[elm].index[inner])
+            drop_trafos(net, idx)
         else:
-            net[elm].drop(net[elm].index[inner], inplace=True)
+            net[elm].drop(idx, inplace=True)
 
 
 def set_element_status(net, buses, in_service):
@@ -1480,7 +1493,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
+               create_continuous_bus_indices=True, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1488,7 +1502,8 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     net = copy.deepcopy(net1)
     net1 = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
-    create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
+    if create_continuous_bus_indices:
+        create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     if validate:
         runpp(net1, **kwargs)
         runpp(net2, **kwargs)
