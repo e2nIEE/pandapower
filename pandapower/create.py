@@ -3696,9 +3696,9 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **bus** - bus number of bus to whom the shunt is connected to
 
-        **p_mw** - shunt active power in kW at v= 1.0 p.u.
+        **p_mw** - shunt active power in MW at v= 1.0 p.u.
 
-        **q_mvar** - shunt susceptance in kVAr at v= 1.0 p.u.
+        **q_mvar** - shunt susceptance in MVAr at v= 1.0 p.u.
 
     OPTIONAL:
         **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of \
@@ -3786,7 +3786,7 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
         **x_pu** (float) - imaginary part of the impedance in per unit
 
-        **sn_mva** (float) - rated power of the impedance in kVA
+        **sn_mva** (float) - rated power of the impedance in MVA
 
     OUTPUT:
 
@@ -3827,7 +3827,7 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     :param to_bus: (int) - ending bus of the series reactor
     :param r_ohm: (float) - real part of the impedance in Ohm
     :param x_ohm: (float) - imaginary part of the impedance in Ohm
-    :param sn_mva: (float) - rated power of the series reactor in kVA
+    :param sn_mva: (float) - rated power of the series reactor in MVA
     :param vn_kv: (float) - rated voltage of the series reactor in kV
     :return: index of the created element
     """
@@ -3869,9 +3869,9 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
         **qs_mvar** (float) - reactive power of the PQ load
 
-        **pz_mw** (float) - active power of the impedance load in kW at 1.pu voltage
+        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
 
-        **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
+        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
 
     OUTPUT:
         ward id
@@ -3914,9 +3914,9 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **qs_mvar** (float) - reactive power of the PQ load
 
-        **pz_mw** (float) - active power of the impedance load in kW at 1.pu voltage
+        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
 
-        **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
+        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
 
         **r_ohm** (float) - internal resistance of the voltage source
 
@@ -3966,7 +3966,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
         **loss_percent** - (float) Relative transmission loss in percent of active power
             transmission
 
-        **loss_mw** - (float) Total transmission loss in kW
+        **loss_mw** - (float) Total transmission loss in MW
 
         **vm_from_pu** - (float) Voltage setpoint at from bus
 
