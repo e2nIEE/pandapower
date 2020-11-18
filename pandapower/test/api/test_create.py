@@ -371,9 +371,9 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    t = pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
@@ -386,11 +386,11 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45,
-                                               sn_mva= 0.5, vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3,
-                                               vk0_percent=0.4, vkr0_percent=1.7,  mag0_rx=0.4, mag0_percent=0.3,
-                                               tap_neutral=0., vector_group='Dyn', si0_hv_partial=0.1,
-                                               max_loading_percent=80)
+    pp.create_transformers_from_parameters(
+        net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45, sn_mva= 0.5,
+        vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3, vk0_percent=0.4,
+        vkr0_percent=1.7,  mag0_rx=0.4, mag0_percent=0.3, tap_neutral=0., vector_group='Dyn',
+        si0_hv_partial=0.1, max_loading_percent=80)
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
@@ -406,7 +406,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_percent == 0.3)
     assert all(net.trafo.tap_neutral == 0.)
     assert all(net.trafo.tap_pos == 0.)
-    assert all(net.trafo.vector_group == 'Dyn')
+    assert all(net.trafo.vector_group.values == 'Dyn')
     assert all(net.trafo.max_loading_percent == 80.)
     assert all(net.trafo.si0_hv_partial == 0.1)
 
@@ -414,12 +414,12 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    t = pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=[15., 15.], sn_mva=[0.6, 0.6],
-                                               vn_lv_kv=[0.45, 0.45], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3],
-                                               pfe_kw=[0.2, 0.2], i0_percent=[0.3, 0.3],  vk0_percent=[0.4, 0.4],
-                                               mag0_rx=[0.4, 0.4], mag0_percent=[0.3, 0.3], tap_neutral=[0., 1.],
-                                               tap_pos=[-1, 4])
-    print(net.trafo.tap_neutral)
+    t = pp.create_transformers_from_parameters(
+        net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=[15., 15.], sn_mva=[0.6, 0.6],
+        vn_lv_kv=[0.45, 0.45], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=[0.2, 0.2],
+        i0_percent=[0.3, 0.3],  vk0_percent=[0.4, 0.4], mag0_rx=[0.4, 0.4], mag0_percent=[0.3, 0.3],
+        tap_neutral=[0., 1.], tap_pos=[-1, 4])
+
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
@@ -444,29 +444,31 @@ def test_create_transformers_raise_except():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                           i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
     with pytest.raises(UserWarning, match=r"Trafos with indexes \[1\] already exist."):
-        pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, index=[2, 1])
+        pp.create_transformers_from_parameters(
+            net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, index=[2, 1])
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                           i0_percent=0.3, foo=2)
-    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"):
-        pp.create_transformers_from_parameters(net, [b1, 2], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{2\}"):
+        pp.create_transformers_from_parameters(
+            net, [b1, 2], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
-    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"):
-        pp.create_transformers_from_parameters(net, [b1, b1], [b2, 3], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                                sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                                i0_percent=0.3, foo=2)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{3\}"):
+        pp.create_transformers_from_parameters(
+            net, [b1, b1], [b2, 3], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
 
 def test_create_transformers3w_from_parameters():
