@@ -3567,8 +3567,16 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
 
 def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
     if values is not None:
-        if not isnan(default_val):
-            entries[column] = pd.Series(values, index=index, dtype=dtyp).fillna(default_val)
+        try:
+            fill_default = not isnan(default_val)
+        except TypeError:
+            fill_default = True
+        if fill_default:
+            if isinstance(values, str) and version.parse(pd.__version__) <= version.parse("0.23"):
+                entries[column] = pd.Series([values] * len(index), index=index, dtype=dtyp)\
+                    .fillna(default_val)
+            else:
+                entries[column] = pd.Series(values, index=index, dtype=dtyp).fillna(default_val)
         else:
             entries[column] = pd.Series(values, index=index, dtype=dtyp)
 
