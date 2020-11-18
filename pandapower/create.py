@@ -3554,7 +3554,7 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     if set_value:
         if column not in net[element].columns:
             if isinstance(default_val, str) \
-                    and version.parse(pd.__version__) <= version.parse("0.23"):
+                    and version.parse(pd.__version__) < version.parse("1.0"):
                 net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
                                                         dtype=dtyp)
             else:
@@ -3572,7 +3572,7 @@ def _add_series_to_entries(entries, index, column, values, dtyp=float64, default
         except TypeError:
             fill_default = True
         if fill_default:
-            if isinstance(values, str) and version.parse(pd.__version__) <= version.parse("0.23"):
+            if isinstance(values, str) and version.parse(pd.__version__) < version.parse("1.0"):
                 entries[column] = pd.Series([values] * len(index), index=index, dtype=dtyp)\
                     .fillna(default_val)
             else:
