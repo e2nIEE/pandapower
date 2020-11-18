@@ -732,7 +732,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     if not isnan(controllable):
         if "controllable" not in net.load.columns:
-            net.load["controllable"] = False
+            net.load["controllable"] = pd.Series(dtype=bool, data=False)
 
         net.load.at[index, "controllable"] = bool(controllable)
     else:
@@ -1066,7 +1066,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     if not isnan(controllable):
         if "controllable" not in net.sgen.columns:
-            net.sgen.loc[:, "controllable"] = False
+            net.sgen.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
 
         net.sgen.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1356,7 +1356,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
     if not isnan(controllable):
         if "controllable" not in net.storage.columns:
-            net.storage.loc[:, "controllable"] = False
+            net.storage.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
 
         net.storage.loc[index, "controllable"] = bool(controllable)
     else:
@@ -1450,7 +1450,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     if not isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = True
+            net.gen.loc[:, "controllable"] = pd.Series(dtype=bool, data=True)
         net.gen.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
@@ -1470,9 +1470,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "xdss_pu"] = pd.Series()
+            net.gen.loc[:, "xdss_pu"] = pd.Series(dtype=float64)
         if "rdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "rdss_pu"] = pd.Series()
+            net.gen.loc[:, "rdss_pu"] = pd.Series(dtype=float64)
         net.gen.at[index, "xdss_pu"] = float(xdss_pu)
 
     _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
@@ -1740,7 +1740,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _create_column_and_set_value(net, index, r0x0_max, "r0x0_max", "ext_grid")
     if not isnan(controllable):
         if "controllable" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "controllable"] = False
+            net.ext_grid.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
         net.ext_grid.at[index, "controllable"] = bool(controllable)
     elif "controllable" in net.ext_grid.columns:
         net.ext_grid.at[index, "controllable"] = False
@@ -2601,11 +2601,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns,
                                                                       axis=1)
 
-    if not isnan(max_loading_percent):
-        if "max_loading_percent" not in net.trafo3w.columns:
-            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
-
-        net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
+    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     return index
 
@@ -2736,11 +2732,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
 
-    if not isnan(max_loading_percent):
-        if "max_loading_percent" not in net.trafo3w.columns:
-            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
-
-        net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
+    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     return index
 
@@ -3057,9 +3049,9 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **bus** - bus number of bus to whom the shunt is connected to
 
-        **p_mw** - shunt active power in kW at v= 1.0 p.u.
+        **p_mw** - shunt active power in MW at v= 1.0 p.u.
 
-        **q_mvar** - shunt susceptance in kVAr at v= 1.0 p.u.
+        **q_mvar** - shunt susceptance in MVAr at v= 1.0 p.u.
 
     OPTIONAL:
         **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of \
@@ -3137,7 +3129,7 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
         **x_pu** (float) - imaginary part of the impedance in per unit
 
-        **sn_mva** (float) - rated power of the impedance in kVA
+        **sn_mva** (float) - rated power of the impedance in MVA
 
     OUTPUT:
 
@@ -3169,7 +3161,7 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     :param to_bus: (int) - ending bus of the series reactor
     :param r_ohm: (float) - real part of the impedance in Ohm
     :param x_ohm: (float) - imaginary part of the impedance in Ohm
-    :param sn_mva: (float) - rated power of the series reactor in kVA
+    :param sn_mva: (float) - rated power of the series reactor in MVA
     :param name:
     :type name:
     :param in_service:
@@ -3210,9 +3202,9 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
         **qs_mvar** (float) - reactive power of the PQ load
 
-        **pz_mw** (float) - active power of the impedance load in kW at 1.pu voltage
+        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
 
-        **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
+        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
 
     OUTPUT:
         ward id
@@ -3245,9 +3237,9 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **qs_mvar** (float) - reactive power of the PQ load
 
-        **pz_mw** (float) - active power of the impedance load in kW at 1.pu voltage
+        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
 
-        **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
+        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
 
         **r_ohm** (float) - internal resistance of the voltage source
 
@@ -3286,7 +3278,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
         **loss_percent** - (float) Relative transmission loss in percent of active power
             transmission
 
-        **loss_mw** - (float) Total transmission loss in kW
+        **loss_mw** - (float) Total transmission loss in MW
 
         **vm_from_pu** - (float) Voltage setpoint at from bus
 
