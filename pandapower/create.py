@@ -3571,14 +3571,13 @@ def _add_series_to_entries(entries, index, column, values, dtyp=float64, default
             fill_default = not isnan(default_val)
         except TypeError:
             fill_default = True
-        if fill_default:
-            if isinstance(values, str) and version.parse(pd.__version__) < version.parse("1.0"):
-                entries[column] = pd.Series([values] * len(index), index=index, dtype=dtyp)\
-                    .fillna(default_val)
-            else:
-                entries[column] = pd.Series(values, index=index, dtype=dtyp).fillna(default_val)
+        if isinstance(values, str) and version.parse(pd.__version__) < version.parse("1.0"):
+            s = pd.Series([values] * len(index), index=index, dtype=dtyp)
         else:
-            entries[column] = pd.Series(values, index=index, dtype=dtyp)
+            s = pd.Series(values, index=index, dtype=dtyp)
+        if fill_default:
+            s = s.fillna(default_val)
+        entries[column] = s
 
 
 def _add_multiple_branch_geodata(net, table, geodata, index):
