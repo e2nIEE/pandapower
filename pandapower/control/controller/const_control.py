@@ -45,13 +45,15 @@ class ConstControl(Controller):
 
         **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
 
+        **update_opf_limits** (bool, function, False) - If set to True the provided set_new_opf_limits function will be executed after setting the new values. It will set p_min and p_max for loads and sgens. The user can also provide his own function to set custom opf limits.
+
     .. note:: If multiple elements are represented with one controller, the data source must have integer columns. At the moment, only the DFData format is tested for the multiple const control.
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=True, order=0, level=0,
                  drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None, initial_run=False,
-                 **kwargs):
+                 update_opf_limits=False, **kwargs):
         # just calling init of the parent
         if matching_params is None:
             matching_params = {"element": element, "variable": variable,
@@ -77,6 +79,14 @@ class ConstControl(Controller):
             logger.error("Parameter set_q_from_cosphi deprecated!")
             raise ValueError
         self.applied = False
+
+        if update_opf_limits is True:
+            self.update_opf_limits = self.set_new_opf_limits
+        elif callable(update_opf_limits):
+            self.update_opf_limits = update_opf_limits
+        else:
+            self.update_opf_limits = None
+
         self.initial_run = initial_run
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
@@ -117,15 +127,10 @@ class ConstControl(Controller):
         from self.values
         """
         # write functions faster, depending on type of self.element_index
-        if self.write == "single_index":
-            self._write_to_single_index(net)
-        elif self.write == "all_index":
-            self._write_to_all_index(net)
-        elif self.write == "loc":
-            self._write_with_loc(net)
-        else:
-            raise NotImplementedError("ConstControl: self.write must be one of "
-                                      "['single_index', 'all_index', 'loc']")
+        self._write_to_net_depending(net, self.variable, self.values)
+
+        if self.update_opf_limits:
+            self.update_opf_limits(net)
 
     def time_step(self, net, time):
         """
@@ -159,11 +164,33 @@ class ConstControl(Controller):
             self.write_to_net(net)
         self.applied = True
 
-    def _write_to_single_index(self, net):
-        net[self.element].at[self.element_index, self.variable] = self.values
+    def _write_to_net_depending(self, net, variable, values):
+        if self.write == "single_index":
+            self._write_to_single_index(net, variable, values)
+        elif self.write == "all_index":
+            self._write_to_all_index(net, variable, values)
+        elif self.write == "loc":
+            self._write_with_loc(net, variable, values)
+        else:
+            raise NotImplementedError("ConstControl: self.write must be one of "
+                                      "['single_index', 'all_index', 'loc']")
 
-    def _write_to_all_index(self, net):
-        net[self.element].loc[:, self.variable] = self.values
+    def _write_to_single_index(self, net, variable, values):
+        net[self.element].at[self.element_index, variable] = values
 
-    def _write_with_loc(self, net):
-        net[self.element].loc[self.element_index, self.variable] = self.values
+    def _write_to_all_index(self, net, variable, values):
+        net[self.element].loc[:, variable] = values
+
+    def _write_with_loc(self, net, variable, values):
+        net[self.element].loc[self.element_index, variable] = values
+
+    def set_new_opf_limits(self, net):
+        if self.element == "load":
+            self._write_to_net_depending(net, "min_p_mw", self.values)
+            self._write_to_net_depending(net, "max_p_mw", self.values * 1.15)
+        elif self.element == "sgen":
+            self._write_to_net_depending(net, "min_p_mw", 0)
+            self._write_to_net_depending(net, "max_p_mw", self.values)
+        else:
+            raise NotImplementedError("ConstControl: can only set limits for "
+                                      "['load', 'sgen']")
