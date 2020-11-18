@@ -3547,7 +3547,11 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
-    if not isnan(variable):
+    try:
+        set_value = not isnan(variable)
+    except TypeError:
+        set_value = True
+    if set_value:
         if column not in net[element].columns:
             net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
         net[element].at[index, column] = variable
