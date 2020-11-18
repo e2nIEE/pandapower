@@ -583,8 +583,8 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         net["bus_geodata"].loc[index, "coords"] = coords
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
-    _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
+    _create_column_and_set_value(net, index, float(min_vm_pu), "min_vm_pu", "bus", default_val=0.)
+    _create_column_and_set_value(net, index, float(max_vm_pu), "max_vm_pu", "bus", default_val=2.)
 
     return index
 
@@ -725,19 +725,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     _set_entries(net, "load", index, True, **entries)
 
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "load")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "load")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "load")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "load")
-
-    if not isnan(controllable):
-        if "controllable" not in net.load.columns:
-            net.load["controllable"] = pd.Series(dtype=bool, data=False)
-
-        net.load.at[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.load.columns:
-            net.load.at[index, "controllable"] = False
+    _create_column_and_set_value(net, index, float(min_p_mw), "min_p_mw", "load")
+    _create_column_and_set_value(net, index, float(max_p_mw), "max_p_mw", "load")
+    _create_column_and_set_value(net, index, float(min_q_mvar), "min_q_mvar", "load")
+    _create_column_and_set_value(net, index, float(max_q_mvar), "max_q_mvar", "load")
+    _create_column_and_set_value(net, index, bool(controllable), "controllable", "load", dtyp=bool_,
+                                 default_val=False)
 
     return index
 
@@ -1057,21 +1050,14 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     _set_entries(net, "sgen", index, True, **entries)
 
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "sgen")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "sgen")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, k, "k", "sgen")
-    _create_column_and_set_value(net, index, rx, "rx", "sgen")
-
-    if not isnan(controllable):
-        if "controllable" not in net.sgen.columns:
-            net.sgen.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
-
-        net.sgen.loc[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.sgen.columns:
-            net.sgen.loc[index, "controllable"] = False
+    _create_column_and_set_value(net, index, float(min_p_mw), "min_p_mw", "sgen")
+    _create_column_and_set_value(net, index, float(max_p_mw), "max_p_mw", "sgen")
+    _create_column_and_set_value(net, index, float(min_q_mvar), "min_q_mvar", "sgen")
+    _create_column_and_set_value(net, index, float(max_q_mvar), "max_q_mvar", "sgen")
+    _create_column_and_set_value(net, index, float(k), "k", "sgen")
+    _create_column_and_set_value(net, index, float(rx), "rx", "sgen")
+    _create_column_and_set_value(net, index, bool(controllable), "controllable", "sgen", dtyp=bool_,
+                                 default_val=False, default_for_nan=True)
 
     return index
 
@@ -1349,19 +1335,12 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     _set_entries(net, "storage", index, True, **entries)
 
     # check for OPF parameters and add columns to network table
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "storage")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "storage")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "storage")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "storage")
-
-    if not isnan(controllable):
-        if "controllable" not in net.storage.columns:
-            net.storage.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
-
-        net.storage.loc[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.storage.columns:
-            net.storage.loc[index, "controllable"] = False
+    _create_column_and_set_value(net, index, float(min_p_mw), "min_p_mw", "storage")
+    _create_column_and_set_value(net, index, float(max_p_mw), "max_p_mw", "storage")
+    _create_column_and_set_value(net, index, float(min_q_mvar), "min_q_mvar", "storage")
+    _create_column_and_set_value(net, index, float(max_q_mvar), "max_q_mvar", "storage")
+    _create_column_and_set_value(net, index, bool(controllable), "controllable", "storage",
+                                 dtyp=bool_, default_val=False)
 
     return index
 
@@ -1455,18 +1434,18 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
     # P limits for OPF if controllable == True
-    net = _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "gen")
-    net = _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "gen")
+    _create_column_and_set_value(net, index, float(min_p_mw), "min_p_mw", "gen")
+    _create_column_and_set_value(net, index, float(max_p_mw), "max_p_mw", "gen")
     # Q limits for OPF if controllable == True
-    net = _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "gen")
-    net = _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "gen")
+    _create_column_and_set_value(net, index, float(min_q_mvar), "min_q_mvar", "gen")
+    _create_column_and_set_value(net, index, float(max_q_mvar), "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    net = _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
-    net = _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
+    _create_column_and_set_value(net, index, float(max_vm_pu), "max_vm_pu", "gen", default_val=2.)
+    _create_column_and_set_value(net, index, float(min_vm_pu), "min_vm_pu", "gen", default_val=0.)
 
     # Short circuit calculation limits
-    net = _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
-    net = _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
+    _create_column_and_set_value(net, index, float(vn_kv), "vn_kv", "gen")
+    _create_column_and_set_value(net, index, float(cos_phi), "cos_phi", "gen")
 
     if not isnan(xdss_pu):
         if "xdss_pu" not in net.gen.columns:
@@ -1475,7 +1454,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
             net.gen.loc[:, "rdss_pu"] = pd.Series(dtype=float64)
         net.gen.at[index, "xdss_pu"] = float(xdss_pu)
 
-    _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
+    _create_column_and_set_value(net, index, float(rdss_pu), "rdss_pu", "gen")
 
     return index
 
@@ -1728,22 +1707,18 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_entries(net, "ext_grid", index, **entries, **kwargs)
 
     # OPF limits
-    _create_column_and_set_value(net, index, s_sc_max_mva, "s_sc_max_mva", "ext_grid")
-    _create_column_and_set_value(net, index, s_sc_min_mva, "s_sc_min_mva", "ext_grid")
-    _create_column_and_set_value(net, index, rx_min, "rx_min", "ext_grid")
-    _create_column_and_set_value(net, index, rx_max, "rx_max", "ext_grid")
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "ext_grid")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "ext_grid")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
-    _create_column_and_set_value(net, index, x0x_max, "x0x_max", "ext_grid")
-    _create_column_and_set_value(net, index, r0x0_max, "r0x0_max", "ext_grid")
-    if not isnan(controllable):
-        if "controllable" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "controllable"] = pd.Series(dtype=bool, data=False)
-        net.ext_grid.at[index, "controllable"] = bool(controllable)
-    elif "controllable" in net.ext_grid.columns:
-        net.ext_grid.at[index, "controllable"] = False
+    _create_column_and_set_value(net, index, float(s_sc_max_mva), "s_sc_max_mva", "ext_grid")
+    _create_column_and_set_value(net, index, float(s_sc_min_mva), "s_sc_min_mva", "ext_grid")
+    _create_column_and_set_value(net, index, float(rx_min), "rx_min", "ext_grid")
+    _create_column_and_set_value(net, index, float(rx_max), "rx_max", "ext_grid")
+    _create_column_and_set_value(net, index, float(min_p_mw), "min_p_mw", "ext_grid")
+    _create_column_and_set_value(net, index, float(max_p_mw), "max_p_mw", "ext_grid")
+    _create_column_and_set_value(net, index, float(min_q_mvar), "min_q_mvar", "ext_grid")
+    _create_column_and_set_value(net, index, float(max_q_mvar), "max_q_mvar", "ext_grid")
+    _create_column_and_set_value(net, index, float(x0x_max), "x0x_max", "ext_grid")
+    _create_column_and_set_value(net, index, float(r0x0_max), "r0x0_max", "ext_grid")
+    _create_column_and_set_value(net, index, bool(controllable), "controllable", "ext_grid",
+                                 dtyp=bool_, default_val=False)
 
     return index
 
@@ -1832,9 +1807,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         net["line_geodata"].loc[index, "coords"] = None
         net["line_geodata"].at[index, "coords"] = geodata
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "line")
-    _create_column_and_set_value(net, index, alpha, "alpha", "line")
-    _create_column_and_set_value(net, index, temperature_degree_celsius,
+    _create_column_and_set_value(net, index, float(max_loading_percent), "max_loading_percent", "line")
+    _create_column_and_set_value(net, index, float(alpha), "alpha", "line")
+    _create_column_and_set_value(net, index, float(temperature_degree_celsius),
                                  "temperature_degree_celsius", "line")
 
     return index
@@ -2004,10 +1979,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
-        _create_column_and_set_value(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
-        _create_column_and_set_value(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
-        _create_column_and_set_value(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _create_column_and_set_value(net, index, g0_us_per_km, "g0_us_per_km", "line",
+        _create_column_and_set_value(net, index, float(r0_ohm_per_km), "r0_ohm_per_km", "line")
+        _create_column_and_set_value(net, index, float(x0_ohm_per_km), "x0_ohm_per_km", "line")
+        _create_column_and_set_value(net, index, float(c0_nf_per_km), "c0_nf_per_km", "line")
+        _create_column_and_set_value(net, index, float(g0_us_per_km), "g0_us_per_km", "line",
                                      default_val=0.)
     elif not np_all(nan_0_values):
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
@@ -2017,11 +1992,12 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         net["line_geodata"].loc[index, "coords"] = None
         net["line_geodata"].at[index, "coords"] = geodata
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "line")
-    _create_column_and_set_value(net, index, alpha, "alpha", "line")
-    _create_column_and_set_value(net, index, temperature_degree_celsius,
+    _create_column_and_set_value(net, index, float(max_loading_percent), "max_loading_percent",
+                                 "line")
+    _create_column_and_set_value(net, index, float(alpha), "alpha", "line")
+    _create_column_and_set_value(net, index, float(temperature_degree_celsius),
                                  "temperature_degree_celsius", "line")
-    _create_column_and_set_value(net, index, endtemp_degree, "endtemp_degree", "line")
+    _create_column_and_set_value(net, index, float(endtemp_degree), "endtemp_degree", "line")
 
     return index
 
@@ -2222,7 +2198,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     _set_entries(net, "trafo", index, **v)
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    _create_column_and_set_value(net, index, float(max_loading_percent), "max_loading_percent",
+                                 "trafo")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2362,14 +2339,13 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
-        _create_column_and_set_value(net, index, vk0_percent, "vk0_percent", "trafo")
-        _create_column_and_set_value(net, index, vkr0_percent, "vkr0_percent", "trafo")
-        _create_column_and_set_value(net, index, mag0_percent, "mag0_percent", "trafo")
-        _create_column_and_set_value(net, index, mag0_rx, "mag0_rx", "trafo")
-        _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
-        if "vector_group" not in net.trafo.columns:
-            net.trafo.loc[:, "vector_group"] = pd.Series(dtype=str)
-        net.trafo.loc[index, "vector_group"] = str(vector_group)
+        _create_column_and_set_value(net, index, float(vk0_percent), "vk0_percent", "trafo")
+        _create_column_and_set_value(net, index, float(vkr0_percent), "vkr0_percent", "trafo")
+        _create_column_and_set_value(net, index, float(mag0_percent), "mag0_percent", "trafo")
+        _create_column_and_set_value(net, index, float(mag0_rx), "mag0_rx", "trafo")
+        _create_column_and_set_value(net, index, float(si0_hv_partial), "si0_hv_partial", "trafo")
+        _create_column_and_set_value(net, index, str(vector_group), "vector_group", "trafo",
+                                     dtyp=str, default_val=None)
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
     return index
@@ -2601,7 +2577,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns,
                                                                       axis=1)
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _create_column_and_set_value(net, index, float(max_loading_percent), "max_loading_percent", "trafo3w")
 
     return index
 
@@ -2712,27 +2688,22 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     if tap_pos is nan:
         tap_pos = tap_neutral
 
-    # store dtypes
-    dtypes = net.trafo3w.dtypes
+    columns = ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv", "sn_hv_mva",
+               "sn_mv_mva", "sn_lv_mva", "vk_hv_percent", "vk_mv_percent", "vk_lv_percent",
+               "vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
+               "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
+               "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min", "in_service",
+               "name", "std_type", "tap_at_star_point"]
+    values = [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, sn_hv_mva, sn_mv_mva, sn_lv_mva,
+              vk_hv_percent, vk_mv_percent, vk_lv_percent, vkr_hv_percent, vkr_mv_percent,
+              vkr_lv_percent, pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree, tap_side,
+              tap_step_percent, tap_step_degree, tap_pos, tap_neutral, tap_max, tap_min,
+              bool(in_service), name, None, tap_at_star_point]
 
-    net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                            "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vk_hv_percent",
-                            "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
-                            "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
-                            "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
-                            "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min",
-                            "in_service", "name", "std_type", "tap_at_star_point"]] = \
-        [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, vk_mv_percent,
-         vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent,
-         pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
-         tap_side, tap_step_percent, tap_step_degree, tap_pos, tap_neutral, tap_max,
-         tap_min, bool(in_service), name, None, tap_at_star_point]
+    _set_entries(net, "trafo3w", index, **dict(zip(columns, values)))
 
-    # and preserve dtypes
-    _preserve_dtypes(net.trafo3w, dtypes)
-
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _create_column_and_set_value(net, index, float(max_loading_percent), "max_loading_percent",
+                                 "trafo3w")
 
     return index
 
@@ -3571,14 +3542,17 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
                           % (element_name, node_name, plural, node_not_exist))
 
 
-def _create_column_and_set_value(net, index, variable, column, element, default_val=nan):
+def _create_column_and_set_value(net, index, variable, column, element, dtyp=float64,
+                                 default_val=nan, default_for_nan=False):
     # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     if not isnan(variable):
         if column not in net[element].columns:
-            net[element].loc[:, column] = float(default_val)
-        net[element].at[index, column] = float(variable)
+            net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
+        net[element].at[index, column] = variable
+    elif default_for_nan and column in net[element].columns:
+        net[element].at[index, column] = default_val
     return net
 
 
