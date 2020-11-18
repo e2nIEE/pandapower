@@ -730,7 +730,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "load")
     _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "load")
     _create_column_and_set_value(net, index, controllable, "controllable", "load", dtyp=bool_,
-                                 default_val=False)
+                                 default_val=False, default_for_nan=True)
 
     return index
 
@@ -1340,7 +1340,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "storage")
     _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "storage")
     _create_column_and_set_value(net, index, controllable, "controllable", "storage",
-                                 dtyp=bool_, default_val=False)
+                                 dtyp=bool_, default_val=False, default_for_nan=True)
 
     return index
 
@@ -1721,7 +1721,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _create_column_and_set_value(net, index, x0x_max, "x0x_max", "ext_grid")
     _create_column_and_set_value(net, index, r0x0_max, "r0x0_max", "ext_grid")
     _create_column_and_set_value(net, index, controllable, "controllable", "ext_grid",
-                                 dtyp=bool_, default_val=False)
+                                 dtyp=bool_, default_val=False, default_for_nan=True)
 
     return index
 
@@ -3553,7 +3553,12 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         set_value = True
     if set_value:
         if column not in net[element].columns:
-            net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
+            if isinstance(default_val, str) \
+                    and version.parse(pd.__version__) <= version.parse("0.23"):
+                net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
+                                                        dtype=dtyp)
+            else:
+                net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
