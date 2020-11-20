@@ -37,7 +37,7 @@ For a more in-depth explanation of the internals of the state estimation method,
 Defining Measurements
 ===========================
 
-Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Contrary to the pandapower load flow results, bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations.
 
 **Types of Measurements**
 
