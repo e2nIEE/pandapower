@@ -3307,7 +3307,8 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Generation is a positive bus power consumption, injection negative
+        "kA" for I. Bus power measurement is in load reference system, which is consistent to
+        the rest of pandapower.
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
