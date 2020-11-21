@@ -82,7 +82,7 @@ For all other bus elements the signing is based on the consumer viewpoint (posit
     - xward
     - storage
  
-The power flow values for branch elements (e.g. lines & transformers) are always defined as the power flow into the branch element (positive values means power flows into the element, negative power means power flows out of the element).
+The power flow values for branch elements (e.g. lines & transformers) are always defined as the power flow out of the branch element (positive values means power flows out of the element, negative power means power flows into the element).
 
 **Frequency**
 
