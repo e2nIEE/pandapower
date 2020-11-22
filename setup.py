@@ -33,10 +33,10 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.2.2',
+    version='2.4.0',
     author='Leon Thurner, Alexander Scheidler',
-    author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
-    description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
+    author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
+    description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
     long_description=long_description,
 	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
@@ -45,11 +45,14 @@ setup(
                       "networkx",
                       "scipy",
                       "numpy>=0.11",
-                      "packaging"],
-    extras_require={":python_version<'3.0'": ["future"],
-                    "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-                    "plotting": ["plotly", "matplotlib", "python-igraph"],
-                    "test": ["pytest", "pytest-xdist"]},
+                      "packaging",
+					  "xlsxwriter",
+					  "xlrd",
+					  "cryptography"],
+    extras_require={
+		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
+		"plotting": ["plotly", "matplotlib", "python-igraph"],
+		"test": ["pytest", "pytest-xdist"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers

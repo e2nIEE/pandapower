@@ -6,6 +6,7 @@
 
 import numpy as np
 import pytest
+import pandapower as pp
 import pandapower.converter as cv
 from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.pypower.idx_bus import VM, BUS_I, VA
@@ -26,6 +27,9 @@ def test_to_ppc_and_mpc():
         pandapower_function = getattr(pandapower_module.networks, fn)
         net = pandapower_function()
         reset_results(net)
+
+        # This should be reviewed
+        pp.runpp(net)
 
         # convert pandapower grids to ppc
         ppc = cv.to_ppc(net)

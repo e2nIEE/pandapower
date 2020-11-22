@@ -22,16 +22,15 @@ class Controller(JSONSerializableClass):
     """
 
     def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
-                 drop_same_existing_ctrl=False, initial_powerflow=True, overwrite=False, **kwargs):
+                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False, **kwargs):
         super().__init__()
-        self.net = net
         self.recycle = recycle
-        self.initial_powerflow = initial_powerflow
+        self.initial_run = initial_run
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
-            index = get_free_id(self.net.controller)
+            index = get_free_id(net.controller)
         self.index = index
-        self.add_controller_to_net(in_service=in_service, order=order,
+        self.add_controller_to_net(net=net, in_service=in_service, order=order,
                                    level=level, index=index, recycle=recycle,
                                    drop_same_existing_ctrl=drop_same_existing_ctrl,
                                    overwrite=overwrite, **kwargs)
@@ -65,65 +64,40 @@ class Controller(JSONSerializableClass):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-    def __deepcopy__(self, memo):
-        """
-        We implement a dedicated __deepcopy__-method
-        to keep the copy-Module from using our
-        modified version of __getstate__
-        """
 
-        # Helper for instance creation without calling __init__
-        # Took _deepcopy_inst in the copy module as reference.
-        class _EmptyClass:
-            pass
-
-        if hasattr(self, '__getinitargs__'):
-            args = self.__getinitargs__()
-            args = copy.deepcopy(args, memo)
-            res = self.__class__(*args)
-        else:
-            res = _EmptyClass()
-            res.__class__ = self.__class__
-
-        memo[id(self)] = res
-
-        # deepcopy and update complete __dict__
-        state = copy.deepcopy(self.__dict__, memo)
-        res.__dict__.update(state)
-        setattr(res, 'net', memo[id(self.net)])
-
-        return res
-
-    def add_controller_to_net(self, in_service, order, level, index, recycle,
+    def add_controller_to_net(self, net, in_service, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
         """
         adds the controller to net['controller'] dataframe.
 
         INPUT:
             **in_service** (bool) - in service status
-            
+
             **order** (int) - order
-            
+
             **index** (int) - index
-            
+
             **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values. This is mostly needed for time series calculations
 
         """
         if drop_same_existing_ctrl:
-            drop_same_type_existing_controllers(self.net, type(self), index=index, **kwargs)
+            drop_same_type_existing_controllers(net, type(self), index=index, **kwargs)
         else:
-            log_same_type_existing_controllers(self.net, type(self), index=index, **kwargs)
+            log_same_type_existing_controllers(net, type(self), index=index, **kwargs)
 
-        dtypes = self.net.controller.dtypes
+        dtypes = net.controller.dtypes
 
         # use base class method to raise an error if the object is in DF and overwrite = False
-        super().add_to_net(element='controller', index=index, overwrite=overwrite)
+        super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
 
-        columns = ['object', 'in_service', 'order', 'level', 'recycle']
-        self.net.controller.loc[index, columns] = self, in_service, order, level, recycle
-        _preserve_dtypes(self.net.controller, dtypes)
+        columns = ['object', 'in_service', 'recycle']
+        net.controller.loc[index,columns] = self, in_service, recycle
+        net.controller['order'][index] = order
+        net.controller['level'][index]= level
 
-    def time_step(self, time):
+        _preserve_dtypes(net.controller, dtypes)
+
+    def time_step(self, net, time):
         """
         It is the first call in each time step, thus suited for things like
         reading profiles or prepare the controller for the next control step.
@@ -144,7 +118,7 @@ class Controller(JSONSerializableClass):
         self.recycle = False
         return self.recycle
 
-    def initialize_control(self):
+    def initialize_control(self, net):
         """
         Some controller require extended initialization in respect to the
         current state of the net (or their view of it). This method is being
@@ -156,7 +130,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def is_converged(self):
+    def is_converged(self, net):
         """
         This method calculated whether or not the controller converged. This is
         where any target values are being calculated and compared to the actual
@@ -166,7 +140,7 @@ class Controller(JSONSerializableClass):
                        "(and will always return True)!")
         return True
 
-    def control_step(self):
+    def control_step(self, net):
         """
         If the is_converged method returns false, the control_step will be
         called. In other words: if the controller did not converge yet, this
@@ -175,7 +149,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def repair_control(self):
+    def repair_control(self, net):
         """
         Some controllers can cause net to not converge. In this case, they can implement a method to
         try and catch the load flow error by altering some values in net, for example load scaling.
@@ -185,7 +159,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def restore_init_state(self):
+    def restore_init_state(self, net):
         """
         Some controllers manipulate values in net and then restore them back to initial values, e.g.
         DistributedSlack.
@@ -195,7 +169,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def finalize_control(self):
+    def finalize_control(self, net):
         """
         Some controller require extended finalization. This method is being
         called at the end of a loadflow.
@@ -205,7 +179,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def finalize_step(self):
+    def finalize_step(self, net):
         """
         .. note:: This method is ONLY being called during time-series simulation!
 
@@ -216,8 +190,8 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def set_active(self, in_service):
+    def set_active(self, net, in_service):
         """
         Sets the controller in or out of service
         """
-        self.net.controller.loc[self.index, 'in_service'] = in_service
+        net.controller.loc[self.index, 'in_service'] = in_service

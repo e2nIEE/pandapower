@@ -865,7 +865,11 @@ def test_add_element_and_init_results():
     pp.create_bus(net, vn_kv=20.)
     pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1),
                    std_type="NAYY 4x150 SE")
-    pp.runpp(net, init="results")
+    try:
+        pp.runpp(net, init="results")
+        assert False
+    except UserWarning:
+        pass
 
 
 def test_pp_initialization():
@@ -913,10 +917,11 @@ def test_equal_indices_res():
     pp.runpp(net)
     net["bus"] = net["bus"].sort_index()
     try:
+        # This should raise a UserWarning since index has changed!!
         pp.runpp(net, init_vm_pu="results", init_va_degree="results")
-        assert True
-    except LoadflowNotConverged:
         assert False
+    except UserWarning:
+        pass
 
 
 def test_ext_grid_and_gen_at_one_bus(**kwargs):

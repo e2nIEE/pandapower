@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -25,6 +25,21 @@ def radial_grid():
     pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0" , length_km=20.)
     pp.create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV" , length_km=15.)
     return net
+
+@pytest.fixture
+def three_bus_big_sgen_example():
+     net = pp.create_empty_network()
+     b1 = pp.create_bus(net, 110)
+     b2 = pp.create_bus(net, 110)
+     b3 = pp.create_bus(net, 110)
+
+     pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+     pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0" , length_km=20.)
+     pp.create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV" , length_km=15.)
+     net.line["endtemp_degree"] = 80
+
+     pp.create_sgen(net, b2, sn_mva=200., p_mw=0, k=1.2)
+     return net
 
 def test_radial_network(radial_grid):   
     net = radial_grid
@@ -63,5 +78,19 @@ def test_meshed_network(meshed_grid):
     assert isclose(line_flow_into_sc, ik, atol=2e-3)
 
 
-if __name__ == '__main__': 
+def test_big_gen_network(three_bus_big_sgen_example):
+    net = three_bus_big_sgen_example
+    sc_bus = 0
+    sc.calc_single_sc(net, sc_bus)
+
+    assert isclose(net.res_line_sc.i_ka.at[0], 1.25967331, atol=1e-3)
+    assert isclose(net.res_line_sc.i_ka.at[1], 0., atol=2e-3)
+
+    net = three_bus_big_sgen_example
+    sc_bus = 2
+    sc.calc_single_sc(net, sc_bus)
+    assert isclose(net.res_line_sc.i_ka.at[0], 0.46221808, atol=1e-3)
+    assert isclose(net.res_line_sc.i_ka.at[1], 1.72233192, atol=1e-3)
+
+if __name__ == '__main__':
     pytest.main([__file__])

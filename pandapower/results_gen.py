@@ -58,29 +58,17 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     if gen_end > eg_end:
         b, pA, qA, pB, qB, pC, qC = _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC)
 
-    if len(net.dcline) > 0:
-        _get_dcline_results(net)
-        b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
-        pDC = -net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten() / 3
-        pA = np.hstack([pA, pDC])
-        pB = np.hstack([pB, pDC])
-        pC = np.hstack([pC, pDC])
-        qDC = -net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten() / 3
-        qA = np.hstack([qA, qDC])
-        qB = np.hstack([qB, qDC])
-        qC = np.hstack([qC, qDC])
-
     if not ac:
         qA, qB, qC = np.copy((np.zeros(len(pA)),)*3)
 
     b_pp, pA_sum, qA_sum, pB_sum, qB_sum, pC_sum, qC_sum = _sum_by_group_nvals(b.astype(int), pA, qA, pB, qB, pC, qC)
     b_ppc = bus_lookup_aranged[b_pp]
-    pq_bus[b_ppc, 0] += pA_sum
-    pq_bus[b_ppc, 1] += qA_sum
-    pq_bus[b_ppc, 2] += pB_sum
-    pq_bus[b_ppc, 3] += qB_sum
-    pq_bus[b_ppc, 4] += pC_sum
-    pq_bus[b_ppc, 5] += qC_sum
+    pq_bus[b_ppc, 0] -= pA_sum
+    pq_bus[b_ppc, 1] -= qA_sum
+    pq_bus[b_ppc, 2] -= pB_sum
+    pq_bus[b_ppc, 3] -= qB_sum
+    pq_bus[b_ppc, 4] -= pC_sum
+    pq_bus[b_ppc, 5] -= qC_sum
 
 
 def _get_ext_grid_results(net, ppc):
@@ -115,8 +103,6 @@ def _get_ext_grid_results(net, ppc):
     return b, p, q
 
 def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
-    ac = net["_options"]["ac"]
-
     # get results for external grids
     eg_is_mask = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
@@ -132,7 +118,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
-    
+
     S012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
     S012[:, eg_idx_ppc] = np.array([(ppc["gen"][eg_idx_ppc, PG] + 1j \
                                    * ppc["gen"][eg_idx_ppc, QG]) \
@@ -255,7 +241,7 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     # lookups for ppc
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
-    
+
     # in service gens
     gen_is_mask = net["_is_elements"]['gen']
     gen_is_idx = net["gen"].index[gen_is_mask]

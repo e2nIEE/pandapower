@@ -7,7 +7,7 @@ from pandapower.timeseries.data_source import DataSource
 
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
@@ -49,7 +49,7 @@ class DFData(DataSource):
         res = self.df.loc[time_step, profile_name]
         if hasattr(res, 'values'):
             res = res.values
-        res *= scale_factor
+        res = res*scale_factor
         return res
 
     def get_time_steps_len(self):

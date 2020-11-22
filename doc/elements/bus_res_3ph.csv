@@ -11,3 +11,4 @@ p_b_mw;float;resulting active power demand:Phase B [MW]
 q_b_mvar;float;resulting reactive power demand:Phase B [Mvar]
 p_c_mw;float;resulting active power demand:Phase C [MW]
 q_c_mvar;float;resulting reactive power demand:Phase C [Mvar]
+unbalance_percent;float;unbalance in percent defined as the ratio of V0 and V1 according to IEC 62749
