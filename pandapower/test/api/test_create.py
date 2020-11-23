@@ -371,9 +371,9 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    t = pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
@@ -386,11 +386,11 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45,
-                                               sn_mva= 0.5, vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3,
-                                               vk0_percent=0.4, vkr0_percent=1.7,  mag0_rx=0.4, mag0_percent=0.3,
-                                               tap_neutral=0., vector_group='Dyn', si0_hv_partial=0.1,
-                                               max_loading_percent=80)
+    pp.create_transformers_from_parameters(
+        net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=15., vn_lv_kv=0.45, sn_mva= 0.5,
+        vk_percent=1., vkr_percent=0.3, pfe_kw=0.2, i0_percent=0.3, vk0_percent=0.4,
+        vkr0_percent=1.7,  mag0_rx=0.4, mag0_percent=0.3, tap_neutral=0., vector_group='Dyn',
+        si0_hv_partial=0.1, max_loading_percent=80)
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
@@ -406,7 +406,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_percent == 0.3)
     assert all(net.trafo.tap_neutral == 0.)
     assert all(net.trafo.tap_pos == 0.)
-    assert all(net.trafo.vector_group == 'Dyn')
+    assert all(net.trafo.vector_group.values == 'Dyn')
     assert all(net.trafo.max_loading_percent == 80.)
     assert all(net.trafo.si0_hv_partial == 0.1)
 
@@ -414,12 +414,12 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    t = pp.create_transformers_from_parameters(net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=[15., 15.], sn_mva=[0.6, 0.6],
-                                               vn_lv_kv=[0.45, 0.45], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3],
-                                               pfe_kw=[0.2, 0.2], i0_percent=[0.3, 0.3],  vk0_percent=[0.4, 0.4],
-                                               mag0_rx=[0.4, 0.4], mag0_percent=[0.3, 0.3], tap_neutral=[0., 1.],
-                                               tap_pos=[-1, 4])
-    print(net.trafo.tap_neutral)
+    t = pp.create_transformers_from_parameters(
+        net, hv_buses=[b1, b1], lv_buses=[b2, b2], vn_hv_kv=[15., 15.], sn_mva=[0.6, 0.6],
+        vn_lv_kv=[0.45, 0.45], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=[0.2, 0.2],
+        i0_percent=[0.3, 0.3],  vk0_percent=[0.4, 0.4], mag0_rx=[0.4, 0.4], mag0_percent=[0.3, 0.3],
+        tap_neutral=[0., 1.], tap_pos=[-1, 4])
+
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
@@ -444,29 +444,31 @@ def test_create_transformers_raise_except():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                           i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
-    with pytest.raises(UserWarning, match="A trafo with index 1 already exists"):
-        pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, index=[2, 1])
+    with pytest.raises(UserWarning, match=r"Trafos with indexes \[1\] already exist."):
+        pp.create_transformers_from_parameters(
+            net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, index=[2, 1])
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                           sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                           i0_percent=0.3, foo=2)
-    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \[2\]"):
-        pp.create_transformers_from_parameters(net, [b1, 2], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                               sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                               i0_percent=0.3, foo=2)
+    pp.create_transformers_from_parameters(
+        net, [b1, b1], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+        vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{2\}"):
+        pp.create_transformers_from_parameters(
+            net, [b1, 2], [b2, b2], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
-    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \[3\]"):
-        pp.create_transformers_from_parameters(net, [b1, b1], [b2, 3], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45],
-                                                sn_mva=[0.5, 0.7], vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2,
-                                                i0_percent=0.3, foo=2)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{3\}"):
+        pp.create_transformers_from_parameters(
+            net, [b1, b1], [b2, 3], vn_hv_kv=[15., 15.], vn_lv_kv=[0.45, 0.45], sn_mva=[0.5, 0.7],
+            vk_percent=[1., 1.], vkr_percent=[0.3, 0.3], pfe_kw=0.2, i0_percent=0.3, foo=2)
 
 
 def test_create_transformers3w_from_parameters():
@@ -556,7 +558,7 @@ def test_create_transformers3w_raise_except():
                                              pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
                                              mag0_rx=0.4, mag0_percent=0.3)
 
-    with pytest.raises(UserWarning, match="A three winding transformer with index 1 already exists"):
+    with pytest.raises(UserWarning, match=r"Three winding transformers with indexes \[1\] already exist."):
         pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
                                                  vn_hv_kv=15., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5,
                                                  sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
@@ -567,28 +569,31 @@ def test_create_transformers3w_raise_except():
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
     b3 = pp.create_bus(net, 0.9)
-    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \{6\}"):
-        pp.create_transformers3w_from_parameters(net, hv_buses=[6, b1], mv_buses=[b3, b3], lv_buses=[b2, b2],
-                                                 vn_hv_kv=15., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5,
-                                                 sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
-                                                 vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                                 pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                                 mag0_rx=0.4, mag0_percent=0.3, index=[0, 1])
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{6\}"):
+        pp.create_transformers3w_from_parameters(
+            net, hv_buses=[6, b1], mv_buses=[b3, b3], lv_buses=[b2, b2], vn_hv_kv=15., vn_mv_kv=0.9,
+            vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5, sn_lv_mva=0.4, vk_hv_percent=1.,
+            vk_mv_percent=1., vk_lv_percent=1., vkr_hv_percent=0.3, vkr_mv_percent=0.3,
+            vkr_lv_percent=0.3, pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., mag0_rx=0.4,
+            mag0_percent=0.3, index=[0, 1])
 
-    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \{3\}"):
-        pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, 3], lv_buses=[b2, b2],
-                                                 vn_hv_kv=15., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5,
-                                                 sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
-                                                 vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                                 pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                                 mag0_rx=0.4, mag0_percent=0.3)
-    with pytest.raises(UserWarning, match="Transformer trying to attach to non existing buses \{3, 4\}"):
-        pp.create_transformers3w_from_parameters(net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[4, 3],
-                                                vn_hv_kv=15., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5,
-                                                sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
-                                                vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                                pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                                mag0_rx=0.4, mag0_percent=0.3)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{3\}"):
+        pp.create_transformers3w_from_parameters(
+            net, hv_buses=[b1, b1], mv_buses=[b3, 3], lv_buses=[b2, b2], vn_hv_kv=15., vn_mv_kv=0.9,
+            vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5, sn_lv_mva=0.4, vk_hv_percent=1.,
+            vk_mv_percent=1., vk_lv_percent=1., vkr_hv_percent=0.3, vkr_mv_percent=0.3,
+            vkr_lv_percent=0.3, pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., mag0_rx=0.4,
+            mag0_percent=0.3)
+    with pytest.raises(UserWarning,
+                       match=r"Transformers trying to attach to non existing buses \{3, 4\}"):
+        pp.create_transformers3w_from_parameters(
+            net, hv_buses=[b1, b1], mv_buses=[b3, b3], lv_buses=[4, 3], vn_hv_kv=15., vn_mv_kv=0.9,
+            vn_lv_kv=0.45, sn_hv_mva= 0.6, sn_mv_mva=0.5, sn_lv_mva=0.4, vk_hv_percent=1.,
+            vk_mv_percent=1., vk_lv_percent=1., vkr_hv_percent=0.3, vkr_mv_percent=0.3,
+            vkr_lv_percent=0.3, pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., mag0_rx=0.4,
+            mag0_percent=0.3)
 
 
 def test_create_switches():
@@ -601,7 +606,8 @@ def test_create_switches():
     l1 = pp.create_line(net, b1, b2,  length_km=1, std_type="48-AL1/8-ST1A 10.0")
     t1 = pp.create_transformer(net, b2, b3, std_type='160 MVA 380/110 kV')
 
-    sw = pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0., foo='aaa')
+    sw = pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"],
+                            z_ohm=0., foo='aaa')
 
     assert(net.switch.bus.at[0] == b1)
     assert(net.switch.bus.at[1] == b2)
@@ -640,11 +646,11 @@ def test_create_switches_raise_except():
                                                 pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.
                                             )
     sw = pp.create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.)
-    with pytest.raises(UserWarning, match="A switch with index 0 already exists"):
+    with pytest.raises(UserWarning, match=r"Switches with indexes \[0\] already exist."):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.,
                            index=[sw, 1, 2])
 
-    with pytest.raises(UserWarning, match="Buses \{6\} do not exist"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"):
         pp.create_switches(net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
 
     with pytest.raises(UserWarning, match="Line 1 does not exist"):
@@ -655,7 +661,7 @@ def test_create_switches_raise_except():
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.)
     with pytest.raises(UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)):
         pp.create_switches(net, buses=[b1, b1, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.)
-    with pytest.raises(UserWarning, match="Unknown bus index 6"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to bus 6, bus does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.)
     with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
         pp.create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 1], et=["l", "t", "t3"], z_ohm=0.)
@@ -698,7 +704,7 @@ def test_create_loads_raise_except():
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
 
-    with pytest.raises(UserWarning, match="Cannot attach to buses \{3, 4, 5\}, they does not exist"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
         pp.create_loads(net, buses=[3, 4, 5], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         )
@@ -706,7 +712,7 @@ def test_create_loads_raise_except():
     l = pp.create_loads(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         )
-    with pytest.raises(UserWarning, match="Loads with the ids \[0 1 2\] already exists"):
+    with pytest.raises(UserWarning, match=r"Loads with indexes \[0 1 2\] already exist"):
         pp.create_loads(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
                         max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
                         index = l)
@@ -750,18 +756,21 @@ def test_create_sgens_raise_except():
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
 
-    with pytest.raises(UserWarning, match="Cannot attach to buses \{3, 4, 5\}, they does not exist"):
-        pp.create_sgens(net, buses=[3, 4, 5], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
-                        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                        k=1.3, rx=0.4, current_source=True)
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
+        pp.create_sgens(
+            net, buses=[3, 4, 5], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
+            max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0], k=1.3,
+            rx=0.4, current_source=True)
 
-    sg = pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
-                        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                        k=1.3, rx=0.4, current_source=True)
-    with pytest.raises(UserWarning, match="Sgens with the ids \[0 1 2\] already exists"):
-        pp.create_sgens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
-                        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                        k=1.3, rx=0.4, current_source=True, index=sg)
+    sg = pp.create_sgens(
+        net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
+        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0], k=1.3, rx=0.4,
+        current_source=True)
+    with pytest.raises(UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"):
+        pp.create_sgens(
+            net, buses=[b1, b2, b3], p_mw=[0, 0, 1], q_mwar=0., controllable=[True, False, False],
+            max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0], k=1.3,
+            rx=0.4, current_source=True, index=sg)
 
 
 def test_create_gens():
@@ -802,21 +811,24 @@ def test_create_gens_raise_except():
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
 
-    with pytest.raises(UserWarning, match="Cannot attach to buses \{3, 4, 5\}, they does not exist"):
-        pp.create_gens(net, buses=[3, 4, 5], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
-                       max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                       min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.
-                       )
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
+        pp.create_gens(
+            net, buses=[3, 4, 5], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
+            max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
+            min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.)
 
-    g = pp.create_gens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
-                        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                        min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.
-                        )
-    with pytest.raises(UserWarning, match="gens with the ids \[0 1 2\] already exists"):
-        pp.create_gens(net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
-                       max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
-                       min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.,
-                       index=g)
+    g = pp.create_gens(
+        net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
+        max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0], min_vm_pu=0.85,
+        max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.)
+
+    with pytest.raises(UserWarning, match=r"Gens with indexes \[0 1 2\] already exist"):
+        pp.create_gens(
+            net, buses=[b1, b2, b3], p_mw=[0, 0, 1], vm_pu=1., controllable=[True, False, False],
+            max_p_mw=0.2, min_p_mw=[0, 0.1, 0],  max_q_mvar=0.2, min_q_mvar=[0, 0.1, 0],
+            min_vm_pu=0.85, max_vm_pu=1.15, vn_kv=0.4, xdss_pu=0.1, rdss_pu=0.1, cos_phi=1.,
+            index=g)
+
 
 if __name__ == '__main__':
     pytest.main(["test_create.py"])
