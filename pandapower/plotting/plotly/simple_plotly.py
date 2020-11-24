@@ -75,7 +75,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
             plotted as an example
 
     OPTIONAL:
-        **respect_separators** (bool, True) - Respect switches when artificial geodata is created
+        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
             or on net.bus_geodata of the connected buses (False)
@@ -100,17 +100,17 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
             any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
-        **branch_width** (float, 1.0) - width of lines
+        **line_width** (float, 1.0) - width of lines
 
-        **node_size** (float, 10.0) -  size of buses to plot.
+        **bus_size** (float, 10.0) -  size of buses to plot.
 
         **ext_grid_size** (float, 20.0) - size of ext_grids to plot.
 
             See bus sizes for details. Note: ext_grids are plotted as rectangles
 
-        **node_color** (String, "blue") - Bus Color. Init as first value of color palette.
+        **bus_color** (String, "blue") - Bus Color. Init as first value of color palette.
 
-        **branch_color** (String, 'grey') - Line Color. Init is grey
+        **line_color** (String, 'grey') - Line Color. Init is grey
 
         **trafo_color** (String, 'green') - Trafo Color. Init is green
 
