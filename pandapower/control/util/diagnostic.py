@@ -3,6 +3,8 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from copy import deepcopy
+from pandas import DataFrame
+from numpy import array
 
 from pandapower.control.util.auxiliary import get_controller_index
 from pandapower.control.controller.trafo_control import TrafoController
@@ -39,22 +41,19 @@ def control_diagnostic(net, respect_in_service=True):
                 indices.remove(val)
 
     # --- find trafo controller of the same trafo
-    trafo_ctrl = []
-    for idx in net.controller.index:
-        current_controller = net.controller.object.loc[idx]
-        if issubclass(type(current_controller), TrafoController):
-            trafo_ctrl += [idx]
-    for idx in trafo_ctrl:
-        current_controller = net.controller.object.loc[idx]
-        parameters = {"tid": current_controller.tid}
-        if respect_in_service:
-            if not net.controller.in_service.at[idx]:
-                continue
-            parameters["in_service"] = True
-        trafo_ctrl_at_same_trafo = get_controller_index(net, parameters=parameters, idx=trafo_ctrl)
-        if len(trafo_ctrl_at_same_trafo) > 1:
-            logger.info("Trafo Controllers " + str([
-                '%i' % i for i in trafo_ctrl_at_same_trafo]) +
-                        " at the transformer probably could affect convergence.")
-            for val in trafo_ctrl_at_same_trafo:
-                trafo_ctrl.remove(val)
+    trafo_ctrl = net.controller.object.apply(lambda x: isinstance(x, TrafoController))
+    trafo_ctrl_idx = net.controller.loc[trafo_ctrl].index.values
+    trafo_type = net.controller.loc[trafo_ctrl].object.apply(lambda x: x.trafotype)
+    trafo_id = net.controller.loc[trafo_ctrl].object.apply(lambda x: x.tid)
+    in_service = net.controller.loc[trafo_ctrl_idx, 'in_service']
+    temp = DataFrame(index=trafo_ctrl_idx, columns=['trafotype', 'tid', 'in_service'],
+                     data=array([trafo_type.values, trafo_id.values, in_service.values]).T)
+    if respect_in_service:
+        cols = ['trafotype', 'tid', 'in_service']
+    else:
+        cols = ['trafotype', 'tid']
+    d = temp.loc[temp.duplicated(subset=cols, keep=False)]
+    if len(d) > 0:
+        for t in d.tid.unique():
+            logger.info("Trafo Controllers %s at the transformer %s probably could affect convergence."
+                        % (str(['%i' % i for i in d.loc[d.tid == t].index.values]), t))
