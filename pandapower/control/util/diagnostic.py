@@ -38,6 +38,7 @@ def control_diagnostic(net, respect_in_service=True):
             for val in same_type_existing_ctrl:
                 indices.remove(val)
 
+    # --- find trafo controller of the same trafo
     trafo_ctrl = []
     for idx in net.controller.index:
         current_controller = net.controller.object.loc[idx]
