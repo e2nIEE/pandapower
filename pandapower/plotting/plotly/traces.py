@@ -365,6 +365,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             no_go_branches = set(branches) & \
                              set(net[separator_element].element[(net[separator_element].et == "l") &
                                                              (net[separator_element].closed == 0)])
+        elif separator_element == "valve":
+            no_go_branches = set(branches) & \
+                             set(net[separator_element][(~net[separator_element].in_service) |
+                                                        (net[separator_element].opened)])
         else:
             raise NotImplementedError("respect separtors is only implements for switches, "
                                       "not for {}s.".format(separator_element))
