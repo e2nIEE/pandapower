@@ -132,6 +132,8 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
     def estimate(self, eppci, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
+        if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
+            raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
         zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG] == True).ravel()
         eppci["bus"][zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD]] = np.NaN
         # Withn pq buses with zero injection identify those who have also no p or q measurement
