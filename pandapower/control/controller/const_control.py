@@ -43,25 +43,27 @@ class ConstControl(Controller):
 
         **recycle** (bool, True) - Re-use of internal-data in a time series loop.
 
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of
+        the same type and with the same matching parameters (e.g. at same element) should be
+        dropped
 
-    .. note:: If multiple elements are represented with one controller, the data source must have integer columns. At the moment, only the DFData format is tested for the multiple const control.
+    .. note:: If multiple elements are represented with one controller, the data source must have
+    integer columns. At the moment, only the DFData format is tested for the multiple const
+    control.
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=True, order=0, level=0,
-                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None, initial_run=False,
-                 **kwargs):
+                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None,
+                 initial_run=False, **kwargs):
         # just calling init of the parent
         if matching_params is None:
             matching_params = {"element": element, "variable": variable,
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_run = initial_run,
+                         matching_params=matching_params, initial_run=initial_run,
                          **kwargs)
-        self.matching_params = {"element": element, "variable": variable,
-                                "element_index": element_index}
 
         # data source for time series values
         self.data_source = data_source
@@ -92,15 +94,17 @@ class ConstControl(Controller):
         self.set_recycle()
 
     def set_recycle(self):
-        allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w", "line"]
+        allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w",
+                            "line"]
         if self.recycle is False or self.element not in allowed_elements:
-            # if recycle is set to False by the user when creating the controller it is deactivated or when
-            # const control controls an element which is not able to be recycled
+            # if recycle is set to False by the user when creating the controller it is deactivated
+            # or when const control controls an element which is not able to be recycled
             self.recycle = False
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=False, gen=False, bus_pq=False)
-        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar", "scaling"]:
+        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar",
+                                                                             "scaling"]:
             recycle["bus_pq"] = True
         if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu", "scaling"] \
                 or self.element in ["ext_grid"] and self.variable in ["vm_pu", "va_degree"]:

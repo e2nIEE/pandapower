@@ -1468,13 +1468,15 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if include_results:
         for table in net.keys():
-            if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
-            net[table].shape[0]):
-                continue
+            if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
+                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net[table[4:]].shape[0]:
+                    continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
-            elif table.startswith("res_") and table != "res_cost":
-                p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
+            else:
+                p2[table] = net[table].loc[p2[table[4:]].index]
     if "bus_geodata" in net:
         p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
     if "line_geodata" in net:
