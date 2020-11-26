@@ -40,7 +40,7 @@ def estimate(net, algorithm='wls',
         **net** - The net within this line should be created
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
-        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        buses, 'results' uses the values from *res_bus* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
