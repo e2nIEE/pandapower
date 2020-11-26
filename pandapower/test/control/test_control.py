@@ -188,10 +188,6 @@ def test_level_in_service(net):
 
 
 def test_matching_params(net):
-    net = networks.create_kerber_vorstadtnetz_kabel_1()
-
-    for i, load in net.load.iterrows():
-        pp.create_sgen(net, load.bus, p_mw=1 * 1e-3, sn_mva=2 * 1e-3)
 
     c0 = DummyController(net)
     c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)

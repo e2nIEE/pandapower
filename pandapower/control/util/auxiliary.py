@@ -17,10 +17,11 @@ from pandapower.toolbox import ensure_iterability
 
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
+
 
 def asarray(val, dtype=np.float64):
     """
@@ -160,7 +161,7 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
     else:
         logger.info("Creating controller " + index + " of type %s " % this_ctrl_type)
         logger.debug("no matching parameters are given to check whether problematic, " +
-                    "same type controllers already exist.")
+                     "same type controllers already exist.")
 
 
 def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
