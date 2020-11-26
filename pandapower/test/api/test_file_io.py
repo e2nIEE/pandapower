@@ -205,7 +205,7 @@ def assert_graphs_equal(mg1, mg2):
 
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
-    s = pd.Series()
+    s = pd.Series(dtype=object)
     s["test"] = [(1, 2), (3, 4)]
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)

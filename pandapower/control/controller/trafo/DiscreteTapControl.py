@@ -36,7 +36,6 @@ class DiscreteTapControl(TrafoController):
             drop_same_existing_ctrl=drop_same_existing_ctrl,
             matching_params={"tid": tid, 'trafotype': trafotype}, **kwargs)
 
-        self.matching_params = {"tid": tid, 'trafotype': trafotype}
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
