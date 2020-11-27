@@ -170,13 +170,13 @@ def _make_bibc_bcbv(bus, branch, graph):
 def _get_bibc_bcbv(ppci, options, bus, branch, graph):
     recycle = options["recycle"]
 
-    if recycle is not None and recycle["bfsw"] and ppci["internal"]["DLF"].size:
+    if isinstance(recycle, dict) and not recycle["trafo"] and ppci["internal"]["DLF"].size:
         DLF, buses_ordered_bfs_nets = ppci["internal"]['DLF'], \
                                       ppci["internal"]['buses_ord_bfs_nets']
     else:
         ## build matrices
         DLF, buses_ordered_bfs_nets = _make_bibc_bcbv(bus, branch, graph)
-        if recycle is not None and recycle["bfsw"]:
+        if isinstance(recycle, dict) and not recycle["trafo"]:
             ppci["internal"]['DLF'], \
             ppci["internal"]['buses_ord_bfs_nets'] = DLF, buses_ordered_bfs_nets
 
