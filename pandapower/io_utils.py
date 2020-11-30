@@ -445,6 +445,9 @@ class FromSerializableRegistry():
     @from_serializable.register(class_name='function')
     def function(self):
         module = importlib.import_module(self.module_name)
+        if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
+            raise UserWarning('Could not find the definition of the function %s in the module %s' %
+                              (self.obj, module.__name__))
         class_ = getattr(module, self.obj)  # works
         return class_
 
