@@ -138,6 +138,7 @@ class ConstControl(Controller):
         self.values = self.data_source.get_time_step_value(time_step=time,
                                                            profile_name=self.profile_name,
                                                            scale_factor=self.scale_factor)
+        self.modify_values()
         # self.write_to_net()
 
     def initialize_control(self, net):
@@ -162,6 +163,17 @@ class ConstControl(Controller):
         if self.values is not None:
             self.write_to_net(net)
         self.applied = True
+
+    def modify_values(self):
+        """
+        This function is applied to self.values after retrieving them from the data_source.
+        Use-case: setting min/max constraints for OPF depending on the time series values of a variable, or as a
+        postprocessing step to ensure that the values are within an allowed range.
+        This method can be overloaded in a class that inherits from ConstControl to use this functionality,
+        see test_const_control.py for reference.
+        Example: self.values = np.clip(self.values, 0, 10)
+        """
+        pass
 
     def _write_to_single_index(self, net):
         net[self.element].at[self.element_index, self.variable] = self.values
