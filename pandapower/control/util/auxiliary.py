@@ -13,12 +13,15 @@ import pandas
 import pandas as pd
 from pandas import Int64Index
 
+from pandapower.toolbox import ensure_iterability
+
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
+
 
 def asarray(val, dtype=np.float64):
     """
@@ -63,19 +66,32 @@ def _controller_attributes_query(controller, parameters):
     """
     Returns a boolean if the controller attributes matches given parameter dict data
     """
-    match = True
+    complete_match = True
+    element_index_match = True
     for key in parameters.keys():
         if key not in controller.__dict__:
             logger.debug(str(key) + " is no attribute of controller object " + str(controller))
             return False
         try:
-            match &= bool(controller.__getattribute__(key) == parameters[key])
+            match = bool(controller.__getattribute__(key) == parameters[key])
         except ValueError:
             try:
-                match &= all(controller.__getattribute__(key) == parameters[key])
+                match = all(controller.__getattribute__(key) == parameters[key])
             except ValueError:
-                match &= bool(len(set(controller.__getattribute__(key)) & set(parameters[key])))
-    return match
+                match = bool(len(set(controller.__getattribute__(key)) & set(parameters[key])))
+        if key == "element_index":
+            element_index_match = match
+        else:
+            complete_match &= match
+
+    if complete_match and not element_index_match:
+        intersect_elms = set(ensure_iterability(controller.__getattribute__("element_index"))) & \
+            set(ensure_iterability(parameters["element_index"]))
+        if len(intersect_elms):
+            logger.info("'element_index' has an intersection of " + str(intersect_elms) +
+                        " with Controller %i" % controller.index)
+
+    return complete_match & element_index_match
 
 
 def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
@@ -145,7 +161,7 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
     else:
         logger.info("Creating controller " + index + " of type %s " % this_ctrl_type)
         logger.debug("no matching parameters are given to check whether problematic, " +
-                    "same type controllers already exist.")
+                     "same type controllers already exist.")
 
 
 def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
