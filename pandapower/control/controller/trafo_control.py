@@ -58,7 +58,7 @@ class TrafoController(Controller):
         self.controlled_bus = net[self.trafotable].at[tid, side + "_bus"]
         if self.controlled_bus in net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values:
             logger.warning("Controlled Bus is Slack Bus - deactivating controller")
-            self.set_active(False)
+            self.set_active(net, False)
         elif self.controlled_bus in net.ext_grid.loc[
             ~net.ext_grid.in_service, 'bus'].values:
             logger.warning("Controlled Bus is Slack Bus with slack out of service - "
