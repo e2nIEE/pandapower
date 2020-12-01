@@ -143,7 +143,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     ac = options["ac"]
 
     if ac:
-        ref, pv, pq = bustypes(ppci["bus"], ppci["gen"])
+        _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
         if pq.shape[0] == 0 and pv.shape[0] == 0:
             result = _bypass_pf_and_set_results(ppci, options)
