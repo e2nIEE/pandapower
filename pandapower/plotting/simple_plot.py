@@ -178,6 +178,93 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         plt.show()
     return ax
 
+def create_simple_collections(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_sgens=False, load_size=1.0, sgen_size=1.0,
+                switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
+                bus_color="b", line_color='grey', trafo_color='k', ext_grid_color='y',
+                switch_color='k', library="igraph", show_plot=True, ax=None):
+
+    if plot_line_switches:
+        respect_switches = False
+
+    # create geocoord if none are available
+    if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
+        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
+                       " This may take some time")
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+
+    if scale_size:
+        # if scale_size -> calc size from distance between min and max geocoord
+        sizes = get_collection_sizes(net, bus_size, ext_grid_size, trafo_size,
+                                     load_size, sgen_size, switch_size, switch_distance)
+        bus_size = sizes["bus"]
+        ext_grid_size = sizes["ext_grid"]
+        trafo_size = sizes["trafo"]
+        sgen_size = sizes["sgen"]
+        load_size = sizes["load"]
+        switch_size = sizes["switch"]
+        switch_distance = sizes["switch_distance"]
+
+    # create bus collections to plot
+    bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
+
+    # if bus geodata is available, but no line geodata
+    use_bus_geodata = len(net.line_geodata) == 0
+    in_service_lines = net.line[net.line.in_service].index
+    nogolines = set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)]) \
+        if respect_switches else set()
+    plot_lines = in_service_lines.difference(nogolines)
+
+    # create line collections
+    lc = create_line_collection(net, plot_lines, color=line_color, linewidths=line_width,
+                                use_bus_geodata=use_bus_geodata)
+    collections = [bc, lc]
+
+    # create ext_grid collections
+    eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
+    if len(eg_buses_with_geo_coordinates) > 0:
+        sc = create_bus_collection(net, eg_buses_with_geo_coordinates, patch_type="rect",
+                                   size=ext_grid_size, color=ext_grid_color, zorder=11)
+        collections.append(sc)
+
+    # create trafo collection if trafo is available
+    trafo_buses_with_geo_coordinates = [t for t, trafo in net.trafo.iterrows()
+                                        if trafo.hv_bus in net.bus_geodata.index and
+                                        trafo.lv_bus in net.bus_geodata.index]
+    if len(trafo_buses_with_geo_coordinates) > 0:
+        tc = create_trafo_collection(net, trafo_buses_with_geo_coordinates,
+                                     color=trafo_color, size=trafo_size)
+        collections.append(tc)
+
+    # create trafo3w collection if trafo3w is available
+    trafo3w_buses_with_geo_coordinates = [
+        t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus_geodata.index and
+                                                      trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
+    if len(trafo3w_buses_with_geo_coordinates) > 0:
+        tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
+                                       color=trafo_color)
+        collections.append(tc)
+
+    if plot_line_switches and len(net.switch):
+        sc = create_line_switch_collection(
+            net, size=switch_size, distance_to_bus=switch_distance,
+            use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
+        collections.append(sc)
+
+    if plot_sgens and len(net.sgen):
+        sgc = create_sgen_collection(net, size=sgen_size)
+        collections.append(sgc)
+    if plot_loads and len(net.load):
+        lc = create_load_collection(net, size=load_size)
+        collections.append(lc)
+
+    if len(net.switch):
+        bsc = create_bus_bus_switch_collection(net, size=switch_size)
+        collections.append(bsc)
+
+    ax = draw_collections(collections, ax=ax)
+
+    return ax
 
 if __name__ == "__main__":
     import pandapower.networks as nw
