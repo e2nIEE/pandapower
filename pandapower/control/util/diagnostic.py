@@ -46,15 +46,14 @@ def control_diagnostic(net, respect_in_service=True):
             trafo_ctrl += [idx]
     for idx in trafo_ctrl:
         current_controller = net.controller.object.loc[idx]
-        parameters = {"tid": current_controller.tid}
+        parameters = {"tid": current_controller.tid, "trafotype": current_controller.trafotype}
         if respect_in_service:
             if not net.controller.in_service.at[idx]:
                 continue
             parameters["in_service"] = True
         trafo_ctrl_at_same_trafo = get_controller_index(net, parameters=parameters, idx=trafo_ctrl)
         if len(trafo_ctrl_at_same_trafo) > 1:
-            logger.info("Trafo Controllers " + str([
-                '%i' % i for i in trafo_ctrl_at_same_trafo]) +
-                        " at the transformer probably could affect convergence.")
+            logger.info("Trafo Controllers %s at the %s transformer %s probably could affect convergence." %
+                        (str(['%i' % i for i in trafo_ctrl_at_same_trafo]), parameters['trafotype'], parameters["tid"]))
             for val in trafo_ctrl_at_same_trafo:
                 trafo_ctrl.remove(val)

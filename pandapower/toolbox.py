@@ -1092,15 +1092,14 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
 
     # --- reroute element connections from b2 to b1
     for element, value in element_bus_tuples():
-        i = net[element][net[element][value].isin(b2)].index
-        net[element].loc[i, value] = b1
+        if net[element].shape[0]:
+            net[element][value].loc[net[element][value].isin(b2)] = b1
 
-    i = net["switch"][(net["switch"]["et"] == 'b') & (
-        net["switch"]["element"].isin(b2))].index
-    net["switch"].loc[i, "element"] = b1
+    net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
+                                 net["switch"]["element"].isin(b2))] = b1
 
     # --- reroute bus measurements from b2 to b1
-    if fuse_bus_measurements:
+    if fuse_bus_measurements and net.measurement.shape[0]:
         bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
         bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
         net.measurement.loc[bus_meas, "element"] = b1
@@ -1113,7 +1112,7 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
         # can now be dropped:
         drop_inner_branches(net, buses=[b1])
         # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        if fuse_bus_measurements:
+        if fuse_bus_measurements and net.measurement.shape[0]:
             drop_duplicated_measurements(net, buses=[b1])
 
 
@@ -1239,10 +1238,10 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
-def get_inner_branches(net, buses, branch_elements=None):
+def _inner_branches(net, buses, task, branch_elements=None):
     """
-    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
-    'from_bus' and 'to_bus').
+    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
+    'to_bus').
     """
     branch_dict = branch_element_bus_dict(include_switch=True)
     if branch_elements is not None:
@@ -1258,8 +1257,26 @@ def get_inner_branches(net, buses, branch_elements=None):
             inner &= net[elm]["et"] == "b"  # bus-bus-switches
 
         if any(inner):
-            inner_branches[elm] = net[elm].index[inner]
+            if task == "drop":
+                if elm == "line":
+                    drop_lines(net, net[elm].index[inner])
+                elif "trafo" in elm:
+                    drop_trafos(net, net[elm].index[inner])
+                else:
+                    net[elm].drop(net[elm].index[inner], inplace=True)
+            elif task == "get":
+                inner_branches[elm] = net[elm].index[inner]
+            else:
+                raise NotImplementedError("task '%s' is unknown." % str(task))
     return inner_branches
+
+
+def get_inner_branches(net, buses, branch_elements=None):
+    """
+    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
+    'from_bus' and 'to_bus').
+    """
+    return _inner_branches(net, buses, "get", branch_elements=branch_elements)
 
 
 def drop_inner_branches(net, buses, branch_elements=None):
@@ -1267,14 +1284,7 @@ def drop_inner_branches(net, buses, branch_elements=None):
     Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
     'to_bus').
     """
-    inner_branches = get_inner_branches(net, buses, branch_elements=branch_elements)
-    for elm, idx in inner_branches.items():
-        if elm == "line":
-            drop_lines(net, idx)
-        elif "trafo" in elm:
-            drop_trafos(net, idx)
-        else:
-            net[elm].drop(idx, inplace=True)
+    _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
 
 def set_element_status(net, buses, in_service):
@@ -1468,13 +1478,15 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if include_results:
         for table in net.keys():
-            if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
-            net[table].shape[0]):
-                continue
+            if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
+                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net[table[4:]].shape[0]:
+                    continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
-            elif table.startswith("res_") and table != "res_cost":
-                p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
+            else:
+                p2[table] = net[table].loc[p2[table[4:]].index]
     if "bus_geodata" in net:
         p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
     if "line_geodata" in net:
