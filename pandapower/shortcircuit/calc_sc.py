@@ -204,13 +204,6 @@ def _calc_sc_single(net, bus):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
-    try:
-        _calc_zbus(ppci)
-    except Exception as e:
-        _clean_up(net, res=False)
-        raise (e)
-    _calc_rx(net, ppci)
-    _calc_ikss(net, ppci)
     _calc_single_bus_sc(net, ppci, bus)
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_single_results(net, ppc)

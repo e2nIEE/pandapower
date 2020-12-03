@@ -12,7 +12,7 @@ from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, X_EQUIV, IKSS2, IKCV, M
-
+from scipy.sparse.linalg import spsolve
 
 def _calc_ikss(net, ppc):
     fault = net._options["fault"]
@@ -230,28 +230,23 @@ def _calc_ib_generator(net, ppci):
 
 
 def _calc_single_bus_sc(net, ppc, bus):
+    bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
+    ybus = ppc["internal"]["Ybus"]
     case = net._options["case"]
-    bus_idx = net._pd2ppc_lookups["bus"][bus]
-    n = ppc["bus"].shape[0]
-    Zbus = ppc["internal"]["Zbus"]
-    #    Yf = ppc["internal"]["Yf"]
-    #    Yt = ppc["internal"]["Yf"]
-    baseI = ppc["internal"]["baseI"]
-    #    fb = np.real(ppc["branch"][:, 0]).astype(int)
-    #    tb = np.real(ppc["branch"][:, 1]).astype(int)
-    c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
+    vqj = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX] #this is the source voltage in per unit (VQj)
 
-    # calculate voltage source branch current
-    V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
-    V = V_ikss[:, bus_idx]
-    #    ikss_all_f = np.conj(Yf.dot(V_ikss))
-    #    ikss_all_t = np.conj(Yt.dot(V_ikss))
-    current_sources = any(ppc["bus"][:, IKCV]) > 0
-    if current_sources:
-        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
-        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
-        V_source = np.dot((current * baseI), Zbus).T
-        V = V + V_source[:, bus_idx]
+    # ToDO: calculate A and B matrices so that
+    A = ybus
+    b = - ybus
+    V = -1 * spsolve(A, b) #TODO: Voltages in per unit?
+
+    #TODO include current sources
+#    current_sources = any(ppc["bus"][:, IKCV]) > 0
+#    if current_sources:
+#        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
+#        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
+#        V_source = np.dot((current * baseI), Zbus).T
+#        V = V + V_source[:, bus_idx]
     # add current source branch current if there is one
     #    ppc["branch"][:, IKSS_F] = abs(ikss_all_f[:, bus_idx] / baseI[fb])
     #    ppc["branch"][:, IKSS_T] = abs(ikss_all_t[:, bus_idx] / baseI[tb])
