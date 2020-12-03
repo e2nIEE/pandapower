@@ -31,7 +31,12 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
-        if: ${{ matrix.python-version }} == "3.6"; then ./.install_julia.sh 1.5; pip install julia; python ./.install_pycall.py; fi
+    - name: Install Julia
+      if: ${{ matrix.python-version == "3.6"}}
+      run: |
+        ./.install_julia.sh 1.5
+        pip install julia
+        python ./.install_pycall.py
    # - name: Lint with flake8
    #   run: |
         # stop the build if there are Python syntax errors or undefined names
