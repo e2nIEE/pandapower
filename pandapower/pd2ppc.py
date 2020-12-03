@@ -3,13 +3,11 @@
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import numpy as np
-
 import pandapower.auxiliary as aux
-from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
-    _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
+_calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -20,7 +18,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
-def _pd2ppc(net):
+def _pd2ppc(net, sequence=None):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -30,10 +28,16 @@ def _pd2ppc(net):
            and fill it in the branch matrix.
            Order: 1st: Line values, 2nd: Trafo values
         5. if opf: make opf objective (gencost)
-        6. convert internal ppci format for pypower powerflow / opf without out of service elements and rearanged buses
+        6. convert internal ppci format for pypower powerflow / 
+        opf without out of service elements and rearanged buses
 
     INPUT:
         **net** - The pandapower format network
+        **sequence** - Used for three phase analysis
+        ( 0 - Zero Sequence
+          1 - Positive Sequence
+          2 - Negative Sequence
+        ) 
 
     OUTPUT:
         **ppc** - The simple matpower format network. Which consists of:
@@ -52,47 +56,61 @@ def _pd2ppc(net):
                               , "gen_is": np.array([], dtype=bool)
                               }
         **ppci** - The "internal" pypower format network for PF calculations
+        
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements_numba(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
 
-    # get options
+    # Gets network configurations
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
-    ppc = _init_ppc(net, mode=mode)
+    ppc = _init_ppc(net, mode=mode, sequence=sequence)
 
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
-    # generate ppc['branch'] and directly generates branch values
-    _build_branch_ppc(net, ppc)
-    # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
+    if sequence == 0:
+        from pandapower.pd2ppc_zero import _add_ext_grid_sc_impedance_zero, _build_branch_ppc_zero
+        # Adds external grid impedance for 3ph and sc calculations in ppc0
+        _add_ext_grid_sc_impedance_zero(net, ppc)
+        # Calculates ppc0 branch impedances from branch elements
+        _build_branch_ppc_zero(net, ppc)
+    else:
+        # Calculates ppc1/ppc2 branch impedances from branch elements  
+        _build_branch_ppc(net, ppc)
+
+    # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_gen_impedances_ppc(net, ppc)
         _add_motor_impedances_ppc(net, ppc)
     else:
-        _calc_pq_elements_and_add_on_ppc(net, ppc)
+        _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
         _calc_shunts_and_add_on_ppc(net, ppc)
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
 
-    # add auxilary buses for out of service buses at in service lines.
-    # Also sets lines out of service if they are connected to two out of service buses
+    # Adds auxilary buses for in service lines with out of service buses.
+    # Also deactivates lines if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
 
     if check_connectivity:
-        # sets islands (multiple isolated nodes) out of service
-        if "opf" in mode:
-            isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
+        if sequence in [None, 1, 2]:
+            # sets islands (multiple isolated nodes) out of service
+            if "opf" in mode:
+                net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
+            else:
+                net["_isolated_buses"], _, _ = aux._check_connectivity(ppc)
+            net["_is_elements_final"] = aux._select_is_elements_numba(net,
+                                                                      net._isolated_buses, sequence)
         else:
-            isolated_nodes, _, _ = aux._check_connectivity(ppc)
-        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
-
-    # sets buses out of service, which aren't connected to branches / REF buses
-    aux._set_isolated_buses_out_of_service(net, ppc)
+            ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
+        net["_is_elements"] = net["_is_elements_final"]
+    else:
+        # sets buses out of service, which aren't connected to branches / REF buses
+        aux._set_isolated_buses_out_of_service(net, ppc)
 
     _build_gen_ppc(net, ppc)
 
@@ -101,7 +119,8 @@ def _pd2ppc(net):
 
     aux._replace_nans_with_default_limits(net, ppc)
 
-    # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
+    # generates "internal" ppci format (for powerflow calc) 
+    # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
 
@@ -118,7 +137,7 @@ def _pd2ppc(net):
     return ppc, ppci
 
 
-def _init_ppc(net, mode="pf"):
+def _init_ppc(net, mode="pf", sequence=None):
     # init empty ppc
     ppc = {"baseMVA": net.sn_mva
         , "version": 2
@@ -139,6 +158,12 @@ def _init_ppc(net, mode="pf"):
         # additional fields in ppc
         ppc["gencost"] = np.array([], dtype=float)
     net["_ppc"] = ppc
+
+    if sequence is None:
+        net["_ppc"] = ppc
+    else:
+        ppc["sequence"] = int(sequence)
+        net["_ppc%s" % sequence] = ppc
     return ppc
 
 
@@ -165,7 +190,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     # BUS Sorting and lookups
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # get OOS busses and place them at the end of the bus array (there are no OOS busses in the ppci)
+    # get OOS busses and place them at the end of the bus array
+    # (there are no OOS busses in the ppci)
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
@@ -198,7 +224,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
 
-    # Note: The "update branch, gen and areas bus numbering" does the same as this:
+    # Note: The "update branch, gen and areas bus numbering" does the same as:
     # ppc['gen'][:, GEN_BUS] = get_indices(ppc['gen'][:, GEN_BUS], bus_lookup_ppc_ppci)
     # ppc["branch"][:, F_BUS] = get_indices(ppc["branch"][:, F_BUS], bus_lookup_ppc_ppci)
     # ppc["branch"][:, T_BUS] = get_indices( ppc["branch"][:, T_BUS], bus_lookup_ppc_ppci)
@@ -247,7 +273,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     else:
         ref_gens = np.array([])
     if np.any(net.gen.slack.values[net._is_elements["gen"]]):
-        slack_gens = np.array(net.gen.index)[net._is_elements["gen"] & net.gen["slack"].values]
+        slack_gens = np.array(net.gen.index)[net._is_elements["gen"] \
+                                             & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
     ppci["internal"]["ref_gens"] = ref_gens.astype(int)
     return ppci

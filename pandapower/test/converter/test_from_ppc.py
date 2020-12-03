@@ -97,6 +97,7 @@ def test_case9_conversion():
     net = pn.case9()
     # set max_loading_percent to enable line limit conversion
     net.line["max_loading_percent"] = 100
+    pp.runpp(net)
     ppc = to_ppc(net, mode="opf")
     # correction because voltage limits are set to 1.0 at slack buses
     ppc["bus"][0, 12] = 0.9

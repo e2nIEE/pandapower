@@ -8,7 +8,7 @@ from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
-
+from pandapower.optimal_powerflow import OPFNotConverged
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):
     """
@@ -27,6 +27,7 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     else:
         _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
+        raise OPFNotConverged("PowerModels.jl OPF not converged")
 
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
@@ -48,30 +49,40 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
         ppc["f"] = ppci["f"]
         return ppc, multinetwork
 
-    for i, bus in sol["bus"].items():
-        bus_idx = int(i) - 1
-        ppci["bus"][bus_idx, VM] = bus["vm"]
-        # replace nans with 0.(in case of SOCWR model for example
-        ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+    if "bus" not in sol:
+        # PowerModels failed
+        ppci["success"] = False
+    else:
+        for i, bus in sol["bus"].items():
+            bus_idx = int(i) - 1
+            if "vm" in bus:
+                ppci["bus"][bus_idx, VM] = bus["vm"]
+            if "va" in bus:
+                # replace nans with 0.(in case of SOCWR model for example
+                ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+            if "w" in bus:
+                # SOCWR model has only w instead of vm values
+                ppci["bus"][bus_idx, VM] = bus["w"]
 
-    for i, gen in sol["gen"].items():
-        gen_idx = int(i) - 1
-        ppci["gen"][gen_idx, PG] = gen["pg"]
-        ppci["gen"][gen_idx, QG] = gen["qg"]
+        for i, gen in sol["gen"].items():
+            gen_idx = int(i) - 1
+            ppci["gen"][gen_idx, PG] = gen["pg"]
+            ppci["gen"][gen_idx, QG] = gen["qg"]
 
-    # read Q from branch results (if not DC calculation)
-    dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(sol["branch"]["1"]["qf"])
-    # read branch status results (OTS)
-    branch_status = "br_status" in sol["branch"]["1"]
-    for i, branch in sol["branch"].items():
-        br_idx = int(i) - 1
-        ppci["branch"][br_idx, PF] = branch["pf"]
-        ppci["branch"][br_idx, PT] = branch["pt"]
-        if not dc_results:
-            ppci["branch"][br_idx, QF] = branch["qf"]
-            ppci["branch"][br_idx, QT] = branch["qt"]
-        if branch_status:
-            ppci["branch"][br_idx, BR_STATUS] = branch["br_status"] > 0.5
+        # read Q from branch results (if not DC calculation)
+        if "branch" in sol:
+            dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(sol["branch"]["1"]["qf"])
+            # read branch status results (OTS)
+            branch_status = "br_status" in sol["branch"]["1"]
+            for i, branch in sol["branch"].items():
+                br_idx = int(i) - 1
+                ppci["branch"][br_idx, PF] = branch["pf"]
+                ppci["branch"][br_idx, PT] = branch["pt"]
+                if not dc_results:
+                    ppci["branch"][br_idx, QF] = branch["qf"]
+                    ppci["branch"][br_idx, QT] = branch["qt"]
+                if branch_status:
+                    ppci["branch"][br_idx, BR_STATUS] = branch["br_status"] > 0.5
 
     result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result, multinetwork

@@ -10,7 +10,10 @@ function run_powermodels(json_path)
     solver = PP2PM.get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"], 
     pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
     
-    result = PowerModels.run_pf(pm, model, solver,
-                                    setting = Dict("output" => Dict("branch_flows" => true)))
+    result = PowerModels.run_pf(pm, model, solver)
+    # add branch flows
+    update_data!(pm, result["solution"])
+    flows = calc_branch_flow_ac(pm)
+    update_data!(result["solution"], flows)
     return result
 end

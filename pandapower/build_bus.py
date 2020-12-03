@@ -205,14 +205,22 @@ def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
             # init voltage possible if bus results are available
-            if net.res_bus.index.equals(net.bus.index):
+            if "res_bus" in net and net.res_bus.index.equals(net.bus.index):
                 # init bus voltages from results if the sorting is correct
-                return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
+                res_table = "res_bus"
             else:
                 # cannot init from results, since sorting of results is different from element table
-                UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
+                # TO BE REVIEWED! Why there was no raise before this commit?
+                raise UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
                             "You should sort res_bus before calling runpp.")
                 return None
+
+            if mode == "magnitude":
+                return net[res_table]["vm_pu"].values.copy()
+            elif mode == "angle":
+                return net[res_table]["va_degree"].values.copy()
+            else:
+                raise UserWarning(str(mode)+" for initialization not available!")
         if init_v == "flat":
             if mode == "magnitude":
                 net["_options"]["init_vm_pu"] = 0.
@@ -331,6 +339,7 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     if net._options["mode"] == "opf":
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
+
     if net._options["init_vm_pu"] == "results":
         ppc["bus"][aux_idx, VM] = net["res_%s" % element]["vm_internal_pu"].values
     else:
@@ -355,13 +364,15 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
 
-def _calc_pq_elements_and_add_on_ppc(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-    for element in ["load", "sgen", "storage", "ward", "xward"]:
+    mode = net["_options"]["mode"]
+    pq_elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
+    for element in pq_elements:
         tab = net[element]
         if len(tab):
             if element == "load" and voltage_depend_loads:
@@ -388,7 +399,11 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 ppc["bus"][b_zip, CZD] = cz_sum
             active = _is_elements[element]
             sign = -1 if element == "sgen" else 1
-            if element.endswith("ward"):
+            if element == "motor":
+                p_mw, q_mvar = _get_motor_pq(net)
+                p = np.hstack([p, p_mw])
+                q = np.hstack([q, q_mvar])
+            elif element.endswith("ward"):
                 p = np.hstack([p, tab["ps_mw"].values * active * sign])
                 q = np.hstack([q, tab["qs_mvar"].values * active * sign])
             else:
@@ -397,6 +412,20 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
 
+    l_3ph = net["asymmetric_load"]
+    if len(l_3ph) > 0 and mode == "pf":
+            # TODO: Voltage dependent loads
+        vl = _is_elements["asymmetric_load"] * l_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(l_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(l_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, l_3ph["bus"].values])
+    sgen_3ph = net["asymmetric_sgen"]
+    if len(sgen_3ph) > 0 and mode == "pf":
+        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(sgen_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(sgen_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, sgen_3ph["bus"].values])
+
     # sum up p & q of bus elements
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -404,7 +433,22 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
+        # Todo: Actually, P and Q have to be divided by 3 because Sabc=3*S012 (we are writing pos. seq. values here!)
 
+
+def _get_motor_pq(net):
+    tab = net["motor"]
+    active = net._is_elements["motor"]
+    scale = tab["loading_percent"].values/100 *tab["scaling"].values*active
+
+    efficiency = tab["efficiency_percent"].values
+    p_mech = tab["pn_mech_mw"].values
+    cos_phi = tab["cos_phi"].values
+
+    p_mw = p_mech / efficiency * 100 * scale
+    s_mvar = p_mw / cos_phi
+    q_mvar = np.sqrt(s_mvar**2 - p_mw**2)
+    return p_mw, q_mvar
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
@@ -485,17 +529,19 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
-        c = 1.
+        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
-                         "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
+                         "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
+    s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
+        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid \n Try: net.ext_grid['rx_max'] = 0.1" %
                          case)
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
+    if mode == 'pf_3ph':
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -503,8 +549,9 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
+    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
+    ppc["bus"][buses, BS] = bs * ppc['baseMVA']
+    return gs * ppc['baseMVA'], bs * ppc['baseMVA']
 
 
 def _add_gen_sc_impedance(net, ppc):
@@ -545,24 +592,34 @@ def _add_gen_sc_impedance(net, ppc):
 
 
 def _add_motor_impedances_ppc(net, ppc):
-    sgen = net.sgen[net._is_elements["sgen"]]
-    if "motor" not in sgen.type.values:
+    if net._options["case"] == "min":
         return
-    motor = sgen[sgen.type == "motor"]
-    for par in ["sn_mva", "rx", "k"]:
+    motor = net["motor"][net._is_elements["motor"]]
+    if motor.empty:
+        return
+    for par in ["vn_kv", "lrc_pu", "efficiency_n_percent", "cos_phi_n", "rx", "pn_mech_mw"]:
         if any(pd.isnull(motor[par])):
-            raise UserWarning("%s needs to be specified for all motors in net.sgen.%s" % (par, par))
+            raise UserWarning("%s needs to be specified for all motors in net.motor.%s" % (par, par))
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    motor_buses = motor.bus.values
-    motor_buses_ppc = bus_lookup[motor_buses]
+    motor_buses_ppc = bus_lookup[motor.bus.values]
+    vn_net = ppc["bus"][motor_buses_ppc, BASE_KV]
 
-    z_motor = 1 / (motor.sn_mva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
-    x_motor = z_motor / np.sqrt(motor.rx ** 2 + 1)
-    r_motor = motor.rx * x_motor
-    r_motor_np, x_motor_np = r_motor.values, x_motor.values
-    y_motor = 1 / (r_motor_np + x_motor_np * 1j)
+    efficiency = motor.efficiency_n_percent.values
+    cos_phi = motor.cos_phi_n.values
+    p_mech = motor.pn_mech_mw.values
+    vn_kv = motor.vn_kv.values
+    lrc = motor.lrc_pu.values
+    rx = motor.rx.values
 
-    buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
+    s_motor = p_mech / (efficiency/100 * cos_phi)
+    z_motor_ohm = 1 / lrc * vn_kv**2 / s_motor
+    z_motor_pu = z_motor_ohm / (vn_net**2 / net.sn_mva)
+
+    x_motor_pu = z_motor_pu / np.sqrt(rx ** 2 + 1)
+    r_motor_pu = rx * x_motor_pu
+    y_motor_pu = 1 / (r_motor_pu + x_motor_pu * 1j)
+
+    buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor_pu.real, y_motor_pu.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 

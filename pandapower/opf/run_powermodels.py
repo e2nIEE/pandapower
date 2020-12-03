@@ -10,7 +10,7 @@ except ImportError:
     import logging
 
 
-def _runpm(net, delete_buffer_file=True):  # pragma: no cover
+def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cover
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PowerModels.jl julia function and reads
     the results back to the pandapower net
@@ -31,12 +31,12 @@ def _runpm(net, delete_buffer_file=True):  # pragma: no cover
     if net._options["pp_to_pm_callback"] is not None:
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
-    buffer_file = dump_pm_json(pm)
+    buffer_file = dump_pm_json(pm, pm_file_path)
     # run power models optimization in julia
     result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
     # read results and write back to net
     read_pm_results_to_net(net, ppc, ppci, result_pm)
-    if delete_buffer_file:
+    if pm_file_path is None and delete_buffer_file:
         # delete buffer file after calculation
         os.remove(buffer_file)
 

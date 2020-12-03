@@ -94,6 +94,18 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
+    for geo_type in ["bus_geodata", "line_geodata"]:
+        dupl_geo_idx = pd.Series(net[geo_type].index)[pd.Series(
+                net[geo_type].index).duplicated()]
+        if len(dupl_geo_idx):
+            if len(dupl_geo_idx) > 20:
+                logger.warning("In net.%s are %i duplicated " % (geo_type, len(dupl_geo_idx)) +
+                               "indices. That can cause troubles for draw_traces()")
+            else:
+                logger.warning("In net.%s are the following duplicated " % geo_type +
+                               "indices. That can cause troubles for draw_traces(): " + str(
+                               dupl_geo_idx))
+
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:

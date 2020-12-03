@@ -1,8 +1,56 @@
 Change Log
 =============
 
+- [ADDED] travis CI tests for PowerModels.jl interface (julia tests)
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver
+- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
+- [FIXED] json load for broken geom columns in bus_geodata
+- [ADDED] The voltage setpoint of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] The Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I")
+- [ADDED] For easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json")
+- [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
+
+[2.4.0]- 2020-09-01
+----------------------
+- [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893
+- [ADDED] new element "net.motor" to model asynchronous machines #244
+- [ADDED] possibility to calculate all branch currents in short-circuit calculations #862
+- [ADDED] more flexibility in the create_generic_geodata function
+
+[2.3.1]- 2020-08-19
+----------------------
+- [ADDED] Missing dependencies xlswriter, xlrd, cryptography
+- [FIXED] Bug in rundcpp result table initialization
+- [CHANGED] PTDF/LODF calculation to improve performance
+- [FIXED] Signing system for P/Q values in net.res_bus_3ph
+- [FIXED] JSON I/O handling of controllers with NaN values
+
+[2.3.0]- 2020-08-11
+----------------------
+- [ADDED] Create functions for multiple gens, sgens, lines, trafos and switches
+- [ADDED] Unbalanced power flow runpp_3ph
+- [ADDED] Zero sequence power flow models for ext_grid, transformer, line, asymmetric_load, asymmetric_sgen
+- [ADDED] Minimal 1ph fault calculation according to IEC 60909
+- [CHANGED] OPF calculate_voltage_angles defaults to True instead of False
+- [ADDED] lightsim2grid interface in NR power flow thanks to @BDonnot https://github.com/BDonnot/lightsim2grid
+- [FIXED] PowerModels.jl solver interface call functions. Added OPFNotConverged to Powermodels.jl call
+- [FIXED] pandas 1.0 and 1.1 support
+- [CHANGED] revision of toolbox function drop_out_of_service_elements()
+- [ADDED] toolbox function drop_measurements_at_elements()
+- [ADDED] Encyption for JSON I/O
+- [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
+- [FIXED] Bug in using initialization option "results" in state estimation #859
+- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
+
+[2.2.2]- 2020-03-17
+----------------------
+- [CHANGED] reset_results empties result tables per default
+- [CHANGED] nan values result tables of power system test cases are emptied
 - [ADDED] dclines and considering given branch indices by create_nxgraph()
 - [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
+- [FIXED] Changed the __deepcopy__ for pandapowerNet back to using copy.deepcopy, fixed the issue that caused the switch to json #676
+- [FIXED] Potential memory leaks due to circular references in JSONSerializableObjects, fixed by using weakref #677
 
 [2.2.1]- 2020-01-29
 ----------------------

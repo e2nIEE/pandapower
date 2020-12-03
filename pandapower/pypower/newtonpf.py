@@ -21,7 +21,6 @@ from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_ja
 
 def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     """Solves the power flow using a full Newton's method.
-
     Solves for bus voltages given the full system admittance matrix (for
     all buses), the complex bus power injection vector (for all buses),
     the initial vector of complex bus voltages, and column vectors with
@@ -30,12 +29,9 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     generator (including ref bus) buses, and the reference angle of the
     swing bus, as well as an initial guess for remaining magnitudes and
     angles.
-
     @see: L{runpf}
-
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
-
     Modified by University of Kassel (Florian Schaefer) to use numba
     """
 

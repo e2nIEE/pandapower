@@ -6,6 +6,7 @@ import copy
 import functools
 import os
 from time import time
+from types import FunctionType
 
 import numpy as np
 import pandas as pd
@@ -39,6 +40,8 @@ class OutputWriter(JSONSerializableClass):
     More sophisticated outputs can be added as well since for each value to be stored a function is
     added to the *output_list* which is called at the end of each time step.
     The function reads the calculation results and returns the desired values to store.
+    The function is expected to return scalar value by default. If more values are returned, the function should have
+    "n_columns" as a paramter (see example below for logging of cost function values).
     These values are then stored in the *output* DataFrame in a column named after the function you implemented.
     Such a function can be used to store only some information of the power flow results, like the highest values
     of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
@@ -66,6 +69,7 @@ class OutputWriter(JSONSerializableClass):
         with ow.log_variable or removed with ow.remove_log_variable
 
 
+
     EXAMPLE:
         >>> from pandapower.timeseries.output_writer import OutputWriter
         >>> from pandapower.networks as nw
@@ -73,13 +77,18 @@ class OutputWriter(JSONSerializableClass):
         >>> ow = OutputWriter(net) # create an OutputWriter
         >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
         >>> ow.log_variable('res_line', 'loading_percent') # add logging for line loadings in percent
+        >>>  # Getting the cost function slope for each time step:
+        >>> def cost_logging(result, n_columns=2):
+        >>>      return array([result[i][0][2] for i in range(len(result))])
+        >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+
+
 
     """
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
                  log_variables=None, csv_separator=";"):
         super().__init__()
-        self.net = net
         self.output_path = output_path
         self.output_file_type = output_file_type
         self.write_time = write_time
@@ -103,7 +112,7 @@ class OutputWriter(JSONSerializableClass):
         # total time steps to calculate
         self.time_steps = time_steps
         # add output_writer to net
-        self.add_to_net(element="output_writer", index=0, overwrite=True)
+        self.add_to_net(net, element="output_writer", index=0, overwrite=True)
         # inits dataframes and numpy arrays which store results
         # self.init_all()
         # Saves all parameters as object attributes to store in JSON
@@ -131,7 +140,7 @@ class OutputWriter(JSONSerializableClass):
         if not isinstance(self.log_variables, list):
             raise TypeError("log_variables must be None or a list of tuples like [('res_bus', 'vm_pu')]")
 
-    def init_log_variables(self):
+    def init_log_variables(self, net):
         """
         inits the log variables given to output writer.
         log_variables is a list with tuples of DataFrame columns to log.
@@ -141,16 +150,17 @@ class OutputWriter(JSONSerializableClass):
         res_bus.vm_pu
         res_line.loading_percent
         """
+        _init_log_variable = functools.partial(self._init_log_variable, net)
         for log_args in self.log_variables:
             # add log variable
-            self._init_log_variable(*log_args)
+            _init_log_variable(*log_args)
 
-    def init_all(self):
+    def init_all(self, net):
         if isinstance(self.time_steps, Iterable):
             self.output = dict()
             self.np_results = dict()
             self.output_list = list()
-            self.init_log_variables()
+            self.init_log_variables(net)
             self.init_timesteps(self.time_steps)
             self._init_np_results()
             self._init_output()
@@ -209,7 +219,7 @@ class OutputWriter(JSONSerializableClass):
                 elif self.output_file_type == ".csv":
                     data.to_csv(file_path, sep=self.csv_separator)
 
-    def dump_to_file(self, append=False, recycle_options=None):
+    def dump_to_file(self, net, append=False, recycle_options=None):
         """
         Save the output to separate files in output_path with the file_type output_file_type. This is called after
         the time series simulation by default.
@@ -219,7 +229,7 @@ class OutputWriter(JSONSerializableClass):
         save_single = False
         self._np_to_pd()
         if recycle_options not in [None, False]:
-            self.get_batch_outputs(recycle_options)
+            self.get_batch_outputs(net, recycle_options)
         if self.output_path is not None:
             try:
                 if save_single and self.output_file_type in [".xls", ".xlsx"]:
@@ -235,12 +245,12 @@ class OutputWriter(JSONSerializableClass):
             except Exception:
                 raise
 
-    def dump(self, recycle_options=None):
+    def dump(self, net, recycle_options=None):
         append = False if self.time_step == self.time_steps[-1] else True
-        self.dump_to_file(append=append, recycle_options=recycle_options)
+        self.dump_to_file(net, append=append, recycle_options=recycle_options)
         self.cur_realtime = time()  # reset real time counter for next period
 
-    def save_results(self, time_step, pf_converged, ctrl_converged, recycle_options=None):
+    def save_results(self, net, time_step, pf_converged, ctrl_converged, recycle_options=None):
         # Saves the results of the current time step to a matrix,
         # using the output functions in the self.output_list
 
@@ -259,9 +269,9 @@ class OutputWriter(JSONSerializableClass):
         # if write time is exceeded or it is the last time step, data is written
         if self.write_time is not None:
             if time() - self.cur_realtime > self.write_time:
-                self.dump()
+                self.dump(net)
         if self.time_step == self.time_steps[-1]:
-            self.dump(recycle_options)
+            self.dump(net, recycle_options)
 
     def save_to_parameters(self):
         # Saves the results of the current time step to self.output,
@@ -323,14 +333,19 @@ class OutputWriter(JSONSerializableClass):
         **eval_function** (function, None) - A function to be applied on the table / variable / index combination.
         example: pd.min or pd.mean
 
-        **eval_name** (str, None) - The name for an applied function. If None the name consists of the table, variable,
-        index and eval function
-        example: "Sir_Lancelot"
+        **eval_name** (str, None) - The name for an applied function. It *must* be unique.
+                                    If the name is None the name consists of the table, variable, index and eval function
+                                    example: "max_load_p_mw_values"
 
         EXAMPLE:
             >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
             >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
             >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
+
+            # Getting the cost function slope for each time step:
+            >>> def cost_logging(result, n_columns=2):
+            >>>      return array([result[i][0][2] for i in range(len(result))])
+            >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
 
         """
         del_indices = list()
@@ -338,6 +353,11 @@ class OutputWriter(JSONSerializableClass):
         append = True
         # check if new log_variable is already in log_variables. If so either append or delete
         for i, log_args in enumerate(self.log_variables):
+            if len(log_args) > 4 and eval_name is not None and log_args[4] == eval_name:
+                logger.warning("eval_name '{}' already exists for table '{}' and variable '{}'. "
+                                 "Please choose a unique eval_name. "
+                               "I'll use the default instead.".format(eval_name, log_args[0], log_args[1]))
+                eval_name = None
             if log_args[0] == table and log_args[1] == variable:
                 # table and variable exist in log_variables
                 if eval_function is not None or eval_name is not None:
@@ -362,29 +382,29 @@ class OutputWriter(JSONSerializableClass):
         if append:
             self.log_variables.append((table, variable, index, eval_function, eval_name))
 
-    def _init_ppc_logging(self, table, variable, index, eval_function, eval_name):
+    def _init_ppc_logging(self, table, variable, net, eval_function, eval_name):
         var_name = self._get_output_name(table, variable)
-        ppc = self.net["_ppc"]
+        ppc = net["_ppc"]
         if ppc is None:
             # if no ppc is in net-> create one
             options = dict(algorithm='nr', calculate_voltage_angles="auto", init="auto",
                            max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
                            trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
                            voltage_depend_loads=True, consider_line_temperature=False)
-            _init_runpp_options(self.net, **options)
-            ppc, _ = _pd2ppc(self.net)
-            self.net["_ppc"] = ppc
+            _init_runpp_options(net, **options)
+            ppc, _ = _pd2ppc(net)
+            net["_ppc"] = ppc
         index = list(range(sum(ppc['bus'][:, BUS_TYPE] != NONE)))
-        self._append_output_list(table, variable, index, eval_function, eval_name, var_name, func=self._log_ppc)
+        self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name, func=self._log_ppc)
         return index
 
-    def _init_log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
+    def _init_log_variable(self, net, table, variable, index=None, eval_function=None, eval_name=None):
         if "ppc" in table:
-            index = self._init_ppc_logging(table, variable, index, eval_function, eval_name)
+            index = self._init_ppc_logging(table, variable, net, eval_function, eval_name)
 
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
-            index = self.net[table.split("res_")[-1]].index
+            index = net[table.split("res_")[-1]].index
         if not hasattr(index, '__iter__'):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):
@@ -396,6 +416,13 @@ class OutputWriter(JSONSerializableClass):
                         "no function is given for eval_name '%s', " % eval_name +
                         "eval_name is neglected.")
             eval_name = None
+        if eval_name is not None and eval_function is not None:
+            if isinstance(eval_function, FunctionType):
+                if "n_columns" in eval_function.__code__.co_varnames:
+                    logger.info("'eval_name' is to give a name in case of single value evaluation functions. Since " +
+                                "n_columns is given as a parameter of the evaluation function, the given for eval_name "
+                                "'%s', " % eval_name + "eval_name is neglected.")
+                    eval_name = None
 
         # var_name = self._get_hash((table, variable, index, eval_function))
         var_name = self._get_output_name(table, variable)
@@ -404,7 +431,7 @@ class OutputWriter(JSONSerializableClass):
         if idx is not None:
             self._append_existing_log_variable_partial_func(idx, index)
         else:
-            self._append_output_list(table, variable, index, eval_function, eval_name, var_name)
+            self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name)
 
     def _get_same_log_variable_partial_func_idx(self, table, variable, eval_function, eval_name):
         """ Returns the position index in self.output_list of partial_func which has the same table
@@ -420,42 +447,42 @@ class OutputWriter(JSONSerializableClass):
     def _append_existing_log_variable_partial_func(self, idx, index):
         """ Appends the index of existing, same partial_func in output_list. """
         for i in index:
-            if i not in self.output_list[idx].args[2]:
-                self.output_list[idx].args[2].append(i)
+            if i not in self.output_list[idx].args[3]:
+                self.output_list[idx].args[3].append(i)
 
-    def _append_output_list(self, table, variable, index, eval_function, eval_name, var_name, func=None):
+    def _append_output_list(self, table, variable, net, index, eval_function, eval_name, var_name, func=None):
         """ Appends the output_list by an additional partial_func. """
         func = self._log if func is None else func
-        partial_func = functools.partial(func, table, variable, index, eval_function, eval_name)
+        partial_func = functools.partial(func, table, variable, net, index, eval_function, eval_name)
         partial_func.__name__ = var_name
         self.output_list.append(partial_func)
         if self.time_steps is not None:
             self._init_np_array(partial_func)
 
-    def _log(self, table, variable, index, eval_function=None, eval_name=None):
+    def _log(self, table, variable, net, index, eval_function=None, eval_name=None):
         try:
             # ToDo: Create a mask for the numpy array in the beginning and use this one for getting the values. Faster
-            if self.net[table].index.equals(pd.Index(index)):
+            if net[table].index.equals(pd.Index(index)):
                 # if index equals all values -> get numpy array directly
-                result = self.net[table][variable].values
+                result = net[table][variable].values
             else:
                 # get by loc (slow)
-                result = self.net[table].loc[index, variable].values
+                result = net[table].loc[index, variable].values
 
             if eval_function is not None:
                 result = eval_function(result)
 
             # save results to numpy array
             time_step_idx = self.time_step_lookup[self.time_step]
-            hash_name = self._get_np_name((table, variable, index, eval_function, eval_name))
+            hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
             self.np_results[hash_name][time_step_idx, :] = result
 
         except Exception as e:
             logger.error("Error at index %s for %s[%s]: %s" % (index, table, variable, e))
 
-    def _log_ppc(self, table, variable, index, eval_function=None, eval_name=None):
+    def _log_ppc(self, table, variable, net, index, eval_function=None, eval_name=None):
         # custom log function fo ppc results
-        ppci = self.net["_ppc"]["internal"]
+        ppci = net["_ppc"]["internal"]
         if variable == "vm":
             v = VM
         elif variable == "va":
@@ -468,7 +495,7 @@ class OutputWriter(JSONSerializableClass):
 
         # save results to numpy array
         time_step_idx = self.time_step_lookup[self.time_step]
-        hash_name = self._get_np_name((table, variable, index, eval_function, eval_name))
+        hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
         self.np_results[hash_name][time_step_idx, :] = result
 
     def _np_to_pd(self):
@@ -476,13 +503,18 @@ class OutputWriter(JSONSerializableClass):
         # intended use: At the end of time series simulation write results to pandas
 
         for partial_func in self.output_list:
-            (table, variable, index, eval_func, eval_name) = partial_func.args
+            (table, variable, net, index, eval_func, eval_name) = partial_func.args
             # res_name = self._get_hash(table, variable)
             res_name = self._get_output_name(table, variable)
             np_name = self._get_np_name(partial_func.args)
             columns = index
-            if eval_name is not None:
-                columns = [eval_name]
+            if eval_name is not None and eval_func is not None:
+                if isinstance(eval_func, FunctionType):
+                    if "n_columns" not in eval_func.__code__.co_varnames:
+                        columns = [eval_name]
+                else:
+                    columns = [eval_name]
+
             res_df = pd.DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
             if res_name in self.output and eval_name is not None:
                 try:
@@ -499,7 +531,7 @@ class OutputWriter(JSONSerializableClass):
         return "%s.%s" % (table, variable)
 
     def _get_np_name(self, partial_args):
-        eval_name = partial_args[4]
+        eval_name = partial_args[5]
         if eval_name is not None:
             return eval_name
         else:
@@ -517,36 +549,39 @@ class OutputWriter(JSONSerializableClass):
         self.time_step_lookup = {t: idx for idx, t in enumerate(time_steps)}
 
     def _init_np_array(self, partial_func):
-        (table, variable, index, eval_function, eval_name) = partial_func.args
+        (table, variable, net, index, eval_function, eval_name) = partial_func.args
         hash_name = self._get_np_name(partial_func.args)
         n_columns = len(index)
         if eval_function is not None:
             n_columns = 1
+            if isinstance(eval_function, FunctionType):
+                if "n_columns" in eval_function.__code__.co_varnames:
+                    n_columns = eval_function.__defaults__[0]
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
 
-    def get_batch_outputs(self, recycle_options):
+    def get_batch_outputs(self, net, recycle_options):
         # read the results in batch from vm, va (ppci values)
 
         if isinstance(recycle_options["batch_read"], list) and len(recycle_options["batch_read"]):
             # vm, va is without out of service elements
             vm, va = self.output["ppc_bus.vm"], self.output["ppc_bus.va"]
-            _, s_abs, i_abs = v_to_i_s(self.net, vm, va)
+            _, s_abs, i_abs = v_to_i_s(net, vm, va)
             results = dict()
             new_output_list = list()
             for table, variable in recycle_options["batch_read"]:
                 if table == "res_line" and "res_line" not in results:
-                    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(self.net, i_abs)
+                    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
                     results["res_line"] = dict(i_ka=i_ka, i_from_ka=i_from_ka, i_to_ka=i_to_ka,
                                                loading_percent=loading_percent)
                 elif table == "res_trafo" and "res_trafo" not in results:
-                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = get_batch_trafo_results(self.net, i_abs, s_abs)
+                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = get_batch_trafo_results(net, i_abs, s_abs)
                     results["res_trafo"] = dict(i_ka=i_ka, i_hv_ka=i_hv_ka, i_lv_ka=i_lv_ka,
                                                 loading_percent=loading_percent)
                 elif table == "res_trafo3w":
-                    i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(self.net, i_abs, s_abs)
+                    i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(net, i_abs, s_abs)
                     results["res_trafo3w"] = dict(i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent)
                 elif table == "res_bus" and "res_bus" not in results:
-                    vm_full, va_full = get_batch_bus_results(self.net, vm, va)
+                    vm_full, va_full = get_batch_bus_results(net, vm, va)
                     results["res_bus"] = dict(vm_pu=vm_full, va_degree=va_full)
                 else:
                     raise ValueError("Something went wrong")

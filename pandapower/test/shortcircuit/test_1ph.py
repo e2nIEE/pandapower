@@ -6,7 +6,6 @@
 import pandapower as pp
 import pandapower.shortcircuit as sc
 import pandapower.test
-import copy
 import numpy as np
 import os
 import pytest
@@ -24,10 +23,13 @@ def add_network(net, vector_group):
     b4 = pp.create_bus(net, 20, zone=vector_group)
     pp.create_bus(net, 20)
 
-    pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=80, rx_min=0.20, rx_max=0.35)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=100, rx_min=0.35, rx_max=0.35)
     net.ext_grid["r0x0_max"] = 0.4
     net.ext_grid["x0x_max"] = 1.0
-
+    
+    net.ext_grid["r0x0_min"] = 0.4
+    net.ext_grid["x0x_min"] = 1.0
+    
     pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304,
                          "max_i_ka": 0.421, "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
                          "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
@@ -62,11 +64,36 @@ def test_1ph_shortcircuit():
                 ,"Dyn": [0.52209347337, 3.5054043285,  2.1086590382,  1.2980120038 ]
                 ,"Dd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
                }
+
     net = pp.create_empty_network()
     for vc in results.keys():
          add_network(net, vc)
          try:
              sc.calc_sc(net, fault="1ph", case="max")
+         except:
+             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+
+    for vc, result in results.items():
+        check_results(net, vc, result)
+
+def test_1ph_shortcircuit_min():
+    results = {
+                 "Yy":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
+                ,"Yyn": [0.52209346201, 2.4135757259, 1.545054139, 0.99373917957]
+                ,"Yd":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
+                ,"YNy": [0.62316686505, 0.66632662571, 0.66756160176, 0.72517293174]
+                ,"YNyn":[0.620287259, 2.9155736491, 1.7561556936, 1.0807305212]
+                ,"YNd": [0.75434229157, 0.66632662571, 0.66756160176, 0.72517293174]
+                ,"Dy":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
+                ,"Dyn": [0.52209346201, 3.4393798093, 1.9535982949, 1.1558364456]
+                ,"Dd":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
+               }
+
+    net = pp.create_empty_network()
+    for vc in results.keys():
+         add_network(net, vc)
+         try:
+             sc.calc_sc(net, fault="1ph", case="min")
          except:
              raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
 
