@@ -32,7 +32,7 @@ jobs:
         pip install .
         pip install matplotlib python-igraph
         if ${{ (matrix.python-version == '3.5') || (matrix.python-version == '3.7')}}; then python -m pip install pypower; fi
-        if ${{ matrix.python-version != '3.6' }}; then python -m pip install numba; fi
+        if ${{ (matrix.python-version != '3.5') || (matrix.python-version != '3.6') }}; then python -m pip install numba; fi
     - name: Install Julia
       if: ${{ matrix.python-version == '3.6'}}
       run: |
