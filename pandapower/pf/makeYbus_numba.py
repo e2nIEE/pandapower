@@ -165,5 +165,5 @@ def makeYbus(baseMVA, bus, branch):
     Yt = coo_matrix((Yt_x, (i, col_Y)), (nl, nb)).tocsr()
     Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl,
                                np.arange(nl, dtype=np.int64))
-    Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp))
+    Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp), (nb, nb))
     return Ybus, Yf, Yt
