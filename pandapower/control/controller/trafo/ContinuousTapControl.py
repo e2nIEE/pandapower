@@ -40,7 +40,6 @@ class ContinuousTapControl(TrafoController):
                          level=level, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params={"tid": tid, 'trafotype': trafotype}, **kwargs)
 
-        self.matching_params = {"tid": tid, 'trafotype': trafotype}
         t = net[self.trafotable]
         b = net.bus
         if trafotype == "2W":
