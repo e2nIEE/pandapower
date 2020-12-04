@@ -236,9 +236,28 @@ def _calc_single_bus_sc(net, ppc, bus):
     vqj = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX] #this is the source voltage in per unit (VQj)
 
     # ToDO: calculate A and B matrices so that
-    A = ybus
-    b = - ybus
-    V = -1 * spsolve(A, b) #TODO: Voltages in per unit?
+    # New method   
+    # Solve Ikss from voltage source
+    ppci_bus = net._pd2ppc_lookups["bus"][bus]
+    Ybus = ppc["internal"]["Ybus"]
+    n_bus = Ybus.shape[0]
+    ybus_sub_mask = (np.arange(Ybus.shape[0]) != ppci_bus)
+    Ybus_sub = Ybus[ybus_sub_mask, :][:, ybus_sub_mask]
+
+    V_ikss = np.zeros(n_bus, dtype=np.complex)
+    
+    # Solve Ax = b
+    b = np.zeros(n_bus, dtype=np.complex) -\
+        Ybus[:, ~ybus_sub_mask].toarray()[ybus_sub_mask] * V_ikss[~ybus_sub_mask]
+    x = spsolve(Ybus_sub, b)
+    
+    V_ikss[ybus_sub_mask] = x
+    I_ikss = np.zeros(n_bus, dtype=np.complex)
+    I_ikss[ppci_bus] = np.dot(Ybus[ppci_bus, :].tonumpy(), V_ikss)
+
+    # calculate voltage source branch current
+    # V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
+    V = V_ikss
 
     #TODO include current sources
 #    current_sources = any(ppc["bus"][:, IKCV]) > 0
