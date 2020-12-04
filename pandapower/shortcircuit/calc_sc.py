@@ -17,7 +17,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
-    _calc_single_bus_sc
+    _calc_single_bus_sc, _calc_single_bus_sc_no_y_inv
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _extract_single_results
@@ -131,7 +131,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         _calc_sc_1ph(net)
 
 
-def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10, check_connectivity=True):
+def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10,
+                   check_connectivity=True, with_y_inv=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -193,18 +194,30 @@ def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10, check_c
                     branch_results=True, return_all_currents=False)
     init_results(net, "sc")
     if fault == "3ph" or fault == "2ph":
-        _calc_sc_single(net, bus)
+        _calc_sc_single(net, bus, with_y_inv)
     elif fault == "1ph":
         raise NotImplementedError("1ph short-circuits are not yet implemented")
     else:
         raise ValueError("Invalid fault %s" % fault)
 
 
-def _calc_sc_single(net, bus):
+def _calc_sc_single(net, bus, with_y_inv):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
-    _calc_single_bus_sc(net, ppci, bus)
+    
+    if with_y_inv:
+        try:
+            _calc_zbus(ppci)
+        except Exception as e:
+            _clean_up(net, res=False)
+            raise (e)
+        _calc_rx(net, ppci)
+        _calc_ikss(net, ppci)
+        _calc_single_bus_sc(net, ppci, bus)
+    else:
+        _calc_single_bus_sc_no_y_inv(net, ppci, bus)
+
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_single_results(net, ppc)
     _clean_up(net)
