@@ -77,7 +77,9 @@ jobs:
   linting:
     # run flake8 and check for errors
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.8']
 
