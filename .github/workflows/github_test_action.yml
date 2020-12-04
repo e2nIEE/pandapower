@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.5', '3.6', '3.7', '3.8']
+        python-version: ['3.6', '3.5', '3.7', '3.8']
 
     steps:
     - uses: actions/checkout@v2
@@ -30,13 +30,15 @@ jobs:
         python -m pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
-        pip install matplotlib
+        pip install matplotlib python-igraph
+        if ${{ (matrix.python-version == '3.5') || (matrix.python-version == '3.7')}}; then python -m pip install pypower; fi
+        if ${{ matrix.python-version != '3.6' }}; then python -m pip install numba; fi
     - name: Install Julia
       if: ${{ matrix.python-version == '3.6'}}
       run: |
         ./.install_julia.sh 1.5
         pip install julia
-        python ./.install_pycall.py
+        python ./.install_pycall.py      
     - name: List of installed packages
       run: |
         pip list
@@ -106,3 +108,4 @@ jobs:
         flake8 . --count --exit-zero --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
