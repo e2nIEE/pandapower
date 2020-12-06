@@ -119,7 +119,7 @@ def _import_numba_extensions_if_flag_is_true(numba):
 
 
 def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
-    if recycle is not None and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
+    if recycle and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
         Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
     else:
         ## build admittance matrices
