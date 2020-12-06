@@ -125,7 +125,6 @@ def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
         ## build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
-
     return ppci, Ybus, Yf, Yt
 
 
