@@ -12,7 +12,8 @@ from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, X_EQUIV, IKSS2, IKCV, M
-from scipy.sparse.linalg import spsolve
+from pandapower.shortcircuit.impedance import _calc_zbus_diag
+
 
 def _calc_ikss(net, ppc):
     fault = net._options["fault"]
@@ -25,6 +26,20 @@ def _calc_ikss(net, ppc):
     elif fault == "2ph":
         ppc["bus"][:, IKSS1] = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
     _current_source_current(net, ppc)
+
+
+def _calc_ikss_single(net, ppc, bus):
+    bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
+    fault = net._options["fault"]
+    case = net._options["case"]
+    c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
+    ppc["internal"]["baseI"] = ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    z_equiv = abs(ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j)
+    if fault == "3ph":
+        ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
+    elif fault == "2ph":
+        ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / 2 * ppc["baseMVA"]
+    _current_source_current(net, ppc)    
 
 
 def _calc_ikss_1ph(net, ppc, ppc_0):
@@ -55,13 +70,18 @@ def _current_source_current(net, ppc):
     baseI = ppc["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
-    Zbus = ppc["internal"]["Zbus"]
     if not "k" in sgen:
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
     i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     ppc["bus"][buses, IKCV] = ikcv_pu
-    ppc["bus"][:, IKSS2] = abs(1 / np.diag(Zbus) * np.dot(Zbus, ppc["bus"][:, IKCV] * -1j) / baseI)
+    if "Zbus" in ppc["internal"]:
+        Zbus = ppc["internal"]["Zbus"]
+        ppc["bus"][:, IKSS2] = abs(1 / np.diag(Zbus) * np.dot(Zbus, ppc["bus"][:, IKCV] * -1j) / baseI)
+    else:
+        ybus_fact = ppc["internal"]["ybus_fact"]
+        diagZ = _calc_zbus_diag(net, ppc)
+        ppc["bus"][:, IKSS2] = ybus_fact(ppc["bus"][:, IKCV] / diagZ)
     ppc["bus"][buses, IKCV] /= baseI[buses]
 
 
@@ -155,9 +175,6 @@ def _calc_branch_currents(net, ppc):
         else:
             ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
             ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
-
-
-
 
 
 def _calc_ib_generator(net, ppci):
@@ -261,40 +278,43 @@ def _calc_single_bus_sc(net, ppc, bus):
 def _calc_single_bus_sc_no_y_inv(net, ppc, bus):
     bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
     ybus = ppc["internal"]["Ybus"]
+    ybus_fact = ppc["internal"]["ybus_fact"]
     case = net._options["case"]
+    baseI = ppc["internal"]["baseI"]
     vqj = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX] #this is the source voltage in per unit (VQj)
 
-
     # Solve Ikss from voltage source
-    ppci_bus = net._pd2ppc_lookups["bus"][bus]
-    Ybus = ppc["internal"]["Ybus"]
-    n_bus = Ybus.shape[0]
-    ybus_sub_mask = (np.arange(Ybus.shape[0]) != ppci_bus)
+    n_bus = ybus.shape[0]
 
-    V_ikss = np.zeros(n_bus, dtype=np.complex)
-    V_ikss[ppci_bus] = vqj[ppci_bus]
+    # ybus_sub_mask = (np.arange(ybus.shape[0]) != bus_idx)
+    # V_ikss = np.zeros(n_bus, dtype=np.complex)
+    # V_ikss[bus_idx] = vqj[bus_idx]
     
-    # Solve Ax = b
-    b = np.zeros(n_bus-1, dtype=np.complex) -\
-        (Ybus[:, ~ybus_sub_mask].toarray())[ybus_sub_mask].ravel() * V_ikss[ppci_bus]
-    ybus_sub = ybus[ybus_sub_mask, :][:, ybus_sub_mask]
-    x = spsolve(ybus_sub, b)
+    # # Solve Ax = b
+    # b = np.zeros(n_bus-1, dtype=np.complex) -\
+    #     (ybus[:, ~ybus_sub_mask].toarray())[ybus_sub_mask].ravel() * V_ikss[bus_idx]
+    # ybus_sub = ybus[ybus_sub_mask, :][:, ybus_sub_mask]
+    # x = spsolve(ybus_sub, b)
 
-    V_ikss[ybus_sub_mask] = x
+    # V_ikss[ybus_sub_mask] = x
+    # I_ikss = np.zeros(n_bus, dtype=np.complex)
+    # I_ikss[bus_idx] = np.dot(ybus[bus_idx, :].toarray(), V_ikss)
+    # V = V_ikss
+
+    # Version 2
     I_ikss = np.zeros(n_bus, dtype=np.complex)
-    I_ikss[ppci_bus] = np.dot(ybus[ppci_bus, :].toarray(), V_ikss)
+    I_ikss[bus_idx] = ppc["bus"][bus_idx, IKSS1]
+    V_ikss = ybus_fact(I_ikss * baseI)
     V = V_ikss
 
     #TODO include current sources
-#    current_sources = any(ppc["bus"][:, IKCV]) > 0
-#    if current_sources:
-#        current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
-#        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
-#        V_source = np.dot((current * baseI), Zbus).T
-#        V = V + V_source[:, bus_idx]
-    # add current source branch current if there is one
-    #    ppc["branch"][:, IKSS_F] = abs(ikss_all_f[:, bus_idx] / baseI[fb])
-    #    ppc["branch"][:, IKSS_T] = abs(ikss_all_t[:, bus_idx] / baseI[tb])
+    current_sources = any(ppc["bus"][:, IKCV]) > 0
+    if current_sources:
+        current = -ppc["bus"][:, IKCV] 
+        current[bus_idx] += ppc["bus"][bus_idx, IKSS2]
+        V_source = ybus_fact(current)
+        V += V_source
+
     calc_branch_results(net, ppc, V)
 
 

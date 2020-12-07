@@ -31,6 +31,22 @@ def _calc_rx(net, ppc):
     ppc["bus"][:, R_EQUIV] = z_equiv.real
     ppc["bus"][:, X_EQUIV] = z_equiv.imag
 
+
+def _calc_rx_single(net, ppc, bus):
+    bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
+    r_fault = net["_options"]["r_fault_ohm"]
+    x_fault = net["_options"]["x_fault_ohm"]
+    if r_fault > 0 or x_fault > 0:
+        base_r = np.square(ppc["bus"][bus_idx, BASE_KV]) / ppc["baseMVA"]
+        fault_impedance = (r_fault + x_fault * 1j) / base_r
+    else:
+        fault_impedance = 0 + 0j
+
+    z_equiv = _calc_zbus_diag(net, ppc, bus) + fault_impedance
+    ppc["bus"][bus_idx, R_EQUIV] = z_equiv.real
+    ppc["bus"][bus_idx, X_EQUIV] = z_equiv.imag
+
+
 def _calc_ybus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
     if np.isnan(Ybus.data).any():
@@ -38,6 +54,7 @@ def _calc_ybus(ppc):
     ppc["internal"]["Yf"] = Yf
     ppc["internal"]["Yt"] = Yt
     ppc["internal"]["Ybus"] = Ybus
+
 
 def _calc_zbus(ppc):
     Ybus = ppc["internal"]["Ybus"]
@@ -48,3 +65,21 @@ def _calc_zbus(ppc):
             ppc["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
     else:
         ppc["internal"]["Zbus"] = inv(Ybus.toarray())
+
+
+def _calc_zbus_diag(net, ppc, bus=None):
+    ybus_fact = ppc["internal"]["ybus_fact"]
+    n_bus = ppc["bus"].shape[0]
+    if bus is None:
+        diagZ = np.zeros(n_bus, dtype=np.complex)
+        for i in range(ppc["bus"].shape[0]):
+            b = np.zeros(n_bus, dtype=np.complex)
+            b[i] = 1 + 0j
+            diagZ[i] = ybus_fact(b)[i]
+        ppc["internal"]["diagZ"] = diagZ
+        return diagZ
+    else:
+        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)        
+        b = np.zeros(n_bus, dtype=np.complex)
+        b[bus_idx] = 1 + 0j
+        return ybus_fact(b)[bus_idx]

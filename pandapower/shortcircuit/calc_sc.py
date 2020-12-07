@@ -11,14 +11,16 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 # import time
+from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_single, \
+    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
     _calc_single_bus_sc, _calc_single_bus_sc_no_y_inv
-from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
+from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx, _calc_rx_single
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _extract_single_results
 from pandapower.results import init_results
@@ -216,6 +218,10 @@ def _calc_sc_single(net, bus, with_y_inv):
         _calc_ikss(net, ppci)
         _calc_single_bus_sc(net, ppci, bus)
     else:
+        # Factorization Ybus once
+        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
+        _calc_rx_single(net, ppci, bus)
+        _calc_ikss_single(net, ppci, bus)
         _calc_single_bus_sc_no_y_inv(net, ppci, bus)
 
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
