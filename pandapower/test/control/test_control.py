@@ -26,11 +26,13 @@ logger.setLevel(pplog.CRITICAL)
 
 
 class DummyController(Controller):
-    def __init__(self, net, in_service=True, level=0, order=0):
-        matching_params = {'level': level, 'order': order}
+    def __init__(self, net, in_service=True, level=0, order=0, drop_same_existing_ctrl=False,
+                 matching_params=None):
+        if matching_params is None:
+            matching_params = {'level': level, 'order': order}
         super().__init__(net, in_service=in_service, level=level, order=order,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
-        self.matching_params = matching_params
         self.applied = False
 
     def initialize_control(self, net):
@@ -66,7 +68,7 @@ def test_add_get_controller(net):
         def control_step(self, net):
             pass
 
-        def is_converged(self):
+        def is_converged(self, net):
             return True
 
     # creating a test controller
@@ -139,14 +141,14 @@ def test_multiple_levels(net):
     TrafoController(net, 0, side="lv", trafotype="2W", level=1, tol=1e-6, in_service=True)
     Controller(net, gid=2, level=[1, 2])
     Controller(net, gid=2, level=[1, 2])
-    level, order = get_controller_order(net)
+    level, order = get_controller_order(net, net.controller)
     # three levels with unspecific controller order => in order of appearance
     # assert order == [[0, 1], [1,2]]
     assert len(order) == 2
-    assert order[0][0].index == 0
-    assert order[0][1].index == 1
-    assert order[1][0].index == 1
-    assert order[1][1].index == 2
+    assert order[0][0][0].index == 0
+    assert order[0][1][0].index == 1
+    assert order[1][0][0].index == 1
+    assert order[1][1][0].index == 2
 
     assert level == [1, 2]
     pp.runpp(net, run_control=True)
@@ -177,12 +179,27 @@ def test_level_in_service(net):
     assert c3.applied
     assert not c4.applied
 
-    level, order = get_controller_order(net)
+    level, order = get_controller_order(net, net.controller)
 
     assert len(level) == 2
     assert len(order[0]) == 0
     assert len(order[1]) == 2
-    assert order[1][0] == c3 and order[1][1] == c2
+    assert order[1][0][0] == c3 and order[1][1][0] == c2
+
+
+def test_matching_params(net):
+
+    c0 = DummyController(net)
+    c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)
+    assert not len(net.controller.index.difference([0, 1]))
+    c2 = DummyController(net, drop_same_existing_ctrl=True)
+    assert not len(net.controller.index.difference([1, 2]))
+    c3 = DummyController(net, matching_params={"level": 0, "order": 0, "in_service": True},
+                         drop_same_existing_ctrl=True)
+    assert not len(net.controller.index.difference([1, 3]))
+    c4 = DummyController(net, in_service=False, drop_same_existing_ctrl=True,
+                         matching_params={"level": 0, "order": 0, "in_service": False})
+    assert not len(net.controller.index.difference([1, 3, 4]))
 
 
 if __name__ == '__main__':

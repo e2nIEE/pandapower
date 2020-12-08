@@ -114,7 +114,7 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
 def _get_switch_mask(net, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element               
     open_elements = net.switch.element.values[open_switches & element_switches]
-    open_element_mask = np.in1d(net[element].index, open_elements)
+    open_element_mask = np.in1d(net[element].index, open_elements, invert=True)
     return open_element_mask
 
 def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
