@@ -220,9 +220,13 @@ def _calc_sc_single(net, bus, with_y_inv):
     else:
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
+
         _calc_rx_single(net, ppci, bus)
         _calc_ikss_single(net, ppci, bus)
         _calc_single_bus_sc_no_y_inv(net, ppci, bus)
+
+        # Delete factorization object
+        ppci["internal"].pop("ybus_fact")
 
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_single_results(net, ppc)
