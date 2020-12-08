@@ -64,6 +64,7 @@ class ConstControl(Controller):
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, initial_run=initial_run,
                          **kwargs)
+        self.matching_params = matching_params
 
         # data source for time series values
         self.data_source = data_source
