@@ -1,13 +1,12 @@
 using PowerModels
-using .PP2PM
-#using Debugger
-# include("pp_2_pm.jl")
+push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
+using PP2PM
 
 function run_powermodels(json_path)
-    pm = PP2PM.load_pm_from_json(json_path)
-    model = PP2PM.get_model(pm["pm_model"])
+    pm = load_pm_from_json(json_path)
+    model = get_model(pm["pm_model"])
     #
-    solver = PP2PM.get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"],
+    solver = get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"],
     pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
 
     if haskey(pm["branch"]["1"],"c_rating_a")
@@ -39,8 +38,6 @@ function run_powermodels(json_path)
         result = PowerModels.run_opf(pm, model, solver,
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     end
-
-
     return result
 end
 

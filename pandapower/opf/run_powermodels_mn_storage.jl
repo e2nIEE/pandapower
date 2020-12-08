@@ -2,9 +2,9 @@ using PowerModels
 using Ipopt
 using Gurobi
 using JuMP
-using .PP2PM
-
 import JSON
+push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
+using PP2PM
 
 function read_time_series(json_path)
     time_series = Dict()
