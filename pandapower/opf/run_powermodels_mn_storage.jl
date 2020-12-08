@@ -3,7 +3,8 @@ using Ipopt
 using Gurobi
 using JuMP
 import JSON
-push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
+# push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
+push!(LOAD_PATH, joinpath(@__DIR__, "pandapower", "pandapower", "opf"))
 using PP2PM
 
 function read_time_series(json_path)
