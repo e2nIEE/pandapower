@@ -35,7 +35,7 @@ class Controller(JSONSerializableClass):
         self.add_controller_to_net(net=net, in_service=in_service, order=order,
                                    level=level, index=index, recycle=recycle,
                                    drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                   overwrite=overwrite, **kwargs)
+                                   overwrite=overwrite, matching_params=matching_params, **kwargs)
 
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
