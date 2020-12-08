@@ -37,13 +37,11 @@ class ContinuousTapControl(TrafoController):
                  check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         if matching_params is None:
-            matching_params = {"element": element, "variable": variable,
-                               "element_index": element_index}
+            matching_params = {"tid": tid, 'trafotype': trafotype}
         super().__init__(net, tid=tid, side=side, tol=tol, in_service=in_service,
                          trafotype=trafotype, level=level, order=order,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
-        self.matching_params = matching_params
 
         t = net[self.trafotable]
         b = net.bus

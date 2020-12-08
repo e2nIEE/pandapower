@@ -32,13 +32,11 @@ class DiscreteTapControl(TrafoController):
                  tol=1e-3, in_service=True, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         if matching_params is None:
-            matching_params = {"element": element, "variable": variable,
-                               "element_index": element_index}
+            matching_params = {"tid": tid, 'trafotype': trafotype}
         super(DiscreteTapControl, self).__init__(
             net, tid, side, tol=tol, in_service=in_service, order=order, trafotype=trafotype,
             drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
             **kwargs)
-        self.matching_params = matching_params
 
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu

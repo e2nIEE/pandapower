@@ -22,10 +22,12 @@ class Controller(JSONSerializableClass):
     """
 
     def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
-                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False, **kwargs):
+                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
+                 matching_params=None, **kwargs):
         super().__init__()
         self.recycle = recycle
         self.initial_run = initial_run
+        self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
             index = get_free_id(net.controller)
