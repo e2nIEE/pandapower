@@ -616,7 +616,7 @@ def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
     return I012_pu
 
 def _get_y_bus(ppci0, ppci1, ppci2, recycle):
-    if recycle is not None and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \
+    if recycle and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \
             ppci1["internal"]["Ybus"].size and ppci2["internal"]["Ybus"].size:
         y_0_bus, y_0_f, y_0_t = ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt']
         y_1_bus, y_1_f, y_1_t = ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt']
@@ -626,7 +626,7 @@ def _get_y_bus(ppci0, ppci1, ppci2, recycle):
         y_0_bus, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
         y_1_bus, y_1_f, y_1_t = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
         y_2_bus, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
-        if recycle is not None and recycle["Ybus"]:
+        if recycle and recycle["Ybus"]:
             ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt'] = y_0_bus, y_0_f, y_0_t
             ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt'] = y_1_bus, y_1_f, y_1_t
             ppci2["internal"]['Ybus'], ppci2["internal"]['Yf'], ppci2["internal"]['Yt'] = y_2_bus, y_2_f, y_2_t
