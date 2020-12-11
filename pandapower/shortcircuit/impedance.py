@@ -19,21 +19,14 @@ except ImportError:
     from pandapower.pypower.makeYbus import makeYbus
 
 
-def _calc_rx(net, ppc):
-    Zbus = ppc["internal"]["Zbus"]
-    r_fault = net["_options"]["r_fault_ohm"]
-    x_fault = net["_options"]["x_fault_ohm"]
-    if r_fault > 0 or x_fault > 0:
-        base_r = np.square(ppc["bus"][:, BASE_KV]) / ppc["baseMVA"]
-        fault_impedance = (r_fault + x_fault * 1j) / base_r
-        np.fill_diagonal(Zbus, Zbus.diagonal() + fault_impedance)
-    z_equiv = np.diag(Zbus)
-    ppc["bus"][:, R_EQUIV] = z_equiv.real
-    ppc["bus"][:, X_EQUIV] = z_equiv.imag
+def _calc_rx(net, ppc, bus):
+    # Vectorized for multiple bus
+    if bus is None:
+        # Slice(None) is equal to select all
+        bus_idx = slice(None)
+    else:
+        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
 
-
-def _calc_rx_single(net, ppc, bus):
-    bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
     r_fault = net["_options"]["r_fault_ohm"]
     x_fault = net["_options"]["x_fault_ohm"]
     if r_fault > 0 or x_fault > 0:
@@ -41,8 +34,12 @@ def _calc_rx_single(net, ppc, bus):
         fault_impedance = (r_fault + x_fault * 1j) / base_r
     else:
         fault_impedance = 0 + 0j
-
-    z_equiv = _calc_zbus_diag(net, ppc, bus) + fault_impedance
+    
+    if net["_options"]["inverse_y"]:
+        Zbus = ppc["internal"]["Zbus"]
+        z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
+    else:
+        z_equiv = _calc_zbus_diag(net, ppc, bus) + fault_impedance
     ppc["bus"][bus_idx, R_EQUIV] = z_equiv.real
     ppc["bus"][bus_idx, X_EQUIV] = z_equiv.imag
 
@@ -79,7 +76,12 @@ def _calc_zbus_diag(net, ppc, bus=None):
         ppc["internal"]["diagZ"] = diagZ
         return diagZ
     else:
-        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)        
-        b = np.zeros(n_bus, dtype=np.complex)
-        b[bus_idx] = 1 + 0j
-        return ybus_fact(b)[bus_idx]
+        if isinstance(bus, int):
+            bus = np.array([bus])
+        diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
+        for ix, b in enumerate(bus):
+            bus_idx = net._pd2ppc_lookups["bus"][b] #bus where the short-circuit is calculated (j)        
+            b = np.zeros(n_bus, dtype=np.complex)
+            b[bus_idx] = 1 + 0j
+            diagZ[ix] = ybus_fact(b)[bus_idx]
+        return diagZ

@@ -17,10 +17,10 @@ from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_single, \
+from pandapower.shortcircuit.currents import _calc_ikss, \
     _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
     _calc_single_bus_sc, _calc_single_bus_sc_no_y_inv
-from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx, _calc_rx_single
+from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _extract_single_results
 from pandapower.results import init_results
@@ -28,7 +28,8 @@ from pandapower.results import init_results
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False, check_connectivity=True, return_all_currents=False):
+            branch_results=False, check_connectivity=True, return_all_currents=False,
+            bus=None, inverse_y=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -123,18 +124,19 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    branch_results=branch_results, return_all_currents=return_all_currents)
+                    branch_results=branch_results, return_all_currents=return_all_currents,
+                    inverse_y=inverse_y)
     init_results(net, "sc")
-    if fault == "3ph":
-        _calc_sc(net)
-    if fault == "2ph":
-        _calc_sc(net)
-    if fault == "1ph":
-        _calc_sc_1ph(net)
+    if fault in ("2ph", "3ph"):
+        _calc_sc(net, bus)
+    elif fault == "1ph":
+        _calc_sc_1ph(net, bus)
+    else:
+        raise ValueError("Invalid fault %s" % fault)        
 
 
 def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10,
-                   check_connectivity=True, with_y_inv=True):
+                   check_connectivity=True, inverse_y=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -193,36 +195,37 @@ def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10,
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=1.,
                     topology="auto", r_fault_ohm=0., kappa_method="C",
                     x_fault_ohm=0., kappa=False, ip=False, ith=False,
-                    branch_results=True, return_all_currents=False)
+                    branch_results=True, return_all_currents=False,
+                    inverse_y=inverse_y)
     init_results(net, "sc")
-    if fault == "3ph" or fault == "2ph":
-        _calc_sc_single(net, bus, with_y_inv)
+    if fault in ("2ph", "3ph"):
+        _calc_sc_single(net, bus)
     elif fault == "1ph":
         raise NotImplementedError("1ph short-circuits are not yet implemented")
     else:
         raise ValueError("Invalid fault %s" % fault)
 
 
-def _calc_sc_single(net, bus, with_y_inv):
+def _calc_sc_single(net, bus):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
     
-    if with_y_inv:
+    if net["_options"]["inverse_y"]:
         try:
             _calc_zbus(ppci)
         except Exception as e:
             _clean_up(net, res=False)
             raise (e)
-        _calc_rx(net, ppci)
-        _calc_ikss(net, ppci)
+        _calc_rx(net, ppci, bus=None)
+        _calc_ikss(net, ppci, bus=None)
         _calc_single_bus_sc(net, ppci, bus)
     else:
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
 
-        _calc_rx_single(net, ppci, bus)
-        _calc_ikss_single(net, ppci, bus)
+        _calc_rx(net, ppci, bus)
+        _calc_ikss(net, ppci, bus)
         _calc_single_bus_sc_no_y_inv(net, ppci, bus)
 
         # Delete factorization object
@@ -233,35 +236,50 @@ def _calc_sc_single(net, bus, with_y_inv):
     _clean_up(net)
 
 
-def _calc_sc(net):
+def _calc_sc(net, bus):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
-    try:
-        _calc_zbus(ppci)
-    except Exception as e:
-        _clean_up(net, res=False)
-        raise (e)
-    _calc_rx(net, ppci)
-    _add_kappa_to_ppc(net, ppci)
-    _calc_ikss(net, ppci)
+    
+    # TODO: Check this, do we need kappa besides Ip calculation?
+    # kappa required inverse of Zbus, which is optimized
+    if net["_options"]["ip"] or net["_options"]["ith"]:
+        _add_kappa_to_ppc(net, ppci)
+
+    if net["_options"]["inverse_y"]:
+        try:
+            _calc_zbus(ppci)
+        except Exception as e:
+            _clean_up(net, res=False)
+            raise (e)
+
+        _calc_rx(net, ppci, bus=None)
+        _calc_ikss(net, ppci, bus=None)
+    else:
+        # Factorization Ybus once
+        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
+
+        _calc_rx(net, ppci, bus)
+        _calc_ikss(net, ppci, bus)
+        
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
     if net["_options"]["ith"]:
         _calc_ith(net, ppci)
+
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci)
+        _calc_branch_currents(net, ppci, bus)
 
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-
-    if net["_options"]["return_all_currents"]:
-        _extract_results(net, ppc, ppc_0=None)
-    else:
-        _extract_results(net, ppc, ppc_0=None)
+    _extract_results(net, ppc, ppc_0=None, bus=bus)
     _clean_up(net)
 
+    if "ybus_fact" in ppci["internal"]:
+        # Delete factorization object
+        ppci["internal"].pop("ybus_fact")
 
-def _calc_sc_1ph(net):
+
+def _calc_sc_1ph(net, bus):
     """
     calculation method for single phase to ground short-circuit currents
     """
@@ -269,6 +287,7 @@ def _calc_sc_1ph(net):
     # pos. seq bus impedance
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
+
     try:
         _calc_zbus(ppci)
     except Exception as e:

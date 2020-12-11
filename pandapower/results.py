@@ -190,11 +190,18 @@ def _ppci_other_to_ppc(result, ppc, mode):
 def _ppci_internal_to_ppc(result, ppc):
     for key, value in result["internal"].items():
         # if branch current matrices have been stored they need to include out of service elements
-        if key in ["branch_ikss_f", "branch_ikss_t", "branch_ip_f", "branch_ip_t", "branch_ith_f", "branch_ith_t"]:
+        if key in ["branch_ikss_f", "branch_ikss_t",
+                   "branch_ip_f", "branch_ip_t",
+                   "branch_ith_f", "branch_ith_t"]:
+
             n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             n_rows_result = np.shape(result['bus'])[0]
-            update_matrix = np.empty((n_branches, n_buses)) * np.nan
+            # update_matrix = np.empty((n_branches, n_buses)) * np.nan
+            # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
+
+            # To select only required buses
+            update_matrix = np.empty((n_branches, value.shape[1])) * np.nan
             update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
             ppc['internal'][key] = np.copy(update_matrix)
         else:
