@@ -28,7 +28,6 @@ def _add_kappa_to_ppc(net, ppc):
         kappa = _kappa_method_b(net, ppc)
     else:
         raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
-    print(kappa)
     ppc["bus"][:, KAPPA] = kappa
 
 def _kappa(rx):

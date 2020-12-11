@@ -14,6 +14,8 @@ from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, 
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, X_EQUIV, IKSS2, IKCV, M
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
+from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 def _calc_ikss(net, ppc, bus=None):
     # Vectorized for multiple bus
@@ -249,10 +251,6 @@ def _calc_single_bus_sc_no_y_inv(net, ppc, bus):
     calc_branch_results(net, ppc, V)
 
 
-from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-
-
 def calc_branch_results(net, ppci, V):
     Ybus = ppci["internal"]["Ybus"]
     Yf = ppci["internal"]["Yf"]
@@ -261,10 +259,14 @@ def calc_branch_results(net, ppci, V):
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
 
-
 def _calc_branch_currents(net, ppc, bus):
     # Vectorized for multiple bus
-    bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)    
+    if bus is None:
+        # Slice(None) is equal to select all
+        bus_idx = slice(None)
+        bus = net.bus.index
+    else:
+        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
     
     case = net._options["case"]
 
@@ -280,6 +282,7 @@ def _calc_branch_currents(net, ppc, bus):
     if "Zbus" in ppc["internal"]:
         Zbus = ppc["internal"]["Zbus"]
         V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
+        V_ikss = V_ikss[:, bus_idx]
     else:
         ybus_fact = ppc["internal"]["ybus_fact"]
         V_ikss = np.zeros((n, np.shape(bus)[0]), dtype=np.complex)

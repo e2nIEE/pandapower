@@ -130,9 +130,11 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     if fault in ("2ph", "3ph"):
         _calc_sc(net, bus)
     elif fault == "1ph":
+        if bus is not None:
+            raise UserWarning("1ph SC Calculation for selected buses are not implemented yet!")
         _calc_sc_1ph(net, bus)
     else:
-        raise ValueError("Invalid fault %s" % fault)        
+        raise ValueError("Invalid fault %s" % fault)  
 
 
 def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10,
@@ -243,7 +245,7 @@ def _calc_sc(net, bus):
     
     # TODO: Check this, do we need kappa besides Ip calculation?
     # kappa required inverse of Zbus, which is optimized
-    if net["_options"]["ip"] or net["_options"]["ith"]:
+    if net["_options"]["kappa"]:
         _add_kappa_to_ppc(net, ppci)
 
     if net["_options"]["inverse_y"]:
@@ -252,16 +254,13 @@ def _calc_sc(net, bus):
         except Exception as e:
             _clean_up(net, res=False)
             raise (e)
-
-        _calc_rx(net, ppci, bus=None)
-        _calc_ikss(net, ppci, bus=None)
     else:
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
 
-        _calc_rx(net, ppci, bus)
-        _calc_ikss(net, ppci, bus)
-        
+    _calc_rx(net, ppci, bus)
+    _calc_ikss(net, ppci, bus)
+
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
     if net["_options"]["ith"]:
