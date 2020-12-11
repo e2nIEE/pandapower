@@ -292,7 +292,7 @@ def _calc_sc_1ph(net, bus):
     except Exception as e:
         _clean_up(net, res=False)
         raise (e)
-    _calc_rx(net, ppci)
+    _calc_rx(net, ppci, bus=bus)
     _add_kappa_to_ppc(net, ppci)
     # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net)
@@ -302,11 +302,11 @@ def _calc_sc_1ph(net, bus):
     except Exception as e:
         _clean_up(net, res=False)
         raise (e)
-    _calc_rx(net, ppci_0)
+    _calc_rx(net, ppci_0, bus=bus)
     _calc_ikss_1ph(net, ppci, ppci_0)
     if net._options["branch_results"]:
         _calc_branch_currents(net, ppci)
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc, ppc_0)
+    _extract_results(net, ppc, ppc_0, bus=bus)
     _clean_up(net)
