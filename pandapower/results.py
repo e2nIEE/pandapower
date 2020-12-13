@@ -197,12 +197,12 @@ def _ppci_internal_to_ppc(result, ppc):
             n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             n_rows_result = np.shape(result['bus'])[0]
-            # update_matrix = np.empty((n_branches, n_buses)) * np.nan
-            # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
-
-            # To select only required buses
-            update_matrix = np.empty((n_branches, value.shape[1])) * np.nan
+            update_matrix = np.empty((n_branches, n_buses)) * np.nan
             update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
+
+            # # To select only required buses
+            # update_matrix = np.empty((n_branches, value.shape[1])) * np.nan
+            # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
             ppc['internal'][key] = np.copy(update_matrix)
         else:
             ppc["internal"][key] = value
