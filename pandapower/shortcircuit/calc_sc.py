@@ -242,11 +242,6 @@ def _calc_sc(net, bus):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
-    
-    # TODO: Check this, do we need kappa besides Ip calculation?
-    # kappa required inverse of Zbus, which is optimized
-    if net["_options"]["kappa"]:
-        _add_kappa_to_ppc(net, ppci)
 
     if net["_options"]["inverse_y"]:
         try:
@@ -258,7 +253,12 @@ def _calc_sc(net, bus):
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
 
+
     _calc_rx(net, ppci, bus)
+    # TODO: Check this, do we need kappa besides Ip, Ith calculation?
+    # kappa required inverse of Zbus, which is optimized
+    if net["_options"]["kappa"]:
+        _add_kappa_to_ppc(net, ppci)
     _calc_ikss(net, ppci, bus)
 
     if net["_options"]["ip"]:
@@ -305,7 +305,7 @@ def _calc_sc_1ph(net, bus):
     _calc_rx(net, ppci_0, bus=bus)
     _calc_ikss_1ph(net, ppci, ppci_0)
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci)
+        _calc_branch_currents(net, ppci, bus=bus)
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0, bus=bus)

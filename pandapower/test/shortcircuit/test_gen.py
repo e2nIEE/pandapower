@@ -45,7 +45,7 @@ def gen_three_bus_example():
 
 def test_max_gen(one_line_one_generator):
     net = one_line_one_generator
-    sc.calc_sc(net, case="max")
+    sc.calc_sc(net, case="max", inverse_y=False)
     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.5083952) < 1e-7
