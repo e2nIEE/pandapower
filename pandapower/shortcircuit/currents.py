@@ -301,11 +301,11 @@ def _calc_branch_currents(net, ppc, bus):
     if current_sources:
         current = np.tile(-ppc["bus"][:, IKCV], (n, 1))
         np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
-        V = np.dot((current * baseI), Zbus).T
+
         # calculate voltage source branch current
         if "Zbus" in ppc["internal"]:
             Zbus = ppc["internal"]["Zbus"]
-            V = (current * baseI) * Zbus
+            V = np.dot((current * baseI), Zbus).T
         else:
             ybus_fact = ppc["internal"]["ybus_fact"]
             V = np.zeros((n, n), dtype=np.complex)

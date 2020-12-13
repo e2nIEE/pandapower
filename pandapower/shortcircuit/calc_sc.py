@@ -253,7 +253,6 @@ def _calc_sc(net, bus):
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
 
-
     _calc_rx(net, ppci, bus)
     # TODO: Check this, do we need kappa besides Ip, Ith calculation?
     # kappa required inverse of Zbus, which is optimized
