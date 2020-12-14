@@ -556,7 +556,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
     assert np.allclose(net.res_bus.va_degree, va_degree, atol=1e-2, rtol=1e-2)
 
 
-@pytest.mark.skipif(not julia_installed)
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_timeseries_powermodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
