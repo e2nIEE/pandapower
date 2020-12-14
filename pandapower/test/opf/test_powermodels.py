@@ -556,6 +556,20 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
     assert np.allclose(net.res_bus.va_degree, va_degree, atol=1e-2, rtol=1e-2)
 
 
+@pytest.mark.skipif(not julia_installed)
+def test_timeseries_powermodels():
+    profiles = pd.DataFrame()
+    n_timesteps = 3
+    profiles['load1'] = np.random.random(n_timesteps) * 2e1
+    ds = DFData(profiles)
+
+    net = nw.simple_four_bus_system()
+    time_steps = range(3)
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1', scale_factor=0.85)
+    net.load['controllable'] = False
+    run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
+
+
 if __name__ == '__main__':
     test_pwl()
     # pytest.main([__file__])
