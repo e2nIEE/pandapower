@@ -48,7 +48,7 @@ setup(
                       "numpy>=0.11",
                       "packaging",
 					  "xlsxwriter",
-					  "xlrd",
+					  "openpyxl",
 					  "cryptography"],
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
