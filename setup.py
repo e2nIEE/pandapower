@@ -47,9 +47,10 @@ setup(
                       "scipy",
                       "numpy>=0.11",
                       "packaging",
-					  "xlsxwriter",
-					  "openpyxl",
-					  "cryptography"],
+		      "xlsxwriter",
+		      "xlrd",
+		      "openpyxl",
+		      "cryptography"],
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
 		"plotting": ["plotly", "matplotlib", "python-igraph"],
