@@ -178,7 +178,7 @@ def from_excel(filename, convert=True):
     elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
-        xls = pd.read_excel(ExcelFile(filename), sheet_name=None, index_col=0, engine="openpyxl"))
+        xls = pd.read_excel(ExcelFile(filename), sheet_name=None, index_col=0, engine="openpyxl")
         
     try:
         net = io_utils.from_dict_of_dfs(xls)
