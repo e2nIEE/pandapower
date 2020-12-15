@@ -264,12 +264,12 @@ def _calc_branch_currents(net, ppc, bus):
     # Vectorized for multiple bus
     if bus is None:
         # Slice(None) is equal to select all
-        bus_idx = net._pd2ppc_lookups["bus"][net.bus.index]
-        n_sc_bus = np.shape(net.bus.index)[0]
-    else:
-        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
-        n_sc_bus = np.shape(bus_idx)[0]
-    
+        bus = net.bus.index
+
+    bus = bus[np.isin(bus, net._is_elements["bus_is_idx"])]
+    bus_idx = net._pd2ppc_lookups["bus"][bus]
+    n_sc_bus = np.shape(net.bus.index)[0]
+
     case = net._options["case"]
 
     Yf = ppc["internal"]["Yf"]
