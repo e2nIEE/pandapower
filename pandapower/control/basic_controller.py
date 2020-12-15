@@ -22,10 +22,12 @@ class Controller(JSONSerializableClass):
     """
 
     def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
-                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False, **kwargs):
+                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
+                 matching_params=None, **kwargs):
         super().__init__()
         self.recycle = recycle
         self.initial_run = initial_run
+        self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
             index = get_free_id(net.controller)
@@ -33,7 +35,7 @@ class Controller(JSONSerializableClass):
         self.add_controller_to_net(net=net, in_service=in_service, order=order,
                                    level=level, index=index, recycle=recycle,
                                    drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                   overwrite=overwrite, **kwargs)
+                                   overwrite=overwrite, matching_params=matching_params, **kwargs)
 
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
