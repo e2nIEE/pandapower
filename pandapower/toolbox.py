@@ -1494,7 +1494,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
 
     # switches
-    p2["switch"] = net.switch[
+    p2["switch"] = net.switch.loc[
         net.switch.bus.isin(p2.bus.index) & pd.concat([
             net.switch[net.switch.et == 'b'].element.isin(p2.bus.index),
             net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
