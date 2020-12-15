@@ -114,6 +114,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
+    
+    if isinstance(bus, int):
+        bus = [bus]
 
     kappa = ith or ip
     net["_options"] = {}

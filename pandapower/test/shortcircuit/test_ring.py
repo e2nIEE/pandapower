@@ -30,7 +30,7 @@ def ring_network():
 
 def test_branch_results_open_ring(ring_network):
     net = ring_network
-    sc.calc_sc(net, branch_results=True)
+    sc.calc_sc(net, branch_results=True, inverse_y=False)
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.47705988])
     assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0.44514686, 0.47125418])
 
@@ -45,7 +45,7 @@ def test_branch_results_closed_ring(ring_network):
 def test_kappa_methods(ring_network):
     net = ring_network
     net.switch.closed = True
-    sc.calc_sc(net, kappa_method="B", ip=True)
+    sc.calc_sc(net, kappa_method="B", ip=True, inverse_y=False)
     assert np.allclose(net.res_bus_sc.ip_ka.values,
                        [0.48810547956, 0.91192962511, 1.0264898716, 1.0360554521])
     sc.calc_sc(net, kappa_method="C", ip=True, topology="auto")
