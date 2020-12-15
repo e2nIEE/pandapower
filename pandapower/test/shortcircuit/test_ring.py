@@ -32,7 +32,17 @@ def test_branch_results_open_ring(ring_network):
     net = ring_network
     sc.calc_sc(net, branch_results=True, inverse_y=False)
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.47705988])
-    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0.0, 0.47125418])
+    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, np.nan, 0.47125418], equal_nan=True)
+    
+def test_branch_results_open_ring_with_impedance(ring_network):
+    net = ring_network
+    sc.calc_sc(net, branch_results=True, inverse_y=False)
+    res_line_no_imp = net.res_line_sc.ikss_ka.values.copy()
+
+    # Make sure that with fault impedance, the total current should be smaller
+    sc.calc_sc(net, branch_results=True, inverse_y=False, r_fault_ohm=1, x_fault_ohm=5)
+    non_nan_flag = ~np.isnan(res_line_no_imp)
+    assert np.all(net.res_line_sc.ikss_ka.values[non_nan_flag] < res_line_no_imp[non_nan_flag])
 
 def test_branch_results_closed_ring(ring_network):
     net = ring_network
