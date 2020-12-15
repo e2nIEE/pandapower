@@ -295,8 +295,8 @@ def _calc_branch_currents(net, ppc, bus):
 
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
     ikss1_all_t = np.conj(Yt.dot(V_ikss))
-    # ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
-    # ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
+    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
+    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
     current_sources = any(ppc["bus"][:, IKCV]) > 0
@@ -338,11 +338,11 @@ def _calc_branch_currents(net, ppc, bus):
     if net._options["ip"]:
         kappa = ppc["bus"][:, KAPPA]
         if current_sources:
-            ip_all_f = np.sqrt(2) * (ikss1_all_f * kappa + ikss2_all_f)
-            ip_all_t = np.sqrt(2) * (ikss1_all_t * kappa + ikss2_all_t)
+            ip_all_f = np.sqrt(2) * (ikss1_all_f * kappa[bus_idx] + ikss2_all_f)
+            ip_all_t = np.sqrt(2) * (ikss1_all_t * kappa[bus_idx] + ikss2_all_t)
         else:
-            ip_all_f = np.sqrt(2) * ikss1_all_f * kappa
-            ip_all_t = np.sqrt(2) * ikss1_all_t * kappa
+            ip_all_f = np.sqrt(2) * ikss1_all_f * kappa[bus_idx]
+            ip_all_t = np.sqrt(2) * ikss1_all_t * kappa[bus_idx]
 
         if net._options["return_all_currents"]:
             ppc["internal"]["branch_ip_f"] = abs(ip_all_f) / baseI[fb, None]

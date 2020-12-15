@@ -67,24 +67,43 @@ def _calc_zbus(ppc):
 def _calc_zbus_diag(net, ppc, bus=None):
     ybus_fact = ppc["internal"]["ybus_fact"]
     n_bus = ppc["bus"].shape[0]
-
-    if bus is None:
-        bus = net.bus.index
-    elif isinstance(bus, int):
-        bus = np.array([bus])
-
-    diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
-    ix = 0
     
-    # Use windows size 32 to calculate Zbus
-    while ix < np.shape(bus)[0]:
-        ix_end = min(ix+32, np.shape(bus)[0])
-        bus_idx = net._pd2ppc_lookups["bus"][bus[ix: ix_end]]
-        b = np.zeros((n_bus, (ix_end-ix)), dtype=np.complex)
-        for this_ix, this_bus_ix in enumerate(bus_idx):
-            b[this_bus_ix, this_ix] = 1 + 0j
-        res = ybus_fact(b)
-        for this_ix, this_bus_ix in enumerate(bus_idx):
-            diagZ[ix] = res[this_bus_ix, this_ix]
-        ix += 32
-    return diagZ
+    if bus is None:
+        diagZ = np.zeros(n_bus, dtype=np.complex)
+        for i in range(ppc["bus"].shape[0]):
+            b = np.zeros(n_bus, dtype=np.complex)
+            b[i] = 1 + 0j
+            diagZ[i] = ybus_fact(b)[i]
+        ppc["internal"]["diagZ"] = diagZ
+        return diagZ
+    else:
+        if isinstance(bus, int):
+            bus = np.array([bus])
+        diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
+        for ix, b in enumerate(bus):
+            bus_idx = net._pd2ppc_lookups["bus"][b] #bus where the short-circuit is calculated (j)        
+            b = np.zeros(n_bus, dtype=np.complex)
+            b[bus_idx] = 1 + 0j
+            diagZ[ix] = ybus_fact(b)[bus_idx]
+        return diagZ 
+
+    # if bus is None:
+    #     bus = net.bus.index
+    # elif isinstance(bus, int):
+    #     bus = np.array([bus])
+
+    # diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
+    # ix = 0
+    
+    # # Use windows size 32 to calculate Zbus
+    # while ix < np.shape(bus)[0]:
+    #     ix_end = min(ix+32, np.shape(bus)[0])
+    #     bus_idx = net._pd2ppc_lookups["bus"][bus[ix: ix_end]]
+    #     b = np.zeros((n_bus, (ix_end-ix)), dtype=np.complex)
+    #     for this_ix, this_bus_ix in enumerate(bus_idx):
+    #         b[this_bus_ix, this_ix] = 1 + 0j
+    #     res = ybus_fact(b)
+    #     for this_ix, this_bus_ix in enumerate(bus_idx):
+    #         diagZ[ix] = res[this_bus_ix, this_ix]
+    #     ix += 32
+    # return diagZ
