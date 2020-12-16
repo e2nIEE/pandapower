@@ -32,7 +32,7 @@ def test_branch_results_open_ring(ring_network):
     net = ring_network
     sc.calc_sc(net, branch_results=True, inverse_y=False)
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.47705988])
-    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0, 0.47125418], equal_nan=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, np.nan, 0.47125418], equal_nan=True)
     
 def test_branch_results_open_ring_with_impedance(ring_network):
     net = ring_network
@@ -64,4 +64,3 @@ def test_kappa_methods(ring_network):
 
 if __name__ == '__main__':
     pytest.main(["test_ring.py"])
-

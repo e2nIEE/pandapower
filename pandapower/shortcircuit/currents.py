@@ -332,8 +332,8 @@ def _calc_branch_currents(net, ppc, bus):
         ppc["internal"]["branch_ikss_f"] = ikss_all_f / baseI[fb, None]
         ppc["internal"]["branch_ikss_t"] = ikss_all_t / baseI[tb, None]
     else:
-        #ikss_all_f[abs(ikss_all_f) < 1e-10] = 0
-        #ikss_all_t[abs(ikss_all_t) < 1e-10] = 0
+        ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
+        ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
         ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
 
@@ -350,8 +350,8 @@ def _calc_branch_currents(net, ppc, bus):
             ppc["internal"]["branch_ip_f"] = abs(ip_all_f) / baseI[fb, None]
             ppc["internal"]["branch_ip_t"] = abs(ip_all_t) / baseI[tb, None]
         else:
-            #ip_all_f[abs(ip_all_f) < 1e-10] = 0
-            #ip_all_t[abs(ip_all_t) < 1e-10] = 0
+            ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
+            ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
             ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
             ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
 
