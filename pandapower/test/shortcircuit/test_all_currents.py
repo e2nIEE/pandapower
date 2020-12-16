@@ -23,6 +23,16 @@ def three_bus_example():
     net.line["endtemp_degree"] = 80
 
     pp.create_sgen(net, b2, sn_mva=2, p_mw=0, k=1.2)
+
+    net.ext_grid['x0x_min'] = 0.1
+    net.ext_grid['r0x0_min'] = 0.1
+    net.ext_grid['x0x_max'] = 0.1
+    net.ext_grid['r0x0_max'] = 0.1
+
+    net.line['r0_ohm_per_km'] = 0.1
+    net.line['x0_ohm_per_km'] = 0.1
+    net.line['c0_nf_per_km'] = 0.1
+    net.line["endtemp_degree"] = 80
     return net
 
 
@@ -59,6 +69,7 @@ def gen_three_bus_example():
     #pp.create_switch(net, b3, b1, et="b")
     return net
 
+
 @pytest.fixture
 def net_transformer():
     net = pp.create_empty_network(sn_mva=2)
@@ -74,6 +85,7 @@ def net_transformer():
                                           tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
     pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500) #adding a shunt shouldn't change the result
     return net
+
 
 def test_all_currents_sgen(three_bus_example):
     #
@@ -97,6 +109,67 @@ def test_all_currents_sgen(three_bus_example):
                        np.array([0.01781447, 0.74438751, 0.72793774, 0., 0., 0.74576565]), atol=1e-5)
     assert np.allclose(net.res_line_sc.ith_ka.values,
                        np.array([0.01265116, 0.40071219, 0.39339323, 0., 0., 0.40605375]), atol=1e-5)
+
+
+def test_all_currents_1ph_max(three_bus_example):
+    # Only check coherence between branch currents and bus currents
+    #
+    # eg--0---l0---1---l1---2
+    #              |
+    #              g
+    #
+    # With generator
+    net = three_bus_example
+    sc.calc_sc(net, case="max", fault='1ph', branch_results=True, return_all_currents=True)
+    i_bus_with_sgen = net.res_bus_sc.copy()
+    i_line_with_gen = net.res_line_sc.copy()
+
+    # Without generator
+    net = three_bus_example
+    net.sgen.in_service = False
+    sc.calc_sc(net, case="max", fault='1ph')
+    i_bus_without_sgen = net.res_bus_sc.copy()
+
+    # Isolate sgen contrib
+    i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
+
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 0)], i_bus_only_sgen.ikss_ka.at[0], atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 1)], i_bus_without_sgen.ikss_ka.at[1], atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 2)], i_bus_without_sgen.ikss_ka.at[2] -
+                      (i_bus_only_sgen.ikss_ka.at[1] - i_bus_only_sgen.ikss_ka.at[2]) , atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 0)], 0., atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 1)], 0., atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 2)], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
+
+
+def test_all_currents_1ph_min(three_bus_example):
+    # Only check coherence between branch currents and bus currents
+    #
+    # eg--0---l0---1---l1---2
+    #              |
+    #              g
+    #
+    # With generator
+    net = three_bus_example
+    sc.calc_sc(net, case="min", fault='1ph', branch_results=True, return_all_currents=True)
+    i_bus_with_sgen = net.res_bus_sc.copy()
+    i_line_with_gen = net.res_line_sc.copy()
+
+    # Without generator
+    net.sgen.in_service = False
+    sc.calc_sc(net, case="min", fault='1ph', branch_results=True)
+    i_bus_without_sgen = net.res_bus_sc.copy()
+
+    # Isolate sgen contrib
+    i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
+
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 0)], i_bus_only_sgen.ikss_ka.at[0], atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 1)], i_bus_without_sgen.ikss_ka.at[1], atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(0, 2)], i_bus_without_sgen.ikss_ka.at[2] -
+                      (i_bus_only_sgen.ikss_ka.at[1] - i_bus_only_sgen.ikss_ka.at[2]) , atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 0)], 0., atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 1)], 0., atol=1e-4)
+    assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 2)], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
 
 
 def test_with_permuted_index(three_bus_permuted_index):
@@ -155,6 +228,7 @@ def test_branch_all_currents_trafo(net_transformer):
     assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,1)] - 0.) <1e-5)
     assert (abs(net.res_trafo_sc.ikss_hv_ka.loc[(0,2)] - 0.648795) <1e-5)
 
+
 def test_against_single_sc_results_line(three_bus_permuted_index):
     net = three_bus_permuted_index
 
@@ -167,6 +241,7 @@ def test_against_single_sc_results_line(three_bus_permuted_index):
         single_result = net.res_line_sc.i_ka.values
         multi_result = multi_results.ikss_ka.loc[line_bus_indices].values
         assert np.allclose(single_result, multi_result)
+
 
 def test_against_single_sc_results_trafo(net_transformer):
     net = net_transformer
@@ -183,6 +258,7 @@ def test_against_single_sc_results_trafo(net_transformer):
         single_result_hv = net.res_trafo_sc.i_hv_ka.values
         multi_result_hv = multi_results.ikss_hv_ka.loc[trafo_bus_indices].values
         assert np.allclose(single_result_hv, multi_result_hv)
+
 
 if __name__ == '__main__':
     pytest.main(["test_all_currents.py"])

@@ -3531,7 +3531,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if missing_nodes:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
-                          % (element_name, index, node_name, plural, missing_nodes))
+                          % (element_name.capitalize(), index, node_name, plural, missing_nodes))
 
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
