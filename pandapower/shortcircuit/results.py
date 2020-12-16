@@ -9,16 +9,35 @@ import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2
-from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_bus import VM, VA, BUS_TYPE
 from pandapower.results_bus import _get_bus_idx, _set_buses_out_of_service
 from pandapower.results import _get_aranged_lookup, _get_branch_results
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
 
+def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    if bus is None:
+        bus = net.bus.index
 
+    ppc_index = np.arange(np.shape(bus)[0])
+    # print(ppc_index, ppc["bus"][ppc_index, BUS_TYPE])
+    ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1 
+    return bus, ppc_index
+
+def _pad_result(net, ppc, bus):
+    for key, value in ppc["internal"].items():
+        # if branch current matrices have been stored they need to pad one row
+        # for out of service elements
+        if key in ["branch_ikss_f", "branch_ikss_t",
+                   "branch_ip_f", "branch_ip_t",
+                   "branch_ith_f", "branch_ith_t"]:
+            ppc["internal"][key] = np.hstack((value, np.ones((value.shape[0], 1)) * np.nan))
+    
 def _extract_results(net, ppc, ppc_0, bus):
     _get_bus_results(net, ppc, ppc_0, bus)
     if net._options["branch_results"]:
         if net._options['return_all_currents']:
+            _pad_result(net, ppc, bus)
             _get_line_all_results(net, ppc, bus)
             _get_trafo_all_results(net, ppc, bus)
             _get_trafo3w_all_results(net, ppc, bus)
@@ -85,13 +104,8 @@ def _get_line_results(net, ppc):
 
 def _get_line_all_results(net, ppc, bus):    
     case = net._options["case"]
-    # TODO: Check this
-    bus_lookup = net._pd2ppc_lookups["bus"]
-    if bus is None:
-        bus = net.bus.index
-        ppc_index = bus_lookup[bus]
-    else:
-        ppc_index = np.arange(np.shape(bus)[0])
+
+    bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
     multindex = pd.MultiIndex.from_product([net.res_line_sc.index, bus], names=['line','bus'])
@@ -110,7 +124,6 @@ def _get_line_all_results(net, ppc, bus):
             net.res_line_sc["ith_ka"] = minmax(ppc["internal"]["branch_ith_f"][f:t, ppc_index].real.reshape(-1, 1),
                                                ppc["internal"]["branch_ith_t"][f:t, ppc_index].real.reshape(-1, 1))
 
-
 def _get_trafo_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
@@ -120,14 +133,7 @@ def _get_trafo_results(net, ppc):
 
 
 def _get_trafo_all_results(net, ppc, bus):
-    bus_lookup = net._pd2ppc_lookups["bus"]
-
-    if bus is None:
-        bus = net.bus.index
-        ppc_index = bus_lookup[bus]
-    else:
-        ppc_index = np.arange(np.shape(bus)[0])
-
+    bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
     multindex = pd.MultiIndex.from_product([net.res_trafo_sc.index, bus], names=['trafo', 'bus'])
@@ -152,12 +158,7 @@ def _get_trafo3w_results(net, ppc):
 
 
 def _get_trafo3w_all_results(net, ppc, bus):
-    bus_lookup = net._pd2ppc_lookups["bus"]
-    if bus is None:
-        bus = net.bus.index
-        ppc_index = bus_lookup[bus]
-    else:
-        ppc_index = np.arange(np.shape(bus)[0])
+    bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
     multindex = pd.MultiIndex.from_product([net.res_trafo3w_sc.index, bus], names=['trafo3w', 'bus'])

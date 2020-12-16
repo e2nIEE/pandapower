@@ -261,30 +261,4 @@ def test_against_single_sc_results_trafo(net_transformer):
 
 
 if __name__ == '__main__':
-    # pytest.main(["test_all_currents.py"])
-    net = pp.create_empty_network(sn_mva=2)
-    b1a = pp.create_bus(net, vn_kv=10.)
-    b1b = pp.create_bus(net, vn_kv=10.)
-    b2 = pp.create_bus(net, vn_kv=.4)
-    pp.create_bus(net, vn_kv=0.4, in_service=False) #add out of service bus to test oos indexing
-    pp.create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
-    pp.create_switch(net, b1a, b1b, et="b")
-    pp.create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6.,
-                                          vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
-                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2,
-                                          tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
-    pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500) #adding a shunt shouldn't change the result
-    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True, inverse_y=True)
-
-    multi_results = net.res_trafo_sc.copy()
-
-    for bus in net.bus.index[net.bus.in_service]:
-        sc.calc_single_sc(net, bus=bus)
-        trafo_bus_indices = [(trafo, bus) for trafo in net.trafo.index]
-        single_result_lv = net.res_trafo_sc.i_lv_ka.values
-        multi_result_lv = multi_results.ikss_lv_ka.loc[trafo_bus_indices].values
-        assert np.allclose(single_result_lv, multi_result_lv)
-
-        single_result_hv = net.res_trafo_sc.i_hv_ka.values
-        multi_result_hv = multi_results.ikss_hv_ka.loc[trafo_bus_indices].values
-        assert np.allclose(single_result_hv, multi_result_hv)
+    pytest.main(["test_all_currents.py"])
