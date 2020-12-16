@@ -110,6 +110,23 @@ def test_iec60909_example_4():
     assert np.isclose(net.res_bus_sc[net.bus.name=="F2"].ikss_ka.values[0], 34.89135137)
     assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
     assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
+    
+def test_iec60909_example_4_bus_selection():
+    file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
+    net = pp.from_json(file)
+    all_bus = net.bus.query("name in ('Q','T2LV')").index
+    sc.calc_sc(net, fault="1ph", bus=all_bus)
+    assert np.isclose(net.res_bus_sc[net.bus.name=="Q"].ikss_ka.values[0], 10.05957231)
+    assert np.isclose(net.res_bus_sc[net.bus.name=="T2LV"].ikss_ka.values[0], 34.467353142)
+
+def test_iec60909_example_4_bus_selection_no_y_inv():
+    file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
+    net = pp.from_json(file)
+    all_bus = net.bus.query("name in ('Q','T2LV')").index
+    sc.calc_sc(net, fault="1ph", bus=all_bus, inverse_y=False)
+    assert np.isclose(net.res_bus_sc[net.bus.name=="Q"].ikss_ka.values[0], 10.05957231)
+    assert np.isclose(net.res_bus_sc[net.bus.name=="T2LV"].ikss_ka.values[0], 34.467353142)
+
 
 def test_1ph_with_switches():
     net = pp.create_empty_network()
