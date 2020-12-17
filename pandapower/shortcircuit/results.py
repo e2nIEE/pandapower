@@ -20,24 +20,13 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
         bus = net.bus.index
 
     ppc_index = np.arange(np.shape(bus)[0])
-    # print(ppc_index, ppc["bus"][ppc_index, BUS_TYPE])
     ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1 
     return bus, ppc_index
 
-def _pad_result(net, ppc, bus):
-    for key, value in ppc["internal"].items():
-        # if branch current matrices have been stored they need to pad one row
-        # for out of service elements
-        if key in ["branch_ikss_f", "branch_ikss_t",
-                   "branch_ip_f", "branch_ip_t",
-                   "branch_ith_f", "branch_ith_t"]:
-            ppc["internal"][key] = np.hstack((value, np.ones((value.shape[0], 1)) * np.nan))
-    
 def _extract_results(net, ppc, ppc_0, bus):
     _get_bus_results(net, ppc, ppc_0, bus)
     if net._options["branch_results"]:
         if net._options['return_all_currents']:
-            _pad_result(net, ppc, bus)
             _get_line_all_results(net, ppc, bus)
             _get_trafo_all_results(net, ppc, bus)
             _get_trafo3w_all_results(net, ppc, bus)
@@ -45,7 +34,6 @@ def _extract_results(net, ppc, ppc_0, bus):
             _get_line_results(net, ppc)
             _get_trafo_results(net, ppc)
             _get_trafo3w_results(net, ppc)
-
 
 def _extract_single_results(net, ppc):
     for element in ["line", "trafo"]:

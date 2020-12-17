@@ -266,7 +266,6 @@ def _calc_branch_currents(net, ppc, bus):
         # Slice(None) is equal to select all
         bus = net.bus.index
 
-
     bus_idx = net._pd2ppc_lookups["bus"][bus]
     # Select only in service bus for sc calculation
     bus_idx = bus_idx[bus_idx < ppc['bus'].shape[0]]
