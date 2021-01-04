@@ -29,6 +29,7 @@ def _calc_ikss(net, ppc, bus=None):
     case = net._options["case"]
     c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
     ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+
     z_equiv = abs(ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j)
     if fault == "3ph":
         ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
@@ -48,8 +49,9 @@ def _calc_ikss_1ph(net, ppc, ppc_0, bus=None):
     assert net._options["fault"] == "1ph"
     case = net._options["case"]
     c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
-    ppc["internal"]["baseI"] = ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
-    ppc_0["internal"]["baseI"] = ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
+    ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    ppc_0["internal"]["baseI"] = ppc_0["bus"][:, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
+
     z_equiv = abs((ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
                   (ppc_0["bus"][bus_idx, R_EQUIV] + ppc_0["bus"][bus_idx, X_EQUIV] * 1j))
 
@@ -331,8 +333,8 @@ def _calc_branch_currents(net, ppc, bus):
         ppc["internal"]["branch_ikss_f"] = ikss_all_f / baseI[fb, None]
         ppc["internal"]["branch_ikss_t"] = ikss_all_t / baseI[tb, None]
     else:
-        ikss_all_f[ikss_all_f < 1e-10] = np.nan
-        ikss_all_t[ikss_all_t < 1e-10] = np.nan
+        ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
+        ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
         ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
 
