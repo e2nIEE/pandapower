@@ -131,6 +131,9 @@ def test_iec60909_example_4_bus_selection_br_res():
         sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
                    bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
                    branch_results=True)
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
+                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+                   branch_results=True, return_all_currents=True)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
                                             "ikss_ka"], 35.53066312)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
