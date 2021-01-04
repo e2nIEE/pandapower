@@ -9,6 +9,8 @@ Change Log
 - [ADDED] The Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I")
 - [ADDED] For easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json")
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
 
 [2.4.0]- 2020-09-01
 ----------------------

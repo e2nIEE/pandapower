@@ -133,8 +133,6 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     if fault in ("2ph", "3ph"):
         _calc_sc(net, bus)
     elif fault == "1ph":
-        if bus is not None:
-            raise UserWarning("1ph SC Calculation for selected buses are not implemented yet!")
         _calc_sc_1ph(net, bus)
     else:
         raise ValueError("Invalid fault %s" % fault)  
@@ -289,21 +287,25 @@ def _calc_sc_1ph(net, bus):
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
 
-    try:
-        _calc_zbus(ppci)
-    except Exception as e:
-        _clean_up(net, res=False)
-        raise (e)
-    _calc_rx(net, ppci, bus=bus)
-    _add_kappa_to_ppc(net, ppci)
     # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net)
     _calc_ybus(ppci_0)
-    try:
-        _calc_zbus(ppci_0)
-    except Exception as e:
-        _clean_up(net, res=False)
-        raise (e)
+
+    if net["_options"]["inverse_y"]:
+        try:
+            _calc_zbus(ppci)
+            _calc_zbus(ppci_0)
+        except Exception as e:
+            _clean_up(net, res=False)
+            raise (e)
+    else:
+        # Factorization Ybus once
+        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
+        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
+
+    _calc_rx(net, ppci, bus=bus)
+    _add_kappa_to_ppc(net, ppci)
+
     _calc_rx(net, ppci_0, bus=bus)
     _calc_ikss_1ph(net, ppci, ppci_0)
     if net._options["branch_results"]:
