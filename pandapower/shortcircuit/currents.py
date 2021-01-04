@@ -45,17 +45,17 @@ def _calc_ikss_1ph(net, ppc, ppc_0, bus=None):
     else:
         bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
 
-    fault = net._options["fault"]
+    assert net._options["fault"] == "1ph"
     case = net._options["case"]
     c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
     ppc["internal"]["baseI"] = ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
     ppc_0["internal"]["baseI"] = ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
     z_equiv = abs((ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
                   (ppc_0["bus"][bus_idx, R_EQUIV] + ppc_0["bus"][bus_idx, X_EQUIV] * 1j))
-    if fault == "1ph":
-        ppc_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
-        ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
-        _current_source_current(net, ppc)
+
+    ppc_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
+    ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc["baseMVA"]
+    _current_source_current(net, ppc)
 
 
 def _current_source_current(net, ppc):
@@ -266,9 +266,10 @@ def _calc_branch_currents(net, ppc, bus):
         # Slice(None) is equal to select all
         bus = net.bus.index
 
-    bus = bus[np.isin(bus, net._is_elements["bus_is_idx"])]
     bus_idx = net._pd2ppc_lookups["bus"][bus]
-    n_sc_bus = np.shape(net.bus.index)[0]
+    # Select only in service bus for sc calculation
+    bus_idx = bus_idx[bus_idx < ppc['bus'].shape[0]]
+    n_sc_bus = np.shape(bus_idx)[0]
 
     case = net._options["case"]
 
@@ -330,8 +331,8 @@ def _calc_branch_currents(net, ppc, bus):
         ppc["internal"]["branch_ikss_f"] = ikss_all_f / baseI[fb, None]
         ppc["internal"]["branch_ikss_t"] = ikss_all_t / baseI[tb, None]
     else:
-        ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
-        ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
+        ikss_all_f[ikss_all_f < 1e-10] = np.nan
+        ikss_all_t[ikss_all_t < 1e-10] = np.nan
         ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
         ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
 

@@ -10,7 +10,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-# import time
+
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
@@ -87,6 +87,10 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
         each (branch, bus) tuple is returned otherwise only the max/min is returned
+        
+        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for defined bus
+        
+        **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization, factorization version is in experiment which should be faster and memory efficienter
 
 
     OUTPUT:
@@ -255,7 +259,7 @@ def _calc_sc(net, bus):
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
 
     _calc_rx(net, ppci, bus)
-    # TODO: Check this, do we need kappa besides Ip, Ith calculation?
+
     # kappa required inverse of Zbus, which is optimized
     if net["_options"]["kappa"]:
         _add_kappa_to_ppc(net, ppci)
@@ -307,7 +311,8 @@ def _calc_sc_1ph(net, bus):
     _add_kappa_to_ppc(net, ppci)
 
     _calc_rx(net, ppci_0, bus=bus)
-    _calc_ikss_1ph(net, ppci, ppci_0)
+    _calc_ikss_1ph(net, ppci, ppci_0, bus=bus)
+
     if net._options["branch_results"]:
         _calc_branch_currents(net, ppci, bus=bus)
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")

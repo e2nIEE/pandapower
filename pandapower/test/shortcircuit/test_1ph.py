@@ -112,8 +112,8 @@ def test_iec60909_example_4():
         assert np.isclose(net.res_bus_sc[net.bus.name=="F2"].ikss_ka.values[0], 34.89135137)
         assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
         assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
-    
-def test_iec60909_example_4_bus_sel():
+
+def test_iec60909_example_4_bus_selection():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
     for inv_y in (False, True):
@@ -124,7 +124,7 @@ def test_iec60909_example_4_bus_sel():
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
                                             "ikss_ka"], 34.89135137)
 
-def test_iec60909_example_4_bus_sel_br_res():
+def test_iec60909_example_4_bus_selection_br_res():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
     for inv_y in (False, True):
@@ -136,6 +136,7 @@ def test_iec60909_example_4_bus_sel_br_res():
                                             "ikss_ka"], 35.53066312)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
                                             "ikss_ka"], 34.89135137)
+
 
 def test_1ph_with_switches():
     for inv_y in (False, True):
