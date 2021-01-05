@@ -1036,6 +1036,46 @@ def test_dc_with_ext_grid_at_one_bus():
     assert np.allclose(net.res_ext_grid.p_mw.values, [0, 0])
 
 
+def test_no_branches():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_sgen(net, 1, 10)
+    pp.create_load(net, 2, 10)
+    pp.runpp(net)
+    assert net.res_ext_grid.p_mw.at[0] == 0.
+    assert net.res_ext_grid.q_mvar.at[0] == 0.
+    assert net.res_bus.vm_pu.at[0] == 1.
+    assert net.res_bus.va_degree.at[0] == 0.
+    assert np.all(pd.isnull(net.res_bus.loc[[1, 2], 'vm_pu']))
+
+
+def test_only_ref_buses():
+    net = pp.create_empty_network()
+    pp.create_buses(net, nr_buses=2, vn_kv=1)
+    pp.create_line_from_parameters(net, from_bus=0, to_bus=1, length_km=1,
+                                   r_ohm_per_km=1, x_ohm_per_km=1,
+                                   c_nf_per_km=0, max_i_ka=1)
+    pp.create_ext_grid(net, bus=0, vm_pu=1)
+    pp.create_ext_grid(net, bus=1, vm_pu=1)
+    pp.runpp(net)
+    assert np.all(net.res_bus.vm_pu == 1.)
+    assert np.all(net.res_bus.va_degree == 0.)
+    assert net.res_line.loading_percent.at[0] == 0.
+    assert np.all(net.res_ext_grid.p_mw == 0.)
+    assert np.all(net.res_ext_grid.q_mvar == 0.)
+
+    net.ext_grid.vm_pu.at[1] = 0.5
+    pp.runpp(net)
+    assert np.allclose(net.res_ext_grid.p_mw.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
+    assert np.allclose(net.res_ext_grid.q_mvar.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
+    assert abs(net.res_line.p_from_mw.at[0] - 0.25) < 1e-12
+    assert abs(net.res_line.q_from_mvar.at[0] - 0.25) < 1e-12
+    assert abs(net.res_line.p_to_mw.at[0] + 0.125) < 1e-12
+    assert abs(net.res_line.q_to_mvar.at[0] + 0.125) < 1e-12
+    assert abs(net.res_line.i_ka.at[0] - 0.20412415) < 1e-6
+
+
 def test_init_results_without_results():
     # should switch to "auto" mode and not fail
     net = example_multivoltage()

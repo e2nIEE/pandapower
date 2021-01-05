@@ -37,6 +37,7 @@ def _calc_ikss_1ph(net, ppc, ppc_0):
                   (ppc_0["bus"][:, R_EQUIV] + ppc_0["bus"][:, X_EQUIV] * 1j))
     if fault == "1ph":
         ppc_0["bus"][:, IKSS1] = c / z_equiv / ppc_0["bus"][:, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
+        ppc["bus"][:, IKSS1] = c / z_equiv / ppc_0["bus"][:, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
         _current_source_current(net, ppc)
 
 
@@ -168,7 +169,6 @@ def _calc_ib_generator(net, ppci):
 
     z_equiv = ppci["bus"][:, R_EQUIV] + ppci["bus"][:, X_EQUIV] * 1j
     I_ikss = c / z_equiv / ppci["bus"][:, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
-    I_ikss = c * ppci["bus"][:, BASE_KV] / np.sqrt(3) / z_equiv
 
     # calculate voltage source branch current
     # I_ikss = ppci["bus"][:, IKSS1]
@@ -196,7 +196,7 @@ def _calc_ib_generator(net, ppci):
     K_G = ppci['bus'][gen_buses, BASE_KV] / gen_vn_kv * c / (1 + xdss_pu * np.sin(np.arccos(cosphi)))
     Z_G = (R_dsss + 1j * X_dsss)
 
-    I_kG = c * ppci['bus'][gen_buses, BASE_KV] / np.sqrt(3) / (Z_G * K_G)
+    I_kG = c * ppci['bus'][gen_buses, BASE_KV] / np.sqrt(3) / (Z_G * K_G) * ppci["baseMVA"]
 
     dV_G = 1j * X_dsss * K_G * I_kG
     V_Is = c * ppci['bus'][gen_buses, BASE_KV] / np.sqrt(3)

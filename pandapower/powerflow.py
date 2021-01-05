@@ -14,6 +14,7 @@ from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
@@ -142,9 +143,10 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     ac = options["ac"]
 
     if ac:
+        _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
-        if ppci["branch"].shape[0] == 0:
-            result = _pf_without_branches(ppci, options)
+        if pq.shape[0] == 0 and pv.shape[0] == 0:
+            result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]
         elif algorithm in ['nr', 'iwamoto_nr']:
@@ -182,7 +184,7 @@ def _ppci_to_net(result, net):
     _clean_up(net)
 
 
-def _pf_without_branches(ppci, options):
+def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     baseMVA, bus, gen, branch, ref, _, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]

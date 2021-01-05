@@ -34,13 +34,15 @@ class ContinuousTapControl(TrafoController):
     """
 
     def __init__(self, net, tid, vm_set_pu, tol=1e-3, side="lv", trafotype="2W", in_service=True,
-                 check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False, **kwargs):
+                 check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False,
+                 matching_params=None, **kwargs):
+        if matching_params is None:
+            matching_params = {"tid": tid, 'trafotype': trafotype}
         super().__init__(net, tid=tid, side=side, tol=tol, in_service=in_service,
-                         trafotype=trafotype,
-                         level=level, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params={"tid": tid, 'trafotype': trafotype}, **kwargs)
+                         trafotype=trafotype, level=level, order=order,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params, **kwargs)
 
-        self.matching_params = {"tid": tid, 'trafotype': trafotype}
         t = net[self.trafotable]
         b = net.bus
         if trafotype == "2W":

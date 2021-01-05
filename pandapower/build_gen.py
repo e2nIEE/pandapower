@@ -232,8 +232,8 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
     xw_is = net["_is_elements"]['xward']
     ppc["gen"][f:t, GEN_BUS] = bus_lookup[aux_buses[xw_is]]
     ppc["gen"][f:t, VG] = xw["vm_pu"][xw_is].values
-    ppc["gen"][f:t, PMIN] = + delta
-    ppc["gen"][f:t, PMAX] = - delta
+    ppc["gen"][f:t, PMIN] = - delta
+    ppc["gen"][f:t, PMAX] = + delta
     ppc["gen"][f:t, QMIN] = -q_lim_default
     ppc["gen"][f:t, QMAX] = q_lim_default
 
