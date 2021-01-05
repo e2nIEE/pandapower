@@ -20,7 +20,7 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
         bus = net.bus.index
 
     ppc_index = np.arange(np.shape(bus)[0])
-    ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1 
+    ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1
     return bus, ppc_index
 
 def _extract_results(net, ppc, ppc_0, bus):
@@ -73,7 +73,7 @@ def _get_bus_results(net, ppc, ppc_0, bus):
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:
         net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, ITH]
-    
+
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 
 
@@ -90,7 +90,7 @@ def _get_line_results(net, ppc):
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 
-def _get_line_all_results(net, ppc, bus):    
+def _get_line_all_results(net, ppc, bus):
     case = net._options["case"]
 
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)

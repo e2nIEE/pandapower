@@ -54,7 +54,7 @@ def _kappa_method_c(net, ppc):
     _calc_ybus(ppc_c)
 
     if net["_options"]["inverse_y"]:
-        _calc_zbus(ppc_c)
+        _calc_zbus(net, ppc_c)
     else:
         # Factorization Ybus once
         ppc_c["internal"]["ybus_fact"] = factorized(ppc_c["internal"]["Ybus"])

@@ -88,9 +88,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
         each (branch, bus) tuple is returned otherwise only the max/min is returned
-        
+
         **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for defined bus
-        
+
         **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization, factorization version is in experiment which should be faster and memory efficienter
 
 
@@ -119,7 +119,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
-    
+
     # Convert bus to numpy array for better performance
     if isinstance(bus, int):
         bus = np.array([bus])
@@ -143,7 +143,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     elif fault == "1ph":
         _calc_sc_1ph(net, bus)
     else:
-        raise ValueError("Invalid fault %s" % fault)  
+        raise ValueError("Invalid fault %s" % fault)
 
 
 def calc_single_sc(net, bus, fault="3ph", case='max', lv_tol_percent=10,

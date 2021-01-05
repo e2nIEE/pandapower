@@ -84,13 +84,13 @@ def test_big_gen_network(three_bus_big_sgen_example):
 
     sc_bus = 0
     sc.calc_single_sc(net, sc_bus, inverse_y=True)
-    assert np.isclose(net.res_line_sc.i_ka.at[0], 1.25967331, atol=1e-1)
-    assert np.isclose(net.res_line_sc.i_ka.at[1], 0., atol=2e-1)
+    assert np.isclose(net.res_line_sc.i_ka.at[0], 1.25967331, atol=1e-3)
+    assert np.isclose(net.res_line_sc.i_ka.at[1], 0., atol=1e-3)
 
     sc_bus = 2
     sc.calc_single_sc(net, sc_bus, inverse_y=True)
-    assert np.isclose(net.res_line_sc.i_ka.at[0], 0.46221808, atol=1e-1)
-    assert np.isclose(net.res_line_sc.i_ka.at[1], 1.72233192, atol=1e-1)
+    assert np.isclose(net.res_line_sc.i_ka.at[0], 0.46221808, atol=1e-3)
+    assert np.isclose(net.res_line_sc.i_ka.at[1], 1.72233192, atol=1e-3)
 
 @pytest.mark.xfail
 def test_big_gen_network_no_y_inv(three_bus_big_sgen_example):
@@ -100,13 +100,13 @@ def test_big_gen_network_no_y_inv(three_bus_big_sgen_example):
     sc_bus = 0
     sc.calc_single_sc(net, sc_bus, inverse_y=False)
 
-    assert np.isclose(net.res_line_sc.i_ka.at[0], 1.25967331, atol=1e-1)
-    assert np.isclose(net.res_line_sc.i_ka.at[1], 0., atol=2e-1)
+    assert np.isclose(net.res_line_sc.i_ka.at[0], 1.25967331, atol=1e-3)
+    assert np.isclose(net.res_line_sc.i_ka.at[1], 0., atol=1e-3)
 
     sc_bus = 2
     sc.calc_single_sc(net, sc_bus, inverse_y=False)
-    assert np.isclose(net.res_line_sc.i_ka.at[0], 0.46221808, atol=1e-1)
-    assert np.isclose(net.res_line_sc.i_ka.at[1], 1.72233192, atol=1e-1)
+    assert np.isclose(net.res_line_sc.i_ka.at[0], 0.46221808, atol=1e-3)
+    assert np.isclose(net.res_line_sc.i_ka.at[1], 1.72233192, atol=1e-3)
 
 
 def test_big_gen_network_calc_sc(three_bus_big_sgen_example):
@@ -115,16 +115,16 @@ def test_big_gen_network_calc_sc(three_bus_big_sgen_example):
     for inv_y in (False, True):
         sc_bus = 0
         sc.calc_sc(net, bus=sc_bus,
-                   branch_results=True, return_all_currents=True, inverse_y=inv_y)
+                   branch_results=True, inverse_y=inv_y)
     
-        assert np.isclose(net.res_line_sc.ikss_ka.at[(0, sc_bus)], 1.25967331, atol=1e-1)
-        assert np.isclose(net.res_line_sc.ikss_ka.at[(1, sc_bus)], 0., atol=2e-1)
+        assert np.isclose(net.res_line_sc.ikss_ka.at[0], 1.25967331, atol=1e-3)
+        assert np.isclose(net.res_line_sc.ikss_ka.at[1], 0., atol=1e-3)
     
         sc_bus = 2
         sc.calc_sc(net, bus=sc_bus,
-                   branch_results=True, return_all_currents=True, inverse_y=inv_y)
-        assert np.isclose(net.res_line_sc.ikss_ka.at[(0, sc_bus)], 0.46221808, atol=1e-1)
-        assert np.isclose(net.res_line_sc.ikss_ka.at[(1, sc_bus)], 1.72233192, atol=1e-1)
+                   branch_results=True, inverse_y=inv_y)
+        assert np.isclose(net.res_line_sc.ikss_ka.at[0], 0.46221808, atol=1e-3)
+        assert np.isclose(net.res_line_sc.ikss_ka.at[1], 1.72233192, atol=1e-3)
 
 
 if __name__ == '__main__':
