@@ -480,7 +480,7 @@ class FromSerializableRegistry():
                 return df
 
     if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame')
+        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
                                                       crs=self.d['crs']).astype(self.d['dtype'])
