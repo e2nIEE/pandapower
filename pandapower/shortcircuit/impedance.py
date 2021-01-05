@@ -13,6 +13,7 @@ from scipy.linalg import inv
 
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
 from pandapower.pypower.idx_bus import BASE_KV
+from pandapower.auxiliary import _clean_up
 try:
     from pandapower.pf.makeYbus_numba import makeYbus
 except ImportError:
@@ -53,15 +54,19 @@ def _calc_ybus(ppc):
     ppc["internal"]["Ybus"] = Ybus
 
 
-def _calc_zbus(ppc):
-    Ybus = ppc["internal"]["Ybus"]
-    sparsity = Ybus.nnz / Ybus.shape[0]**2
-    if sparsity < 0.002:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ppc["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
-    else:
-        ppc["internal"]["Zbus"] = inv(Ybus.toarray())
+def _calc_zbus(net, ppc):
+    try:
+        Ybus = ppc["internal"]["Ybus"]
+        sparsity = Ybus.nnz / Ybus.shape[0]**2
+        if sparsity < 0.002:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ppc["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
+        else:
+            ppc["internal"]["Zbus"] = inv(Ybus.toarray())
+    except Exception as e:
+        _clean_up(net, res=False)
+        raise (e)
 
 
 def _calc_zbus_diag(net, ppc, bus=None):
@@ -77,8 +82,6 @@ def _calc_zbus_diag(net, ppc, bus=None):
         ppc["internal"]["diagZ"] = diagZ
         return diagZ
     else:
-        if isinstance(bus, int):
-            bus = np.array([bus])
         diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
         for ix, b in enumerate(bus):
             bus_idx = net._pd2ppc_lookups["bus"][b] #bus where the short-circuit is calculated (j)        
@@ -89,8 +92,6 @@ def _calc_zbus_diag(net, ppc, bus=None):
 
     # if bus is None:
     #     bus = net.bus.index
-    # elif isinstance(bus, int):
-    #     bus = np.array([bus])
 
     # diagZ = np.zeros(np.shape(bus)[0], dtype=np.complex)
     # ix = 0

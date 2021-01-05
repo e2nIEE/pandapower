@@ -11,6 +11,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
@@ -119,8 +120,11 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
     
+    # Convert bus to numpy array for better performance
     if isinstance(bus, int):
-        bus = [bus]
+        bus = np.array([bus])
+    elif isinstance(bus, list):
+        bus = np.array(bus)
 
     kappa = ith or ip
     net["_options"] = {}
@@ -219,11 +223,7 @@ def _calc_sc_single(net, bus):
     _calc_ybus(ppci)
     
     if net["_options"]["inverse_y"]:
-        try:
-            _calc_zbus(ppci)
-        except Exception as e:
-            _clean_up(net, res=False)
-            raise (e)
+        _calc_zbus(net, ppci)
         _calc_rx(net, ppci, bus=None)
         _calc_ikss(net, ppci, bus=None)
         _calc_single_bus_sc(net, ppci, bus)
@@ -249,11 +249,7 @@ def _calc_sc(net, bus):
     _calc_ybus(ppci)
 
     if net["_options"]["inverse_y"]:
-        try:
-            _calc_zbus(ppci)
-        except Exception as e:
-            _clean_up(net, res=False)
-            raise (e)
+        _calc_zbus(net, ppci)
     else:
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
@@ -296,12 +292,8 @@ def _calc_sc_1ph(net, bus):
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
-        try:
-            _calc_zbus(ppci)
-            _calc_zbus(ppci_0)
-        except Exception as e:
-            _clean_up(net, res=False)
-            raise (e)
+        _calc_zbus(net, ppci)
+        _calc_zbus(net, ppci_0)
     else:
         # Factorization Ybus once
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
