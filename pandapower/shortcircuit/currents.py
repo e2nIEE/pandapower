@@ -333,8 +333,8 @@ def _calc_branch_currents(net, ppc, bus):
     else:
         ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
         ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
-        ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
-        ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
+        ppc["branch"][:, IKSS_F] = np.nan_to_num(minmax(ikss_all_f, axis=1) / baseI[fb])
+        ppc["branch"][:, IKSS_T] = np.nan_to_num(minmax(ikss_all_t, axis=1) / baseI[tb])
 
     if net._options["ip"]:
         kappa = ppc["bus"][:, KAPPA]
@@ -351,8 +351,8 @@ def _calc_branch_currents(net, ppc, bus):
         else:
             ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
             ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
-            ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
-            ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
+            ppc["branch"][:, IP_F] = np.nan_to_num(minmax(abs(ip_all_f), axis=1) / baseI[fb])
+            ppc["branch"][:, IP_T] = np.nan_to_num(minmax(abs(ip_all_t), axis=1) / baseI[tb])
 
     if net._options["ith"]:
         n = 1
@@ -364,5 +364,5 @@ def _calc_branch_currents(net, ppc, bus):
             ppc["internal"]["branch_ith_f"] = ith_all_f / baseI[fb, None]
             ppc["internal"]["branch_ith_t"] = ith_all_t / baseI[tb, None]
         else:
-            ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
-            ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+            ppc["branch"][:, ITH_F] = np.nan_to_num(minmax(ith_all_f, axis=1) / baseI[fb])
+            ppc["branch"][:, ITH_T] = np.nan_to_num(minmax(ith_all_t, axis=1) / baseI[fb])
