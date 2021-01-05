@@ -221,7 +221,7 @@ def _calc_sc_single(net, bus):
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
-    
+
     if net["_options"]["inverse_y"]:
         _calc_zbus(net, ppci)
         _calc_rx(net, ppci, bus=None)

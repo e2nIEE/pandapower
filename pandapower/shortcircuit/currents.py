@@ -255,7 +255,7 @@ def calc_branch_results(net, ppci, V):
     Ybus = ppci["internal"]["Ybus"]
     Yf = ppci["internal"]["Yf"]
     Yt = ppci["internal"]["Yt"]
-    baseMVA, bus, gen, branch, ref, _, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, _, _, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
 
