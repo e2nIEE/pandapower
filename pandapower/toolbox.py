@@ -1479,19 +1479,20 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-                net[table[4:]].shape[0]:
-                    continue
+               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+               net[table[4:]].shape[0]:
+                continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
             else:
                 p2[table] = net[table].loc[p2[table[4:]].index]
     if "bus_geodata" in net:
-        p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
+        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index[p2.bus.index.isin(
+            net.bus_geodata.index)]]
     if "line_geodata" in net:
-        lines = p2.line.index
-        p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
+        p2["line_geodata"] = net.line_geodata.loc[p2.line.index[p2.line.index.isin(
+            net.line_geodata.index)]]
 
     # switches
     p2["switch"] = net.switch.loc[
