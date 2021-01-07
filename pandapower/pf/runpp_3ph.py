@@ -37,6 +37,78 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class InputError(Exception):     
+    def __init__(self, msg):
+        super().__init__(msg) 
+
+def _check_input(net):
+    """
+    Checks if the grid elements are having the necessary parameters to calculate a 3ph powerflow. 
+    Also checks if the given parameters are in the correct and supported range. 
+    Raises an error message in case of a violation.    
+    """
+    # trafo
+    supported_vector_groups = ['Dyn','Yyn','Yzn','YNyn']
+    for itrafo in net.trafo.index:
+        if not net.trafo.vector_group.at[itrafo] in supported_vector_groups:
+            message = "Trafo vector_group not supported: " + str(net.trafo.vector_group.at[itrafo] + 
+                                                                 "\n" + "Supported vector_groups are: " + str(supported_vector_groups))
+            raise InputError(message)
+        if not net.trafo.vk0_percent.at[itrafo] >= 0:
+            message = "For 3 phase power flow, trafo parameter vk0_percent should be >= 0, but it is " + str(net.trafo.vk0_percent.at[itrafo])
+            raise InputError(message)
+        if not net.trafo.vkr0_percent.at[itrafo] >= 0:
+            message = "For 3 phase power flow, trafo parameter vkr0_percent should be >= 0, but it is " + str(net.trafo.vkr0_percent.at[itrafo])
+            raise InputError(message)
+        if not net.trafo.mag0_percent.at[itrafo] >= 0:
+            message = "For 3 phase power flow, trafo parameter mag0_percent should be >= 0, but it is " + str(net.trafo.mag0_percent.at[itrafo])
+            raise InputError(message)
+        if not net.trafo.si0_hv_partial.at[itrafo] >= 0:
+            message = "For 3 phase power flow, trafo parameter si0_hv_partial should be >= 0, but it is " + str(net.trafo.si0_hv_partial.at[itrafo])
+            raise InputError(message)
+            
+    # line
+    for iline in net.line.index:
+        if not net.line.r0_ohm_per_km.at[iline] >= 0:
+            message = "For 3 phase power flow, line parameter r0_ohm_per_km should be >= 0, but it is " + str(net.line.r0_ohm_per_km.at[iline])
+            raise InputError(message)
+        if not net.line.x0_ohm_per_km.at[iline] >= 0:
+            message = "For 3 phase power flow, line parameter x0_ohm_per_km should be >= 0, but it is " + str(net.line.x0_ohm_per_km.at[iline])
+            raise InputError(message)
+        if not net.line.c0_nf_per_km.at[iline] >= 0:
+            message = "For 3 phase power flow, line parameter c0_nf_per_km should be >= 0, but it is " + str(net.line.c0_nf_per_km.at[iline])
+            raise InputError(message)
+            
+    # ext_grid
+    for igrid in net.ext_grid.index:
+        if not net.ext_grid.s_sc_max_mva.at[igrid] > 0:
+            message = "For 3 phase power flow, ext_grid parameter s_sc_max_mva should be > 0, but it is " + str(net.ext_grid.s_sc_max_mva.at[igrid])
+            raise InputError(message)
+        if not 0 <= net.ext_grid.rx_max.at[igrid] <= 1:
+            message = "For 3 phase power flow, ext_grid parameter rx_max should be 0 to 1, but it is " + str(net.ext_grid.rx_max.at[igrid])
+            raise InputError(message)
+        if not 0 <= net.ext_grid.r0x0_max.at[igrid] <= 1:
+            message = "For 3 phase power flow, ext_grid parameter r0x0_max should be 0 to 1, but it is " + str(net.ext_grid.r0x0_max.at[igrid])
+            raise InputError(message)
+        if not 0 <= net.ext_grid.x0x_max.at[igrid] <= 1:
+            message = "For 3 phase power flow, ext_grid parameter x0x_max should be 0 to 1, but it is " + str(net.ext_grid.x0x_max.at[igrid])
+            raise InputError(message)
+            
+    # sgen
+    if len(net.sgen.index) > 0:
+        message = "For 3 phase power flow, the 'sgen' element is not supported. Please convert to 'asymmetric_sgen' elements."
+        raise InputError(message)
+        
+    # gen
+    if len(net.gen.index) > 0:
+        message = "For 3 phase power flow, the 'gen' element is not supported."
+        raise InputError(message)
+        
+    # load
+    if len(net.load.index) > 0:
+        message = "For 3 phase power flow, the 'load' element is not supported. Please convert to 'asymmetric_load' elements."
+        raise InputError(message)
+
 class Not_implemented(ppException):
     """
     Exception being raised in case loadflow did not converge.
@@ -372,6 +444,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         - PH-E load type is called as wye since Neutral and Earth are considered same
         - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
     """
+    
+    # check, if all necessary 3 phase input parameters are given. if not, inform user via exception and stop
+    _check_input(net)
+    
     # =============================================================================
     # pandapower settings
     # =============================================================================
@@ -616,7 +692,7 @@ def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
     return I012_pu
 
 def _get_y_bus(ppci0, ppci1, ppci2, recycle):
-    if recycle is not None and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \
+    if recycle and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \
             ppci1["internal"]["Ybus"].size and ppci2["internal"]["Ybus"].size:
         y_0_bus, y_0_f, y_0_t = ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt']
         y_1_bus, y_1_f, y_1_t = ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt']
@@ -626,7 +702,7 @@ def _get_y_bus(ppci0, ppci1, ppci2, recycle):
         y_0_bus, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
         y_1_bus, y_1_f, y_1_t = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
         y_2_bus, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
-        if recycle is not None and recycle["Ybus"]:
+        if recycle and recycle["Ybus"]:
             ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt'] = y_0_bus, y_0_f, y_0_t
             ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt'] = y_1_bus, y_1_f, y_1_t
             ppci2["internal"]['Ybus'], ppci2["internal"]['Yf'], ppci2["internal"]['Yt'] = y_2_bus, y_2_f, y_2_t
