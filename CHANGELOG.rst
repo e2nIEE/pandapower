@@ -1,13 +1,16 @@
 Change Log
 =============
 
-- [ADDED] travis CI tests for PowerModels.jl interface (julia tests)
-- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver
-- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
-- [FIXED] json load for broken geom columns in bus_geodata
-- [ADDED] The voltage setpoint of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
-- [ADDED] The Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I")
-- [ADDED] For easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json")
+[2.5.0]- 2021-01-07
+----------------------
+- [ADDED] github actions for tests added.
+- [ADDED] tests for PowerModels.jl interface (julia tests).
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver.
+- [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
+- [FIXED] json load for broken geom columns in bus_geodata.
+- [ADDED] the voltage set point of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
+- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
 
 [2.4.0]- 2020-09-01
