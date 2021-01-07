@@ -296,6 +296,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
+            ('initial_run', "bool"),
             ("recycle", "bool"),
         ],
         # geodata
