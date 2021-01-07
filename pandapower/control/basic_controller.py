@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 from pandapower.auxiliary import get_free_id, _preserve_dtypes
@@ -25,14 +25,11 @@ class Controller(JSONSerializableClass):
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
                  matching_params=None, **kwargs):
         super().__init__()
-        self.recycle = recycle
-        self.initial_run = initial_run
-        self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
             index = get_free_id(net.controller)
         self.index = index
-        self.add_controller_to_net(net=net, in_service=in_service, order=order,
+        self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order,
                                    level=level, index=index, recycle=recycle,
                                    drop_same_existing_ctrl=drop_same_existing_ctrl,
                                    overwrite=overwrite, matching_params=matching_params, **kwargs)
@@ -40,7 +37,7 @@ class Controller(JSONSerializableClass):
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
 
-        for member in ["index", "json_excludes", "recycle"]:
+        for member in ["index", "json_excludes"]:
             rep += ("\n" + member + ": ").ljust(20)
             d = locals()
             exec('value = self.' + member, d)
@@ -67,7 +64,7 @@ class Controller(JSONSerializableClass):
         self.__dict__.update(state)
 
 
-    def add_controller_to_net(self, net, in_service, order, level, index, recycle,
+    def add_controller_to_net(self, net, in_service, initial_run, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
         """
         adds the controller to net['controller'] dataframe.
@@ -92,10 +89,8 @@ class Controller(JSONSerializableClass):
         # use base class method to raise an error if the object is in DF and overwrite = False
         super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
 
-        columns = ['object', 'in_service', 'recycle']
-        net.controller.loc[index,columns] = self, in_service, recycle
-        net.controller['order'][index] = order
-        net.controller['level'][index]= level
+        columns = ['object', 'in_service', 'order', 'level', 'initial_run', 'recycle']
+        net.controller.loc[index,columns] = self, in_service, order,  level, initial_run, recycle
 
         _preserve_dtypes(net.controller, dtypes)
 
@@ -108,7 +103,7 @@ class Controller(JSONSerializableClass):
         """
         pass
 
-    def set_recycle(self):
+    def set_recycle(self, net):
         """
         Checks the recyclability of this controller and changes the recyclability of the control handler if
         necessary. With this a faster time series calculation can be achieved since not everything must be
