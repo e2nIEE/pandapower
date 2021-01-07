@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import importlib
@@ -480,7 +480,7 @@ class FromSerializableRegistry():
                 return df
 
     if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame')
+        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
                                                       crs=self.d['crs']).astype(self.d['dtype'])
