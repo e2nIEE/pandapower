@@ -92,6 +92,7 @@ def ctrl_variables_default(net):
     ctrl_variables["run"] = pp.runpp
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
+    ctrl_variables['continue_on_divergence'] = False
     return ctrl_variables
 
 
