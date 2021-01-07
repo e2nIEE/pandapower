@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
@@ -24,9 +24,10 @@ classifiers = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3']
 
-with open('.travis.yml', 'rb') as f:
+with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
-    for version in re.findall('python: 3.[0-9]', lines):
+    versions = set(re.findall('3.[0-9]', lines))
+    for version in versions:
         classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
 
 long_description = '\n\n'.join((install, changelog))
@@ -46,9 +47,10 @@ setup(
                       "scipy",
                       "numpy>=0.11",
                       "packaging",
-					  "xlsxwriter",
-					  "xlrd",
-					  "cryptography"],
+                      "xlsxwriter",
+                      "xlrd",
+                      "openpyxl",
+                      "cryptography"],
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
 		"plotting": ["plotly", "matplotlib", "python-igraph"],

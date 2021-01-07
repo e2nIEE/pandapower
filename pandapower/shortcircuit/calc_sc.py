@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -270,6 +270,8 @@ def _calc_sc_1ph(net):
         raise (e)
     _calc_rx(net, ppci_0)
     _calc_ikss_1ph(net, ppci, ppci_0)
+    if net._options["branch_results"]:
+        _calc_branch_currents(net, ppci)
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0)

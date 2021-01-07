@@ -1,0 +1,121 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: pandapower
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.5', '3.7', '3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    #- uses: julia-actions/setup-julia@v1.5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        pip install matplotlib python-igraph
+        if ${{ (matrix.python-version == '3.5') || (matrix.python-version == '3.7')}}; then python -m pip install pypower; fi
+        if ${{ (matrix.python-version != '3.5') && (matrix.python-version != '3.6') }}; then python -m pip install numba; fi
+    - name: Install Julia
+      if: ${{ matrix.python-version == '3.6'}}
+      run: |
+        ./.install_julia.sh 1.5
+        pip install julia
+        python ./.install_pycall.py      
+    - name: List of installed packages
+      run: |
+        pip list
+    - name: Test with pytest
+      run: |
+        pytest
+
+  relying: # packages that rely on pandapower
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        pip install matplotlib
+    - name: Install pandapipes
+      run: |
+        python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
+    - name: List of installed packages
+      run: |
+        pip list
+    - name: Test pandapipes
+      run: |
+        python -c 'from pandapipes.test.run_tests import run_tests as run_pandapipes_tests; run_pandapipes_tests()'
+
+  linting:
+    # run flake8 and check for errors
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .
+        pip install matplotlib
+    - name: List of installed packages
+      run: |
+        pip list
+    - name: Lint with flake8 (sytax errors and undefined names)
+      continue-on-error: true
+      run: |
+        # stop the build if there are Python syntax errors or undefined names (omitted by exit-zero)
+        flake8 . --count --exit-zero --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Lint with flake8 (all errors and warnings)
+      run: |
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Generate coverage report
+      run: |
+        pip install pytest
+        pip install pytest-cov
+        pytest --cov=./ --cov-report=xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        verbose: true

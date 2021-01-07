@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -178,8 +178,8 @@ def from_excel(filename, convert=True):
     elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
-        xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
-
+        xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
+        
     try:
         net = io_utils.from_dict_of_dfs(xls)
     except:

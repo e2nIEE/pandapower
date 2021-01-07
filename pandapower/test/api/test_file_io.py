@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import json
@@ -205,7 +205,7 @@ def assert_graphs_equal(mg1, mg2):
 
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
-    s = pd.Series()
+    s = pd.Series(dtype=object)
     s["test"] = [(1, 2), (3, 4)]
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)

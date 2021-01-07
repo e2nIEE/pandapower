@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import importlib
@@ -442,9 +442,12 @@ class FromSerializableRegistry():
         # class_ = getattr(module, obj) # doesn't work
         return self.obj
 
-    @from_serializable.register(class_name='function', module_name='pandapower.run')
+    @from_serializable.register(class_name='function')
     def function(self):
         module = importlib.import_module(self.module_name)
+        if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
+            raise UserWarning('Could not find the definition of the function %s in the module %s' %
+                              (self.obj, module.__name__))
         class_ = getattr(module, self.obj)  # works
         return class_
 
@@ -477,7 +480,7 @@ class FromSerializableRegistry():
                 return df
 
     if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame')
+        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
                                                       crs=self.d['crs']).astype(self.d['dtype'])
