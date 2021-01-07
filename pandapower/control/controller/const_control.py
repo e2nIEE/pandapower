@@ -79,7 +79,6 @@ class ConstControl(Controller):
             logger.error("Parameter set_q_from_cosphi deprecated!")
             raise ValueError
         self.applied = False
-        self.initial_run = initial_run
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
@@ -91,15 +90,15 @@ class ConstControl(Controller):
         else:
             # use common .loc
             self.write = "loc"
-        self.set_recycle()
+        self.set_recycle(net)
 
-    def set_recycle(self):
+    def set_recycle(self, net):
         allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w",
                             "line"]
-        if self.recycle is False or self.element not in allowed_elements:
+        if net.controller.at[self.index, 'recycle'] is False or self.element not in allowed_elements:
             # if recycle is set to False by the user when creating the controller it is deactivated
             # or when const control controls an element which is not able to be recycled
-            self.recycle = False
+            net.controller.at[self.index, 'recycle'] = False
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=False, gen=False, bus_pq=False)
@@ -113,7 +112,7 @@ class ConstControl(Controller):
             recycle["trafo"] = True
         # recycle is either the dict what should be recycled
         # or False if the element + variable combination is not supported
-        self.recycle = recycle if any(list(recycle.values())) else False
+        net.controller.at[self.index, 'recycle'] = recycle if any(list(recycle.values())) else False
 
     def write_to_net(self, net):
         """

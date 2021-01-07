@@ -73,12 +73,18 @@ def check_for_initial_run(controller_order):
         return True
 
     for levelorder in controller_order:
-        for ctrl, _ in levelorder:
+        for ctrl, net in levelorder:
             if hasattr(ctrl, 'initial_powerflow'):
-                ctrl.initial_run = ctrl.initial_powerflow
+                net.controller.at[ctrl.index, 'initial_run']= ctrl.initial_powerflow
                 logger.warning("initial_powerflow is deprecated. Instead of defining initial_powerflow "
                                "please define initial_run in the future.")
-            if ctrl.initial_run:
+                del ctrl.initial_powerflow
+            elif hasattr(ctrl, 'initial_run'):
+                net.controller.at[ctrl.index, 'initial_run']= ctrl.initial_run
+                logger.warning("initial_run as attribute is deprecated. initial_run is now part of the "
+                               "net.controller DataFrame")
+                del ctrl.initial_run
+            if net.controller.at[ctrl.index, 'initial_run']:
                 return True
     return False
 

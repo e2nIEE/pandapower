@@ -141,7 +141,7 @@ def _check_controller_recyclability(net):
 
     for idx in net.controller.index:
         # todo: write to controller data frame recycle column instead of using self.recycle of controller instance
-        ctrl_recycle = net.controller.at[idx, "object"].recycle
+        ctrl_recycle = net.controller.at[idx, "recycle"]
         if not isinstance(ctrl_recycle, dict):
             # if one controller has a wrong recycle configuration it is deactived
             recycle = False
@@ -249,8 +249,6 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     """
 
     time_steps = init_time_steps(net, time_steps, **kwargs)
-
-    ts_variables = dict()
 
     init_default_outputwriter(net, time_steps, **kwargs)
     # get run function
