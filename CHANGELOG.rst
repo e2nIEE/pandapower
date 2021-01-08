@@ -10,7 +10,7 @@ Change Log
 - [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
 - [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
-- [CHANGED] all controllers and output writers do not have net as attribute any more. time series functions, .
+- [CHANGED] all controllers and output writers do not have net as attribute any more.
 - [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.
 - [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
 - [CHANGED] introduce abstract node/branch formulation for the plotly functions.
