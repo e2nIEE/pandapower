@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 from pandapower.auxiliary import get_free_id, _preserve_dtypes
 from pandapower.control.util.auxiliary import \
@@ -89,8 +90,10 @@ class Controller(JSONSerializableClass):
         # use base class method to raise an error if the object is in DF and overwrite = False
         super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
 
-        columns = ['object', 'in_service', 'order', 'level', 'initial_run', 'recycle']
-        net.controller.loc[index,columns] = self, in_service, order,  level, initial_run, recycle
+        columns = ['object', 'in_service', 'initial_run', 'recycle']
+        net.controller.loc[index,columns] = (self, in_service, initial_run, recycle)
+        net.controller['order'][index] = order
+        net.controller['level'][index] = level
 
         _preserve_dtypes(net.controller, dtypes)
 
