@@ -4,4 +4,3 @@ global-include *.mat
 global-include *.json
 global-include *.jl
 global-include *.csv
-recursive-include dir-pattern .github
