@@ -1,4 +1,7 @@
-__author__ = 'lthurner'
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
