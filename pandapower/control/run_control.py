@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import pandapower as pp
 import numpy as np
 
@@ -73,12 +74,18 @@ def check_for_initial_run(controller_order):
         return True
 
     for levelorder in controller_order:
-        for ctrl, _ in levelorder:
+        for ctrl, net in levelorder:
             if hasattr(ctrl, 'initial_powerflow'):
-                ctrl.initial_run = ctrl.initial_powerflow
+                net.controller.at[ctrl.index, 'initial_run']= ctrl.initial_powerflow
                 logger.warning("initial_powerflow is deprecated. Instead of defining initial_powerflow "
                                "please define initial_run in the future.")
-            if ctrl.initial_run:
+                del ctrl.initial_powerflow
+            elif hasattr(ctrl, 'initial_run'):
+                net.controller.at[ctrl.index, 'initial_run']= ctrl.initial_run
+                logger.warning("initial_run as attribute is deprecated. initial_run is now part of the "
+                               "net.controller DataFrame")
+                del ctrl.initial_run
+            if net.controller.at[ctrl.index, 'initial_run']:
                 return True
     return False
 
@@ -92,6 +99,7 @@ def ctrl_variables_default(net):
     ctrl_variables["run"] = pp.runpp
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
+    ctrl_variables['continue_on_divergence'] = False
     return ctrl_variables
 
 

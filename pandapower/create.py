@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -296,6 +296,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
+            ('initial_run', "bool"),
             ("recycle", "bool"),
         ],
         # geodata

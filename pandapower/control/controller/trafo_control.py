@@ -1,4 +1,7 @@
-__author__ = 'lthurner'
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
@@ -107,18 +110,18 @@ class TrafoController(Controller):
                                                                    self.tid))
         if net[self.trafotable].at[self.tid, "tap_step_percent"] < 0:
             self.tap_side_coeff *= -1
-        self.set_recycle()
+        self.set_recycle(net)
 
-    def set_recycle(self):
+    def set_recycle(self, net):
         allowed_elements = ["2W", "3W"]
-        if self.recycle is False or self.trafotype not in allowed_elements:
+        if net.controller.at[self.index, 'recycle'] is False or self.trafotype not in allowed_elements:
             # if recycle is set to False by the user when creating the controller it is deactivated or when
             # const control controls an element which is not able to be recycled
-            self.recycle = False
+            net.controller.at[self.index, 'recycle'] = False
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=True, gen=False, bus_pq=False)
-        self.recycle = recycle
+        net.controller.at[self.index, 'recycle'] = recycle
 
     def timestep(self, net):
         self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
