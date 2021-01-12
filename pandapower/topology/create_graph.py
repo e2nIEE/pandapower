@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 def create_nxgraph(net, respect_switches=True, include_lines=True,
                    include_trafos=True, include_impedances=True,
                    nogobuses=None, notravbuses=None, multi=True,
-                   calc_branch_impedances=False, branch_impedance_unit="ohm", library="networkx"):
+                   calc_branch_impedances=False, branch_impedance_unit="ohm", library="networkx",
+                   remove_out_of_service=True):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -245,9 +246,10 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                 except:
                     del mg._adj[b][i]  # networkx versions 2.0
 
-    # remove out of service buses
-    for b in net.bus.index[~net.bus.in_service.values]:
-        mg.remove_node(b)
+    if remove_out_of_service:
+        # remove out of service buses
+        for b in net.bus.index[~net.bus.in_service.values]:
+            mg.remove_node(b)
 
     return mg
 

@@ -191,7 +191,8 @@ def from_pickle(filename, convert=True):
                     if key == "bus_geodata":
                         data = {"x": [row[0] for row in df_dict["data"]],
                                 "y": [row[1] for row in df_dict["data"]]}
-                        geo = [Point(row[2][0], row[2][1]) for row in df_dict["data"]]
+                        geo_col_idx = df_dict["columns"].index("geometry")
+                        geo = [Point(row[geo_col_idx][0], row[geo_col_idx][1]) for row in df_dict["data"]]
                     elif key == "line_geodata":
                         data = {"coords": [row[0] for row in df_dict["data"]]}
                         geo = [LineString(row[1]) for row in df_dict["data"]]

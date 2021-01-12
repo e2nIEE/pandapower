@@ -171,10 +171,16 @@ def _add_missing_columns(net):
             net[element]["df"] = 1.0
     if "coords" not in net.bus_geodata:
         net.bus_geodata["coords"] = None
-    if not "tap_at_star_point" in net.trafo3w:
+    if "tap_at_star_point" not in net.trafo3w:
         net.trafo3w["tap_at_star_point"] = False
-    if not "tap_step_degree" in net.trafo3w:
+    if "tap_step_degree" not in net.trafo3w:
         net.trafo3w["tap_step_degree"] = 0
+
+    if "tap_step_degree" not in net.trafo:
+        net.trafo["tap_step_degree"] = 0
+    if "parallel" not in net.trafo:
+        net.trafo["parallel"] = 1
+
     if "const_z_percent" not in net.load or "const_i_percent" not in net.load:
         net.load["const_z_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_percent"] = np.zeros(net.load.shape[0])
@@ -275,11 +281,15 @@ def _convert_to_mw(net):
 
     for element, std_types in net.std_types.items():
         for std_type, parameters in std_types.items():
+            marked_for_replacement = []
             for parameter, value in parameters.items():
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
-                        parameters[parameter.replace(old, new)] = value * 1e-3
-                        del parameters[parameter]
+                        marked_for_replacement.append((parameter, old, new, value))
+
+            for parameter, old, new, value in marked_for_replacement:
+                parameters[parameter.replace(old, new)] = value * 1e-3
+                del parameters[parameter]
 
 
 def _update_object_attributes(obj):

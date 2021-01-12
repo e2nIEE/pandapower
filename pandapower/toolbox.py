@@ -1226,12 +1226,11 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
         net.switch.loc[oos_switches, "closed"] = True
 
-        for idx, bus in net.switch[
-            ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
+        for idx, bus in net.switch[~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
-        logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
+        logger.info('There are %d closed switches: %s' % (len(closed_switches), closed_switches))
 
 
 def drop_out_of_service_elements(net):

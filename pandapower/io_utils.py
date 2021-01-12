@@ -47,7 +47,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.INFO)
 
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
