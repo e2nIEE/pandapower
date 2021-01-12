@@ -1800,7 +1800,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     dd["name"] = name
     dd["type"] = type
     dd["slack"] = slack
-    
+
     if min_p_mw is not None:
         dd["min_p_mw"] = min_p_mw
         dd["min_p_mw"] = dd["min_p_mw"].astype(float)
@@ -2059,6 +2059,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         "c_nf_per_km": lineparam["c_nf_per_km"],
         "max_i_ka": lineparam["max_i_ka"]
     })
+
+    if "r0_ohm_per_km" in lineparam:
+        v["r0_ohm_per_km"] = lineparam["r0_ohm_per_km"]
+        v["x0_ohm_per_km"] = lineparam["x0_ohm_per_km"]
+        v["c0_nf_per_km"] = lineparam["c0_nf_per_km"]
+
     v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
 
     if "type" in lineparam:
