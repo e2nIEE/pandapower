@@ -1,14 +1,29 @@
 Change Log
 =============
 
-- [ADDED] travis CI tests for PowerModels.jl interface (julia tests)
-- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver
-- [CHANGED] internal datastructure tutorial contains now an example of a spy plot to visiualize the admittance matrix Ybus
-- [FIXED] json load for broken geom columns in bus_geodata
-- [ADDED] The voltage setpoint of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
-- [ADDED] The Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I")
-- [ADDED] For easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json")
+[2.5.0]- 2021-01-08
+----------------------
+- [ADDED] github actions for tests added.
+- [ADDED] tests for PowerModels.jl interface (julia tests).
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver.
+- [ADDED] the voltage set point of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
+- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
+- [CHANGED] all controllers and output writers do not have net as attribute any more.
+- [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.
+- [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
+- [CHANGED] introduce abstract node/branch formulation for the plotly functions.
+- [FIXED] issue # 905 fixed (If powerflow not necessary, e.g. two ext_grids/pv-nodes with only two buses) powerflow is bypassed and the solution is trivial.
+- [FIXES] issue # 954 fixed (Update bus IDs for net.asymmetric_load and net.asymmetric_sgen when merging nets in toolbox.py).
+- [FIXED] issue # 780 fixed (passing the shape to pypower solves the problem)
+- [FIXED] excel engine pd.ExcelFile not working in new pandas version. Adaptation in file_io with new module openpyxl. openpyxl needs to be installed. Requirements are adapted accordngly.
+- [FIXED] in io_utils functions with no clear class name can be de-serialized as well.
+- [FIXED] fixed generic coordinates creation when respect_switches is set.
+- [FIXED] recycle values None and False are considered equally --> recycle usage is skipped.
+- [FIXED] control_diagnostic distinguishes between two winding and three winding transformers.
+- [FIXED] toolbox functions, e.g. get_connected_elements, consider switches for three winding transformers.
+- [FIXED] json load for broken geom columns in bus_geodata.
 
 [2.4.0]- 2020-09-01
 ----------------------
@@ -37,7 +52,7 @@ Change Log
 - [FIXED] pandas 1.0 and 1.1 support
 - [CHANGED] revision of toolbox function drop_out_of_service_elements()
 - [ADDED] toolbox function drop_measurements_at_elements()
-- [ADDED] Encyption for JSON I/O
+- [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
 - [CHANGED] In state estimation power flow results will not be renamed anymore 

@@ -303,7 +303,7 @@ def ppc_to_pm(net, ppci):
             branch["b_fr"] = row[BR_B].real / 2.0
             branch["b_to"] = row[BR_B].real / 2.0
 
-            if net._options["opf_flow_lim"] == "S":
+            if net._options["opf_flow_lim"] == "S": #--> Rate_a is always needed for the TNEP problem, right?
                 branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
                 branch["rate_b"] = row[RATE_B].real
                 branch["rate_c"] = row[RATE_C].real
