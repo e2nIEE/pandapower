@@ -1796,6 +1796,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     v.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km",
                                                     "max_i_ka"]})
+    if "r0_ohm_per_km" in lineparam:
+        v.update({param: lineparam[param] for param in ["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
+
     v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
 
     if "type" in lineparam:
