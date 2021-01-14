@@ -29,6 +29,7 @@ class Controller(JSONSerializableClass):
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
             index = get_free_id(net.controller)
+        self.matching_params = dict() if matching_params is None else matching_params
         self.index = index
         self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order,
                                    level=level, index=index, recycle=recycle,
