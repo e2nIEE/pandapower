@@ -100,10 +100,11 @@ def ctrl_variables_default(net):
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
+    ctrl_variables['check_each_level'] = True
     return ctrl_variables
 
 
-def prepare_run_ctrl(net, ctrl_variables):
+def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     """
     Prepares run control functions. Internal variables needed:
 
@@ -113,8 +114,19 @@ def prepare_run_ctrl(net, ctrl_variables):
 
     """
     # sort controller_order by order if not already done
+
+
+    ctrl_var = ctrl_variables
+
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net)
+
+    if ('continue_on_divergence') in kwargs and (ctrl_var is None):
+        div = kwargs.pop('continue_on_divergence')
+        ctrl_variables['continue_on_divergence'] = div
+    if ('check_each_level') in kwargs and (ctrl_var is None):
+        check = kwargs.pop('check_each_level')
+        ctrl_variables['check_each_level'] = check
 
     ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
@@ -186,6 +198,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
 
 def control_implementation(net, controller_order, ctrl_variables, max_iter,
                            evaluate_net_fct=_evaluate_net, **kwargs):
+
+    run_count=0
     # run each controller step in given controller order
     for levelorder in controller_order:
         # converged gives status about convergence of a controller. Is initialized as False
@@ -201,7 +215,10 @@ def control_implementation(net, controller_order, ctrl_variables, max_iter,
                 run_count += 1
                 ctrl_variables = evaluate_net_fct(net, levelorder, ctrl_variables, **kwargs)
         # raises controller not converged
-        check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
+        if ctrl_variables['check_each_level']:
+            check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
+    # is required if you only want to check if in the last level everything is converged
+    check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
 
 
 def _control_step(levelorder, run_count):
@@ -240,6 +257,14 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     OPTIONAL:
        **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
        **max_iter** (int, 30) - The maximum number of iterations for controller to converge
+
+    KWARGS:
+        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired
+                                                   (only relevant if ctrl_varibales is None, otherwise it needs
+                                                   to be defined in ctrl_variables anyway)
+        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not
+                                           (only relevant if ctrl_varibales is None, otherwise it needs
+                                           to be defined in ctrl_variables anyway)
 
     Runs controller until each one converged or max_iter is hit.
 
