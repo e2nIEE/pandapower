@@ -13,7 +13,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
-
+from pandas._testing import assert_series_equal
 
 def test_opf_task():
     net = pp.create_empty_network()
@@ -1139,6 +1139,83 @@ def test_repl_to_line():
     assert np.allclose(vm1, vm0)
     assert np.allclose(va1, va0)
 
+@pytest.mark.xfail(reason="Parallel lines leading to errors!")
+def test_repl_to_line_with_switch():
+    """
+    Same test as above, but this time in comparison to actual replacement
+    """
+    net = nw.example_multivoltage()
+    pp.runpp(net)
+
+    for testindex in net.line.index:
+        if net.line.in_service.loc[testindex]:
+            # todo print weg
+            print("testing line " + str(testindex))
+            line = net.line.loc[testindex]
+            fbus = line.from_bus
+            tbus = line.to_bus
+            len = line.length_km
+
+            # 184-AL1/30-ST1A 110.0 --> 243-AL1/39-ST1A 110.0
+            # NA2XS2Y 1x185 RM/25 12/20 kV --> NA2XS2Y 1x240 RM/25 6/10 kV
+            # NAYY 4x120 SE --> NAYY 4x150 SE
+            # 15-AL1/3-ST1A 0.4 --> 24-AL1/4-ST1A 0.4
+
+            if "184-AL1/30-ST1A" in net.line.std_type.loc[testindex]:
+                std = "243-AL1/39-ST1A 110.0"
+            elif "NA2XS2Y" in net.line.std_type.loc[testindex]:
+                std = "NA2XS2Y 1x240 RM/25 6/10 kV"
+            elif "NAYY" in net.line.std_type.loc[testindex]:
+                std = "NAYY 4x150 SE"
+            elif " 15-AL1/3-ST1A" in net.line.std_type.loc[testindex]:
+                std = "24-AL1/4-ST1A 0.4"
+
+            # create an oos line at the same buses
+            REPL = pp.create_line(net, from_bus=fbus, to_bus=tbus, length_km=len, std_type=std)
+
+            for bus in fbus, tbus:
+                if bus in net.switch[(net.switch.closed == False) & (net.switch.element == testindex)].bus.values:
+                    pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
+
+            # calculate runpp with REPL
+            net.line.in_service[testindex] = False
+            net.line.in_service[REPL] = True
+            pp.runpp(net)
+
+            fbus_repl = net.res_bus.loc[fbus]
+            tbus_repl = net.res_bus.loc[tbus]
+
+            ploss_repl = (net.res_line.loc[REPL].p_from_mw - net.res_line.loc[REPL].p_to_mw )
+            qloss_repl =(net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar )
+
+
+            # get ne line impedances
+            new_idx = tb.repl_to_line(net, testindex, std, in_service=True)
+            # activate new idx line
+            net.line.in_service[REPL] = False
+            net.line.in_service[testindex] = True
+            net.line.in_service[new_idx] = True
+            pp.runpp(net)
+            # compare lf results
+            fbus_ne = net.res_bus.loc[fbus]
+            tbus_ne = net.res_bus.loc[tbus]
+            ploss_ne = (net.res_line.loc[testindex].p_from_mw - net.res_line.loc[testindex].p_to_mw)+\
+                  (net.res_line.loc[new_idx].p_from_mw - net.res_line.loc[new_idx].p_to_mw)
+            qloss_ne = (net.res_line.loc[testindex].q_from_mvar - net.res_line.loc[testindex].q_to_mvar )+\
+                  (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
+
+
+            assert_series_equal(fbus_repl, fbus_ne)
+            assert_series_equal(tbus_repl, tbus_ne)
+            assert np.isclose(ploss_repl,ploss_ne, atol=1e-5)
+            assert np.isclose(qloss_repl,qloss_ne)
+
+            # and reset to unreinforced state again
+            net.line.in_service[testindex] = True
+            net.line.in_service[new_idx] = False
+            net.line.in_service[REPL] = False
+
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_repl_to_line_with_switch()

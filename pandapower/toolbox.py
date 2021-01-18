@@ -2650,7 +2650,9 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     new_idx (int) - index of the created power line
 
     """
+
     # impedance before changing the standard type
+
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
     x0 = net.line.at[idx, "x_ohm_per_km"]
@@ -2659,6 +2661,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     i_ka0 = net.line.at[idx, "max_i_ka"]
     bak = net.line.loc[idx, :].values
 
+    if p0 <1: logger.warning("Not working for parallel lines!")
     change_std_type(net, idx, std_type)
 
     # impedance after changing the standard type
@@ -2692,4 +2695,10 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
                                           in_service=in_service, name=name, **kwargs)
     # restore the previous line parameters before changing the standard type
     net.line.loc[idx, :] = bak
+
+    # check switching state and add line switch if necessary:
+    for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
+            create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
+
     return new_idx
