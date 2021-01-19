@@ -20,5 +20,7 @@ IP          = start + 9
 IB          = start + 10
 ITH         = start + 11
 IK          = start + 12
+R_EQUIV_OHM = start + 13
+X_EQUIV_OHM = start + 14
 
-bus_cols_sc = 13
+bus_cols_sc = 15
