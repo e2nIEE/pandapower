@@ -121,10 +121,10 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net)
 
-    if ('continue_on_divergence') in kwargs and (ctrl_var is None):
+    if ('continue_on_divergence') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         div = kwargs.pop('continue_on_divergence')
         ctrl_variables['continue_on_divergence'] = div
-    if ('check_each_level') in kwargs and (ctrl_var is None):
+    if ('check_each_level') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         check = kwargs.pop('check_each_level')
         ctrl_variables['check_each_level'] = check
 
