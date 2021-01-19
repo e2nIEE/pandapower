@@ -74,7 +74,7 @@ jobs:
         pip list
     - name: Test pandapipes
       run: |
-        python -c 'from pandapipes.test.run_tests import run_tests as run_pandapipes_tests; run_pandapipes_tests()'
+        python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
 
   linting:
     # run flake8 and check for errors
