@@ -1139,7 +1139,6 @@ def test_repl_to_line():
     assert np.allclose(vm1, vm0)
     assert np.allclose(va1, va0)
 
-@pytest.mark.xfail(reason="Parallel lines leading to errors!")
 def test_repl_to_line_with_switch():
     """
     Same test as above, but this time in comparison to actual replacement
@@ -1155,11 +1154,6 @@ def test_repl_to_line_with_switch():
             fbus = line.from_bus
             tbus = line.to_bus
             len = line.length_km
-
-            # 184-AL1/30-ST1A 110.0 --> 243-AL1/39-ST1A 110.0
-            # NA2XS2Y 1x185 RM/25 12/20 kV --> NA2XS2Y 1x240 RM/25 6/10 kV
-            # NAYY 4x120 SE --> NAYY 4x150 SE
-            # 15-AL1/3-ST1A 0.4 --> 24-AL1/4-ST1A 0.4
 
             if "184-AL1/30-ST1A" in net.line.std_type.loc[testindex]:
                 std = "243-AL1/39-ST1A 110.0"
@@ -1188,7 +1182,6 @@ def test_repl_to_line_with_switch():
             ploss_repl = (net.res_line.loc[REPL].p_from_mw - net.res_line.loc[REPL].p_to_mw )
             qloss_repl =(net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar )
 
-
             # get ne line impedances
             new_idx = tb.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
@@ -1205,7 +1198,7 @@ def test_repl_to_line_with_switch():
                   (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
 
 
-            assert_series_equal(fbus_repl, fbus_ne)
+            assert_series_equal(fbus_repl, fbus_ne, atol=1e-2)
             assert_series_equal(tbus_repl, tbus_ne)
             assert np.isclose(ploss_repl,ploss_ne, atol=1e-5)
             assert np.isclose(qloss_repl,qloss_ne)
@@ -1215,7 +1208,34 @@ def test_repl_to_line_with_switch():
             net.line.in_service[new_idx] = False
             net.line.in_service[REPL] = False
 
+def test_merge_parallel_line():
+    net = nw.example_multivoltage()
+    pp.runpp(net)
+    assert net.line.parallel.at[5] == 2
+
+    line = net.line.loc[5]
+    fbus = line.from_bus
+    tbus = line.to_bus
+
+    fbus_0 = net.res_bus.loc[fbus]
+    tbus_0 = net.res_bus.loc[tbus]
+    ploss_0 = (net.res_line.loc[5].p_from_mw - net.res_line.loc[5].p_to_mw)
+    qloss_0 = (net.res_line.loc[5].q_from_mvar - net.res_line.loc[5].q_to_mvar)
+
+    net = tb.merge_parallel_line(net,5)
+
+    assert net.line.parallel.at[5] == 1
+    pp.runpp(net)
+    fbus_1 = net.res_bus.loc[fbus]
+    tbus_1 = net.res_bus.loc[tbus]
+    ploss_1 = (net.res_line.loc[5].p_from_mw - net.res_line.loc[5].p_to_mw)
+    qloss_1 = (net.res_line.loc[5].q_from_mvar - net.res_line.loc[5].q_to_mvar)
+
+    assert_series_equal(fbus_0, fbus_1)
+    assert_series_equal(tbus_0, tbus_1)
+    assert np.isclose(ploss_0, ploss_1, atol=1e-5)
+    assert np.isclose(qloss_0, qloss_1)
+
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-x"])
-    test_repl_to_line_with_switch()
+    pytest.main([__file__, "-x"])

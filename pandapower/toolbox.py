@@ -2652,7 +2652,6 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     """
 
     # impedance before changing the standard type
-
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
     x0 = net.line.at[idx, "x_ohm_per_km"]
@@ -2661,27 +2660,26 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     i_ka0 = net.line.at[idx, "max_i_ka"]
     bak = net.line.loc[idx, :].values
 
-    if p0 <1: logger.warning("Not working for parallel lines!")
     change_std_type(net, idx, std_type)
 
     # impedance after changing the standard type
     r1 = net.line.at[idx, "r_ohm_per_km"]
-    p1 = net.line.at[idx, "parallel"]
+    p1 = 1
     x1 = net.line.at[idx, "x_ohm_per_km"]
     c1 = net.line.at[idx, "c_nf_per_km"]
     g1 = net.line.at[idx, "g_us_per_km"]
     i_ka1 = net.line.at[idx, "max_i_ka"]
 
     # complex resistance of the line parallel to the existing line
-    y1 = p1 / complex(r1, x1)
+    y1 = 1 / complex(r1, x1)
     y0 = p0 / complex(r0, x0)
     z2 = 1 / (y1 - y0)
 
     # required parameters
-    c_nf_per_km = c1 * p1 - c0 * p0
+    c_nf_per_km = c1 * 1 - c0 * p0
     r_ohm_per_km = z2.real
     x_ohm_per_km = z2.imag
-    g_us_per_km = g1 * p1 - g0 * p0
+    g_us_per_km = g1 * 1 - g0 * p0
     max_i_ka = i_ka1 - i_ka0
     name = "repl_" + str(idx) if name is None else name
 
@@ -2702,3 +2700,51 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
+
+
+def merge_parallel_line(net, idx):
+    """
+    Changes the impedances of the parallel line so that it equals a single line.
+    Args:
+        net: pandapower net
+        idx: idx of the line to merge
+
+    Returns:
+        net
+
+    Z0 = impedance of the existing parallel lines
+    Z1 = impedance of the respective single line
+
+        --- Z0 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+    """
+    # impedance before changing the standard type
+
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line to the existing line
+    y0 = 1 / complex(r0, x0)
+    y1 = p0*y0
+    z1 = 1 / y1
+    r1 = z1.real
+    x1 = z1.imag
+
+    g1 = p0*g0
+    c1 = p0*c0
+    i_ka1 = p0*i_ka0
+
+    net.line.at[idx, "r_ohm_per_km"] = r1
+    net.line.at[idx, "parallel"] = 1
+    net.line.at[idx, "x_ohm_per_km"] = x1
+    net.line.at[idx, "c_nf_per_km"] = c1
+    net.line.at[idx, "g_us_per_km"] = g1
+    net.line.at[idx, "max_i_ka"] = i_ka1
+
+    return net
