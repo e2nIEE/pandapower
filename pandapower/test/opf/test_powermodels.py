@@ -15,6 +15,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
+from pandapower.converter.powermodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
@@ -317,31 +318,6 @@ def test_voltage_angles():
         assert np.allclose(net.res_bus.vm_pu.values, vm_pu, atol=1e-6, rtol=1e-6, equal_nan=True)
         assert np.allclose(net.res_trafo3w.loading_percent, loading3w, atol=1e-2, rtol=1e-2, equal_nan=True)
 
-
-def init_ne_line(net, new_line_index, construction_costs=None):
-    """
-    init function for new line dataframe, which specifies the possible new lines being built by power models opt
-
-    Parameters
-    ----------
-    net - pp net
-    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
-    construction_costs (list, 0.) - costs of newly constructed lines
-
-    Returns
-    -------
-
-    """
-    # init dataframe
-    net["ne_line"] = net["line"].loc[new_line_index, :]
-    # add costs, if None -> init with zeros
-    construction_costs = np.zeros(
-        len(new_line_index)) if construction_costs is None else construction_costs
-    net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
-    # set in service, but only in ne line dataframe
-    net["ne_line"].loc[new_line_index, "in_service"] = True
-    # init res_ne_line to save built status afterwards
-    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
 
 
 def tnep_grid():
