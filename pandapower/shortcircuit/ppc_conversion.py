@@ -14,7 +14,6 @@ from pandapower.build_branch import _trafo_df_from_trafo3w, get_trafo_values
 
 from pandapower.pypower.idx_bus import BASE_KV, GS, BS, bus_cols
 from pandapower.pypower.idx_brch import branch_cols, F_BUS, T_BUS, BR_X, BR_R
-from pandapower.pypower.idx_gen import gen_cols
 from pandapower.shortcircuit.idx_bus import  C_MAX, C_MIN, K_G, K_SG, V_G,\
     PS_TRAFO_IX, bus_cols_sc
 from pandapower.shortcircuit.idx_brch import K_T, K_ST, branch_cols_sc

@@ -274,4 +274,4 @@ if __name__ == '__main__':
     
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     rb = net.res_bus_sc
-    rb * 10.5 / 10
+

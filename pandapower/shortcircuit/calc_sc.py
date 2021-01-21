@@ -18,7 +18,7 @@ from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_iz_generator, \
+from pandapower.shortcircuit.currents import _calc_ikss,\
     _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
     _calc_single_bus_sc, _calc_single_bus_sc_no_y_inv, _calc_ib_generator
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
