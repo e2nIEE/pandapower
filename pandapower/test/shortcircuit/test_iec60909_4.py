@@ -10,7 +10,7 @@ import pytest
 import pandapower as pp
 import pandapower.shortcircuit as sc
 
-@pytest.fixture
+# @pytest.fixture
 def iec_60909_4():
     net = pp.create_empty_network()
 
@@ -112,7 +112,7 @@ def iec_60909_4():
 
     return net
 
-@pytest.fixture
+# @pytest.fixture
 def iec_60909_4_small():
     net = pp.create_empty_network()
 
@@ -176,12 +176,15 @@ def iec_60909_4_small_gen_only():
     b3 = pp.create_bus(net, vn_kv=110.)
     HG2 = pp.create_bus(net, vn_kv=10)  # 10.5kV?
 
-    pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
-                  xdss_pu=0.16, rdss_pu=0.00453, cos_phi=0.9, sn_mva=100, slack=True)
 
-    pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0,
-        vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+    # pp.create_ext_grid(net, HG2, 1.05, s_sc_max_mva=150, rx_max=0.1)
+    pp.create_load(net, b3, p_mw=1)
+    t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+    pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
+                  xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
+                  slack=True, power_station_trafo=t1)
+
     return net
 
 
@@ -246,4 +249,29 @@ def test_iec_60909_4_3ph_without_motor(iec_60909_4):
 #     assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
 
 if __name__ == '__main__':
-    pytest.main(["test_iec60909_4.py"])
+    # pytest.main(["test_iec60909_4.py"])
+    
+    net = iec_60909_4_small_gen_only()
+    pp.runpp(net)
+    rb = net.res_bus
+
+
+    ikss_pf = [1.9755, 39.5042]
+    ip_pf = [5.2316, 104.1085]
+    ib_pf = [1.6071, 27.3470]
+    r_gen_pf, x_gen_pf = 0.004782723229, 0.16873438253
+
+    # pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
+    #               xdss_pu=0.14, rdss_pu=0.00453, cos_phi=0.85, sn_mva=150, slack=True)
+    r_gen, x_gen = 0.005, 0.16*(10.5**2)/100
+    k_g = (1/1.075) * 1.1 / (1 + (0.16 * np.sin(np.arccos(0.9))))
+    np.array((r_gen, x_gen)) * k_g
+    
+    # # pp.create_line_from_parameters(net, 1, b_aux, r_ohm_per_km=r_gen * k_g, x_ohm_per_km=x_gen*k_g,
+    # #                                length_km=1, c_nf_per_km=0, max_i_ka=1)
+    # pp.create_line_from_parameters(net, 1, b_aux, r_ohm_per_km=r_gen_pf, x_ohm_per_km=x_gen_pf,
+    #                                length_km=1, c_nf_per_km=0, max_i_ka=1)
+    
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    rb = net.res_bus_sc
+    rb * 10.5 / 10

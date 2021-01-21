@@ -1349,7 +1349,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
+               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=None,
+               in_service=True):
     """
     Adds a generator to the network.
 
@@ -1388,9 +1389,13 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **xdss_pu** (float, NaN) - Subtransient generator reactance for short-circuit calculation
 
-        **rdss_pu** (float, NaN) - Subtransient generator resistance for short-circuit calculation
+        **rdss_ohm** (float, NaN) - Subtransient generator resistance for short-circuit calculation
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
+        
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for short-circuit calculation
+        
+        **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1444,18 +1449,14 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
     _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
 
-    # Short circuit calculation limits
+    # Short circuit calculation variables
     _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
-    _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
-
-    if not isnan(xdss_pu):
-        if "xdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "xdss_pu"] = pd.Series(dtype=float64)
-        if "rdss_pu" not in net.gen.columns:
-            net.gen.loc[:, "rdss_pu"] = pd.Series(dtype=float64)
-        net.gen.at[index, "xdss_pu"] = float(xdss_pu)
-
-    _create_column_and_set_value(net, index, rdss_pu, "rdss_pu", "gen")
+    _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen") 
+    _create_column_and_set_value(net, index, xdss_pu, "xdss_pu", "gen")
+    _create_column_and_set_value(net, index, rdss_ohm, "rdss_ohm", "gen")
+    _create_column_and_set_value(net, index, pg_percent, "pg_percent", "gen")
+    _create_column_and_set_value(net, index, power_station_trafo,
+                                 "power_station_trafo", "gen")
 
     return index
 
@@ -1463,7 +1464,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=None,
                 min_q_mvar=None, min_p_mw=None, max_p_mw=None, min_vm_pu=None, max_vm_pu=None,
                 scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
-                xdss_pu=None, rdss_pu=None, cos_phi=None, in_service=True, **kwargs):
+                xdss_pu=None, rdss_ohm=None, cos_phi=None, pg_percent=None, power_station_trafo=None,
+                in_service=True, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -1507,11 +1509,16 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **xdss_pu** (list of float, NaN) - Subtransient generator reactance for short-circuit \
             calculation
 
-        **rdss_pu** (list of float, NaN) - Subtransient generator resistance for short-circuit \
+        **rdss_ohm** (list of float, NaN) - Subtransient generator resistance for short-circuit \
             calculation
 
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
+            
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+            short-circuit calculation
+        
+        **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1558,7 +1565,9 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_series_to_entries(entries, index, "vn_kv", vn_kv)
     _add_series_to_entries(entries, index, "cos_phi", cos_phi)
     _add_series_to_entries(entries, index, "xdss_pu", xdss_pu)
-    _add_series_to_entries(entries, index, "rdss_pu", rdss_pu)
+    _add_series_to_entries(entries, index, "rdss_ohm", rdss_ohm)
+    _add_series_to_entries(entries, index, "pg_percent", pg_percent)
+    _add_series_to_entries(entries, index, "power_station_trafo", power_station_trafo)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
 

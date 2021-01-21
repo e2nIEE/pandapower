@@ -11,30 +11,44 @@ from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, X_EQUIV, IKSS2, IKCV, M
+from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH,\
+    X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
-def _calc_ikss(net, ppc, bus=None):
+def _calc_ikss(net, ppc, ppci_bus=None):
     # Vectorized for multiple bus
-    if bus is None:
+    if ppci_bus is None:
         # Slice(None) is equal to : select
-        bus_idx = slice(None)
+        bus_idx = np.arange(ppc["bus"].shape[0])
     else:
-        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
+        bus_idx = ppci_bus
+        # bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
 
     fault = net._options["fault"]
     case = net._options["case"]
     c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
     ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    
+    # Only for test, should correspondant to PF result
+    baseZ = ppc["bus"][bus_idx, BASE_KV] ** 2 / ppc["baseMVA"]
+    ppc["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc["bus"][bus_idx, R_EQUIV]
+    ppc["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc["bus"][bus_idx, X_EQUIV]
 
     z_equiv = abs(ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j)
     if fault == "3ph":
         ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
     elif fault == "2ph":
         ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / 2 * ppc["baseMVA"]
+    
+    # Correct voltage of generator bus
+    if np.any(np.isfinite(ppc["bus"][bus_idx, V_G])):
+        gen_bus_idx = bus_idx[~np.isnan(ppc["bus"][bus_idx, V_G])]
+        ppc["bus"][gen_bus_idx, IKSS1] *=\
+            (ppc["bus"][gen_bus_idx, V_G] / ppc["bus"][gen_bus_idx, BASE_KV])
+
     _current_source_current(net, ppc)
 
 
@@ -117,11 +131,12 @@ def _calc_ib_generator(net, ppci):
 
     # calculate voltage source branch current
     # I_ikss = ppci["bus"][:, IKSS1]
-    V_ikss = (I_ikss * baseI) * Zbus
+    # V_ikss = (I_ikss * baseI) * Zbus
 
     gen = net["gen"][net._is_elements["gen"]]
     gen_vn_kv = gen.vn_kv.values
 
+    # Check difference ext_grid and gen
     gen_buses = ppci['gen'][:, GEN_BUS].astype(np.int64)
     gen_mbase = ppci['gen'][:, MBASE]
     gen_i_rg = gen_mbase / (np.sqrt(3) * gen_vn_kv)
