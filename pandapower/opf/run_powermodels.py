@@ -55,7 +55,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
     # import two julia scripts and runs powermodels julia_file
-#     Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
+    Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
         run_powermodels = Main.include(julia_file)
     except ImportError:

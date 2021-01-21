@@ -1,17 +1,16 @@
 using PowerModels
-# push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
-push!(LOAD_PATH, joinpath(@__DIR__, "pandapower", "pandapower", "opf"))
-using PP2PM
+using .PP2PM
+
 
 function run_powermodels(json_path)
-    pm = load_pm_from_json(json_path)
+    pm = PP2PM.load_pm_from_json(json_path)
 
-    model = get_model(pm["pm_model"])
+    model = PP2PM.get_model(pm["pm_model"])
     
-    solver = get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"], 
+    solver = PP2PM.get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"], 
     pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
     
-    result = run_pf(pm, model, solver)
+    result = PowerModels.run_pf(pm, model, solver)
     # add branch flows
     update_data!(pm, result["solution"])
     flows = calc_branch_flow_ac(pm)

@@ -1,16 +1,18 @@
+
 module PP2PM
 export load_pm_from_json, get_model, get_solver
 
 import JSON
 using PowerModels
-using Cbc
-using Ipopt
-using Juniper
+
+import Cbc
+import Ipopt
+import Juniper
 import JuMP
 
 
 try
-    using Gurobi
+    import Gurobi
 catch e
     if isa(e, LoadError)
         println("Cannot import Gurobi. That's fine if you do not plan to use it")
@@ -18,7 +20,7 @@ catch e
 end
 
 try
-    using KNITRO
+    import KNITRO
 catch e
     if isa(e, LoadError)
         println("Cannot import KNITRO. That's fine if you do not plan to use it")
@@ -26,7 +28,7 @@ catch e
 end
 
 try
-    using SCIP
+    import SCIP
 catch e
     if isa(e, LoadError)
         println("Cannot import SCIP. That's fine if you do not plan to use it")
