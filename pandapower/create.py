@@ -2228,7 +2228,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        tap_phase_shifter=False, in_service=True, name=None,
                                        vector_group=None, index=None, max_loading_percent=nan,
                                        parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
-                                       mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan, **kwargs):
+                                       mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
+                                       pt_percent=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2307,6 +2308,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
+            
+        **pt_percent** (float, NaN) - pt (shortcircuit voltage) of the transformer with OLTC for short-circuit calculation
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -2360,6 +2363,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
         _create_column_and_set_value(net, index, vector_group, "vector_group", "trafo", dtyp=str,
                                      default_val=None)
+    _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")   
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
     return index
@@ -2373,7 +2377,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         vector_group=None, index=None, max_loading_percent=None,
                                         parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
                                         mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        **kwargs):
+                                        pt_percent=nan, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2454,6 +2458,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
+        **pt_percent** (float, NaN) - pt (shortcircuit voltage) of the transformer with OLTC for short-circuit calculation
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2486,6 +2492,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_series_to_entries(entries, index, "si0_hv_partial", si0_hv_partial)
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
     _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
+    _add_series_to_entries(entries, index, "pt_percent", pt_percent)
 
     _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
 
