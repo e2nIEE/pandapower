@@ -668,8 +668,8 @@ class DiagnosticReports:
             logger.warning(self.diag_errors["missing_bus_indices"])
         else:
             logger.info("PASSED: No missing bus indices found.")
-            
-            
+
+
     def report_unsupported_elements_active(self):
         if "unsupported_elements_active" in self.diag_results:
             if '3ph' in self.diag_results["unsupported_elements_active"]["mode"]:
@@ -680,15 +680,15 @@ class DiagnosticReports:
                     else:
                         logger.warning("Checking for unsupported elements...")
                     logger.warning("")
-        
+
                     # message body
                     diag_result = self.diag_results["unsupported_elements_active"]
                     for active_element in diag_result:
-                        if active_element == "active_gens":                    
+                        if active_element == "active_gens":
                             logger.warning("Active 'gen' found. Gens are not supported for 3 phase powerflow. Please put them out of service.")
-                        elif not active_element == "mode": 
+                        elif not active_element == "mode":
                             logger.warning("%s found" % active_element)
-        
+
                         # message summary
                     if not self.compact_report:
                         logger.warning("")

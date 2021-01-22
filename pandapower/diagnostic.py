@@ -221,14 +221,14 @@ def check_switch_type(element, element_index, column):
     valid_values = ['b', 'l', 't', 't3']
     if element[column] not in valid_values:
         return element_index
-    
-    
+
+
 def check_trafo_vector_group(element, element_index, column):
     valid_values = ['Dyn', 'Yyn', 'Yzn', 'YNyn']
     if element[column] not in valid_values:
         return element_index
-    
-    
+
+
 def check_asym_load_type(element, element_index, column):
     valid_values = ['wye', 'delta']
     if element[column] not in valid_values:
@@ -292,28 +292,28 @@ def invalid_values(net):
                                      ('va_degree', 'number')],
                         'switch': [('bus', 'positive_integer'), ('element', 'positive_integer'),
                                    ('et', 'switch_type'), ('closed', 'boolean')]}
-    
+
     # Check if net is made for 3ph calculation and if so, add 3ph parameters to important_values
     if len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 or "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo:
         three_phase_values = {'line': [('r0_ohm_per_km', '>=0'), ('x0_ohm_per_km', '>=0'), ('c0_nf_per_km', '>=0')],
                               'trafo': [('vk0_percent', '>=0'), ('vkr0_percent', '>=0'), ('mag0_percent', '>=0'), ('si0_hv_partial', '>=0'),
                                         ('vector_group', 'trafo_supported_vector_group: Dyn, Yyn, Yzn, YNyn')],
                               'asymmetric_load': [('bus', 'positive_integer'),
-                                                  ('p_a_mw', '>=0'), ('p_b_mw', '>=0'),('p_c_mw', '>=0'),
-                                                  ('q_a_mvar', '>=0'), ('q_b_mvar', '>=0'), ('q_c_mvar', '>=0'), 
+                                                  ('p_a_mw', '>=0'), ('p_b_mw', '>=0'), ('p_c_mw', '>=0'),
+                                                  ('q_a_mvar', '>=0'), ('q_b_mvar', '>=0'), ('q_c_mvar', '>=0'),
                                                   ('scaling', '>=0'), ('in_service', 'boolean'),
                                                   ('type', 'asym_load_type: wye, delta')],
                               'asymmetric_sgen': [('bus', 'positive_integer'),
-                                                  ('p_a_mw', '<=0'), ('p_b_mw', '<=0'),('p_c_mw', '<=0'),
-                                                  ('q_a_mvar', '<=0'), ('q_b_mvar', '<=0'), ('q_c_mvar', '<=0'), 
-                                                  ('sn_mva', '>0'), ('scaling', '>=0'), ('in_service', 'boolean'),],
-                              'ext_grid': [('s_sc_max_mva', '>0'), ('rx_max', '0<x<=1'), ('x0x_max', '0<x<=1'), ('r0x0_max', '0<x<=1'),],
-                              } 
-        
+                                                  ('p_a_mw', '<=0'), ('p_b_mw', '<=0'), ('p_c_mw', '<=0'),
+                                                  ('q_a_mvar', '<=0'), ('q_b_mvar', '<=0'), ('q_c_mvar', '<=0'),
+                                                  ('sn_mva', '>0'), ('scaling', '>=0'), ('in_service', 'boolean')],
+                              'ext_grid': [('s_sc_max_mva', '>0'), ('rx_max', '0<x<=1'), ('x0x_max', '0<x<=1'), ('r0x0_max', '0<x<=1')],
+                              }
+
         # Merge three_phase_values into important_values
         for key in three_phase_values:
             for element in three_phase_values[key]:
-                if key in important_values:                    
+                if key in important_values:
                     important_values[key].append(element)
                 else:
                     important_values[key] = [element]
@@ -964,17 +964,17 @@ def unsupported_elements_active(net):
     """
     Checks, if there are active net elements that are not supported by certain modes
     """
-    
+
     check_results = {}
     # check if net is made for 3ph calculation
     if len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 or "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo:
         mode = "3ph"
-        
+
     check_results['mode'] = mode
-    
+
     if(mode == "3ph"):
         active_gens = list(net.gen[net.gen.in_service == True].index)
-        
+
     if active_gens:
         check_results['active_gens'] = active_gens
 
