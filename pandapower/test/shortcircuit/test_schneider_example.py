@@ -28,10 +28,24 @@ def schneider_example():
 def test_schneider_example():
     net = schneider_example()
     
+    ikss = [44.74, 2.08]
+    ip = [117.69, 5.61]
+    
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-    assert np.allclose(net.res_bus_sc.loc[:, "ikss_ka"].values, [44.74, 2.08], atol=1e-2)
+    assert np.allclose(net.res_bus_sc.loc[:, "ikss_ka"].values, np.array(ikss), atol=1e-2)
     # assert np.allclose(net.res_bus_sc.loc[:, "ip_ka"], [117.69, 5.61], atol=1e-2)
     # assert np.allclose(net.res_bus_sc.loc[:, "ib_ka"], [31.77, 1.77], atol=1e-2)
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    # pytest.main([__file__])
+    
+    net = schneider_example()
+    
+    ikss = [44.74, 2.08]
+    ip = [117.69, 5.61]
+    kappa = [1.86, 1.908]
+    
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="c")
+    rb = net.res_bus_sc
+    kappa = (rb["ip_ka"] / rb["ikss_ka"] / np.sqrt(2)).values
+    1.02 + 0.98 * np.exp(-3 * 0.05)

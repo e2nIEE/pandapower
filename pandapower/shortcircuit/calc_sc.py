@@ -147,7 +147,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     else:
         raise ValueError("Invalid fault %s" % fault)
 
-def _calc_ik(net, ppci_orig, bus):
+def _calc_current(net, ppci_orig, bus):
     # ppci_bus = net._pd2ppc_lookups["bus"][bus]
     # update ppci
     non_ps_gen_bus, non_ps_gen_ppci, ps_gen_bus_ppci =\
@@ -173,14 +173,14 @@ def _calc_ik(net, ppci_orig, bus):
             this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"])
 
         _calc_rx(net, this_ppci, this_calc_bus)
-        # _add_kappa_to_ppc(net, ppci)
         _calc_ikss(net, this_ppci, this_calc_bus)
-        
+        _add_kappa_to_ppc(net, this_ppci)
+
         # Fix this
-        # if net["_options"]["ip"]:
-        #     _calc_ip(net, this_ppci)
-        # if net["_options"]["ith"]:
-        #     _calc_ith(net, this_ppci)
+        if net["_options"]["ip"]:
+            _calc_ip(net, this_ppci)
+        if net["_options"]["ith"]:
+            _calc_ith(net, this_ppci)
 
         # if net._options["branch_results"]:
         #     _calc_branch_currents(net, this_ppci, this_calc_bus)
@@ -192,7 +192,7 @@ def _calc_ik(net, ppci_orig, bus):
 def _calc_sc(net, bus):
     ppc, ppci = _init_ppc(net)
 
-    _calc_ik(net, ppci, bus)
+    _calc_current(net, ppci, bus)
 
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0=None, bus=bus)
