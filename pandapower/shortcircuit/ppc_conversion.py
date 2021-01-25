@@ -44,7 +44,6 @@ def _create_k_updated_ppci(net, ppci_orig, bus):
     n_ppci_bus = ppci["bus"].shape[0]
     non_ps_gen_bus = np.arange(n_ppci_bus)[np.isnan(ppci["bus"][:, K_SG])]
     ps_gen_bus = np.arange(n_ppci_bus)[~np.isnan(ppci["bus"][:, K_SG])]
-    
 
     ps_gen_bus_mask = ~np.isnan(ppci["bus"][:, K_SG])
     ps_trafo_mask = ~np.isnan(ppci["branch"][:, K_ST])
@@ -152,7 +151,6 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     #     rdss_ohm[large_hv_gens] = 0.05 * xdss_pu[large_hv_gens] * vn_gen ** 2 / sn_gen
     #     rdss_ohm[small_hv_gens] = 0.07 * xdss_pu[small_hv_gens] * vn_gen ** 2 / sn_gen
 
-
     r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
     z_gen = (r_gen + x_gen * 1j)
     z_gen_pu = z_gen / gen_baseZ
@@ -167,9 +165,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     kg = (1/(1+pg_percent/100)) * cmax / (1 + (xdss_pu * sin_phi_gen))
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
-    
 
-    # Calculate G,B (r,x) for peak current calculation
+    # Calculate G,B (r,x) on generator for peak current calculation
     r_gen_p = np.full_like(r_gen, fill_value=np.nan)
     lv_gens, hv_gens = (vn_gen <= 1.), (vn_gen > 1.)
     small_hv_gens = (sn_gen < 100) & hv_gens

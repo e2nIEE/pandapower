@@ -308,11 +308,10 @@ def test_iec_60909_4_1ph():
             0.06337, 0.0633, 0, 0.0001, 0.0001]
     ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337,
           0.1656, 0.1279, 0.0, 0.00025, 0.00033]
-    # No ip for 1ph sc calculation
+    # No ib for 1ph sc calculation
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-4)
     # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
-

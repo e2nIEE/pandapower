@@ -48,8 +48,8 @@ def _kappa_method_c(net, ppc):
     ppc_c["bus"][np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS, GS])] =\
         ppc_c["bus"][np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS_P, GS_P])] 
 
-    zero_conductance = np.where(ppc["bus"][:,GS] == 0)
     # TODO: Check this
+    # zero_conductance = np.where(ppc["bus"][:,GS] == 0)
     # ppc_c["bus"][zero_conductance, BS] *= net.f_hz / fc
 
     conductance = np.where(ppc["bus"][:,GS] != 0)

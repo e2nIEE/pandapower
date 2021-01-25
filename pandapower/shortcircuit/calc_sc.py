@@ -19,20 +19,19 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.shortcircuit.currents import _calc_ikss,\
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, \
-    _calc_single_bus_sc, _calc_single_bus_sc_no_y_inv, _calc_ib_generator
+    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_ib, _calc_branch_currents
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.results import _extract_results, _extract_single_results,\
-    _copy_result_ppci_orig
+from pandapower.shortcircuit.results import _extract_results, _copy_result_ppci_orig
 from pandapower.results import init_results
 
 
-def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-            ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
+def calc_sc(net, bus=None,
+            fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
+            ith=False, ib=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
-            bus=None, inverse_y=True):
+            inverse_y=True):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -47,6 +46,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
     INPUT:
         **net** (pandapowerNet) pandapower Network
+
+        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for defined bus
 
         ***fault** (str, 3ph) type of fault
 
@@ -70,7 +71,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **ip** (bool, False) if True, calculate aperiodic short-circuit current
 
-        **Ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
+        **ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
+
+        **ib** (bool, False) if True, calculate breaking short-circuit current Ib
 
         **topology** (str, "auto") define option for meshing (only relevant for ip and ith)
 
@@ -90,8 +93,6 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
         each (branch, bus) tuple is returned otherwise only the max/min is returned
-
-        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for defined bus
 
         **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization, factorization version is in experiment which should be faster and memory efficienter
 
@@ -123,10 +124,13 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                        "especially for transformers")
 
     # Convert bus to numpy array for better performance
-    if isinstance(bus, int):
+    if bus is None:
+        bus = net.bus.index.values
+    elif isinstance(bus, int):
         bus = np.array([bus])
-    elif isinstance(bus, list):
+    elif not isinstance(bus, np.ndarray):
         bus = np.array(bus)
+       
 
     kappa = ith or ip
     net["_options"] = {}
@@ -136,10 +140,11 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                       recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
-                    x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
+                    x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith, ib=ib,
                     branch_results=branch_results, return_all_currents=return_all_currents,
                     inverse_y=inverse_y)
     init_results(net, "sc")
+
     if fault in ("2ph", "3ph"):
         _calc_sc(net, bus)
     elif fault == "1ph":
@@ -150,20 +155,19 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 def _calc_current(net, ppci_orig, bus):
     # ppci_bus = net._pd2ppc_lookups["bus"][bus]
     # update ppci
-    non_ps_gen_bus, non_ps_gen_ppci, ps_gen_bus_ppci =\
-        _create_k_updated_ppci(net, ppci_orig, bus=net.bus.index.values)
+    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict =\
+        _create_k_updated_ppci(net, ppci_orig, bus=bus)
+
     # For each ps_gen_bus one unique ppci is required
-    ps_gen_bus = list(ps_gen_bus_ppci.keys())
+    ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
     
-    for calc_bus in ps_gen_bus+[non_ps_gen_bus]:
+    for calc_bus in ps_gen_ppci_bus+[non_ps_gen_ppci_bus]:
         if isinstance(calc_bus, np.ndarray):
             # Use ppci for general bus
-            this_ppci = non_ps_gen_ppci
-            this_calc_bus = calc_bus
+            this_ppci, this_ppci_bus = non_ps_gen_ppci, calc_bus
         else:
             # Use specific ps_gen_bus ppci
-            this_ppci = ps_gen_bus_ppci[calc_bus]
-            this_calc_bus = np.array([calc_bus])
+            this_ppci, this_ppci_bus = ps_gen_bus_ppci_dict[calc_bus], np.array([calc_bus])
 
         _calc_ybus(this_ppci)
         if net["_options"]["inverse_y"]:
@@ -172,8 +176,8 @@ def _calc_current(net, ppci_orig, bus):
             # Factorization Ybus once
             this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"])
 
-        _calc_rx(net, this_ppci, this_calc_bus)
-        _calc_ikss(net, this_ppci, this_calc_bus)
+        _calc_rx(net, this_ppci, this_ppci_bus)
+        _calc_ikss(net, this_ppci, this_ppci_bus)
         _add_kappa_to_ppc(net, this_ppci)
 
         # Fix this
@@ -181,12 +185,14 @@ def _calc_current(net, ppci_orig, bus):
             _calc_ip(net, this_ppci)
         if net["_options"]["ith"]:
             _calc_ith(net, this_ppci)
+        # if net["_options"]["ib"]:
+        #     _calc_ib(net, this_ppci)
 
-        # if net._options["branch_results"]:
-        #     _calc_branch_currents(net, this_ppci, this_calc_bus)
+        if net._options["branch_results"]:
+            _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
-        _copy_result_ppci_orig(ppci_orig, this_ppci,
-                               active_bus=this_calc_bus)
+        _copy_result_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
+                               calc_options=net._options)
 
 
 def _calc_sc(net, bus):
@@ -224,14 +230,15 @@ def _calc_sc_1ph(net, bus):
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
         ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
 
-    _calc_rx(net, ppci, bus=bus)
+    ppci_bus = net._pd2ppc_lookups["bus"][bus]
+    _calc_rx(net, ppci, ppci_bus)
     _add_kappa_to_ppc(net, ppci)
 
-    _calc_rx(net, ppci_0, bus=bus)
+    _calc_rx(net, ppci_0, ppci_bus)
     _calc_ikss_1ph(net, ppci, ppci_0, bus=bus)
 
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci, bus=bus)
+        _calc_branch_currents(net, ppci, ppci_bus)
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0, bus=bus)
