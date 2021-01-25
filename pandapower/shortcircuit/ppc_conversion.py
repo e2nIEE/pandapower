@@ -34,6 +34,7 @@ def _init_ppc(net):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
+    _init_append_array(ppc)
     _calc_k_and_add_ppc(net, ppc)
     ppci = _ppc2ppci(ppc, net)
     return ppc, ppci
@@ -42,8 +43,11 @@ def _create_k_updated_ppci(net, ppci_orig, bus):
     ppci = deepcopy(ppci_orig)
     
     n_ppci_bus = ppci["bus"].shape[0]
-    non_ps_gen_bus = np.arange(n_ppci_bus)[np.isnan(ppci["bus"][:, K_SG])]
-    ps_gen_bus = np.arange(n_ppci_bus)[~np.isnan(ppci["bus"][:, K_SG])]
+    is_bus = bus[np.in1d(bus, net._is_elements["bus_is_idx"])]
+    all_needed_ppci_bus = net._pd2ppc_lookups["bus"][is_bus]
+
+    non_ps_gen_bus = all_needed_ppci_bus[np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
+    ps_gen_bus = all_needed_ppci_bus[~np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
 
     ps_gen_bus_mask = ~np.isnan(ppci["bus"][:, K_SG])
     ps_trafo_mask = ~np.isnan(ppci["branch"][:, K_ST])
@@ -60,8 +64,8 @@ def _create_k_updated_ppci(net, ppci_orig, bus):
 
     trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
     if np.any(trafo_mask):
-        ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *=\
-            ppci["branch"][np.ix_(ps_trafo_mask, [K_T])]
+        ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
+            ppci["branch"][np.ix_(trafo_mask, [K_T])]
     
     bus_ppci = {}
     if ps_gen_bus.size > 0:
@@ -85,22 +89,9 @@ def _create_k_updated_ppci(net, ppci_orig, bus):
 
 
 def _init_append_array(ppc):
-    bus_append = np.full((ppc["bus"].shape[0], bus_cols_sc),
-                            np.nan, dtype=ppc["branch"].dtype)
-    branch_append = np.full((ppc["branch"].shape[0], branch_cols_sc),
-                            np.nan, dtype=ppc["branch"].dtype)
-
     # Check append or update
-    if ppc["bus"].shape[1] == bus_cols:
-        ppc["bus"] = np.hstack((ppc["bus"], bus_append))
-    else:
-        ppc["bus"][:, bus_cols: bus_cols + bus_cols_sc] = bus_append
-
-    if ppc["branch"].shape[1] == branch_cols:
-        ppc["branch"] = np.hstack((ppc["branch"], branch_append))
-    else:
-        ppc["branch"][:, branch_cols: branch_cols + branch_cols_sc] = branch_append
-
+    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P,]] = np.nan
+    ppc["branch"][:, [K_T, K_ST]] = np.nan
 
 def _calc_k_and_add_ppc(net, ppc):
     _add_kt(net, ppc)
@@ -181,7 +172,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     z_gen_p_pu = z_gen_p / gen_baseZ
     y_gen_p_pu = 1 / z_gen_p_pu
 
-    buses, ppc["bus"][buses, GS_P], ppc["bus"][buses, BS_P] =\
+    _, ppc["bus"][buses, GS_P], ppc["bus"][buses, BS_P] =\
         _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
 
 
@@ -209,7 +200,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["branch"][np.arange(f, t)[ps_trafo_ix][ps_trafo_with_tap_mask], K_ST] = ks[ps_trafo_with_tap_mask]
 
         if np.any(~ps_trafo_with_tap_mask):
-            kso = (v_q/v_g/(1 + pg_percent[ps_gen_ix] /100)) * (v_trafo_lv/v_trafo_hv) *\
+            kso = (v_q/v_g/(1 + pg_percent[ps_gen_ix] / 100)) * (v_trafo_lv/v_trafo_hv) *\
                 ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_ix])
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_with_tap_mask], K_SG] = kso[~ps_trafo_with_tap_mask]
             ppc["branch"][np.arange(f, t)[ps_trafo_ix][~ps_trafo_with_tap_mask], K_ST] = kso[~ps_trafo_with_tap_mask]
