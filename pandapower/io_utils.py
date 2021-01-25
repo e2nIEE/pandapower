@@ -482,8 +482,11 @@ class FromSerializableRegistry():
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
-            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
-                                                      crs=self.d['crs']).astype(self.d['dtype'])
+            try:
+                df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
+                                                          crs=self.d['crs']).astype(self.d['dtype'])
+            except KeyError:
+                df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
@@ -849,3 +852,7 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
+
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.from_json(r'edis_zone_3_6.json')
