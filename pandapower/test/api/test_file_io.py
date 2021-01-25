@@ -5,19 +5,24 @@
 import copy
 import json
 import os
+import sys
 
 import numpy as np
-import pandas as pd
-import pytest
-
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
 import pandapower.topology as topology
+import pandas as pd
+import pytest
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
+
+try:
+    import geopandas as gpd
+except ImportError:
+    pass
 
 
 @pytest.fixture(params=[1])
@@ -293,6 +298,7 @@ def test_json_different_nets():
     pp.runpp(net, run_control=True)
     assert_net_equal(net, net_out)
 
+
 def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
     control.ContinuousTapControl(net, 114, 1.01)
@@ -301,9 +307,18 @@ def test_deepcopy_controller():
     ct2 = net2.controller.object.iloc[0]
     assert ct1 != ct2
     assert ct1.equals(ct2)
-    ct2.vm_set_pu=1.02
+    ct2.vm_set_pu = 1.02
     assert not ct1.equals(ct2)
+
+
+@pytest.mark.skipif('geopandas' not in sys.modules, reason="requires the GeoPandas library")
+def test_empty_geo_dataframe():
+    net = pp.create_empty_network()
+    net.bus_geodata['geometry'] = None
+    net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
+    pp.to_json(net, 'GeoDataFrameTest.json')
+    net = pp.from_json('GeoDataFrameTest.json')
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
-
