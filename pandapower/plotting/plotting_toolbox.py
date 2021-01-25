@@ -122,7 +122,7 @@ def get_index_array(indices, net_table_indices):
 
 
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus"):
+                             node_name="Bus", ignore_zero_length=True):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -140,6 +140,9 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :type table_name: str
     :param node_name: Name of the node type (only for logging)
     :type node_name: str, default "Bus"
+    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e.\
+        from_node_coords = to_node_coords
+    :type ignore_zero_length: bool, default True
     :return: Return values are:\
         - coords (list) - list of branch coordinates of shape (N, (2, 2))\
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found\
@@ -152,7 +155,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
               in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
                                  node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
-              if not (x_from == x_to and y_from == y_to)]
+              if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
         logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
