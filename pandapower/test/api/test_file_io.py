@@ -316,9 +316,9 @@ def test_empty_geo_dataframe():
     net = pp.create_empty_network()
     net.bus_geodata['geometry'] = None
     net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
-    pp.to_json(net, 'GeoDataFrameTest.json')
-    net = pp.from_json('GeoDataFrameTest.json')
-
+    s = pp.to_json(net)
+    net1 = pp.from_json_string(s)
+    assert assert_net_equal(net, net1)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])

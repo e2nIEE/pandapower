@@ -482,19 +482,18 @@ class FromSerializableRegistry():
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
-            try:
-                df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
-                                                          crs=self.d['crs']).astype(self.d['dtype'])
-            except KeyError:
-                df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
+            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+            else:
+                df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
+            df = df.astype(self.d['dtype'])
             return df
 
     if SHAPELY_INSTALLED:
