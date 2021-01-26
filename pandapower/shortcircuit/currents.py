@@ -244,8 +244,8 @@ def _calc_branch_currents(net, ppc, ppci_bus):
         else:
             ybus_fact = ppc["internal"]["ybus_fact"]
             V = np.zeros((n_bus, n_sc_bus), dtype=np.complex)
-            for b in ppci_bus:
-                V[:, b] = ybus_fact(current[b, :] * baseI[b])
+            for ix, b in enumerate(ppci_bus):
+                V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
 
         fb = np.real(ppc["branch"][:, 0]).astype(int)
         tb = np.real(ppc["branch"][:, 1]).astype(int)
