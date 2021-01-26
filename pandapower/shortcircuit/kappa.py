@@ -117,6 +117,4 @@ def nxgraph_from_ppc(net, ppc):
         z = 1 / (ppc["bus"][non_gen_vs_buses, GS] + ppc["bus"][non_gen_vs_buses, BS] * 1j)
         mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag})
                             for bus, z in zip(non_gen_vs_buses, z))
-    
-
     return mg

@@ -140,7 +140,6 @@ def _get_trafo_all_results(net, ppc, bus):
 
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
-        print(ppc["internal"]["branch_ikss_f"].iloc[f:t,:])
         net.res_trafo_sc["ikss_hv_ka"] = ppc["internal"]["branch_ikss_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1)
         net.res_trafo_sc["ikss_lv_ka"] = ppc["internal"]["branch_ikss_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1)
 

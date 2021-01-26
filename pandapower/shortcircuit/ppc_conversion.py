@@ -42,9 +42,8 @@ def _init_ppc(net):
 def _create_k_updated_ppci(net, ppci_orig, bus):
     ppci = deepcopy(ppci_orig)
     
-    n_ppci_bus = ppci["bus"].shape[0]
     is_bus = bus[np.in1d(bus, net._is_elements["bus_is_idx"])]
-    all_needed_ppci_bus = net._pd2ppc_lookups["bus"][is_bus]
+    all_needed_ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
 
     non_ps_gen_bus = all_needed_ppci_bus[np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
     ps_gen_bus = all_needed_ppci_bus[~np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
