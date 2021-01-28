@@ -1,7 +1,3 @@
-# using PowerModels
-# # push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
-# push!(LOAD_PATH, joinpath(@__DIR__, "pandapower", "pandapower", "opf"))
-# using PP2PM
 
 function run_powermodels(json_path)
     pm = load_pm_from_json(json_path)
