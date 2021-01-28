@@ -1,5 +1,7 @@
 Change Log
 =============
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
 
 [2.5.0]- 2021-01-08
 ----------------------
