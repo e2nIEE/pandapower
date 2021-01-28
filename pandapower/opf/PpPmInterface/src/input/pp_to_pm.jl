@@ -1,38 +1,3 @@
-# module PP2PM
-# export load_pm_from_json, get_model, get_solver
-
-# import JSON
-# using PowerModels
-# using Cbc
-# using Ipopt
-# using Juniper
-# import JuMP
-
-
-# try
-#     using Gurobi
-# catch e
-#     if isa(e, LoadError)
-#         println("Cannot import Gurobi. That's fine if you do not plan to use it")
-#     end
-# end
-
-# try
-#     using KNITRO
-# catch e
-#     if isa(e, LoadError)
-#         println("Cannot import KNITRO. That's fine if you do not plan to use it")
-#     end
-# end
-
-# try
-#     using SCIP
-# catch e
-#     if isa(e, LoadError)
-#         println("Cannot import SCIP. That's fine if you do not plan to use it")
-#     end
-# end
-
 
 function get_model(model_type)
     """
@@ -119,5 +84,3 @@ function load_pm_from_json(json_path)
     end
     return pm
 end
-
-# end
