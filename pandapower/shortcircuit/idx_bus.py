@@ -28,5 +28,6 @@ V_G         = start + 17
 PS_TRAFO_IX = start + 18
 GS_P        = start + 19
 BS_P        = start + 20
+SKSS        = start + 21
 
-bus_cols_sc = 21
+bus_cols_sc = 22

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM
+from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import VM, VA, BUS_TYPE
 from pandapower.results_bus import _get_bus_idx, _set_buses_out_of_service
 from pandapower.results import _get_aranged_lookup, _get_branch_results
@@ -76,6 +76,7 @@ def _get_bus_results(net, ppc, ppc_0, bus):
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
     else:
         net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:

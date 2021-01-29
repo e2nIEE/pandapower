@@ -12,7 +12,7 @@ from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH,\
-    X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G, K_SG
+    X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G, K_SG, SKSS
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
@@ -42,14 +42,23 @@ def _calc_ikss(net, ppc, ppci_bus=None):
         ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
     elif fault == "2ph":
         ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / 2 * ppc["baseMVA"]
-    
+
+    if fault == "3ph":
+        ppc["bus"][bus_idx, SKSS] = np.sqrt(3) * ppc["bus"][bus_idx, IKSS1] * ppc["bus"][bus_idx, BASE_KV] 
+    elif fault == "2ph":
+        ppc["bus"][bus_idx, SKSS] = ppc["bus"][bus_idx, IKSS1] * ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+
     # Correct voltage of generator bus inside power station
     if np.any(~np.isnan(ppc["bus"][:, K_SG])):
         gen_bus_idx = bus_idx[~np.isnan(ppc["bus"][bus_idx, K_SG])]
         ppc["bus"][gen_bus_idx, IKSS1] *=\
             (ppc["bus"][gen_bus_idx, V_G] / ppc["bus"][gen_bus_idx, BASE_KV])
+        ppc["bus"][gen_bus_idx, SKSS] *=\
+            (ppc["bus"][gen_bus_idx, V_G] / ppc["bus"][gen_bus_idx, BASE_KV])
 
     _current_source_current(net, ppc)
+    
+
 
 
 def _calc_ikss_1ph(net, ppc, ppc_0, bus=None):

@@ -280,9 +280,12 @@ def test_iec_60909_4_3ph():
                            83.4033, 98.1434, 51.6899, 36.9227]
     ib = [40.645, 31.570, 19.388, 16.017, 32.795, 34.028,
           23.212, 13.578, 42.3867, 68.4172]
+    skss = [26751.51, 6055.49, 3748.20, 3091.78, 6323.43,
+            650.61, 443.22, 705.52, 1816.71, 1395.55]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
     assert np.allclose(net.res_bus_sc.ip_ka.values[:8], np.array(ip_standard_kappa_c ), atol=1e-3)
+    assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-2)  
 
 
 def test_iec_60909_4_2ph():
@@ -294,9 +297,12 @@ def test_iec_60909_4_2ph():
     ip = [87.0941, 69.8085, 39.6736, 31.9067, 72.2294,
           84.9946, 44.7648, 31.9760, 118.0221, 182.1389]
     # No ib for 2ph sc calculation
+    skss = [7722.50, 1748.07, 1082.01, 892.52, 1825.42,
+            187.81, 127.95, 203.67, 524.44, 402.86]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
     assert np.allclose(net.res_bus_sc.ip_ka.values[:10], np.array(ip), atol=1e-3)
+    assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
 
 
 @pytest.mark.skip("1ph gen-close sc calculation still under develop")
