@@ -18,6 +18,7 @@ from pandapower.shortcircuit.impedance import _calc_zbus_diag
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
+
 def _calc_ikss(net, ppc, ppci_bus=None):
     # Vectorized for multiple bus
     if ppci_bus is None:
@@ -59,15 +60,13 @@ def _calc_ikss(net, ppc, ppci_bus=None):
     _current_source_current(net, ppc)
     
 
-
-
-def _calc_ikss_1ph(net, ppc, ppc_0, bus=None):
+def _calc_ikss_1ph(net, ppc, ppc_0, ppci_bus=None):
     # Vectorized for multiple bus
-    if bus is None:
+    if ppci_bus is None:
         # Slice(None) is equal to : select
-        bus_idx = slice(None)
+        bus_idx = np.arange(ppc["bus"].shape[0])
     else:
-        bus_idx = net._pd2ppc_lookups["bus"][bus] #bus where the short-circuit is calculated (j)
+        bus_idx = ppci_bus
 
     case = net._options["case"]
     c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]

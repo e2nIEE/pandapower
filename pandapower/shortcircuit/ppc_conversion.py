@@ -54,17 +54,17 @@ def _create_k_updated_ppci(net, ppci_orig, bus):
         ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
             ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
         ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *=\
-            ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])]
+            ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])] / ppci["branch"][np.ix_(ps_trafo_mask, [K_T])]
 
     gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
     if np.any(gen_bus_mask):
         ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
             ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
 
-    trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
-    if np.any(trafo_mask):
-        ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
-            ppci["branch"][np.ix_(trafo_mask, [K_T])]
+    # trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
+    # if np.any(trafo_mask):
+    #     ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
+    #         ppci["branch"][np.ix_(trafo_mask, [K_T])]
     
     bus_ppci = {}
     if ps_gen_bus.size > 0:

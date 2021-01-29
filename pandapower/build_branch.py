@@ -262,14 +262,14 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc):
     r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
     if mode == "sc":
         y = 0
-        # if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
-        #     from pandapower.shortcircuit.idx_bus import C_MAX
-        #     bus_lookup = net._pd2ppc_lookups["bus"]
-        #     cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-        #     kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
-        #                                         trafo_df.sn_mva, cmax)
-        #     r *= kt
-        #     x *= kt
+        if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
+            from pandapower.shortcircuit.idx_bus import C_MAX
+            bus_lookup = net._pd2ppc_lookups["bus"]
+            cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+            kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
+                                                trafo_df.sn_mva, cmax)
+            r *= kt
+            x *= kt
     else:
         y = _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
 

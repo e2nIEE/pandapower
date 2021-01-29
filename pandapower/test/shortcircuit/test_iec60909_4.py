@@ -125,11 +125,13 @@ def iec_60909_4_small():
     H = pp.create_bus(net, vn_kv=30.)
     HG2 = pp.create_bus(net, vn_kv=10) 
 
-    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1)
-    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
+    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
 
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
+        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, 
+        shift_degree=5, vector_group="YNd")
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t1)
@@ -153,16 +155,20 @@ def iec_60909_4_small():
 
     pp.create_line_from_parameters(net, b2, b3, name="L1",
         c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
-        length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39,)
+        length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
+        r0_ohm_per_km=0.32, x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0)
     pp.create_line_from_parameters(net, b2, b5, name="L3a",
         c_nf_per_km=0, max_i_ka=0,
-        length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39)
+        length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
+        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0)
     pp.create_line_from_parameters(net, b2, b5, name="L3b",
         c_nf_per_km=0, max_i_ka=0,
-        length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39)
+        length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
+        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0)
     pp.create_line_from_parameters(net, b5, b3, name="L4",
         c_nf_per_km=0, max_i_ka=0,
-        length_km=10, r_ohm_per_km=0.096, x_ohm_per_km=0.388)
+        length_km=10, r_ohm_per_km=0.096, x_ohm_per_km=0.388,
+        r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0)
 
     return net
 
@@ -173,7 +179,8 @@ def iec_60909_4_small_gen_only():
     HG2 = pp.create_bus(net, vn_kv=10)
 
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
+        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, vector_group="YNd")
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t1)
@@ -306,6 +313,11 @@ def test_iec_60909_4_2ph():
 
 
 @pytest.mark.skip("1ph gen-close sc calculation still under develop")
+def test_iec_60909_4_small_1ph():
+    net = iec_60909_4_small()
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C") 
+
+@pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_1ph():
     net = iec_60909_4()
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
@@ -321,3 +333,4 @@ def test_iec_60909_4_1ph():
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
+

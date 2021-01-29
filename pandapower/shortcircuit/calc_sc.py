@@ -123,7 +123,7 @@ def calc_sc(net, bus=None,
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
 
-    # Convert bus to numpy array for better performance
+    # Convert bus to numpy array
     if bus is None:
         bus = net.bus.index.values
     elif isinstance(bus, int):
@@ -216,12 +216,13 @@ def _calc_sc_1ph(net, bus):
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
     ppc, ppci = _pd2ppc(net)
+    # _init_ppc(net)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net)
     _calc_ybus(ppci_0)
-
+    
     if net["_options"]["inverse_y"]:
         _calc_zbus(net, ppci)
         _calc_zbus(net, ppci_0)
@@ -230,15 +231,21 @@ def _calc_sc_1ph(net, bus):
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
         ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
 
-    ppci_bus = net._pd2ppc_lookups["bus"][bus]
-    _calc_rx(net, ppci, ppci_bus)
+    ppci_bus =  net["_pd2ppc_lookups"]["bus"][bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]]
+    _calc_rx(net, ppci, ppci_bus=ppci_bus)
     _add_kappa_to_ppc(net, ppci)
 
-    _calc_rx(net, ppci_0, ppci_bus)
-    _calc_ikss_1ph(net, ppci, ppci_0, bus=bus)
+    _calc_rx(net, ppci_0, ppci_bus=ppci_bus)
+    _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus=ppci_bus)
 
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci, ppci_bus)
+        _calc_branch_currents(net, ppci, ppci_bus=ppci_bus)
+        
+    _copy_result_ppci_orig(ppci, ppci, ppci_bus,
+                           calc_options=net._options)
+    _copy_result_ppci_orig(ppci_0, ppci_0, ppci_bus,
+                           calc_options=net._options)
+
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0, bus=bus)
