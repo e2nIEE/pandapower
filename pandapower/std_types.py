@@ -335,8 +335,6 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")
     parameter_from_std_type(net, "endtemp_degree")
-    parameter_from_std_type(net, "r0x0_max", element="ext_grid")
-    parameter_from_std_type(net, "x0x_max", element="ext_grid")
 
 
 def add_temperature_coefficient(net, fill=None):
