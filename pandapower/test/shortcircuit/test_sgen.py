@@ -82,8 +82,8 @@ def test_max_3ph_branch_small_sgen(three_bus_example):
     net = three_bus_example
     sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([0.53746061, 0.50852707, 0.4988896]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.49593034,  0.4988896 ]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.92787443,  0.9251165 ]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.49593034,  0.4988896]))
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.92787443,  0.9251165]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([ 0.49811957,  0.50106881]))
 
 
@@ -91,7 +91,7 @@ def test_max_3ph_branch_big_sgen(big_sgen_three_bus_example):
     net = big_sgen_three_bus_example
     sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([1.78453722, 1.75560368, 1.72233192]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([1.25967331, 1.72233192 ]))
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([1.25967331, 1.72233192]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([1.78144709, 2.65532524]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([1.26511638, 1.7298553]))
 
