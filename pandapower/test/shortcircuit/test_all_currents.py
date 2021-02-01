@@ -197,12 +197,14 @@ def test_all_currents_with_oos_elements(three_bus_example):
 
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
                        np.array([0.01259673, 0.49593036]), atol=1e-5)
-    assert all(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].isnull())
+    assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].values,
+                       0, atol=1e-10)
 
     sc.calc_sc(net, case="min", branch_results=True, return_all_currents=True)
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
                        np.array([0.01259673, 0.3989686]), atol=1e-5)
-    assert all(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].isnull())
+    assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].values,
+                       0, atol=1e-10)
 
 
 def test_branch_all_currents_gen(gen_three_bus_example):
@@ -245,7 +247,7 @@ def test_against_single_sc_results_line(three_bus_permuted_index):
 
 def test_against_single_sc_results_trafo(net_transformer):
     net = net_transformer
-    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
+    sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True, inverse_y=False)
     multi_results = net.res_trafo_sc.copy()
 
     for bus in net.bus.index[net.bus.in_service]:
