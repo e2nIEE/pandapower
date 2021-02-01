@@ -294,7 +294,7 @@ def invalid_values(net):
                                    ('et', 'switch_type'), ('closed', 'boolean')]}
 
     # Check if net is made for 3ph calculation and if so, add 3ph parameters to important_values
-    if len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 or "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo:
+    if "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo or len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 or 'r0x0_max' in net.ext_grid:
         three_phase_values = {'line': [('r0_ohm_per_km', '>=0'), ('x0_ohm_per_km', '>=0'), ('c0_nf_per_km', '>=0')],
                               'trafo': [('vk0_percent', '>=0'), ('vkr0_percent', '>=0'), ('mag0_percent', '>=0'), ('si0_hv_partial', '>=0'),
                                         ('vector_group', 'trafo_supported_vector_group: Dyn, Yyn, Yzn, YNyn')],
