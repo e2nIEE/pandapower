@@ -1905,7 +1905,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 max_loading_percent=nan, alpha=nan,
                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
                                 x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=0,
-                                endtemp_degree=nan, **kwargs):
+                                endtemp_degree=nan, std_type=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1976,7 +1976,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     v = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
-        "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
+        "to_bus": to_bus, "in_service": bool(in_service), "std_type": std_type,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
