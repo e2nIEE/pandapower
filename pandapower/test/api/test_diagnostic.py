@@ -77,10 +77,27 @@ def test_no_issues(diag_params, diag_errors, report_methods):
             assert report_check
 
 
+def add_3ph_to_net(net):
+    net.line['r0_ohm_per_km'] = 0.7766
+    net.line['x0_ohm_per_km'] = 0.29908
+    net.line['c0_nf_per_km'] = 496.2
+    net.trafo['vk0_percent'] = 6
+    net.trafo['vkr0_percent'] = 0.78125
+    net.trafo['mag0_percent'] = 100
+    net.trafo['mag0_rx'] = 0
+    net.trafo['si0_hv_partial'] = 0.9
+    net.trafo['vector_group'] = "Dyn"
+    net.ext_grid['r0x0_max'] = 0.1
+    net.ext_grid['x0x_max'] = 1
+
+    return net
+
+
 class TestInvalidValues:
 
     def test_greater_zero(self, test_net, diag_params, diag_errors, report_methods):
         net = copy.deepcopy(test_net)
+        net = add_3ph_to_net(net)
         check_function = 'invalid_values'
         net.bus.loc[42, 'vn_kv'] = '-1'
         net.line.loc[7, 'length_km'] = -1
