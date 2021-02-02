@@ -74,6 +74,8 @@ def _get_bus_results(net, ppc, ppc_0, bus):
 
     if net["_options"]["fault"] == "1ph":
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
+        net.res_bus_sc["xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM] 
     else:
         net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]

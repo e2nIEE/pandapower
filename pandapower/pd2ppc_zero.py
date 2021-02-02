@@ -11,7 +11,8 @@ from pandapower.build_gen import _build_gen_ppc
 #from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS
-from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
+from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe,\
+     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 
 def _pd2ppc_zero(net, sequence=0):
@@ -72,11 +73,15 @@ def _build_branch_ppc_zero(net, ppc):
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc ))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    
     _add_line_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc)
-    if "trafo3w" in lookup:
-        raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
-
+    if mode == "sc":
+        _add_trafo3w_sc_impedance_zero(net, ppc)
+    else:
+        if "trafo3w" in lookup:
+            raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
+    
 
 def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     if trafo_df is None:
@@ -373,3 +378,37 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
+
+
+def _add_trafo3w_sc_impedance_zero(net, ppc):
+    branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if not "trafo3w" in branch_lookup:
+        return
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    branch = ppc["branch"]
+    f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
+    trafo_df = _trafo_df_from_trafo3w(net, seq=0)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    branch[f:t, F_BUS] = bus_lookup[hv_bus]
+    branch[f:t, T_BUS] = bus_lookup[lv_bus]
+
+    r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, seq=0)
+    
+    
+    # Correction for YnYnD
+    ys = 1 / ((x[-1] * 1j + r[-1]) * ratio[-1] ** 2)
+    x[[1, 2]] = 1e20
+    r[[1, 2]] = 1e20
+
+    ppc["bus"][-1, BS] += ys.imag
+    ppc["bus"][-1, GS] += ys.real
+
+
+    branch[f:t, BR_R] = r 
+    branch[f:t, BR_X] = x
+    branch[f:t, BR_B] = 0
+    branch[f:t, TAP] = ratio
+    branch[f:t, SHIFT] = shift
+    branch[f:t, BR_STATUS] = in_service

@@ -74,7 +74,18 @@ def _calc_ikss_1ph(net, ppc, ppc_0, ppci_bus=None):
     ppc_0["internal"]["baseI"] = ppc_0["bus"][:, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
 
     z_equiv = abs((ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
-                  (ppc_0["bus"][bus_idx, R_EQUIV] + ppc_0["bus"][bus_idx, X_EQUIV] * 1j))
+                (ppc_0["bus"][bus_idx, R_EQUIV] + ppc_0["bus"][bus_idx, X_EQUIV] * 1j))
+    
+    
+    # Only for test, should correspondant to PF result
+    baseZ = ppc["bus"][bus_idx, BASE_KV] ** 2 / ppc["baseMVA"]
+    ppc["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc['bus'][bus_idx, R_EQUIV]
+    ppc["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc['bus'][bus_idx, X_EQUIV]
+    ppc_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc_0['bus'][bus_idx, R_EQUIV]
+    ppc_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc_0['bus'][bus_idx, X_EQUIV]
+    # print(f"r0:{baseZ[0] *ppc_0['bus'][0, R_EQUIV]}, x0:{baseZ[0] *ppc_0['bus'][0, X_EQUIV]}")
+    # print(f"r:{baseZ[0] *ppc['bus'][0, R_EQUIV]}, x:{baseZ[0] *ppc['bus'][0, X_EQUIV]}")    
+
 
     ppc_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
     ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc["baseMVA"]

@@ -2611,7 +2611,10 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
                                          tap_neutral=nan, tap_max=nan,
                                          tap_min=nan, name=None, in_service=True, index=None,
-                                         max_loading_percent=nan, tap_at_star_point=False):
+                                         max_loading_percent=nan, tap_at_star_point=False,
+                                         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
+                                         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
+                                         vector_group=None):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -2686,6 +2689,20 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        
+        **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
+
+        **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
+
+        **vk0_lv_percent** (float) - zero sequence short circuit voltage from high to low voltage
+
+        **vkr0_hv_percent** (float) - zero sequence real part of short circuit voltage from high to medium voltage
+
+        **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
+
+        **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
+        
+        **vector_group** (list of String) - Vector group of the transformer3w
 
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created 3W transformer
@@ -2714,12 +2731,15 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                "vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
                "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
                "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min", "in_service",
-               "name", "std_type", "tap_at_star_point"]
+               "name", "std_type", "tap_at_star_point", "vk0_hv_percent", "vk0_mv_percent", "vk0_lv_percent",
+               "vkr0_hv_percent", "vkr0_mv_percent", "vkr0_lv_percent", "vector_group"]
     values = [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, sn_hv_mva, sn_mv_mva, sn_lv_mva,
               vk_hv_percent, vk_mv_percent, vk_lv_percent, vkr_hv_percent, vkr_mv_percent,
               vkr_lv_percent, pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree, tap_side,
               tap_step_percent, tap_step_degree, tap_pos, tap_neutral, tap_max, tap_min,
-              bool(in_service), name, None, tap_at_star_point]
+              bool(in_service), name, None, tap_at_star_point,
+              vk0_hv_percent, vk0_mv_percent, vk0_lv_percent,
+              vkr0_hv_percent, vkr0_mv_percent, vkr0_lv_percent, vector_group]
 
     _set_entries(net, "trafo3w", index, **dict(zip(columns, values)))
 
@@ -2736,7 +2756,10 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                                           tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
                                           tap_neutral=nan, tap_max=nan, tap_min=nan, name=None,
                                           in_service=True, index=None, max_loading_percent=None,
-                                          tap_at_star_point=False, **kwargs):
+                                          tap_at_star_point=False,
+                                          vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
+                                          vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
+                                          vector_group=None, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -2815,6 +2838,20 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
+
+        **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
+
+        **vk0_lv_percent** (float) - zero sequence short circuit voltage from high to low voltage
+
+        **vkr0_hv_percent** (float) - zero sequence real part of short circuit voltage from high to medium voltage
+
+        **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
+
+        **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
+        
+        **vector_group** (list of String) - Vector group of the transformer3w
+
     OUTPUT:
         **trafo_id** - List of trafo_ids of the created 3W transformers
 
@@ -2852,7 +2889,11 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "tap_step_degree": tap_step_degree, "tap_pos": tp_pos, "tap_neutral": tp_neutral,
                "tap_max": tap_max, "tap_min": tap_min,
                "in_service": array(in_service).astype(bool_), "name": name,
-               "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None}
+               "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None,
+               "vk0_hv_percent":vk0_hv_percent, "vk0_mv_percent":vk0_mv_percent,
+               "vk0_lv_percent":vk0_lv_percent, "vkr0_hv_percent":vkr0_hv_percent,
+               "vkr0_mv_percent":vkr0_mv_percent, "vkr0_lv_percent":vkr0_lv_percent,
+               "vector_group": vector_group}
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
