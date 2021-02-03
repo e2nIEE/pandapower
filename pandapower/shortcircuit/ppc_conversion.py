@@ -10,7 +10,7 @@ import numpy as np
 
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.auxiliary import _add_auxiliary_elements, _clean_up, _sum_by_group
-from pandapower.build_branch import _trafo_df_from_trafo3w, get_trafo_values
+from pandapower.build_branch import _trafo_df_from_trafo3w, get_trafo_values, _transformer_correction_factor
 
 from pandapower.pypower.idx_bus import BASE_KV, GS, BS, bus_cols
 from pandapower.pypower.idx_brch import branch_cols, F_BUS, T_BUS, BR_X, BR_R
@@ -106,10 +106,8 @@ def _add_kt(net, ppc):
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
         cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
-        zt = get_trafo_values(trafo_df, "vk_percent") / 100 / get_trafo_values(trafo_df, "sn_mva")
-        rt = get_trafo_values(trafo_df, "vkr_percent") / 100 / get_trafo_values(trafo_df, "sn_mva")
-        xt = np.sqrt(zt ** 2 - rt ** 2)
-        kt = 0.95 * cmax / (1 + .6 * xt * get_trafo_values(trafo_df, "sn_mva"))
+        kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
+                                            trafo_df.sn_mva, cmax)
         branch[f:t, K_T] = kt
 
 

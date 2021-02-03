@@ -153,7 +153,7 @@ def test_1ph_with_switches():
         check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
     
 
-def iec_60909_4_small_one_trafo3w():
+def iec_60909_4_small(n_t3=1):
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=380.)
@@ -166,14 +166,19 @@ def iec_60909_4_small_one_trafo3w():
     pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
     pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
 
-    # pp.create_transformer3w_from_parameters(net,
-    #     hv_bus=b1, mv_bus=b2, lv_bus=H,
-    #     vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
-    #     sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50,
-    #     pfe_kw=0, i0_percent=0,  # FIXME: Optional for SC
-    #     vk_hv_percent=21, vkr_hv_percent=.26,
-    #     vk_mv_percent=7, vkr_mv_percent=.16,
-    #     vk_lv_percent=10., vkr_lv_percent=.16)
+    if n_t3==2:
+        pp.create_transformer3w_from_parameters(net,
+            hv_bus=b1, mv_bus=b2, lv_bus=b8,
+            vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
+            sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50,
+            pfe_kw=0, i0_percent=0,
+            vk_hv_percent=21, vkr_hv_percent=.26,
+            vk_mv_percent=7, vkr_mv_percent=.16,
+            vk_lv_percent=10., vkr_lv_percent=.16,
+            vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
+            vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
+            vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714,
+            vector_group="YYNd")
     pp.create_transformer3w_from_parameters(net,
         hv_bus=b1, mv_bus=b2, lv_bus=b8,
         vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
@@ -185,7 +190,7 @@ def iec_60909_4_small_one_trafo3w():
         vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
         vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
         vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714,
-        vector_group="YNYNd", shift_lv_degree=-150)
+        vector_group="YNYd")
 
     pp.create_line_from_parameters(net, b2, b3, name="L1",
         c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
@@ -207,7 +212,7 @@ def iec_60909_4_small_one_trafo3w():
     return net
 
 def test_iec60909_example_4_one_trafo3w():
-    net = iec_60909_4_small_one_trafo3w()
+    net = iec_60909_4_small(n_t3=1)
     
     # r0 = 2.378330877	
     # x0 = 17.335578502	
@@ -217,6 +222,14 @@ def test_iec60909_example_4_one_trafo3w():
     
     sc.calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
+    
+def test_iec60909_example_4_two_trafo3w():
+    net = iec_60909_4_small(n_t3=2)
+
+    ikss_pf_2t3 = [24.5772, 14.7247, 8.1060, 15.2749]
+    
+    sc.calc_sc(net, fault="1ph")
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_2t3), atol=1e-4)
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -396,17 +396,36 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
 
     r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, seq=0)
     
-    
-    # Correction for YnYnD
-    ys = 1 / ((x[-1] * 1j + r[-1]) * ratio[-1] ** 2)
-    x[[1, 2]] = 1e20
-    r[[1, 2]] = 1e20
+    n_t3 = net.trafo3w.shape[0]
+    for t3_ix in np.arange(n_t3):
+        t3 = net.trafo3w.iloc[t3_ix, :]
+        
+        if t3.vector_group.lower() == "ynyd":
+            # Correction for YnYnD
+            # z3/y3 -> Shunt
+            ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            aux_bus = bus_lookup[lv_bus[t3_ix]]
+            ppc["bus"][aux_bus, BS] += ys.imag
+            ppc["bus"][aux_bus, GS] += ys.real
+            
+            # Set z2/z3 to almost 0 to avoid isolated bus
+            x[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e20
+            r[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e20
 
-    ppc["bus"][-1, BS] += ys.imag
-    ppc["bus"][-1, GS] += ys.real
+        elif t3.vector_group.lower() == "yynd":
+            # z3/y3
+            ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            aux_bus = bus_lookup[lv_bus[t3_ix]]
+            ppc["bus"][aux_bus, BS] += ys.imag
+            ppc["bus"][aux_bus, GS] += ys.real
+            
+            # Set z1/z3 to almost 0 to avoid isolated bus
+            x[[t3_ix, t3_ix+n_t3*2]] = 1e20
+            r[[t3_ix, t3_ix+n_t3*2]] = 1e20
+        else:
+            raise UserWarning(f"{t3.vector_group} not supported yet for trafo3w!")
 
-
-    branch[f:t, BR_R] = r 
+    branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_B] = 0
     branch[f:t, TAP] = ratio

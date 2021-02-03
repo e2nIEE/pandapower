@@ -31,8 +31,9 @@ def _copy_result_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
                 if res_key not in ppci_orig["internal"]:
                     ppci_orig["internal"][res_key] = ppci["internal"][res_key]
                 else:
-                    ppci_orig["internal"][res_key] = np.c_[ppci_orig["internal"][res_key],
-                                                           ppci["internal"][res_key]]
+                    if not ppci_orig["internal"][res_key] is ppci["internal"][res_key]:
+                        ppci_orig["internal"][res_key] = np.c_[ppci_orig["internal"][res_key],
+                                                               ppci["internal"][res_key]]
 
         else:
             case = calc_options["case"]
