@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -296,6 +296,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
+            ('initial_run', "bool"),
             ("recycle", "bool"),
         ],
         # geodata
@@ -1795,6 +1796,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     v.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km",
                                                     "max_i_ka"]})
+    if "r0_ohm_per_km" in lineparam:
+        v.update({param: lineparam[param] for param in ["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
+
     v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
 
     if "type" in lineparam:

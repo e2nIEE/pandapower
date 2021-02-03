@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import copy
 import networkx as nx
 import numpy as np
+from scipy.sparse.linalg import factorized
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
@@ -29,6 +30,9 @@ def _add_kappa_to_ppc(net, ppc):
         raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
     ppc["bus"][:, KAPPA] = kappa
 
+def _kappa(rx):
+    return 1.02 + .98 * np.exp(-3 * rx)
+
 def _kappa_method_c(net, ppc):
     if net.f_hz == 50:
         fc = 20
@@ -48,13 +52,16 @@ def _kappa_method_c(net, ppc):
     ppc_c["bus"][conductance, GS] = y_shunt.real[0]
     ppc_c["bus"][conductance, BS] = y_shunt.imag[0]
     _calc_ybus(ppc_c)
-    _calc_zbus(ppc_c)
-    _calc_rx(net, ppc_c)
+
+    if net["_options"]["inverse_y"]:
+        _calc_zbus(net, ppc_c)
+    else:
+        # Factorization Ybus once
+        ppc_c["internal"]["ybus_fact"] = factorized(ppc_c["internal"]["Ybus"])
+
+    _calc_rx(net, ppc_c, bus=None)
     rx_equiv_c = ppc_c["bus"][:, R_EQUIV] / ppc_c["bus"][:, X_EQUIV] * fc / net.f_hz
     return _kappa(rx_equiv_c)
-
-def _kappa(rx):
-    return 1.02 + .98 * np.exp(-3 * rx)
 
 def _kappa_method_b(net, ppc):
     topology = net._options["topology"]

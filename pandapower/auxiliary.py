@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -577,7 +577,8 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method, return_all_currents):
+                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method, return_all_currents,
+                    inverse_y):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -594,7 +595,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "ith": ith,
         "branch_results": branch_results,
         "kappa_method": kappa_method,
-        "return_all_currents": return_all_currents
+        "return_all_currents": return_all_currents,
+        "inverse_y": inverse_y
     }
     _add_options(net, options)
 
