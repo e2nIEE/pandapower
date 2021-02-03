@@ -43,8 +43,20 @@ jobs:
       run: |
         pip list
     - name: Test with pytest
+      if: ${{ matrix.python-version != '3.8' }}
       run: |
         pytest
+    - name: Test with pytest and Codecov
+      if: ${{ matrix.python-version == '3.8' }}
+      run: |
+        pip install pytest
+        pip install pytest-cov
+        pytest --cov=./ --cov-report=xml
+    - name: Upload coverage to Codecov
+      if: ${{ matrix.python-version == '3.8' }}
+      uses: codecov/codecov-action@v1
+      with:
+        verbose: true
 
   relying: # packages that rely on pandapower
 
@@ -110,12 +122,3 @@ jobs:
       run: |
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Generate coverage report
-      run: |
-        pip install pytest
-        pip install pytest-cov
-        pytest --cov=./ --cov-report=xml
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        verbose: true
