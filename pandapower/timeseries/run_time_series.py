@@ -260,7 +260,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control
-    ts_variables = prepare_run_ctrl(net, None)
+    ts_variables = prepare_run_ctrl(net, None, **kwargs)
     # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
     ts_variables["run"] = run
     # recycle options, which define what can be recycled
