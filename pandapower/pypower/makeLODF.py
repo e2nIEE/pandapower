@@ -7,8 +7,8 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Builds the line outage distribution factor matrix.
-"""
+# Builds the line outage distribution factor matrix.
+
 
 from numpy import ones, diag, r_, arange
 import numpy as np
