@@ -20,7 +20,7 @@ class OptAlgorithm(BaseAlgorithm):
         opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in kwargs else kwargs['opt_method']
 
         # matrix calculation object
-        estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **okwargs)
+        estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **kwargs)
 
         jac = estm.create_cost_jacobian
         res = minimize(estm.cost_function, x0=eppci.E,
