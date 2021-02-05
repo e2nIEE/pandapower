@@ -1406,7 +1406,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                                              limit is taken.
                                            - necessary for OPF.
 
-        **max_vm_pur** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
                                               limit is taken.
                                             - necessary for OPF
 
@@ -1531,7 +1531,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                                                      bus voltage limit is taken.
                                                    - necessary for OPF.
 
-        **max_vm_pur** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
+        **max_vm_pu** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
                                                       voltage limit is taken.
                                                     - necessary for OPF
 
