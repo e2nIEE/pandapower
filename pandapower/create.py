@@ -297,7 +297,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('order', "float64"),
             ('level', dtype(object)),
             ('initial_run', "bool"),
-            ("recycle", "bool"),
+            ("recycle", dtype(object)),
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -3345,10 +3345,6 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
-    if meas_type in ("p", "q") and element_type == "bus":
-        logger.warning("Attention! Signing system of P,Q measurement of buses now changed to load "
-                       "reference (match pandapower res_bus pq)!")
-
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
