@@ -413,7 +413,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
 
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
-        # Initialize ppci with measurements
+        """Initialize ppci object with measurements."""
         self.data = ppci
 
         # Measurement relevant parameters
