@@ -7,8 +7,8 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Builds the DC PTDF matrix for a given choice of slack.
-"""
+# Builds the DC PTDF matrix for a given choice of slack.
+
 
 from sys import stderr
 
