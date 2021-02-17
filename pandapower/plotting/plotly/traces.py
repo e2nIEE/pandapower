@@ -768,8 +768,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         # change traces for mapbox
         # change trace_type to scattermapbox and rename x to lat and y to lon
         for trace in traces:
-            trace['lat'] = trace.pop('x')
-            trace['lon'] = trace.pop('y')
+            trace['lat'] = trace.pop('y')
+            trace['lon'] = trace.pop('x')
             trace['type'] = 'scattermapbox'
             if "line" in trace and isinstance(trace["line"], Line):
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
