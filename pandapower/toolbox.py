@@ -1442,7 +1442,6 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
-        # include_results = True  # assumption: the user doesn't want to old results without selection
     else:
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
@@ -1479,19 +1478,20 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-                net[table[4:]].shape[0]:
-                    continue
+               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+               net[table[4:]].shape[0]:
+                continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
             else:
                 p2[table] = net[table].loc[p2[table[4:]].index]
     if "bus_geodata" in net:
-        p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
+        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index[p2.bus.index.isin(
+            net.bus_geodata.index)]]
     if "line_geodata" in net:
-        lines = p2.line.index
-        p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
+        p2["line_geodata"] = net.line_geodata.loc[p2.line.index[p2.line.index.isin(
+            net.line_geodata.index)]]
 
     # switches
     p2["switch"] = net.switch.loc[
@@ -1938,7 +1938,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -2022,7 +2022,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
