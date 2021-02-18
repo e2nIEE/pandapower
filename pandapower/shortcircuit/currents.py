@@ -19,78 +19,78 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 
-def _calc_ikss(net, ppc, ppc_bus=None):
+def _calc_ikss(net, ppci, ppci_bus=None):
     # Vectorized for multiple bus
-    if ppc_bus is None:
+    if ppci_bus is None:
         # Slice(None) is equal to : select
-        bus_idx = np.arange(ppc["bus"].shape[0])
+        bus_idx = np.arange(ppci["bus"].shape[0])
     else:
-        bus_idx = ppc_bus
+        bus_idx = ppci_bus
 
     fault = net._options["fault"]
     case = net._options["case"]
-    c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
-    ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
+    ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
 
     # Only for test, should correspondant to PF result
-    baseZ = ppc["bus"][bus_idx, BASE_KV] ** 2 / ppc["baseMVA"]
-    ppc["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc["bus"][bus_idx, R_EQUIV]
-    ppc["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc["bus"][bus_idx, X_EQUIV]
+    baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
+    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci["bus"][bus_idx, R_EQUIV]
+    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci["bus"][bus_idx, X_EQUIV]
 
-    z_equiv = abs(ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j)
+    z_equiv = abs(ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j)
     if fault == "3ph":
-        ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
+        ppci["bus"][bus_idx, IKSS1] = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
     elif fault == "2ph":
-        ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] / 2 * ppc["baseMVA"]
+        ppci["bus"][bus_idx, IKSS1] = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / 2 * ppci["baseMVA"]
 
     if fault == "3ph":
-        ppc["bus"][bus_idx, SKSS] = np.sqrt(3) * ppc["bus"][bus_idx, IKSS1] * ppc["bus"][bus_idx, BASE_KV]
+        ppci["bus"][bus_idx, SKSS] = np.sqrt(3) * ppci["bus"][bus_idx, IKSS1] * ppci["bus"][bus_idx, BASE_KV]
     elif fault == "2ph":
-        ppc["bus"][bus_idx, SKSS] = ppc["bus"][bus_idx, IKSS1] * ppc["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+        ppci["bus"][bus_idx, SKSS] = ppci["bus"][bus_idx, IKSS1] * ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3)
 
     # Correct voltage of generator bus inside power station
-    if np.any(~np.isnan(ppc["bus"][:, K_SG])):
-        gen_bus_idx = bus_idx[~np.isnan(ppc["bus"][bus_idx, K_SG])]
-        ppc["bus"][gen_bus_idx, IKSS1] *=\
-            (ppc["bus"][gen_bus_idx, V_G] / ppc["bus"][gen_bus_idx, BASE_KV])
-        ppc["bus"][gen_bus_idx, SKSS] *=\
-            (ppc["bus"][gen_bus_idx, V_G] / ppc["bus"][gen_bus_idx, BASE_KV])
+    if np.any(~np.isnan(ppci["bus"][:, K_SG])):
+        gen_bus_idx = bus_idx[~np.isnan(ppci["bus"][bus_idx, K_SG])]
+        ppci["bus"][gen_bus_idx, IKSS1] *=\
+            (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
+        ppci["bus"][gen_bus_idx, SKSS] *=\
+            (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
 
-    _current_source_current(net, ppc)
+    _current_source_current(net, ppci)
 
 
-def _calc_ikss_1ph(net, ppc, ppc_0, ppc_bus=None):
+def _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus=None):
     # Vectorized for multiple bus
-    if ppc_bus is None:
+    if ppci_bus is None:
         # Slice(None) is equal to : select
-        bus_idx = np.arange(ppc["bus"].shape[0])
+        bus_idx = np.arange(ppci["bus"].shape[0])
     else:
-        bus_idx = ppc_bus
+        bus_idx = ppci_bus
 
     case = net._options["case"]
-    c = ppc["bus"][bus_idx, C_MIN] if case == "min" else ppc["bus"][bus_idx, C_MAX]
-    ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
-    ppc_0["internal"]["baseI"] = ppc_0["bus"][:, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
+    c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
+    ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
+    ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
 
-    z_equiv = abs((ppc["bus"][bus_idx, R_EQUIV] + ppc["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
-                (ppc_0["bus"][bus_idx, R_EQUIV] + ppc_0["bus"][bus_idx, X_EQUIV] * 1j))
+    z_equiv = abs((ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
+                (ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j))
 
     # Only for test, should correspondant to PF result
-    baseZ = ppc["bus"][bus_idx, BASE_KV] ** 2 / ppc["baseMVA"]
-    ppc["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc['bus'][bus_idx, R_EQUIV]
-    ppc["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc['bus'][bus_idx, X_EQUIV]
-    ppc_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppc_0['bus'][bus_idx, R_EQUIV]
-    ppc_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppc_0['bus'][bus_idx, X_EQUIV]
+    baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
+    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, R_EQUIV]
+    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, X_EQUIV]
+    ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, R_EQUIV]
+    ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, X_EQUIV]
 
-    ppc_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppc_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
-    ppc["bus"][bus_idx, IKSS1] = c / z_equiv / ppc["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppc["baseMVA"]
+    ppci_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppci_0["baseMVA"]
+    ppci["bus"][bus_idx, IKSS1] = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppci["baseMVA"]
 
-    _current_source_current(net, ppc)
+    _current_source_current(net, ppci)
 
 
-def _current_source_current(net, ppc):
-    ppc["bus"][:, IKCV] = 0
-    ppc["bus"][:, IKSS2] = 0
+def _current_source_current(net, ppci):
+    ppci["bus"][:, IKCV] = 0
+    ppci["bus"][:, IKSS2] = 0
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if not False in net.sgen.current_source.values:
         sgen = net.sgen[net._is_elements["sgen"]]
@@ -100,39 +100,39 @@ def _current_source_current(net, ppc):
         return
     if any(pd.isnull(sgen.sn_mva)):
         raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
-    baseI = ppc["internal"]["baseI"]
+    baseI = ppci["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
     if not "k" in sgen:
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
     i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
-    ppc["bus"][buses, IKCV] = ikcv_pu
+    ppci["bus"][buses, IKCV] = ikcv_pu
     if net["_options"]["inverse_y"]:
-        Zbus = ppc["internal"]["Zbus"]
-        ppc["bus"][:, IKSS2] = abs(1 / np.diag(Zbus) * np.dot(Zbus, ppc["bus"][:, IKCV] * -1j) / baseI)
+        Zbus = ppci["internal"]["Zbus"]
+        ppci["bus"][:, IKSS2] = abs(1 / np.diag(Zbus) * np.dot(Zbus, ppci["bus"][:, IKCV] * -1j) / baseI)
     else:
-        ybus_fact = ppc["internal"]["ybus_fact"]
-        diagZ = _calc_zbus_diag(net, ppc)
-        ppc["bus"][:, IKSS2] = abs(ybus_fact(ppc["bus"][:, IKCV] * -1j) / diagZ / baseI)
-    ppc["bus"][buses, IKCV] /= baseI[buses]
+        ybus_fact = ppci["internal"]["ybus_fact"]
+        diagZ = _calc_zbus_diag(net, ppci)
+        ppci["bus"][:, IKSS2] = abs(ybus_fact(ppci["bus"][:, IKCV] * -1j) / diagZ / baseI)
+    ppci["bus"][buses, IKCV] /= baseI[buses]
 
 
-def _calc_ip(net, ppc):
-    ip = np.sqrt(2) * (ppc["bus"][:, KAPPA] * ppc["bus"][:, IKSS1] + ppc["bus"][:, IKSS2])
-    ppc["bus"][:, IP] = ip
+def _calc_ip(net, ppci):
+    ip = np.sqrt(2) * (ppci["bus"][:, KAPPA] * ppci["bus"][:, IKSS1] + ppci["bus"][:, IKSS2])
+    ppci["bus"][:, IP] = ip
 
 
-def _calc_ith(net, ppc):
+def _calc_ith(net, ppci):
     tk_s = net["_options"]["tk_s"]
-    kappa = ppc["bus"][:, KAPPA]
+    kappa = ppci["bus"][:, KAPPA]
     f = 50
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
     m[np.where(kappa > 1.99)] = 0
-    ppc["bus"][:, M] = m
-    ith = (ppc["bus"][:, IKSS1] + ppc["bus"][:, IKSS2]) * np.sqrt(m + n)
-    ppc["bus"][:, ITH] = ith
+    ppci["bus"][:, M] = m
+    ith = (ppci["bus"][:, IKSS1] + ppci["bus"][:, IKSS2]) * np.sqrt(m + n)
+    ppci["bus"][:, ITH] = ith
 
 
 def _calc_ib_generator(net, ppci):
@@ -204,13 +204,13 @@ def _calc_ib_generator(net, ppci):
     return I_ikss_G
 
 
-def calc_branch_results(net, ppc, V):
-    Ybus = ppc["internal"]["Ybus"]
-    Yf = ppc["internal"]["Yf"]
-    Yt = ppc["internal"]["Yt"]
-    baseMVA, bus, gen, branch, ref, _, _, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppc)
+def calc_branch_results(net, ppci, V):
+    Ybus = ppci["internal"]["Ybus"]
+    Yf = ppci["internal"]["Yf"]
+    Yt = ppci["internal"]["Yt"]
+    baseMVA, bus, gen, branch, ref, _, _, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
-    ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
+    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
 
 
 def _calc_branch_currents(net, ppci, ppci_bus):
