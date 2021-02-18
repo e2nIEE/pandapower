@@ -350,7 +350,6 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
-
 def _add_line_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     mode = net["_options"]["mode"]
@@ -378,7 +377,6 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
-
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]

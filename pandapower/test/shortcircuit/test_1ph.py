@@ -163,8 +163,10 @@ def iec_60909_4_small(n_t3=1, num_earth=1):
     b8 = pp.create_bus(net, vn_kv=30.)
     # H = pp.create_bus(net, vn_kv=30.)
 
-    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
-    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15,
+                       s_sc_min_mva=38 * 380 * np.sqrt(3) / 10, rx_min=0.1, x0x_min=3, r0x0_min=0.15,)
+    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2,
+                       s_sc_min_mva=16 * 110 * np.sqrt(3) / 10, rx_min=0.1, x0x_min=3.3, r0x0_min=0.2)
 
     if num_earth == 1:
         vector_group = ("YYNd", "YNYd")
@@ -200,19 +202,19 @@ def iec_60909_4_small(n_t3=1, num_earth=1):
     pp.create_line_from_parameters(net, b2, b3, name="L1",
         c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
         length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
-        r0_ohm_per_km=0.32, x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0)
+        r0_ohm_per_km=0.32, x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
     pp.create_line_from_parameters(net, b2, b5, name="L3a",
         c_nf_per_km=0, max_i_ka=0,
         length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
-        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0)
+        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
     pp.create_line_from_parameters(net, b2, b5, name="L3b",
         c_nf_per_km=0, max_i_ka=0,
         length_km=5, r_ohm_per_km=0.12, x_ohm_per_km=0.39,
-        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0)
+        r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
     pp.create_line_from_parameters(net, b5, b3, name="L4",
         c_nf_per_km=0, max_i_ka=0,
         length_km=10, r_ohm_per_km=0.096, x_ohm_per_km=0.388,
-        r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0)
+        r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
 
     return net
 
@@ -243,10 +245,14 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
     # x0 = 17.335578502
     # r = 0.59621204768
     # x = 6.0598429694
-    ikss_pf = [26.0499, 20.9472, 9.1722, 18.7457]
+    ikss_pf_max = [26.0499, 20.9472, 9.1722, 18.7457]
+    ikss_pf_min = [3.9622, 8.3914, 5.0248, 6.9413]
 
     sc.calc_sc(net, fault="1ph")
-    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_max), atol=1e-4)
+
+    sc.calc_sc(net, fault="1ph", case="min")
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
 
 
 if __name__ == "__main__":
