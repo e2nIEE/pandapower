@@ -26,10 +26,10 @@ def add_network(net, vector_group):
     pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=100, rx_min=0.35, rx_max=0.35)
     net.ext_grid["r0x0_max"] = 0.4
     net.ext_grid["x0x_max"] = 1.0
-    
+
     net.ext_grid["r0x0_min"] = 0.4
     net.ext_grid["x0x_min"] = 1.0
-    
+
     pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304,
                          "max_i_ka": 0.421, "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
                          "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
@@ -97,7 +97,7 @@ def test_1ph_shortcircuit_min():
                  sc.calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
              except:
                  raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
-    
+
         for vc, result in results.items():
             check_results(net, vc, result)
 
@@ -117,7 +117,7 @@ def test_iec60909_example_4_bus_selection():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
     for inv_y in (False, True):
-        sc.calc_sc(net, fault="1ph", inverse_y=inv_y, 
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
                    bus=net.bus[net.bus.name.isin(("F1", "F2"))].index)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
                                             "ikss_ka"], 35.53066312)
@@ -151,9 +151,9 @@ def test_1ph_with_switches():
         pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
         sc.calc_sc(net, fault="1ph", case="max")
         check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
-    
 
-def iec_60909_4_small(n_t3=1):
+
+def iec_60909_4_small(n_t3=1, num_earth=1):
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=380.)
@@ -165,6 +165,11 @@ def iec_60909_4_small(n_t3=1):
 
     pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
     pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
+
+    if num_earth == 1:
+        vector_group = ("YYNd", "YNYd")
+    else:
+        vector_group = ("YNYNd", "YNYNd")
 
     if n_t3==2:
         pp.create_transformer3w_from_parameters(net,
@@ -178,7 +183,7 @@ def iec_60909_4_small(n_t3=1):
             vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
             vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
             vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714,
-            vector_group="YYNd")
+            vector_group=vector_group[0])
     pp.create_transformer3w_from_parameters(net,
         hv_bus=b1, mv_bus=b2, lv_bus=b8,
         vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
@@ -190,7 +195,7 @@ def iec_60909_4_small(n_t3=1):
         vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
         vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
         vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714,
-        vector_group="YNYd")
+        vector_group=vector_group[1])
 
     pp.create_line_from_parameters(net, b2, b3, name="L1",
         c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
@@ -213,23 +218,36 @@ def iec_60909_4_small(n_t3=1):
 
 def test_iec60909_example_4_one_trafo3w():
     net = iec_60909_4_small(n_t3=1)
-    
-    # r0 = 2.378330877	
-    # x0 = 17.335578502	
-    # r = 0.59621204768	
+
+    # r0 = 2.378330877
+    # x0 = 17.335578502
+    # r = 0.59621204768
     # x = 6.0598429694
     ikss_pf = [24.4009, 8.2481, 6.1728, 10.1851]
-    
+
     sc.calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
-    
+
 def test_iec60909_example_4_two_trafo3w():
     net = iec_60909_4_small(n_t3=2)
 
     ikss_pf_2t3 = [24.5772, 14.7247, 8.1060, 15.2749]
-    
+
     sc.calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_2t3), atol=1e-4)
+
+def test_iec60909_example_4_two_trafo3w_two_earth():
+    net = iec_60909_4_small(n_t3=2, num_earth=2)
+
+    # r0 = 2.378330877
+    # x0 = 17.335578502
+    # r = 0.59621204768
+    # x = 6.0598429694
+    ikss_pf = [26.0499, 20.9472, 9.1722, 18.7457]
+
+    sc.calc_sc(net, fault="1ph")
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
