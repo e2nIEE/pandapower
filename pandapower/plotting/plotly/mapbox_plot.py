@@ -84,13 +84,13 @@ def geo_data_to_latlong(net, projection):
     # transform all geodata to long/lat using set or found projection
     try:
         lon, lat = transform(projection, wgs84, net.bus_geodata.loc[:, 'x'].values, net.bus_geodata.loc[:, 'y'].values)
-        net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] = lat, lon
+        net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] =  lon, lat
 
         if net.line_geodata.shape[0] > 0:
             for idx in net.line_geodata.index:
                 line_coo = np.array(net.line_geodata.loc[idx, 'coords'])
                 lon, lat = transform(projection, wgs84, line_coo[:, 0], line_coo[:, 1])
-                net.line_geodata.loc[idx, 'coords'] = np.array([lat,lon]).T.tolist()
+                net.line_geodata.loc[idx, 'coords'] = np.array([lon, lat]).T.tolist()
         return
     except:
         logger.warning('Transformation of geodata to lat/long failed!')
