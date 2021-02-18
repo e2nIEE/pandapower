@@ -3,38 +3,39 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import numpy as np
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
-from pandapower.pypower.idx_bus import VM, VA, BUS_TYPE
-from pandapower.results_bus import _get_bus_idx, _set_buses_out_of_service
-from pandapower.results import _get_aranged_lookup, _get_branch_results
-from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
+from pandapower.pypower.idx_bus import BUS_TYPE
 
-def _copy_result_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
-    # WIP: Add branch result
+BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
+                       "branch_ip_f", "branch_ip_t",
+                       "branch_ith_f", "branch_ith_t")
+
+
+def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
+    if ppci_orig is ppci:
+        return
+
     ppci_orig["bus"][ppci_bus, :] = ppci["bus"][ppci_bus, :]
     if calc_options["branch_results"]:
         if calc_options["return_all_currents"]:
-            branch_result_keys = ["branch_ikss_f", "branch_ikss_t",
-                                  "branch_ip_f", "branch_ip_t",
-                                  "branch_ith_f", "branch_ith_t"]
             ppci_orig["internal"]["br_res_ks_ppci_bus"] =\
                 ppci_bus if "br_res_ks_ppci_bus" not in ppci_orig["internal"]\
                 else np.r_[ppci_orig["internal"]["br_res_ks_ppci_bus"], ppci_bus]
-            for res_key in branch_result_keys:
+
+            for res_key in BRANCH_RESULTS_KEYS:
+                # Skip not required data points
                 if res_key not in ppci["internal"]:
                     continue
+
                 if res_key not in ppci_orig["internal"]:
                     ppci_orig["internal"][res_key] = ppci["internal"][res_key]
                 else:
-                    if not ppci_orig["internal"][res_key] is ppci["internal"][res_key]:
-                        ppci_orig["internal"][res_key] = np.c_[ppci_orig["internal"][res_key],
-                                                               ppci["internal"][res_key]]
-
+                    ppci_orig["internal"][res_key] = np.c_[ppci_orig["internal"][res_key],
+                                                           ppci["internal"][res_key]]
         else:
             case = calc_options["case"]
             branch_results_cols = [IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T]
@@ -45,7 +46,8 @@ def _copy_result_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
             else:
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.minimum(np.nan_to_num(ppci["branch"][:, branch_results_cols], nan=1e10),
-                               np.nan_to_num(ppci_orig["branch"][:, branch_results_cols], nan=1e10))                
+                               np.nan_to_num(ppci_orig["branch"][:, branch_results_cols], nan=1e10))
+
 
 def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
@@ -55,6 +57,7 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
     ppc_index = bus_lookup[bus]
     ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1
     return bus, ppc_index
+
 
 def _extract_results(net, ppc, ppc_0, bus):
     _get_bus_results(net, ppc, ppc_0, bus)
@@ -76,7 +79,7 @@ def _get_bus_results(net, ppc, ppc_0, bus):
     if net["_options"]["fault"] == "1ph":
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
-        net.res_bus_sc["xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM] 
+        net.res_bus_sc["xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM]
     else:
         net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]
@@ -84,10 +87,10 @@ def _get_bus_results(net, ppc, ppc_0, bus):
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:
         net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, ITH]
-    
+
     # Export also equivalent rk, xk on the calculated bus
     net.res_bus_sc["rk_ohm"] = ppc["bus"][ppc_index, R_EQUIV_OHM]
-    net.res_bus_sc["xk_ohm"] = ppc["bus"][ppc_index, X_EQUIV_OHM] 
+    net.res_bus_sc["xk_ohm"] = ppc["bus"][ppc_index, X_EQUIV_OHM]
 
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 

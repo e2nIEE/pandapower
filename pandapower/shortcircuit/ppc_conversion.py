@@ -3,20 +3,34 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-import warnings
 from copy import deepcopy
 import numpy as np
 
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
-from pandapower.auxiliary import _add_auxiliary_elements, _clean_up, _sum_by_group
-from pandapower.build_branch import _trafo_df_from_trafo3w, get_trafo_values, _transformer_correction_factor
+from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
+from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 
-from pandapower.pypower.idx_bus import BASE_KV, GS, BS, bus_cols
-from pandapower.pypower.idx_brch import branch_cols, F_BUS, T_BUS, BR_X, BR_R
-from pandapower.shortcircuit.idx_bus import  C_MAX, C_MIN, K_G, K_SG, V_G,\
-    PS_TRAFO_IX, GS_P, BS_P, bus_cols_sc
-from pandapower.shortcircuit.idx_brch import K_T, K_ST, branch_cols_sc
+from pandapower.pypower.idx_bus import BASE_KV, GS, BS
+from pandapower.pypower.idx_brch import BR_X, BR_R
+from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
+    PS_TRAFO_IX, GS_P, BS_P
+from pandapower.shortcircuit.idx_brch import K_T, K_ST
+
+def _init_ppc(net):
+    _check_sc_data_integrity(net)
+    _add_auxiliary_elements(net)
+    ppc, _ = _pd2ppc(net)
+
+    # Init the required columns to nan
+    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P,]] = np.nan
+    ppc["branch"][:, [K_T, K_ST]] = np.nan
+
+    # Add parameter K into ppc
+    _add_kt(net, ppc)
+    _add_gen_sc_z_kg_ks(net, ppc)
+
+    ppci = _ppc2ppci(ppc, net)
+    return ppc, ppci
 
 
 def _check_sc_data_integrity(net):
@@ -30,78 +44,11 @@ def _check_sc_data_integrity(net):
             if col not in net.trafo.columns:
                 net.trafo[col] = np.nan
 
-def _init_ppc(net):
-    _check_sc_data_integrity(net)
-    _add_auxiliary_elements(net)
-    ppc, _ = _pd2ppc(net)
-    _init_append_array(ppc)
-    _calc_k_and_add_ppc(net, ppc)
-    ppci = _ppc2ppci(ppc, net)
-    return ppc, ppci
-
-def _create_k_updated_ppci(net, ppci_orig, bus):
-    ppci = deepcopy(ppci_orig)
-    
-    is_bus = bus[np.in1d(bus, net._is_elements["bus_is_idx"])]
-    all_needed_ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
-
-    non_ps_gen_bus = all_needed_ppci_bus[np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
-    ps_gen_bus = all_needed_ppci_bus[~np.isnan(ppci["bus"][all_needed_ppci_bus, K_SG])]
-
-    ps_gen_bus_mask = ~np.isnan(ppci["bus"][:, K_SG])
-    ps_trafo_mask = ~np.isnan(ppci["branch"][:, K_ST])
-    if np.any(ps_gen_bus_mask):
-        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
-            ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
-        ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *=\
-            ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])] / ppci["branch"][np.ix_(ps_trafo_mask, [K_T])]
-
-    gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
-    if np.any(gen_bus_mask):
-        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
-            ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
-
-    # trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
-    # if np.any(trafo_mask):
-    #     ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
-    #         ppci["branch"][np.ix_(trafo_mask, [K_T])]
-    
-    bus_ppci = {}
-    if ps_gen_bus.size > 0:
-        for bus in ps_gen_bus:
-            ppci_gen = deepcopy(ppci)
-            assert np.isfinite(ppci_gen["bus"][bus, K_SG])
-            # Correct ps gen bus
-            ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /=\
-                (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
-
-            # Correct ps transfomer
-            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
-            # ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] *= \
-            #     (ppci_gen["branch"][trafo_ix, K_T] / ppci_gen["branch"][trafo_ix, K_ST])
-            # TODO: This need to be checked!
-            ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= \
-                ( ppci_gen["branch"][trafo_ix, K_ST])
-
-            bus_ppci.update({bus: ppci_gen})
-    return non_ps_gen_bus, ppci, bus_ppci
-
-
-def _init_append_array(ppc):
-    # Check append or update
-    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P,]] = np.nan
-    ppc["branch"][:, [K_T, K_ST]] = np.nan
-
-def _calc_k_and_add_ppc(net, ppc):
-    _add_kt(net, ppc)
-    _add_gen_sc_z_kg_ks(net, ppc)
-    return ppc
-
 
 def _add_kt(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
-    # Trafo3w is corrected in pd2ppc only need to correct "trafo"
+    # "trafo/trafo3w" are already corrected in pd2ppc, write parameter kt for trafo
     if not net.trafo.empty:
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
@@ -125,20 +72,9 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     xdss_pu = gen.xdss_pu.values
     pg_percent = gen.pg_percent.values
     vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
-    sin_phi_gen = np.sin(np.arccos(gen.cos_phi.values))  
+    sin_phi_gen = np.sin(np.arccos(gen.cos_phi.values))
 
     gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
-    # gens_without_r = np.isnan(rdss_ohm)
-    # if gens_without_r.any():
-    #     #  use the estimations from the IEC standard for generators without defined rdss_pu
-    #     lv_gens = (vn_gen <= 1.) & gens_without_r
-    #     hv_gens = (vn_gen > 1.) & gens_without_r
-    #     large_hv_gens = (sn_gen >= 100) & hv_gens
-    #     small_hv_gens = (sn_gen < 100) & hv_gens
-    #     rdss_ohm[lv_gens] = 0.15 * xdss_pu[lv_gens] * vn_gen ** 2 / sn_gen
-    #     rdss_ohm[large_hv_gens] = 0.05 * xdss_pu[large_hv_gens] * vn_gen ** 2 / sn_gen
-    #     rdss_ohm[small_hv_gens] = 0.07 * xdss_pu[small_hv_gens] * vn_gen ** 2 / sn_gen
-
     r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
     z_gen = (r_gen + x_gen * 1j)
     z_gen_pu = z_gen / gen_baseZ
@@ -172,10 +108,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     _, ppc["bus"][buses, GS_P], ppc["bus"][buses, BS_P] =\
         _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
 
-
     # Calculate K_S on power station configuration
     if np.any(~np.isnan(net.gen.power_station_trafo.values)):
-        # TODO: Check this
         ps_gen_ix = net.gen.loc[~np.isnan(net.gen.power_station_trafo.values),:].index.values
         ps_trafo_ix = net.gen.loc[ps_gen_ix, "power_station_trafo"].values.astype(int)
         ps_trafo_with_tap_mask = (~np.isnan(net.trafo.loc[ps_trafo_ix, "pt_percent"]))
@@ -189,7 +123,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         v_g = vn_gen[ps_gen_ix]
         x_g = xdss_pu[ps_gen_ix]
         x_t = net.trafo.loc[ps_trafo_ix, "vk_percent"].values / 100
-        
+
         if np.any(ps_trafo_with_tap_mask):
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
                 ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_ix])
@@ -203,3 +137,48 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["branch"][np.arange(f, t)[ps_trafo_ix][~ps_trafo_with_tap_mask], K_ST] = kso[~ps_trafo_with_tap_mask]
 
         ppc["bus"][ps_gen_buses_ppc, PS_TRAFO_IX] = np.arange(f, t)[ps_trafo_ix]
+
+
+def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
+    ppci = deepcopy(ppci_orig)
+
+    non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]
+    ps_gen_bus = ppci_bus[~np.isnan(ppci["bus"][ppci_bus, K_SG])]
+
+    ps_gen_bus_mask = ~np.isnan(ppci["bus"][:, K_SG])
+    ps_trafo_mask = ~np.isnan(ppci["branch"][:, K_ST])
+    if np.any(ps_gen_bus_mask):
+        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
+            ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
+        ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *=\
+            ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])] / ppci["branch"][np.ix_(ps_trafo_mask, [K_T])]
+
+    gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
+    if np.any(gen_bus_mask):
+        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
+            ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
+
+    # trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
+    # if np.any(trafo_mask):
+    #     ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
+    #         ppci["branch"][np.ix_(trafo_mask, [K_T])]
+
+    bus_ppci = {}
+    if ps_gen_bus.size > 0:
+        for bus in ps_gen_bus:
+            ppci_gen = deepcopy(ppci)
+            assert np.isfinite(ppci_gen["bus"][bus, K_SG])
+            # Correct ps gen bus
+            ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /=\
+                (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
+
+            # Correct ps transfomer
+            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
+            # TODO: Check this!
+            # ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] *= \
+            #     (ppci_gen["branch"][trafo_ix, K_T] / ppci_gen["branch"][trafo_ix, K_ST])
+            ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= \
+                ppci_gen["branch"][trafo_ix, K_ST]
+
+            bus_ppci.update({bus: ppci_gen})
+    return non_ps_gen_bus, ppci, bus_ppci

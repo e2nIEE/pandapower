@@ -7,7 +7,7 @@ import numpy as np
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
-_calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
+_calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -28,7 +28,7 @@ def _pd2ppc(net, sequence=None):
            and fill it in the branch matrix.
            Order: 1st: Line values, 2nd: Trafo values
         5. if opf: make opf objective (gencost)
-        6. convert internal ppci format for pypower powerflow / 
+        6. convert internal ppci format for pypower powerflow /
         opf without out of service elements and rearanged buses
 
     INPUT:
@@ -37,7 +37,7 @@ def _pd2ppc(net, sequence=None):
         ( 0 - Zero Sequence
           1 - Positive Sequence
           2 - Negative Sequence
-        ) 
+        )
 
     OUTPUT:
         **ppc** - The simple matpower format network. Which consists of:
@@ -56,7 +56,7 @@ def _pd2ppc(net, sequence=None):
                               , "gen_is": np.array([], dtype=bool)
                               }
         **ppci** - The "internal" pypower format network for PF calculations
-        
+
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
@@ -77,12 +77,13 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
-        # Calculates ppc1/ppc2 branch impedances from branch elements  
+        # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
-        _add_gen_impedances_ppc(net, ppc)
+        _add_ext_grid_sc_impedance(net, ppc)
+        # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
@@ -119,7 +120,7 @@ def _pd2ppc(net, sequence=None):
 
     aux._replace_nans_with_default_limits(net, ppc)
 
-    # generates "internal" ppci format (for powerflow calc) 
+    # generates "internal" ppci format (for powerflow calc)
     # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
