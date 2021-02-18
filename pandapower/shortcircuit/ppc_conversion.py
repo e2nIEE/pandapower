@@ -158,11 +158,6 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
         ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
             ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
 
-    # trafo_mask = np.isnan(ppci["branch"][:, K_ST]) & (~np.isnan(ppci["branch"][:, K_T]))
-    # if np.any(trafo_mask):
-    #     ppci["branch"][np.ix_(trafo_mask, [BR_X, BR_R])] *=\
-    #         ppci["branch"][np.ix_(trafo_mask, [K_T])]
-
     bus_ppci = {}
     if ps_gen_bus.size > 0:
         for bus in ps_gen_bus:

@@ -136,8 +136,8 @@ def _calc_ith(net, ppci):
 
 
 def _calc_ib_generator(net, ppci):
-    Zbus = ppci["internal"]["Zbus"]
-    baseI = ppci["internal"]["baseI"]
+    # Zbus = ppci["internal"]["Zbus"]
+    # baseI = ppci["internal"]["baseI"]
     tk_s = net._options['tk_s']
     c = 1.1
 

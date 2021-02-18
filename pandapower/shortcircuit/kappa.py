@@ -15,6 +15,7 @@ from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
 from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
 
+
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
         return
@@ -30,8 +31,10 @@ def _add_kappa_to_ppc(net, ppc):
         raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
     ppc["bus"][:, KAPPA] = kappa
 
+
 def _kappa(rx):
     return 1.02 + .98 * np.exp(-3 * rx)
+
 
 def _kappa_method_c(net, ppc):
     if net.f_hz == 50:
@@ -43,10 +46,10 @@ def _kappa_method_c(net, ppc):
 
     ppc_c = copy.deepcopy(ppc)
     ppc_c["branch"][:, BR_X] *= fc / net.f_hz
-    
+
     # Generator peak admittance application
     ppc_c["bus"][np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS, GS])] =\
-        ppc_c["bus"][np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS_P, GS_P])] 
+        ppc_c["bus"][np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS_P, GS_P])]
 
     # # TODO: Check this
     # zero_conductance = np.where(ppc["bus"][:,GS] == 0)
@@ -68,6 +71,7 @@ def _kappa_method_c(net, ppc):
     _calc_rx(net, ppc_c, np.arange(ppc_c["bus"].shape[0]))
     rx_equiv_c = ppc_c["bus"][:, R_EQUIV] / ppc_c["bus"][:, X_EQUIV] * fc / net.f_hz
     return _kappa(rx_equiv_c)
+
 
 def _kappa_method_b(net, ppc):
     topology = net._options["topology"]
@@ -95,6 +99,7 @@ def _kappa_method_b(net, ppc):
                         break
     rx_equiv = ppc["bus"][:, R_EQUIV] / ppc["bus"][:, X_EQUIV]
     return np.clip(kappa_korr * _kappa(rx_equiv), 1, kappa_max)
+
 
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]

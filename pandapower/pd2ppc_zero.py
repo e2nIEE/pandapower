@@ -301,6 +301,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     ppc["bus"][buses, BS] += bs
     del net.trafo["_ppc_idx"]
 
+
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]
 
@@ -350,6 +351,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
+
 def _add_line_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     mode = net["_options"]["mode"]
@@ -378,6 +380,7 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
 
+
 def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if not "trafo3w" in branch_lookup:
@@ -392,7 +395,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
-    r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, seq=0)
+    r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, seq=0)
 
     n_t3 = net.trafo3w.shape[0]
     for t3_ix in np.arange(n_t3):
