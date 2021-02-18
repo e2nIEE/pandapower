@@ -60,7 +60,7 @@ class BaseAlgorithm:
         self.pp_meas_indices = eppci.pp_meas_indices
         self.check_observability(eppci, eppci.z)
 
-    def estimate(self, ppci: ExtendedPPCI, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # Must be implemented individually!!
         pass
 
@@ -76,7 +76,7 @@ class WLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
 
-    def estimate(self, eppci, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -129,7 +129,7 @@ class WLSAlgorithm(BaseAlgorithm):
 
 
 class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
         if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
@@ -199,7 +199,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
 
 
 class IRWLSAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci, estimator="wls", **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, estimator="wls", **kwargs):
         self.initialize(eppci)
 
         # matrix calculation object

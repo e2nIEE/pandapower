@@ -297,7 +297,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('order', "float64"),
             ('level', dtype(object)),
             ('initial_run', "bool"),
-            ("recycle", "bool"),
+            ("recycle", dtype(object)),
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -1406,7 +1406,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                                              limit is taken.
                                            - necessary for OPF.
 
-        **max_vm_pur** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
                                               limit is taken.
                                             - necessary for OPF
 
@@ -1531,7 +1531,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                                                      bus voltage limit is taken.
                                                    - necessary for OPF.
 
-        **max_vm_pur** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
+        **max_vm_pu** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
                                                       voltage limit is taken.
                                                     - necessary for OPF
 
@@ -3345,10 +3345,6 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
-    if meas_type in ("p", "q") and element_type == "bus":
-        logger.warning("Attention! Signing system of P,Q measurement of buses now changed to load "
-                       "reference (match pandapower res_bus pq)!")
-
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
