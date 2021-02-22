@@ -45,7 +45,7 @@ setup(
     install_requires=["pandas>=0.17",
                       "networkx",
                       "scipy",
-                      "numpy>=0.11,<1.2.0",
+                      "numpy>=0.11,<1.20",
                       "packaging",
                       "xlsxwriter",
                       "xlrd",
