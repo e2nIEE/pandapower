@@ -162,7 +162,8 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
     if ps_gen_bus.size > 0:
         for bus in ps_gen_bus:
             ppci_gen = deepcopy(ppci)
-            assert np.isfinite(ppci_gen["bus"][bus, K_SG])
+            if not np.isfinite(ppci_gen["bus"][bus, K_SG]):
+                raise UserWarning("Parameter error of K SG")
             # Correct ps gen bus
             ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /=\
                 (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
