@@ -153,7 +153,7 @@ def test_1ph_with_switches():
         check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
 
 
-def iec_60909_4_small(n_t3=1, num_earth=1):
+def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=380.)
@@ -161,7 +161,7 @@ def iec_60909_4_small(n_t3=1, num_earth=1):
     b3 = pp.create_bus(net, vn_kv=110.)
     b5 = pp.create_bus(net, vn_kv=110.)
     b8 = pp.create_bus(net, vn_kv=30.)
-    # H = pp.create_bus(net, vn_kv=30.)
+    HG2 = pp.create_bus(net, vn_kv=10)
 
     pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15,
                        s_sc_min_mva=38 * 380 * np.sqrt(3) / 10, rx_min=0.1, x0x_min=3, r0x0_min=0.15,)
@@ -216,6 +216,15 @@ def iec_60909_4_small(n_t3=1, num_earth=1):
         length_km=10, r_ohm_per_km=0.096, x_ohm_per_km=0.388,
         r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
 
+    if with_gen:
+        t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
+            pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
+            vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+            shift_degree=5, vector_group="YNd")
+        pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
+                      xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
+                      slack=True, power_station_trafo=t1)
+
     return net
 
 def test_iec60909_example_4_one_trafo3w():
@@ -253,6 +262,18 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
 
     sc.calc_sc(net, fault="1ph", case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
+
+
+@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+def test_iec_60909_4_small_with_gen_1ph():
+    net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss_max = [24.6109, 17.4363, 12.7497, 18.6883]
+
+    ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
+    ip_min = [8.6843, 21.6173, 18.0242, 19.4261]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
 
 if __name__ == "__main__":

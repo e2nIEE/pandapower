@@ -133,7 +133,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]
-    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else   np.square(base_kv) / net.sn_mva 
+    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else   np.square(base_kv) / net.sn_mva
     branch[f:t, F_BUS] = from_bus
     branch[f:t, T_BUS] = to_bus
     branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
@@ -313,14 +313,14 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
-   
+
     baseR = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
     pfe = get_trafo_values(trafo_df, "pfe_kw") * 1e-3
     parallel = get_trafo_values(trafo_df, "parallel")
 
     ### Calculate subsceptance ###
-   
+
     vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else  vn_lv_kv **2
     b_real = pfe / vnl_squared * baseR
     i0 = get_trafo_values(trafo_df, "i0_percent")
@@ -810,7 +810,8 @@ def _trafo_df_from_trafo3w(net, seq=1):
     if seq==1:
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode)
     elif seq==0:
-        assert mode == "sc"
+        if mode != "sc":
+            raise NotImplementedError("0 seq impedance calculation only implemented for short-circuit calculation!")
         _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")

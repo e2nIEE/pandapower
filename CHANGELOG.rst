@@ -2,6 +2,9 @@ Change Log
 =============
 - [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
 - [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
+- [CHANGED] Short-circuit gen calculation parameter "rkss_pu" to "rkss_ohm" according to IEC 60909 example
+- [ADDED] Power station units with gen and trafo designated with "ps_trafo_ix" for short-circuit calculation
+- [ADDED] Multiple example networks and network variations from IEC 60909-4
 
 [2.5.0]- 2021-01-08
 ----------------------
@@ -57,7 +60,7 @@ Change Log
 - [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
-- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [CHANGED] In state estimation power flow results will not be renamed anymore
 - [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
