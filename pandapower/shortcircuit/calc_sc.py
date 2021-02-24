@@ -214,7 +214,6 @@ def _calc_sc_1ph(net, bus):
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
     ppc, ppci = _pd2ppc(net)
-    # _init_ppc(net)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
@@ -230,14 +229,14 @@ def _calc_sc_1ph(net, bus):
         ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
 
     ppci_bus = _get_is_ppci_bus(net, bus)
-    _calc_rx(net, ppci, ppci_bus=ppci_bus)
+    _calc_rx(net, ppci, ppci_bus)
     _add_kappa_to_ppc(net, ppci)
 
-    _calc_rx(net, ppci_0, ppci_bus=ppci_bus)
-    _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus=ppci_bus)
+    _calc_rx(net, ppci_0, ppci_bus)
+    _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus)
 
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci, ppci_bus=ppci_bus)
+        _calc_branch_currents(net, ppci, ppci_bus)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")

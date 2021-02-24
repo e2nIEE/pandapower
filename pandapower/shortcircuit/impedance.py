@@ -20,23 +20,23 @@ except ImportError:
     from pandapower.pypower.makeYbus import makeYbus
 
 
-def _calc_rx(net, ppci, ppci_bus):
+def _calc_rx(net, ppci, bus_idx):
     # Vectorized for multiple bus
     r_fault = net["_options"]["r_fault_ohm"]
     x_fault = net["_options"]["x_fault_ohm"]
     if r_fault > 0 or x_fault > 0:
-        base_r = np.square(ppci["bus"][ppci_bus, BASE_KV]) / ppci["baseMVA"]
+        base_r = np.square(ppci["bus"][bus_idx, BASE_KV]) / ppci["baseMVA"]
         fault_impedance = (r_fault + x_fault * 1j) / base_r
     else:
         fault_impedance = 0 + 0j
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
-        z_equiv = np.diag(Zbus)[ppci_bus] + fault_impedance
+        z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
     else:
-        z_equiv = _calc_zbus_diag(net, ppci, ppci_bus) + fault_impedance
-    ppci["bus"][ppci_bus, R_EQUIV] = z_equiv.real
-    ppci["bus"][ppci_bus, X_EQUIV] = z_equiv.imag
+        z_equiv = _calc_zbus_diag(net, ppci, bus_idx) + fault_impedance
+    ppci["bus"][bus_idx, R_EQUIV] = z_equiv.real
+    ppci["bus"][bus_idx, X_EQUIV] = z_equiv.imag
 
 
 def _calc_ybus(ppci):
@@ -63,22 +63,22 @@ def _calc_zbus(net, ppci):
         raise (e)
 
 
-def _calc_zbus_diag(net, ppci, ppci_bus=None):
+def _calc_zbus_diag(net, ppci, bus_idx=None):
     ybus_fact = ppci["internal"]["ybus_fact"]
-    n_bus = ppci["bus"].shape[0]
+    n_ppci_bus = ppci["bus"].shape[0]
 
-    if ppci_bus is None:
-        diagZ = np.zeros(n_bus, dtype=np.complex)
-        for i in range(ppci["bus"].shape[0]):
-            b = np.zeros(n_bus, dtype=np.complex)
+    if bus_idx is None:
+        diagZ = np.zeros(n_ppci_bus, dtype=np.complex)
+        for i in range(n_ppci_bus):
+            b = np.zeros(n_ppci_bus, dtype=np.complex)
             b[i] = 1 + 0j
             diagZ[i] = ybus_fact(b)[i]
         ppci["internal"]["diagZ"] = diagZ
         return diagZ
     else:
-        diagZ = np.zeros(np.shape(ppci_bus)[0], dtype=np.complex)
-        for ix, bus_idx in enumerate(ppci_bus):
-            b = np.zeros(n_bus, dtype=np.complex)
-            b[bus_idx] = 1 + 0j
-            diagZ[ix] = ybus_fact(b)[bus_idx]
+        diagZ = np.zeros(bus_idx.shape[0], dtype=np.complex)
+        for ix, b in enumerate(bus_idx):
+            rhs = np.zeros(n_ppci_bus, dtype=np.complex)
+            rhs[b] = 1 + 0j
+            diagZ[ix] = ybus_fact(rhs)[b]
         return diagZ
