@@ -16,6 +16,13 @@ from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
     PS_TRAFO_IX, GS_P, BS_P
 from pandapower.shortcircuit.idx_brch import K_T, K_ST
 
+
+def _get_is_ppci_bus(net, bus):
+    is_bus = bus[np.in1d(bus, net._is_elements["bus_is_idx"])]
+    ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
+    return ppci_bus
+
+
 def _init_ppc(net):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)

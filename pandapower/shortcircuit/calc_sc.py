@@ -22,7 +22,7 @@ from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.shortcircuit.currents import _calc_ikss,\
     _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
-from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci
+from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 from pandapower.results import init_results
@@ -108,7 +108,7 @@ def calc_sc(net, bus=None,
             "Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
-        logger.warning("aperiodic, thermal short-circuit are only implemented for "
+        logger.warning("aperiodic, thermal short-circuit currents are only implemented for "
                        "faults far from generators!")
 
     if case not in ['max', 'min']:
@@ -151,13 +151,10 @@ def calc_sc(net, bus=None,
     else:
         raise ValueError("Invalid fault %s" % fault)
 
-def _calc_sc_non_gen_bus(net, ppci):
-    pass
 
 def _calc_current(net, ppci_orig, bus):
     # Select required ppci bus
-    is_bus = bus[np.in1d(bus, net._is_elements["bus_is_idx"])]
-    ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
+    ppci_bus = _get_is_ppci_bus(net, bus)
 
     # update ppci
     non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict =\
@@ -232,7 +229,7 @@ def _calc_sc_1ph(net, bus):
         ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
         ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
 
-    ppci_bus =  net["_pd2ppc_lookups"]["bus"][bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]]
+    ppci_bus = _get_is_ppci_bus(net, bus)
     _calc_rx(net, ppci, ppci_bus=ppci_bus)
     _add_kappa_to_ppc(net, ppci)
 

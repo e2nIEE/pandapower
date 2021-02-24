@@ -19,10 +19,7 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 
-def _calc_ikss(net, ppci, ppci_bus):
-    # Vectorized for multiple bus
-    bus_idx = ppci_bus
-
+def _calc_ikss(net, ppci, bus_idx):
     fault = net._options["fault"]
     case = net._options["case"]
     c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
@@ -55,10 +52,7 @@ def _calc_ikss(net, ppci, ppci_bus):
     _current_source_current(net, ppci)
 
 
-def _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus):
-    # Vectorized for multiple bus
-    bus_idx = ppci_bus
-
+def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     case = net._options["case"]
     c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
     ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
@@ -197,8 +191,8 @@ def _calc_ith(net, ppci):
 #     return I_ikss_G
 
 
-def _calc_branch_currents(net, ppci, ppci_bus):
-    n_sc_bus = np.shape(ppci_bus)[0]
+def _calc_branch_currents(net, ppci, bus_idx):
+    n_sc_bus = np.shape(bus_idx)[0]
 
     case = net._options["case"]
     minmax = np.nanmin if case == "min" else np.nanmax
@@ -214,11 +208,11 @@ def _calc_branch_currents(net, ppci, ppci_bus):
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         V_ikss = (ppci["bus"][:, IKSS1] * baseI) * Zbus
-        V_ikss = V_ikss[:, ppci_bus]
+        V_ikss = V_ikss[:, bus_idx]
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex)
-        for ix, b in enumerate(ppci_bus):
+        for ix, b in enumerate(bus_idx):
             ikss = np.zeros(n_bus, dtype=np.complex)
             ikss[b] = ppci["bus"][b, IKSS1] * baseI[b]
             V_ikss[:, ix] = ybus_fact(ikss)
@@ -232,7 +226,7 @@ def _calc_branch_currents(net, ppci, ppci_bus):
     current_sources = any(ppci["bus"][:, IKCV]) > 0
     if current_sources:
         current = np.tile(-ppci["bus"][:, IKCV], (n_sc_bus, 1))
-        for ix, b in enumerate(ppci_bus):
+        for ix, b in enumerate(bus_idx):
             current[ix, b] += ppci["bus"][b, IKSS2]
 
         # calculate voltage source branch current
@@ -242,7 +236,7 @@ def _calc_branch_currents(net, ppci, ppci_bus):
         else:
             ybus_fact = ppci["internal"]["ybus_fact"]
             V = np.zeros((n_bus, n_sc_bus), dtype=np.complex)
-            for ix, b in enumerate(ppci_bus):
+            for ix, b in enumerate(bus_idx):
                 V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
 
         fb = np.real(ppci["branch"][:, 0]).astype(int)
@@ -268,11 +262,11 @@ def _calc_branch_currents(net, ppci, ppci_bus):
     if net._options["ip"]:
         kappa = ppci["bus"][:, KAPPA]
         if current_sources:
-            ip_all_f = np.sqrt(2) * (ikss1_all_f * kappa[ppci_bus] + ikss2_all_f)
-            ip_all_t = np.sqrt(2) * (ikss1_all_t * kappa[ppci_bus] + ikss2_all_t)
+            ip_all_f = np.sqrt(2) * (ikss1_all_f * kappa[bus_idx] + ikss2_all_f)
+            ip_all_t = np.sqrt(2) * (ikss1_all_t * kappa[bus_idx] + ikss2_all_t)
         else:
-            ip_all_f = np.sqrt(2) * ikss1_all_f * kappa[ppci_bus]
-            ip_all_t = np.sqrt(2) * ikss1_all_t * kappa[ppci_bus]
+            ip_all_f = np.sqrt(2) * ikss1_all_f * kappa[bus_idx]
+            ip_all_t = np.sqrt(2) * ikss1_all_t * kappa[bus_idx]
 
         if net._options["return_all_currents"]:
             ppci["internal"]["branch_ip_f"] = abs(ip_all_f) / baseI[fb, None]
@@ -285,7 +279,7 @@ def _calc_branch_currents(net, ppci, ppci_bus):
 
     if net._options["ith"]:
         n = 1
-        m = ppci["bus"][ppci_bus, M]
+        m = ppci["bus"][bus_idx, M]
         ith_all_f = ikss_all_f * np.sqrt(m + n)
         ith_all_t = ikss_all_t * np.sqrt(m + n)
 
@@ -298,4 +292,4 @@ def _calc_branch_currents(net, ppci, ppci_bus):
 
     # Update bus index for branch results
     if net._options["return_all_currents"]:
-        ppci["internal"]["br_res_ks_ppci_bus"] = ppci_bus
+        ppci["internal"]["br_res_ks_ppci_bus"] = bus_idx
