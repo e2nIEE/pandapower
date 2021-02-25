@@ -1,4 +1,5 @@
 
+
 function run_powermodels(json_path)
     pm = load_pm_from_json(json_path)
     model = get_model(pm["pm_model"])
@@ -29,12 +30,14 @@ function run_powermodels(json_path)
         # pm["bus"]["4"]["vmax"] = 1.1
         # pm["bus"]["4"]["vmin"] = 0.9
 
-        result = PowerModels._run_opf_cl(pm, model, solver,
+        result = _run_opf_cl(pm, model, solver,
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     else
-        result = PowerModels.run_opf(pm, model, solver,
+        result = run_opf(pm, model, solver,
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     end
+
+
     return result
 end
 
