@@ -6,7 +6,8 @@ function get_model(model_type)
     see: https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/
     """
     s = Symbol(model_type)
-    return getfield(Main, s)
+    # FIXME: when we register the package as global package with sepeate repo, we must change it to getfield(Main, s)
+    return getfield(PpPmInterface, s)
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
@@ -80,7 +81,7 @@ function load_pm_from_json(json_path)
         end
     end
     if pm["correct_pm_network_data"]
-        correct_network_data!(pm)
+        PowerModels.correct_network_data!(pm)
     end
     return pm
 end
