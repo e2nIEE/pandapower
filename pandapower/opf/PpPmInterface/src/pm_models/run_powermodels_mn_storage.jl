@@ -1,11 +1,6 @@
-# using PowerModels
-# using Ipopt
-# using Gurobi
-# using JuMP
-# import JSON
-# # push!(LOAD_PATH, joinpath(homedir(), "pandapower", "pandapower", "opf"))
-# push!(LOAD_PATH, joinpath(@__DIR__, "pandapower", "pandapower", "opf"))
-# using PP2PM
+
+using Gurobi
+
 
 function read_time_series(json_path)
     time_series = Dict()
@@ -36,12 +31,12 @@ function set_pq_values_from_timeseries(mn, time_series)
     return mn
 end
 
-function run_powermodels(json_path)
+function run_powermodels_mn_storage(json_path)
     # load converted pandapower network
-    pm = PP2PM.load_pm_from_json(json_path)
+    pm = load_pm_from_json(json_path)
     # copy network n_time_steps time step times
     n_time_steps = pm["n_time_steps"]
-    mn = PowerModels.replicate(pm, pm["n_time_steps"])
+    mn = replicate(pm, pm["n_time_steps"])
     mn["time_elapsed"] = pm["time_elapsed"]
     # set P, Q values of loads and generators from time series
     if isfile("/tmp/timeseries.json")
@@ -54,7 +49,7 @@ function run_powermodels(json_path)
     ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0)
 
     # run multinetwork storage opf
-    result = PowerModels._run_mn_strg_opf(mn, PowerModels.ACPPowerModel, ipopt_solver)
+    result = _run_mn_strg_opf(mn, PowerModels.ACPPowerModel, ipopt_solver)
     print_summary(result)
     return result
 end
