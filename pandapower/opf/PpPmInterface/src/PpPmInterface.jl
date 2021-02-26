@@ -3,7 +3,9 @@ module PpPmInterface
 import JuMP
 import JSON
 
+# TODO: check all functions from powermodels and use import instead of using
 using PowerModels
+
 using Cbc
 using Ipopt
 using Juniper
@@ -16,18 +18,7 @@ catch e
     end
 end
 
-export run_powermodels, run_powermodels_mn_storage,
-        run_powermodels_ots, run_powermodels_powerflow,
-        run_powermodels_tnep
-        
-include("input/pp_to_pm.jl")
-
-include("../src/pm_models/run_powermodels.jl")
-include("../src/pm_models/run_powermodels_mn_storage.jl")
-include("../src/pm_models/run_powermodels_ots.jl")
-include("../src/pm_models/run_powermodels_powerflow.jl")
-include("../src/pm_models/run_powermodels_tnep.jl")
-#
+# TODO: get licence for KNITRO and SCIP
 # try
 #     using KNITRO
 # catch e
@@ -43,5 +34,19 @@ include("../src/pm_models/run_powermodels_tnep.jl")
 #         println("Cannot import SCIP. That's fine if you do not plan to use it")
 #     end
 # end
+
+export run_powermodels
+# export run_powermodels_mn_storage,
+#         run_powermodels_ots, run_powermodels_powerflow,
+#         run_powermodels_tnep
+
+include("input/pp_to_pm.jl")
+
+include("../src/pm_models/run_powermodels.jl")
+# include("../src/pm_models/run_powermodels_mn_storage.jl")
+# include("../src/pm_models/run_powermodels_ots.jl")
+# include("../src/pm_models/run_powermodels_powerflow.jl")
+# include("../src/pm_models/run_powermodels_tnep.jl")
+#
 
 end
