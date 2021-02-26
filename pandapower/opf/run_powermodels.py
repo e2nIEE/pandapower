@@ -57,9 +57,10 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # import two julia scripts and runs powermodels julia_file
     Main.include(os.path.join(pp_dir, "opf", "PpPmInterface", "src", "PpPmInterface.jl"))
     Main.using(".PpPmInterface")
+    run_powermodels(julia_file)
     try:
         # result_pm = Main.run_powermodels(buffer_file)
-        run_powermodels = Main.include(julia_file)
+        run_powermodels = Main.PpPmInterface.run_powermodels(julia_file)
     except ImportError:
         raise UserWarning("File %s could not be imported" % julia_file)
     result_pm = run_powermodels(buffer_file)
