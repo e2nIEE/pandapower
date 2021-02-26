@@ -10,10 +10,12 @@
 * [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl)
 * [PowerModels.jl](https://github.com/lanl-ansi/PowerModels.jl)
 
-* i/o:
+i/o:
+
   * [JSON.jl](https://github.com/JuliaIO/JSON.jl)
 
-* solvers:
+solvers:
+
  * [Ipopt.jl](https://github.com/jump-dev/Ipopt.jl)
  * [Juniper.jl](https://github.com/lanl-ansi/Juniper.jl)
  * [Cbc.jl](https://github.com/jump-dev/Cbc.jl)
