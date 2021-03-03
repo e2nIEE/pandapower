@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import warnings
 import numpy as np
-from scipy.sparse import vstack, hstack, diags
-from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import vstack, hstack
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.dSbus_dV import dSbus_dV
 from pandapower.pypower.dSbr_dV import dSbr_dV
 from pandapower.pypower.dIbr_dV import dIbr_dV
@@ -21,6 +18,7 @@ __all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
 
 class BaseAlgebra:
     def __init__(self, eppci: ExtendedPPCI):
+        """Object to calculate matrices required in state-estimation iterations."""
         self.eppci = eppci
 
         self.fb = eppci['branch'][:, F_BUS].real.astype(int)
@@ -140,11 +138,13 @@ class BaseAlgebra:
         dSf_dth, dSf_dv, dSt_dth, dSt_dv, _, _ = dSbr_dV(self.eppci['branch'], self.Yf, self.Yt, V)
         return dSf_dth, dSf_dv, dSt_dth, dSt_dv
 
-    def _dvmbus_dV(self, V):
+    @staticmethod
+    def _dvmbus_dV(V):
         dvm_dth, dvm_dv = np.zeros((V.shape[0], V.shape[0])), np.eye(V.shape[0], V.shape[0])
         return dvm_dth, dvm_dv
 
-    def _dvabus_dV(self, V):
+    @staticmethod
+    def _dvabus_dV(V):
         dva_dth, dva_dv = np.eye(V.shape[0], V.shape[0]), np.zeros((V.shape[0], V.shape[0]))
         return dva_dth, dva_dv
 
@@ -160,7 +160,7 @@ class BaseAlgebra:
         difa_dv = (np.angle(1e-5 * dif_dv + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
         dita_dth = (np.angle(1e-5 * dit_dth + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
         dita_dv = (np.angle(1e-5 * dit_dv + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
-        return difm_dth, difm_dv, ditm_dth, ditm_dv, difa_dth, difa_dv, dita_dth, dita_dv   
+        return difm_dth, difm_dv, ditm_dth, ditm_dv, difa_dth, difa_dv, dita_dth, dita_dv
 
 
 class BaseAlgebraZeroInjConstraints(BaseAlgebra):

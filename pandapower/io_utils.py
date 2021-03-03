@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import importlib
@@ -442,9 +442,12 @@ class FromSerializableRegistry():
         # class_ = getattr(module, obj) # doesn't work
         return self.obj
 
-    @from_serializable.register(class_name='function', module_name='pandapower.run')
+    @from_serializable.register(class_name='function')
     def function(self):
         module = importlib.import_module(self.module_name)
+        if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
+            raise UserWarning('Could not find the definition of the function %s in the module %s' %
+                              (self.obj, module.__name__))
         class_ = getattr(module, self.obj)  # works
         return class_
 
@@ -477,18 +480,20 @@ class FromSerializableRegistry():
                 return df
 
     if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame')
+        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
-            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj),
-                                                      crs=self.d['crs']).astype(self.d['dtype'])
+            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+            else:
+                df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
+            df = df.astype(self.d['dtype'])
             return df
 
     if SHAPELY_INSTALLED:
@@ -846,3 +851,7 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
+
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.from_json(r'edis_zone_3_6.json')

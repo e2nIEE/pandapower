@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -158,6 +158,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
         max_i_ka = line.max_i_ka.values
         df = line.df.values
+        # This calculates the maximum apparent power at 1.0 p.u.
         branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
 
 
