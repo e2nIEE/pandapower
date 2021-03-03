@@ -2,6 +2,7 @@ Change Log
 =============
 - [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
 - [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead. 
 
 [2.5.0]- 2021-01-08
 ----------------------
