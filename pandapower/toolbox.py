@@ -2664,7 +2664,6 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # impedance after changing the standard type
     r1 = net.line.at[idx, "r_ohm_per_km"]
-    p1 = 1
     x1 = net.line.at[idx, "x_ohm_per_km"]
     c1 = net.line.at[idx, "c_nf_per_km"]
     g1 = net.line.at[idx, "g_us_per_km"]
