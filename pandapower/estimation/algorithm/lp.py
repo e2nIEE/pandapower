@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from scipy.optimize import linprog
 import warnings
 
+from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 
 
 class LPAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         if "estimator" in kwargs and kwargs["estimator"].lower() != "lav":  # pragma: no cover
             self.logger.warning("LP Algorithm supports only LAV Estimator!! Set to LAV!!")
 
@@ -49,7 +50,8 @@ class LPAlgorithm(BaseAlgorithm):
         self.check_result(current_error, cur_it)
         return eppci
 
-    def solve_lp(self, H, x, r):
+    @staticmethod
+    def solve_lp(H, x, r):
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
         one_m = np.ones((m, 1))

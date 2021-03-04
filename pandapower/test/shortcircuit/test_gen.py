@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -45,7 +45,7 @@ def gen_three_bus_example():
 
 def test_max_gen(one_line_one_generator):
     net = one_line_one_generator
-    sc.calc_sc(net, case="max")
+    sc.calc_sc(net, case="max", inverse_y=False)
     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.5083952) < 1e-7
@@ -144,7 +144,6 @@ def test_close_to_gen_simple2():
     # sc.calc_single_sc(net, b2)
     sc.calc_sc(net, tk_s=5e-2)
 
-
 def test_generator_book():
     net=pp.create_empty_network()
     b1= pp.create_bus(net, 110)
@@ -156,7 +155,6 @@ def test_generator_book():
     pp.create_gen(net, b2, 0, 1, sn_mva=25, vn_kv=6.3, xdss_pu=0.11, cos_phi=np.cos(np.arcsin(0.8)))
     sc.calc_sc(net, tk_s=2.5e-2)
 
-
 def test_shunt():
     net=pp.create_empty_network()
     b1= pp.create_bus(net, 110)
@@ -167,7 +165,6 @@ def test_shunt():
     pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=10)
 
     sc.calc_sc(net, tk_s=2.5e-2)
-
 
 def test_power_station_unit():
     net = pp.create_empty_network()
@@ -185,21 +182,5 @@ def test_power_station_unit():
 
     sc.calc_sc(net)
 
-
-
-
 if __name__ == '__main__':
     pytest.main(['test_gen.py'])
-#    net = pp.create_empty_network(sn_mva=2)
-#    b1 = pp.create_bus(net, vn_kv=10.)
-#    b2 = pp.create_bus(net, vn_kv=10.)
-#    b3 = pp.create_bus(net, vn_kv=10.)
-#    pp.create_bus(net, vn_kv=0.4, in_service=False)
-#    pp.create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-#    pp.create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-#    l = pp.create_line_from_parameters(net, b2, b1, length_km=1.0, max_i_ka=0.29,
-#                                       r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-#    net.line.loc[l, "endtemp_degree"] = 165
-#    pp.create_switch(net, b3, b1, et="b")
-#    sc.calc_sc(net)
-#    pp.reset_results(net, "sc")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,6 +8,8 @@ from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import networkx as nx
 
 import pandapower.topology as top
 

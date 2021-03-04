@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 from collections.abc import Iterable
@@ -141,7 +141,7 @@ def _check_controller_recyclability(net):
 
     for idx in net.controller.index:
         # todo: write to controller data frame recycle column instead of using self.recycle of controller instance
-        ctrl_recycle = net.controller.at[idx, "object"].recycle
+        ctrl_recycle = net.controller.at[idx, "recycle"]
         if not isinstance(ctrl_recycle, dict):
             # if one controller has a wrong recycle configuration it is deactived
             recycle = False
@@ -250,8 +250,6 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     time_steps = init_time_steps(net, time_steps, **kwargs)
 
-    ts_variables = dict()
-
     init_default_outputwriter(net, time_steps, **kwargs)
     # get run function
     run = kwargs.pop("run", pp.runpp)
@@ -262,7 +260,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control
-    ts_variables = prepare_run_ctrl(net, None)
+    ts_variables = prepare_run_ctrl(net, None, **kwargs)
     # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
     ts_variables["run"] = run
     # recycle options, which define what can be recycled
