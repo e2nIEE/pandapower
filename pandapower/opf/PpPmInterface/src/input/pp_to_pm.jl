@@ -5,6 +5,7 @@ function get_model(model_type)
     model_type (str) - examples: "ACPPowerModel", "DCPPowerModel", "SOCWRPowerModel"...
     see: https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/
     """
+
     s = Symbol(model_type)
     # FIXME: when we register the package as global package with sepeate repo, we must change it to getfield(Main, s)
     return getfield(PpPmInterface, s)

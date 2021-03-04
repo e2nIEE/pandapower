@@ -46,6 +46,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     try:
         import julia
         from julia import Main
+        from julia import Pkg
     except ImportError:
         raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
     try:
@@ -55,12 +56,14 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
     # import two julia scripts and runs powermodels julia_file
-    Main.include(os.path.join(pp_dir, "opf", "PpPmInterface", "src", "PpPmInterface.jl"))
-    Main.using(".PpPmInterface")
-    try:
-        # result_pm = Main.run_powermodels(buffer_file)
-        run_powermodels = Main.include(julia_file)
-    except ImportError:
+    Pkg.activate(os.path.join(pp_dir, "opf", "PpPmInterface"))
+    # Main.include(os.path.join(pp_dir, "opf", "PpPmInterface", "src", "PpPmInterface.jl"))
+    # Main.using(".PpPmInterface")
+    Main.using("PpPmInterface")
+    #     
+    if not os.path.isfile(julia_file):
         raise UserWarning("File %s could not be imported" % julia_file)
-    result_pm = run_powermodels(buffer_file)
+    Main.buffer_file = buffer_file
+    exec_fun = julia_file.split("/")[-1].split(".")[0]
+    result_pm = Main.eval(exec_fun+"(buffer_file)")
     return result_pm
