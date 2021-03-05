@@ -453,8 +453,10 @@ def test_ots_opt():
 
 
 def assert_pf(net, dc=False):
-    custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
-                               "opf", "run_powermodels_powerflow.jl")
+    # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
+    #                            "opf", "run_powermodels_powerflow.jl")
+    custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
+    
     if dc:
         # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
         pp.runpm(net, julia_file=custom_file, pm_model="DCMPPowerModel")
@@ -580,6 +582,7 @@ if __name__ == '__main__':
     test_multiple_ext_grids()
     test_ots_opt()
     test_pm_tnep()
+    test_compare_pwl_and_poly(net_3w_trafo_opf)
     # test_storage_opt()  # missing net._options["opf_flow_lim"]
     test_voltage_angles() # fix "run_powermodels_custom" in line 299 and 300
     test_timeseries_powermodels()

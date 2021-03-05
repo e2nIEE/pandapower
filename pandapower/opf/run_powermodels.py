@@ -41,8 +41,8 @@ def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cov
         os.remove(buffer_file)
 
 
+
 def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
-    # checks if julia works, otherwise raises an error
     try:
         import julia
         from julia import Main
@@ -54,13 +54,10 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     except:
         raise UserWarning(
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
-
+    
     # import two julia scripts and runs powermodels julia_file
     Pkg.activate(os.path.join(pp_dir, "opf", "PpPmInterface"))
-    # Main.include(os.path.join(pp_dir, "opf", "PpPmInterface", "src", "PpPmInterface.jl"))
-    # Main.using(".PpPmInterface")
     Main.using("PpPmInterface")
-    #     
     if not os.path.isfile(julia_file):
         raise UserWarning("File %s could not be imported" % julia_file)
     Main.buffer_file = buffer_file
