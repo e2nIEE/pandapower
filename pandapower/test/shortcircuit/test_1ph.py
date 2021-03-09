@@ -89,39 +89,68 @@ def test_1ph_shortcircuit_min():
                 ,"Dd":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
                }
 
-    net = pp.create_empty_network()
-    for vc in results.keys():
-         add_network(net, vc)
-         try:
-             sc.calc_sc(net, fault="1ph", case="min")
-         except:
-             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
-
-    for vc, result in results.items():
-        check_results(net, vc, result)
+    for inv_y in (False, True):
+        net = pp.create_empty_network()
+        for vc in results.keys():
+             add_network(net, vc)
+             try:
+                 sc.calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
+             except:
+                 raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+    
+        for vc, result in results.items():
+            check_results(net, vc, result)
 
 def test_iec60909_example_4():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
-    sc.calc_sc(net, fault="1ph")
-    assert np.isclose(net.res_bus_sc[net.bus.name=="Q"].ikss_ka.values[0], 10.05957231)
-    assert np.isclose(net.res_bus_sc[net.bus.name=="T2LV"].ikss_ka.values[0], 34.467353142)
-    assert np.isclose(net.res_bus_sc[net.bus.name=="F1"].ikss_ka.values[0], 35.53066312)
-    assert np.isclose(net.res_bus_sc[net.bus.name=="F2"].ikss_ka.values[0], 34.89135137)
-    assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
-    assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
+    for inv_y in (False, True):
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="Q"].ikss_ka.values[0], 10.05957231)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="T2LV"].ikss_ka.values[0], 34.467353142)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="F1"].ikss_ka.values[0], 35.53066312)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="F2"].ikss_ka.values[0], 34.89135137)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
+        assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
+
+def test_iec60909_example_4_bus_selection():
+    file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
+    net = pp.from_json(file)
+    for inv_y in (False, True):
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y, 
+                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index)
+        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
+                                            "ikss_ka"], 35.53066312)
+        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
+                                            "ikss_ka"], 34.89135137)
+
+def test_iec60909_example_4_bus_selection_br_res():
+    file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
+    net = pp.from_json(file)
+    for inv_y in (False, True):
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
+                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+                   branch_results=True)
+        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
+                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+                   branch_results=True, return_all_currents=True)
+        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
+                                            "ikss_ka"], 35.53066312)
+        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
+                                            "ikss_ka"], 34.89135137)
 
 def test_1ph_with_switches():
-    net = pp.create_empty_network()
-    vc = "Yy"
-    l1, l2, _ = add_network(net, vc)
-    sc.calc_sc(net, fault="1ph", case="max")
-    pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
-                   std_type="unsymmetric_line_type", parallel=2.)
-    pp.add_zero_impedance_parameters(net)
-    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
-    sc.calc_sc(net, fault="1ph", case="max")
-    check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
+    for inv_y in (False, True):
+        net = pp.create_empty_network()
+        vc = "Yy"
+        l1, l2, _ = add_network(net, vc)
+        sc.calc_sc(net, fault="1ph", case="max", inverse_y=inv_y)
+        pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
+                       std_type="unsymmetric_line_type", parallel=2.)
+        pp.add_zero_impedance_parameters(net)
+        pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
+        sc.calc_sc(net, fault="1ph", case="max")
+        check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
 
 if __name__ == "__main__":
     pytest.main([__file__])

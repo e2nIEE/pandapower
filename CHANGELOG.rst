@@ -1,6 +1,21 @@
 Change Log
 =============
 
+[2.6.0]- 2021-03-09
+----------------------
+
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
+- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
+- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow.
+- [ADDED] Toolbox method get_connecting_branches to determine branches which connect two sets of buses.
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
+- [CHANGED] Removed official Python 3.5 support due to end of its life #994.
+- [FIXED] matching_params was missing in basic controller.
+- [FIXED] Order of latitude and longitude in plotly mapbox plot.
+- [FIXED] Dependencies of powerflow result plotting.
+- [FIXED] init_ne_line to work with switches and parallel lines. Needed for PowerModels TNEP.
+
 [2.5.0]- 2021-01-08
 ----------------------
 - [ADDED] github actions for tests added.
@@ -10,7 +25,7 @@ Change Log
 - [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
 - [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
-- [CHANGED] all controllers and output writers do not have net as attribute any more. time series functions, .
+- [CHANGED] all controllers and output writers do not have net as attribute any more.
 - [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.
 - [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
 - [CHANGED] introduce abstract node/branch formulation for the plotly functions.
@@ -55,7 +70,7 @@ Change Log
 - [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
-- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [CHANGED] In state estimation power flow results will not be renamed anymore
 - [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
