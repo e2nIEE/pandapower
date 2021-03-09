@@ -1,8 +1,13 @@
 Change Log
 =============
+
+[2.6.0]- 2021-03-09
+----------------------
+
 - [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
 - [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
-- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead. 
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
+- [CHANGED] Removed official Python 3.5 support #994
 
 [2.5.0]- 2021-01-08
 ----------------------
@@ -58,7 +63,7 @@ Change Log
 - [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
-- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [CHANGED] In state estimation power flow results will not be renamed anymore
 - [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
