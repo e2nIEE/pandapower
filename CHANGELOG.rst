@@ -4,15 +4,16 @@ Change Log
 [2.6.0]- 2021-03-09
 ----------------------
 
-- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation
-- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
-- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104
-- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
+- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
+- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow.
+- [ADDED] Toolbox method get_connecting_branches to determine branches which connect two sets of buses.
 - [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
-- [CHANGED] Removed official Python 3.5 support #994
-- [FIXED] matching_params was missing in basic controller
-- [FIXED] Order of latitude and longitude in plotly mapbox plot
-- [FIXED] Dependencies of powerflow result plotting
+- [CHANGED] Removed official Python 3.5 support due to end of its life #994.
+- [FIXED] matching_params was missing in basic controller.
+- [FIXED] Order of latitude and longitude in plotly mapbox plot.
+- [FIXED] Dependencies of powerflow result plotting.
 - [FIXED] init_ne_line to work with switches and parallel lines. Needed for PowerModels TNEP.
 
 [2.5.0]- 2021-01-08
