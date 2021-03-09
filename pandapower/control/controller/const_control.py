@@ -54,7 +54,7 @@ class ConstControl(Controller):
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
                  scale_factor=1.0, in_service=True, recycle=True, order=0, level=0,
-                 drop_same_existing_ctrl=False, set_q_from_cosphi=False, matching_params=None,
+                 drop_same_existing_ctrl=False, matching_params=None,
                  initial_run=False, **kwargs):
         # just calling init of the parent
         if matching_params is None:
@@ -75,9 +75,6 @@ class ConstControl(Controller):
         self.values = None
         self.profile_name = profile_name
         self.scale_factor = scale_factor
-        if set_q_from_cosphi:
-            logger.error("Parameter set_q_from_cosphi deprecated!")
-            raise ValueError
         self.applied = False
         # write functions faster, depending on type of self.element_index
         if isinstance(self.element_index, int):
