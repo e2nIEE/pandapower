@@ -1,3 +1,6 @@
+# using Logging
+# NullLogger()
+
 import Pkg
 Pkg.activate(joinpath(pwd(), "pandapower", "opf","PpPmInterface")) # for lyu
 # Pkg.activate(".") #for maryam

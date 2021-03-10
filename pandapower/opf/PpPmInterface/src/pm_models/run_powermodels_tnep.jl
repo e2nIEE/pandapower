@@ -7,7 +7,7 @@ function run_powermodels_tnep(json_path)
     pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
 
     # function to run transmission network expansion optimization of powermodels.jl
-    result = run_tnep(pm, model, solver,
+    result = PowerModels.run_tnep(pm, model, solver,
                         setting = Dict("output" => Dict("branch_flows" => true)))
     return result
 end
