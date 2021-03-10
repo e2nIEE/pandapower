@@ -577,6 +577,7 @@ def test_timeseries_powermodels():
 
 
 if __name__ == '__main__':
+    # all run_powermodels_custom are setting julia_file to run_powermodels.jl
     test_pwl()
     test_without_ext_grid()
     test_multiple_ext_grids()
@@ -584,6 +585,6 @@ if __name__ == '__main__':
     test_pm_tnep()
     test_compare_pwl_and_poly(net_3w_trafo_opf)
     # test_storage_opt()  # missing net._options["opf_flow_lim"]
-    test_voltage_angles() # fix "run_powermodels_custom" in line 299 and 300
+    test_voltage_angles()
     test_timeseries_powermodels()
     # pytest.main([__file__])
