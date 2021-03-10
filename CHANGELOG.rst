@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] Efficient PTDF calculation on large grid
 
 [2.6.0]- 2021-03-09
 ----------------------
