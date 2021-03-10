@@ -4,6 +4,7 @@ Change Log
 - [CHANGED] Short-circuit gen calculation parameter "rkss_pu" to "rkss_ohm" according to IEC 60909 example
 - [ADDED] Power station units with gen and trafo designated with "ps_trafo_ix" for short-circuit calculation
 - [ADDED] Multiple example networks and network variations from IEC 60909-4
+- [ADDED] Efficient PTDF calculation on large grid
 
 [2.6.0]- 2021-03-09
 ----------------------
