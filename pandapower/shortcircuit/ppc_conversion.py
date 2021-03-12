@@ -47,7 +47,7 @@ def _check_sc_data_integrity(net):
                 net.gen[col] = np.nan
 
     if not net.trafo.empty:
-        for col in ("pt_percent",):
+        for col in ("pt_percent", "power_station_unit"):
             if col not in net.trafo.columns:
                 net.trafo[col] = np.nan
 
@@ -116,9 +116,18 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
 
     # Calculate K_S on power station configuration
-    if np.any(~np.isnan(net.gen.power_station_trafo.values)):
-        ps_gen_ix = net.gen.loc[~np.isnan(net.gen.power_station_trafo.values),:].index.values
-        ps_trafo_ix = net.gen.loc[ps_gen_ix, "power_station_trafo"].values.astype(int)
+    if np.any(net.gen.power_station_trafo.values) or\
+        np.any(net.trafo.power_station_unit.values):
+
+        if np.all(np.isnan(net.gen.power_station_trafo.values)):
+            ps_trafo_ix = net.trafo.query("power_station_unit").index.values
+            ps_gen_ix = _get_gen_ps_units(net, ps_trafo_ix)
+        else:
+            # If power station units defined with index in gen, no topological search needed
+            ps_gen_ix = net.gen.loc[~np.isnan(net.gen.power_station_trafo.values),:].index.values
+            ps_trafo_ix = net.gen.loc[ps_gen_ix, "power_station_trafo"].values.astype(int)
+
+
         ps_trafo_with_tap_mask = (~np.isnan(net.trafo.loc[ps_trafo_ix, "pt_percent"]))
         ps_gen_buses_ppc = bus_lookup[net.gen.loc[ps_gen_ix, "bus"]]
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
@@ -177,11 +186,38 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
 
             # Correct ps transfomer
             trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
-            # TODO: Check this!
-            # ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] *= \
-            #     (ppci_gen["branch"][trafo_ix, K_T] / ppci_gen["branch"][trafo_ix, K_ST])
+            # Calculating SC inside power system unit
             ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= \
                 ppci_gen["branch"][trafo_ix, K_ST]
 
             bus_ppci.update({bus: ppci_gen})
+
     return non_ps_gen_bus, ppci, bus_ppci
+
+
+def _get_gen_ps_units(net, ps_trafo_ix):
+    ps_trafo_lv_bus = net.trafo.loc[ps_trafo_ix, "lv_bus"].values
+    ps_trafo_lv_bus_ppc = net._pd2ppc_lookups["bus"][ps_trafo_lv_bus]
+
+    gen_bus_ppc = net._pd2ppc_lookups["bus"][net.gen.bus.values]
+    ps_units_bus_ppc = np.union1d(ps_trafo_lv_bus_ppc, gen_bus_ppc)
+    ps_gen_ppc_mask = np.isin(gen_bus_ppc, ps_units_bus_ppc)
+
+    # Check parallel trafo, not allowed in the phase
+    if len(np.unique(ps_trafo_lv_bus_ppc)) != len(ps_trafo_lv_bus_ppc):
+        raise UserWarning("Parallel trafos not allowed in power station units")
+
+    # Check parallel gen, not allowed in the phase
+    if len(np.unique(gen_bus_ppc[ps_gen_ppc_mask])) != len(gen_bus_ppc[ps_gen_ppc_mask]):
+        raise UserWarning("Parallel gens not allowed in power station units")
+
+    # Check wrongly defined trafo (lv side no gen)
+    if np.any(~np.isin(ps_trafo_lv_bus_ppc, ps_units_bus_ppc)):
+        raise UserWarning("Some power station units defined wrong! No gen detected at LV side!")
+
+    ps_gen_ix = np.empty_like(ps_trafo_lv_bus)
+    # TODO: This performance needs to be optimized
+    for ix in ps_trafo_ix:
+        ps_gen_ix[ix] = np.where(gen_bus_ppc==ps_trafo_lv_bus_ppc[ix])[0][0]
+
+    return ps_gen_ix

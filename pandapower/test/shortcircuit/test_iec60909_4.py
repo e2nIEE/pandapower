@@ -294,6 +294,19 @@ def test_iec_60909_4_3ph():
     assert np.allclose(net.res_bus_sc.ip_ka.values[:8], np.array(ip_standard_kappa_c ), atol=1e-3)
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-2)
 
+def test_iec_60909_4_3ph_ps_trafo_flag():
+    net = iec_60909_4()
+    net.trafo["power_station_unit"] = False
+    ps_trafo = net.gen.power_station_trafo.values
+    ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(int)
+    net.trafo.loc[ps_trafo, "power_station_unit"] = True
+    net.gen.power_station_trafo.values[:] = np.nan
+
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894,
+            37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
 
 def test_iec_60909_4_2ph():
     net = iec_60909_4()
@@ -328,4 +341,3 @@ def test_iec_60909_4_1ph():
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
-
