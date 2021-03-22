@@ -805,8 +805,9 @@ def test_get_internal():
     baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
+    dist_slack = False
 
-    J = _create_J_without_numba(Ybus, V, pvpq, pq)
+    J = _create_J_without_numba(Ybus, V, pvpq, pq, contribution_factors, dist_slack)
 
     assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
     # get J for all other algorithms
