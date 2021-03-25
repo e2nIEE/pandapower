@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 
-from pandapower.topology import create_nxgraph, calc_distance_to_bus
+from pandapower.topology import create_nxgraph
 
 
 def detect_power_station_unit(net, mode="auto",
@@ -56,7 +56,6 @@ def detect_power_station_unit(net, mode="auto",
             assert len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1
 
             # Check parallel gen
-            pass
 
             net.gen.loc[np.in1d(net.gen.bus.values, gen_bus_at_lv_side),
                         "power_station_trafo"] = t_ix
@@ -77,10 +76,3 @@ if __name__ == "__main__":
     import pandapower.networks as nw
     net = nw.case300()
     detect_power_station_unit(net)
-    # bd, g_bus = detect_power_station_unit(net)
-    # buses_lv_side = bd.index.values
-
-
-
-
-
