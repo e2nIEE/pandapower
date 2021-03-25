@@ -295,6 +295,19 @@ def test_iec_60909_4_3ph():
     assert np.allclose(net.res_bus_sc.ip_ka.values[:8], np.array(ip_standard_kappa_c ), atol=1e-3)
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-2)
 
+def test_iec_60909_4_3ph_min():
+    net = iec_60909_4()
+    net.line["endtemp_degree"] = 80.0
+    net.ext_grid["s_sc_min_mva"] = net.ext_grid["s_sc_max_mva"]/10 
+    net.ext_grid["rx_min"] = net.ext_grid["rx_max"]   
+    sc.calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604,
+                28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
+
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
+
+
 def test_iec_60909_4_3ph_ps_trafo_flag():
     net = iec_60909_4()
     net.trafo["power_station_unit"] = False
@@ -358,3 +371,4 @@ def test_detect_power_station_units():
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
+   
