@@ -9,6 +9,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
+from pandapower.shortcircuit.toolbox import detect_power_station_unit
 
 def iec_60909_4():
     net = pp.create_empty_network()
@@ -302,6 +303,7 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     net.trafo.loc[ps_trafo, "power_station_unit"] = True
     net.gen.power_station_trafo.values[:] = np.nan
 
+    detect_power_station_unit(net, mode="trafo")
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894,
@@ -338,6 +340,21 @@ def test_iec_60909_4_1ph():
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-4)
     # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
+
+
+def test_detect_power_station_units():
+    net = iec_60909_4()
+    ps_trafo = net.gen.power_station_trafo.values.copy()
+    net.gen.power_station_trafo[:] = None
+
+    detect_power_station_unit(net)
+    print(net.gen.power_station_trafo.values, ps_trafo)
+    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+    net.gen.power_station_trafo[:] = None
+
+    detect_power_station_unit(net, mode="trafo")
+    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
