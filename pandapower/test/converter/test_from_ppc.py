@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -15,6 +15,7 @@ from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 
 try:
     import pypower.case24_ieee_rts as c24
+
     pypower_installed = True
 except ImportError:
     pypower_installed = False
@@ -72,6 +73,7 @@ def test_ppc_testgrids():
         logger.debug('%s has been checked successfully.' % i)
 
 
+@pytest.mark.slow
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
@@ -95,6 +97,7 @@ def test_case9_conversion():
     net = pn.case9()
     # set max_loading_percent to enable line limit conversion
     net.line["max_loading_percent"] = 100
+    pp.runpp(net)
     ppc = to_ppc(net, mode="opf")
     # correction because voltage limits are set to 1.0 at slack buses
     ppc["bus"][0, 12] = 0.9
@@ -110,15 +113,17 @@ def test_case9_conversion():
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
     # compare optimal powerflow results
-    pp.runopp(net)
-    pp.runopp(net2)
+    pp.runopp(net, delta=1e-16)
+    pp.runopp(net2, delta=1e-16)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
-@pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
+
+@pytest.mark.skipif(pypower_installed == False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)
     assert net.OPF_converged
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

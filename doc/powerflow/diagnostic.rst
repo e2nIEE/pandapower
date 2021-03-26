@@ -15,7 +15,7 @@ Check functions
 
 The diagnostic function includes the following checks:
 
-- invalid values (e.g. negative element indeces)
+- invalid values (e.g. negative element indices)
 - check, if at least one external grid exists
 - check, if there are buses with more than one gen and/or ext_grid
 - overload: tries to run a power flow calculation with loads scaled down to 10%
@@ -52,7 +52,7 @@ Both reports show the same result, but on the left hand picture with detailed in
 Result Dictionary
 ------------------
 
-Aditionally all check results are returned in a dict to allow simple access to the indeces of all element where
+Additionally all check results are returned in a dict to allow simple access to the indeces of all element where
 errors were found.
 
 .. image:: /pics/diagnostic/diag_results_dict.png

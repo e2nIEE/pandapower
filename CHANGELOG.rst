@@ -1,6 +1,139 @@
 Change Log
 =============
 
+[2.6.0]- 2021-03-09
+----------------------
+
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
+- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
+- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow.
+- [ADDED] Toolbox method get_connecting_branches to determine branches which connect two sets of buses.
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
+- [CHANGED] Removed official Python 3.5 support due to end of its life #994.
+- [FIXED] matching_params was missing in basic controller.
+- [FIXED] Order of latitude and longitude in plotly mapbox plot.
+- [FIXED] Dependencies of powerflow result plotting.
+- [FIXED] init_ne_line to work with switches and parallel lines. Needed for PowerModels TNEP.
+
+[2.5.0]- 2021-01-08
+----------------------
+- [ADDED] github actions for tests added.
+- [ADDED] tests for PowerModels.jl interface (julia tests).
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver.
+- [ADDED] the voltage set point of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
+- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
+- [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
+- [CHANGED] all controllers and output writers do not have net as attribute any more.
+- [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.
+- [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
+- [CHANGED] introduce abstract node/branch formulation for the plotly functions.
+- [FIXED] issue # 905 fixed (If powerflow not necessary, e.g. two ext_grids/pv-nodes with only two buses) powerflow is bypassed and the solution is trivial.
+- [FIXES] issue # 954 fixed (Update bus IDs for net.asymmetric_load and net.asymmetric_sgen when merging nets in toolbox.py).
+- [FIXED] issue # 780 fixed (passing the shape to pypower solves the problem)
+- [FIXED] excel engine pd.ExcelFile not working in new pandas version. Adaptation in file_io with new module openpyxl. openpyxl needs to be installed. Requirements are adapted accordngly.
+- [FIXED] in io_utils functions with no clear class name can be de-serialized as well.
+- [FIXED] fixed generic coordinates creation when respect_switches is set.
+- [FIXED] recycle values None and False are considered equally --> recycle usage is skipped.
+- [FIXED] control_diagnostic distinguishes between two winding and three winding transformers.
+- [FIXED] toolbox functions, e.g. get_connected_elements, consider switches for three winding transformers.
+- [FIXED] json load for broken geom columns in bus_geodata.
+
+[2.4.0]- 2020-09-01
+----------------------
+- [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893
+- [ADDED] new element "net.motor" to model asynchronous machines #244
+- [ADDED] possibility to calculate all branch currents in short-circuit calculations #862
+- [ADDED] more flexibility in the create_generic_geodata function
+
+[2.3.1]- 2020-08-19
+----------------------
+- [ADDED] Missing dependencies xlswriter, xlrd, cryptography
+- [FIXED] Bug in rundcpp result table initialization
+- [CHANGED] PTDF/LODF calculation to improve performance
+- [FIXED] Signing system for P/Q values in net.res_bus_3ph
+- [FIXED] JSON I/O handling of controllers with NaN values
+
+[2.3.0]- 2020-08-11
+----------------------
+- [ADDED] Create functions for multiple gens, sgens, lines, trafos and switches
+- [ADDED] Unbalanced power flow runpp_3ph
+- [ADDED] Zero sequence power flow models for ext_grid, transformer, line, asymmetric_load, asymmetric_sgen
+- [ADDED] Minimal 1ph fault calculation according to IEC 60909
+- [CHANGED] OPF calculate_voltage_angles defaults to True instead of False
+- [ADDED] lightsim2grid interface in NR power flow thanks to @BDonnot https://github.com/BDonnot/lightsim2grid
+- [FIXED] PowerModels.jl solver interface call functions. Added OPFNotConverged to Powermodels.jl call
+- [FIXED] pandas 1.0 and 1.1 support
+- [CHANGED] revision of toolbox function drop_out_of_service_elements()
+- [ADDED] toolbox function drop_measurements_at_elements()
+- [ADDED] Encryption for JSON I/O
+- [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
+- [FIXED] Bug in using initialization option "results" in state estimation #859
+- [CHANGED] In state estimation power flow results will not be renamed anymore
+- [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
+
+[2.2.2]- 2020-03-17
+----------------------
+- [CHANGED] reset_results empties result tables per default
+- [CHANGED] nan values result tables of power system test cases are emptied
+- [ADDED] dclines and considering given branch indices by create_nxgraph()
+- [ADDED] use_umfpack and permc_spec option from scipy spsolve in Newton-Raphson power flow
+- [FIXED] Changed the __deepcopy__ for pandapowerNet back to using copy.deepcopy, fixed the issue that caused the switch to json #676
+- [FIXED] Potential memory leaks due to circular references in JSONSerializableObjects, fixed by using weakref #677
+
+[2.2.1]- 2020-01-29
+----------------------
+- [FIXED] Missing csv files #625
+- [FIXED] deepcopy speed and missing DataFrames in net #620, #631
+- [FIXED] simple plotly error with generic coords #619
+- [FIXED] create line with passed geodata #610
+- [FIXED] ConstControl write to and all_index attribute #609
+- [FIXED] collection plotting issue #608
+
+
+[2.2.0]- 2020-01-17
+----------------------
+- [ADDED] control and timeseries module
+- [ADDED] Support phasor measurement in state estimation
+- [ADDED] Support recycle in state estimation
+- [ADDED] PowerModels.jl converter callable without running the PowerModels optimization
+- [ADDED] Other PowerModels features via interface callable (e.g. network data check and different solver)
+- [ADDED] toolbox function select_subnet now also copies cost data and net parameters
+- [ADDED] toolbox functions replace_ward_by_internal_elements and replace_xward_by_internal_elements
+- [ADDED] consideration of result tables in toolbox functions drop
+- [ADDED] new jupyter notebook examples for time series, controller and PowerModels.jl interface
+- [ADDED] reindex_buses() toolbox function
+
+- [FIXED] Bugfixes in PowerModels conversion, OPF in general and tests
+- [FIXED] renew opf_task() toolbox function which got outdated
+- [FIXED] dtype at element parameter in cost tables
+- [FIXED] convert_format.py: added the renaming of controller column and of the controller attributes, added tests for version 2.1.0
+
+- [CHANGED] Unified the mesurement unit conversion of state estimation in ppc conversion
+- [CHANGED] OPF bounds and settings for gens. limits or fixed values can now be enforced. See #511
+- [CHANGED] OPF documentation and _check_necessary_opf_parameters()
+- [CHANGED] JSON I/O: pandapower objects that are derived from JSONSerializableClass are now instantiated using __new__ instead of __init__ (as before), and the serialization has been adjusted; self.update_initialized(locals()) is not necessary anymore and has been removed; restore_json_objects is not needed anymore and has been removed
+- [CHANGED] column name in net.controller: "controller" -> "object"
+- [CHANGED] variable names in ContinuousTapControl ("u_set" -> "vm_set_pu") and in DiscreteTapControl ("u_lower" -> "vm_lower_pu", "u_upper" -> "vm_upper_pu")
+- [CHANGED] __version__ is now changed to 2.2.0
+
+[2.1.0]- 2019-07-08
+----------------------
+- [ADDED] calc_single_sc function to analyse a single fault instead of vectorized fault
+- [ADDED] convenience function for logarithmic colormaps in plotting
+- [CHANGED] corrected spelling 'continous' to 'continuous' in several functions
+- [ADDED] additional standard types for overhead lines
+- [CHANGED] make pp.to_json format closer to the JSON standard #406
+- [ADDED] PowerModels.jl storage interface for time series based storage optimization.
+- [ADDED] PowerModels.jl OTS interface for optimize transmission switching optimization.
+- [ADDED] PowerModels.jl TNEP interface for transmission expansion optimization. See Jupyter Notebook
+- [ADDED] pytest slow marker for tests and functions to run all, slow or fast tests
+- [ADDED] Graph-Tool interface
+- [ADDED] Multiple new algorithms and robust estimators in state estimation
+- [ADDED] Support measurements for trafo3w in state estimation
+- [ADDED] Auto zero-injection bus handling in state estimation
+
 [2.0.1]- 2019-03-28
 ----------------------
 - [FIXED] bug in short-circuit impedance of gens
@@ -115,7 +248,7 @@ Change Log
 ----------------------
 
 - [ADDED] possibility to save networks to an sql database
-- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [CHANGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
 - [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
 - [FIXED] state estimation bug with phase shift transformers
 - [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception

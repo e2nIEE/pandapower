@@ -34,7 +34,7 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+\*necessary for executing a balanced power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*necessary for executing a three phase power flow / single phase short circuit
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
@@ -48,6 +48,12 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 
 .. image:: trafo_t.png
 	:width: 30em
+	:align: center
+
+*sequence = 0:*
+
+.. image:: trafo_t_zero.png
+	:width: 50em
 	:align: center
 
 *trafo_model='pi':*
@@ -108,8 +114,8 @@ The short-circuit impedance is calculated as:
    :nowrap:
 
    \begin{align*}
-   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
-   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
+   z_k &= \frac{vk\_percent}{100} \cdot \frac{net.sn\_mva}{sn\_mva} \\
+   r_k &= \frac{vkr\_percent}{100} \cdot \frac{net.sn\_mva}{sn\_mva} \\
    x_k &= \sqrt{z^2 - r^2} \\
    \underline{z}_k &= r_k + j \cdot x_k
    \end{align*}    
@@ -121,7 +127,7 @@ The magnetising admittance is calculated as:
 
    \begin{align*}
    y_m &= \frac{i0\_percent}{100} \\
-   g_m &= \frac{pfe\_mw}{sn\_mva \cdot 1000} \cdot \frac{1000}{sn\_mva} \\
+   g_m &= \frac{pfe\_kw}{sn\_mva \cdot 1000} \cdot \frac{net.sn\_mva}{sn\_mva} \\
    b_m &= \sqrt{y_m^2 - g_m^2} \\
    \underline{y_m} &= g_m - j \cdot b_m
    \end{align*}    
@@ -133,7 +139,7 @@ The values calculated in that way are relative to the rated values of the transf
 
    \begin{align*}
     Z_{N} &= \frac{V_{N}^2}{S_{N}} \\
-    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot 1000}{sn\_mva} \\
+    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot net.sn\_mva}{sn\_mva} \\
     \underline{z} &= \underline{z}_k \cdot \frac{Z_{ref, trafo}}{Z_{N}} \\
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
@@ -240,6 +246,29 @@ Result Parameters
     i\_lv\_ka &= i_{lv}
     \end{align*}
     
+*net.res_trafo_3ph*
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. csv-table:: 
+   :file: trafo_res_3ph.csv
+   :delim: ;
+   :widths: 15, 10, 55
+
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+    p\_hv\_mw_{phase} &= Re(\underline{v}_{hv_{phase}} \cdot \underline{i}^*_{hv_{phase}}) \\    
+    q\_hv\_mvar_{phase} &= Im(\underline{v}_{hv_{phase}} \cdot \underline{i}^*_{hv_{phase}}) \\
+    p\_lv\_mw_{phase} &= Re(\underline{v}_{lv_{phase}} \cdot \underline{i}^*_{lv_{phase}}) \\
+    q\_lv\_mvar_{phase} &= Im(\underline{v}_{lv_{phase}} \cdot \underline{i}^*_{lv_{phase}}) \\
+	pl\_mw_{phase} &= p\_hv\_mw_{phase} + p\_lv\_mw_{phase} \\
+	ql\_mvar_{phase} &= q\_hv\_mvar_{phase} + q\_lv\_mvar_{phase} \\
+    i\_hv\_ka_{phase} &= i_{hv_{phase}} \\
+    i\_lv\_ka_{phase}&= i_{lv_{phase}}
+    \end{align*}
+
 The definition of the transformer loading depends on the trafo_loading parameter of the power flow.
 
 For trafo_loading="current", the loading is calculated as:

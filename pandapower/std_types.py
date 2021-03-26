@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -25,7 +25,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
     additional parameters can be added and later loaded into pandapower with the function
     "parameter_from_std_type".
 
-    \* only considered in loadflow if calculate_voltage_angles = True
+    ** only considered in loadflow if calculate_voltage_angles = True
 
     The standard type is saved into the pandapower library of the given network by default.
 
@@ -42,6 +42,34 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
 
     >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "max_i_ka": 0.142, "type": "cs", "q_mm2": 50, "alpha": 4.03e-3}
     >>> pandapower.create_std_type(net, line_data, "NAYY 4×50 SE", element='line')
+    >>> # Three phase line creation:
+    >>> pandapower.create_std_type(net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991,
+                    "c_nf_per_km": 1160., "max_i_ka": 0.421,
+                    "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
+                    "x0_ohm_per_km": 0.2990796,
+                    "c0_nf_per_km":  496.2}, name="unsymmetric_line_type",element = "line")
+    >>> #Three phase transformer creation
+    >>> pp.create_std_type(net, {"sn_mva": 1.6,
+            "vn_hv_kv": 10,
+            "vn_lv_kv": 0.4,
+            "vk_percent": 6,
+            "vkr_percent": 0.78125,
+            "pfe_kw": 2.7,
+            "i0_percent": 0.16875,
+            "shift_degree": 0,
+            "vector_group": vector_group,
+            "tap_side": "lv",
+            "tap_neutral": 0,
+            "tap_min": -2,
+            "tap_max": 2,
+            "tap_step_degree": 0,
+            "tap_step_percent": 2.5,
+            "tap_phase_shifter": False,
+            "vk0_percent": 6, 
+            "vkr0_percent": 0.78125, 
+            "mag0_percent": 100,
+            "mag0_rx": 0.,
+            "si0_hv_partial": 0.9,}, name='Unsymmetric_trafo_type', element="trafo")
     """
 
     if type(data) != dict:
@@ -284,7 +312,18 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
 
 def add_zero_impedance_parameters(net):
     """
-    adds all parameters required for zero impedance calculations
+    Adds all parameters required for zero sequence impedance calculations
+    INPUT:
+        **net** - pandapower network
+        
+        zero sequence parameters of lines and transformers in pandapower networks
+        are entered using std_type. 
+        
+        This function adds them to the pandas dataframe
+
+
+    OUTPUT:
+        Now, net has all the zero sequence  parameters
     """
     parameter_from_std_type(net, "vector_group", element="trafo")
     parameter_from_std_type(net, "vk0_percent", element="trafo")
@@ -295,6 +334,7 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "c0_nf_per_km")
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")
+    parameter_from_std_type(net, "endtemp_degree")
 
 
 def add_temperature_coefficient(net, fill=None):
@@ -479,6 +519,7 @@ def add_basic_std_types(net):
 
         # Overhead Lines, all from S.742f, Heuck: Elektrische Energieversorgung -
         # Vierweg+Teubner 2013
+        # 679/86 110 from S. 362, Flosdorff, Hilgarth: Elektrische Energieverteilung - Teubner 2005
 
         # Low Voltage
         "15-AL1/3-ST1A 0.4":
@@ -629,6 +670,39 @@ def add_basic_std_types(net):
             "alpha": alpha_al},
 
         # High Voltage
+        # c acd x values are estimated for 4 m conductor distance, single bundle and "Donaumast"
+        "48-AL1/8-ST1A 110.0":
+        {"c_nf_per_km": 8,
+            "r_ohm_per_km": 0.5939,
+            "x_ohm_per_km": 0.46,
+            "max_i_ka": 0.210,
+            "type": "ol",
+            "q_mm2": 48,
+            "alpha": alpha_al},
+        "70-AL1/11-ST1A 110.0":
+        {"c_nf_per_km": 8.4,
+            "r_ohm_per_km": 0.4132,
+            "x_ohm_per_km": 0.45,
+            "max_i_ka": 0.290,
+            "type": "ol",
+            "q_mm2": 70,
+            "alpha": alpha_al},
+        "94-AL1/15-ST1A 110.0":
+        {"c_nf_per_km": 8.65,
+            "r_ohm_per_km": 0.3060,
+            "x_ohm_per_km": 0.44,
+            "max_i_ka": 0.350,
+            "type": "ol",
+            "q_mm2": 94,
+            "alpha": alpha_al},
+        "122-AL1/20-ST1A 110.0":
+        {"c_nf_per_km": 8.5,
+            "r_ohm_per_km": 0.2376,
+            "x_ohm_per_km": 0.43,
+            "max_i_ka": 0.410,
+            "type": "ol",
+            "q_mm2": 122,
+            "alpha": alpha_al},
         "149-AL1/24-ST1A 110.0":
         {"c_nf_per_km": 8.75,
             "r_ohm_per_km": 0.1940,
@@ -661,27 +735,59 @@ def add_basic_std_types(net):
             "type": "ol",
             "q_mm2": 305,
             "alpha": alpha_al},
+        "490-AL1/64-ST1A 110.0":
+        {"c_nf_per_km": 9.75,
+            "r_ohm_per_km": 0.059,
+            "x_ohm_per_km": 0.37,
+            "max_i_ka": 0.960,
+            "type": "ol",
+            "q_mm2": 490,
+            "alpha": alpha_al},
+        "679-AL1/86-ST1A 110.0":
+        {"c_nf_per_km": 9.95,
+            "r_ohm_per_km": 0.042,
+            "x_ohm_per_km": 0.36,
+            "max_i_ka": 1.150,
+            "type": "ol",
+            "q_mm2": 679,
+            "alpha": alpha_al},
 
         # Transmission System
-        # The following values of c and x are depend on the geometries of the  overhead line
+        # The following values of c and x depend on the geometries of the  overhead line
         # Here it is assumed that for x the 220kV line uses twin conductors and the 380kV line uses
         # quad bundle conductor. The c values are estimated.
         "490-AL1/64-ST1A 220.0":
         {"c_nf_per_km": 10,
-            "r_ohm_per_km": 0.059,
-            "x_ohm_per_km": 0.285,
-            "max_i_ka": 0.96,
-            "type": "ol",
-            "q_mm2": 490,
-            "alpha": alpha_al},
+             "r_ohm_per_km": 0.059,
+             "x_ohm_per_km": 0.285,
+             "max_i_ka": 0.96,
+             "type": "ol",
+             "q_mm2": 490,
+             "alpha": alpha_al},
+        "679-AL1/86-ST1A 220.0":
+        {"c_nf_per_km": 11.7,
+             "r_ohm_per_km": 0.042,
+             "x_ohm_per_km": 0.275,
+             "max_i_ka": 1.150,
+             "type": "ol",
+             "q_mm2": 679,
+             "alpha": alpha_al},
         "490-AL1/64-ST1A 380.0":
         {"c_nf_per_km": 11,
-            "r_ohm_per_km": 0.059,
-            "x_ohm_per_km": 0.253,
-            "max_i_ka": 0.96,
-            "type": "ol",
-            "q_mm2": 490,
-            "alpha": alpha_al}
+             "r_ohm_per_km": 0.059,
+             "x_ohm_per_km": 0.253,
+             "max_i_ka": 0.96,
+             "type": "ol",
+             "q_mm2": 490,
+             "alpha": alpha_al},
+        "679-AL1/86-ST1A 380.0":
+        {"c_nf_per_km": 14.6,
+             "r_ohm_per_km": 0.042,
+             "x_ohm_per_km": 0.25,
+             "max_i_ka": 1.150,
+             "type": "ol",
+             "q_mm2": 679,
+             "alpha": alpha_al}
     }
     create_std_types(net, data=linetypes, element="line")
 

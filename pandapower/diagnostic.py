@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 
 
 import copy
@@ -18,7 +16,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
@@ -220,7 +217,7 @@ def check_greater_zero_less_equal_one(element, element_index, column):
 
 
 def check_switch_type(element, element_index, column):
-    valid_values = ['b', 'l', 't']
+    valid_values = ['b', 'l', 't', 't3']
     if element[column] not in valid_values:
         return element_index
 
@@ -324,7 +321,7 @@ def no_ext_grid(net):
 
     """
 
-    if not len(net.ext_grid) > 0:
+    if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
         return True
 
 
@@ -462,8 +459,7 @@ def missing_bus_indices(net):
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
                 if row[bus_name] not in bus_indices:
-                    if not ((element == "switch") and (bus_name == "element") and (
-                                row.et in ['l', 't'])):
+                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't', 't3'])):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
@@ -524,15 +520,15 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
     implausible_elements = {}
 
     line = net.line[((net.line.r_ohm_per_km * net.line.length_km) <= min_r_ohm)
-                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm)].index
+                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm) & net.line.in_service].index
 
     xward = net.xward[(net.xward.r_ohm <= min_r_ohm)
-                      | (net.xward.x_ohm <= min_x_ohm)].index
+                      | (net.xward.x_ohm <= min_x_ohm) & net.xward.in_service].index
 
     impedance = net.impedance[(net.impedance.rft_pu <= min_r_pu)
                               | (net.impedance.xft_pu <= min_x_pu)
                               | (net.impedance.rtf_pu <= min_r_pu)
-                              | (net.impedance.xtf_pu <= min_x_pu)].index
+                              | (net.impedance.xtf_pu <= min_x_pu) & net.impedance.in_service].index
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
@@ -714,7 +710,7 @@ def disconnected_elements(net):
                                                    'disconnected sgens'    : sgen_indices}
 
     """
-
+    import pandapower.topology as top
     mg = top.create_nxgraph(net)
     sections = top.connected_components(mg)
     disc_elements = []
@@ -722,7 +718,9 @@ def disconnected_elements(net):
     for section in sections:
         section_dict = {}
 
-        if not section & set(net.ext_grid.bus) and any(net.bus.in_service.loc[section]):
+        if not section & set(net.ext_grid.bus[net.ext_grid.in_service]).union(
+                net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
+                net.bus.in_service.loc[section]):
             section_buses = list(net.bus[net.bus.index.isin(section)
                                          & (net.bus.in_service == True)].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
@@ -903,24 +901,20 @@ def deviation_from_std_type(net):
 
 def parallel_switches(net):
     """
-        Checks for parallel switches.
+    Checks for parallel switches.
 
-         INPUT:
-            **net** (PandapowerNet)    - pandapower network
+     INPUT:
+        **net** (PandapowerNet)    - pandapower network
 
-
-         OUTPUT:
-            **parallel_switches** (list)   - List of tuples each containing parallel switches.
-
-
-
-
+     OUTPUT:
+        **parallel_switches** (list)   - List of tuples each containing parallel switches.
     """
     parallel_switches = []
     compare_parameters = ['bus', 'element', 'et']
     parallels_bus_and_element = list(
         net.switch.groupby(compare_parameters).count().query('closed > 1').index)
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
+        parallel_switches.append(list(net.switch.query(
+            'bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches

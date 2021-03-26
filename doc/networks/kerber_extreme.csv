@@ -1,16 +1,16 @@
 ;**Lines**;**Total Length**;**Loads**;**Installed Power**
 **Kerber Landnetze**;;;;
-Freileitung 1;26;0.312 km;26;208 MW
-Freileitung 2;27;0.348 km;27;216 MW
-Kabel 1;52;1.339 km;26;208 MW
-Kabel 2;54;1.435 km;27;216 MW
+Freileitung 1;26;0.312 km;26;0.208 MW
+Freileitung 2;27;0.348 km;27;0.216 MW
+Kabel 1;52;1.339 km;26;0.208 MW
+Kabel 2;54;1.435 km;27;0.216 MW
 ;;;;
 **Kerber Dorfnetze**;;;;
-Kabel 1;116;3.088 km;58;348 MW
-Kabel 2;234;6.094 km;117;702 MW
+Kabel 1;116;3.088 km;58;0.348 MW
+Kabel 2;234;6.094 km;117;0.702 MW
 ;;;;
 **Vorstadtnetze**;;;;
-Kabel_a Type 1;290;3.296 km;145;290 MW
-Kabel_b Type 1;290;4.019 km;145;290 MW
-Kabel_c Type 2;382;5.256 km;191;382 MW
-Kabel_d Type 2;384;5.329 km;192;384 MW
+Kabel_a Type 1;290;3.296 km;145;0.290 MW
+Kabel_b Type 1;290;4.019 km;145;0.290 MW
+Kabel_c Type 2;382;5.256 km;191;0.382 MW
+Kabel_d Type 2;384;5.329 km;192;0.384 MW

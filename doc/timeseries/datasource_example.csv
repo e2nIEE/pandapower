@@ -1,0 +1,7 @@
+;0;1;---;N-1;N
+0;P0 sgen0;P0 sgen1;---;P0 sgen N-1;P0 sgen N
+1;P1 sgen0;P1 sgen1;---;P1 sgen N-1;P1 sgen N
+2;P2 sgen0;P2 sgen1;---;P2 sgen N-1;P2 sgen N
+---;---;---;---;---;---
+T-1;P T-1 sgen0;P T-1 sgen1;---;P T-1 sgen N-1;P T-1 sgen N
+T;P T sgen0;P T sgen1;---;P T sgen N-1;P T sgen N

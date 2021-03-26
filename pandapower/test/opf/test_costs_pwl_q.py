@@ -23,7 +23,7 @@ def test_3point_pwl():
     # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
     pp.create_pwl_cost(net, 0, "sgen", [[-50, 0, -1.5], [0, 50, 1.5]], power_type="q")
 
-    pp.runopp(net, )
+    pp.runopp(net)
 
     # The reactive power should be at zero to minimze the costs.
     assert np.isclose(net.res_sgen.q_mvar.values, 0, atol=1e-4)
@@ -33,7 +33,7 @@ def test_3point_pwl():
 
     net.sgen.min_q_mvar = 0.05
     net.sgen.max_q_mvar = 0.1
-    pp.runopp(net, )
+    pp.runopp(net)
     assert np.isclose(net.res_sgen.q_mvar.values, 0.05, atol=1e-4)
     assert np.isclose(net.res_cost, abs(net.res_sgen.q_mvar.values)*1.5, atol=1e-4)
 

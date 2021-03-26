@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -82,7 +82,7 @@ def case5():
     Studies" Its data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
 
     OUTPUT:
-         **net** - Returns the required ieee network case4gs
+         **net** - Returns the required ieee network case5
 
     EXAMPLE:
          import pandapower.networks as pn
@@ -130,6 +130,7 @@ def case9():
     case9 = pp.from_json(_get_cases_path("case9.json"))
     return case9
 
+
 def case11_iwamoto():
     """
     Calls the json file case11_iwamoto.json which represents \
@@ -154,6 +155,7 @@ def case11_iwamoto():
     """
     case11 = pp.from_json(_get_cases_path("case11_iwamoto.json"))
     return case11
+
 
 def case14():
     """

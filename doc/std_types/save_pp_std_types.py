@@ -9,7 +9,7 @@ import pandapower as pp
 net = pp.create_empty_network()
 
 linetypes = pp.available_std_types(net, "line")
-columns = [c for c in net.line.columns if c in linetypes.columns] + ["q_mm2"]
+columns = [c for c in net.line.columns if c in linetypes.columns] + ["q_mm2", "alpha"]
 linetypes = linetypes.reindex(columns, axis=1)
 linetypes.to_csv("linetypes.csv", sep=";")
 
