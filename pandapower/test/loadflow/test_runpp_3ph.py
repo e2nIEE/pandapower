@@ -486,10 +486,10 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
 
 
 def test_trafo_asym():
-    nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test\\loadflow"))
+    nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
     for trafo_vector_group in ["YNyn", "Dyn", "Yzn"]:
         for load_type in ["delta", "wye", "bal_wye", 'delta_wye']:
-            net = pp.from_pickle(nw_dir + '\\runpp_3ph validation network.p')
+            net = pp.from_pickle(nw_dir + '/runpp_3ph validation network.p')
             if load_type == 'bal_wye':
                 net.asymmetric_load.type[0] = 'wye'
                 p_sum = net.asymmetric_load.p_a_mw[0] + \
