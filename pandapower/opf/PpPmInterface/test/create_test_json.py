@@ -77,5 +77,5 @@ json_path = os.path.join(pkg_dir, "test" , "data", "test_tnep.json")
 
 test_net = convert_pp_to_pm(net, pm_file_path=json_path, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                     pp_to_pm_callback=None, pm_model="DCPowerModel", pm_solver="ipopt",
+                     pp_to_pm_callback=None, pm_model="DCPPowerModel", pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt")

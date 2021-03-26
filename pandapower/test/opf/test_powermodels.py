@@ -297,10 +297,9 @@ def test_voltage_angles():
     net.bus.loc[:, "max_vm_pu"] = 1.1
     net.bus.loc[:, "min_vm_pu"] = .9
 
-    # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
-    #                            "test_files", "run_powermodels_custom.jl")
-    custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
 
+    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
+    custom_file = "run_powermodels"
     # load is zero since costs are high. PF results should be the same as OPF
     net.load.loc[1, "p_mw"] = 0.
     pp.runpp(net, calculate_voltage_angles=True)
@@ -455,8 +454,8 @@ def test_ots_opt():
 def assert_pf(net, dc=False):
     # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
     #                            "opf", "run_powermodels_powerflow.jl")
-    custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-    
+    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
+    custom_file = "run_powermodels"
     if dc:
         # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
         pp.runpm(net, julia_file=custom_file, pm_model="DCMPPowerModel")
@@ -578,13 +577,13 @@ def test_timeseries_powermodels():
 
 if __name__ == '__main__':
     # all run_powermodels_custom are setting julia_file to run_powermodels.jl
-    test_pwl()
-    test_without_ext_grid()
-    test_multiple_ext_grids()
-    test_ots_opt()
-    test_pm_tnep()
-    test_compare_pwl_and_poly(net_3w_trafo_opf)
+    # test_pwl()
+    # test_without_ext_grid()
+    # test_multiple_ext_grids()
+    # test_ots_opt()
+    # test_pm_tnep()
+    # test_compare_pwl_and_poly(net_3w_trafo_opf)
     # test_storage_opt()  # missing net._options["opf_flow_lim"]
-    test_voltage_angles()
-    test_timeseries_powermodels()
-    # pytest.main([__file__])
+    # test_voltage_angles()
+    # test_timeseries_powermodels()
+    pytest.main([__file__])
