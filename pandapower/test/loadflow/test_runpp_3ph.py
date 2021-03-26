@@ -4,11 +4,13 @@ Created on Wed May  2 17:06:25 2018
 Tests 3 phase power flow algorithm
 @author: sghosh
 """
+import os
 import pandapower as pp
 import numpy as np
 import pytest
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks
+
 
 @pytest.fixture
 def net():
@@ -299,16 +301,140 @@ def test_3ph_two_bus_line_powerfactory():
     assert np.max(np.abs(line_load_pp - line_load_pf)) < 1e-2
 
 
-def check_results(net, vc, result):
-    res_vm_kv = np.concatenate(
-            (
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_a_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_b_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_c_pu
-            ), axis=0)
-    assert np.allclose(result, res_vm_kv, atol=1e-4)
-    if not np.allclose(result, res_vm_kv, atol=1e-4):
-        raise ValueError("Incorrect results for vector group %s" % vc, res_vm_kv, result)
+def check_bus_voltages(net, result, trafo_vector_group, load_type):
+    res_vm_pu = []
+    for i in range(3):
+        res_vm_pu.append(net.res_bus_3ph.vm_a_pu[i])
+        res_vm_pu.append(net.res_bus_3ph.vm_b_pu[i])
+        res_vm_pu.append(net.res_bus_3ph.vm_c_pu[i])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_vm_pu, atol=tol):
+    #         max_tol = tol
+    # # print('Voltage Magnitude for %s %s is within tolerance of %s' % (trafo_vector_group, load_type, max_tol))
+    # print(max_tol)
+
+    tolerances = {'YNyn delta': 1e-04,
+                  'YNyn wye': 1e-03,
+                  'YNyn bal_wye': 1e-05,
+                  'YNyn delta_wye': 1e-03,
+                  'Dyn delta': 1e-04,
+                  'Dyn wye': 1e-03,
+                  'Dyn bal_wye': 1e-05,
+                  'Dyn delta_wye': 1e-03,
+                  'Yzn delta': 1e-04,
+                  'Yzn wye': 1e-04,
+                  'Yzn bal_wye': 1e-05,
+                  'Yzn delta_wye': 1e-03}
+
+    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group + ' ' + load_type])
+    if not np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group + ' ' + load_type]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_vm_pu, result)
+
+
+def check_line_currents(net, result, trafo_vector_group, load_type):
+    res_line_i_ka = []
+    res_line_i_ka.append(net.res_line_3ph.i_a_from_ka[0])
+    res_line_i_ka.append(net.res_line_3ph.i_b_from_ka[0])
+    res_line_i_ka.append(net.res_line_3ph.i_c_from_ka[0])
+    res_line_i_ka.append(net.res_line_3ph.i_a_to_ka[0])
+    res_line_i_ka.append(net.res_line_3ph.i_b_to_ka[0])
+    res_line_i_ka.append(net.res_line_3ph.i_c_to_ka[0])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_line_i_ka, atol=tol):
+    #         max_tol = tol
+    # # print('Line current for %s %s is within tolerance of %s' % (trafo_vector_group, load_type, max_tol))
+    # print(max_tol)
+
+    tolerances = {'YNyn delta': 1e-04,
+                  'YNyn wye': 1e-04,
+                  'YNyn bal_wye': 1e-05,
+                  'YNyn delta_wye': 1e-03,
+                  'Dyn delta': 1e-04,
+                  'Dyn wye': 1e-04,
+                  'Dyn bal_wye': 1e-05,
+                  'Dyn delta_wye': 1e-03,
+                  'Yzn delta': 1e-04,
+                  'Yzn wye': 1e-04,
+                  'Yzn bal_wye': 1e-05,
+                  'Yzn delta_wye': 1e-03}
+
+    assert np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type])
+    if not np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_line_i_ka, result)
+
+
+def check_trafo_currents(net, result, trafo_vector_group, load_type):
+    res_trafo_i_ka = []
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_a_hv_ka[0])
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_b_hv_ka[0])
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_c_hv_ka[0])
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_a_lv_ka[0])
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_b_lv_ka[0])
+    res_trafo_i_ka.append(net.res_trafo_3ph.i_c_lv_ka[0])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_trafo_i_ka, atol=tol):
+    #         max_tol = tol
+    # # print('Trafo current for %s %s is within tolerance of %s' % (trafo_vector_group, load_type, max_tol))
+    # print(max_tol)
+
+    tolerances = {'YNyn delta': 1e-03,
+                  'YNyn wye': 1e-03,
+                  'YNyn bal_wye': 1e-03,
+                  'YNyn delta_wye': 1e-03,
+                  'Dyn delta': 1e-03,
+                  'Dyn wye': 1e-03,
+                  'Dyn bal_wye': 1e-03,
+                  'Dyn delta_wye': 1e-03,
+                  'Yzn delta': 1e-03,
+                  'Yzn wye': 1e-02,
+                  'Yzn bal_wye': 1e-03,
+                  'Yzn delta_wye': 1e-02}
+
+    assert np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type])
+    if not np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_trafo_i_ka, result)
+
+
+def check_trafo_line_current(net, trafo_vector_group, load_type):
+    res_trafo_i_ka = net.res_trafo_3ph[["i_%s_lv_ka" % phase for phase in "abc"]]
+    res_line_i_ka = net.res_line_3ph[["i_%s_from_ka" % phase for phase in "abc"]]
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(res_trafo_i_ka, res_line_i_ka, atol=tol):
+    #         max_tol = tol
+    # # print('Trafo to Line current for %s %s is within tolerance of %s' % (trafo_vector_group, load_type, max_tol))
+    # print(max_tol)
+
+    tolerances = {'YNyn delta': 1e-07,
+                  'YNyn wye': 1e-04,
+                  'YNyn bal_wye': 1e-07,
+                  'YNyn delta_wye': 1e-04,
+                  'Dyn delta': 1e-07,
+                  'Dyn wye': 1e-03,
+                  'Dyn bal_wye': 1e-07,
+                  'Dyn delta_wye': 1e-03,
+                  'Yzn delta': 1e-07,
+                  'Yzn wye': 1e-02,
+                  'Yzn bal_wye': 1e-07,
+                  'Yzn delta_wye': 1e-02}
+
+    assert np.allclose(res_trafo_i_ka, res_line_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type])
+    if not np.allclose(res_trafo_i_ka, res_line_i_ka, atol=tolerances[trafo_vector_group + ' ' + load_type]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group)
+
+
+def check_results(net, trafo_vector_group, load_type, results):
+    check_bus_voltages(net, results[0], trafo_vector_group, load_type)
+    check_line_currents(net, results[1], trafo_vector_group, load_type)
+    check_trafo_currents(net, results[2], trafo_vector_group, load_type)
+    check_trafo_line_current(net, trafo_vector_group, load_type)
 
 
 def make_nw(net, bushv, tap_ps, case, vector_group):
@@ -360,16 +486,36 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
 
 
 def test_trafo_asym():
-    results = get_PF_Results()   # Results taken out from PF
-    for bushv in [10]:
-        for tap_ps in [0]:
-            for loadtyp in ["delta", "wye", "delta_wye", "bal_wye"]:
-                for vc in ["YNyn", "Dyn", "Yzn"]:  # ,"Yyn"]:
-                    net = pp.create_empty_network(sn_mva=100)
-                    make_nw(net, bushv, tap_ps, loadtyp, vc)
-                    runpp_3ph_with_consistency_checks(net)
-                    assert net['converged']
-                    check_results(net, vc, results[bushv][tap_ps][loadtyp][vc])
+    nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test\\loadflow"))
+    for trafo_vector_group in ["YNyn", "Dyn", "Yzn"]:
+        for load_type in ["delta", "wye", "bal_wye", 'delta_wye']:
+            net = pp.from_pickle(nw_dir + '\\runpp_3ph validation network.p')
+            if load_type == 'bal_wye':
+                net.asymmetric_load.type[0] = 'wye'
+                p_sum = net.asymmetric_load.p_a_mw[0] + \
+                    net.asymmetric_load.p_b_mw[0] + \
+                    net.asymmetric_load.p_c_mw[0]
+                q_sum = net.asymmetric_load.q_a_mvar[0] + \
+                    net.asymmetric_load.q_b_mvar[0] + \
+                    net.asymmetric_load.q_c_mvar[0]
+                net.asymmetric_load.p_a_mw[0] = p_sum / 3
+                net.asymmetric_load.p_b_mw[0] = p_sum / 3
+                net.asymmetric_load.p_c_mw[0] = p_sum / 3
+                net.asymmetric_load.q_a_mvar[0] = q_sum / 3
+                net.asymmetric_load.q_b_mvar[0] = q_sum / 3
+                net.asymmetric_load.q_c_mvar[0] = q_sum / 3
+                net['trafo'].vector_group = trafo_vector_group
+            elif load_type == 'delta_wye':
+                net['asymmetric_load'].in_service = True
+                net.asymmetric_load.type[net.asymmetric_load.name == 'load A'] = 'wye'
+                net.asymmetric_load.type[net.asymmetric_load.name == 'load B'] = 'delta'
+                net['trafo'].vector_group = trafo_vector_group
+            else:
+                net['asymmetric_load'].type = load_type
+                net['trafo'].vector_group = trafo_vector_group
+            runpp_3ph_with_consistency_checks(net)
+            assert net['converged']
+            check_results(net, trafo_vector_group, load_type, get_PF_Results(trafo_vector_group, load_type))
 
 
 def test_2trafos():
@@ -403,7 +549,7 @@ def test_3ph_isolated_nodes():
                              "c_nf_per_km": 230}, "example_type")
     # Loads on supplied buses
     pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
-                    p_c_mw=10, q_c_mvar=5)
+                              p_c_mw=10, q_c_mvar=5)
     pp.create_load(net, bus=busl, p_mw=7, q_mvar=0.070, name="Load 1")
     # Loads on unsupplied buses
     pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
