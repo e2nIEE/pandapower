@@ -87,7 +87,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
      """
     net._options = {}
     ac = True if "DC" not in pm_model else False
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl') if julia_file is None else julia_file
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl') if julia_file is None else julia_file
+    julia_file = "run_powermodels" if julia_file is None else julia_file
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
@@ -153,7 +154,8 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         
         **pm_log_level** (int, 0) - solver log level in power models
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl')
+    julia_file = "run_powermodels"
     ac = True if "DC" not in pm_model else False
 
     net._options = {}
@@ -235,7 +237,8 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                                        you want to keep the file after optimization, you should also set
                                        delete_buffer_file to False!
          """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl')
+    julia_file = "run_powermodels"
     ac = True if "DC" not in pm_model else False
 
     net._options = {}
@@ -279,7 +282,8 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         **pm_log_level** (int, 0) - solver log level in power models
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels_tnep.jl')
+    julia_file = "run_powermodels_tnep"
     ac = True if "DC" not in pm_model else False
     if pm_solver is None:
         if pm_model == "DCPPowerModel":
@@ -333,7 +337,8 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels_ots.jl')
+    julia_file = "run_powermodels_ots"
     ac = True if "DC" not in pm_model else False
     if pm_solver is None:
         pm_solver = "juniper"
@@ -374,7 +379,8 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
 
         **pm_log_level** (int, 0) - solver log level in power models
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_mn_storage.jl')
+    # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels_mn_storage.jl')
+    julia_file = "run_powermodels_mn_storage"
     ac = True if "DC" not in pm_model else False
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
