@@ -15,7 +15,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
-from pandapower import pp_dir
+# from pandapower import pp_dir
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line

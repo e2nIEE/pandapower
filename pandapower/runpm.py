@@ -6,7 +6,7 @@
 
 import os
 
-from pandapower import pp_dir
+# from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
