@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -18,7 +18,7 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 
 
 def test_PTDF():
-    net = nw.case9()
+    net = nw.case30()
     pp.rundcpp(net)
     _, ppci = _pd2ppc(net)
 
@@ -31,11 +31,20 @@ def test_PTDF():
 
     if not np.allclose(ptdf, ptdf_sparse):
         raise AssertionError("Sparse PTDF has differenct result against dense PTDF")
-    if not ptdf.shape == (ppci["bus"].shape[0], ppci["branch"].shape[0]):
+    if not ptdf.shape == (ppci["branch"].shape[0], ppci["bus"].shape[0]):
         raise AssertionError("PTDF has wrong dimension")
     if not np.all(~np.isnan(ptdf)):
         raise AssertionError("PTDF has NaN value")
 
+def test_PTDF_large():
+    net = nw.case9241pegase()
+    pp.rundcpp(net)
+    _, ppci = _pd2ppc(net)
+
+    ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
+                            using_sparse_solver=True)
+    if not ptdf_sparse.shape == (ppci["branch"].shape[0], ppci["bus"].shape[0]):
+        raise AssertionError("PTDF has wrong dimension")
 
 def test_LODF():
     net = nw.case9()

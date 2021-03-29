@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -64,7 +64,7 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # 2 * rx * (1/sigma**2)* -(dhx/dE)
-        rx = self.create_rx(E) 
+        rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
         drho_dr = 2 * (rx * (1/self.sigma**2))
         jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
@@ -83,11 +83,11 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
 
     def create_phi(self, E):
         r = self.create_rx(E)
-        chi2_res, w = self.weight(E)
+        _, w = self.weight(E)
         rsi = r / (w * self.sigma)
         phi = 1/(self.sigma**2)
         condition_mask = np.abs(rsi)>self.a
-        phi[condition_mask] = (1/(self.sigma**2) * np.abs(self.a / rsi))[condition_mask] 
+        phi[condition_mask] = (1/(self.sigma**2) * np.abs(self.a / rsi))[condition_mask]
         return np.diagflat(phi)
 
     def weight(self, E):
@@ -97,7 +97,8 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         ps = self._ps(H)
         return chi2_res, np.min(np.c_[(chi2_res/ps)**2, np.ones(ps.shape)], axis=1)
 
-    def _ps(self, H):
+    @staticmethod
+    def _ps(H):
         omega = np.dot(H, H.T)
 
         x = np.zeros(omega.shape[0]-1)
@@ -180,7 +181,7 @@ class QCEstimatorOpt(BaseEstimatorOpt):
 
 class QLEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
-        super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)     
+        super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)
         assert 'a' in hyperparameters
         self.a = hyperparameters['a']
 
@@ -203,6 +204,6 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         drho_dr = 2 * (rx * (1/self.sigma)**2)
         large_dev_mask = np.abs(rx/self.sigma) > self.a
         if np.any(large_dev_mask):
-            drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask] 
-        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)  
+            drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask]
+        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
         return jac

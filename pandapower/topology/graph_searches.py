@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -32,7 +32,7 @@ def connected_component(mg, bus, notravbuses=[]):
     EXAMPLE:
          import pandapower.topology as top
 
-         mg = top.create_nx_graph(net)
+         mg = top.create_nxgraph(net)
 
          cc = top.connected_component(mg, 5)
 
@@ -68,7 +68,7 @@ def connected_components(mg, notravbuses=set()):
      EXAMPLE:
          import pandapower.topology as top
 
-         mg = top.create_nx_graph(net)
+         mg = top.create_nxgraph(net)
 
          cc = top.connected_components(net, 5)
 

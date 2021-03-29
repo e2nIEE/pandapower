@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -183,7 +183,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
                         'trafo3w': {'side': ('hv', 'mv', 'lv'),
                                     'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')}}
 
-    # Added degree result for branches    
+    # Added degree result for branches
     for br_type in branch_meas_type.keys():
         for side in branch_meas_type[br_type]['side']:
             p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
