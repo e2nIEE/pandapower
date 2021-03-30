@@ -61,7 +61,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
         Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
         print(Pkg_path)
     except:
-        Pkg.add(url = "https://github.com/e2nIEE/PandaModels.jl")#(path = "C:/Users/x230/.julia/dev/PandaModels.jl")
+        Pkg.add(path = "C:/Users/x230/.julia/dev/PandaModels.jl")
         Pkg.build()
         Pkg.resolve()
         
