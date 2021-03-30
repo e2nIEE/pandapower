@@ -7,8 +7,7 @@ function get_model(model_type)
     """
 
     s = Symbol(model_type)
-    # FIXME: when we register the package as global package with sepeate repo, we must change it to getfield(Main, s)
-    return getfield(PpPmInterface, s)
+    return getfield(PowerModels, s)
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",

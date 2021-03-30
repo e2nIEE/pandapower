@@ -3,8 +3,7 @@
 function run_powermodels(json_path)
     pm = load_pm_from_json(json_path)
     model = get_model(pm["pm_model"])
-    @info "run get_model $(model)"
-    #
+    # @info "run get_model $(model)"
     solver = get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"],
     pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
 
@@ -31,10 +30,10 @@ function run_powermodels(json_path)
         # pm["bus"]["4"]["vmax"] = 1.1
         # pm["bus"]["4"]["vmin"] = 0.9
 
-        result = _run_opf_cl(pm, model, solver,
+        result = PowerModels._run_opf_cl(pm, model, solver,
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     else
-        result = run_opf(pm, model, solver,
+        result = PowerModels.run_opf(pm, model, solver,
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     end
 
