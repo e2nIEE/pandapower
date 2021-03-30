@@ -28,13 +28,13 @@ def diag_errors():
 @pytest.fixture(scope='function')
 def diag_params():
     return {
-    "overload_scaling_factor": 0.001,
-    "min_r_ohm":0.001,
-    "min_x_ohm":0.001,
-    "min_r_pu":1e-05,
-    "min_x_pu":1e-05,
-    "nom_voltage_tolerance": 0.3,
-    "numba_tolerance": 1e-8}
+        "overload_scaling_factor": 0.001,
+        "min_r_ohm": 0.001,
+        "min_x_ohm": 0.001,
+        "min_r_pu": 1e-05,
+        "min_x_pu": 1e-05,
+        "nom_voltage_tolerance": 0.3,
+        "numba_tolerance": 1e-8}
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -44,21 +44,20 @@ def test_net():
 @pytest.fixture(scope='module')
 def report_methods():
     return {
-    "missing_bus_indices": "diag_report.report_missing_bus_indices()",
-    "disconnected_elements": "diag_report.report_disconnected_elements()",
-    "different_voltage_levels_connected": "diag_report.report_different_voltage_levels_connected()",
-    "impedance_values_close_to_zero": "diag_report.report_impedance_values_close_to_zero()",
-    "nominal_voltages_dont_match": "diag_report.report_nominal_voltages_dont_match()",
-    "invalid_values": "diag_report.report_invalid_values()",
-    "overload": "diag_report.report_overload()",
-    "multiple_voltage_controlling_elements_per_bus" : "diag_report.report_multiple_voltage_controlling_elements_per_bus()",
-    "wrong_switch_configuration": "diag_report.report_wrong_switch_configuration()",
-    "no_ext_grid": "diag_report.report_no_ext_grid()",
-    "wrong_reference_system": "diag_report.report_wrong_reference_system()",
-    "deviation_from_std_type": "diag_report.report_deviation_from_std_type()",
-    "numba_comparison": "diag_report.report_numba_comparison()",
-    "parallel_switches": "diag_report.report_parallel_switches()"}
-
+        "missing_bus_indices": "diag_report.report_missing_bus_indices()",
+        "disconnected_elements": "diag_report.report_disconnected_elements()",
+        "different_voltage_levels_connected": "diag_report.report_different_voltage_levels_connected()",
+        "impedance_values_close_to_zero": "diag_report.report_impedance_values_close_to_zero()",
+        "nominal_voltages_dont_match": "diag_report.report_nominal_voltages_dont_match()",
+        "invalid_values": "diag_report.report_invalid_values()",
+        "overload": "diag_report.report_overload()",
+        "multiple_voltage_controlling_elements_per_bus": "diag_report.report_multiple_voltage_controlling_elements_per_bus()",
+        "wrong_switch_configuration": "diag_report.report_wrong_switch_configuration()",
+        "no_ext_grid": "diag_report.report_no_ext_grid()",
+        "wrong_reference_system": "diag_report.report_wrong_reference_system()",
+        "deviation_from_std_type": "diag_report.report_deviation_from_std_type()",
+        "numba_comparison": "diag_report.report_numba_comparison()",
+        "parallel_switches": "diag_report.report_parallel_switches()"}
 
 
 def test_no_issues(diag_params, diag_errors, report_methods):
@@ -77,7 +76,74 @@ def test_no_issues(diag_params, diag_errors, report_methods):
             assert report_check
 
 
+def test_3ph_no_issues(diag_params, diag_errors, report_methods):
+    net = get_3ph_net()
+    diag_results = pp.diagnostic(net, report_style=None)
+    assert diag_results == {'wrong_switch_configuration': False}
+    for bool_value in [True, False]:
+        for check_function in report_methods.keys():
+            DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
+            report_check = None
+            try:
+                eval(report_methods[check_function])
+                report_check = True
+            except:
+                report_check = False
+            assert report_check
+
+
 class TestInvalidValues:
+
+    def test_3ph(self, test_net, diag_params, diag_errors, report_methods):
+        """
+        Tests 3 phase specific invalid value inputs
+        """
+
+        net = get_3ph_net()
+        check_function = 'invalid_values'
+        net.line.loc[0, 'r0_ohm_per_km'] = '-1'
+        net.line.loc[0, 'x0_ohm_per_km'] = '-1'
+        net.line.loc[0, 'c0_nf_per_km'] = '-1'
+        net.trafo.loc[0, 'vk0_percent'] = '-1'
+        net.trafo.loc[0, 'vkr0_percent'] = '-1'
+        net.trafo.loc[0, 'mag0_percent'] = '-1'
+        net.trafo.loc[0, 'si0_hv_partial'] = '-1'
+        net.trafo.loc[0, 'vector_group'] = '-1'
+        net.ext_grid.loc[0, 's_sc_max_mva'] = True
+        net.ext_grid.loc[0, 'rx_max'] = True
+        net.ext_grid.loc[0, 'x0x_max'] = True
+        net.ext_grid.loc[0, 'r0x0_max'] = True
+
+        check_result = pp.invalid_values(net)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+
+        assert diag_results[check_function] == \
+            {'line': [(0, 'r0_ohm_per_km', '-1', '>=0'),
+                      (0, 'x0_ohm_per_km', '-1', '>=0'),
+                      (0, 'c0_nf_per_km', '-1', '>=0')],
+             'trafo': [(0, 'vk0_percent', '-1', '>=0'),
+                       (0, 'vkr0_percent', '-1', '>=0'),
+                       (0, 'mag0_percent', '-1', '>=0'),
+                       (0, 'si0_hv_partial', '-1', '>=0'),
+                       (0, 'vector_group', '-1', 'trafo_3ph_currently_supported_vector_groups: Dyn, Yzn, YNyn')],
+             'ext_grid': [(0, 's_sc_max_mva', True, '>0'),
+                          (0, 'rx_max', True, '0<x<=1'),
+                          (0, 'x0x_max', True, '0<x<=1'),
+                          (0, 'r0x0_max', True, '0<x<=1')]}
+
+        for bool_value in [True, False]:
+            DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
+            report_check = None
+            try:
+                eval(report_methods[check_function])
+                report_check = True
+            except:
+                report_check = False
+            assert report_check
+
 
     def test_greater_zero(self, test_net, diag_params, diag_errors, report_methods):
         net = copy.deepcopy(test_net)
@@ -1097,6 +1163,29 @@ def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     net.load.p_mw *= 100
     diag = pp.diagnostic(net, report_style=None)
+
+
+def get_3ph_net():
+    net = nw.panda_four_load_branch()
+    net.line['r0_ohm_per_km'] = 0.7766
+    net.line['x0_ohm_per_km'] = 0.29908
+    net.line['c0_nf_per_km'] = 496.2
+    net.trafo['vk0_percent'] = 6
+    net.trafo['vkr0_percent'] = 0.78125
+    net.trafo['mag0_percent'] = 100
+    net.trafo['mag0_rx'] = 0
+    net.trafo['si0_hv_partial'] = 0.9
+    net.trafo['vector_group'] = "Dyn"
+    net.trafo['std_type'] = None
+    net.ext_grid['s_sc_max_mva'] = 1000
+    net.ext_grid['rx_max'] = 0.1
+    net.ext_grid['r0x0_max'] = 0.1
+    net.ext_grid['x0x_max'] = 1
+    pp.create_asymmetric_load(net, 5, 1, 2, 3, 3, 2, 1, 8.5)
+    pp.create_asymmetric_sgen(net, 4, 1, 2, 3, 3, 2, 1, 8.5)
+
+    return net
+
 
 if __name__ == "__main__":
     pytest.main(["test_diagnostic.py", "-xs"])
