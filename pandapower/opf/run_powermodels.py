@@ -57,13 +57,19 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
     
     # import two julia scripts and runs powermodels julia_file
-    try:
-        Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
-        print(Pkg_path)
-    except:
-        Pkg.add(path = "C:/Users/x230/.julia/dev/PandaModels.jl")
-        Pkg.build()
+    if str(type(Base.find_package("PandaModels"))) == "<class 'NoneType'>":
+        Pkg.add(path = joinpath(homedir(), ".julia", "dev", "PandaModels.jl"))#(url = "https://github.com/e2nIEE/PandaModels.jl")
+        # Pkg.build()
         Pkg.resolve()
+        
+    Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
+    # try:
+    #     Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
+    #     print(Pkg_path)
+    # except:
+    #     Pkg.add(path = "C:/Users/x230/.julia/dev/PandaModels.jl")
+    #     Pkg.build()
+    #     Pkg.resolve()
         
     Pkg.activate(Pkg_path)
     Main.using("PandaModels")
