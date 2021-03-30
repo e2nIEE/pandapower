@@ -8,6 +8,10 @@ import copy
 import pandas as pd
 import numpy as np
 import pandapower as pp
+from pandapower.run import runpp
+from pandapower.diagnostic_reports import diagnostic_report
+from pandapower.toolbox import get_connected_elements
+from pandapower.powerflow import LoadflowNotConverged
 
 try:
     import pplog as logging
@@ -16,10 +20,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-from pandapower.run import runpp
-from pandapower.diagnostic_reports import diagnostic_report
-from pandapower.toolbox import get_connected_elements
-from pandapower.powerflow import LoadflowNotConverged
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -90,18 +90,18 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                       "wrong_reference_system(net)",
                       "deviation_from_std_type(net)",
                       "numba_comparison(net, numba_tolerance)",
-                      "parallel_switches(net)"]
+                      "parallel_switches(net)",
+                      "unsupported_elements_active(net)"]
 
     diag_results = {}
     diag_errors = {}
     for diag_function in diag_functions:
         try:
             diag_result = eval(diag_function)
-            if not diag_result == None:
+            if diag_result is not None:
                 diag_results[diag_function.split("(")[0]] = diag_result
         except Exception as e:
             diag_errors[diag_function.split("(")[0]] = e
-
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
@@ -222,6 +222,18 @@ def check_switch_type(element, element_index, column):
         return element_index
 
 
+def check_trafo_vector_group(element, element_index, column):
+    valid_values = ['Dyn', 'Yzn', 'YNyn']
+    if element[column] not in valid_values:
+        return element_index
+
+
+def check_asym_load_type(element, element_index, column):
+    valid_values = ['wye', 'delta']
+    if element[column] not in valid_values:
+        return element_index
+
+
 def invalid_values(net):
     """
     Applies type check functions to find violations of input type restrictions.
@@ -280,6 +292,54 @@ def invalid_values(net):
                         'switch': [('bus', 'positive_integer'), ('element', 'positive_integer'),
                                    ('et', 'switch_type'), ('closed', 'boolean')]}
 
+    # Check if net is made for 3ph calculation and if so, add 3ph parameters to important_values
+    if "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo \
+            or len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 \
+            or 'r0x0_max' in net.ext_grid:
+        three_phase_values = {
+            'line': [('r0_ohm_per_km', '>=0'),
+                     ('x0_ohm_per_km', '>=0'),
+                     ('c0_nf_per_km', '>=0')],
+            'trafo': [('vk0_percent', '>=0'),
+                      ('vkr0_percent', '>=0'),
+                      ('mag0_percent', '>=0'),
+                      ('si0_hv_partial', '>=0'),
+                      ('vector_group', 'trafo_3ph_currently_supported_vector_groups: Dyn, Yzn, YNyn')],
+            'asymmetric_load': [('bus', 'positive_integer'),
+                                ('p_a_mw', 'number'),
+                                ('p_b_mw', 'number'),
+                                ('p_c_mw', 'number'),
+                                ('q_a_mvar', 'number'),
+                                ('q_b_mvar', 'number'),
+                                ('q_c_mvar', 'number'),
+                                # ('sn_mva', '>0'),
+                                ('scaling', '>=0'),
+                                ('in_service', 'boolean'),
+                                ('type', 'asym_load_type: wye, delta')],
+            'asymmetric_sgen': [('bus', 'positive_integer'),
+                                ('p_a_mw', 'number'),
+                                ('p_b_mw', 'number'),
+                                ('p_c_mw', 'number'),
+                                ('q_a_mvar', 'number'),
+                                ('q_b_mvar', 'number'),
+                                ('q_c_mvar', 'number'),
+                                # ('sn_mva', '>0'),
+                                ('scaling', '>=0'),
+                                ('in_service', 'boolean')],
+            'ext_grid': [('s_sc_max_mva', '>0'),
+                         ('rx_max', '0<x<=1'),
+                         ('x0x_max', '0<x<=1'),
+                         ('r0x0_max', '0<x<=1')],
+                              }
+
+        # Merge three_phase_values into important_values
+        for key in three_phase_values:
+            for element in three_phase_values[key]:
+                if key in important_values:
+                    important_values[key].append(element)
+                else:
+                    important_values[key] = [element]
+
     # matches a check function to each single input type restriction
     type_checks = {'>0': check_greater_zero,
                    '>=0': check_greater_equal_zero,
@@ -289,7 +349,9 @@ def invalid_values(net):
                    'positive_integer': check_pos_int,
                    'number': check_number,
                    '0<x<=1': check_greater_zero_less_equal_one,
-                   'switch_type': check_switch_type
+                   'switch_type': check_switch_type,
+                   'trafo_3ph_currently_supported_vector_groups: Dyn, Yzn, YNyn': check_trafo_vector_group,
+                   'asym_load_type: wye, delta': check_asym_load_type
                    }
 
     for key in important_values:
@@ -423,7 +485,12 @@ def wrong_switch_configuration(net):
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
-        runpp(net)
+        if "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo \
+            or len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 \
+                or 'r0x0_max' in net.ext_grid:
+            pp.runpp_3ph(net)
+        else:
+            runpp(net)
     except:
         try:
             net.switch.closed = True
@@ -722,7 +789,7 @@ def disconnected_elements(net):
                 net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
                 net.bus.in_service.loc[section]):
             section_buses = list(net.bus[net.bus.index.isin(section)
-                                         & (net.bus.in_service == True)].index)
+                                         & (net.bus.in_service is True)].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
             section_lines = list(get_connected_elements(net, 'line', section_buses,
                                                         respect_switches=True,
@@ -735,11 +802,11 @@ def disconnected_elements(net):
                                                            respect_switches=True,
                                                            respect_in_service=True))
             section_gens = list(net.gen[net.gen.bus.isin(section)
-                                        & (net.gen.in_service == True)].index)
+                                        & (net.gen.in_service is True)].index)
             section_sgens = list(net.sgen[net.sgen.bus.isin(section)
-                                          & (net.sgen.in_service == True)].index)
+                                          & (net.sgen.in_service is True)].index)
             section_loads = list(net.load[net.load.bus.isin(section)
-                                          & (net.load.in_service == True)].index)
+                                          & (net.load.in_service is True)].index)
 
             if section_buses:
                 section_dict['buses'] = section_buses
@@ -764,7 +831,7 @@ def disconnected_elements(net):
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
     isolated_trafos = set(
         (open_trafo_switches.groupby("element").count().query("bus > 1").index))
-    isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service == True]
+    isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service is True]
                                                            .index)))
     if isolated_trafos_is:
         disc_elements.append({'isolated_trafos': list(isolated_trafos_is)})
@@ -772,7 +839,7 @@ def disconnected_elements(net):
     isolated_trafos3w = set(
         (open_trafo_switches.groupby("element").count().query("bus > 2").index))
     isolated_trafos3w_is = isolated_trafos3w.intersection((
-        set(net.trafo[net.trafo.in_service == True].index)))
+        set(net.trafo[net.trafo.in_service is True].index)))
     if isolated_trafos3w_is:
         disc_elements.append({'isolated_trafos3w': list(isolated_trafos3w_is)})
 
@@ -918,3 +985,26 @@ def parallel_switches(net):
             'bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches
+
+
+def unsupported_elements_active(net):
+    """
+    Checks, if there are active net elements that are not supported by certain modes
+    """
+
+    check_results = {}
+    # check if net is made for 3ph calculation
+    if "r0_ohm_per_km" in net.line or "vk0_percent" in net.trafo \
+            or len(net.asymmetric_load) > 0 or len(net.asymmetric_sgen) > 0 \
+            or 'r0x0_max' in net.ext_grid:
+        mode = "3ph"
+
+    if(mode == "3ph"):
+        active_gens = list(net.gen[net.gen.in_service].index)
+
+    if active_gens:
+        check_results['active_gens'] = active_gens
+        check_results['mode'] = mode
+
+    if check_results:
+        return check_results

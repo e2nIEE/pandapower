@@ -37,7 +37,8 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
         "wrong_reference_system": diag_report.report_wrong_reference_system,
         "deviation_from_std_type": diag_report.report_deviation_from_std_type,
         "numba_comparison": diag_report.report_numba_comparison,
-        "parallel_switches": diag_report.report_parallel_switches
+        "parallel_switches": diag_report.report_parallel_switches,
+        "unsupported_elements_active": diag_report.report_unsupported_elements_active
     }
 
     logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
@@ -667,3 +668,31 @@ class DiagnosticReports:
             logger.warning(self.diag_errors["missing_bus_indices"])
         else:
             logger.info("PASSED: No missing bus indices found.")
+
+
+    def report_unsupported_elements_active(self):
+        if "unsupported_elements_active" in self.diag_results:
+            if '3ph' in self.diag_results["unsupported_elements_active"]["mode"]:
+                if len(self.diag_results["unsupported_elements_active"]) > 1:
+                    # message header
+                    if self.compact_report:
+                        logger.warning("unsupported_elements_active:")
+                    else:
+                        logger.warning("Checking for unsupported elements...")
+                    logger.warning("")
+
+                    # message body
+                    diag_result = self.diag_results["unsupported_elements_active"]
+                    for active_element in diag_result:
+                        if active_element == "active_gens":
+                            logger.warning("Active 'gen' found. Gens are not supported for 3 phase powerflow. Please put them out of service.")
+                        elif not active_element == "mode":
+                            logger.warning("%s found" % active_element)
+
+                        # message summary
+                    if not self.compact_report:
+                        logger.warning("")
+                        logger.warning("SUMMARY: %s occurences of unsupported elements found."
+                                       % (len(diag_result) - 1))
+                else:
+                    logger.info("PASSED: No unsupported elements found.")
