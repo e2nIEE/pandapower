@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,9 +30,19 @@ def ring_network():
 
 def test_branch_results_open_ring(ring_network):
     net = ring_network
-    sc.calc_sc(net, branch_results=True)
+    sc.calc_sc(net, branch_results=True, inverse_y=False)
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.47705988])
-    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0.44514686, 0.47125418])
+    assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0.0, 0.47125418])
+    
+def test_branch_results_open_ring_with_impedance(ring_network):
+    net = ring_network
+    sc.calc_sc(net, branch_results=True, inverse_y=False)
+    res_line_no_imp = net.res_line_sc.ikss_ka.values.copy()
+
+    # Make sure that with fault impedance, the total current should be smaller
+    sc.calc_sc(net, branch_results=True, inverse_y=False, r_fault_ohm=1, x_fault_ohm=5)
+    non_null_flag = np.abs(res_line_no_imp) > 1e-10
+    assert np.all(net.res_line_sc.ikss_ka.values[non_null_flag] < res_line_no_imp[non_null_flag])
 
 def test_branch_results_closed_ring(ring_network):
     net = ring_network
@@ -45,7 +55,7 @@ def test_branch_results_closed_ring(ring_network):
 def test_kappa_methods(ring_network):
     net = ring_network
     net.switch.closed = True
-    sc.calc_sc(net, kappa_method="B", ip=True)
+    sc.calc_sc(net, kappa_method="B", ip=True, inverse_y=False)
     assert np.allclose(net.res_bus_sc.ip_ka.values,
                        [0.48810547956, 0.91192962511, 1.0264898716, 1.0360554521])
     sc.calc_sc(net, kappa_method="C", ip=True, topology="auto")
@@ -53,7 +63,4 @@ def test_kappa_methods(ring_network):
                        [0.48810547956, 0.91192962511, 0.89331396461, 0.90103415924])
 
 if __name__ == '__main__':
-#    net = ring_network()
-#    test_branch_results_open_ring(net)
     pytest.main(["test_ring.py"])
-

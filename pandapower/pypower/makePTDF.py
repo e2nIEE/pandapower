@@ -4,18 +4,18 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Builds the DC PTDF matrix for a given choice of slack.
-"""
+# Builds the DC PTDF matrix for a given choice of slack.
+
 
 from sys import stderr
 
 from numpy import zeros, arange, isscalar, dot, ix_, flatnonzero as find
 import numpy as np
 from numpy.linalg import solve
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, factorized
 
 from .idx_bus import BUS_TYPE, REF, BUS_I
 from .makeBdc import makeBdc
@@ -64,10 +64,19 @@ def makePTDF(baseMVA, bus, branch, slack=None,
     # compute PTDF for single slack_bus
     if using_sparse_solver:
         Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
-        Bbus, Bf = Bbus.real, Bf.real.toarray()
+
+        Bbus = Bbus.real
         if result_side == 1:
             Bf *= -1
-        H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
+
+        if Bf.shape[0] < 2000:
+            Bf = Bf.real.toarray()
+            H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
+        else:
+            # Use memory saving modus
+            Bbus_fact = factorized(Bbus[ix_(noslack, noref)].T)
+            for i in range(0, Bf.shape[0], 32):
+                H[i:i+32, noslack] = Bbus_fact(Bf[i:i+32, noref].real.toarray().T).T
     else:
         Bbus, Bf, _, _ = makeBdc(bus, branch)
         Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())

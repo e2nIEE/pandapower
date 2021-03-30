@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -223,6 +223,13 @@ def _add_missing_columns(net):
     if "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
 
+    if "initial_run" not in net.controller:
+        net.controller.insert(4, 'initial_run', False)
+        for _, ctrl in net.controller.iterrows():
+            if hasattr(ctrl['object'], 'initial_run'):
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
