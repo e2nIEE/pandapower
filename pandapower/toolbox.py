@@ -959,7 +959,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         element_in_cost_df = net[cost_df].et == element
         if sum(element_in_cost_df):
             net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
-                                                                           element_in_cost_df], lookup)
+                element_in_cost_df], lookup)
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
@@ -1238,10 +1238,32 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
+def get_connecting_branches(net, buses1, buses2, branch_elements=None):
+    """
+    Gets/Drops branches that connects any bus of buses1 with any bus of buses2.
+    """
+    branch_dict = branch_element_bus_dict(include_switch=True)
+    if branch_elements is not None:
+        branch_dict = {key: branch_dict[key] for key in branch_elements}
+    if "switch" in branch_dict:
+        branch_dict["switch"].append("element")
+
+    found = {elm: set() for elm in branch_dict.keys()}
+    for elm, bus_types in branch_dict.items():
+        for bus1 in bus_types:
+            for bus2 in bus_types:
+                if bus2 != bus1:
+                    idx = net[elm].index[net[elm][bus1].isin(buses1) & net[elm][bus2].isin(buses2)]
+                    if elm == "switch":
+                        idx = idx.intersection(net[elm].index[net[elm].et == "b"])
+                    found[elm] |= set(idx)
+    return {key: val for key, val in found.items() if len(val)}
+
+
 def _inner_branches(net, buses, task, branch_elements=None):
     """
-    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
-    'to_bus').
+    Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
+    and 'to_bus').
     """
     branch_dict = branch_element_bus_dict(include_switch=True)
     if branch_elements is not None:
@@ -1319,18 +1341,21 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
         if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
             net.trafo3w.at[tr3w, 'in_service'] = False
-        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (net.switch.element == tr3w)]
+        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
+            net.switch.element == tr3w)]
         if len(open_tr3w_switches) == 3:
             net.trafo3w.at[tr3w, 'in_service'] = False
 
     for element, et in zip(["line", "trafo"], ["l", "t"]):
         oos_elements = net[element].query("not in_service").index
-        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(oos_elements)].index
+        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
+            oos_elements)].index
 
         closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
         net.switch.loc[oos_switches, "closed"] = True
 
-        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][["element", "bus"]].values:
+        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][[
+                "element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
@@ -1442,7 +1467,6 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
-        # include_results = True  # assumption: the user doesn't want to old results without selection
     else:
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
@@ -1479,19 +1503,20 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-                net[table[4:]].shape[0]:
-                    continue
+               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+               net[table[4:]].shape[0]:
+                continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[buses]
             else:
                 p2[table] = net[table].loc[p2[table[4:]].index]
     if "bus_geodata" in net:
-        p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
+        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index[p2.bus.index.isin(
+            net.bus_geodata.index)]]
     if "line_geodata" in net:
-        lines = p2.line.index
-        p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
+        p2["line_geodata"] = net.line_geodata.loc[p2.line.index[p2.line.index.isin(
+            net.line_geodata.index)]]
 
     # switches
     p2["switch"] = net.switch.loc[
@@ -1745,7 +1770,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         Zni = vn ** 2 / sn_mva[i]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
-                                               line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
             in_service=line_.in_service))
         i += 1
     drop_lines(net, index)
@@ -1938,7 +1963,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -2022,7 +2047,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -2150,9 +2175,9 @@ def replace_ward_by_internal_elements(net, wards=None):
         to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
         to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values ** 2 * net.ward.pz_mw[wards].values * \
-                            sign_in_service * sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[wards].values * \
-                              sign_in_service * sign_not_isolated
+            sign_in_service * sign_not_isolated
+        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[
+            wards].values * sign_in_service * sign_not_isolated
         to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
@@ -2193,8 +2218,9 @@ def replace_xward_by_internal_elements(net, xwards=None):
                      in_service=xward.in_service, name=xward.name)
         create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
                    name=xward.name)
-        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2), xward.x_ohm / (bus_v ** 2),
-                         net.sn_mva, in_service=xward.in_service, name=xward.name)
+        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2),
+                         xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service,
+                         name=xward.name)
 
     # --- result data
     if net.res_xward.shape[0]:
@@ -2395,8 +2421,8 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
                                                             will be respected
                                                             False: in_service status will be
                                                             ignored
-        **consider** (iterable, ("l", "s", "t", "t3", "i"))    - Determines, which types of connections will
-                                                      be considered.
+        **consider** (iterable, ("l", "s", "t", "t3", "i"))    - Determines, which types of
+        connections will be considered.
                                                       l: lines
                                                       s: switches
                                                       t: trafos
@@ -2412,12 +2438,13 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     cb = set()
     if "l" in consider or 'line' in consider:
         in_service_constr = net.line.in_service if respect_in_service else True
-        opened_lines = set(net.switch.loc[(~net.switch.closed) &
-                                          (net.switch.et == "l")].element.unique()) if respect_switches else set()
-        connected_fb_lines = set(net.line.index[(net.line.from_bus.isin(buses)) &
-                                                ~net.line.index.isin(opened_lines) & in_service_constr])
-        connected_tb_lines = set(net.line.index[(net.line.to_bus.isin(buses)) &
-                                                ~net.line.index.isin(opened_lines) & in_service_constr])
+        opened_lines = set(net.switch.loc[(~net.switch.closed) & (
+            net.switch.et == "l")].element.unique()) if respect_switches else set()
+        connected_fb_lines = set(net.line.index[(
+            net.line.from_bus.isin(buses)) & ~net.line.index.isin(opened_lines) &
+            in_service_constr])
+        connected_tb_lines = set(net.line.index[(
+            net.line.to_bus.isin(buses)) & ~net.line.index.isin(opened_lines) & in_service_constr])
         cb |= set(net.line[net.line.index.isin(connected_tb_lines)].from_bus)
         cb |= set(net.line[net.line.index.isin(connected_fb_lines)].to_bus)
 
@@ -2429,12 +2456,14 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
 
     if "t" in consider or 'trafo' in consider:
         in_service_constr = net.trafo.in_service if respect_in_service else True
-        opened_trafos = set(net.switch.loc[(~net.switch.closed) &
-                                           (net.switch.et == "t")].element.unique()) if respect_switches else set()
-        connected_hvb_trafos = set(net.trafo.index[(net.trafo.hv_bus.isin(buses)) &
-                                                   ~net.trafo.index.isin(opened_trafos) & in_service_constr])
-        connected_lvb_trafos = set(net.trafo.index[(net.trafo.lv_bus.isin(buses)) &
-                                                   ~net.trafo.index.isin(opened_trafos) & in_service_constr])
+        opened_trafos = set(net.switch.loc[(~net.switch.closed) & (
+            net.switch.et == "t")].element.unique()) if respect_switches else set()
+        connected_hvb_trafos = set(net.trafo.index[(
+            net.trafo.hv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
+            in_service_constr])
+        connected_lvb_trafos = set(net.trafo.index[(
+            net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
+            in_service_constr])
         cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
         cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
 
@@ -2442,28 +2471,34 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     if "t3" in consider or 'trafo3w' in consider:
         in_service_constr3w = net.trafo3w.in_service if respect_in_service else True
         if respect_switches:
-            opened_buses_hv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.hv_bus)].bus.unique())
-            opened_buses_mv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.mv_bus)].bus.unique())
-            opened_buses_lv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.lv_bus)].bus.unique())
+            opened_buses_hv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.hv_bus)].bus.unique())
+            opened_buses_mv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.mv_bus)].bus.unique())
+            opened_buses_lv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.lv_bus)].bus.unique())
         else:
             opened_buses_hv = opened_buses_mv = opened_buses_lv = set()
 
-        hvb_trafos3w = set(net.trafo3w.index[net.trafo3w.hv_bus.isin(buses) &
-                                             ~net.trafo3w.hv_bus.isin(opened_buses_hv) & in_service_constr3w])
-        mvb_trafos3w = set(net.trafo3w.index[net.trafo3w.mv_bus.isin(buses) &
-                                             ~net.trafo3w.mv_bus.isin(opened_buses_mv) & in_service_constr3w])
-        lvb_trafos3w = set(net.trafo3w.index[net.trafo3w.lv_bus.isin(buses) &
-                                             ~net.trafo3w.lv_bus.isin(opened_buses_lv) & in_service_constr3w])
+        hvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.hv_bus.isin(buses) & ~net.trafo3w.hv_bus.isin(opened_buses_hv) &
+            in_service_constr3w])
+        mvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.mv_bus.isin(buses) & ~net.trafo3w.mv_bus.isin(opened_buses_mv) &
+            in_service_constr3w])
+        lvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.lv_bus.isin(buses) & ~net.trafo3w.lv_bus.isin(opened_buses_lv) &
+            in_service_constr3w])
 
-        cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(net.trafo3w.loc[hvb_trafos3w].lv_bus) -
-               opened_buses_mv - opened_buses_lv)
-        cb |= (set(net.trafo3w.loc[mvb_trafos3w].hv_bus) | set(net.trafo3w.loc[mvb_trafos3w].lv_bus) -
-               opened_buses_hv - opened_buses_lv)
-        cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(net.trafo3w.loc[lvb_trafos3w].mv_bus) -
-               opened_buses_hv - opened_buses_mv)
+        cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(
+            net.trafo3w.loc[hvb_trafos3w].lv_bus) - opened_buses_mv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[mvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[mvb_trafos3w].lv_bus) - opened_buses_hv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[lvb_trafos3w].mv_bus) - opened_buses_hv - opened_buses_mv)
 
     if "i" in consider or 'impedance' in consider:
         in_service_constr = net.impedance.in_service if respect_in_service else True
@@ -2571,7 +2606,8 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
     for et in consider:
         if et == 'b':
             cs |= set(net['switch'].index[
-                          (net['switch']['bus'].isin(buses) | net['switch']['element'].isin(buses)) &
+                          (net['switch']['bus'].isin(buses) |
+                           net['switch']['element'].isin(buses)) &
                           (net['switch']['et'] == 'b') & switch_selection])
         else:
             cs |= set(net['switch'].index[(net['switch']['bus'].isin(buses)) &
@@ -2610,7 +2646,8 @@ def get_gc_objects_dict():
     This function is based on the code in mem_top module
     Summarize object types that are tracket by the garbage collector in the moment.
     Useful to test if there are memoly leaks.
-    :return: dictionary with keys corresponding to types and values to the number of objects of the type
+    :return: dictionary with keys corresponding to types and values to the number of objects of the
+    type
     """
     objs = gc.get_objects()
     nums_by_types = dict()
@@ -2623,9 +2660,10 @@ def get_gc_objects_dict():
 
 def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     """
-    creates a power line in parallel to the existing power line based on the values of the new std_type.
-    The new parallel line has an impedance value, which is chosen so that the resulting impedance of the new line
-    and the already existing line is equal to the impedance of the replaced line. Or for electrical engineers:
+    creates a power line in parallel to the existing power line based on the values of the new
+    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
+    impedance of the new line and the already existing line is equal to the impedance of the
+    replaced line. Or for electrical engineers:
 
     Z0 = impedance of the existing line
     Z1 = impedance of the replaced line
@@ -2650,6 +2688,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     new_idx (int) - index of the created power line
 
     """
+
     # impedance before changing the standard type
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
@@ -2663,33 +2702,85 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # impedance after changing the standard type
     r1 = net.line.at[idx, "r_ohm_per_km"]
-    p1 = net.line.at[idx, "parallel"]
     x1 = net.line.at[idx, "x_ohm_per_km"]
     c1 = net.line.at[idx, "c_nf_per_km"]
     g1 = net.line.at[idx, "g_us_per_km"]
     i_ka1 = net.line.at[idx, "max_i_ka"]
 
     # complex resistance of the line parallel to the existing line
-    y1 = p1 / complex(r1, x1)
+    y1 = 1 / complex(r1, x1)
     y0 = p0 / complex(r0, x0)
     z2 = 1 / (y1 - y0)
 
     # required parameters
-    c_nf_per_km = c1 * p1 - c0 * p0
+    c_nf_per_km = c1 * 1 - c0 * p0
     r_ohm_per_km = z2.real
     x_ohm_per_km = z2.imag
-    g_us_per_km = g1 * p1 - g0 * p0
+    g_us_per_km = g1 * 1 - g0 * p0
     max_i_ka = i_ka1 - i_ka0
     name = "repl_" + str(idx) if name is None else name
 
-    # if this line is in service to the existing line, the power flow result should be the same as when replacing the
-    # existing line with the desired standard type
-    new_idx = create_line_from_parameters(net, from_bus=net.line.at[idx, "from_bus"],
-                                          to_bus=net.line.at[idx, "to_bus"],
-                                          length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
-                                          x_ohm_per_km=x_ohm_per_km,
-                                          c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka, g_us_per_km=g_us_per_km,
-                                          in_service=in_service, name=name, **kwargs)
+    # if this line is in service to the existing line, the power flow result should be the same as
+    # when replacing the existing line with the desired standard type
+    new_idx = create_line_from_parameters(
+        net, from_bus=net.line.at[idx, "from_bus"], to_bus=net.line.at[idx, "to_bus"],
+        length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
+        x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka,
+        g_us_per_km=g_us_per_km, in_service=in_service, name=name, **kwargs)
     # restore the previous line parameters before changing the standard type
     net.line.loc[idx, :] = bak
+
+    # check switching state and add line switch if necessary:
+    for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
+            create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
+
     return new_idx
+
+
+def merge_parallel_line(net, idx):
+    """
+    Changes the impedances of the parallel line so that it equals a single line.
+    Args:
+        net: pandapower net
+        idx: idx of the line to merge
+
+    Returns:
+        net
+
+    Z0 = impedance of the existing parallel lines
+    Z1 = impedance of the respective single line
+
+        --- Z0 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+    """
+    # impedance before changing the standard type
+
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line to the existing line
+    y0 = 1 / complex(r0, x0)
+    y1 = p0*y0
+    z1 = 1 / y1
+    r1 = z1.real
+    x1 = z1.imag
+
+    g1 = p0*g0
+    c1 = p0*c0
+    i_ka1 = p0*i_ka0
+
+    net.line.at[idx, "r_ohm_per_km"] = r1
+    net.line.at[idx, "parallel"] = 1
+    net.line.at[idx, "x_ohm_per_km"] = x1
+    net.line.at[idx, "c_nf_per_km"] = c1
+    net.line.at[idx, "g_us_per_km"] = g1
+    net.line.at[idx, "max_i_ka"] = i_ka1
+
+    return net

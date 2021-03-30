@@ -1,4 +1,6 @@
-__version__ = "2.5.0"
+
+__version__ = "2.6.0"
+
 
 import os
 pp_dir = os.path.dirname(os.path.realpath(__file__))

@@ -1,5 +1,22 @@
 Change Log
 =============
+- [ADDED] Efficient PTDF calculation on large grid
+
+
+[2.6.0]- 2021-03-09
+----------------------
+
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
+- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
+- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow.
+- [ADDED] Toolbox method get_connecting_branches to determine branches which connect two sets of buses.
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
+- [CHANGED] Removed official Python 3.5 support due to end of its life #994.
+- [FIXED] matching_params was missing in basic controller.
+- [FIXED] Order of latitude and longitude in plotly mapbox plot.
+- [FIXED] Dependencies of powerflow result plotting.
+- [FIXED] init_ne_line to work with switches and parallel lines. Needed for PowerModels TNEP.
 
 [2.5.0]- 2021-01-08
 ----------------------
@@ -55,7 +72,7 @@ Change Log
 - [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
-- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [CHANGED] In state estimation power flow results will not be renamed anymore
 - [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
