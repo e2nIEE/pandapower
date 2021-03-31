@@ -59,6 +59,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # Pkg.rm("PandaModels")
     # Pkg.resolve()
     # import two julia scripts and runs powermodels julia_file
+
     if str(type(Base.find_package("PandaModels"))) == "<class 'NoneType'>":
         
         Pkg.add(url = "https://github.com/e2nIEE/PandaModels.jl") 
@@ -81,6 +82,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # Pkg.activate(Pkg_path)
     Pkg.activate("PandaModels")
     
+
     Main.using("PandaModels")
     # if not os.path.isfile(julia_file):
     #     raise UserWarning("File %s could not be imported" % julia_file)
