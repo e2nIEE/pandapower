@@ -15,9 +15,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
-
 from pandapower.converter.powermodels.to_pm import init_ne_line
-
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
@@ -301,7 +299,7 @@ def test_voltage_angles():
 
 
     # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-    custom_file = "run_powermodels"
+    custom_file = "run_powermodels_custom"  #custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),"test_files", "run_powermodels_custom.jl")
     # load is zero since costs are high. PF results should be the same as OPF
     net.load.loc[1, "p_mw"] = 0.
     pp.runpp(net, calculate_voltage_angles=True)
@@ -432,7 +430,7 @@ def assert_pf(net, dc=False):
     # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
     #                            "opf", "run_powermodels_powerflow.jl")
     # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-    custom_file = "run_powermodels"
+    custom_file = "run_powermodels_powerflow"
     if dc:
         # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
         pp.runpm(net, julia_file=custom_file, pm_model="DCMPPowerModel")

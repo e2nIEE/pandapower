@@ -6,7 +6,7 @@
 
 import os
 
-# from pandapower import pp_dir
+from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
@@ -85,10 +85,11 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                                     "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
      """
-    net._options = {}
-    ac = True if "DC" not in pm_model else False
     # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl') if julia_file is None else julia_file
     julia_file = "run_powermodels" if julia_file is None else julia_file
+    ac = True if "DC" not in pm_model else False
+
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
@@ -156,7 +157,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
      """
     # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl')
     julia_file = "run_powermodels"
-    ac = True if "DC" not in pm_model else False
+    # ac = True if "DC" not in pm_model else False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -164,7 +165,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
+    _add_opf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
                      correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
                      pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim="S")
@@ -239,7 +240,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
          """
     # julia_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", 'run_powermodels.jl')
     julia_file = "run_powermodels"
-    ac = True if "DC" not in pm_model else False
+    # ac = True if "DC" not in pm_model else False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -247,7 +248,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
