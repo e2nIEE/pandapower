@@ -42,6 +42,27 @@ class DiscreteTapControl(TrafoController):
         self.vm_upper_pu = vm_upper_pu
 
         self.tap_pos = net[self.trafotable].at[tid, "tap_pos"]
+        if "vm_set_pu" in kwargs:
+            self.vm_set_pu = kwargs["vm_set_pu"]
+            self.vm_delta_pu = self.net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5
+        else:
+            self.vm_set_pu = None
+            self.vm_delta_pu = None
+
+    @classmethod
+    def from_tap_step_percent(cls, net, tid, vm_set_pu, side="lv", trafotype="2W", tol=1e-3, in_service=True, order=0,
+                              drop_same_existing_ctrl=False, matching_params=None, **kwargs):
+        self = DiscreteTapControl(net, tid=tid, vm_lower_pu=None, vm_upper_pu=None, side=side, trafotype=trafotype, tol=tol,
+                                  in_service=in_service, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
+                                  matching_params=matching_params, vm_set_pu=vm_set_pu, **kwargs)
+        self.vm_lower_pu = self.vm_set_pu - self.vm_delta_pu
+        self.vm_upper_pu = self.vm_set_pu + self.vm_delta_pu
+
+    def initialize_control(self, net):
+        if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
+            self.vm_delta_pu = self.net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5
+            self.vm_lower_pu = self.vm_set_pu - self.vm_delta_pu
+            self.vm_upper_pu = self.vm_set_pu + self.vm_delta_pu
 
     def control_step(self, net):
         """
