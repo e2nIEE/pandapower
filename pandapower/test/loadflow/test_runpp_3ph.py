@@ -8,7 +8,7 @@ import pandapower as pp
 import numpy as np
 import pytest
 from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
 
 @pytest.fixture
 def net():
@@ -416,6 +416,33 @@ def test_3ph_isolated_nodes():
                        "va_b_degree", "vm_c_pu", "va_c_degree"]], np.nan, equal_nan=True)
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["p_a_mw", "q_a_mvar", "p_b_mw", "q_b_mvar",
                        "p_c_mw", "q_c_mvar"]], 0.0)
+
+
+def test_balanced_power_flow_with_unbalanced_loads_and_sgens():
+    net = pp.create_empty_network(sn_mva=100)
+    make_nw(net, 10, 0, "wye", "Dyn")
+    pp.create_asymmetric_sgen(net, 1, p_a_mw=0.01, p_b_mw=0.02, scaling=0.8)
+    runpp_with_consistency_checks(net)
+
+    vm_pu = net.res_bus.vm_pu
+
+    net.asymmetric_load.in_service = False
+    pp.create_load(net, bus=net.asymmetric_load.bus.iloc[0],
+                   scaling=net.asymmetric_load.scaling.iloc[0],
+                   p_mw=net.asymmetric_load.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(),
+                   q_mvar=net.asymmetric_load.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum()
+                   )
+    runpp_with_consistency_checks(net)
+    assert net.res_bus.vm_pu.equals(vm_pu)
+
+    net.asymmetric_sgen.in_service = False
+    pp.create_sgen(net, bus=net.asymmetric_sgen.bus.iloc[0],
+                   scaling=net.asymmetric_sgen.scaling.iloc[0],
+                   p_mw=net.asymmetric_sgen.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(),
+                   q_mvar=net.asymmetric_sgen.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum()
+                   )
+    runpp_with_consistency_checks(net)
+    assert net.res_bus.vm_pu.equals(vm_pu)
 
 
 if __name__ == "__main__":
