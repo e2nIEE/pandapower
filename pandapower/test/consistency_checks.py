@@ -91,6 +91,14 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_p.at[tab.bus] -= net.res_sgen.p_mw.at[idx]
         bus_q.at[tab.bus] -= net.res_sgen.q_mvar.at[idx]
 
+    for idx, tab in net.asymmetric_load.iterrows():
+        bus_p.at[tab.bus] += net.res_asymmetric_load.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_asymmetric_load.q_mvar.at[idx]
+
+    for idx, tab in net.asymmetric_sgen.iterrows():
+        bus_p.at[tab.bus] -= net.res_asymmetric_sgen.p_mw.at[idx]
+        bus_q.at[tab.bus] -= net.res_asymmetric_sgen.q_mvar.at[idx]
+
     for idx, tab in net.storage.iterrows():
         bus_p.at[tab.bus] += net.res_storage.p_mw.at[idx]
         bus_q.at[tab.bus] += net.res_storage.q_mvar.at[idx]
@@ -106,6 +114,7 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.xward.iterrows():
         bus_p.at[tab.bus] += net.res_xward.p_mw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
+
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:
