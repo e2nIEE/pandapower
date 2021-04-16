@@ -30,7 +30,7 @@ from pandapower.results import init_results
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
-            bus=None, inverse_y=True):
+            bus=None, inverse_y=True, suppress_warnings=False):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -105,7 +105,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise NotImplementedError(
             "Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
-    if len(net.gen) and (ip or ith):
+    if len(net.gen) and (ip or ith) and not suppress_warnings:
         logger.warning("aperiodic and thermal short-circuit currents are only implemented for "
                        "faults far from generators!")
 
@@ -116,7 +116,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise ValueError(
             'specify network structure as "meshed", "radial" or "auto"')
 
-    if branch_results:
+    if branch_results and not suppress_warnings:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
 
