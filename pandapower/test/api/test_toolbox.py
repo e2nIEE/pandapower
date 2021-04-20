@@ -1082,7 +1082,7 @@ def test_replace_pq_elmtype():
     assert list(net.sgen.index) == [2, 7]
     assert list(net.sgen.type.values) == types
     assert list(net.sgen.name.values) == names
-    assert net.sgen.controllable.dtype.astype(bool).all()
+    assert net.sgen.controllable.astype(bool).all()
     assert "min_p_mw" not in net.sgen.columns
     pp.runpp(net)
     assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
