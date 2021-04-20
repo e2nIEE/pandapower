@@ -59,7 +59,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
 
 
 def sorted_from_json(path):
-    net = pp.from_json(_get_cases_path("case4gs.json"))
+    net = pp.from_json(path)
     for elm in pp.pp_elements():
         net[elm].sort_index(inplace=True)
     return net
