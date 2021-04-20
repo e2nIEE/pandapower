@@ -15,6 +15,7 @@ import pandapower.networks as nw
 import pandapower.toolbox as tb
 from pandas._testing import assert_series_equal
 
+
 def test_opf_task():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
@@ -1051,6 +1052,62 @@ def test_replace_gen_sgen():
         if i == 0:
             pp.replace_sgen_by_gen(net, 1)
             assert pp.nets_equal(net, net2)
+
+
+def test_replace_pq_elmtype():
+
+    def check_elm_shape(net, elm_shape: dict):
+        for elm, no in elm_shape.items():
+            assert net[elm].shape[0] == no
+
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 20)
+    pp.create_ext_grid(net, 0)
+    for to_bus in [1, 2]:
+        pp.create_line(net, 0, to_bus, 0.6, 'NA2XS2Y 1x95 RM/25 12/20 kV')
+    names = ["load 1", "load 2"]
+    types = ["house", "commercial"]
+    pp.create_loads(net, [1, 2], 0.8, 0.1, sn_mva=1, min_p_mw=0.5, max_p_mw=1.0, controllable=True,
+                    name=names, scaling=[0.8, 1], type=types)
+    pp.create_poly_cost(net, 0, "load", 7)
+    pp.create_poly_cost(net, 1, "load", 3)
+    pp.runpp(net)
+    net_orig = copy.deepcopy(net)
+
+    # --- test unset old_indices, cols_to_keep and add_cols_to_keep
+    pp.replace_pq_elmtype(net, "load", "sgen", new_indices=[2, 7], cols_to_keep=["type"],
+                          add_cols_to_keep=["scaling"])  # cols_to_keep is not
+    # default but ["type"] -> min/max p_mw get lost
+    check_elm_shape(net, {"load": 0, "sgen": 2})
+    assert list(net.sgen.index) == [2, 7]
+    assert list(net.sgen.type.values) == types
+    assert list(net.sgen.name.values) == names
+    assert net.sgen.controllable.astype(bool).all()
+    assert "min_p_mw" not in net.sgen.columns
+    pp.runpp(net)
+    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+
+    # --- test set old_indices and add_cols_to_keep for different element types
+    net = copy.deepcopy(net_orig)
+    add_cols_to_keep = ["scaling", "type", "sn_mva"]
+    pp.replace_pq_elmtype(net, "load", "sgen", old_indices=1, add_cols_to_keep=add_cols_to_keep)
+    check_elm_shape(net, {"load": 1, "sgen": 1})
+    pp.runpp(net)
+    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+    assert net.sgen.max_p_mw.at[0] == - 0.5
+    assert net.sgen.min_p_mw.at[0] == - 1.0
+
+    pp.replace_pq_elmtype(net, "sgen", "storage", old_indices=0, add_cols_to_keep=add_cols_to_keep)
+    check_elm_shape(net, {"load": 1, "storage": 1})
+    pp.runpp(net)
+    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+
+    pp.replace_pq_elmtype(net, "storage", "load", add_cols_to_keep=add_cols_to_keep)
+    pp.runpp(net)
+    check_elm_shape(net, {"storage": 0, "sgen": 0})
+    net.sgen = net_orig.sgen
+    net.storage = net_orig.storage
+    assert pp.nets_equal(net_orig, net)
 
 
 def test_get_connected_elements_dict():
