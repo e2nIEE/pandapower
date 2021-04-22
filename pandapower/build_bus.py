@@ -219,8 +219,6 @@ def get_voltage_init_vector(net, init_v, mode, sequence=None):
 
                 voltage_vector = phase_to_sequence(vm * np.exp(1j * np.pi * va / 180.))[sequence, :]
 
-                print(sequence, voltage_vector)
-
                 if mode == "magnitude":
                     return np.abs(voltage_vector)
                 elif mode == "angle":
