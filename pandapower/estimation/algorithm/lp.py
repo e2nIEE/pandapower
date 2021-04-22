@@ -40,7 +40,7 @@ class LPAlgorithm(BaseAlgorithm):
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = self.solve_lp(H, E, r)
+                d_E = self._solve_lp(H, E, r)
                 E += d_E
                 eppci.update_E(E)
 
@@ -58,7 +58,12 @@ class LPAlgorithm(BaseAlgorithm):
         return eppci
 
     @staticmethod
-    def solve_lp(H, x, r):
+    def _solve_lp(H, x, r):
+        '''
+        Performance comparison(601 bus system/1204 random measurements):
+        Scipy   : 269.20 seconds
+        OR-Tools:   8.51 seconds +- 154 ms
+        '''
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
         one_m = np.ones((m, 1))
@@ -68,12 +73,12 @@ class LPAlgorithm(BaseAlgorithm):
         A = np.c_[H, -H, Im, -Im]
 
         if ortools_available:
-            return LPAlgorithm.solve_or_tools(c_T.ravel(), A, r, n)
+            return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
         else:
-            return LPAlgorithm.solve_scipy(c_T, A, r, n)
+            return LPAlgorithm._solve_scipy(c_T, A, r, n)
     
     @staticmethod    
-    def solve_scipy(c_T, A, r, n):
+    def _solve_scipy(c_T, A, r, n):
         '''
         The use of linprog function from the scipy library.
         '''
@@ -90,7 +95,7 @@ class LPAlgorithm(BaseAlgorithm):
             
         
     @staticmethod
-    def solve_or_tools(c_T, A, r, n):
+    def _solve_or_tools(c_T, A, r, n):
         # Just to ensure floating point precision if there are any
         error_margin = 1e-10
         
