@@ -69,7 +69,7 @@ def _pd2ppc(net, sequence=None):
     ppc = _init_ppc(net, mode=mode, sequence=sequence)
 
     # generate ppc['bus'] and the bus lookup
-    _build_bus_ppc(net, ppc)
+    _build_bus_ppc(net, ppc, sequence=sequence)
     if sequence == 0:
         from pandapower.pd2ppc_zero import _add_ext_grid_sc_impedance_zero, _build_branch_ppc_zero
         # Adds external grid impedance for 3ph and sc calculations in ppc0

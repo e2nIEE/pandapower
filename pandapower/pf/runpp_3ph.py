@@ -400,7 +400,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
     calculate_voltage_angles = True
-    if init == "results" and len(net.res_bus) == 0:
+    if init == "results" and net.res_bus_3ph.empty:
         init = "auto"
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
@@ -429,7 +429,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
-    init_results(net, "pf_3ph")
     # =========================================================================
     # pd2ppc conversion
     # =========================================================================
@@ -447,6 +446,9 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v01, ref_gens = _get_pf_variables_from_ppci(ppci1)
     _,       bus2, gen2, branch2,      _,      _,      _, _, _, \
         v02, ref_gens = _get_pf_variables_from_ppci(ppci2)
+
+    # initialize the results after the conversion to ppc is done, otherwise init=results does not work
+    init_results(net, "pf_3ph")
 
 # =============================================================================
 #     P Q values aggragated and summed up for each bus to make s_abc matrix
