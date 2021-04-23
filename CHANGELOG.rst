@@ -1,5 +1,6 @@
 Change Log
 =============
+- [FIXED] issue # 1212 (Missing matplotlib dependency)
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
 
