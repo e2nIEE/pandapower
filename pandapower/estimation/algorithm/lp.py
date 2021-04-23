@@ -59,9 +59,8 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_lp(H, x, r):
-        '''
-        Function to choose the best option based on the installed libraries to solve linear programming.
-        
+        '''Function to choose the best option based on the installed libraries to solve linear programming.
+
         Performance comparison(601 bus system/1204 random measurements):
         Scipy   : 269.20 seconds
         OR-Tools:   8.51 seconds +- 154 ms
