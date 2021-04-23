@@ -1,6 +1,7 @@
 Change Log
 =============
 - [ADDED] Efficient PTDF calculation on large grid
+- [ADDED] toolbox function replace_pq_elmtype()
 
 [2.6.0]- 2021-03-09
 ----------------------
