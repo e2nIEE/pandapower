@@ -123,7 +123,7 @@ def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline"]
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
     elif mode == "se":
