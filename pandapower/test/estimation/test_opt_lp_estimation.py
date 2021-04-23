@@ -13,7 +13,7 @@ from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.algorithm.base import WLSAlgorithm
-from pandapower.estimation.algorithm.lp import LPAlgorithm, pywraplp
+from pandapower.estimation.algorithm.lp import LPAlgorithm, ortools_available
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.estimation.results import eppci2pp
 from copy import deepcopy
@@ -65,7 +65,7 @@ def test_lp_scipy_lav():
        not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-@pytest.mark.skipif(not pywraplp, reason="OR-Tools.pywraplp is not installed")
+@pytest.mark.skipif(not ortools_available, reason="OR-Tools.pywraplp is not installed")
 def test_lp_ortools_lav():
     '''
     If OR-Tools is installed, run this test.

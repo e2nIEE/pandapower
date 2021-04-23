@@ -9,7 +9,7 @@ import numpy as np
 try:
     from ortools.linear_solver import pywraplp
     ortools_available = True
-except ModuleNotFoundError:
+except ImportError:
     from scipy.optimize import linprog
     ortools_available = False
 import warnings
@@ -60,10 +60,13 @@ class LPAlgorithm(BaseAlgorithm):
     @staticmethod
     def _solve_lp(H, x, r):
         '''
+        Function to choose the best option based on the installed libraries to solve linear programming.
+        
         Performance comparison(601 bus system/1204 random measurements):
         Scipy   : 269.20 seconds
         OR-Tools:   8.51 seconds +- 154 ms
         '''
+        
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
         one_m = np.ones((m, 1))
@@ -76,8 +79,8 @@ class LPAlgorithm(BaseAlgorithm):
             return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
         else:
             return LPAlgorithm._solve_scipy(c_T, A, r, n)
-    
-    @staticmethod    
+
+    @staticmethod
     def _solve_scipy(c_T, A, r, n):
         '''
         The use of linprog function from the scipy library.
