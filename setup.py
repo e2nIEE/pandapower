@@ -54,7 +54,8 @@ setup(
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
 		"plotting": ["plotly", "matplotlib", "python-igraph"],
-		"test": ["pytest", "pytest-xdist"]},
+		"test": ["pytest", "pytest-xdist"],
+        "performance": ["ortools"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers

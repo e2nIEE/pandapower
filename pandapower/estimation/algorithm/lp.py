@@ -59,12 +59,12 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_lp(H, x, r):
-        '''Function to choose the best option based on the installed libraries to solve linear programming.
+        """Function to choose the best option based on the installed libraries to solve linear programming.
 
         Performance comparison(601 bus system/1204 random measurements):
         Scipy   : 269.20 seconds
         OR-Tools:   8.51 seconds +- 154 ms
-        '''
+        """
         
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
@@ -81,9 +81,7 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_scipy(c_T, A, r, n):
-        '''
-        The use of linprog function from the scipy library.
-        '''
+        """The use of linprog function from the scipy library."""
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
