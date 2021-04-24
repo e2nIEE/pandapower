@@ -298,7 +298,7 @@ def test_voltage_angles():
     net.bus.loc[:, "min_vm_pu"] = .9
 
     # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-    custom_file = "run_powermodels_custom"  #custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),"test_files", "run_powermodels_custom.jl")
+    custom_file = "run_powermodels"  #custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),"test_files", "run_powermodels_custom.jl")
 
     # load is zero since costs are high. PF results should be the same as OPF
     net.load.loc[1, "p_mw"] = 0.
