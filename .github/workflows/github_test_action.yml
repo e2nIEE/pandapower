@@ -31,6 +31,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib python-igraph
+        pip install ortools
         if ${{ matrix.python-version == '3.7' }}; then python -m pip install pypower; fi
         if ${{ matrix.python-version != '3.6' }}; then python -m pip install numba; fi
     - name: Install Julia
@@ -77,6 +78,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
+        pip install ortools
     - name: Install pandapipes
       run: |
         python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
@@ -109,6 +111,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
+        pip install ortools
     - name: List of installed packages
       run: |
         pip list
