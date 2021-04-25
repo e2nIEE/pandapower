@@ -59,13 +59,14 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_lp(H, x, r):
+
         """Function to choose the best option based on the installed libraries to solve linear programming.
 
         Performance comparison(601 bus system/1204 random measurements):
         Scipy   : 269.20 seconds
         OR-Tools:   8.51 seconds +- 154 ms
         """
-        
+
         n, m = H.shape[1], H.shape[0]
         zero_n = np.zeros((n, 1))
         one_m = np.ones((m, 1))
@@ -81,8 +82,9 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_scipy(c_T, A, r, n):
+
         """The use of linprog function from the scipy library."""
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
@@ -92,38 +94,38 @@ class LPAlgorithm(BaseAlgorithm):
             return d_x
         else:  # pragma: no cover
             raise np.linalg.linalg.LinAlgError
-            
-        
+
+
     @staticmethod
     def _solve_or_tools(c_T, A, r, n):
         # Just to ensure floating point precision if there are any
         error_margin = 1e-10
-        
+
         # Create the solver object...
         solver = pywraplp.Solver.CreateSolver('GLOP')
-        
-        
+
+
         # Create the states...
         x = []
         for counter in range(len(c_T)):
             x.append(solver.NumVar(0, solver.infinity(), 'x_' + str(counter)))
-        
-        
+
+
         # Give the equality constraints...
         for row_counter, row in enumerate(A):
             row_equality = 0
             for col_counter, col in enumerate(row):
                 if abs(col) > error_margin:
                     row_equality = row_equality + col*x[col_counter]
-                    
+
             solver.Add(row_equality == r[row_counter])
-        
+
 
         # What to optimize?
         to_minimize = 0
         for counter, coef in enumerate(c_T):
             to_minimize = to_minimize + coef*x[counter]
-        
+
         solver.Minimize(to_minimize)
 
         # Solve the optimization problem
@@ -135,11 +137,11 @@ class LPAlgorithm(BaseAlgorithm):
             # An optimal solution is found
             for counter, x_current in enumerate(x):
                 d_x.append(x_current.solution_value())
-            
+
             d_x = np.array(d_x)
             return d_x[:n] - d_x[n:2*n]
         else:
             # No solution found...
             raise np.linalg.linalg.LinAlgError
 
-        
+

@@ -49,11 +49,11 @@ def test_lp_scipy_lav():
     '''
     # Set the solver
     LPAlgorithm.ortools_available = False
-    
+
     net = nw.case9()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
-    
+
     net, ppc, eppci       = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
@@ -65,7 +65,7 @@ def test_lp_scipy_lav():
        not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-@pytest.mark.skipif(not ortools_available, reason="OR-Tools.pywraplp is not installed")
+
 def test_lp_ortools_lav():
     '''
     If OR-Tools is installed, run this test.
@@ -75,7 +75,7 @@ def test_lp_ortools_lav():
     net = nw.case9()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
-    
+
     net, ppc, eppci       = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
