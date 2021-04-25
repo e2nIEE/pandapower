@@ -4,13 +4,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from scipy.optimize import linprog
+
 # Make sure the library is installed
 # Otherwise, load the scipy linprog
 try:
     from ortools.linear_solver import pywraplp
     ortools_available = True
 except ImportError:
-    from scipy.optimize import linprog
     ortools_available = False
 import warnings
 
