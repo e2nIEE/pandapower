@@ -20,7 +20,7 @@ from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 
 
 class LPAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, with_ortools=True, **kwargs):
         if "estimator" in kwargs and kwargs["estimator"].lower() != "lav":  # pragma: no cover
             self.logger.warning("LP Algorithm supports only LAV Estimator!! Set to LAV!!")
 
@@ -40,7 +40,7 @@ class LPAlgorithm(BaseAlgorithm):
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = self._solve_lp(H, E, r)
+                d_E = self._solve_lp(H, E, r, with_ortools=with_ortools)
                 E += d_E
                 eppci.update_E(E)
 
@@ -58,7 +58,7 @@ class LPAlgorithm(BaseAlgorithm):
         return eppci
 
     @staticmethod
-    def _solve_lp(H, x, r):
+    def _solve_lp(H, x, r, with_ortools):
 
         """Function to choose the best option based on the installed libraries to solve linear programming.
 
@@ -75,7 +75,7 @@ class LPAlgorithm(BaseAlgorithm):
         c_T = np.r_[zero_n, zero_n, one_m, one_m]
         A = np.c_[H, -H, Im, -Im]
 
-        if ortools_available:
+        if ortools_available and with_ortools:
             return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
         else:
             return LPAlgorithm._solve_scipy(c_T, A, r, n)
