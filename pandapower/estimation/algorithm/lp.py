@@ -78,7 +78,7 @@ class LPAlgorithm(BaseAlgorithm):
         if ortools_available and with_ortools:
             return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
         else:
-            return LPAlgorithm._solve_scipy(c_T, A, r, n)
+            return LPAlgorithm._solve_scipy(c_T.ravel(), A, r, n)
 
     @staticmethod
     def _solve_scipy(c_T, A, r, n):
