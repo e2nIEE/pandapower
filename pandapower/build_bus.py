@@ -412,19 +412,13 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
 
-    l_3ph = net["asymmetric_load"]
-    if len(l_3ph) > 0 and mode == "pf":
-            # TODO: Voltage dependent loads
-        vl = _is_elements["asymmetric_load"] * l_3ph["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, np.sum(l_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
-        p = np.hstack([p, np.sum(l_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
-        b = np.hstack([b, l_3ph["bus"].values])
-    sgen_3ph = net["asymmetric_sgen"]
-    if len(sgen_3ph) > 0 and mode == "pf":
-        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, np.sum(sgen_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
-        p = np.hstack([p, np.sum(sgen_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
-        b = np.hstack([b, sgen_3ph["bus"].values])
+    for element in ["asymmetric_load", "asymmetric_sgen"]:
+        if len(net[element]) > 0 and mode == "pf":
+            p_mw, q_mvar = _get_symmetric_pq_of_unsymetric_element(net, element)
+            sign = -1 if element.endswith("sgen") else 1
+            p = np.hstack([p, p_mw * sign])
+            q = np.hstack([q, q_mvar * sign ])
+            b = np.hstack([b, net[element]["bus"].values])
 
     # sum up p & q of bus elements
     if b.size:
@@ -433,8 +427,13 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
-        # Todo: Actually, P and Q have to be divided by 3 because Sabc=3*S012 (we are writing pos. seq. values here!)
 
+
+def _get_symmetric_pq_of_unsymetric_element(net, element):
+    scale = net["_is_elements"][element] * net[element]["scaling"].values.T
+    q_mvar = np.sum(net[element][["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1)
+    p_mw = np.sum(net[element][["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1)
+    return p_mw*scale, q_mvar*scale
 
 def _get_motor_pq(net):
     tab = net["motor"]
