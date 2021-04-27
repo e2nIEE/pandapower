@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] OR-Tools implementation of linprog solver
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
 
