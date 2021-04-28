@@ -1,5 +1,6 @@
 Change Log
 =============
+- [ADDED] OR-Tools implementation of linprog solver
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
 - [ADDED] Alternative constructor for DiscreteTapControl to use net.trafo.tap_step_percent to determine vm_lower_pu and vm_upper_pu based on vm_set_pu
