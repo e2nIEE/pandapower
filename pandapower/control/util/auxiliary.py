@@ -14,6 +14,11 @@ import pandas as pd
 from pandas import Int64Index
 
 from pandapower.toolbox import ensure_iterability
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
 
 try:
     import pplog
@@ -194,3 +199,12 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
         logger.info("Creating controller " + index + " of type %s, " % this_ctrl_type +
                     "no matching parameters are given to check which " +
                     "same type controllers should be dropped.")
+
+
+def plot_characteristic(characteristic, start, stop, num=None):
+    x = np.linspace(start, stop, num)
+    y = characteristic(x)
+    if MATPLOTLIB_INSTALLED:
+        plt.plot(x, y, marker='x')
+    else:
+        logger.info("matplotlib not installed. y-values: %s" % y)

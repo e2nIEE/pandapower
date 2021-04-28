@@ -83,7 +83,7 @@ class UsetOfP(Controller):
         pass
 
     def is_converged(self, net):
-        self.setpoint = self.cc.target(net.res_bus.at[self.controlled_bus, "p_mw"])
+        self.setpoint = self.cc(net.res_bus.at[self.controlled_bus, "p_mw"])
 
         if self.continuous:
             self.ctrl.vm_set_pu = self.setpoint

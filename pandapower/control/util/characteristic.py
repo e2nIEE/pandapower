@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from builtins import zip
 from builtins import object
@@ -5,10 +9,7 @@ from builtins import object
 from numpy import interp
 from pandapower.io_utils import JSONSerializableClass
 
-__author__ = 'jdollichon'
 
-
-# TODO option eine Exception zu raisen wenn Wert ausserhalb des def. Intervalls gefragt wird.
 class Characteristic(JSONSerializableClass):
     """
     This class represents a characteristics curve. The curve is described as a
@@ -16,6 +17,9 @@ class Characteristic(JSONSerializableClass):
 
     |   **pts** - Expects two (or more) points of the function (i.e. kneepoints)
     |   **eps** - Optional: An epsilon to compare the difference to.
+
+    The class has an implementation of the __call__ method, which allows using it interchangeably with other interpolator objects,
+    e.g. scipy.interpolate.CubicSpline, scipy.interpolate.PPoly, etc.
 
     Example usage:
 
@@ -57,7 +61,6 @@ class Characteristic(JSONSerializableClass):
     True
     >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
     False
-
     """
 
     def __init__(self, x_values, y_values):
@@ -65,17 +68,16 @@ class Characteristic(JSONSerializableClass):
         self.x_vals = x_values
         self.y_vals = y_values
 
-
     @classmethod
-    def from_points(self, points):
+    def from_points(cls, points):
         unzipped = list(zip(*points))
-        return Characteristic(unzipped[0], unzipped[1])
+        return cls(unzipped[0], unzipped[1])
 
     @classmethod
-    def from_gradient(self, zero_crossing, gradient, y_min, y_max):
+    def from_gradient(cls, zero_crossing, gradient, y_min, y_max):
         x_left = (y_min - zero_crossing) / float(gradient)
         x_right = (y_max - zero_crossing) / float(gradient)
-        return Characteristic([x_left, x_right], [y_min, y_max])
+        return cls([x_left, x_right], [y_min, y_max])
 
     def diff(self, x, measured):
         """
@@ -83,14 +85,16 @@ class Characteristic(JSONSerializableClass):
         :param actual: The actual y-value being measured.
         :return: The difference between actual and expected value.
         """
-        return measured-interp(x, self.x_vals, self.y_vals)
+        return measured - interp(x, self.x_vals, self.y_vals)
 
     def target(self, x):
         """
+        Note: Deprecated. Use the __call__ interface instead.
         :param x: An x-value
         :return: The corresponding target value of this characteristics
         """
-        return interp(x, self.x_vals, self.y_vals)
+        # return interp(x, self.x_vals, self.y_vals)
+        raise DeprecationWarning("target method is deprecated. Use the __call__ interface instead.")
 
     def satisfies(self, x, measured, epsilon):
         """
@@ -104,3 +108,10 @@ class Characteristic(JSONSerializableClass):
             return True
         else:
             return False
+
+    def __call__(self, x):
+        """
+        :param x: An x-value
+        :return: The corresponding target value of this characteristics
+        """
+        return interp(x, self.x_vals, self.y_vals)
