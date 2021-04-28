@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.control.controller.characteristic_controller import CharacteristicControl
+from pandapower.control.controller.characteristic_control import CharacteristicControl
 from control.util.characteristic import Characteristic
 
 class USetTapControl(CharacteristicControl):
