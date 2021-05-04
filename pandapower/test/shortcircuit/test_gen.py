@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -26,13 +26,36 @@ def one_line_one_generator():
     pp.create_switch(net, b3, b1, et="b")
     return net
 
+@pytest.fixture
+def gen_three_bus_example():
+    net = pp.create_empty_network(sn_mva=2)
+    b1 = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=10.)
+    b3 = pp.create_bus(net, vn_kv=10.)
+    #pp.create_bus(net, vn_kv=0.4, in_service=False)
+    pp.create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
+    pp.create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29,
+                                        r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
+    pp.create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29,
+                                        r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
+    net.line["endtemp_degree"] = 165
+    pp.create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
+    #pp.create_switch(net, b3, b1, et="b")
+    return net
+
 def test_max_gen(one_line_one_generator):
     net = one_line_one_generator
-    sc.calc_sc(net, case="max")
+    sc.calc_sc(net, case="max", inverse_y=False)
     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.5395815) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.5083952) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+
+def test_branch_max_gen(gen_three_bus_example):
+    net = gen_three_bus_example
+    sc.calc_sc(net, case="max", branch_results=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.76204252, 1.28698045]))
+
 
 def test_min_gen(one_line_one_generator):
     net = one_line_one_generator
@@ -41,6 +64,11 @@ def test_min_gen(one_line_one_generator):
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+
+def test_branch_min_gen(gen_three_bus_example):
+    net = gen_three_bus_example
+    sc.calc_sc(net, case="min", branch_results=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]))
 
 def test_max_gen_fault_impedance(one_line_one_generator):
     net = one_line_one_generator
@@ -116,7 +144,6 @@ def test_close_to_gen_simple2():
     # sc.calc_single_sc(net, b2)
     sc.calc_sc(net, tk_s=5e-2)
 
-
 def test_generator_book():
     net=pp.create_empty_network()
     b1= pp.create_bus(net, 110)
@@ -128,7 +155,6 @@ def test_generator_book():
     pp.create_gen(net, b2, 0, 1, sn_mva=25, vn_kv=6.3, xdss_pu=0.11, cos_phi=np.cos(np.arcsin(0.8)))
     sc.calc_sc(net, tk_s=2.5e-2)
 
-
 def test_shunt():
     net=pp.create_empty_network()
     b1= pp.create_bus(net, 110)
@@ -139,7 +165,6 @@ def test_shunt():
     pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=10)
 
     sc.calc_sc(net, tk_s=2.5e-2)
-
 
 def test_power_station_unit():
     net = pp.create_empty_network()
@@ -156,9 +181,6 @@ def test_power_station_unit():
     pp.create_gen(net, b5, vn_kv=10, xdss_pu=0.12, cos_phi=0.8, p_mw=0, sn_mva=10)
 
     sc.calc_sc(net)
-
-
-
 
 if __name__ == '__main__':
     pytest.main(['test_gen.py'])

@@ -48,8 +48,8 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
     :return: sizes (dict) - dictionary containing all scaled sizes
     """
 
-    mean_distance_between_buses = sum((net['bus_geodata'].max() - net[
-        'bus_geodata'].min()).dropna() / 200)
+    mean_distance_between_buses = sum((net['bus_geodata'].loc[:, ["x", "y"]].max() -
+                                       net['bus_geodata'].loc[:, ["x", "y"]].min()).dropna() / 200)
 
     sizes = {
         "bus": bus_size * mean_distance_between_buses,
@@ -100,7 +100,7 @@ def get_list(individuals, number_entries, name_ind, name_ent):
 
 def get_color_list(color, number_entries, name_entries="nodes"):
     if (len(color) == 3 or len(color) == 4) and all(isinstance(c, float) for c in color):
-        logger.info("Interpreting color %s as rgb or rgba!" % color)
+        logger.info("Interpreting color %s as rgb or rgba!" % str(color))
         return get_list([color], number_entries, "colors", name_entries)
     return get_list(color, number_entries, "colors", name_entries)
 
@@ -113,8 +113,16 @@ def get_linewidth_list(linewidth, number_entries, name_entries="lines"):
     return get_list(linewidth, number_entries, "linewidths", name_entries)
 
 
+def get_index_array(indices, net_table_indices):
+    if indices is None:
+        return np.copy(net_table_indices.values)
+    elif isinstance(indices, set):
+        return np.array(list(indices))
+    return np.array(indices)
+
+
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus"):
+                             node_name="Bus", ignore_zero_length=True):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -132,6 +140,9 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :type table_name: str
     :param node_name: Name of the node type (only for logging)
     :type node_name: str, default "Bus"
+    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e.\
+        from_node_coords = to_node_coords
+    :type ignore_zero_length: bool, default True
     :return: Return values are:\
         - coords (list) - list of branch coordinates of shape (N, (2, 2))\
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found\
@@ -144,7 +155,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
               in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
                                  node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
-              if not (x_from == x_to and y_from == y_to)]
+              if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
         logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"

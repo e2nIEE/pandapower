@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,8 @@ import pandapower.topology as top
 from pandapower import pp_dir
 
 
-def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False, separation_by_sub=False):
+def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,
+                 separation_by_sub=False):
     """
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer
     stations. The network supplies 141 MV/LV substations and 6 MV loads through four MV feeders.
@@ -40,23 +41,23 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         **include_substations** - (bool, False): if True, the transformers of the MV/LV level are
         modelled, otherwise the loads representing the LV networks are connected directly to the
         MV node
-        
-        **separation_by_sub** - (bool, False): if True, the network gets separated into two 
+
+        **separation_by_sub** - (bool, False): if True, the network gets separated into two
         sections, referring to both substations
 
     OUTPUT:
          **net** - pandapower network
-         
+
          **net0, net1** - both sections of the pandapower network
 
     EXAMPLE:
 
         ``import pandapower.networks``
-    
+
         ``net = pandapower.networks.mv_oberrhein("generation")``
-    
+
         or with separation
-    
+
         ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
     """
     if include_substations:
@@ -77,20 +78,20 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         net.trafo.tap_pos.loc[hv_trafos] = [0, 0]
     else:
         raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
-        
-    if separation_by_sub == True:
+
+    if separation_by_sub:
         # creating multigraph
         mg = top.create_nxgraph(net)
         # clustering connected buses
         zones = [list(area) for area in top.connected_components(mg)]
-        net1 = pp.select_subnet(net, buses=zones[0], include_switch_buses=False, 
+        net1 = pp.select_subnet(net, buses=zones[0], include_switch_buses=False,
                                 include_results=True, keep_everything_else=True)
-        net0 = pp.select_subnet(net, buses=zones[1], include_switch_buses=False, 
+        net0 = pp.select_subnet(net, buses=zones[1], include_switch_buses=False,
                                 include_results=True, keep_everything_else=True)
-        
-        pp.runpp(net0); pp.runpp(net1)
-        return net0, net1
 
+        pp.runpp(net0)
+        pp.runpp(net1)
+        return net0, net1
 
     pp.runpp(net)
     return net

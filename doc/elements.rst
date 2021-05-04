@@ -19,8 +19,11 @@ information about the definition and interpretation of the parameters in the fol
     elements/bus
     elements/line
     elements/switch
-    elements/load	
-    elements/sgen	
+    elements/load
+    elements/motor
+    elements/asymmetric_load	
+    elements/sgen
+    elements/asymmetric_sgen
     elements/ext_grid	
     elements/trafo
     elements/trafo3w	
@@ -32,4 +35,3 @@ information about the definition and interpretation of the parameters in the fol
     elements/dcline
     elements/measurement
     elements/storage
-

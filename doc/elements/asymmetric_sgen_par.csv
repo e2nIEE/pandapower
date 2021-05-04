@@ -1,0 +1,16 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the static generator
+type;string;"| naming conventions:
+| *""PV""* - photovoltaic system
+| *""WP""* - wind power system
+| *""CHP""* - combined heating and power system";type of generator
+bus*;integer;;index of connected bus
+p_a_mw*;float;:math:`\leq` 0;active power of the static generator : Phase A[MW]
+q_a_mvar*;float;;reactive power of the static generator : Phase A [MVar]
+p_b_mw*;float;:math:`\leq` 0;active power of the static generator : Phase B[MW]
+q_b_mvar*;float;;reactive power of the static generator : Phase B [MVar]
+p_c_mw*;float;:math:`\leq` 0;active power of the static generator : Phase C[MW]
+q_c_mvar*;float;;reactive power of the static generator : Phase C [MVar]
+sn_mva;float;:math:`>` 0;rated power ot the static generator [MVA]
+scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
+in_service*;boolean;True / False;specifies if the generator is in service.

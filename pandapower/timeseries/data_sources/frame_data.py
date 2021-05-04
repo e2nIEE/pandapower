@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.timeseries.data_source import DataSource
 
 try:
     import pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
@@ -49,7 +49,7 @@ class DFData(DataSource):
         res = self.df.loc[time_step, profile_name]
         if hasattr(res, 'values'):
             res = res.values
-        res *= scale_factor
+        res = res*scale_factor
         return res
 
     def get_time_steps_len(self):

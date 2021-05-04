@@ -16,7 +16,7 @@ from pandapower.pypower.idx_brch import ANGMIN, ANGMAX, BR_R, BR_X, BR_B, RATE_A
 from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYPE, VMAX, VMIN, VM, PD, QD
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
-from pandapower.results import reset_results
+from pandapower.results import init_results
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
@@ -29,7 +29,7 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt"):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
 
@@ -71,7 +71,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -83,11 +83,11 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net):
+def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
-    reset_results(net)
+    init_results(net)
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
@@ -113,6 +113,8 @@ def dump_pm_json(pm, buffer_file=None):
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
+    pm_lookup = np.ones(max(net[element].index) + 1, dtype=int) * -1 if len(net[element].index) \
+        else np.array([], dtype=int)
     for idx in net[element].index:
         if "controllable" in net[element] and net[element].at[idx, "controllable"]:
             continue
@@ -138,8 +140,9 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
             pd_bus[pm_bus] += pd
             qd_bus[pm_bus] += qd
 
+        pm_lookup[idx] = load_idx
         load_idx += 1
-    return load_idx
+    return load_idx, pm_lookup
 
 
 def get_branch_angles(row, correct_pm_network_data):
@@ -161,6 +164,27 @@ def get_branch_angles(row, correct_pm_network_data):
     return angmin, angmax
 
 
+def create_pm_lookups(net, pm_lookup):
+    for key, val in net._pd2ppc_lookups.items():
+        if isinstance(val, dict):
+            # lookup is something like "branch" with dict as val -> iterate over the subdicts
+            pm_val = dict()
+            for subkey, subval in val.items():
+                pm_val[subkey] = tuple((v + 1 for v in subval))
+        elif isinstance(val, int) or isinstance(val, np.ndarray):
+            # lookup is a numpy array
+            # julia starts counting at 1 instead of 0
+            pm_val = val + 1
+            # restore -1 for not existing elements
+            pm_val[pm_val == 0] = -1
+        else:
+            # val not supported
+            continue
+        pm_lookup[key] = pm_val
+    net._pd2pm_lookups = pm_lookup
+    return net
+
+
 def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
@@ -174,9 +198,12 @@ def ppc_to_pm(net, ppci):
     # temp dicts which hold the sum of p, q of loads + sgens
     pd_bus = dict()
     qd_bus = dict()
-    load_idx = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
-    load_idx = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
-    load_idx = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
+    load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
+    load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
+    load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
+    pm_lookup = {"load": load_lookup, "sgen": sgen_lookup, "storage": storage_lookup}
+    net = create_pm_lookups(net, pm_lookup)
+
     correct_pm_network_data = net._options["correct_pm_network_data"]
 
     for row in ppci["bus"]:
@@ -227,9 +254,21 @@ def ppc_to_pm(net, ppci):
         branch["g_to"] = - row[BR_B].imag / 2.0
         branch["b_fr"] = row[BR_B].real / 2.0
         branch["b_to"] = row[BR_B].real / 2.0
-        branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-        branch["rate_b"] = row[RATE_B].real
-        branch["rate_c"] = row[RATE_C].real
+
+        if net._options["opf_flow_lim"] == "S": # or branch["transformer"]:
+            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["rate_b"] = row[RATE_B].real
+            branch["rate_c"] = row[RATE_C].real
+        elif net._options["opf_flow_lim"] == "I":
+            f = net._pd2ppc_lookups["branch"]["line"][0]
+            f = int(row[F_BUS].real) # from bus of this line
+            vr = ppci["bus"][f][BASE_KV]
+            branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["c_rating_b"] = row[RATE_B].real
+            branch["c_rating_c"] = row[RATE_C].real
+        else:
+            logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
+
         branch["f_bus"] = int(row[F_BUS].real) + 1
         branch["t_bus"] = int(row[T_BUS].real) + 1
         branch["br_status"] = int(row[BR_STATUS].real)
@@ -263,9 +302,21 @@ def ppc_to_pm(net, ppci):
             branch["g_to"] = - row[BR_B].imag / 2.0
             branch["b_fr"] = row[BR_B].real / 2.0
             branch["b_to"] = row[BR_B].real / 2.0
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
+
+            if net._options["opf_flow_lim"] == "S": #--> Rate_a is always needed for the TNEP problem, right?
+                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["rate_b"] = row[RATE_B].real
+                branch["rate_c"] = row[RATE_C].real
+            elif net._options["opf_flow_lim"] == "I":
+                f, t = net._pd2ppc_lookups["branch"]["line"]
+                f = int(row[F_BUS].real)  # from bus of this line
+                vr = ppci["bus"][f][BASE_KV]
+                row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
+
+                branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["c_rating_b"] = row[RATE_B].real
+                branch["c_rating_c"] = row[RATE_C].real
+
             branch["f_bus"] = int(row[F_BUS].real) + 1
             branch["t_bus"] = int(row[T_BUS].real) + 1
             branch["br_status"] = int(row[BR_STATUS].real)

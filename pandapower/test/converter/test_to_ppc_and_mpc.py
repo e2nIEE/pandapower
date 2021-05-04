@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
+import pandapower as pp
 import pandapower.converter as cv
 from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.pypower.idx_bus import VM, BUS_I, VA
-from pandapower.powerflow import LoadflowNotConverged, reset_results
+from pandapower.powerflow import LoadflowNotConverged
+from pandapower.results import reset_results
 from pandapower.pf.runpf_pypower import _runpf_pypower
 
 
@@ -25,6 +27,9 @@ def test_to_ppc_and_mpc():
         pandapower_function = getattr(pandapower_module.networks, fn)
         net = pandapower_function()
         reset_results(net)
+
+        # This should be reviewed
+        pp.runpp(net)
 
         # convert pandapower grids to ppc
         ppc = cv.to_ppc(net)

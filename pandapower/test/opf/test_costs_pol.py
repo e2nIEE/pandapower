@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,9 +13,6 @@ try:
     import pplog as logging
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
-logger.setLevel("DEBUG")
 
 
 def test_cost_pol_gen():
@@ -128,4 +125,6 @@ def test_cost_pol_q():
 
 
 if __name__ == "__main__":
-       pytest.main(["test_costs_pol.py", "-xs"])
+    logger = logging.getLogger(__name__)
+    logger.setLevel("DEBUG")
+    pytest.main(["test_costs_pol.py", "-xs"])

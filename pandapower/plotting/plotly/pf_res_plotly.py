@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
-                  filename="temp-plot.html"):
+                  filename="temp-plot.html", auto_open=True):
     """
     Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
@@ -73,6 +73,8 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
         **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
 
+        **auto_open** (bool, True) - automatically open plot in browser
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
 
@@ -94,6 +96,18 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
+    for geo_type in ["bus_geodata", "line_geodata"]:
+        dupl_geo_idx = pd.Series(net[geo_type].index)[pd.Series(
+                net[geo_type].index).duplicated()]
+        if len(dupl_geo_idx):
+            if len(dupl_geo_idx) > 20:
+                logger.warning("In net.%s are %i duplicated " % (geo_type, len(dupl_geo_idx)) +
+                               "indices. That can cause troubles for draw_traces()")
+            else:
+                logger.warning("In net.%s are the following duplicated " % geo_type +
+                               "indices. That can cause troubles for draw_traces(): " + str(
+                               dupl_geo_idx))
+
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
@@ -116,7 +130,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
     # if bus geodata is available, but no line geodata
-    cmap_lines = 'jet' if cmap is 'Jet' else cmap
+    cmap_lines = 'jet' if cmap == 'Jet' else cmap
     if use_line_geodata is None:
         use_line_geodata = False if len(net.line_geodata) == 0 else True
     elif use_line_geodata and len(net.line_geodata) == 0:
@@ -159,4 +173,4 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,
-                       map_style=map_style, figsize=figsize, filename=filename)
+                       map_style=map_style, figsize=figsize, filename=filename, auto_open=auto_open)

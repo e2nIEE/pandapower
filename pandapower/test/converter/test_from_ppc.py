@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -64,7 +64,8 @@ def test_validate_from_ppc():
 
 def test_ppc_testgrids():
     # check ppc_testgrids
-    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14', 'case57']
+    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
+            'case57']
     for i in name:
         ppc = get_testgrids(i, 'ppc_testgrids.p')
         net = from_ppc(ppc, f_hz=60)
@@ -96,6 +97,7 @@ def test_case9_conversion():
     net = pn.case9()
     # set max_loading_percent to enable line limit conversion
     net.line["max_loading_percent"] = 100
+    pp.runpp(net)
     ppc = to_ppc(net, mode="opf")
     # correction because voltage limits are set to 1.0 at slack buses
     ppc["bus"][0, 12] = 0.9

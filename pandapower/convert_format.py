@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
 import numpy as np
-import copy
+import pandas as pd
 from packaging import version
+
+from pandapower import __version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower import __version__
-from pandapower.toolbox import set_data_type_of_columns_to_default
 
 
 def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
+    from pandapower.toolbox import set_data_type_of_columns_to_default
     if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
         return net
     _add_nominal_power(net)
@@ -24,6 +24,8 @@ def convert_format(net):
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
+    if version.parse(str(net.version)) < version.parse("2.4.0"):
+        _convert_bus_pq_meas_to_load_reference(net)
     if isinstance(net.version, float) and net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
@@ -35,6 +37,12 @@ def convert_format(net):
     _convert_objects(net)
     net.version = __version__
     return net
+
+
+def _convert_bus_pq_meas_to_load_reference(net):
+    bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"])&\
+        (net.measurement.element_type=="bus")
+    net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
 def _convert_to_generation_system(net):
@@ -78,10 +86,12 @@ def _convert_costs(net):
 
 
 def _add_nominal_power(net):
-    if "sn_kva" not in net:
-        net.sn_kva = 1e3
-    if "sn_kva" in net.keys():
+    if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
+
+    # Reset sn_mva only if sn_mva not available
+    if "sn_mva" not in net:
+        net.sn_mva = 1.0
 
 
 def _add_missing_tables(net):
@@ -219,6 +229,13 @@ def _add_missing_columns(net):
     if "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
 
+    if "initial_run" not in net.controller:
+        net.controller.insert(4, 'initial_run', False)
+        for _, ctrl in net.controller.iterrows():
+            if hasattr(ctrl['object'], 'initial_run'):
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
@@ -281,15 +298,11 @@ def _convert_to_mw(net):
 
     for element, std_types in net.std_types.items():
         for std_type, parameters in std_types.items():
-            marked_for_replacement = []
-            for parameter, value in parameters.items():
+            for parameter in set(parameters.keys()):
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
-                        marked_for_replacement.append((parameter, old, new, value))
-
-            for parameter, old, new, value in marked_for_replacement:
-                parameters[parameter.replace(old, new)] = value * 1e-3
-                del parameters[parameter]
+                        parameters[parameter.replace(old, new)] = parameters[parameter] * 1e-3
+                        del parameters[parameter]
 
 
 def _update_object_attributes(obj):
@@ -313,5 +326,3 @@ def _convert_objects(net):
     if "controller" in net.keys():
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
-            if not hasattr(obj, 'net'):
-                obj.__init__(net, overwrite=True, **obj.__dict__)

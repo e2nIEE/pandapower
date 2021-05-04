@@ -30,24 +30,25 @@ class DiscreteTapControl(TrafoController):
 
     def __init__(self, net, tid, vm_lower_pu, vm_upper_pu, side="lv", trafotype="2W",
                  tol=1e-3, in_service=True, order=0, drop_same_existing_ctrl=False,
-                 **kwargs):
+                 matching_params=None, **kwargs):
+        if matching_params is None:
+            matching_params = {"tid": tid, 'trafotype': trafotype}
         super(DiscreteTapControl, self).__init__(
             net, tid, side, tol=tol, in_service=in_service, order=order, trafotype=trafotype,
-            drop_same_existing_ctrl=drop_same_existing_ctrl,
-            matching_params={"tid": tid, 'trafotype': trafotype}, **kwargs)
+            drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
+            **kwargs)
 
-        self.matching_params = {"tid": tid, 'trafotype': trafotype}
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
-        self.tap_pos = self.net[self.trafotable].at[tid, "tap_pos"]
+        self.tap_pos = net[self.trafotable].at[tid, "tap_pos"]
 
-    def control_step(self):
+    def control_step(self, net):
         """
         Implements one step of the Discrete controller, always stepping only one tap position up or down
         """
-        vm_pu = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
         if self.tap_side_coeff * self.tap_sign == 1:
             if vm_pu < self.vm_lower_pu and self.tap_pos > self.tap_min:
@@ -61,17 +62,17 @@ class DiscreteTapControl(TrafoController):
                 self.tap_pos -= 1
 
         # WRITE TO NET
-        self.net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
+        net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
-    def is_converged(self):
+    def is_converged(self, net):
         """
         Checks if the voltage is within the desired voltage band, then returns True
         """
-        if not self.tid in self.net[self.trafotable].index or \
-           not self.net[self.trafotable].at[self.tid, 'in_service']:
+        if not self.tid in net[self.trafotable].index or \
+           not net[self.trafotable].at[self.tid, 'in_service']:
             return True
-        vm_pu = self.net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = self.net[self.trafotable].at[self.tid, "tap_pos"]
+        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
         # render this controller converged if he cant reach the desired point
         if self.tap_side_coeff * self.tap_sign == 1:

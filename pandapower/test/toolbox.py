@@ -1,39 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import os
-import shutil
-import tempfile
 from math import isnan
 
 import numpy as np
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 import pytest
-
 import pandapower as pp
-import pandapower.networks as networks
-
-
-@pytest.fixture(params=[1])  # TODO
-def net_in(request):
-    if request.param == 1:
-        net = create_test_network()
-        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
-        return net
-    if request.param == 2:
-        return networks.case145()
-
-
-@pytest.yield_fixture(scope="module")
-def tempdir():
-    # we create a temporary folder to store all test files and remove it afterwards
-    tmp = tempfile.mkdtemp()
-    yield tmp
-    shutil.rmtree(tmp)
 
 
 def assert_mpc_equal(mpc1, mpc2):
@@ -57,8 +34,9 @@ def assert_net_equal(a_net, b_net, **kwargs):
     """
     status = True
     namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata',
-                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen',
-                'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
+                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'asymmetric_load', 'asymmetric_sgen',
+                'res_line', 'res_bus', 'res_sgen', 'res_gen', 'res_shunt', 'res_load', 'res_ext_grid',
+                'res_trafo']
     for name in namelist:
         if name in a_net or name in b_net:
             if not (a_net[name] is None and b_net[name] is None):

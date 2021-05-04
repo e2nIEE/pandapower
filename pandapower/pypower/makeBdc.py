@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,8 @@
 from numpy import ones, r_, pi, flatnonzero as find, real
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
-from scipy.sparse import csr_matrix as sparse
+
+from scipy.sparse import csr_matrix, csc_matrix
 
 try:
     import pplog as logging
@@ -22,7 +23,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-def makeBdc(bus, branch):
+
+def makeBdc(bus, branch, return_csr=True):
     """Builds the B matrices and phase shift injections for DC power flow.
 
     Returns the B matrices and phase shift injection vectors needed for a
@@ -41,6 +43,9 @@ def makeBdc(bus, branch):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
     """
+    ## Select csc/csr B matrix
+    sparse = csr_matrix if return_csr else csc_matrix
+
     ## constants
     nb = bus.shape[0]          ## number of buses
     nl = branch.shape[0]       ## number of lines
