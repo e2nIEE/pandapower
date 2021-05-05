@@ -2221,15 +2221,18 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     return index
 
 
-def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv, vkr_percent,
-                                       vk_percent, pfe_kw, i0_percent, shift_degree=0,
-                                       tap_side=None, tap_neutral=nan, tap_max=nan, tap_min=nan,
-                                       tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-                                       tap_phase_shifter=False, in_service=True, name=None,
-                                       vector_group=None, index=None, max_loading_percent=nan,
-                                       parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
-                                       mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
-                                       pt_percent=nan, **kwargs):
+def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
+                                       vkr_percent, vk_percent, pfe_kw, i0_percent,
+                                       shift_degree=0,
+                                       tap_side=None, tap_neutral=nan, tap_max=nan,
+                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
+                                       tap_pos=nan, tap_phase_shifter=False, in_service=True,
+                                       name=None, vector_group=None, index=None,
+                                       max_loading_percent=nan, parallel=1,
+                                       df=1., vk0_percent=nan, vkr0_percent=nan,
+                                       mag0_percent=nan, mag0_rx=nan,
+                                       si0_hv_partial=nan,
+                                       pt_percent=nan, oltc=False, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2308,8 +2311,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
-            
-        **pt_percent** (float, NaN) - pt (shortcircuit voltage) of the transformer with OLTC for short-circuit calculation
+
+        **pt_percent** (float, nan) - (short circuit only)
+        
+        **oltc** (bool, False) - (short circuit only)
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -2340,9 +2345,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
-        "tap_side": tap_side, "tap_step_percent": tap_step_percent,
-        "tap_step_degree": tap_step_degree,
-        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
+        "pt_percent": pt_percent, "oltc": oltc
     }
 
     if ("tap_neutral" in v) and (tap_pos is nan):
@@ -2377,7 +2382,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         vector_group=None, index=None, max_loading_percent=None,
                                         parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
                                         mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        pt_percent=nan, **kwargs):
+                                        pt_percent=nan, oltc=False, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2457,8 +2462,10 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
-
-        **pt_percent** (float, NaN) - pt (shortcircuit voltage) of the transformer with OLTC for short-circuit calculation
+        
+        **pt_percent** (float, nan) - (short circuit only)
+        
+        **oltc** (bool, False) - (short circuit only)
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -2483,7 +2490,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_neutral": tp_neutral, "tap_max": tap_max, "tap_min": tap_min,
                "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-               "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
+               "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
+               "pt_percent": pt_percent, "oltc": oltc}
 
     _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
     _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
