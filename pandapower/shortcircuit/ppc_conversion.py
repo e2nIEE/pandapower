@@ -18,17 +18,15 @@ from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 
 from pandapower.pypower.idx_bus import BASE_KV, GS, BS
-from pandapower.pypower.idx_brch import BR_X, BR_R
+from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS
 from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
     PS_TRAFO_IX, GS_P, BS_P
 from pandapower.shortcircuit.idx_brch import K_T, K_ST
-
 
 def _get_is_ppci_bus(net, bus):
     is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
-
 
 def _init_ppc(net):
     _check_sc_data_integrity(net)
@@ -44,6 +42,7 @@ def _init_ppc(net):
     _add_gen_sc_z_kg_ks(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
+
     return ppc, ppci
 
 
@@ -54,9 +53,13 @@ def _check_sc_data_integrity(net):
                 net.gen[col] = np.nan
 
     if not net.trafo.empty:
-        for col in ("pt_percent", "power_station_unit"):
+        for col in ("power_station_unit", "pt_percent",):
             if col not in net.trafo.columns:
                 net.trafo[col] = np.nan
+
+        for col in ("oltc", ):
+            if col not in net.trafo.columns:
+                net.trafo[col] = False
 
 
 def _add_kt(net, ppc):
@@ -79,14 +82,18 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_buses_ppc = bus_lookup[gen_buses]
+    vn_gen_buses = net.bus.loc[gen_buses, "vn_kv"].values
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_mva.values
 
     rdss_ohm = gen.rdss_ohm.values
     xdss_pu = gen.xdss_pu.values
-    pg_percent = gen.pg_percent.values
-    vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
-    sin_phi_gen = np.sin(np.arccos(gen.cos_phi.values))
+
+    # TODO: Set to zero, might needs to be checked
+    pg_percent = np.nan_to_num(gen.pg_percent.values)
+
+    vn_net = net.bus.loc[gen.bus.values, "vn_kv"].values
+    sin_phi_gen = np.sqrt(1 - gen.cos_phi.values**2)
 
     gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
     r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
@@ -100,7 +107,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
     # Calculate K_G
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
-    kg = (1/(1+pg_percent/100)) * cmax / (1 + (xdss_pu * sin_phi_gen))
+    kg = (vn_gen_buses/(vn_gen * (1+pg_percent/100))) * cmax / (1 + xdss_pu * sin_phi_gen)
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
 
@@ -123,42 +130,56 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
 
     # Calculate K_S on power station configuration
-    if np.any(net.gen.power_station_trafo.values) or\
-        np.any(net.trafo.power_station_unit.values):
-
+    if np.any(~np.isnan(net.gen.power_station_trafo.values)):
 
         # If power station units defined with index in gen, no topological search needed
-        ps_gen_ix = net.gen.loc[~np.isnan(net.gen.power_station_trafo.values),:].index.values
+        ps_gen_mask = ~np.isnan(net.gen.power_station_trafo.values)
+        ps_gen_ix = net.gen.loc[(~np.isnan(net.gen.power_station_trafo.values)), :].index.values
+        ps_trafo_ix = net.gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
         if not len(ps_gen_ix):
             logger.info("No power station units defined! If this feature is required please use 'detect_power_station_units' function")
-        ps_trafo_ix = net.gen.loc[ps_gen_ix, "power_station_trafo"].values.astype(int)
 
+        ps_trafo = net.trafo.loc[ps_trafo_ix, :]
+        ps_trafo_oltc_mask = ps_trafo["oltc"].values.astype(bool)
+        ps_gen_buses_ppc = bus_lookup[net.gen.loc[ps_gen_mask, "bus"]]
+        ps_cmax = ppc["bus"][ps_gen_buses_ppc, C_MAX]
 
-        ps_trafo_with_tap_mask = (~np.isnan(net.trafo.loc[ps_trafo_ix, "pt_percent"]))
-        ps_gen_buses_ppc = bus_lookup[net.gen.loc[ps_gen_ix, "bus"]]
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
 
-        ps_cmax = ppc["bus"][ps_gen_buses_ppc, C_MAX]
-        v_trafo_hv, v_trafo_lv =\
-            net.trafo.loc[ps_trafo_ix, "vn_hv_kv"].values, net.trafo.loc[ps_trafo_ix, "vn_lv_kv"].values
-        v_q = net.bus.loc[net.trafo.loc[ps_trafo_ix, "hv_bus"], "vn_kv"].values
-        v_g = vn_gen[ps_gen_ix]
-        x_g = xdss_pu[ps_gen_ix]
-        x_t = net.trafo.loc[ps_trafo_ix, "vk_percent"].values / 100
+        v_trafo_hv, v_trafo_lv = ps_trafo["vn_hv_kv"].values, ps_trafo["vn_lv_kv"].values
+        v_q = net.bus.loc[ps_trafo["hv_bus"].values, "vn_kv"].values
+        x_t = ps_trafo["vk_percent"].values / 100
+        p_t = ps_trafo["pt_percent"].values / 100
 
-        if np.any(ps_trafo_with_tap_mask):
+        if np.any(np.isnan(p_t)):
+            # TODO: Check if tap is always on HV side
+            p_t[np.isnan(p_t)] =\
+                 -(ps_trafo["tap_step_percent"].values *
+                   (ps_trafo["tap_max"].values - ps_trafo["tap_neutral"].values))[np.isnan(p_t)] / 100
+            p_t[np.isnan(p_t)] = 0.0
+
+        v_g = vn_gen[ps_gen_mask]
+        x_g = xdss_pu[ps_gen_mask]
+        p_g = pg_percent[ps_gen_mask] / 100
+
+        if np.any(ps_trafo_oltc_mask):
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
-                ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_ix])
-            ppc["bus"][ps_gen_buses_ppc[ps_trafo_with_tap_mask], K_SG] = ks[ps_trafo_with_tap_mask]
-            ppc["branch"][np.arange(f, t)[ps_trafo_ix][ps_trafo_with_tap_mask], K_ST] = ks[ps_trafo_with_tap_mask]
+                ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_mask])
+            ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_SG] = ks[ps_trafo_oltc_mask]
+            ppc["branch"][np.arange(f, t)[ps_trafo_ix][ps_trafo_oltc_mask], K_ST] = ks[ps_trafo_oltc_mask]
 
-        if np.any(~ps_trafo_with_tap_mask):
-            kso = (v_q/v_g/(1 + pg_percent[ps_gen_ix] / 100)) * (v_trafo_lv/v_trafo_hv) *\
-                ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_ix])
-            ppc["bus"][ps_gen_buses_ppc[~ps_trafo_with_tap_mask], K_SG] = kso[~ps_trafo_with_tap_mask]
-            ppc["branch"][np.arange(f, t)[ps_trafo_ix][~ps_trafo_with_tap_mask], K_ST] = kso[~ps_trafo_with_tap_mask]
+            kg = ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
+            ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_G] = kg[ps_trafo_oltc_mask]
 
-        ppc["bus"][ps_gen_buses_ppc, PS_TRAFO_IX] = np.arange(f, t)[ps_trafo_ix]
+        if np.any(~ps_trafo_oltc_mask):
+            kso = (v_q/v_g/(1 + p_g)) * (v_trafo_lv/v_trafo_hv) *\
+                ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask]) * (1 - p_t[~ps_trafo_oltc_mask])
+
+            ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_SG] = kso[~ps_trafo_oltc_mask]
+            ppc["branch"][np.arange(f, t)[ps_trafo_ix][~ps_trafo_oltc_mask], K_ST] = kso[~ps_trafo_oltc_mask]
+
+            kg = (1 / (1+p_g)) * ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
+            ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
 
 def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
@@ -169,6 +190,12 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
 
     ps_gen_bus_mask = ~np.isnan(ppci["bus"][:, K_SG])
     ps_trafo_mask = ~np.isnan(ppci["branch"][:, K_ST])
+
+    if np.any(ps_trafo_mask):
+        ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
+        ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(int)
+        ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
+
     if np.any(ps_gen_bus_mask):
         ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
             ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
@@ -182,6 +209,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
 
     bus_ppci = {}
     if ps_gen_bus.size > 0:
+
         for bus in ps_gen_bus:
             ppci_gen = deepcopy(ppci)
             if not np.isfinite(ppci_gen["bus"][bus, K_SG]):

@@ -13,6 +13,7 @@ from pandapower.shortcircuit.toolbox import detect_power_station_unit
 
 def iec_60909_4():
     net = pp.create_empty_network()
+    net.sn_mva = 1
 
     b1 = pp.create_bus(net, vn_kv=380.)
     b2 = pp.create_bus(net, vn_kv=110.)
@@ -32,22 +33,32 @@ def iec_60909_4():
     pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1)
     pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1)
 
-    t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
-        pfe_kw=0, i0_percent=0,
-        vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12)
+    # t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
+    #     pfe_kw=0, i0_percent=0,
+    #     vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
+    #     pt_percent=12, oltc=True)
+    t1 = pp.create_transformers_from_parameters(net, [b4], [HG1], sn_mva=[150],
+        pfe_kw=[0], i0_percent=[0],
+        vn_hv_kv=[115.], vn_lv_kv=[21], vk_percent=[16], vkr_percent=[0.5],
+        pt_percent=[12], oltc=[True])
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
-                  power_station_trafo=t1)
+                  power_station_trafo=t1[0])
 
     t2 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
+        oltc=False)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
 
+    # # Add gen 3
+    # pp.create_gen(net, b6, p_mw=0.9 * 100, vn_kv=10.5,
+    #               xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=5)
     # Add gen 3
     pp.create_gen(net, b6, p_mw=0.9 * 100, vn_kv=10.5,
-                  xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=5)
+                  xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=0)
+
 
     pp.create_transformer3w_from_parameters(net,
         hv_bus=b1, mv_bus=b2, lv_bus=H,
@@ -198,13 +209,14 @@ def iec_60909_4_2gen():
 
     t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
         pfe_kw=0, i0_percent=0,
-        vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12)
+        vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
+        pt_percent=12, oltc=True)
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                   power_station_trafo=t1)
 
     t2 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5)
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
@@ -262,6 +274,18 @@ def test_iec_60909_4_3ph_2gen():
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
     # TODO: Check this
     assert np.allclose(net.res_bus_sc.ip_ka[:4].values, np.array(ip_pf), atol=1e-1)
+
+
+def test_iec_60909_4_3ph_2gen_no_ps_detection():
+    net = iec_60909_4_2gen()
+    net.gen.power_station_trafo = np.nan
+    net.gen.at[0, "in_service"] = False
+    net.gen = net.gen.query("in_service")
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    
+    ikss_pf = [1.8460, 1.6715, 6.8953, 39.5042]
+    assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
+
 
 def test_iec_60909_4_3ph_without_motor():
     # Generator connected to normal bus does not need voltage correction
@@ -369,4 +393,3 @@ def test_detect_power_station_units():
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
-
