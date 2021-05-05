@@ -8,7 +8,6 @@
 """
 from time import time
 import numpy as np
-from numpy import flatnonzero as find, pi, exp
 from pandapower import LoadflowNotConverged
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pypower.idx_gen import PG, QG
@@ -27,7 +26,7 @@ from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pypower.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
+from pandapower.pypower.idx_gen import GEN_BUS
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
 try:
@@ -430,7 +429,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     _, ppci0 = _pd2ppc_recycle(net, 0, recycle=recycle)
 
     _,        bus0, gen0, branch0,      _,      _,      _ = _get_pf_variables_from_ppci(ppci0)
-    base_mva, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus = _get_pf_variables_from_ppci(ppci1)
+    base_mva, bus1, gen1, branch1, sl_bus,      _, pq_bus = _get_pf_variables_from_ppci(ppci1)
     _,        bus2, gen2, branch2,      _,      _,      _ = _get_pf_variables_from_ppci(ppci2)
 
     # initialize the results after the conversion to ppc is done, otherwise init=results does not work
@@ -445,8 +444,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =========================================================================
 
-    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, y_2_f,\
-        y_0_t, y_1_t, y_2_t = _get_y_bus(ppci0, ppci1, ppci2, recycle)
+    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, _,\
+        y_0_t, y_1_t, _ = _get_y_bus(ppci0, ppci1, ppci2, recycle)
     # =========================================================================
     # Initial voltage values
     # =========================================================================

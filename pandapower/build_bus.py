@@ -233,14 +233,10 @@ def get_voltage_init_vector(net, init_v, mode, sequence=None):
                 else:
                     raise UserWarning(str(mode)+" for initialization not available!")
         if init_v == "flat":
-            if mode == "magnitude":
-                net["_options"]["init_vm_pu"] = 0.
-            else:
-                net["_options"]["init_va_degree"] = 0.
             return None
-    elif isinstance(init_v, (float, np.ndarray, list)):
+    elif isinstance(init_v, (float, np.ndarray, list)) and sequence is None or sequence == 1:
         return init_v
-    elif isinstance(init_v, pd.Series):
+    elif isinstance(init_v, pd.Series) and sequence is None or sequence == 1:
         if init_v.index.equals(net.bus.index):
             return init_v.loc[net.bus.index]
         else:
