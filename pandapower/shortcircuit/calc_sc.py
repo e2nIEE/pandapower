@@ -33,6 +33,7 @@ def calc_sc(net, bus=None,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
             inverse_y=True):
+
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source

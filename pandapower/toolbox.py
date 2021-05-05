@@ -16,7 +16,7 @@ from packaging import version
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen
+    create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
@@ -2129,6 +2129,119 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_sgen.drop(sgens, inplace=True)
+    return new_idx
+
+
+def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None, cols_to_keep=None,
+                       add_cols_to_keep=None):
+    """
+    Replaces e.g. static generators by loads or loads by storages and so forth.
+
+    INPUT:
+        **net** - pandapower net
+
+        **old_elm** (str) - element type of which elements should be replaced. Should be in [
+            "sgen", "load", "storage"]
+
+        **new_elm** (str) - element type of which elements should be created. Should be in [
+            "sgen", "load", "storage"]
+
+    OPTIONAL:
+        **old_indices** (iterable) - indices of the elements which should be replaced
+
+        **new_indices** (iterable) - required indices of the new elements
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing.
+        If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". Independent whether cols_to_keep is given, these columns are
+        always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+        'cols_to_keep' to be kept while replacing.
+    """
+    if old_elm == new_elm:
+        logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
+        return old_indices
+    if old_indices is None:
+        old_indices = net[old_elm].index
+    else:
+        old_indices = ensure_iterability(old_indices)
+    if new_indices is None:
+        new_indices = [None] * len(old_indices)
+    elif len(new_indices) != len(old_indices):
+        raise ValueError("The length of 'new_indices' must be the same as of 'old_indices' but " +
+                         "is %i instead of %i" % (len(new_indices), len(old_indices)))
+
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net[old_elm].loc[old_indices].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net[new_elm] which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net[new_elm].columns)
+    for col in missing_cols_to_keep:
+        net[new_elm][col] = np.nan
+
+    # --- create new_elm
+    already_considered_cols = set()
+    new_idx = []
+    for oelm, index in zip(net[old_elm].loc[old_indices].itertuples(), new_indices):
+        controllable = False if "controllable" not in net[old_elm].columns else oelm.controllable
+        sign = -1 if old_elm in ["sgen"] else 1
+        args = dict()
+        if new_elm == "load":
+            fct = create_load
+        elif new_elm == "sgen":
+            fct = create_sgen
+            sign *= -1
+        elif new_elm == "storage":
+            fct = create_storage
+            already_considered_cols |= {"max_e_mwh"}
+            args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_elm].columns else net[
+                old_elm].max_e_kwh.loc[old_indices]}
+        idx = fct(net, oelm.bus, p_mw=sign*oelm.p_mw, q_mvar=sign*oelm.q_mvar, name=oelm.name,
+                  in_service=oelm.in_service, controllable=controllable, index=index, **args)
+        new_idx.append(idx)
+
+    if sign == -1:
+        for col1, col2 in zip(["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
+                              ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]):
+            if col1 in existing_cols_to_keep:
+                net[new_elm].loc[new_idx, col2] = sign * net[old_elm].loc[
+                    old_indices, col1].values
+                already_considered_cols |= {col1}
+    net[new_elm].loc[new_idx, existing_cols_to_keep.difference(already_considered_cols)] = net[
+        old_elm].loc[old_indices, existing_cols_to_keep.difference(already_considered_cols)].values
+
+    # --- drop replaced old_indices
+    net[old_elm].drop(old_indices, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == old_elm) &
+                                         (net[table].element.isin(old_indices))]
+            if len(to_change):
+                net[table].et.loc[to_change] = new_elm
+                net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net["res_" + old_elm].shape[0]:
+        to_add = net["res_" + old_elm].loc[old_indices]
+        to_add.index = new_idx
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
+        else:
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
+        net["res_" + old_elm].drop(old_indices, inplace=True)
     return new_idx
 
 
