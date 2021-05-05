@@ -43,6 +43,7 @@ class Not_implemented(ppException):
     """
     pass
 
+
 def _get_pf_variables_from_ppci(ppci):
     """
     Used for getting values for pfsoln function in one convinient function
@@ -55,14 +56,7 @@ def _get_pf_variables_from_ppci(ppci):
         ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
     # get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
-    # generator info
-    on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
-    # initial state
-    v0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
-    v0[gbus] = gen[on, VG] / abs(v0[gbus]) * v0[gbus]
-    ref_gens = ppci["internal"]["ref_gens"]
-    return base_mva, bus, gen, branch, ref, pv, pq, on, gbus, v0, ref_gens
+    return base_mva, bus, gen, branch, ref, pv, pq
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
@@ -435,12 +429,9 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
     _, ppci0 = _pd2ppc_recycle(net, 0, recycle=recycle)
 
-    _,       bus0, gen0, branch0,      _,      _,      _, _, _,\
-        v00, ref_gens = _get_pf_variables_from_ppci(ppci0)
-    base_mva, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, \
-        v01, ref_gens = _get_pf_variables_from_ppci(ppci1)
-    _,       bus2, gen2, branch2,      _,      _,      _, _, _, \
-        v02, ref_gens = _get_pf_variables_from_ppci(ppci2)
+    _,        bus0, gen0, branch0,      _,      _,      _ = _get_pf_variables_from_ppci(ppci0)
+    base_mva, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus = _get_pf_variables_from_ppci(ppci1)
+    _,        bus2, gen2, branch2,      _,      _,      _ = _get_pf_variables_from_ppci(ppci2)
 
     # initialize the results after the conversion to ppc is done, otherwise init=results does not work
     init_results(net, "pf_3ph")
@@ -548,6 +539,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # This is required since the ext_grid power results are not correct if its
     # not done
     ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+    ref_gens = ppci0["internal"]["ref_gens"]
     ppci0["bus"][ref, GS] -= gs_eg
     ppci0["bus"][ref, BS] -= bs_eg
     y_0_pu, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
