@@ -291,6 +291,10 @@ def _build_bus_ppc(net, ppc, sequence=None):
     ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
+
+    if sequence is not None and sequence != 1:
+        ppc["bus"][:, VM] = 0.
+
     if mode == "sc":
         from pandapower.shortcircuit.idx_bus import bus_cols_sc
         bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
