@@ -126,7 +126,7 @@ def iec_60909_4():
 
     return net
 
-def iec_60909_4_small():
+def iec_60909_4_small(with_xward=False):
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=380.)
@@ -181,6 +181,9 @@ def iec_60909_4_small():
         c_nf_per_km=0, max_i_ka=0,
         length_km=10, r_ohm_per_km=0.096, x_ohm_per_km=0.388,
         r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0)
+    
+    if with_xward:
+        pp.create_xward(net, b5, 1, 0, 0, 0, 10, 20, 1)
 
     return net
 
@@ -250,6 +253,14 @@ def test_iec_60909_4_3ph_small_with_gen():
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
     assert np.allclose(net.res_bus_sc.ip_ka.values[:4], np.array(ip_pf), atol=1e-3)
+
+def test_iec_60909_4_3ph_small_with_gen_xward():
+    net = iec_60909_4_small(with_xward=True)
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    
+    ikss_pf = [40.6422, 31.6394, 16.7409, 33.2808]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
+    
 
 def test_iec_60909_4_3ph_small_gen_only():
     net = iec_60909_4_small_gen_only()

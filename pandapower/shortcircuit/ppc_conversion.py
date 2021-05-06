@@ -16,7 +16,6 @@ import numpy as np
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
-
 from pandapower.pypower.idx_bus import GS, BS
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS
 from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
@@ -40,11 +39,11 @@ def _init_ppc(net):
     # Add parameter K into ppc
     _add_kt(net, ppc)
     _add_gen_sc_z_kg_ks(net, ppc)
+    _add_xward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
 
     return ppc, ppci
-
 
 def _check_sc_data_integrity(net):
     if not net.gen.empty:
@@ -61,7 +60,6 @@ def _check_sc_data_integrity(net):
             if col not in net.trafo.columns:
                 net.trafo[col] = False
 
-
 def _add_kt(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
@@ -74,6 +72,25 @@ def _add_kt(net, ppc):
                                             trafo_df.sn_mva, cmax)
         branch[f:t, K_T] = kt
 
+def _add_xward_sc_z(net, ppc):
+    # TODO: Check if this should be ward or xward
+    ward = net["xward"][net._is_elements["xward"]]
+    if len(ward) == 0:
+        return
+    ward_buses = ward.bus.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    ward_buses_ppc = bus_lookup[ward_buses]
+    
+    vn_ward = net.bus.loc[ward_buses, "vn_kv"].values
+    ward_baseZ = (vn_ward ** 2 / ppc["baseMVA"])
+    r_ward, x_ward = ward["r_ohm"].values, ward["x_ohm"].values
+    z_ward = (r_ward + x_ward*1j)
+    z_ward_pu = z_ward / ward_baseZ
+    y_ward_pu = 1 / z_ward_pu
+
+    buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
+    ppc["bus"][buses, GS] += gs
+    ppc["bus"][buses, BS] += bs
 
 def _add_gen_sc_z_kg_ks(net, ppc):
     gen = net["gen"][net._is_elements["gen"]]
@@ -82,13 +99,13 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_buses_ppc = bus_lookup[gen_buses]
-    # vn_gen_buses = net.bus.loc[gen_buses, "vn_kv"].values
+
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_mva.values
     rdss_ohm = gen.rdss_ohm.values
     xdss_pu = gen.xdss_pu.values
 
-    # TODO: Set to zero, might needs to be checked
+    # Set to zero to avoid nan
     pg_percent = np.nan_to_num(gen.pg_percent.values)
     vn_net = net.bus.loc[gen_buses, "vn_kv"].values
     sin_phi_gen = np.sqrt(1 - gen.cos_phi.values**2)
@@ -132,17 +149,11 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
         # If power station units defined with index in gen, no topological search needed
         ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
-        # ps_gen_ix = net.gen.loc[(~np.isnan(gen.power_station_trafo.values)), :].index.values
         ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
-        # if not len(ps_gen_ix):
-        #     logger.info("No power station units defined! If this feature is required please use 'detect_power_station_units' function")
-
         ps_trafo = net.trafo.loc[ps_trafo_ix, :]
         ps_trafo_oltc_mask = ps_trafo["oltc"].values.astype(bool)
         ps_gen_buses_ppc = bus_lookup[gen.loc[ps_gen_mask, "bus"]]
         ps_cmax = ppc["bus"][ps_gen_buses_ppc, C_MAX]
-
-        f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
 
         v_trafo_hv, v_trafo_lv = ps_trafo["vn_hv_kv"].values, ps_trafo["vn_lv_kv"].values
         v_q = net.bus.loc[ps_trafo["hv_bus"].values, "vn_kv"].values
@@ -160,6 +171,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         x_g = xdss_pu[ps_gen_mask]
         p_g = pg_percent[ps_gen_mask] / 100
 
+        f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         if np.any(ps_trafo_oltc_mask):
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
                 ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_mask])
