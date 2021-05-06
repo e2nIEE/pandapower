@@ -17,7 +17,7 @@ from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 
-from pandapower.pypower.idx_bus import BASE_KV, GS, BS
+from pandapower.pypower.idx_bus import GS, BS
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS
 from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
     PS_TRAFO_IX, GS_P, BS_P
@@ -82,17 +82,15 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_buses_ppc = bus_lookup[gen_buses]
-    vn_gen_buses = net.bus.loc[gen_buses, "vn_kv"].values
+    # vn_gen_buses = net.bus.loc[gen_buses, "vn_kv"].values
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_mva.values
-
     rdss_ohm = gen.rdss_ohm.values
     xdss_pu = gen.xdss_pu.values
 
     # TODO: Set to zero, might needs to be checked
     pg_percent = np.nan_to_num(gen.pg_percent.values)
-
-    vn_net = net.bus.loc[gen.bus.values, "vn_kv"].values
+    vn_net = net.bus.loc[gen_buses, "vn_kv"].values
     sin_phi_gen = np.sqrt(1 - gen.cos_phi.values**2)
 
     gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
@@ -107,7 +105,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
     # Calculate K_G
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
-    kg = (vn_gen_buses/(vn_gen * (1+pg_percent/100))) * cmax / (1 + xdss_pu * sin_phi_gen)
+    kg = vn_net/(vn_gen * (1+pg_percent/100)) * cmax / (1 + xdss_pu * sin_phi_gen)
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
 
@@ -130,18 +128,18 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
 
     # Calculate K_S on power station configuration
-    if np.any(~np.isnan(net.gen.power_station_trafo.values)):
+    if np.any(~np.isnan(gen.power_station_trafo.values)):
 
         # If power station units defined with index in gen, no topological search needed
-        ps_gen_mask = ~np.isnan(net.gen.power_station_trafo.values)
-        ps_gen_ix = net.gen.loc[(~np.isnan(net.gen.power_station_trafo.values)), :].index.values
-        ps_trafo_ix = net.gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
-        if not len(ps_gen_ix):
-            logger.info("No power station units defined! If this feature is required please use 'detect_power_station_units' function")
+        ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
+        # ps_gen_ix = net.gen.loc[(~np.isnan(gen.power_station_trafo.values)), :].index.values
+        ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
+        # if not len(ps_gen_ix):
+        #     logger.info("No power station units defined! If this feature is required please use 'detect_power_station_units' function")
 
         ps_trafo = net.trafo.loc[ps_trafo_ix, :]
         ps_trafo_oltc_mask = ps_trafo["oltc"].values.astype(bool)
-        ps_gen_buses_ppc = bus_lookup[net.gen.loc[ps_gen_mask, "bus"]]
+        ps_gen_buses_ppc = bus_lookup[gen.loc[ps_gen_mask, "bus"]]
         ps_cmax = ppc["bus"][ps_gen_buses_ppc, C_MAX]
 
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
@@ -168,6 +166,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_SG] = ks[ps_trafo_oltc_mask]
             ppc["branch"][np.arange(f, t)[ps_trafo_ix][ps_trafo_oltc_mask], K_ST] = ks[ps_trafo_oltc_mask]
 
+            # kg for sc calculation inside power station units
             kg = ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
             ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_G] = kg[ps_trafo_oltc_mask]
 
@@ -178,7 +177,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_SG] = kso[~ps_trafo_oltc_mask]
             ppc["branch"][np.arange(f, t)[ps_trafo_ix][~ps_trafo_oltc_mask], K_ST] = kso[~ps_trafo_oltc_mask]
 
-            kg = (1 / (1+p_g)) * ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
+            # kg for sc calculation inside power station units
+            kg = 1 / (1+p_g) * ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
 
@@ -209,7 +209,6 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
 
     bus_ppci = {}
     if ps_gen_bus.size > 0:
-
         for bus in ps_gen_bus:
             ppci_gen = deepcopy(ppci)
             if not np.isfinite(ppci_gen["bus"][bus, K_SG]):
