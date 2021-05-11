@@ -201,7 +201,7 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
                     "same type controllers should be dropped.")
 
 
-def plot_characteristic(characteristic, start, stop, num=None):
+def plot_characteristic(characteristic, start, stop, num=20):
     x = np.linspace(start, stop, num)
     y = characteristic(x)
     if MATPLOTLIB_INSTALLED:
