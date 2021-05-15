@@ -14,7 +14,7 @@ class CharacteristicControl(Controller):
     Example: change the tap position of the transformers (net.trafo.tap_pos) based on transformer loading (net.res_trafo.loading_percent)
     according to a specified linear relationship. To this end, the input element is "res_trafo", the input variable is "loading_percent",
     the output element is "trafo" and the output variable is "tap_pos". The relationship between the values of the input and output
-    variables is specified using the Characteristic class (or a scipy interpolator, e.g. scipy.interpolate.PPoly).
+    variables is specified using the Characteristic class (or a scipy interpolator, e.g. scipy.interpolate.interp1d).
 
     INPUT:
         **net** (attrdict) - Pandapower net

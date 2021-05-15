@@ -19,7 +19,7 @@ class Characteristic(JSONSerializableClass):
     |   **eps** - Optional: An epsilon to compare the difference to.
 
     The class has an implementation of the __call__ method, which allows using it interchangeably with other interpolator objects,
-    e.g. scipy.interpolate.CubicSpline, scipy.interpolate.PPoly, etc.
+    e.g. scipy.interpolate.interp1d, scipy.interpolate.CubicSpline, scipy.interpolate.PPoly, etc.
 
     Example usage:
 
