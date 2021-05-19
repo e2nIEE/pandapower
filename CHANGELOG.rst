@@ -5,6 +5,9 @@ Change Log
 - [ADDED] toolbox function replace_pq_elmtype()
 - [CHANGED] ConstControl can now also change attributes of other controllers, if the parameter "variable" is defined in the format "object.attribute" (e.g. "object.vm_set_pu")
 - [ADDED] Alternative constructor for DiscreteTapControl to use net.trafo.tap_step_percent to determine vm_lower_pu and vm_upper_pu based on vm_set_pu
+- [ADDED] Characteristic object that represents a piecewise-linear characteristic
+- [ADDED] CharacteristicControl that implements adjusting values in net based on some other input values in the grid
+- [ADDED] USetTapControl that adjusts the setpoint for a transformer tap changer, based on a specified result variable (e.g. i_lv_ka)
 
 [2.6.0]- 2021-03-09
 ----------------------

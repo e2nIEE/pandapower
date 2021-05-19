@@ -35,7 +35,8 @@ Continuous Tap Control
 **********************
 .. autoclass:: pandapower.control.controller.trafo.ContinuousTapControl.ContinuousTapControl
     :members:
-    
+
+
 -------------
 
 **********************
@@ -45,3 +46,22 @@ Discrete Tap Control
 .. autoclass:: pandapower.control.controller.trafo.DiscreteTapControl.DiscreteTapControl
     :members:
     
+CharacteristicControl
+===============
+
+The following controllers that use characteristics are predefined within the pandapower control module.
+
+**********************
+CharacteristicControl
+**********************
+.. autoclass:: pandapower.control.controller.characteristic_control.CharacteristicControl
+    :members:
+
+-------------
+
+**********************
+USetTapControl
+**********************
+
+.. autoclass:: pandapower.control.controller.trafo.USetTapControl.USetTapControl
+    :members:
