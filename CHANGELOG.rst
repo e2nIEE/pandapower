@@ -3,6 +3,7 @@ Change Log
 - [ADDED] OR-Tools implementation of linprog solver
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
+- [CHANGED] ConstControl can now also change attributes of other controllers, if the parameter "variable" is defined in the format "object.attribute" (e.g. "object.vm_set_pu")
 
 [2.6.0]- 2021-03-09
 ----------------------
