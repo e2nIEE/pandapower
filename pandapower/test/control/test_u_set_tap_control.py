@@ -5,8 +5,8 @@
 
 import pandapower as pp
 import pytest
-import control
-from control import Characteristic
+from pandapower import control
+from pandapower.control import Characteristic
 
 
 def test_continuous_p():
