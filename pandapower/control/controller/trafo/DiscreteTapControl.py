@@ -64,9 +64,11 @@ class DiscreteTapControl(TrafoController):
 
             **vm_set_pu** (float) - Voltage setpoint in pu
         """
-        return cls(net, tid=tid, vm_lower_pu=None, vm_upper_pu=None, side=side, trafotype=trafotype, tol=tol,
+        self = cls(net, tid=tid, vm_lower_pu=None, vm_upper_pu=None, side=side, trafotype=trafotype, tol=tol,
                    in_service=in_service, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
                    matching_params=matching_params, vm_set_pu=vm_set_pu, **kwargs)
+        self.vm_delta_pu = net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5 + self.tol
+        return self
 
     @property
     def vm_set_pu(self):
@@ -77,9 +79,8 @@ class DiscreteTapControl(TrafoController):
         self._vm_set_pu = value
         if value is None:
             return
-        vm_delta_pu = net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5 + self.tol
-        self.vm_lower_pu = value - vm_delta_pu
-        self.vm_upper_pu = value + vm_delta_pu
+        self.vm_lower_pu = value - self.vm_delta_pu
+        self.vm_upper_pu = value + self.vm_delta_pu
 
     def control_step(self, net):
         """
