@@ -84,7 +84,7 @@ class DiscreteTapControl(TrafoController):
 
     def initialize_control(self, net):
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
-            self.vm_delta_pu = net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5 + self.tol
+            self.vm_delta_pu = net[self.trafotable].at[self.tid, "tap_step_percent"] / 100. * .5 + self.tol
 
     def control_step(self, net):
         """
