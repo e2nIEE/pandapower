@@ -179,7 +179,7 @@ def from_excel(filename, convert=True):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
         xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
-        
+
     try:
         net = io_utils.from_dict_of_dfs(xls)
     except:
@@ -212,7 +212,7 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(filename, convert=True, encryption_key=None):
+def from_json(filename, convert=True, encryption_key=None, deserialized_pandas_tables=None):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -242,10 +242,11 @@ def from_json(filename, convert=True, encryption_key=None):
         with open(filename, "r") as fp:
             json_string = fp.read()
 
-    return from_json_string(json_string, convert=convert, encryption_key=encryption_key)
+    return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
+                            deserialized_pandas_tables=deserialized_pandas_tables)
 
 
-def from_json_string(json_string, convert=False, encryption_key=None):
+def from_json_string(json_string, convert=False, encryption_key=None, deserialized_pandas_tables=None):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -270,7 +271,18 @@ def from_json_string(json_string, convert=False, encryption_key=None):
     if encryption_key is not None:
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
-    net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+    if deserialized_pandas_tables is None:
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+        for key in net.keys():
+            if key in ['version', 'name']:
+                continue
+            if isinstance(net[key], str):
+                net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+    else:
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
+        for key in deserialized_pandas_tables:
+            net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
@@ -340,3 +352,9 @@ def from_sqlite(filename, netname=""):
     net = from_sql(con)
     con.close()
     return net
+
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.from_json('test.json', deserialized_pandas_tables=['bus'])
+    pp.to_json(net, 'test2.json')
+    net = pp.from_json('test2.json')

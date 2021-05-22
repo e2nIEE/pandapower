@@ -14,6 +14,7 @@ import weakref
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
+from pandapower import io_utils
 
 import networkx
 import numpy
@@ -400,10 +401,11 @@ class FromSerializableRegistry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct, deserialize_pandas):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
+        self.deserialize_pandas = deserialize_pandas
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
@@ -411,16 +413,19 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
     def DataFrame(self):
-        df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
-        try:
-            df.set_index(df.index.astype(numpy.int64), inplace=True)
-        except (ValueError, TypeError, AttributeError):
-            logger.debug("failed setting int64 index")
-        # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook)
-        return df
+        if self.deserialize_pandas:
+            df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
+            try:
+                df.set_index(df.index.astype(numpy.int64), inplace=True)
+            except (ValueError, TypeError, AttributeError):
+                logger.debug("failed setting int64 index")
+            # recreate jsoned objects
+            for col in ('object', 'controller'):  # "controller" for backwards compatibility
+                if (col in df.columns):
+                    df[col] = df[col].apply(self.pp_hook)
+            return df
+        else:
+            return self.obj
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
     def pandapowerNet(self):
@@ -505,16 +510,21 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
-#        net = create_empty_network()
-        super_kwargs = {"object_hook": partial(pp_hook, registry_class=FromSerializableRegistry)}
+        #        net = create_empty_network()
+        deserialize_pandas = kwargs.pop('deserialize_pandas', True)
+        super_kwargs = {"object_hook": partial(pp_hook,
+                                               deserialize_pandas=deserialize_pandas,
+                                               registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, registry_class=FromSerializableRegistry):
+def pp_hook(d, deserialize_pandas, registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
-            if "_object" in d:
+            if 'pandas' in d['_module'] and not deserialize_pandas:
+                return json.dumps(d, cls=io_utils.PPJSONEncoder, indent=2)
+            elif "_object" in d:
                 obj = d.pop('_object')
             elif "_state" in d:
                 obj = d['_state']
@@ -524,7 +534,7 @@ def pp_hook(d, registry_class=FromSerializableRegistry):
             else:
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook)
+            fs = registry_class(obj, d, pp_hook, deserialize_pandas)
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             return fs.from_serializable()
