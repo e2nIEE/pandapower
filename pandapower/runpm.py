@@ -7,7 +7,7 @@
 import os
 
 from pandapower import pp_dir
-from pandapower.auxiliary import _add_ppc_options, _add_opf_options
+from pandapower.auxiliary import _add_ppc_options, _add_opf_options,  _add_pf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
 from pandapower.opf.run_powermodels import _runpm
@@ -103,8 +103,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                 correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
-                 pm_time_limits=None, pm_log_level=0, **kwargs):  # pragma: no cover
+                 correct_pm_network_data=True, pm_solver="ipopt", pm_time_limits=None,
+                 pm_log_level=0, delete_buffer_file=True, pm_file_path = None, **kwargs):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
 
@@ -142,8 +142,6 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     OPTIONAL:
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
-        **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
-
         **pm_solver** (str, "ipopt") - The "main" power models solver
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
@@ -154,7 +152,6 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pm_log_level** (int, 0) - solver log level in power models
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
-    ac = True if "DC" not in pm_model else False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -162,11 +159,11 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
+    _add_opf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
-                     correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
+                     correct_pm_network_data=correct_pm_network_data, pm_model="DCPPowerModel", pm_solver=pm_solver,
                      pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim="S")
-    _runpm(net)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path = pm_file_path)
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -212,8 +209,6 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
-        **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-
         **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
 
         **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
@@ -236,7 +231,6 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                                        delete_buffer_file to False!
          """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
-    ac = True if "DC" not in pm_model else False
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -244,16 +238,61 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model="ACPPowerModel", pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
     _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file)
 
 
+def runpm_dc_pf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                 correct_pm_network_data=True, pm_solver="ipopt",
+                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True, **kwargs):
+    
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_powerflow.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_pf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
+                     max_iteration="auto", tolerance_mva=1e-8, algorithm="nr",
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
+                     correct_pm_network_data=correct_pm_network_data, pm_model="DCMPPowerModel", pm_solver=pm_solver,
+                     pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim="S")
+    
+    _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file)
+    
+    
+def runpm_ac_pf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True,
+                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
+                 opf_flow_lim="S", **kwargs):
+
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_powerflow.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="pf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+        
+    _add_pf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     max_iteration="auto", tolerance_mva=1e-8, algorithm="nr",
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model="ACPPowerModel", pm_solver=pm_solver,
+                     correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
+                     pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
+    
+    _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file)
+
 def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-               pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True,
+               pm_model="DCMPowerModel", pm_solver=None, correct_pm_network_data=True,
                pm_nl_solver="ipopt", pm_mip_solver="cbc", pm_time_limits=None, pm_log_level=0,
                opf_flow_lim="S", **kwargs):  # pragma: no cover
     """
@@ -393,3 +432,9 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
     _runpm(net)
     storage_results = read_pm_storage_results(net)
     return storage_results
+
+
+
+
+
+    

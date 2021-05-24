@@ -426,6 +426,38 @@ def test_ots_opt():
         assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_runpm_dc_pf():
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0. 
+    
+    pp.runpm_dc_pf(net) 
+    
+    va_pm = copy.copy(net.bus.va_degree)
+
+    pp.rundcpp(net, calculate_voltage_angles=True)
+    va_pp = copy.copy(net.bus.va_degree)
+    
+    assert np.allclose(va_pm, va_pp)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")      
+def test_runpm_ac_pf():
+    net = nw.simple_four_bus_system()
+    net.trafo.loc[0, "shift_degree"] = 0.
+    
+    pp.runpm_ac_pf(net)   
+    va_pm = copy.copy(net.bus.va_degree)
+    vm_pm = copy.copy(net.bus.vm_pu)
+
+    pp.runpp(net, calculate_voltage_angles=True)   
+    va_pp = copy.copy(net.bus.va_degree)
+    vm_pp = copy.copy(net.bus.vm_pu)
+
+    assert np.allclose(va_pm, va_pp)
+    assert np.allclose(vm_pm, vm_pp)
+    
+    
 def assert_pf(net, dc=False):
     custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
                                "opf", "run_powermodels_powerflow.jl")
@@ -449,7 +481,7 @@ def assert_pf(net, dc=False):
     if not dc:
         assert np.allclose(vm_pm, vm_pp)
 
-
+        
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_pm_ac_powerflow_simple():
     net = nw.simple_four_bus_system()
@@ -458,7 +490,7 @@ def test_pm_ac_powerflow_simple():
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.xfail(reason="DCMPPowerModel not released yet")
+# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_simple():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
@@ -474,7 +506,7 @@ def test_pm_ac_powerflow_shunt():
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.xfail(reason="DCMPPowerModel not released yet")
+# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_shunt():
     net = nw.simple_four_bus_system()
     pp.create_shunt(net, 2, q_mvar=-0.5)
@@ -491,7 +523,7 @@ def test_pm_ac_powerflow_tap():
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.xfail(reason="DCMPPowerModel not released yet")
+# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_tap():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
@@ -549,5 +581,5 @@ def test_timeseries_powermodels():
 
 
 if __name__ == '__main__':
-    test_pwl()
-    # pytest.main([__file__])
+    
+    pytest.main([__file__])
