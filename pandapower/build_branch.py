@@ -132,7 +132,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]
-    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else   np.square(base_kv) / net.sn_mva 
+    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else np.square(base_kv) / net.sn_mva 
     branch[f:t, F_BUS] = from_bus
     branch[f:t, T_BUS] = to_bus
     branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
@@ -258,7 +258,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
     if mode == "sc":
         y = 0
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
@@ -270,7 +270,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc):
             r *= kt
             x *= kt
     else:
-        y = _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+        y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
@@ -298,7 +298,7 @@ def _wye_delta(r, x, y):
     return r, x, y
 
 
-def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
+def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -311,17 +311,19 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
-   
+
     baseR = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
-    pfe = get_trafo_values(trafo_df, "pfe_kw") * 1e-3
+    pfe = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
+        else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
     parallel = get_trafo_values(trafo_df, "parallel")
 
     ### Calculate subsceptance ###
-   
-    vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else  vn_lv_kv **2
+
+    vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vn_lv_kv ** 2
     b_real = pfe / vnl_squared * baseR
-    i0 = get_trafo_values(trafo_df, "i0_percent")
+    i0 = get_trafo_values(trafo_df, "i0_percent") / 3 if mode == 'pf_3ph'\
+        else get_trafo_values(trafo_df, "i0_percent")
     sn = get_trafo_values(trafo_df, "sn_mva")
     b_img = (i0 / 100. * sn) ** 2 - pfe ** 2
 
@@ -375,7 +377,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
     for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
         phase_shifters = tap_phase_shifter & (tap_side == side)
         tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-                      ~phase_shifters
+            ~phase_shifters
         if tap_complex.any():
             tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
             tap_angles = _replace_nan(tap_step_degree[tap_complex])
@@ -403,7 +405,7 @@ def _replace_nan(array, value=0):
     array[mask] = value
     return array
 
-def _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
@@ -412,8 +414,8 @@ def _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     parallel = get_trafo_values(trafo_df, "parallel")
     vk_percent = get_trafo_values(trafo_df, "vk_percent")
     vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * (3* sn_mva)  if mode == 'pf_3ph' else\
-    np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
+    tap_lv = np.square(vn_trafo_lv / vn_lv) * (3 * sn_mva) if mode == 'pf_3ph' else\
+        np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
     r_sc = vkr_percent / 100. / sn_trafo_mva * tap_lv
@@ -442,7 +444,7 @@ def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lo
     hv_bus = get_trafo_values(trafo_df, "hv_bus")
     lv_bus = get_trafo_values(trafo_df, "lv_bus")
     nom_rat = get_values(ppc["bus"][:, BASE_KV], hv_bus, bus_lookup) / \
-              get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup)
+        get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup)
     return tap_rat / nom_rat
 
 
@@ -481,7 +483,7 @@ def _calc_xward_parameter(net, ppc):
     f, t = net["_pd2ppc_lookups"]["branch"]["xward"]
     branch = ppc["branch"]
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / \
-            net.sn_mva
+        net.sn_mva
     xw_is = net["_is_elements"]["xward"]
     branch[f:t, F_BUS] = bus_lookup[net["xward"]["bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net._pd2ppc_lookups["aux"]["xward"]]
