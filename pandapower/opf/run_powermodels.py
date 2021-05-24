@@ -63,10 +63,13 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     if str(type(Base.find_package("PandaModels"))) == "<class 'NoneType'>":
         
         Pkg.add(url = "https://github.com/e2nIEE/PandaModels.jl") 
-        
+        Pkg.build()
+        Pkg.resolve()
         Pkg.develop("PandaModels")
         Pkg.build()
         Pkg.resolve()
+    else: 
+        Pkg.update("PandaModels")
         
     # Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
 
