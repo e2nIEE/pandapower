@@ -29,3 +29,5 @@ pandapower/timeseries/logs/*
 /.vscode/
 
 pandapower/test/buffer_file.json
+
+pandapower/test/opf/buffer_file.json
