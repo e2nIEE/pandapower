@@ -86,6 +86,8 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
         
     # Pkg.activate(Pkg_path)
     Pkg.activate("PandaModels")
+    Pkg.instantiate()
+    Pkg.resolve()
     print("activate PandaModels")
     
     try:    
