@@ -38,6 +38,11 @@ end
 function run_powermodels(json_path)
     # load converted pandapower network
     pm = PP2PM.load_pm_from_json(json_path)
+    model = PP2PM.get_model(pm["pm_model"])
+
+    solver = PP2PM.get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"],
+    pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
+    
     # copy network n_time_steps time step times
     n_time_steps = pm["n_time_steps"]
     mn = PowerModels.replicate(pm, pm["n_time_steps"])
@@ -50,10 +55,10 @@ function run_powermodels(json_path)
         print("Running storage without time series")
     end
 
-    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level = 0)
+    ipopt_solver = JuMP.with_optimizer(Ipopt.Optimizer, print_level = 1)
 
     # run multinetwork storage opf
-    result = PowerModels._run_mn_strg_opf(mn, PowerModels.ACPPowerModel, ipopt_solver)
+    result = PowerModels.run_mn_opf_strg(mn, model, solver)#(mn, PowerModels.ACPPowerModel, ipopt_solver)
     print_summary(result)
     return result
 end

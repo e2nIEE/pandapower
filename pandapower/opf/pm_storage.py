@@ -49,7 +49,9 @@ def add_storage_opf_settings(net, ppci, pm):
             "qmax": max_q_mvar,
             "qmin": min_q_mvar,
             "charge_rating": max_p_mw,
-            "discharge_efficiency": 1.0
+            "discharge_efficiency": 1.0,
+            "p_loss": 0.0,
+            "q_loss": 0.0
         }
 
 

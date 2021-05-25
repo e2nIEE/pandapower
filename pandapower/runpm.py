@@ -394,8 +394,10 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 def runpm_storage_opf(net, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                      n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True,
-                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0, **kwargs):  # pragma: no cover
+                      n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True, 
+                      pm_solver="ipopt", pm_mip_solver="cbc", pm_nl_solver="ipopt",
+                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
+                      delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", **kwargs):  # pragma: no cover
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.
 
@@ -424,7 +426,7 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=add_storage_opf_settings, julia_file=julia_file,
                      correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_time_limits=pm_time_limits,
-                     pm_log_level=pm_log_level)
+                     pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
 
     net._options["n_time_steps"] = n_timesteps
     net._options["time_elapsed"] = time_elapsed
