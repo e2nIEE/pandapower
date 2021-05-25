@@ -57,7 +57,8 @@ def detect_power_station_unit(net, mode="auto",
 
         if len(gen_bus_at_lv_side) == 1:
             # Check parallel trafo
-            assert len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1
+            if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
+                raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
 
             # Check parallel gen
 
@@ -85,10 +86,11 @@ def _create_element_from_exisiting(net, ele_type, ele_ix):
 
 
 def _create_aux_net(net, line_ix, distance_to_bus0):
-    assert distance_to_bus0 > 0 and distance_to_bus0 < 1
+    if distance_to_bus0 > 0 and distance_to_bus0 < 1:
+        raise UserWarning("Calculating SC current on line failed! distance_to_bus0 must be between 0-1!")
     aux_net = deepcopy(net)
 
-    # # Create auxiliary bus
+    # Create auxiliary bus
     aux_bus = pp.create_bus(aux_net, vn_kv=aux_net.bus.at[aux_net.line.at[line_ix, "from_bus"], "vn_kv"],
                             name="aux_bus_sc_calc")
 
@@ -128,69 +130,3 @@ def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
 
     # Return the new net and the aux bus
     return aux_net, aux_bus
-
-
-if __name__ == "__main__":
-    import pandapower.networks as nw
-    net = nw.case300()
-    detect_power_station_unit(net)
-
-    import pandapower.networks as nw
-    # vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5
-    # net = nw.create_cigre_network_mv()
-    # net = nw.case118()
-    # net = nw.case2869pegase()
-    # net = nw.case1354pegase()
-    net = nw.case9241pegase()
-    net.ext_grid['s_sc_max_mva'] = 1000
-    net.ext_grid['rx_max'] = 0.1
-    net.gen["vn_kv"] = net.bus.loc[net.gen.bus.values, "vn_kv"].values
-    net.gen["rdss_pu"] = 0.01
-    net.gen["xdss_pu"] = 0.1
-    net.gen["cos_phi"] = 0.8
-    net.gen["sn_mva"] = net.gen.p_mw.values + 0.01
-
-    net.sgen['k'] = 1.
-    net.sgen["sn_mva"] = net.sgen.p_mw.values + 0.01
-    net.sgen = net.sgen.iloc[0:0, :]
-
-    net_no_inv = deepcopy(net)
-    net_all = deepcopy(net)
-
-
-    # for _ in range(10):
-    # calc_sc(net, branch_results=True, return_all_currents=True, ip=False, ith=True, bus=[10,60,50])
-    for _ in range(10):
-        pass
-        # calc_sc(net, branch_results=True, return_all_currents=True, ip=False, ith=True, bus=[10,60,50], inverse_y=False)
-    # calc_sc(net_all, branch_results=True, return_all_currents=True, ip=True, ith=True)
-    # # calc_single_sc(net,254)
-    # calc_single_sc(net_no_inv, 6, with_y_inv=True)
-    # n = [net]
-    # n_no_inv = [net_no_inv]
-    # n_all = [net_all]
-
-# %timeit calc_sc(net, ip=True, ith=False, bus=[15, 50, 986, 5412], branch_results=True, inverse_y=False)
-# %timeit calc_sc(net, ip=False, ith=False, bus=[1,3,6], inverse_y=True)
-# %timeit calc_sc(net, ip=True, ith=True)
-
-# %timeit calc_sc(net, branch_results=True, return_all_currents=True)
-# %timeit calc_single_sc(net, 8, inverse_y=False)
-# %timeit calc_single_sc(net_no_inv, 8, with_y_inv=False)
-
-
-#     # print(net.res_bus)
-#     # print(net.res_bus_sc)
-#     # print(net_no_inv.res_bus_sc)
-
-#     print((net.res_bus_sc - net_no_inv.res_bus_sc).max())
-
-
-#     # print(net.res_line_sc)
-#     # print(net_no_inv.res_line_sc)
-#     delta = net.res_line_sc - net_no_inv.res_line_sc
-    # n = [net]
-
-    # aux_net, aux_bus = _create_aux_net(net, 4, 0.2)
-    # pp.runpp(net)
-    # calc_single_sc(aux_net,aux_bus)

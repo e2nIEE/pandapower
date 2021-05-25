@@ -569,7 +569,7 @@ def _add_motor_impedances_ppc(net, ppc):
 
     s_motor = p_mech / (efficiency/100 * cos_phi)
     z_motor_ohm = 1 / lrc * vn_kv**2 / s_motor
-    z_motor_pu = z_motor_ohm / (vn_net**2 / net.sn_mva)
+    z_motor_pu = z_motor_ohm / vn_net**2
 
     x_motor_pu = z_motor_pu / np.sqrt(rx ** 2 + 1)
     r_motor_pu = rx * x_motor_pu

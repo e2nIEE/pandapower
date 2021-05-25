@@ -80,12 +80,11 @@ def _add_xward_sc_z(net, ppc):
     ward_buses = ward.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     ward_buses_ppc = bus_lookup[ward_buses]
-    
-    vn_ward = net.bus.loc[ward_buses, "vn_kv"].values
-    ward_baseZ = (vn_ward ** 2 / ppc["baseMVA"])
+
+    vn_net = net.bus.loc[ward_buses, "vn_kv"].values
     r_ward, x_ward = ward["r_ohm"].values, ward["x_ohm"].values
     z_ward = (r_ward + x_ward*1j)
-    z_ward_pu = z_ward / ward_baseZ
+    z_ward_pu = z_ward / vn_net ** 2
     y_ward_pu = 1 / z_ward_pu
 
     buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
@@ -110,7 +109,9 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     vn_net = net.bus.loc[gen_buses, "vn_kv"].values
     sin_phi_gen = np.sqrt(1 - gen.cos_phi.values**2)
 
-    gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
+    # TODO: Check which is correct
+    # gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
+    gen_baseZ = vn_net ** 2
     r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
     z_gen = (r_gen + x_gen * 1j)
     z_gen_pu = z_gen / gen_baseZ
