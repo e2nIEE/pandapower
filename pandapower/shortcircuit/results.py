@@ -55,7 +55,7 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
         bus = net.bus.index
 
     ppc_index = bus_lookup[bus]
-    ppc_index[ppc["bus"][bus_lookup[ppc_index], BUS_TYPE] == 4] = -1
+    ppc_index[ppc["bus"][ppc_index, BUS_TYPE] == 4] = -1
     return bus, ppc_index
 
 
