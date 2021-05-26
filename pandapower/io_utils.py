@@ -523,7 +523,7 @@ def pp_hook(d, deserialize_pandas, registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
-                return json.dumps(d, cls=io_utils.PPJSONEncoder, indent=2)
+                return json.dumps(d)#, cls=io_utils.PPJSONEncoder, indent=2)
             elif "_object" in d:
                 obj = d.pop('_object')
             elif "_state" in d:
@@ -715,7 +715,11 @@ def to_serializable(obj):
 
 @to_serializable.register(pandapowerNet)
 def json_pandapowernet(obj):
+    logger.debug('pandapowerNet')
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
+    for k, item in net_dict.items():
+        if (isinstance(item, str) and '_module' in item):
+            net_dict[k] = json.loads(item)
     d = with_signature(obj, net_dict)
     return d
 

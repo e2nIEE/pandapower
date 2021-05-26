@@ -354,7 +354,11 @@ def from_sqlite(filename, netname=""):
     return net
 
 if __name__ == '__main__':
+    import time
     import pandapower as pp
+    start = time.time()
     net = pp.from_json('test.json', deserialized_pandas_tables=['bus'])
     pp.to_json(net, 'test2.json')
     net = pp.from_json('test2.json')
+    end = time.time()
+    delta = end-start
