@@ -10,7 +10,7 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _sum_by_group
+from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, \
     CID, CZD, bus_cols, REF
 
@@ -201,42 +201,49 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
     return bus_lookup
 
 
-def get_voltage_init_vector(net, init_v, mode):
+def get_voltage_init_vector(net, init_v, mode, sequence=None):
     if isinstance(init_v, str):
         if init_v == "results":
+            res_table = "res_bus" if sequence is None else "res_bus_3ph"
+
             # init voltage possible if bus results are available
-            if "res_bus" in net and net.res_bus.index.equals(net.bus.index):
-                # init bus voltages from results if the sorting is correct
-                res_table = "res_bus"
-            else:
+            if res_table not in net or not net[res_table].index.equals(net.bus.index):
                 # cannot init from results, since sorting of results is different from element table
                 # TO BE REVIEWED! Why there was no raise before this commit?
-                raise UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
-                            "You should sort res_bus before calling runpp.")
-                return None
+                raise UserWarning("Init from results not possible. Index of %s do not match with bus. "
+                                  "You should sort res_bus before calling runpp." % res_table)
 
-            if mode == "magnitude":
-                return net[res_table]["vm_pu"].values.copy()
-            elif mode == "angle":
-                return net[res_table]["va_degree"].values.copy()
+            if res_table == "res_bus_3ph":
+                vm = net.res_bus_3ph[["vm_a_pu", "vm_b_pu", "vm_c_pu"]].values.T
+                va = net.res_bus_3ph[["va_a_degree", "va_b_degree", "va_c_degree"]].values.T
+
+                voltage_vector = phase_to_sequence(vm * np.exp(1j * np.pi * va / 180.))[sequence, :]
+
+                if mode == "magnitude":
+                    return np.abs(voltage_vector)
+                elif mode == "angle":
+                    return np.angle(voltage_vector) * 180 / np.pi
+                else:
+                    raise UserWarning(str(mode)+" for initialization not available!")
             else:
-                raise UserWarning(str(mode)+" for initialization not available!")
+                if mode == "magnitude":
+                    return net[res_table]["vm_pu"].values.copy()
+                elif mode == "angle":
+                    return net[res_table]["va_degree"].values.copy()
+                else:
+                    raise UserWarning(str(mode)+" for initialization not available!")
         if init_v == "flat":
-            if mode == "magnitude":
-                net["_options"]["init_vm_pu"] = 0.
-            else:
-                net["_options"]["init_va_degree"] = 0.
             return None
-    elif isinstance(init_v, (float, np.ndarray, list)):
+    elif isinstance(init_v, (float, np.ndarray, list)) and sequence is None or sequence == 1:
         return init_v
-    elif isinstance(init_v, pd.Series):
+    elif isinstance(init_v, pd.Series) and sequence is None or sequence == 1:
         if init_v.index.equals(net.bus.index):
             return init_v.loc[net.bus.index]
         else:
             raise UserWarning("Voltage starting vector indices do not match bus indices")
 
 
-def _build_bus_ppc(net, ppc):
+def _build_bus_ppc(net, ppc, sequence=None):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
@@ -280,6 +287,10 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
+
+    if sequence is not None and sequence != 1:
+        ppc["bus"][:, VM] = 0.
+
     if mode == "sc":
         from pandapower.shortcircuit.idx_bus import bus_cols_sc
         bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
@@ -302,11 +313,11 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"][~in_service, BUS_TYPE] = NONE
     if mode != "nx":
         set_reference_buses(net, ppc, bus_lookup, mode)
-    vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
+    vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude", sequence=sequence)
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
 
-    va_degree = get_voltage_init_vector(net, init_va_degree, "angle")
+    va_degree = get_voltage_init_vector(net, init_va_degree, "angle", sequence=sequence)
     if va_degree is not None:
         ppc["bus"][:n_bus, VA] = va_degree
 
