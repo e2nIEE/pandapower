@@ -516,12 +516,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
 
-
-def _add_gen_impedances_ppc(net, ppc):
-    _add_ext_grid_sc_impedance(net, ppc)
-    _add_gen_sc_impedance(net, ppc)
-
-
+# Short circuit relevant routines
 def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     mode = net._options["mode"]
@@ -542,11 +537,11 @@ def _add_ext_grid_sc_impedance(net, ppc):
         c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
-                         "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
+                          "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000" )
     s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid \n Try: net.ext_grid['rx_max'] = 0.1" %
-                         case)
+                          case)
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
@@ -562,44 +557,6 @@ def _add_ext_grid_sc_impedance(net, ppc):
     ppc["bus"][buses, GS] = gs * ppc['baseMVA']
     ppc["bus"][buses, BS] = bs * ppc['baseMVA']
     return gs * ppc['baseMVA'], bs * ppc['baseMVA']
-
-
-def _add_gen_sc_impedance(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MAX
-    gen = net["gen"][net._is_elements["gen"]]
-    if len(gen) == 0:
-        return
-    gen_buses = gen.bus.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    gen_buses_ppc = bus_lookup[gen_buses]
-    vn_gen = gen.vn_kv.values
-    sn_gen = gen.sn_mva.values
-
-    rdss_pu = gen.rdss_pu.values
-    xdss_pu = gen.xdss_pu.values
-    gens_without_r = np.isnan(rdss_pu)
-    if gens_without_r.any():
-        #  use the estimations from the IEC standard for generators without defined rdss_pu
-        lv_gens = (vn_gen <= 1.) & gens_without_r
-        hv_gens = (vn_gen > 1.) & gens_without_r
-        large_hv_gens = (sn_gen >= 100) & hv_gens
-        small_hv_gens = (sn_gen < 100) & hv_gens
-        rdss_pu[lv_gens] = 0.15 * xdss_pu[lv_gens]
-        rdss_pu[large_hv_gens] = 0.05 * xdss_pu[large_hv_gens]
-        rdss_pu[small_hv_gens] = 0.07 * xdss_pu[small_hv_gens]
-
-    vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
-    cmax = ppc["bus"][gen_buses_ppc, C_MAX]
-    phi_gen = np.arccos(gen.cos_phi.values)
-    kg = vn_gen / vn_net * cmax / (1 + xdss_pu * np.sin(phi_gen))
-
-    z_gen = (rdss_pu + xdss_pu * 1j) * kg / sn_gen
-    y_gen = 1 / z_gen
-
-    buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen.real, y_gen.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
-
 
 def _add_motor_impedances_ppc(net, ppc):
     if net._options["case"] == "min":
@@ -623,7 +580,7 @@ def _add_motor_impedances_ppc(net, ppc):
 
     s_motor = p_mech / (efficiency/100 * cos_phi)
     z_motor_ohm = 1 / lrc * vn_kv**2 / s_motor
-    z_motor_pu = z_motor_ohm / (vn_net**2 / net.sn_mva)
+    z_motor_pu = z_motor_ohm / vn_net**2
 
     x_motor_pu = z_motor_pu / np.sqrt(rx ** 2 + 1)
     r_motor_pu = rx * x_motor_pu

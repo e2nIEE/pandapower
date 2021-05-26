@@ -7,7 +7,7 @@ import numpy as np
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
-_calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
+_calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -116,7 +116,8 @@ def _pd2ppc(net, sequence=None):
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
-        _add_gen_impedances_ppc(net, ppc)
+        _add_ext_grid_sc_impedance(net, ppc)
+        # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
