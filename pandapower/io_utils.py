@@ -458,8 +458,7 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(pp_hook,
-                                                          registry_class=FromSerializableRegistry))
+                                      object_hook=pp_hook)
                 # backwards compatibility
             if "net" in self.obj:
                 del self.obj["net"]
@@ -514,7 +513,7 @@ class PPJSONDecoder(json.JSONDecoder):
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, deserialize_pandas, registry_class=FromSerializableRegistry):
+def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
