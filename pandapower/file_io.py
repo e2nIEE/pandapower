@@ -273,11 +273,6 @@ def from_json_string(json_string, convert=False, encryption_key=None, deserializ
 
     if deserialized_pandas_tables is None:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
-        for key in net.keys():
-            if key in ['version', 'name']:
-                continue
-            if isinstance(net[key], str):
-                net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
     else:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
         for key in deserialized_pandas_tables:
