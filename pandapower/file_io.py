@@ -284,7 +284,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, table_sele
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
     else:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
-        net_dummy = pp.create_empty_network()
+        net_dummy = create_empty_network()
         if (not 'version' in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. Convert and save '
                               'your net first.')
