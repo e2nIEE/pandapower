@@ -40,13 +40,6 @@ def _calc_rx(net, ppci, bus_idx):
 
 
 def _calc_ybus(ppci):
-    # from pandapower.pypower.idx_brch import BR_X, BR_R
-
-    # ppci["branch"][abs(ppci["branch"][:, BR_X])<1e-8, BR_X] = 1e20
-    # ppci["branch"][abs(ppci["branch"][:, BR_R])<1e-8, BR_R] = 1e20
-    # print(ppci["branch"][abs(ppci["branch"][:, BR_R])<1e-8, :].shape)
-    # ppci["branch"] = ppci["branch"][abs(ppci["branch"][:, BR_R])>1e-8, :]
-    # print(ppci["branch"][:, BR_X])
     Ybus, Yf, Yt = makeYbus(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     if np.isnan(Ybus.data).any():
         raise ValueError("nan value detected in Ybus matrix - check calculation parameters for nan values")
