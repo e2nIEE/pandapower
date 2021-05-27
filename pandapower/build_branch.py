@@ -429,7 +429,8 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
     r_sc = vkr_percent / 100. / sn_trafo_mva * tap_lv
-    x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
+    print(z_sc, r_sc, type(z_sc), type(r_sc))
+    x_sc = np.sign(z_sc) * np.sqrt((z_sc ** 2 - r_sc ** 2).astype(float))
     return r_sc / parallel, x_sc / parallel
 
 

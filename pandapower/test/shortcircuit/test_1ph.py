@@ -70,8 +70,8 @@ def test_1ph_shortcircuit():
          add_network(net, vc)
          try:
              sc.calc_sc(net, fault="1ph", case="max")
-         except:
-             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+         except Exception as e:
+             raise UserWarning(str(e) + " Did not converge after adding transformer with vector group %s"%vc)
 
     for vc, result in results.items():
         check_results(net, vc, result)
@@ -257,16 +257,43 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
     ikss_pf_max = [26.0499, 20.9472, 9.1722, 18.7457]
     ikss_pf_min = [3.9622, 8.3914, 5.0248, 6.9413]
 
-    sc.calc_sc(net, fault="1ph")
+    sc.calc_sc(net, fault="1ph", case="max")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_max), atol=1e-4)
 
     sc.calc_sc(net, fault="1ph", case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
 
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+def test_iec_60909_4_small_with_t2_1ph():
+    net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
+    net.gen = net.gen.iloc[0:0, :]
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss_max = [24.577168865, 16.962352384, 11.610898156, 18.078357948]
+    # ikss_max = [24.6109, 17.4363, 12.7497, 18.6883]
+
+    # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
+
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
+
+
+
 def test_iec_60909_4_small_with_gen_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
+    net.gen.power_station_trafo=np.nan
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss_max = [24.60896, 17.2703, 12.3771, 18.4723]
+
+    # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
+    # ip_min = [8.6843, 21.6173, 18.0242, 19.4261]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
+
+
+@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+def test_iec_60909_4_small_with_gen_ps_unit_1ph():
+    net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
+
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_max = [24.6109, 17.4363, 12.7497, 18.6883]
@@ -277,4 +304,52 @@ def test_iec_60909_4_small_with_gen_1ph():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    # pytest.main([__file__])
+
+    results = {
+                 "Yy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Yyn": [0.52209347337, 2.5145986133,  1.6737892808,  1.1117955913 ]
+                ,"Yd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"YNy": [0.6291931171,  0.74400073149, 0.74563682772, 0.81607276962]
+                ,"YNyn":[0.62623661918, 2.9829679356,  1.8895041867,  1.2075537026 ]
+                ,"YNd": [0.75701600162, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Dy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Dyn": [0.52209347337, 3.5054043285,  2.1086590382,  1.2980120038 ]
+                ,"Dd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+               }
+
+    net = pp.create_empty_network()
+    for vc in results.keys():
+         add_network(net, vc)
+         try:
+             sc.calc_sc(net, fault="1ph", case="max")
+         except Exception as e:
+             raise UserWarning(str(e) + " Did not converge after adding transformer with vector group %s"%vc)
+
+    for vc, result in results.items():
+        check_results(net, vc, result)
+    # file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
+    # net = pp.from_json(file)
+    # for inv_y in (False, True):
+    #     sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
+    #                bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+    #                branch_results=True)
+    #     sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
+    #                bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+    #                branch_results=True, return_all_currents=True)
+    #     assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
+    #                                         "ikss_ka"], 35.53066312)
+    #     assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
+    #                                         "ikss_ka"], 34.89135137)
+    
+    # net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
+    # # net.trafo.in_service = False
+    # # net.gen = net.gen.iloc[0:0, :]
+    # # net.gen.in_service = False
+    # net.gen.power_station_trafo=np.nan
+
+    # sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C",
+    #             branch_results=True, inverse_y=True)
+    
+    # rb = net.res_bus_sc
+    # nd = [net]

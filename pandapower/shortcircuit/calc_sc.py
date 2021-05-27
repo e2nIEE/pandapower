@@ -149,6 +149,7 @@ def calc_sc(net, bus=None,
         _calc_sc(net, bus)
     elif fault == "1ph":
         _calc_sc_1ph(net, bus)
+        
     else:
         raise ValueError("Invalid fault %s" % fault)
 
@@ -214,11 +215,25 @@ def _calc_sc_1ph(net, bus):
     """
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
-    ppc, ppci = _pd2ppc(net)
+    # ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _init_ppc(net)
+
+    # Select required ppci bus
+    ppci_bus = _get_is_ppci_bus(net, bus)
+    # update ppci
+    _, ppci, _ =\
+        _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net)
+    from pandapower.pypower.idx_brch import BR_X, BR_R
+    print(ppci_0["branch"][:, BR_X])
+    print( ppci_0["bus"].shape)
+    # ppci_0["bus"] = ppci_0["bus"][np.arange(8)!=5, :]
+    # ppci_0["bus"]
+    # ppci_0["bus"] = ppci_0["bus"][np.arange(8)!=5, :]
+    # print( ppci_0["bus"].shape)
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
