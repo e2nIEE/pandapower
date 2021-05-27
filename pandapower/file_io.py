@@ -226,6 +226,10 @@ def from_json(filename, convert=True, encryption_key=None, table_selection=None,
 
         **encrytion_key** (string, "") - If given, key to decrypt an encrypted pandapower network
 
+        **table_selection** (list, None) - Deserialize only certain pandapower tables. If None all tables are deserialized.
+
+        **keep_unserialized** (bool, True) - Keep unserialized tables if given. Default: Unserialized tables are kept.
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -260,6 +264,10 @@ def from_json_string(json_string, convert=False, encryption_key=None, table_sele
             older version of pandapower to the newer version format
 
         **encrytion_key** (string, "") - If given, key to decrypt an encrypted json_string
+
+        **table_selection** (list, None) - Deserialize only certain pandapower tables. If None all tables are deserialized.
+
+        **keep_unserialized** (bool, True) - Keep unserialized tables if given. Default: Unserialized tables are kept.
 
     OUTPUT:
         **net** (dict) - The pandapower format network
