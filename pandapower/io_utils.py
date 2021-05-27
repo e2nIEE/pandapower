@@ -517,7 +517,7 @@ def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry)
     try:
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
-                return json.dumps(d)#, cls=io_utils.PPJSONEncoder, indent=2)
+                return json.dumps(d)
             elif "_object" in d:
                 obj = d.pop('_object')
             elif "_state" in d:

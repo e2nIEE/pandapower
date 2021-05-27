@@ -212,7 +212,7 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(filename, convert=True, encryption_key=None, deserialized_pandas_tables=None):
+def from_json(filename, convert=True, encryption_key=None, table_selection=None, keep_unserialized=True):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -243,10 +243,11 @@ def from_json(filename, convert=True, encryption_key=None, deserialized_pandas_t
             json_string = fp.read()
 
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
-                            deserialized_pandas_tables=deserialized_pandas_tables)
+                            table_selection=table_selection, keep_unserialized=keep_unserialized)
 
 
-def from_json_string(json_string, convert=False, encryption_key=None, deserialized_pandas_tables=None):
+def from_json_string(json_string, convert=False, encryption_key=None, table_selection=None,
+                     keep_unserialized=True):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -271,12 +272,31 @@ def from_json_string(json_string, convert=False, encryption_key=None, deserializ
     if encryption_key is not None:
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
-    if deserialized_pandas_tables is None:
+    if table_selection is None:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
     else:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
-        for key in deserialized_pandas_tables:
-            net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+        net_dummy = pp.create_empty_network()
+        if (not 'version' in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
+            raise UserWarning('table selection is only possible for nets above version 2.0.1. Convert and save '
+                              'your net first.')
+        if keep_unserialized:
+            for key in table_selection:
+                net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+        else:
+            if ((not 'version' in net.keys()) or (net['version'] != net_dummy.version)) and not convert:
+                raise UserWarning(
+                    'The version of your net %s you are trying to load differs from the actual pandapower '
+                    'version %s. Before you can load only distinct tables, convert and save your net '
+                    'first or set convert to True!'
+                    % (net['version'], net_dummy.version))
+            for key in net.keys():
+                if key in table_selection:
+                    net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+                elif not isinstance(net[key], str):
+                    continue
+                elif 'pandas' in net[key]:
+                    net[key] = net_dummy[key]
 
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
@@ -289,7 +309,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, deserializ
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net)
+        convert_format(net, table_selection=table_selection)
     return net
 
 
@@ -347,13 +367,3 @@ def from_sqlite(filename, netname=""):
     net = from_sql(con)
     con.close()
     return net
-
-if __name__ == '__main__':
-    import time
-    import pandapower as pp
-    start = time.time()
-    net = pp.from_json('test.json', deserialized_pandas_tables=['bus'])
-    pp.to_json(net, 'test2.json')
-    net = pp.from_json('test2.json')
-    end = time.time()
-    delta = end-start
