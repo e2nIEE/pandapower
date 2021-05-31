@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, create_trafo3w_trace, draw_traces, version_check, _create_node_trace, _create_branch_trace
+    create_trafo_trace, draw_traces, version_check, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
