@@ -19,6 +19,10 @@ class ConstControl(Controller):
     """
     Class representing a generic time series controller for a specified element and variable
     Control strategy: "No Control" -> just updates timeseries
+    It is possible to set attributes of objects that are contained in a net table, e.g. attributes of other controllers. This can be helpful
+    e.g. if a voltage setpoint of a transformer tap changer depends on the time step.
+    An attribute of an object in the "object" column of a table (e.g. net.controller["object"] -> net.controller.object.at[0, "vm_set_pu"]
+    can be set if the attribute is specified as "object.attribute" (e.g. "object.vm_set_pu").
 
     INPUT:
 
@@ -76,8 +80,13 @@ class ConstControl(Controller):
         self.profile_name = profile_name
         self.scale_factor = scale_factor
         self.applied = False
+        self.object_attribute = None
         # write functions faster, depending on type of self.element_index
-        if isinstance(self.element_index, int):
+        if self.variable.startswith('object'):
+            # write to object attribute
+            self.write = "object"
+            self.object_attribute = self.variable.split(".")[1]
+        elif isinstance(self.element_index, int):
             # use .at if element_index is integer for speedup
             self.write = "single_index"
         # commenting this out for now, see issue 609
@@ -123,6 +132,8 @@ class ConstControl(Controller):
             self._write_to_all_index(net)
         elif self.write == "loc":
             self._write_with_loc(net)
+        elif self.write == "object":
+            self._write_to_object_attribute(net)
         else:
             raise NotImplementedError("ConstControl: self.write must be one of "
                                       "['single_index', 'all_index', 'loc']")
@@ -167,3 +178,14 @@ class ConstControl(Controller):
 
     def _write_with_loc(self, net):
         net[self.element].loc[self.element_index, self.variable] = self.values
+
+    def _write_to_object_attribute(self, net):
+        if hasattr(self.element_index, '__iter__') and len(self.element_index) > 1:
+            for idx, val in zip(self.element_index, self.values):
+                setattr(net[self.element]["object"].at[idx], self.object_attribute, val)
+        else:
+            setattr(net[self.element]["object"].at[self.element_index], self.object_attribute, self.values)
+
+    def __str__(self):
+        return super().__str__() + " [%s.%s]" % (self.element, self.variable)
+
