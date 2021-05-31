@@ -103,9 +103,10 @@ def _build_pp_ext_grid(net, ppc, f, t):
     ppc["gen"][f:t, VG] = net["ext_grid"]["vm_pu"].values[eg_is]
 
     # set bus values for external grid buses
-    if calculate_voltage_angles:
-        ppc["bus"][eg_buses, VA] = net["ext_grid"]["va_degree"].values[eg_is]
-    ppc["bus"][eg_buses, VM] = net["ext_grid"]["vm_pu"].values[eg_is]
+    if ppc.get("sequence", 1) == 1:
+        if calculate_voltage_angles:
+            ppc["bus"][eg_buses, VA] = net["ext_grid"]["va_degree"].values[eg_is]
+        ppc["bus"][eg_buses, VM] = net["ext_grid"]["vm_pu"].values[eg_is]
     if net._options["mode"] == "opf":
         add_q_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
         add_p_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)

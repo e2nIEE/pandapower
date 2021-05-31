@@ -1,5 +1,9 @@
 Change Log
-=============
+
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
+- [CHANGED] Short-circuit gen calculation parameter "rkss_pu" to "rkss_ohm" according to IEC 60909 example
+- [ADDED] Power station units with gen and trafo designated with "ps_trafo_ix" for short-circuit calculation
+- [ADDED] Multiple example networks and network variations from IEC 60909-4
 - [ADDED] OR-Tools implementation of linprog solver
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
@@ -11,7 +15,6 @@ Change Log
 
 [2.6.0]- 2021-03-09
 ----------------------
-
 - [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
 - [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
 - [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
