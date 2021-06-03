@@ -57,7 +57,7 @@ class ConstControl(Controller):
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
-                 scale_factor=1.0, in_service=True, recycle=True, order=0, level=0,
+                 scale_factor=1.0, in_service=True, recycle=True, order=-1, level=-1,
                  drop_same_existing_ctrl=False, matching_params=None,
                  initial_run=False, **kwargs):
         # just calling init of the parent
@@ -136,7 +136,7 @@ class ConstControl(Controller):
             self._write_to_object_attribute(net)
         else:
             raise NotImplementedError("ConstControl: self.write must be one of "
-                                      "['single_index', 'all_index', 'loc']")
+                                      "['single_index', 'all_index', 'loc', 'object']")
 
     def time_step(self, net, time):
         """
