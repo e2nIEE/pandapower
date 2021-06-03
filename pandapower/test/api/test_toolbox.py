@@ -648,14 +648,14 @@ def test_close_switch_at_line_with_two_open_switches():
 
 
 def test_pq_from_cosphi():
-    p, q = pp.pq_from_cosphi(1 / 0.95, 0.95, "ind", "load")
+    p, q = pp.pq_from_cosphi(1 / 0.95, 0.95, "underexcited", "load")
     assert np.isclose(p, 1)
     assert np.isclose(q, 0.3286841051788632)
 
     s = np.array([1, 1, 1])
     cosphi = np.array([1, 0.5, 0])
     pmode = np.array(["load", "load", "load"])
-    qmode = np.array(["ind", "ind", "ind"])
+    qmode = np.array(["underexcited", "underexcited", "underexcited"])
     p, q = pp.pq_from_cosphi(s, cosphi, qmode, pmode)
     excpected_values = (np.array([1, 0.5, 0]), np.array([0, 0.8660254037844386, 1]))
     assert np.allclose(p, excpected_values[0])
@@ -666,19 +666,15 @@ def test_pq_from_cosphi():
     assert np.allclose(p, excpected_values[0])
     assert np.allclose(q, -excpected_values[1])
 
-    qmode = "cap"
+    qmode = "overexcited"
     p, q = pp.pq_from_cosphi(s, cosphi, qmode, pmode)
     assert np.allclose(p, excpected_values[0])
     assert np.allclose(q, excpected_values[1])
 
-    try:
+    with pytest.raises(ValueError):
         pp.pq_from_cosphi(1, 0.95, "ohm", "gen")
-        bool_ = False
-    except ValueError:
-        bool_ = True
-    assert bool_
 
-    p, q = pp.pq_from_cosphi(0, 0.8, "cap", "gen")
+    p, q = pp.pq_from_cosphi(0, 0.8, "overexcited", "gen")
     assert np.isclose(p, 0)
     assert np.isclose(q, 0)
 
@@ -687,7 +683,7 @@ def test_cosphi_from_pq():
     cosphi, s, qmode, pmode = pp.cosphi_from_pq(1, 0.4)
     assert np.isclose(cosphi, 0.9284766908852593)
     assert np.isclose(s, 1.077032961426901)
-    assert qmode == 'ind'
+    assert qmode == 'underexcited'
     assert pmode == 'load'
 
     p = np.array([1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1])
@@ -699,8 +695,8 @@ def test_cosphi_from_pq():
     assert pd.Series(cosphi[[5, 6, 7]]).isnull().all()
     assert np.allclose(s, (p ** 2 + q ** 2) ** 0.5)
     assert all(pmode == np.array(["load"] * 5 + ["undef"] * 3 + ["gen"] * 3))
-    ind_cap_ohm = ["ind", "cap", "ohm"]
-    assert all(qmode == np.array(ind_cap_ohm + ["ind", "cap"] + ind_cap_ohm * 2))
+    ind_cap_ohm = ["underexcited", "overexcited", "ohm"]
+    assert all(qmode == np.array(ind_cap_ohm + ["underexcited", "overexcited"] + ind_cap_ohm * 2))
 
 
 def test_create_replacement_switch_for_branch():

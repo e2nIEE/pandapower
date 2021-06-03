@@ -131,12 +131,13 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
        - s: rated apparent power
        - cosphi: cosine phi of the
-       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - qmode: "underexcided" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
        - pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
     power, that means that loads are positive and generation is negative. For reactive power,
-    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    underexcited behavior (Q absorption, decreases voltage) is modeled with positive values,
+    overexcited behavior (Q injection, increases voltage) with negative values.
     """
     if hasattr(s, "__iter__"):
         s = ensure_iterability(s)
@@ -154,12 +155,17 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
-    if qmode == "ind":
+    if qmode in ("ind", "cap"):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms '
+                        '"underexcited" (Q absorption, decreases voltage) and "overexcited" (Q injection, increases voltage).'
+                        'Please use "underexcited" in place of "ind" and "overexcited" in place of "cap".')
+    if qmode == "ind" or qmode == "underexcited":
         qsign = 1 if pmode == "load" else -1
-    elif qmode == "cap":
+    elif qmode == "cap" or qmode == "overexcited":
         qsign = -1 if pmode == "load" else 1
     else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage) or '
+                         '"overexcited" (Q injection, increases voltage)' % qmode)
 
     p = s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
@@ -207,8 +213,8 @@ def cosphi_from_pq(p, q):
 
 def _cosphi_from_pq(p, q):
     """
-    Analog to pq_from_cosphi, but other way around.
-    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+    Analog to pq_from_cosphi, but the other way around.
+    In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and "overexcited" (Q injection, increases voltage)
     """
     if p == 0:
         cosphi = np.nan
@@ -217,7 +223,7 @@ def _cosphi_from_pq(p, q):
         cosphi = np.cos(np.arctan(q / p))
     s = (p ** 2 + q ** 2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    qmode = ["ohm", "underexcited", "overexcited"][int(np.sign(q))]
     return cosphi, s, qmode, pmode
 
 
