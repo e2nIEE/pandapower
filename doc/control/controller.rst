@@ -17,6 +17,9 @@ ConstControl
 ==============
 .. _ConstControl:
 This controller is made for the use with the time series module to read data from a DataSource and write it to the net.
+The controller can write the values either to a column of an element table (e.g. net.load.p_mw) or an attribute of another object that is
+stored in an element table (e.g. another controller, net.controller.object). To change a controller attribute, the variable must be defined
+in the format "object.attribute" (e.g. "object.set_vm_pu").
 
 .. autoclass:: pandapower.control.controller.const_control.ConstControl
     :members:
@@ -32,7 +35,8 @@ Continuous Tap Control
 **********************
 .. autoclass:: pandapower.control.controller.trafo.ContinuousTapControl.ContinuousTapControl
     :members:
-    
+
+
 -------------
 
 **********************
@@ -42,3 +46,22 @@ Discrete Tap Control
 .. autoclass:: pandapower.control.controller.trafo.DiscreteTapControl.DiscreteTapControl
     :members:
     
+CharacteristicControl
+===============
+
+The following controllers that use characteristics are predefined within the pandapower control module.
+
+**********************
+CharacteristicControl
+**********************
+.. autoclass:: pandapower.control.controller.characteristic_control.CharacteristicControl
+    :members:
+
+-------------
+
+**********************
+USetTapControl
+**********************
+
+.. autoclass:: pandapower.control.controller.trafo.USetTapControl.USetTapControl
+    :members:
