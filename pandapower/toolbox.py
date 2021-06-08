@@ -1795,7 +1795,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
