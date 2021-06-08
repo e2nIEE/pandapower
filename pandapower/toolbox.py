@@ -1795,7 +1795,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -1856,13 +1856,14 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
     # --- result data
     if net.res_ext_grid.shape[0]:
-        to_add = net.res_ext_grid.loc[ext_grids]
-        to_add.index = new_idx
+        in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
+        to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_ext_grid.drop(ext_grids, inplace=True)
+        net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
     return new_idx
 
 
@@ -1938,13 +1939,14 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
         else:
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2022,13 +2024,14 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_sgen = pd.concat([net.res_sgen, to_add])
         else:
             net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2122,13 +2125,14 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_sgen.shape[0]:
-        to_add = net.res_sgen.loc[sgens]
-        to_add.index = new_idx
+        in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
+        to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_sgen.drop(sgens, inplace=True)
+        net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2235,13 +2239,14 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 
     # --- result data
     if net["res_" + old_elm].shape[0]:
-        to_add = net["res_" + old_elm].loc[old_indices]
-        to_add.index = new_idx
+        in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
+        to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
         else:
             net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
-        net["res_" + old_elm].drop(old_indices, inplace=True)
+        net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 
 
