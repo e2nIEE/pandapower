@@ -115,6 +115,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][f:t, BR_STATUS] = in_service  
     else:
         ppc["branch"][f:t, BR_STATUS] = 0
+
     if not "vector_group" in trafo_df:
         raise ValueError("Vector Group of transformer needs to be specified for zero \
                          sequence modelling \n Try : net.trafo[\"vector_group\"] = 'Dyn'" )
@@ -192,7 +193,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
-        z0_k = (r_sc + x_sc * 1j) / parallel  * ratio**2
+        # TODO: This equation needs to be checked!
+        # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
+        z0_k = (r_sc + x_sc * 1j) / parallel
         y0_k = 1 / z0_k #adding admittance for "pi" model
         if mode == "sc":# or trafo_model == "pi":
             from pandapower.shortcircuit.idx_bus import C_MAX
@@ -236,40 +239,36 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
-        
-        # # TODO: Check this
-        # z0_k *= ratio ** 2
-        # # * ratio ** 2
+
         # y0_k = 1 / z0_k #adding admittance for "pi" model
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
-                y = y0_k * ppc["baseMVA"] # pi model
+                y = y0_k # pi model
             else:
-                y = (YAB + YBN).astype(complex) * int(ppc["baseMVA"])  # T model
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
+                y = (YAB + YBN).astype(complex)  # T model
+            gs_all = np.hstack([gs_all, y.real * in_service]) * int(ppc["baseMVA"])
+            bs_all = np.hstack([bs_all, y.imag * in_service]) * int(ppc["baseMVA"])
 
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
                 y = y0_k * ppc["baseMVA"] # pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) * int(ppc["baseMVA"]) #T model
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
+                y = (YAB_BN + YAN).astype(complex) #T model
+            gs_all = np.hstack([gs_all, y.real * in_service]) * int(ppc["baseMVA"])
+            bs_all = np.hstack([bs_all, y.imag * in_service]) * int(ppc["baseMVA"])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
-                y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"]) #pi model
+                y = 1/(z0_mag+z0_k).astype(complex) #pi model
             else:
-#                y = (YAB_AN + YBN).astype(complex) * int(ppc["baseMVA"]) #T model
-                y = (YAB + YAB_BN + YBN).astype(complex)* int(ppc["baseMVA"])  # T model
+#                y = (YAB_AN + YBN).astype(complex) #T model
+                y = (YAB + YAB_BN + YBN).astype(complex) # T model
 
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
-
+            gs_all = np.hstack([gs_all, y.real * in_service]) * int(ppc["baseMVA"])
+            bs_all = np.hstack([bs_all, y.imag * in_service]) * int(ppc["baseMVA"])
 
         elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
@@ -325,32 +324,20 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
 def _add_gen_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]
+    if mode == 'pf_3ph':
+        return
 
-    if mode == "sc":
-        from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
-        case = net._options["case"]
-    else:
-        case = "max"
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     eg = net["gen"][net._is_elements["gen"]]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     eg_buses_ppc = bus_lookup[eg_buses]
-
-    if mode == "sc":
-        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
-    else:
-        c = 1.1
-
-    # z_grid = c / s_sc
-    if mode == 'pf_3ph':
-        return
 
     y0_gen = 1 / (1e3 + 1e3*1j)
     # buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_gen.real, y0_gen.imag)
-    ppc["bus"][eg_buses_ppc, GS] = y0_gen.real
-    ppc["bus"][eg_buses_ppc, BS] = y0_gen.imag
+    ppc["bus"][eg_buses_ppc, GS] += y0_gen.real
+    ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]

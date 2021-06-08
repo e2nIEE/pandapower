@@ -149,7 +149,6 @@ def calc_sc(net, bus=None,
         _calc_sc(net, bus)
     elif fault == "1ph":
         _calc_sc_1ph(net, bus)
-        
     else:
         raise ValueError("Invalid fault %s" % fault)
 

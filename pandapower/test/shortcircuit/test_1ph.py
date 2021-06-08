@@ -113,20 +113,6 @@ def test_iec60909_example_4():
         assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
         assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
 
-# 15,919581392
-# 35,705180056
-# 34,982811924
-# 4,8318757028
-# 10,000000415
-# 34,492918209
-
-# 15,879879726
-# 35,385555637
-# 34,724771418
-# 4,8281138675
-# 10,062061454
-# 34,283475551
-
 def test_iec60909_example_4_bus_selection():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
@@ -277,18 +263,18 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
     sc.calc_sc(net, fault="1ph", case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
 
-
+@pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_small_with_t2_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
     net.gen = net.gen.iloc[0:0, :]
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
-    ikss_max = [24.577168865, 16.962352384, 11.610898156, 18.078357948]
+    ikss_max = [24.57717, 16.96235, 11.6109, 18.07836]
     # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
-
-def test_iec_60909_4_small_with_gen_1ph():
+@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
     net.gen.power_station_trafo=np.nan
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
