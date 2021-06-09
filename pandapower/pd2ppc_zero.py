@@ -112,7 +112,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][f:t, BR_X] = 1e20
         ppc["branch"][f:t, BR_R] = 1e20
         ppc["branch"][f:t, BR_B] = 0
-        ppc["branch"][f:t, BR_STATUS] = in_service  
+        ppc["branch"][f:t, BR_STATUS] = in_service
     else:
         ppc["branch"][f:t, BR_STATUS] = 0
 
@@ -437,7 +437,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     n_t3 = net.trafo3w.shape[0]
     for t3_ix in np.arange(n_t3):
         t3 = net.trafo3w.iloc[t3_ix, :]
-        
+
         if t3.vector_group.lower() in set(map(lambda vg: "".join(vg), product("dy", repeat=3))):
             x[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
             r[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
