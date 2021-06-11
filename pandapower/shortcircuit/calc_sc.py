@@ -127,10 +127,8 @@ def calc_sc(net, bus=None,
     # Convert bus to numpy array
     if bus is None:
         bus = net.bus.index.values
-    elif isinstance(bus, int):
-        bus = np.array([bus])
-    elif not isinstance(bus, np.ndarray):
-        bus = np.array(bus)
+    else:
+        bus = np.array([bus]).ravel()
 
     kappa = ith or ip
     net["_options"] = {}

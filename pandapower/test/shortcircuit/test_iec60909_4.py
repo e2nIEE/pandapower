@@ -9,7 +9,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
-from pandapower.shortcircuit.toolbox import detect_power_station_unit
+from pandapower.shortcircuit.toolbox import detect_power_station_unit, calc_sc_on_line
 
 def iec_60909_4():
     net = pp.create_empty_network()
@@ -404,6 +404,11 @@ def test_detect_power_station_units():
     detect_power_station_unit(net, mode="trafo")
     assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
 
+
+def test_sc_on_line():
+    net = iec_60909_4()
+    calc_sc_on_line(net, 2, 0.3)
+    
 
 if __name__ == '__main__':
     pytest.main(["test_iec60909_4.py"])
