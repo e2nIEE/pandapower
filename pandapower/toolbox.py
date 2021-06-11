@@ -1050,6 +1050,8 @@ def set_data_type_of_columns_to_default(net):
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
                 if key in new_net and col in new_net[key].columns:
+                    if new_net[key][col].dtype == net[key][col].dtype:
+                        continue
                     if set(item.columns) == set(new_net[key]):
                         if version.parse(pd.__version__) < version.parse("0.21"):
                             net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
@@ -1094,7 +1096,6 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     for element, value in element_bus_tuples():
         if net[element].shape[0]:
             net[element][value].loc[net[element][value].isin(b2)] = b1
-
     net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
                                  net["switch"]["element"].isin(b2))] = b1
 
