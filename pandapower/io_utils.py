@@ -504,8 +504,6 @@ class FromSerializableRegistry():
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        # net = pandapowerNet.__new__(pandapowerNet)
-#        net = create_empty_network()
         super_kwargs = {"object_hook": partial(pp_hook, registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
@@ -705,7 +703,7 @@ def to_serializable(obj):
 
 @to_serializable.register(pandapowerNet)
 def json_pandapowernet(obj):
-    net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
+    net_dict = {k: item for k, item in obj.items() if not k.startswith("_") and not (isinstance(item, pd.DataFrame) and item.empty)}
     d = with_signature(obj, net_dict)
     return d
 
