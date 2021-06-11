@@ -587,8 +587,8 @@ def _add_motor_impedances_ppc(net, ppc):
     y_motor_pu = 1 / (r_motor_pu + x_motor_pu * 1j)
 
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor_pu.real, y_motor_pu.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
+    ppc["bus"][buses, GS] += gs
+    ppc["bus"][buses, BS] += bs
 
 
 def _add_c_to_ppc(net, ppc):
