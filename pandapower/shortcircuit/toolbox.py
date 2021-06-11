@@ -35,9 +35,8 @@ def detect_power_station_unit(net, mode="auto",
         **mode** (str, ("auto", trafo""))
 
         **max_gen_voltage_level** (float)
-    
-        **max_distance_km** (float)
 
+        **max_distance_km** (float)
     """
     logger.info("This function will overwrites the value 'power_station_trafo' in gen table")
     net.gen["power_station_trafo"] = np.nan
@@ -125,7 +124,7 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
 
 def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
     """
-    Calculate the shortcircuit in the middle of the line, returns a modified network 
+    Calculate the shortcircuit in the middle of the line, returns a modified network
     with the shortcircuit calculation results and the bus added
 
     INPUT:
@@ -140,7 +139,7 @@ def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
     """
     # Update network
     aux_net, aux_bus = _create_aux_net(net, line_ix, distance_to_bus0)
-    
+
     pp.rundcpp(aux_net)
     calc_sc(aux_net, bus=aux_bus, **kwargs)
 

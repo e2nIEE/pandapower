@@ -142,14 +142,15 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     z_gen_p = (r_gen_p + x_gen * 1j)
     z_gen_p_pu = z_gen_p / gen_baseZ
     y_gen_p_pu = 1 / z_gen_p_pu
-    
+
+    # GS_P/GS_B will only be updated here
     _, gen_gs_p, gen_bs_p = _sum_by_group(gen_buses_ppc, y_gen_p_pu.real, y_gen_p_pu.imag)
-    ppc["bus"][buses, GS_P] += gen_gs_p
-    ppc["bus"][buses, BS_P] += gen_bs_p
+    ppc["bus"][buses, GS_P] = gen_gs_p
+    ppc["bus"][buses, BS_P] = gen_bs_p
 
     # Calculate K_S on power station configuration
     if np.any(~np.isnan(gen.power_station_trafo.values)):
-        f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
+        f, _ = net["_pd2ppc_lookups"]["branch"]["trafo"]
 
         # If power station units defined with index in gen, no topological search needed
         ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
@@ -179,7 +180,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         x_g = xdss_pu[ps_gen_mask]
         p_g = pg_percent[ps_gen_mask] / 100
 
-        
+
         if np.any(ps_trafo_oltc_mask):
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
                 ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_mask])
