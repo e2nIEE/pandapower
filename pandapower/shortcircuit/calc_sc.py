@@ -127,10 +127,8 @@ def calc_sc(net, bus=None,
     # Convert bus to numpy array
     if bus is None:
         bus = net.bus.index.values
-    elif isinstance(bus, int):
-        bus = np.array([bus])
-    elif not isinstance(bus, np.ndarray):
-        bus = np.array(bus)
+    else:
+        bus = np.array([bus]).ravel()
 
     kappa = ith or ip
     net["_options"] = {}
@@ -214,7 +212,11 @@ def _calc_sc_1ph(net, bus):
     """
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _init_ppc(net)
+    # Create k updated ppci
+    ppci_bus = _get_is_ppci_bus(net, bus)
+    _, ppci, _ =\
+        _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
