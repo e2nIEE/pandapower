@@ -209,7 +209,7 @@ def get_trafo_values(trafo_df, par):
         return trafo_df[par].values
 
 
-def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, seq=1):
+def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     """
     Calculates the MAT/PYPOWER-branch-attributes from the pandapower trafo dataframe.
 
@@ -252,15 +252,15 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, seq=1):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, seq=seq)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
     return r, x, y, ratio, shift
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, seq=1):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, seq=seq)
+    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
 
     if mode == "sc":
         y = 0
@@ -408,17 +408,17 @@ def _replace_nan(array, value=0):
     array[mask] = value
     return array
 
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, seq=1):
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
 
     """
     parallel = get_trafo_values(trafo_df, "parallel")
-    if seq == 1:
+    if sequence == 1:
         vk_percent = get_trafo_values(trafo_df, "vk_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
-    elif seq == 0:
+    elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr0_percent")
     else:
@@ -429,7 +429,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, seq=1):
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
     r_sc = vkr_percent / 100. / sn_trafo_mva * tap_lv
-    x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
+    x_sc = np.sign(z_sc) * np.sqrt((z_sc ** 2 - r_sc ** 2).astype(float))
     return r_sc / parallel, x_sc / parallel
 
 
@@ -803,7 +803,7 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, seq=1):
+def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
@@ -811,9 +811,9 @@ def _trafo_df_from_trafo3w(net, seq=1):
     loss_side = net._options["trafo3w_losses"].lower()
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
-    if seq==1:
+    if sequence==1:
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode)
-    elif seq==0:
+    elif sequence==0:
         if mode != "sc":
             raise NotImplementedError("0 seq impedance calculation only implemented for short-circuit calculation!")
         _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
