@@ -21,9 +21,23 @@ from pandapower.shortcircuit import calc_sc
 from pandapower.create import _get_index_with_check
 from pandapower.topology import create_nxgraph
 
+__all__ = ["detect_power_station_unit", "calc_sc_on_line"]
 
 def detect_power_station_unit(net, mode="auto",
                               max_gen_voltage_kv=80, max_distance_km=0.01):
+    """
+    Identifies the power station units configuration (gen and trafo) according to IEC 60909.
+    Updates the power_station_trafo in the gen table
+
+    INPUT:
+        **net** - panpdapower net
+
+        **mode** (str, ("auto", trafo""))
+
+        **max_gen_voltage_level** (float)
+
+        **max_distance_km** (float)
+    """
     logger.info("This function will overwrites the value 'power_station_trafo' in gen table")
     net.gen["power_station_trafo"] = np.nan
 
@@ -59,24 +73,10 @@ def detect_power_station_unit(net, mode="auto",
             # Check parallel trafo
             if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
                 raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
-
-            # Check parallel gen
-
+            if np.in1d(net.gen.bus.values, gen_bus_at_lv_side).sum() > 1:
+                raise UserWarning("More than 1 gen detected at the lv side of a power station trafo")
             net.gen.loc[np.in1d(net.gen.bus.values, gen_bus_at_lv_side),
                         "power_station_trafo"] = t_ix
-
-    # # Check parallel trafo, not allowed in the phase
-    # if len(np.unique(ps_trafo_lv_bus_ppc)) != len(ps_trafo_lv_bus_ppc):
-    #     raise UserWarning("Parallel trafos not allowed in power station units")
-
-    # # Check parallel gen, not allowed in the phase
-    # if len(np.unique(gen_bus_ppc[ps_gen_ppc_mask])) != len(gen_bus_ppc[ps_gen_ppc_mask]):
-    #     raise UserWarning("Parallel gens not allowed in power station units")
-
-    # # Check wrongly defined trafo (lv side no gen)
-    # if np.any(~np.isin(ps_trafo_lv_bus_ppc, ps_units_bus_ppc)):
-    #     raise UserWarning("Some power station units defined wrong! No gen detected at LV side!")
-
 
 
 def _create_element_from_exisiting(net, ele_type, ele_ix):
@@ -86,7 +86,7 @@ def _create_element_from_exisiting(net, ele_type, ele_ix):
 
 
 def _create_aux_net(net, line_ix, distance_to_bus0):
-    if distance_to_bus0 > 0 and distance_to_bus0 < 1:
+    if distance_to_bus0 < 0 or distance_to_bus0 > 1:
         raise UserWarning("Calculating SC current on line failed! distance_to_bus0 must be between 0-1!")
     aux_net = deepcopy(net)
 
@@ -123,9 +123,24 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
 
 
 def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
+    """
+    Calculate the shortcircuit in the middle of the line, returns a modified network
+    with the shortcircuit calculation results and the bus added
+
+    INPUT:
+        **net** - panpdapower net
+
+        **line_ix** (int) - The line of the shortcircuit
+
+        **distance_to_bus0** (float) - The position of the shortcircuit should be between 0-1
+
+    OPTIONAL:
+        **kwargs**** - the parameters required for the pandapower calc_sc function
+    """
     # Update network
     aux_net, aux_bus = _create_aux_net(net, line_ix, distance_to_bus0)
 
+    pp.rundcpp(aux_net)
     calc_sc(aux_net, bus=aux_bus, **kwargs)
 
     # Return the new net and the aux bus
