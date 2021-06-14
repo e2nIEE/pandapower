@@ -43,40 +43,42 @@ def gen_three_bus_example():
     #pp.create_switch(net, b3, b1, et="b")
     return net
 
-# def test_max_gen(one_line_one_generator):
-#     net = one_line_one_generator
-#     sc.calc_sc(net, case="max", inverse_y=False)
+def test_max_gen(one_line_one_generator):
+    net = one_line_one_generator
+    sc.calc_sc(net, case="max", inverse_y=False)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [1.5395815, 1.5083952, 1.5395815], atol=1e-3)
 #     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.5395815) < 1e-7
 #     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.5395815) < 1e-7
 #     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.5083952) < 1e-7
-#     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
-# def test_branch_max_gen(gen_three_bus_example):
-#     net = gen_three_bus_example
-#     sc.calc_sc(net, case="max", branch_results=True)
-#     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.76204252, 1.28698045]))
+def test_branch_max_gen(gen_three_bus_example):
+    net = gen_three_bus_example
+    sc.calc_sc(net, case="max", branch_results=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.76204252, 1.28698045]), atol=1e-3)
 
+def test_min_gen(one_line_one_generator):
+    net = one_line_one_generator
+    sc.calc_sc(net, case="min")
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [1.3996195, 1.3697407, 1.3996195], atol=1e-3)
+    # assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.3996195) < 1e-7
+    # assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
+    # assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
-# def test_min_gen(one_line_one_generator):
-#     net = one_line_one_generator
-#     sc.calc_sc(net, case="min")
-#     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.3996195) < 1e-7
-#     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
-#     assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
-#     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+def test_branch_min_gen(gen_three_bus_example):
+    net = gen_three_bus_example
+    sc.calc_sc(net, case="min", branch_results=True)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]), atol=1e-3)
 
-# def test_branch_min_gen(gen_three_bus_example):
-#     net = gen_three_bus_example
-#     sc.calc_sc(net, case="min", branch_results=True)
-#     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]))
-
-# def test_max_gen_fault_impedance(one_line_one_generator):
-#     net = one_line_one_generator
-#     sc.calc_sc(net, case="max", r_fault_ohm=2, x_fault_ohm=10)
-#     assert abs(net.res_bus_sc.ikss_ka.at[0] - 0.4450868) < 1e-7
-#     assert abs(net.res_bus_sc.ikss_ka.at[1] - 0.4418823) < 1e-7
-#     assert abs(net.res_bus_sc.ikss_ka.at[2] - 0.4450868) < 1e-7
-#     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+def test_max_gen_fault_impedance(one_line_one_generator):
+    net = one_line_one_generator
+    sc.calc_sc(net, case="max", r_fault_ohm=2, x_fault_ohm=10)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [0.4450868, 0.4418823, 0.4450868], atol=1e-3)
+    # assert abs(net.res_bus_sc.ikss_ka.at[0] - 0.4450868) < 1e-7
+    # assert abs(net.res_bus_sc.ikss_ka.at[1] - 0.4418823) < 1e-7
+    # assert abs(net.res_bus_sc.ikss_ka.at[2] - 0.4450868) < 1e-7
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 
 # def test_rdss_estimations():
@@ -184,9 +186,3 @@ def gen_three_bus_example():
 
 if __name__ == '__main__':
     pytest.main(['test_gen.py'])
-    
-    # net = gen_three_bus_example()
-    # sc.calc_sc(net, case="max", branch_results=True)
-    # assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.76204252, 1.28698045]))
-    
-    # rl = net.res_line_sc

@@ -554,8 +554,12 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
-    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
-    ppc["bus"][buses, BS] = bs * ppc['baseMVA']
+    if mode == "sc":
+        ppc["bus"][buses, GS] += gs * ppc['baseMVA']
+        ppc["bus"][buses, BS] += bs * ppc['baseMVA']
+    else:
+        ppc["bus"][buses, GS] = gs * ppc['baseMVA']
+        ppc["bus"][buses, BS] = bs * ppc['baseMVA']
     return gs * ppc['baseMVA'], bs * ppc['baseMVA']
 
 def _add_motor_impedances_ppc(net, ppc):
