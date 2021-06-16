@@ -8,6 +8,8 @@ Change Log
 - [ADDED] Efficient PTDF calculation on large grid
 - [ADDED] toolbox function replace_pq_elmtype()
 - [CHANGED] ConstControl can now also change attributes of other controllers, if the parameter "variable" is defined in the format "object.attribute" (e.g. "object.vm_set_pu")
+- [CHANGED] ConstControl is initialized with level=-1 and order=-1 by default to make sure that it runs before other controllers
+- [CHANGED] ConstControl now writes values from the datasource to net at time_step instead of control_step, which ensures that the values for the time step are set before running the initial power flow
 - [ADDED] Alternative constructor for DiscreteTapControl to use net.trafo.tap_step_percent to determine vm_lower_pu and vm_upper_pu based on vm_set_pu
 - [ADDED] Characteristic object that represents a piecewise-linear characteristic
 - [ADDED] CharacteristicControl that implements adjusting values in net based on some other input values in the grid
