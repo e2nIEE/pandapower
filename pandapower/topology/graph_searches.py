@@ -32,7 +32,7 @@ def connected_component(mg, bus, notravbuses=[]):
     EXAMPLE:
          import pandapower.topology as top
 
-         mg = top.create_nx_graph(net)
+         mg = top.create_nxgraph(net)
 
          cc = top.connected_component(mg, 5)
 
@@ -68,7 +68,7 @@ def connected_components(mg, notravbuses=set()):
      EXAMPLE:
          import pandapower.topology as top
 
-         mg = top.create_nx_graph(net)
+         mg = top.create_nxgraph(net)
 
          cc = top.connected_components(net, 5)
 
