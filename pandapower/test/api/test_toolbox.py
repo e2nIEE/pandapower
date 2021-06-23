@@ -45,7 +45,7 @@ def test_branch_element_bus_dict():
     bebd = pp.branch_element_bus_dict()
     assert isinstance(bebd, dict)
     assert len(bebd) >= 5
-    assert bebd["trafo"] == ["hv_bus", "lv_bus"]
+    assert set(bebd["trafo"]) == {"hv_bus", "lv_bus"}
     bebd = pp.branch_element_bus_dict(include_switch=True)
     assert "bus" in bebd["switch"]
 
