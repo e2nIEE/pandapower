@@ -16,6 +16,52 @@ import pandapower.toolbox as tb
 from pandas._testing import assert_series_equal
 
 
+def test_element_bus_tuples():
+    ebts = pp.element_bus_tuples()
+    assert isinstance(ebts, set)
+    assert len(ebts) >= 20
+    item = next(iter(ebts))
+    assert isinstance(item, tuple)
+    assert len(item) == 2
+    assert len({"line", "gen"} & {elm for (elm, bus) in ebts}) == 2
+    assert {bus for (elm, bus) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
+                                            'lv_bus'}
+    assert len(pp.element_bus_tuples(bus_elements=False, res_elements=True)) > \
+        1.5*len(pp.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
+
+
+def test_pp_elements():
+    elms = pp.pp_elements()
+    assert isinstance(elms, set)
+    assert "bus" in elms
+    assert "measurement" in elms
+    assert "sgen" in elms
+    assert len(pp.pp_elements(bus=False, other_elements=False, bus_elements=True,
+                              branch_elements=False)) == \
+        len(pp.element_bus_tuples(bus_elements=True, branch_elements=False))
+
+
+def test_branch_element_bus_dict():
+    bebd = pp.branch_element_bus_dict()
+    assert isinstance(bebd, dict)
+    assert len(bebd) >= 5
+    assert set(bebd["trafo"]) == {"hv_bus", "lv_bus"}
+    bebd = pp.branch_element_bus_dict(include_switch=True)
+    assert "bus" in bebd["switch"]
+
+
+def test_signing_system_value():
+    assert pp.signing_system_value("sgen") == -1
+    assert pp.signing_system_value("load") == 1
+    for bus_elm in pp.pp_elements(bus=False, branch_elements=False, other_elements=False):
+        assert pp.signing_system_value(bus_elm) in [1, -1]
+    try:
+        pp.signing_system_value("sdfjio")
+        assert False
+    except ValueError:
+        pass
+
+
 def test_opf_task():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
@@ -873,9 +919,11 @@ def test_get_connected_buses():
     bus4 = pp.create_bus(net, vn_kv=0.4)
     bus5 = pp.create_bus(net, vn_kv=20)
 
-    trafo0 = pp.create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, std_type='63/25/38 MVA 110/20/10 kV')
+    trafo0 = pp.create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2,
+                                     std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = pp.create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
-    line1 = pp.create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1, std_type='24-AL1/4-ST1A 0.4')
+    line1 = pp.create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
+                           std_type='24-AL1/4-ST1A 0.4')
 
     switch0a = pp.create_switch(net, bus=bus0, element=trafo0, et='t3')
     switch0b = pp.create_switch(net, bus=bus2, element=trafo0, et='t3')
@@ -932,9 +980,12 @@ def test_drop_elements_at_buses():
     for b in net.bus.index.values:
         net1 = net.deepcopy()
         cd = tb.get_connected_elements_dict(net1, b, connected_buses=False)
-        swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) & (net1.switch.et=='t3')].index)
-        swt = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo', [1000])) & (net1.switch.et=='t')].index)
-        swl = set(net1.switch.loc[net1.switch.element.isin(cd.get('line', [1000])) & (net1.switch.et=='l')].index)
+        swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) &
+                                    (net1.switch.et == 't3')].index)
+        swt = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo', [1000])) &
+                                  (net1.switch.et == 't')].index)
+        swl = set(net1.switch.loc[net1.switch.element.isin(cd.get('line', [1000])) &
+                                  (net1.switch.et == 'l')].index)
         sw = swt3w | swt | swl
         tb.drop_elements_at_buses(net1, [b])
         assert b not in net1.switch.bus.values
@@ -1192,6 +1243,7 @@ def test_repl_to_line():
     assert np.allclose(vm1, vm0)
     assert np.allclose(va1, va0)
 
+
 def test_repl_to_line_with_switch():
     """
     Same test as above, but this time in comparison to actual replacement
@@ -1221,7 +1273,8 @@ def test_repl_to_line_with_switch():
             REPL = pp.create_line(net, from_bus=fbus, to_bus=tbus, length_km=len, std_type=std)
 
             for bus in fbus, tbus:
-                if bus in net.switch[(net.switch.closed == False) & (net.switch.element == testindex)].bus.values:
+                if bus in net.switch[(net.switch.closed == False) &
+                                     (net.switch.element == testindex)].bus.values:
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
@@ -1232,8 +1285,8 @@ def test_repl_to_line_with_switch():
             fbus_repl = net.res_bus.loc[fbus]
             tbus_repl = net.res_bus.loc[tbus]
 
-            ploss_repl = (net.res_line.loc[REPL].p_from_mw - net.res_line.loc[REPL].p_to_mw )
-            qloss_repl =(net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar )
+            ploss_repl = (net.res_line.loc[REPL].p_from_mw - net.res_line.loc[REPL].p_to_mw)
+            qloss_repl =(net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar)
 
             # get ne line impedances
             new_idx = tb.repl_to_line(net, testindex, std, in_service=True)
@@ -1245,21 +1298,23 @@ def test_repl_to_line_with_switch():
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
             tbus_ne = net.res_bus.loc[tbus]
-            ploss_ne = (net.res_line.loc[testindex].p_from_mw - net.res_line.loc[testindex].p_to_mw)+\
-                  (net.res_line.loc[new_idx].p_from_mw - net.res_line.loc[new_idx].p_to_mw)
-            qloss_ne = (net.res_line.loc[testindex].q_from_mvar - net.res_line.loc[testindex].q_to_mvar )+\
-                  (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
-
+            ploss_ne = (net.res_line.loc[testindex].p_from_mw -
+                        net.res_line.loc[testindex].p_to_mw) + \
+                (net.res_line.loc[new_idx].p_from_mw - net.res_line.loc[new_idx].p_to_mw)
+            qloss_ne = (net.res_line.loc[testindex].q_from_mvar -
+                        net.res_line.loc[testindex].q_to_mvar) + \
+                (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
 
             assert_series_equal(fbus_repl, fbus_ne, atol=1e-2)
             assert_series_equal(tbus_repl, tbus_ne)
-            assert np.isclose(ploss_repl,ploss_ne, atol=1e-5)
-            assert np.isclose(qloss_repl,qloss_ne)
+            assert np.isclose(ploss_repl, ploss_ne, atol=1e-5)
+            assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
             net.line.in_service[testindex] = True
             net.line.in_service[new_idx] = False
             net.line.in_service[REPL] = False
+
 
 def test_merge_parallel_line():
     net = nw.example_multivoltage()
@@ -1275,7 +1330,7 @@ def test_merge_parallel_line():
     ploss_0 = (net.res_line.loc[5].p_from_mw - net.res_line.loc[5].p_to_mw)
     qloss_0 = (net.res_line.loc[5].q_from_mvar - net.res_line.loc[5].q_to_mvar)
 
-    net = tb.merge_parallel_line(net,5)
+    net = tb.merge_parallel_line(net, 5)
 
     assert net.line.parallel.at[5] == 1
     pp.runpp(net)
