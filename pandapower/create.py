@@ -902,9 +902,8 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 #     OUTPUT:
 #         **index** (int) - The unique ID of the created load
 #
-#     All elements are modeled from a consumer point of view. Active power will therefore always be
-#     positive, reactive power will be negative for inductive behaviour and positive for capacitive
-#     behaviour.
+#     Load elements are modeled from a consumer point of view. Active power will therefore always be
+#     positive, reactive power will be positive for under-excited behavior (Q absorption, decreases voltage) and negative for over-excited behavior (Q injection, increases voltage)
 #     """
 #     if bus not in net["bus"].index.values:
 #         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
@@ -943,16 +942,16 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
 
         **kwargs are passed on to the create_load function
 
     OUTPUT:
         **index** (int) - The unique ID of the created load
 
-    All elements are modeled from a consumer point of view. Active power will therefore always be
-    positive, reactive power will be negative for inductive behaviour and positive for capacitive
-    behaviour.
+    Load elements are modeled from a consumer point of view. Active power will therefore always be
+    positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative for
+    overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
@@ -1227,14 +1226,15 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
     gen, sgen, and ext_grid are modelled in the generator point of view. Active power
-    will therefore be postive por generation, and reactive power will be negative for consumption
-    behaviour and positive for generation behaviour.
+    will therefore be postive for generation, and reactive power will be negative for
+    underexcited behavior (Q absorption, decreases voltage) and
+    positive for for overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
@@ -3383,7 +3383,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     OPTIONAL:
         **check_existing** (bool, default: None) - Check for and replace existing measurements for\
             this bus, type and element_type. Set it to false for performance improvements which can\
-            cause unsafe behaviour
+            cause unsafe behavior
 
         **index** (int, default: None) - Index of the measurement in the measurement table. Should\
             not exist already.

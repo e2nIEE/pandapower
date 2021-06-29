@@ -200,7 +200,7 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     # ----- 3W Trafos ------
     if 'trafo3w' in net:
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace = create_trafo3w_trace(net, color=trafo3w_color, width=branch_width * 5,
+        trans_trace = create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5, trace_name='3w_trafos',
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
     else:
