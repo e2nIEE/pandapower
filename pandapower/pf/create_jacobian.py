@@ -52,24 +52,8 @@ def _create_J_without_numba(Ybus, V, pvpq, pq, contribution_factors, dist_slack)
         J21 = dS_dVa[array([pq]).T, pvpq].imag
         J22 = dS_dVm[array([pq]).T, pq].imag
         if dist_slack:
-            J13 = contribution_factors[1:].reshape(-1,1)
-            J23 = ones(len(pq)).reshape(-1,1)
-            print('___J11:')
-            print(J11.toarray())
-            print('___J12:')
-            print(J12.toarray())
-            print('___J13:')
-            print(J13)
-            print('___J11J12J13')
-            print(hstack([J11, J12, J13]).toarray())
-            print('___J21:')
-            print(J21.toarray())
-            print('___J22:')
-            print(J22.toarray())
-            print('___J23:')
-            print(J23)
-            print('___J21J22J23')
-            print(hstack([J21, J22, J23]).toarray())
+            J13 = array(contribution_factors[1:]).reshape(-1,1)
+            J23 = zeros(shape=(len(pq), 1))
             J = vstack([
                 hstack([J11, J12, J13]),
                 hstack([J21, J22, J23])

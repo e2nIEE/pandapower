@@ -30,13 +30,17 @@ def test_small_example():
     tol_mw = 1e-6
     net = pp.create_empty_network()
     pp.create_buses(net, 3, 20)
-    pp.create_ext_grid(net, 0)
-    pp.create_gen(net, 1, p_mw=0, vm_pu=1)
-    pp.create_load(net, 1, p_mw=10, q_mvar=3)
-    pp.create_load(net, 2, p_mw=10, q_mvar=3)
-    pp.create_line(net, 0, 1, 2, "122-AL1/20-ST1A 20.0")
-    pp.create_line(net, 1, 2, 2, "122-AL1/20-ST1A 20.0")
-    net.ext_grid["contribution_factor"] = 0
+
+    pp.create_gen(net, 0, p_mw=100, vm_pu=1, slack=True)
+    # pp.create_ext_grid(net, 0)
+
+    pp.create_load(net, 1, p_mw=100, q_mvar=100)
+
+    pp.create_line_from_parameters(net, 0, 1, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+
+    # net.ext_grid["contribution_factor"] = 0
     # if no dspf is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
     net.gen["contribution_factor"] = 1

@@ -140,7 +140,8 @@ def _evaluate_Fx(Ybus, V, Sbus, pv, pq, contribution_factors, dist_slack):
         # we smuggle the guess for the overall slack mismatch as the last element of V
         print(V)
         print(contribution_factors)
-        mis = V[:-1] * conj(Ybus * V[:-1]) - Sbus + contribution_factors * V[-1]
+        slack_power = contribution_factors * V[-1]
+        mis = V[:-1] * conj(Ybus * V[:-1]) - Sbus + slack_power
     else:
         mis = V * conj(Ybus * V) - Sbus
     F = r_[mis[pv].real,
