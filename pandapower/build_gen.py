@@ -122,14 +122,6 @@ def _build_pp_ext_grid(net, ppc, f, t):
             # if we dont:
             ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
             ppc["bus"][eg_buses, VMIN] = net["ext_grid"]["vm_pu"].values[eg_is] - delta
-
-
-
-
-
-
-
-
     else:
         ppc["gen"][f:t, QMIN] = 0
         ppc["gen"][f:t, QMAX] = 0
