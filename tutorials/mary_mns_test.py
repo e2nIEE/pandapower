@@ -115,3 +115,14 @@ def plot_storage_results(storage_results):
     plt.show()
 # plot the result
 plot_storage_results(storage_results)
+
+
+
+import pandapower as pp
+import pandapower.networks as nw
+net = nw.case5()
+pp.create_storage(net, 2, p_mw=1., max_e_mwh=.2, soc_percent=100., q_mvar=1.)
+pp.create_storage(net, 3, p_mw=1., max_e_mwh=.3, soc_percent=100., q_mvar=1.)
+
+# optimize for 24 time steps. At the end the SOC is 0%
+storage_results = pp.runpm_storage_opf(net, n_timesteps=24)

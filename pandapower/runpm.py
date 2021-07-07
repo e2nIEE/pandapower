@@ -392,12 +392,15 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     read_ots_results(net)
 
 
-def runpm_storage_opf(net, calculate_voltage_angles=True,
+def runpm_storage_opf(net, calculate_voltage_angles=True, correct_pm_network_data=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                      n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True, 
+                      n_timesteps=24, time_elapsed=1.0,
+                      charge_efficiency=1.0, discharge_efficiency=1.0, 
+                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8,
                       pm_solver="ipopt", pm_mip_solver="cbc", pm_nl_solver="ipopt",
-                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
-                      delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", **kwargs):  # pragma: no cover
+                      pm_model="DCPPowerModel", pm_time_limits=None, pm_log_level=0,
+                      delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S",
+                      profiles = None, **kwargs):  # pragma: no cover
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.
 
@@ -430,7 +433,17 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
 
     net._options["n_time_steps"] = n_timesteps
     net._options["time_elapsed"] = time_elapsed
-
+    
+    net._options["charge_efficiency"] = charge_efficiency
+    net._options["discharge_efficiency"] = discharge_efficiency
+    
+    net._options["standby_loss"] = standby_loss
+    net._options["p_loss"] = p_loss
+    net._options["q_loss"] = q_loss
+           
+    net._options["multinet"] = True
+    net._options["profiles"] = profiles
+    
     _runpm(net)
     storage_results = read_pm_storage_results(net)
     return storage_results

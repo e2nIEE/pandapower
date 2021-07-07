@@ -4,7 +4,7 @@ import os
 import tempfile
 from os import remove
 from os.path import isfile
-
+import pathlib
 import numpy as np
 import pandas as pd
 
@@ -103,11 +103,15 @@ def dump_pm_json(pm, buffer_file=None):
         # if no buffer file is provided a random file name is generated
         temp_name = next(tempfile._get_candidate_names())
         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
+
+    else:
+        temp_name = None
+        
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
 
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
-    return buffer_file
+    return buffer_file, temp_name
 
 
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
@@ -401,3 +405,69 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     net["ne_line"].loc[new_line_index, "in_service"] = True
     # init res_ne_line to save built status afterwards
     net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
+    
+    
+    
+def convert_timeseries_to_multinet(net, profiles, buffer_file, temp_name):
+    pd2pm_lookup = net._pd2pm_lookups
+    
+    # gen_index = list()
+    load_p_index = list()
+    load_q_index = list()
+    n_ts = None
+    
+    for key, val in profiles.items():
+        n_ts = val.shape[0]
+        element = key[0]
+        el_lookup = pd2pm_lookup[element]
+        pm_index = el_lookup[el_lookup >= 0]
+        # if element == "gen":
+        #     gen_index.extend(list(pm_index))
+        # else:
+        if key[1] == "q_mvar":
+            load_q_index.extend(list(pm_index))
+        else:
+            load_p_index.extend(list(pm_index))
+        # controllable = element + "_controllable"
+        # if controllable in pd2pm_lookup and key[1] == "p_mw":
+        #     el_lookup = pd2pm_lookup[controllable]
+        #     pm_index = el_lookup[el_lookup >= 0]
+        #     gen_index.extend(list(pm_index))
+    if n_ts is None:
+        raise ValueError("No time series available")
+    
+    load_p = pd.DataFrame(0., index = load_p_index, columns = range(n_ts))
+    load_q = pd.DataFrame(0., index = load_q_index, columns = range(n_ts))
+    # gen_p = pd.DataFrame(0., index = gen_index, columns = range(n_ts))
+    
+    for key, val in profiles.items():
+        element = key[0]
+        el_lookup = pd2pm_lookup[element]
+        pm_index = el_lookup[el_lookup >= 0]
+        array_index = np.where([el_lookup >= 0])[1]
+        # ts = -val.values[:, array_index].T if "gen" in element else val.values[:, array_index].T
+        ts = val.values[:, array_index].T
+        # if element == "gen":
+        #     gen_p.loc[pm_index,:] = ts
+        # else:
+        if key[1] == "q_mvar":
+            load_q.loc[pm_index,:] = ts
+        else:
+            load_p.loc[pm_index,:] = ts
+    
+        # controllable = element + "_controllable"
+        # if controllable in pd2pm_lookup and key[1] == "p_mw":
+        #     el_lookup = pd2pm_lookup[controllable]
+        #     pm_index = el_lookup[el_lookup >= 0]
+        #     array_index = np.where([el_lookup >= 0])[1]
+        #     gen_p.loc[pm_index, :] = val.values[:, array_index].T
+    
+    # for file, df in zip(["load_p", "load_q", "gen_p"], [load_p, load_q, gen_p]):
+    for file, df in zip(["load_p", "load_q"], [load_p, load_q]):
+        if not df.empty:
+            pm_file = pathlib.Path(tempfile.gettempdir(), temp_name + "_" + file + ".json")
+            df.to_json(pm_file, orient="index")
+            buffer_file[file] = str(pm_file)
+    return buffer_file
+
+

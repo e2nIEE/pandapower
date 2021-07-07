@@ -2,6 +2,68 @@ import numpy as np
 import pandas as pd
 
 
+# def add_storage_opf_settings(net, ppci, pm):
+#     # callback function to add storage settings. Must be called after initializing pm data structure since the
+#     # pm["storage"] dict is filled
+
+#     # n time steps to optimize (here 3 hours)
+#     pm["n_time_steps"] = net._options["n_time_steps"]
+#     # time step (here 1 hour)
+#     pm["time_elapsed"] = net._options["time_elapsed"]
+
+#     # add storage systems to pm
+#     # Todo: Some variables are not used and not included in pandapower as well (energy_rating, thermal_rating,
+#     # (efficiencies, r, x...)
+#     bus_lookup = net._pd2ppc_lookups["bus"]
+
+#     for idx in net["storage"].index:
+#         energy = (net["storage"].at[idx, "soc_percent"] * 1e-2 *
+#                   (net["storage"].at[idx, "max_e_mwh"] -
+#                    net["storage"].at[idx, "min_e_mwh"])) / pm["baseMVA"]
+        
+#         qs = net["storage"].at[idx, "q_mvar"].item() / pm["baseMVA"]
+#         ps = net["storage"].at[idx, "p_mw"].item() / pm["baseMVA"]
+#         # max_p_mw = ps
+#         # max_q_mvar, min_q_mvar = qs, -qs
+#         if "max_p_mw" in net["storage"]:
+#             max_p_mw = net["storage"].at[idx, "max_p_mw"].item() / pm["baseMVA"]
+#         else:
+#             max_p_mw = ps
+            
+#         if "max_q_mvar" in net["storage"]:
+#             max_q_mvar = net["storage"].at[idx, "max_q_mvar"].item() / pm["baseMVA"]
+#         else:
+#             max_q_mvar = qs
+            
+#         if "max_q_mvar" in net["storage"]:
+#             min_q_mvar = net["storage"].at[idx, "min_q_mvar"].item() / pm["baseMVA"]
+#         else:
+#             min_q_mvar = -qs
+            
+#         pm_idx = int(idx) + 1
+        
+#         pm["storage"][str(pm_idx)] = {
+#             "energy_rating": net["storage"].at[idx, "max_e_mwh"],
+#             "standby_loss": -1e-8,
+#             "x": 0.0,
+#             "energy": energy,
+#             "r": 0.0,
+#             "qs": qs,
+#             "thermal_rating": net["storage"].at[idx, "max_e_mwh"],  # Todo: include in DataFrame?
+#             "status": int(net["storage"].at[idx, "in_service"]),
+#             "discharge_rating": max_p_mw,
+#             "storage_bus": bus_lookup[net["storage"].at[idx, "bus"]].item(),
+#             "charge_efficiency": 1.,
+#             "index": pm_idx,
+#             "ps": ps,
+#             "qmax": max_q_mvar,
+#             "qmin": min_q_mvar,
+#             "charge_rating": max_p_mw,
+#             "discharge_efficiency": 1.0,
+#             "p_loss": -1e-8,
+#             "q_loss": -1e-8,
+#         }
+
 def add_storage_opf_settings(net, ppci, pm):
     # callback function to add storage settings. Must be called after initializing pm data structure since the
     # pm["storage"] dict is filled
@@ -35,9 +97,9 @@ def add_storage_opf_settings(net, ppci, pm):
         pm["storage"][str(pm_idx)] = {
             "energy_rating": net["storage"].at[idx, "max_e_mwh"],
             "standby_loss": 0.,
-            "x": 0.,
+            "x": 0.0,
             "energy": energy,
-            "r": 0.0,
+            "r": 0.1,
             "qs": qs,
             "thermal_rating": net["storage"].at[idx, "max_e_mwh"],  # Todo: include in DataFrame?
             "status": int(net["storage"].at[idx, "in_service"]),
@@ -50,10 +112,9 @@ def add_storage_opf_settings(net, ppci, pm):
             "qmin": min_q_mvar,
             "charge_rating": max_p_mw,
             "discharge_efficiency": 1.0,
-            "p_loss": 0.0,
-            "q_loss": 0.0
+            "p_loss": 0,
+            "q_loss": 0
         }
-
 
 def read_pm_storage_results(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
