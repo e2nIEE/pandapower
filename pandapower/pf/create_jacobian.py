@@ -1,4 +1,4 @@
-from numpy import complex128, float64, int32, ones
+from numpy import complex128, float64, int32, ones, r_
 from numpy.core.multiarray import zeros, empty, array
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 
@@ -38,22 +38,29 @@ def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
     return J
 
 
-def _create_J_without_numba(Ybus, V, pvpq, pq, contribution_factors, dist_slack):
+def _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_slack):
     # create Jacobian with standard pypower implementation.
-    if dist_slack:
-        dS_dVm, dS_dVa = dSbus_dV(Ybus, V[:-1])
-    else:
-        dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
+    dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
     ## evaluate Jacobian
-    J11 = dS_dVa[array([pvpq]).T, pvpq].real
-    J12 = dS_dVm[array([pvpq]).T, pq].real
+    if dist_slack:
+        rows_pvpq = array(r_[ref, pvpq]).T
+        cols_pvpq = r_[ref[1:], pvpq]
+        J11 = dS_dVa[r_[ref, pvpq], :][:, cols_pvpq].real
+        J12 = dS_dVm[r_[ref, pvpq], :][:, pq].real
+    else:
+        rows_pvpq = array([pvpq]).T
+        cols_pvpq = pvpq
+        # J11 = dS_dVa[array([pvpq]).T, cols_pvpq].real
+        # J12 = dS_dVm[array([pvpq]).T, pq].real
+        J11 = dS_dVa[rows_pvpq, cols_pvpq].real
+        J12 = dS_dVm[rows_pvpq, pq].real
     if len(pq) > 0 or dist_slack:
-        J21 = dS_dVa[array([pq]).T, pvpq].imag
+        J21 = dS_dVa[array([pq]).T, cols_pvpq].imag
         J22 = dS_dVm[array([pq]).T, pq].imag
         if dist_slack:
-            J13 = array(contribution_factors[1:]).reshape(-1,1)
-            J23 = zeros(shape=(len(pq), 1))
+            J13 = sparse(contribution_factors.reshape(-1,1))
+            J23 = sparse(zeros(shape=(len(pq), 1)))
             J = vstack([
                 hstack([J11, J12, J13]),
                 hstack([J21, J22, J23])
@@ -70,11 +77,11 @@ def _create_J_without_numba(Ybus, V, pvpq, pq, contribution_factors, dist_slack)
     return J
 
 
-def create_jacobian_matrix(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack):
+def create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack):
     if numba and not dist_slack:
         J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq)
     else:
-        J = _create_J_without_numba(Ybus, V, pvpq, pq, contribution_factors, dist_slack)
+        J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_slack)
     return J
 
 

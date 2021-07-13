@@ -258,6 +258,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
+                  ("contribution_factor", 'f8'),
                   ("in_service", "bool")],
         "measurement": [("name", dtype(object)),
                         ("measurement_type", dtype(object)),
@@ -3261,7 +3262,7 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
 
 def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, in_service=True,
-                 name=None, index=None):
+                 name=None, index=None, contribution_factor=0.0):
     """
     Creates an extended ward equivalent.
 
@@ -3287,6 +3288,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
+        **contribution_factor** (float, default 1.0) - Slack power contribution factor
+
     OUTPUT:
         xward id
     """
@@ -3295,8 +3298,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
     columns = ["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "r_ohm", "x_ohm", "vm_pu", "name",
-               "in_service"]
-    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, in_service]
+               "contribution_factor", "in_service"]
+    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, contribution_factor, in_service]
     _set_entries(net, "xward", index, **dict(zip(columns, values)))
 
     return index

@@ -65,9 +65,9 @@ def ppci_to_pfsoln(ppci, options):
     else:
         # reads values from internal ppci storage to bus, gen, branch and returns it
         _, pfsoln = _get_numba_functions(ppci, options)
-        return pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
+        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
                       internal["Yf"], internal["Yt"], internal["V"], internal["ref"], internal["ref_gens"])
-
+        return result_pfsoln
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
@@ -85,7 +85,7 @@ def _get_numba_functions(ppci, options):
     """
     pfsoln from pypower maybe slow in some cases. This function chooses the fastest for the given pf calculation
     """
-    if options["numba"]:
+    if options["numba"] and not options['distributed_slack']:
         makeYbus = makeYbus_numba
         shunt_in_net = any(ppci["bus"][:, BS]) or any(ppci["bus"][:, GS])
         # faster pfsoln function if only one slack is in the grid and no gens
@@ -127,8 +127,10 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    newton = newton_ls if lightsim2grid_available and options["lightsim2grid"] else newtonpf
-    V, success, iterations, J, Vm_it, Va_it = newton(Ybus, Sbus, V0, pv, pq, ppci, options)
+    if lightsim2grid_available:
+        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, Sbus, V0, pv, pq, ppci, options)
+    else:
+        V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,

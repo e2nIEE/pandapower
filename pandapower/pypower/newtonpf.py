@@ -22,7 +22,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, CON_FAC
 from pandapower.pypower.idx_bus import BUS_I, CON_FAC
 
 
-def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
+def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     """Solves the power flow using a full Newton's method.
     Solves for bus voltages given the full system admittance matrix (for
     all buses), the complex bus power injection vector (for all buses),
@@ -57,8 +57,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     # initialize
     i = 0
     V = V0
-    if dist_slack:
-        V = append(V, 0)
+    slack = 0  # for dist_slack
     Va = angle(V)
     Vm = abs(V)
     dVa, dVm = None, None
@@ -73,6 +72,10 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         Va_it = None
 
     # set up indexing for updating V
+    if len(ref) > 1 and dist_slack:
+        pv = r_[ref[1:], pv]
+        ref = ref[[0]]
+
     pvpq = r_[pv, pq]
     # generate lookup pvpq -> index pvpq (used in createJ)
     pvpq_lookup = zeros(max(Ybus.indices) + 1, dtype=int)
@@ -81,6 +84,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
 
+    nref = len(ref)
     npv = len(pv)
     npq = len(pq)
     j1 = 0
@@ -89,9 +93,11 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     j4 = j2 + npq  # j3:j4 - V angle of pq buses
     j5 = j4
     j6 = j4 + npq  # j5:j6 - V mag of pq buses
+    j7 = j6
+    j8 = j6 + nref # j7:j8 - slacks
 
     # evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, contribution_factors, dist_slack)
+    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors, dist_slack, slack)
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
@@ -102,7 +108,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         # update iteration counter
         i = i + 1
 
-        J = create_jacobian_matrix(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack)
+        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -111,6 +117,8 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         if npq and not iwamoto:
             Va[pq] = Va[pq] + dx[j3:j4]
             Vm[pq] = Vm[pq] + dx[j5:j6]
+        if dist_slack:
+            slack = slack + dx[j7:j8]
 
         # iwamoto multiplier to increase convergence
         if iwamoto:
@@ -127,26 +135,22 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
-        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, contribution_factors, dist_slack)
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors, dist_slack, slack)
 
         converged = _check_for_convergence(F, tol)
 
     return V, converged, i, J, Vm_it, Va_it
 
 
-def _evaluate_Fx(Ybus, V, Sbus, pv, pq, contribution_factors, dist_slack):
+def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors=None, dist_slack=False, slack=None):
     # evalute F(x)
     if dist_slack:
-        # we smuggle the guess for the overall slack mismatch as the last element of V
-        print(V)
-        print(contribution_factors)
-        slack_power = contribution_factors * V[-1]
-        mis = V[:-1] * conj(Ybus * V[:-1]) - Sbus + slack_power
+        # we include the slack power (slack * contribution factors) in the mismatch calculation
+        mis = V * conj(Ybus * V) - Sbus + contribution_factors * slack
+        F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
     else:
         mis = V * conj(Ybus * V) - Sbus
-    F = r_[mis[pv].real,
-           mis[pq].real,
-           mis[pq].imag]
+        F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
     return F
 
 
