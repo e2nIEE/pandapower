@@ -57,7 +57,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     # initialize
     i = 0
     V = V0
-    slack = 0  # for dist_slack
+    slack = 0  # for dist_slack  # todo: pre-calculate from grid balance
     Va = angle(V)
     Vm = abs(V)
     dVa, dVm = None, None
