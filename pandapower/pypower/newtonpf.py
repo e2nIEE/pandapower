@@ -72,7 +72,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         Va_it = None
 
     # set up indexing for updating V
-    if len(ref) > 1 and dist_slack:
+    if dist_slack and len(ref) > 1:
         pv = r_[ref[1:], pv]
         ref = ref[[0]]
 

@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandapower as pp
+from pandapower import networks
 import pytest
 from pandapower.test.toolbox import assert_res_equal
 
@@ -41,7 +42,7 @@ def get_injection_consumption(net):
 @pytest.mark.xfail(reason="is not implemented with numba")
 def test_numba():
     net = small_example_grid()
-    # if no dspf is given for ext_grid, 1 is assumed, because normally
+    # if no contribution_factor is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
     net.gen["contribution_factor"] = 1
     net2 = net.deepcopy()
@@ -52,7 +53,7 @@ def test_numba():
 
 def test_small_example():
     net = small_example_grid()
-    # if no dspf is given for ext_grid, 1 is assumed, because normally
+    # if no contribution_factor is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
     net.gen["contribution_factor"] = 1
 
@@ -73,6 +74,20 @@ def test_two_gens():
 
     assert abs(net.res_gen.at[0, 'p_mw'] / net.res_gen.p_mw.sum() - 1 / 3) < 1e-6
     assert abs(net.res_gen.at[1, 'p_mw'] / net.res_gen.p_mw.sum() - 2 / 3) < 1e-6
+
+    injected_p_mw, consumed_p_mw = get_injection_consumption(net)
+    con_fac = net.gen.contribution_factor / np.sum(net.gen.contribution_factor)
+
+    assert abs(net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
+    assert np.allclose(net.gen.p_mw - (injected_p_mw - consumed_p_mw) * con_fac, net.res_gen.p_mw, atol=1e-6, rtol=0)
+
+
+def test_three_gens():
+    net = small_example_grid()
+    pp.create_gen(net, 1, 200, 1., slack=True, contribution_factor=2)
+    pp.create_gen(net, 2, 200, 1., slack=True, contribution_factor=2)
+
+    pp.runpp(net, distributed_slack=True, numba=False, tolerance_mva=1e-6)
 
     injected_p_mw, consumed_p_mw = get_injection_consumption(net)
     con_fac = net.gen.contribution_factor / np.sum(net.gen.contribution_factor)
@@ -123,8 +138,8 @@ def test_gen_ext_grid():
 
     injected_p_mw, consumed_p_mw = get_injection_consumption(net)
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
-    input_p_mw = np.array([100, 0])  # 100 MW for gen and 0 for ext_grid
-    res_p_mw = np.r_[net.res_gen.p_mw, net.res_ext_grid.p_mw]  # resulting injection after distributed slack
+    input_p_mw = np.r_[net.gen.p_mw, 0]  # 100 MW for gen and 0 for ext_grid
+    res_p_mw = np.r_[net.res_gen.p_mw, net.res_ext_grid.p_mw.fillna(0)]  # resulting injection after distributed slack
     assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * con_fac, res_p_mw, atol=1e-6, rtol=0)
 
 
@@ -170,6 +185,73 @@ def test_separate_zones():
     # distributed slack not implemented for separate zones
     with pytest.raises(NotImplementedError):
         pp.runpp(net, distributed_slack=True, numba=False)
+
+
+def case9_simplified():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 9, vn_kv=345.)
+    lines = [[0, 3],[3, 4],[4, 5],[2, 5],[5, 6],[6, 7],[7, 1],[7, 8],[8, 3]]
+
+    for i, (fb, tb) in enumerate(lines):
+        pp.create_line_from_parameters(net, fb, tb, 1, 20, 100, 0, 1)
+
+    pp.create_gen(net, 0, 0, slack=True, contribution_factor=1)
+    pp.create_gen(net, 1, 163, slack=True, contribution_factor=1)
+    pp.create_gen(net, 2, 85, slack=True, contribution_factor=1)
+
+    pp.create_load(net, 4, 90, 30)
+    pp.create_load(net, 6, 100, 35)
+    pp.create_load(net, 8, 125, 50)
+    return net
+
+
+def test_case9():
+    """
+    basic test with ext_grid + gen, scaling != 1, contribution_factor sum = 1
+    """
+    tol_mw = 1e-6
+    net = networks.case9()
+    # net = case9_simplified()
+
+    # set contribution_factor (distributed slack participation factor)
+    net.ext_grid['contribution_factor'] = 1 / 3
+    net.gen['contribution_factor'] = 1 / 3
+    # todo: is it clearer to consider scaling or to ignore it? right now is ignored
+    # net.gen["scaling"] = [0.8, 0.7]
+    net.gen["scaling"] = [1, 1]
+    net.gen.slack = True
+
+    # # set ext_grid dispatched active power
+    # net.ext_grid['p_disp_mw'] = 30
+
+    pp.runpp(net, distributed_slack=True, numba=False)
+
+    # active power difference of dispatched and result
+    ext_grid_diff_p = 0 - net.res_ext_grid.p_mw
+    gen_diff = net.gen.p_mw * net.gen.scaling - net.res_gen.p_mw
+
+    # resulting active slack power
+    res_p_slack = ext_grid_diff_p.sum() + gen_diff.sum()
+
+    # calculate target active power difference
+    p_target_ext_grid = res_p_slack * net.ext_grid.contribution_factor
+    p_target_gen = res_p_slack * net.gen.contribution_factor
+
+    # check the power balances
+    assert np.allclose(ext_grid_diff_p, p_target_ext_grid, atol=tol_mw)
+    assert np.allclose(gen_diff, p_target_gen, atol=tol_mw)
+
+    # check balance of power
+    injected_p_mw, consumed_p_mw = get_injection_consumption(net)
+    assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
+
+    # check the distribution formula of the slack power difference
+    input_p_mw = np.r_[net.gen.p_mw, 0]  # 100 MW for gen and 0 for ext_grid
+    res_p_mw = np.r_[net.res_gen.p_mw, net.res_ext_grid.p_mw.fillna(0)]  # resulting injection after distributed slack
+    # calculate normalized contribution factors
+    con_fac = np.r_[net.gen.contribution_factor, net.ext_grid.contribution_factor]
+    con_fac /= sum(con_fac)
+    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * con_fac, res_p_mw, atol=1e-6, rtol=0)
 
 
 # todo: implement distributed slack to work with numba

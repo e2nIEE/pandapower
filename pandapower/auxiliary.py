@@ -1015,7 +1015,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if numba:
             # TODO: Implement distributed slack for numba.
             raise NotImplementedError(f'Distributed slack is not implemented '
-                                      f'with numba.')
+                                      f'with numba. Specify parameter numba=False.')
         if algorithm != 'nr':
             raise NotImplementedError(f'Distributed slack is only implemented '
                                       f'for Newton Raphson algorithm.')

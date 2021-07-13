@@ -18,7 +18,6 @@ from scipy.sparse import csr_matrix
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VM, VA, PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, CON_FAC
-from sympy.codegen.fnodes import sum_
 
 EPS = finfo(float).eps
 

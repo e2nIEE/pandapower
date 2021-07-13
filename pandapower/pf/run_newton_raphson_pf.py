@@ -43,7 +43,8 @@ def _run_newton_raphson_pf(ppci, options):
 
     """
     t0 = time()
-    if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
+    # we cannot run DC pf before running newton with distributed slack because the slacks come pre-solved after the DC pf
+    if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc" and not options['distributed_slack']:
         ppci = _run_dc_pf(ppci)
     if options["enforce_q_lims"]:
         ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)

@@ -341,7 +341,6 @@ def _build_bus_ppc(net, ppc, sequence=None):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus", aux)
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
     net["_pd2ppc_lookups"]["aux"] = aux
-    _add_contribution_factor(net, ppc)
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
@@ -612,16 +611,3 @@ def _add_c_to_ppc(net, ppc):
                              " to be either 6% or 10% according to IEC 60909")
         ppc["bus"][lv_buses, C_MAX] = c_ns
         ppc["bus"][lv_buses, C_MIN] = .95
-
-
-def _add_contribution_factor(net, ppc):
-    gen = net["gen"][net._is_elements["gen"]]
-    if len(gen) == 0:
-        return
-    gen_buses = gen.bus.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    gen_buses_ppc = bus_lookup[gen_buses]
-    contribution_factors_gen = gen.contribution_factor.values
-
-    buses, contribution_factors_bus, _ = _sum_by_group(gen_buses_ppc, contribution_factors_gen, contribution_factors_gen)
-    ppc["bus"][buses, CON_FAC] = contribution_factors_bus
