@@ -71,6 +71,7 @@ def _update_v(bus, V):
 def _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens):
     # update Pg for slack bus(es)
     # inj P + local Pd
+    # todo: expand the functionality to PV gens with non-zero slack_weight
     for slack_bus in ref:
         gens_at_bus = find(gbus == slack_bus)  # which is(are) the reference gen(s)?
         p_bus = Sbus[gens_at_bus[0]].real * baseMVA + bus[slack_bus, PD]

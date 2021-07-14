@@ -342,6 +342,10 @@ def _normalise_slack_weights(ppc):
     gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
     con_fac_gen = ppc['gen'][:, CON_FAC].astype(np.float64)
 
+    # todo: flip the logic, only 1 ext_grid and all others PV, show logger warning that 1 ext_grid is used
+    #  as slack and others are converted to PV nodes internally;
+    # todo: calculate dist_slack for all SL and PV nodes that have non-zero slack weight
+    # todo: rename contribution_factor to slack_weight
     buses_with_con_fac = ppc['gen'][ppc['gen'][:, CON_FAC] != 0, GEN_BUS].astype(np.int32)
     if not np.all(ppc['bus'][buses_with_con_fac, BUS_TYPE] == REF):
         raise UserWarning("Distributed slack calculation is implemented only for reference type buses. "
