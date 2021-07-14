@@ -129,7 +129,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("scaling", "f8"),
                 ("slack", "bool"),
                 ("in_service", 'bool'),
-                ("contribution_factor", 'f8'),
+                ("slack_weight", 'f8'),
                 ("type", dtype(object))],
         "switch": [("bus", "i8"),
                    ("element", "i8"),
@@ -150,7 +150,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
-                     ("contribution_factor", 'f8'),
+                     ("slack_weight", 'f8'),
                      ("in_service", 'bool')],
         "line": [("name", dtype(object)),
                  ("std_type", dtype(object)),
@@ -258,7 +258,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
-                  ("contribution_factor", 'f8'),
+                  ("slack_weight", 'f8'),
                   ("in_service", "bool")],
         "measurement": [("name", dtype(object)),
                         ("measurement_type", dtype(object)),
@@ -1343,7 +1343,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=None,
-               in_service=True, contribution_factor=0.0):
+               in_service=True, slack_weight=0.0):
     """
     Adds a generator to the network.
 
@@ -1377,7 +1377,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                 False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                 defaults to True if "controllable" column exists in DataFrame
 
-        **contribution_factor** (float, default 0.0) - Slack power contribution factor
+        **slack_weight** (float, default 0.0) - Slack power contribution factor
 
         powerflow
 
@@ -1423,8 +1423,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     index = _get_index_with_check(net, "gen", index, name="generator")
 
     columns = ["name", "bus", "p_mw", "vm_pu", "sn_mva", "type", "slack", "in_service",
-               "scaling", "contribution_factor"]
-    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling, contribution_factor]
+               "scaling", "slack_weight"]
+    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling, slack_weight]
 
     _set_entries(net, "gen", index, True, **dict(zip(columns, variables)))
 
@@ -1461,7 +1461,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                 min_q_mvar=None, min_p_mw=None, max_p_mw=None, min_vm_pu=None, max_vm_pu=None,
                 scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
                 xdss_pu=None, rdss_ohm=None, cos_phi=None, pg_percent=None, power_station_trafo=None,
-                in_service=True, contribution_factor=0.0, **kwargs):
+                in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -1518,7 +1518,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
-        **contribution_factor** (float, default 0.0) - Slack power contribution factor
+        **slack_weight** (float, default 0.0) - Slack power contribution factor
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
             OPF
@@ -1552,7 +1552,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "contribution_factor": contribution_factor, "name": name, "type": type, "slack": slack}
+               "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type, "slack": slack}
 
     _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
     _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
@@ -1644,7 +1644,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
                     index=None, r0x0_max=nan, x0x_max=nan, controllable=nan,
-                    contribution_factor=1.0, **kwargs):
+                    slack_weight=1.0, **kwargs):
     """
     Creates an external grid connection.
 
@@ -1691,7 +1691,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
-        **contribution_factor** (float, default 1.0) - Slack power contribution factor
+        **slack_weight** (float, default 1.0) - Slack power contribution factor
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -1716,8 +1716,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
-    entries = dict(zip(["bus", "name", "vm_pu", "va_degree", "in_service", "contribution_factor"],
-                       [bus, name, vm_pu, va_degree, bool(in_service), contribution_factor]))
+    entries = dict(zip(["bus", "name", "vm_pu", "va_degree", "in_service", "slack_weight"],
+                       [bus, name, vm_pu, va_degree, bool(in_service), slack_weight]))
     _set_entries(net, "ext_grid", index, **entries, **kwargs)
 
     # OPF limits
@@ -3262,7 +3262,7 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
 
 def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, in_service=True,
-                 name=None, index=None, contribution_factor=0.0):
+                 name=None, index=None, slack_weight=0.0):
     """
     Creates an extended ward equivalent.
 
@@ -3288,7 +3288,7 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
-        **contribution_factor** (float, default 1.0) - Slack power contribution factor
+        **slack_weight** (float, default 1.0) - Slack power contribution factor
 
     OUTPUT:
         xward id
@@ -3298,8 +3298,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
     columns = ["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "r_ohm", "x_ohm", "vm_pu", "name",
-               "contribution_factor", "in_service"]
-    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, contribution_factor, in_service]
+               "slack_weight", "in_service"]
+    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, slack_weight, in_service]
     _set_entries(net, "xward", index, **dict(zip(columns, values)))
 
     return index

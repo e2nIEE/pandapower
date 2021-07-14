@@ -16,7 +16,7 @@ def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
     Ibus = zeros(len(V), dtype=complex128)
     # create Jacobian from fast calc of dS_dV
     dVm_x, dVa_x = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), Ibus)
-
+    # todo: initialize J also for extra column and extra row, for the rows where slack_weight != 0
     # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
     Jx = empty(len(dVm_x) * 4, dtype=float64)
     # row pointer, dimension = pvpq.shape[0] + pq.shape[0] + 1
@@ -38,11 +38,12 @@ def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
     return J
 
 
-def _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_slack):
+def _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack):
     # create Jacobian with standard pypower implementation.
     dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
     ## evaluate Jacobian
+
     if dist_slack:
         rows_pvpq = array(r_[ref, pvpq]).T
         cols_pvpq = r_[ref[1:], pvpq]
@@ -57,7 +58,7 @@ def _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_s
         J21 = dS_dVa[array([pq]).T, cols_pvpq].imag
         J22 = dS_dVm[array([pq]).T, pq].imag
         if dist_slack:
-            J13 = sparse(contribution_factors.reshape(-1,1))
+            J13 = sparse(slack_weights.reshape(-1,1))
             J23 = sparse(zeros(shape=(len(pq), 1)))
             J = vstack([
                 hstack([J11, J12, J13]),
@@ -75,16 +76,16 @@ def _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_s
     return J
 
 
-def create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack):
+def create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, slack_weights, dist_slack):
     if numba:
         J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq)
     else:
-        J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, contribution_factors, dist_slack)
+        J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack)
     return J
 
 
 def get_fastest_jacobian_function(pvpq, pq, numba, dist_slack):
-    if numba and not dist_slack:
+    if numba:
         if len(pvpq) == len(pq):
             create_jacobian = create_J2
         else:

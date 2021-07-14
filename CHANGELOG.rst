@@ -15,7 +15,7 @@ Change Log
 - [ADDED] CharacteristicControl that implements adjusting values in net based on some other input values in the grid
 - [ADDED] USetTapControl that adjusts the setpoint for a transformer tap changer, based on a specified result variable (e.g. i_lv_ka)
 - [CHANGED] replaced naming for "inductive" or "ind" by "underexcited" and "capacitive" or "cap" for "overexcited"
-- [ADDED] Added distributed slack calculation to newton-raphson load flow; new column "contribution_factors" for ext_grid, gen and xward (xward not implemented yet); gen with contribution_factor>0 must have slack=True
+- [ADDED] Added distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward (xward not implemented yet); gen with slack_weight>0 must have slack=True
 
 [2.6.0]- 2021-03-09
 ----------------------

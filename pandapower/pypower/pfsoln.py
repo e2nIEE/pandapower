@@ -17,7 +17,7 @@ from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VM, VA, PD, QD
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, CON_FAC
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, SL_FAC
 
 EPS = finfo(float).eps
 
@@ -80,7 +80,7 @@ def _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens):
             ext_grids = intersect1d(gens_at_bus, ref_gens)
             pv_gens = setdiff1d(gens_at_bus, ext_grids)
             p_ext_grids = p_bus - sum(gen[pv_gens, PG])
-            con_fac = gen[ext_grids, CON_FAC]
+            con_fac = gen[ext_grids, SL_FAC]
             sum_con_fac = sum(con_fac)
             if sum_con_fac > 0:
                 # distribute bus slack power according to the distributed slack contribution factors

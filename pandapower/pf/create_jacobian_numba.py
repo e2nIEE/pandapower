@@ -168,3 +168,95 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragm
                 nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
         Jp[r + lpvpq + 1] = nnz - nnzStart + Jp[r + lpvpq]
+
+
+@jit(nopython=True, cache=False)
+def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, ref, pvpq, pq, Jx, Jj, Jp):  # pragma: no cover
+    """Calculates Jacobian faster with numba and sparse matrices.
+
+        Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
+
+        OUTPUT:  data from CSR form of Jacobian (Jx, Jj, Jp) and number of non zeros (nnz)
+
+        @author: Florian Schaefer
+
+        Calculate Jacobian entries
+
+        J11 = dS_dVa[array([pvpq]).T, pvpq].real
+        J12 = dS_dVm[array([pvpq]).T, pq].real
+        J21 = dS_dVa[array([pq]).T, pvpq].imag
+        J22 = dS_dVm[array([pq]).T, pq].imag
+
+        Explanation of code:
+        To understand the concept the CSR storage method should be known. See:
+        https://de.wikipedia.org/wiki/Compressed_Row_Storage
+
+        J has the shape
+        | J11 | J12 |               | (pvpq, pvpq) | (pvpq, pq) |
+        | --------- | = dimensions: | ------------------------- |
+        | J21 | J22 |               |  (pq, pvpq)  |  (pq, pq)  |
+
+        We first iterate the rows of J11 and J12 (for r in range lpvpq) and add the entries which are stored in dS_dV
+        Then we iterate the rows of J21 and J22 (for r in range lpq) and add the entries from dS_dV
+
+        Note: The row and column pointer of of dVm and dVa are the same as the one from Ybus
+    """
+    # Jacobi Matrix in sparse form
+    # Jp, Jx, Jj equal J like:
+    # J = zeros(shape=(ndim, ndim), dtype=float64)
+
+    # get length of vectors
+    lpvpq = len(pvpq)
+    lpq = len(pq)
+    lpv = lpvpq - lpq
+
+    # nonzeros in J
+    nnz = 0
+
+    # iterate rows of J
+    # first iterate pvpq (J11 and J12)
+    for r in range(lpvpq):
+        # nnzStar is necessary to calculate nonzeros per row
+        nnzStart = nnz
+        # iterate columns of J11 = dS_dVa.real at positions in pvpq
+        # check entries in row pvpq[r] of dS_dV
+        for c in range(Yp[pvpq[r]], Yp[pvpq[r] + 1]):
+            # check if column Yj is in pvpq
+            cc = pvpq_lookup[Yj[c]]
+            # entries for J11 and J12
+            if pvpq[cc] == Yj[c]:
+                # entry found
+                # equals entry of J11: J[r,cc] = dVa_x[c].real
+                Jx[nnz] = dVa_x[c].real
+                Jj[nnz] = cc
+                nnz += 1
+                # if entry is found in the "pq part" of pvpq = add entry of J12
+                if cc >= lpv:
+                    Jx[nnz] = dVm_x[c].real
+                    Jj[nnz] = cc + lpq
+                    nnz += 1
+        # add the slack weight for the last column
+        if slack_weights[r] != 0:
+            # todo: add the last entry of the row for slack weight
+            pass
+        # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
+        Jp[r + 1] = nnz - nnzStart + Jp[r]
+    # second: iterate pq (J21 and J22)
+    for r in range(lpq):
+        nnzStart = nnz
+        # iterate columns of J21 = dS_dVa.imag at positions in pvpq
+        for c in range(Yp[pq[r]], Yp[pq[r] + 1]):
+            cc = pvpq_lookup[Yj[c]]
+            if pvpq[cc] == Yj[c]:
+                # entry found
+                # equals entry of J21: J[r + lpvpq, cc] = dVa_x[c].imag
+                Jx[nnz] = dVa_x[c].imag
+                Jj[nnz] = cc
+                nnz += 1
+                if cc >= lpv:
+                    # if entry is found in the "pq part" of pvpq = Add entry of J22
+                    Jx[nnz] = dVm_x[c].imag
+                    Jj[nnz] = cc + lpq
+                    nnz += 1
+        # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
+        Jp[r + lpvpq + 1] = nnz - nnzStart + Jp[r + lpvpq]

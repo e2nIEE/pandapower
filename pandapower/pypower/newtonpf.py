@@ -18,8 +18,8 @@ from scipy.sparse.linalg import spsolve
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, CON_FAC
-from pandapower.pypower.idx_bus import BUS_I, CON_FAC
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, SL_FAC
+from pandapower.pypower.idx_bus import BUS_I, SL_FAC
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
@@ -52,7 +52,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
     gen = ppci['gen']
-    contribution_factors = bus[:, CON_FAC]  ## contribution factors for distributed slack
+    slack_weights = bus[:, SL_FAC]  ## contribution factors for distributed slack
 
     # initialize
     i = 0
@@ -97,7 +97,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     j8 = j6 + nref # j7:j8 - slacks
 
     # evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors, dist_slack, slack)
+    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
@@ -108,7 +108,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         # update iteration counter
         i = i + 1
 
-        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, contribution_factors, dist_slack)
+        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, slack_weights, dist_slack)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -135,18 +135,18 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
-        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors, dist_slack, slack)
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
 
         converged = _check_for_convergence(F, tol)
 
     return V, converged, i, J, Vm_it, Va_it
 
 
-def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, contribution_factors=None, dist_slack=False, slack=None):
+def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
     # evalute F(x)
     if dist_slack:
         # we include the slack power (slack * contribution factors) in the mismatch calculation
-        mis = V * conj(Ybus * V) - Sbus + contribution_factors * slack
+        mis = V * conj(Ybus * V) - Sbus + slack_weights * slack
         F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
     else:
         mis = V * conj(Ybus * V) - Sbus

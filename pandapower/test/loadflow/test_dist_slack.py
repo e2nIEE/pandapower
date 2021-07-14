@@ -21,7 +21,7 @@ def small_example_grid():
     net = pp.create_empty_network()
     pp.create_buses(net, 3, 20)
 
-    pp.create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, contribution_factor=1)
+    pp.create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
     # pp.create_ext_grid(net, 0)
 
     pp.create_load(net, 1, p_mw=100, q_mvar=100)
@@ -42,9 +42,9 @@ def get_injection_consumption(net):
 @pytest.mark.xfail(reason="is not implemented with numba")
 def test_numba():
     net = small_example_grid()
-    # if no contribution_factor is given for ext_grid, 1 is assumed, because normally
+    # if no slack_weight is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
-    net.gen["contribution_factor"] = 1
+    net.gen["slack_weight"] = 1
     net2 = net.deepcopy()
     pp.runpp(net, distributed_slack=True)
 
@@ -53,9 +53,9 @@ def test_numba():
 
 def test_small_example():
     net = small_example_grid()
-    # if no contribution_factor is given for ext_grid, 1 is assumed, because normally
+    # if no slack_weight is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
-    net.gen["contribution_factor"] = 1
+    net.gen["slack_weight"] = 1
 
     net2 = net.deepcopy()
 
@@ -68,7 +68,7 @@ def test_small_example():
 
 def test_two_gens():
     net = small_example_grid()
-    pp.create_gen(net, 2, 200, 1., slack=True, contribution_factor=2)
+    pp.create_gen(net, 2, 200, 1., slack=True, slack_weight=2)
 
     pp.runpp(net, distributed_slack=True, numba=False)
 
@@ -76,7 +76,7 @@ def test_two_gens():
     assert abs(net.res_gen.at[1, 'p_mw'] / net.res_gen.p_mw.sum() - 2 / 3) < 1e-6
 
     injected_p_mw, consumed_p_mw = get_injection_consumption(net)
-    con_fac = net.gen.contribution_factor / np.sum(net.gen.contribution_factor)
+    con_fac = net.gen.slack_weight / np.sum(net.gen.slack_weight)
 
     assert abs(net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
     assert np.allclose(net.gen.p_mw - (injected_p_mw - consumed_p_mw) * con_fac, net.res_gen.p_mw, atol=1e-6, rtol=0)
@@ -84,13 +84,13 @@ def test_two_gens():
 
 def test_three_gens():
     net = small_example_grid()
-    pp.create_gen(net, 1, 200, 1., slack=True, contribution_factor=2)
-    pp.create_gen(net, 2, 200, 1., slack=True, contribution_factor=2)
+    pp.create_gen(net, 1, 200, 1., slack=True, slack_weight=2)
+    pp.create_gen(net, 2, 200, 1., slack=True, slack_weight=2)
 
     pp.runpp(net, distributed_slack=True, numba=False, tolerance_mva=1e-6)
 
     injected_p_mw, consumed_p_mw = get_injection_consumption(net)
-    con_fac = net.gen.contribution_factor / np.sum(net.gen.contribution_factor)
+    con_fac = net.gen.slack_weight / np.sum(net.gen.slack_weight)
 
     assert abs(net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
     assert np.allclose(net.gen.p_mw - (injected_p_mw - consumed_p_mw) * con_fac, net.res_gen.p_mw, atol=1e-6, rtol=0)
@@ -99,7 +99,7 @@ def test_three_gens():
 @pytest.mark.xfail(reason="xward not implemented as slack")
 def test_gen_xward():
     net = small_example_grid()
-    pp.create_xward(net, 2, 200, 0, 0, 0, 0, 6, 1, contribution_factor=2)
+    pp.create_xward(net, 2, 200, 0, 0, 0, 0, 6, 1, slack_weight=2)
 
     pp.runpp(net, distributed_slack=True, numba=False)
 
@@ -118,9 +118,9 @@ def test_gen_xward():
 def test_ext_grid():
     net = small_example_grid()
     net.gen.in_service = False
-    pp.create_ext_grid(net, 0, contribution_factor=1)
-    pp.create_ext_grid(net, 2, contribution_factor=2)
-    con_fac = net.ext_grid.contribution_factor / np.sum(net.ext_grid.contribution_factor)
+    pp.create_ext_grid(net, 0, slack_weight=1)
+    pp.create_ext_grid(net, 2, slack_weight=2)
+    con_fac = net.ext_grid.slack_weight / np.sum(net.ext_grid.slack_weight)
 
     pp.runpp(net, distributed_slack=True, numba=False)
 
@@ -131,7 +131,7 @@ def test_ext_grid():
 
 def test_gen_ext_grid():
     net = small_example_grid()
-    pp.create_ext_grid(net, 2, contribution_factor=2)
+    pp.create_ext_grid(net, 2, slack_weight=2)
     con_fac = np.array([1, 2]) / 3
 
     pp.runpp(net, distributed_slack=True, numba=False)
@@ -146,7 +146,7 @@ def test_gen_ext_grid():
 def test_pvgen_ext_grid():
     # now test the behavior if gen is not slack
     net = small_example_grid()
-    pp.create_ext_grid(net, 2, contribution_factor=2)
+    pp.create_ext_grid(net, 2, slack_weight=2)
     net.gen.slack = False
     con_fac = np.array([1, 2]) / 3
 
@@ -163,7 +163,7 @@ def test_pvgen_ext_grid():
 
 def test_same_bus():
     net = small_example_grid()
-    pp.create_ext_grid(net, 0, contribution_factor=2)
+    pp.create_ext_grid(net, 0, slack_weight=2)
     con_fac = np.array([1, 2]) / 3
 
     pp.runpp(net, distributed_slack=True, numba=False)
@@ -179,7 +179,7 @@ def test_separate_zones():
     net = small_example_grid()
     b1, b2 = pp.create_buses(net, 2, 110)
     pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
-    pp.create_gen(net, b1, 50, 1, slack=True, contribution_factor=1)
+    pp.create_gen(net, b1, 50, 1, slack=True, slack_weight=1)
     pp.create_load(net, b2, 100)
 
     # distributed slack not implemented for separate zones
@@ -195,9 +195,9 @@ def case9_simplified():
     for i, (fb, tb) in enumerate(lines):
         pp.create_line_from_parameters(net, fb, tb, 1, 20, 100, 0, 1)
 
-    pp.create_gen(net, 0, 0, slack=True, contribution_factor=1)
-    pp.create_gen(net, 1, 163, slack=True, contribution_factor=1)
-    pp.create_gen(net, 2, 85, slack=True, contribution_factor=1)
+    pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
+    pp.create_gen(net, 1, 163, slack=True, slack_weight=1)
+    pp.create_gen(net, 2, 85, slack=True, slack_weight=1)
 
     pp.create_load(net, 4, 90, 30)
     pp.create_load(net, 6, 100, 35)
@@ -207,15 +207,15 @@ def case9_simplified():
 
 def test_case9():
     """
-    basic test with ext_grid + gen, scaling != 1, contribution_factor sum = 1
+    basic test with ext_grid + gen, scaling != 1, slack_weight sum = 1
     """
     tol_mw = 1e-6
     net = networks.case9()
     # net = case9_simplified()
 
-    # set contribution_factor (distributed slack participation factor)
-    net.ext_grid['contribution_factor'] = 1 / 3
-    net.gen['contribution_factor'] = 1 / 3
+    # set slack_weight (distributed slack participation factor)
+    net.ext_grid['slack_weight'] = 1 / 3
+    net.gen['slack_weight'] = 1 / 3
     # todo: is it clearer to consider scaling or to ignore it? right now is ignored
     # net.gen["scaling"] = [0.8, 0.7]
     net.gen["scaling"] = [1, 1]
@@ -234,8 +234,8 @@ def test_case9():
     res_p_slack = ext_grid_diff_p.sum() + gen_diff.sum()
 
     # calculate target active power difference
-    p_target_ext_grid = res_p_slack * net.ext_grid.contribution_factor
-    p_target_gen = res_p_slack * net.gen.contribution_factor
+    p_target_ext_grid = res_p_slack * net.ext_grid.slack_weight
+    p_target_gen = res_p_slack * net.gen.slack_weight
 
     # check the power balances
     assert np.allclose(ext_grid_diff_p, p_target_ext_grid, atol=tol_mw)
@@ -249,7 +249,7 @@ def test_case9():
     input_p_mw = np.r_[net.gen.p_mw, 0]  # 100 MW for gen and 0 for ext_grid
     res_p_mw = np.r_[net.res_gen.p_mw, net.res_ext_grid.p_mw.fillna(0)]  # resulting injection after distributed slack
     # calculate normalized contribution factors
-    con_fac = np.r_[net.gen.contribution_factor, net.ext_grid.contribution_factor]
+    con_fac = np.r_[net.gen.slack_weight, net.ext_grid.slack_weight]
     con_fac /= sum(con_fac)
     assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * con_fac, res_p_mw, atol=1e-6, rtol=0)
 
