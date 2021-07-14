@@ -6,13 +6,13 @@
 
 from time import time
 
-from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, any
+from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32
 
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, GS, BS
-from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
@@ -65,9 +65,21 @@ def ppci_to_pfsoln(ppci, options):
         return internal["bus"], internal["gen"], internal["branch"]
     else:
         # reads values from internal ppci storage to bus, gen, branch and returns it
+        if options['distributed_slack']:
+            # consider buses with non-zero slack weights as if they were slack buses,
+            # and gens with non-zero slack weights as if they were reference machines
+            # this way, the function pfsoln will extract results for distributed slack gens, too
+            gens_with_slack_weights = find(internal["gen"][:, SL_FAC] != 0)
+            buses_with_slack_weights = internal["gen"][gens_with_slack_weights, GEN_BUS].astype(int32)
+            ref = union1d(internal["ref"], buses_with_slack_weights)
+            ref_gens = union1d(internal["ref_gens"], gens_with_slack_weights)
+        else:
+            ref = internal["ref"]
+            ref_gens = internal["ref_gens"]
+
         _, pfsoln = _get_numba_functions(ppci, options)
         result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
-                      internal["Yf"], internal["Yt"], internal["V"], internal["ref"], internal["ref_gens"])
+                      internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens)
         return result_pfsoln
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):

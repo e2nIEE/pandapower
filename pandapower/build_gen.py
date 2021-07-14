@@ -340,29 +340,30 @@ def _normalise_slack_weights(ppc):
     """ Unitise the slack contribution factors in each island to sum to 1. """
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
-    con_fac_gen = ppc['gen'][:, SL_FAC].astype(np.float64)
+    slack_weights_gen = ppc['gen'][:, SL_FAC].astype(np.float64)
 
-    # todo: flip the logic, only 1 ext_grid and all others PV, show logger warning that 1 ext_grid is used
-    #  as slack and others are converted to PV nodes internally;
-    # todo: calculate dist_slack for all SL and PV nodes that have non-zero slack weight
-    buses_with_con_fac = ppc['gen'][ppc['gen'][:, SL_FAC] != 0, GEN_BUS].astype(np.int32)
-    if not np.all(ppc['bus'][buses_with_con_fac, BUS_TYPE] == REF):
-        raise UserWarning("Distributed slack calculation is implemented only for reference type buses. "
-                          "Specify net.gen.slack=True for generators that have a non-zero contribution factor. "
-                          "Extended ward (xward) elements are not supported as distributed slack elements")
+    # only 1 ext_grid (reference bus) supported and all others are considered as PV buses,
+    # 1 ext_grid is used as slack and others are converted to PV nodes internally;
+    # calculate dist_slack for all SL and PV nodes that have non-zero slack weight:
+    buses_with_slack_weights = ppc['gen'][ppc['gen'][:, SL_FAC] != 0, GEN_BUS].astype(np.int32)
+    if np.sum(ppc['bus'][buses_with_slack_weights, BUS_TYPE] == REF) > 1:
+        logger.warning("Distributed slack calculation is implemented only for one reference type bus, "
+                       "other reference buses will be converted to PV buses internally. "
+                       "All distributed slack elements that have a non-zero contribution factor will be considered. "
+                       "Extended ward (xward) elements are not supported as distributed slack elements")
 
     for subnet in subnets:
         subnet_gen_mask = np.isin(gen_buses, subnet)
-        sum_dist_weights = np.sum(con_fac_gen[subnet_gen_mask])
-        if np.isclose(sum_dist_weights, 0):
+        sum_slack_weights = np.sum(slack_weights_gen[subnet_gen_mask])
+        if np.isclose(sum_slack_weights, 0):
             # ppc['gen'][subnet_gen_mask, SL_FAC] = 0
             raise ValueError('Distributed slack contribution factors in an '
                              'island sum to zero.')
         else:
-            # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_dist_weights
-            con_fac_gen /= sum_dist_weights
-            buses, con_fac_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], con_fac_gen[subnet_gen_mask], con_fac_gen[subnet_gen_mask])
-            ppc['bus'][buses, SL_FAC_BUS] = con_fac_bus
+            # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_slack_weights
+            slack_weights_gen /= sum_slack_weights
+            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask], slack_weights_gen[subnet_gen_mask])
+            ppc['bus'][buses, SL_FAC_BUS] = slack_weights_bus
 
     # raise NotImplementedError if there are several separate zones for distributed slack:
     if not np.isclose(sum(ppc['bus'][:, SL_FAC_BUS]), 1):

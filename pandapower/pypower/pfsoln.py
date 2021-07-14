@@ -71,7 +71,6 @@ def _update_v(bus, V):
 def _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens):
     # update Pg for slack bus(es)
     # inj P + local Pd
-    # todo: expand the functionality to PV gens with non-zero slack_weight
     for slack_bus in ref:
         gens_at_bus = find(gbus == slack_bus)  # which is(are) the reference gen(s)?
         p_bus = Sbus[gens_at_bus[0]].real * baseMVA + bus[slack_bus, PD]
@@ -80,11 +79,11 @@ def _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens):
             ext_grids = intersect1d(gens_at_bus, ref_gens)
             pv_gens = setdiff1d(gens_at_bus, ext_grids)
             p_ext_grids = p_bus - sum(gen[pv_gens, PG])
-            con_fac = gen[ext_grids, SL_FAC]
-            sum_con_fac = sum(con_fac)
-            if sum_con_fac > 0:
+            slack_weights = gen[ext_grids, SL_FAC]
+            sum_slack_weights = sum(slack_weights)
+            if sum_slack_weights > 0:
                 # distribute bus slack power according to the distributed slack contribution factors
-                gen[ext_grids, PG] = gen[ext_grids, PG] + (p_ext_grids - sum(gen[ext_grids, PG])) * con_fac / sum_con_fac
+                gen[ext_grids, PG] = gen[ext_grids, PG] + (p_ext_grids - sum(gen[ext_grids, PG])) * slack_weights / sum_slack_weights
             else:
                 gen[ext_grids, PG] = p_ext_grids / len(ext_grids)
         else:
