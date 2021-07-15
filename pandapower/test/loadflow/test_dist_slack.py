@@ -26,8 +26,8 @@ def small_example_grid():
 
     pp.create_load(net, 1, p_mw=100, q_mvar=100)
 
-    pp.create_line_from_parameters(net, 0, 1, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
-    pp.create_line_from_parameters(net, 1, 2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
     pp.create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
     return net
 
@@ -98,11 +98,21 @@ def test_small_example():
 
 
 def test_two_gens():
+    # a three-bus example with 3 lines in a ring, 2 gens and 1 load
     net = small_example_grid()
     pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
     pp.runpp(net, distributed_slack=True, numba=False)
     assert_results_correct(net)
+
+    # check bus voltages
+    assert np.allclose(net.res_bus.vm_pu, [1, 0.96542683532, 1], rtol=0, atol=1e-9)
+    assert np.allclose(net.res_bus.va_degree, [0, -1.5537971468, 0.08132969181], rtol=0, atol=1e-6)
+    # check gen p and q
+    assert np.allclose(net.res_gen.p_mw, [33.548233528, 67.096467056], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_gen.q_mvar, [43.22006789, 63.226937869], rtol=0, atol=1e-6)
+    # check line currents
+    assert np.allclose(net.res_line.i_ka, [1.6717271156, 2.5572842138, 0.16309292919], rtol=0, atol=1e-9)
 
 
 def test_three_gens():
