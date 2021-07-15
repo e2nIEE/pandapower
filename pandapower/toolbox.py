@@ -16,7 +16,7 @@ from packaging import version
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen
+    create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
@@ -82,6 +82,20 @@ def branch_element_bus_dict(include_switch=False):
     return bebd
 
 
+def signing_system_value(elm):
+    """
+    Returns a 1 for all bus elements using the consumver viewpoint and a -1 for all bus elements
+    using the generator viewpoint.
+    """
+    generator_viewpoint_elms = ["ext_grid", "gen", "sgen"]
+    if elm in generator_viewpoint_elms:
+        return -1
+    elif elm in pp_elements(bus=False, branch_elements=False, other_elements=False):
+        return 1
+    else:
+        raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
+
+
 # def pq_from_cosphi(s, cosphi, qmode, pmode):
 #    """
 #    Calculates P/Q values from rated apparent power and cosine(phi) values.
@@ -131,12 +145,13 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
        - s: rated apparent power
        - cosphi: cosine phi of the
-       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - qmode: "underexcided" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
        - pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
     power, that means that loads are positive and generation is negative. For reactive power,
-    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    underexcited behavior (Q absorption, decreases voltage) is modeled with positive values,
+    overexcited behavior (Q injection, increases voltage) with negative values.
     """
     if hasattr(s, "__iter__"):
         s = ensure_iterability(s)
@@ -154,12 +169,18 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
-    if qmode == "ind":
+    if qmode in ("ind", "cap"):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
+    if qmode == "ind" or qmode == "underexcited":
         qsign = 1 if pmode == "load" else -1
-    elif qmode == "cap":
+    elif qmode == "cap" or qmode == "overexcited":
         qsign = -1 if pmode == "load" else 1
     else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
+                         ') or "overexcited" (Q injection, increases voltage)' % qmode)
 
     p = s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
@@ -207,8 +228,9 @@ def cosphi_from_pq(p, q):
 
 def _cosphi_from_pq(p, q):
     """
-    Analog to pq_from_cosphi, but other way around.
-    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+    Analog to pq_from_cosphi, but the other way around.
+    In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and
+    "overexcited" (Q injection, increases voltage)
     """
     if p == 0:
         cosphi = np.nan
@@ -217,7 +239,7 @@ def _cosphi_from_pq(p, q):
         cosphi = np.cos(np.arctan(q / p))
     s = (p ** 2 + q ** 2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    qmode = ["ohm", "underexcited", "overexcited"][int(np.sign(q))]
     return cosphi, s, qmode, pmode
 
 
@@ -1050,6 +1072,8 @@ def set_data_type_of_columns_to_default(net):
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
                 if key in new_net and col in new_net[key].columns:
+                    if new_net[key][col].dtype == net[key][col].dtype:
+                        continue
                     if set(item.columns) == set(new_net[key]):
                         if version.parse(pd.__version__) < version.parse("0.21"):
                             net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
@@ -1076,7 +1100,7 @@ def close_switch_at_line_with_two_open_switches(net):
     for _, switch in nl.groupby("element"):
         if len(switch.index) > 1:  # find all lines that have open switches at both ends
             # and close on of them
-            net.switch.at[switch.index[0], "closed"] = 1
+            net.switch.at[switch.index[0], "closed"] = True
             closed_switches.add(switch.index[0])
     if len(closed_switches) > 0:
         logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
@@ -1094,7 +1118,6 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     for element, value in element_bus_tuples():
         if net[element].shape[0]:
             net[element][value].loc[net[element][value].isin(b2)] = b1
-
     net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
                                  net["switch"]["element"].isin(b2))] = b1
 
@@ -1795,7 +1818,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -1856,13 +1879,14 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
     # --- result data
     if net.res_ext_grid.shape[0]:
-        to_add = net.res_ext_grid.loc[ext_grids]
-        to_add.index = new_idx
+        in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
+        to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_ext_grid.drop(ext_grids, inplace=True)
+        net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
     return new_idx
 
 
@@ -1938,13 +1962,14 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
         else:
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2022,13 +2047,14 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_sgen = pd.concat([net.res_sgen, to_add])
         else:
             net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2122,13 +2148,128 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_sgen.shape[0]:
-        to_add = net.res_sgen.loc[sgens]
-        to_add.index = new_idx
+        in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
+        to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_sgen.drop(sgens, inplace=True)
+        net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
+    return new_idx
+
+
+def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None, cols_to_keep=None,
+                       add_cols_to_keep=None):
+    """
+    Replaces e.g. static generators by loads or loads by storages and so forth.
+
+    INPUT:
+        **net** - pandapower net
+
+        **old_elm** (str) - element type of which elements should be replaced. Should be in [
+            "sgen", "load", "storage"]
+
+        **new_elm** (str) - element type of which elements should be created. Should be in [
+            "sgen", "load", "storage"]
+
+    OPTIONAL:
+        **old_indices** (iterable) - indices of the elements which should be replaced
+
+        **new_indices** (iterable) - required indices of the new elements
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing.
+        If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". Independent whether cols_to_keep is given, these columns are
+        always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+        'cols_to_keep' to be kept while replacing.
+    """
+    if old_elm == new_elm:
+        logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
+        return old_indices
+    if old_indices is None:
+        old_indices = net[old_elm].index
+    else:
+        old_indices = ensure_iterability(old_indices)
+    if new_indices is None:
+        new_indices = [None] * len(old_indices)
+    elif len(new_indices) != len(old_indices):
+        raise ValueError("The length of 'new_indices' must be the same as of 'old_indices' but " +
+                         "is %i instead of %i" % (len(new_indices), len(old_indices)))
+
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net[old_elm].loc[old_indices].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net[new_elm] which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net[new_elm].columns)
+    for col in missing_cols_to_keep:
+        net[new_elm][col] = np.nan
+
+    # --- create new_elm
+    already_considered_cols = set()
+    new_idx = []
+    for oelm, index in zip(net[old_elm].loc[old_indices].itertuples(), new_indices):
+        controllable = False if "controllable" not in net[old_elm].columns else oelm.controllable
+        sign = -1 if old_elm in ["sgen"] else 1
+        args = dict()
+        if new_elm == "load":
+            fct = create_load
+        elif new_elm == "sgen":
+            fct = create_sgen
+            sign *= -1
+        elif new_elm == "storage":
+            fct = create_storage
+            already_considered_cols |= {"max_e_mwh"}
+            args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_elm].columns else net[
+                old_elm].max_e_kwh.loc[old_indices]}
+        idx = fct(net, oelm.bus, p_mw=sign*oelm.p_mw, q_mvar=sign*oelm.q_mvar, name=oelm.name,
+                  in_service=oelm.in_service, controllable=controllable, index=index, **args)
+        new_idx.append(idx)
+
+    if sign == -1:
+        for col1, col2 in zip(["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
+                              ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]):
+            if col1 in existing_cols_to_keep:
+                net[new_elm].loc[new_idx, col2] = sign * net[old_elm].loc[
+                    old_indices, col1].values
+                already_considered_cols |= {col1}
+    net[new_elm].loc[new_idx, existing_cols_to_keep.difference(already_considered_cols)] = net[
+        old_elm].loc[old_indices, existing_cols_to_keep.difference(already_considered_cols)].values
+
+    # --- drop replaced old_indices
+    net[old_elm].drop(old_indices, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == old_elm) &
+                                         (net[table].element.isin(old_indices))]
+            if len(to_change):
+                net[table].et.loc[to_change] = new_elm
+                net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net["res_" + old_elm].shape[0]:
+        in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
+        to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
+        else:
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
+        net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 
 
@@ -2732,7 +2873,8 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # check switching state and add line switch if necessary:
     for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
+                             (net.switch.et == "l")].bus.values:
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
