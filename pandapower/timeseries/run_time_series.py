@@ -118,7 +118,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control_fct(net, run_control=False, ctrl_variables=ts_variables, **kwargs)
+        run_control_fct(net, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
@@ -260,9 +260,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control
-    ts_variables = prepare_run_ctrl(net, None, **kwargs)
-    # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
-    ts_variables["run"] = run
+    ts_variables = prepare_run_ctrl(net, None, run=run, **kwargs)
     # recycle options, which define what can be recycled
     ts_variables["recycle_options"] = recycle_options
     # time steps to be calculated (list or range)
@@ -271,8 +269,6 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["continue_on_divergence"] = continue_on_divergence
     # print settings
     ts_variables["verbose"] = verbose
-    # errors to be considered as exception
-    ts_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     if logger.level != 10 and verbose:
         # simple progress bar
