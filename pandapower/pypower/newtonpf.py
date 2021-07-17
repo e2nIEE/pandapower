@@ -79,7 +79,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     pvpq = r_[pv, pq]
     # generate lookup pvpq -> index pvpq (used in createJ)
     pvpq_lookup = zeros(max(Ybus.indices) + 1, dtype=int)
-    pvpq_lookup[pvpq] = arange(len(pvpq))
+    if False and dist_slack:
+        pvpq_lookup[r_[ref, pvpq]] = arange(len(ref)+len(pvpq))
+    else:
+        pvpq_lookup[pvpq] = arange(len(pvpq))
 
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
@@ -108,7 +111,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         # update iteration counter
         i = i + 1
 
-        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, slack_weights, dist_slack)
+        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage

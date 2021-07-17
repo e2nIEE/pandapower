@@ -73,7 +73,8 @@ def test_numba():
     net = small_example_grid()
     # if no slack_weight is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
-    net.gen["slack_weight"] = 1
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.runpp(net)
     net2 = net.deepcopy()
     pp.runpp(net, distributed_slack=True)
 
@@ -124,10 +125,10 @@ def test_three_gens():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="xward not implemented as slack")
+@pytest.mark.xfail(reason="xward results are incorrect, implementation must be adjusted for xward")
 def test_gen_xward():
     net = small_example_grid()
-    pp.create_xward(net, 2, 200, 0, 0, 0, 0, 6, 1, slack_weight=2)
+    pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
 
     pp.runpp(net, distributed_slack=True, numba=False)
     assert_results_correct(net)
