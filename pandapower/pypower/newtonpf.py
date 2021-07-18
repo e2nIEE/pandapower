@@ -11,7 +11,7 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack, append
+from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack, append, float64
 from numpy import flatnonzero as find
 from scipy.sparse.linalg import spsolve
 
@@ -52,7 +52,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
     gen = ppci['gen']
-    slack_weights = bus[:, SL_FAC]  ## contribution factors for distributed slack
+    slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
 
     # initialize
     i = 0
@@ -77,10 +77,19 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         ref = ref[[0]]
 
     pvpq = r_[pv, pq]
-    # generate lookup pvpq -> index pvpq (used in createJ)
+    # reference buses are always at the top, no matter where they are in the grid (very confusing...)
+    # so in the refpvpq, the indices must be adjusted so that ref bus(es) starts with 0
+    # todo simplify indexing: the way it is now with the lookups is very confusing/annoying
+    refpvpq_row = r_[arange(len(ref)), pvpq+len(ref)]  # this is for rows (the slack-row is at the very top in ybus)
+    refpvpq_col = r_[ref, pvpq]  # for columns: columns are in the normal order in Ybus
+    # generate lookup pvpq -> index pvpq (used in createJ):
+    #   shows for a given row from Ybus, which row in J it becomes
+    #   e.g. the first row in J is a PV bus. If the first PV bus in Ybus is in the row 2, the index of the row in Jbus must be 0.
+    #   pvpq_lookup will then have a 0 at the index 2
     pvpq_lookup = zeros(max(Ybus.indices) + 1, dtype=int)
-    if False and dist_slack:
-        pvpq_lookup[r_[ref, pvpq]] = arange(len(ref)+len(pvpq))
+    if dist_slack:
+        # slack bus is relevant for the function createJ_ds
+        pvpq_lookup[refpvpq_col] = arange(len(refpvpq_col))
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
@@ -111,7 +120,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         # update iteration counter
         i = i + 1
 
-        J = create_jacobian_matrix(Ybus, V, ref, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        J = create_jacobian_matrix(Ybus, V, ref, refpvpq_row, refpvpq_col, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage

@@ -67,18 +67,22 @@ def assert_results_correct(net):
     assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * slack_weights, result_p_mw, atol=1e-6, rtol=0)
 
 
+def run_and_assert_numba(net):
+    net_temp = net.deepcopy()
+    pp.runpp(net_temp, distributed_slack=True, numba=False)
+    if numba_installed:
+        pp.runpp(net, distributed_slack=True)
+        assert_res_equal(net, net_temp)
+
+
 @pytest.mark.skipif(not numba_installed, reason="skip the test if numba not installed")
-@pytest.mark.xfail(reason="is not implemented with numba")
 def test_numba():
     net = small_example_grid()
     # if no slack_weight is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
     pp.create_gen(net, 2, 200, 1., slack_weight=2)
-    pp.runpp(net)
-    net2 = net.deepcopy()
-    pp.runpp(net, distributed_slack=True)
 
-    assert_res_equal(net, net2)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -103,7 +107,7 @@ def test_two_gens():
     net = small_example_grid()
     pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
     # check bus voltages
@@ -121,7 +125,7 @@ def test_three_gens():
     pp.create_gen(net, 1, 200, 1., slack_weight=2)
     pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False, tolerance_mva=1e-6)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -130,7 +134,7 @@ def test_gen_xward():
     net = small_example_grid()
     pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -140,7 +144,7 @@ def test_ext_grid():
     pp.create_ext_grid(net, 0, slack_weight=1)
     pp.create_ext_grid(net, 2, slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -148,7 +152,7 @@ def test_gen_ext_grid():
     net = small_example_grid()
     pp.create_ext_grid(net, 2, slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -158,7 +162,9 @@ def test_pvgen_ext_grid():
     pp.create_ext_grid(net, 2, slack_weight=2)
     net.gen.slack = False
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    pp.runpp(net, distributed_slack=True)
+
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -166,7 +172,7 @@ def test_same_bus():
     net = small_example_grid()
     pp.create_ext_grid(net, 0, slack_weight=2)
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
     assert_results_correct(net)
 
 
@@ -218,7 +224,7 @@ def test_case9():
     # # set ext_grid dispatched active power
     # net.ext_grid['p_disp_mw'] = 30
 
-    pp.runpp(net, distributed_slack=True, numba=False)
+    run_and_assert_numba(net)
 
     # active power difference of dispatched and result
     ext_grid_diff_p = 0 - net.res_ext_grid.p_mw
@@ -243,7 +249,6 @@ def test_case9():
     assert_results_correct(net)
 
 
-# todo: implement distributed slack to work with numba
 # todo: implement xward elements as slacks (similarly to gen with slack=True)
 # todo add test for only xward when xward as slack is implemented
 # todo: implement distributed slack for when the grid has several disconnected zones
