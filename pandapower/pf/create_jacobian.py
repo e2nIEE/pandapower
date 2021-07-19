@@ -16,7 +16,6 @@ def _create_J_with_numba(Ybus, V, refpvpq_row, refpvpq_col, pvpq, pq, createJ, p
     Ibus = zeros(len(V), dtype=complex128)
     # create Jacobian from fast calc of dS_dV
     dVm_x, dVa_x = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), Ibus)
-    # todo: initialize J also for extra column and extra row, for the rows where slack_weight != 0
     # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
     Jx = empty(len(dVm_x) * 4, dtype=float64)
     # row pointer, dimension = pvpq.shape[0] + pq.shape[0] + 1
