@@ -1012,6 +1012,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_va_degree = init
 
     if distributed_slack:
+        if net.xward.slack_weight.abs().sum() > 0:
+            raise NotImplementedError("xward participation in distributed slack is not implemented")
         if algorithm != 'nr':
             raise NotImplementedError(f'Distributed slack is only implemented '
                                       f'for Newton Raphson algorithm.')

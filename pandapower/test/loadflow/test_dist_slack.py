@@ -140,6 +140,15 @@ def test_gen_xward():
     assert_results_correct(net)
 
 
+def test_xward():
+    # for now, not implemented and should raise an error
+    net = small_example_grid()
+    pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, distributed_slack=True)
+
+
 def test_ext_grid():
     net = small_example_grid()
     net.gen.in_service = False

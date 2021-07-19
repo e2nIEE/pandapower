@@ -347,10 +347,10 @@ def _normalise_slack_weights(ppc):
     # calculate dist_slack for all SL and PV nodes that have non-zero slack weight:
     buses_with_slack_weights = ppc['gen'][ppc['gen'][:, SL_FAC] != 0, GEN_BUS].astype(np.int32)
     if np.sum(ppc['bus'][buses_with_slack_weights, BUS_TYPE] == REF) > 1:
-        logger.warning("Distributed slack calculation is implemented only for one reference type bus, "
-                       "other reference buses will be converted to PV buses internally. "
-                       "All distributed slack elements that have a non-zero contribution factor will be considered. "
-                       "Extended ward (xward) elements are not supported as distributed slack elements")
+        logger.info("Distributed slack calculation is implemented only for one reference type bus, "
+                    "other reference buses will be converted to PV buses internally. "
+                    "All distributed slack elements that have a non-zero contribution factor will be considered. "
+                    "Extended ward (xward) elements are not supported as distributed slack elements")
 
     for subnet in subnets:
         subnet_gen_mask = np.isin(gen_buses, subnet)
