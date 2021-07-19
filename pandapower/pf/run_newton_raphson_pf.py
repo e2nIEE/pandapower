@@ -98,12 +98,13 @@ def _get_numba_functions(ppci, options):
     """
     pfsoln from pypower maybe slow in some cases. This function chooses the fastest for the given pf calculation
     """
-    if options["numba"] and not options['distributed_slack']:
+    if options["numba"]:
         makeYbus = makeYbus_numba
         shunt_in_net = any(ppci["bus"][:, BS]) or any(ppci["bus"][:, GS])
         # faster pfsoln function if only one slack is in the grid and no gens
         pfsoln = pf_solution_single_slack if ppci["gen"].shape[0] == 1 \
                                              and not options["voltage_depend_loads"] \
+                                             and not options['distributed_slack'] \
                                              and not shunt_in_net \
             else pfsoln_numba
     else:
