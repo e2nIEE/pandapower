@@ -1,4 +1,4 @@
-from numpy import complex128, float64, int32, ones, r_
+from numpy import complex128, float64, int32, r_
 from numpy.core.multiarray import zeros, empty, array
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 
