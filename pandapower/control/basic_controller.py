@@ -129,7 +129,7 @@ class BasicCtrl(JSONSerializableClass):
         """
         pass
 
-    def finalize_step(self, container):
+    def finalize_step(self, container, time):
         """
         .. note:: This method is ONLY being called during time-series simulation!
 

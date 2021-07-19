@@ -78,10 +78,15 @@ def pf_not_converged(time_step, ts_variables):
         raise ts_variables['errors'][0]
 
 
-def control_time_step(controller_order, time_step):
+def implement_time_step(controller_order, time_step):
     for levelorder in controller_order:
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
+
+def finalize_step(controller_order, time_step):
+    for levelorder in controller_order:
+        for ctrl, net in levelorder:
+            ctrl.finalize_step(net, time_step)
 
 
 def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
@@ -114,7 +119,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
     pf_converged = True
     # run time step function for each controller
 
-    control_time_step(ts_variables['controller_order'], time_step)
+    implement_time_step(ts_variables['controller_order'], time_step)
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
@@ -129,6 +134,8 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
         pf_not_converged(time_step, ts_variables)
 
     output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables)
+
+    finalize_step(ts_variables['controller_order'], time_step)
 
 
 def _check_controller_recyclability(net):
