@@ -11,15 +11,14 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack, append, float64
-from numpy import flatnonzero as find
+from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack, float64
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, SL_FAC
-from pandapower.pypower.idx_bus import BUS_I, SL_FAC
+from pandapower.pypower.idx_gen import GEN_STATUS
+from pandapower.pypower.idx_bus import SL_FAC
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
