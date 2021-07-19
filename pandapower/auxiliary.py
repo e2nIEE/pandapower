@@ -1015,7 +1015,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         false_slack_weight_elms = [elm for elm in {'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt',
                                                    'storage', 'ward', 'xward'} if "slack_weight" in net[elm].columns]
         if len(false_slack_weight_elms):
-            logger.warning("Currently distributed_slack is implemented for 'ext_grid' and 'gen' " +
+            raise NotImplementedError("Currently distributed_slack is implemented for 'ext_grid' and 'gen' " +
                            "only, not for '" + "', '".join(false_slack_weight_elms) + "'.")
         if algorithm != 'nr':
             raise NotImplementedError('Distributed slack is only implemented for Newton Raphson algorithm.')
