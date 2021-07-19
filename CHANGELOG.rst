@@ -1,5 +1,7 @@
 Change Log
 
+- [ADDED] Added distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward (xward not implemented yet); only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
+
 [2.7.0]- 2021-07-15
 ----------------------
 - [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
@@ -17,7 +19,6 @@ Change Log
 - [CHANGED] ConstControl is initialized with level=-1 and order=-1 by default to make sure that it runs before other controllers
 - [CHANGED] ConstControl now writes values from the datasource to net at time_step instead of control_step, which ensures that the values for the time step are set before running the initial power flow
 - [CHANGED] replaced naming for "inductive" or "ind" by "underexcited" and "capacitive" or "cap" for "overexcited"
-- [ADDED] Added distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward (xward not implemented yet); only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
 
 [2.6.0]- 2021-03-09
 ----------------------
