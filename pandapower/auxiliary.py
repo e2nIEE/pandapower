@@ -39,6 +39,7 @@ from packaging import version
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from pandapower.toolbox import pp_elements
 
 try:
     from numba import jit
@@ -1012,8 +1013,12 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_va_degree = init
 
     if distributed_slack:
-        if net.xward.slack_weight.abs().sum() > 0:
-            raise NotImplementedError("xward participation in distributed slack is not implemented")
+        false_slack_weight_elms = [elm for elm in pp_elements(
+            bus=False, branch_elements=False, other_elements=False)-{"ext_grid", "gen"} if
+            "slack_weight" in net[elm].columns]
+        if len(false_slack_weight_elms):
+            logger.warning("Currently distributed_slack is implemented for 'ext_grid' and 'gen' " +
+                           "only, not for '" + "', '".join(false_slack_weight_elms) + "'.")
         if algorithm != 'nr':
             raise NotImplementedError('Distributed slack is only implemented for Newton Raphson algorithm.')
 
