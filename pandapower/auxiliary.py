@@ -37,7 +37,7 @@ import six
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV, REF
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -1015,8 +1015,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if net.xward.slack_weight.abs().sum() > 0:
             raise NotImplementedError("xward participation in distributed slack is not implemented")
         if algorithm != 'nr':
-            raise NotImplementedError(f'Distributed slack is only implemented '
-                                      f'for Newton Raphson algorithm.')
+            raise NotImplementedError('Distributed slack is only implemented for Newton Raphson algorithm.')
 
 
     # init options
