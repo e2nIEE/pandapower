@@ -337,7 +337,7 @@ def _different_values_at_one_bus(buses, values):
 
 
 def _normalise_slack_weights(ppc):
-    """ Unitise the slack contribution factors in each island to sum to 1. """
+    """Unitise the slack contribution factors in each island to sum to 1."""
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
     slack_weights_gen = ppc['gen'][:, SL_FAC].astype(np.float64)
