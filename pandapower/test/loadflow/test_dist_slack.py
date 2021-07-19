@@ -68,11 +68,13 @@ def assert_results_correct(net):
 
 
 def run_and_assert_numba(net):
-    net_temp = net.deepcopy()
-    pp.runpp(net_temp, distributed_slack=True, numba=False)
     if numba_installed:
+        net_temp = net.deepcopy()
+        pp.runpp(net_temp, distributed_slack=True, numba=False)
         pp.runpp(net, distributed_slack=True)
         assert_res_equal(net, net_temp)
+    else:
+        pp.runpp(net, distributed_slack=True, numba=False)
 
 
 @pytest.mark.skipif(not numba_installed, reason="skip the test if numba not installed")
