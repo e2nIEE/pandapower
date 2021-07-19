@@ -1,4 +1,3 @@
-
 module PP2PM
 export load_pm_from_json, get_model, get_solver
 
@@ -47,9 +46,9 @@ function get_model(model_type)
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
-    log_level::Int=0, time_limit::Float64=Inf, nl_time_limit::Float64=Inf, 
+    log_level::Int=0, time_limit::Float64=Inf, nl_time_limit::Float64=Inf,
     mip_time_limit::Float64=Inf, ipopt_tol::Float64=1e-8)
-    
+
     if optimizer == "gurobi"
             solver = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => time_limit, "OutputFlag" => log_level)
     end

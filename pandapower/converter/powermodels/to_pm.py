@@ -96,22 +96,33 @@ def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net._pm = pm
     return net, pm, ppc, ppci
 
-
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
         # if no buffer file is provided a random file name is generated
         temp_name = next(tempfile._get_candidate_names())
         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
-
-    else:
-        temp_name = None
-        
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
 
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
-    return buffer_file, temp_name
+    return buffer_file
+
+# def dump_pm_json(pm, buffer_file=None):
+#     # dump pm dict to buffer_file (*.json)
+#     if buffer_file is None:
+#         # if no buffer file is provided a random file name is generated
+#         temp_name = next(tempfile._get_candidate_names())
+#         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
+
+#     else:
+#         temp_name = None
+        
+#     logger.debug("writing PowerModels data structure to %s" % buffer_file)
+
+#     with open(buffer_file, 'w') as outfile:
+#         json.dump(pm, outfile)
+#     return buffer_file, temp_name
 
 
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
