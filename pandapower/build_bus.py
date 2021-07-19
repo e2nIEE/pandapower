@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, \
-    CID, CZD, bus_cols, REF, SL_FAC
+    CID, CZD, bus_cols, REF
 
 try:
     from numba import jit
