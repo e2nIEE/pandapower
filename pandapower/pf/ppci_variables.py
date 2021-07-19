@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG, SL_FAC
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
 from numpy import flatnonzero as find, pi, exp
 
