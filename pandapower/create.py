@@ -1382,9 +1382,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **rdss_ohm** (float, NaN) - Subtransient generator resistance for short-circuit calculation
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
-        
+
         **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for short-circuit calculation
-        
+
         **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
@@ -1441,7 +1441,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     # Short circuit calculation variables
     _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
-    _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen") 
+    _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
     _create_column_and_set_value(net, index, xdss_pu, "xdss_pu", "gen")
     _create_column_and_set_value(net, index, rdss_ohm, "rdss_ohm", "gen")
     _create_column_and_set_value(net, index, pg_percent, "pg_percent", "gen")
@@ -1504,10 +1504,10 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
-            
+
         **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
-        
+
         **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
@@ -2303,7 +2303,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
             current of transformer (from 0 to 1)
 
         **pt_percent** (float, nan) - (short circuit only)
-        
+
         **oltc** (bool, False) - (short circuit only)
 
         ** only considered in loadflow if calculate_voltage_angles = True
@@ -2358,7 +2358,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
         _create_column_and_set_value(net, index, vector_group, "vector_group", "trafo", dtyp=str,
                                      default_val=None)
-    _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")   
+    _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
     return index
@@ -2452,9 +2452,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
-        
+
         **pt_percent** (float, nan) - (short circuit only)
-        
+
         **oltc** (bool, False) - (short circuit only)
 
         ** only considered in loadflow if calculate_voltage_angles = True
@@ -2687,7 +2687,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
-        
+
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
 
         **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
@@ -2699,7 +2699,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
 
         **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
-        
+
         **vector_group** (list of String) - Vector group of the transformer3w
 
     OUTPUT:
@@ -2847,7 +2847,7 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
         **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
 
         **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
-        
+
         **vector_group** (list of String) - Vector group of the transformer3w
 
     OUTPUT:
@@ -3604,7 +3604,7 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     try:
-        set_value = not isnan(variable)
+        set_value = not (isnan(variable) or variable is None)
     except TypeError:
         set_value = True
     if set_value:
