@@ -17,7 +17,6 @@ from scipy.sparse.linalg import spsolve
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
-from pandapower.pypower.idx_gen import GEN_STATUS
 from pandapower.pypower.idx_bus import SL_FAC
 
 

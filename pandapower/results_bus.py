@@ -228,17 +228,17 @@ def _extract_dist_slack_pq_results(net, ppc, element, res_):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
         # first, count the total slack weights per bus, and obtain the variable part of the active power
         total_weight = 0
-        for e, id in connected.items():
+        for e, idx in connected.items():
             if 'slack_weight' in net[e].columns:
-                elm_weight = net[e].loc[id, 'slack_weight'].values
+                elm_weight = net[e].loc[idx, 'slack_weight'].values
                 if np.abs(elm_weight).sum() != 0:
                     total_weight += np.abs(elm_weight)
-            p_bus -= net[e].loc[id, 'ps_mw' if e in ["ward", "xward"] else "p_mw"].values.sum()
+            p_bus -= net[e].loc[idx, 'ps_mw' if e in ["ward", "xward"] else "p_mw"].values.sum()
 
         # now, distribute the variable part of the active power among the dist_slack elements
-        for e, id in connected.items():
+        for e, idx in connected.items():
             if 'slack_weight' in net[e].columns:
-                elm_weight = net[e].loc[id, 'slack_weight'].values
+                elm_weight = net[e].loc[idx, 'slack_weight'].values
                 if np.abs(elm_weight).sum() != 0:
                     net[res_]["p_mw"] += p_bus * elm_weight / total_weight
 

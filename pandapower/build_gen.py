@@ -9,7 +9,7 @@ import numpy as np
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_brch import F_BUS  #, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
 try:
