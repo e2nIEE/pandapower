@@ -1377,7 +1377,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                 False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                 defaults to True if "controllable" column exists in DataFrame
 
-        **slack_weight** (float, default 0.0) - Slack power contribution factor
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
 
         powerflow
 
@@ -1518,7 +1518,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Slack power contribution factor
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
             OPF
@@ -1691,7 +1691,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Slack power contribution factor
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -3288,7 +3288,7 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
-        **slack_weight** (float, default 1.0) - Slack power contribution factor
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
 
     OUTPUT:
         xward id
