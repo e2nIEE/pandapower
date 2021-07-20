@@ -78,9 +78,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     pvpq = r_[pv, pq]
     # reference buses are always at the top, no matter where they are in the grid (very confusing...)
     # so in the refpvpq, the indices must be adjusted so that ref bus(es) starts with 0
-    # todo simplify indexing: the way it is now with the lookups is very confusing/annoying
-    refpvpq_row = r_[arange(len(ref)), pvpq+len(ref)]  # this is for rows (the slack-row is at the very top in ybus)
-    refpvpq_col = r_[ref, pvpq]  # for columns: columns are in the normal order in Ybus
+    # todo: is it possible to simplify the indices/lookups and make the code clearer?
+    # for columns: columns are in the normal order in Ybus; column numbers for J are reduced by 1 internally
+    refpvpq = r_[ref, pvpq]
     # generate lookup pvpq -> index pvpq (used in createJ):
     #   shows for a given row from Ybus, which row in J it becomes
     #   e.g. the first row in J is a PV bus. If the first PV bus in Ybus is in the row 2, the index of the row in Jbus must be 0.
@@ -88,7 +88,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     pvpq_lookup = zeros(max(Ybus.indices) + 1, dtype=int)
     if dist_slack:
         # slack bus is relevant for the function createJ_ds
-        pvpq_lookup[refpvpq_col] = arange(len(refpvpq_col))
+        pvpq_lookup[refpvpq] = arange(len(refpvpq))
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
@@ -119,7 +119,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
         # update iteration counter
         i = i + 1
 
-        J = create_jacobian_matrix(Ybus, V, ref, refpvpq_row, refpvpq_col, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
