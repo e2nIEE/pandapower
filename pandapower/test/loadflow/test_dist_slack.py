@@ -7,6 +7,7 @@
 import numpy as np
 import pandapower as pp
 from pandapower import networks
+from pandapower.pypower.idx_bus import PD
 import pytest
 from pandapower.test.toolbox import assert_res_equal
 
@@ -33,8 +34,9 @@ def small_example_grid():
 
 
 def _get_injection_consumption(net):
-    consumed_p_mw = net.load.query("in_service").p_mw.sum() + net.res_line.pl_mw.sum()
-    injected_p_mw = net.gen.query("in_service").p_mw.sum() + net.xward.query("in_service").ps_mw.sum()
+    # xward is in the consumption reference system
+    consumed_p_mw = net.load.query("in_service").p_mw.sum() + net.res_line.pl_mw.sum() + net.xward.query("in_service").ps_mw.sum()
+    injected_p_mw = net.gen.query("in_service").p_mw.sum()
     return injected_p_mw, consumed_p_mw
 
 
@@ -46,12 +48,13 @@ def _get_slack_weights(net):
 
 
 def _get_inputs_results(net):
+    # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
     inputs = np.r_[net.gen.query("in_service").p_mw,
                    np.zeros(len(net.ext_grid.query("in_service"))),
-                   net.xward.query("in_service").ps_mw]
+                   -net.xward.query("in_service").ps_mw]
     results = np.r_[net.res_gen[net.gen.in_service].p_mw,
                     net.res_ext_grid[net.ext_grid.in_service].p_mw,
-                    net.res_xward[net.xward.in_service].p_mw]
+                    -net.res_xward[net.xward.in_service].p_mw]
     return inputs, results
 
 
@@ -131,22 +134,49 @@ def test_three_gens():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="xward results are incorrect, implementation must be adjusted for xward")
 def test_gen_xward():
+    # here testing for numba only
     net = small_example_grid()
+    # note: xward is in the consumption reference system, so positive ps_mw stands for consumption
     pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
-
     run_and_assert_numba(net)
-    assert_results_correct(net)
+    # xward behavior is a bit different due to the shunt component and the impedance component of the xward
+    # so we check the results by hand for the case when shunt values are != 0
 
 
-def test_xward():
+def test_xward_pz_mw():
+    # here testing for numba only
     # for now, not implemented and should raise an error
     net = small_example_grid()
-    pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    # pp.create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
+    run_and_assert_numba(net)
+    # xward behavior is a bit different due to the shunt component of the xward
+    # so we check the results by hand for the case when shunt values are != 0
 
-    with pytest.raises(NotImplementedError):
-        pp.runpp(net, distributed_slack=True)
+
+def test_xward_manually():
+    net_1 = small_example_grid()
+    # pp.create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    pp.create_xward(net_1, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
+    run_and_assert_numba(net_1)
+
+    # xward behavior is a bit different due to the shunt component of the xward
+    # so we check the results by hand for the case when shunt values are != 0
+    net = small_example_grid()
+    pp.create_bus(net, 20)
+    pp.create_load(net, 2, 200, 20)
+    pp.create_shunt(net, 2, 1, 10)
+    pp.create_gen(net, 3, 0, 1, slack_weight=2)
+    pp.create_line_from_parameters(net, 2, 3, 1, 0.02, 0.2, 0, 1)
+
+    net.load.at[1, 'p_mw'] = net_1._ppc['bus'][net_1.xward.bus.at[0], PD]
+    pp.runpp(net)
+
+    assert np.isclose(net_1.res_gen.at[0, 'p_mw'], net.res_gen.at[0, 'p_mw'], rtol=0, atol=1e-6)
+    assert np.isclose(net_1.res_gen.at[0, 'q_mvar'], net.res_gen.at[0, 'q_mvar'], rtol=0, atol=1e-6)
+    assert np.allclose(net_1.res_bus.vm_pu, net.res_bus.loc[0:2, 'vm_pu'], rtol=0, atol=1e-6)
+    assert np.allclose(net_1.res_bus.va_degree, net.res_bus.loc[0:2, 'va_degree'], rtol=0, atol=1e-6)
 
 
 def test_ext_grid():
@@ -260,8 +290,6 @@ def test_case9():
     assert_results_correct(net)
 
 
-# todo: implement xward elements as slacks (similarly to gen with slack=True)
-# todo add test for only xward when xward as slack is implemented
 # todo: implement distributed slack for when the grid has several disconnected zones
 
 

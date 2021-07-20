@@ -9,6 +9,7 @@ import numpy as np
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
 try:
@@ -56,7 +57,11 @@ def _build_gen_ppc(net, ppc):
     net._gen_order = gen_order
 
     if distributed_slack:
-        _normalise_slack_weights(ppc)
+        # we add the slack weights of the xward elements to the PQ bus and not the PV bus,
+        # that is why we to treat the xward as a special case
+        xward_pq_buses = _get_xward_pq_buses(net, ppc)
+        gen_mask, xward_mask = _gen_xward_mask(net, ppc)
+        _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses)
 
 
 def add_gen_order(gen_order, element, _is_elements, f):
@@ -336,11 +341,29 @@ def _different_values_at_one_bus(buses, values):
     return not np.allclose(values, values_equal)
 
 
-def _normalise_slack_weights(ppc):
+def _gen_xward_mask(net, ppc):
+    gen_mask = ~np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
+    xward_mask = np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
+    return gen_mask, xward_mask
+
+
+def _get_xward_pq_buses(net, ppc):
+    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to the auxiliary PV bus
+    ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
+    if len(ft) > 0:
+        f, t = ft
+        xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int32)
+        # xward_pv_buses = ppc['branch'][f:t, T_BUS]
+        return xward_pq_buses
+    else:
+        return np.array([], dtype=np.int32)
+
+
+def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
     """Unitise the slack contribution factors in each island to sum to 1."""
     subnets = _subnetworks(ppc)
-    gen_buses = ppc['gen'][:, GEN_BUS].astype(np.int32)
-    slack_weights_gen = ppc['gen'][:, SL_FAC].astype(np.float64)
+    gen_buses = np.r_[ppc['gen'][gen_mask, GEN_BUS].astype(np.int32), xward_pq_buses]
+    slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
 
     # only 1 ext_grid (reference bus) supported and all others are considered as PV buses,
     # 1 ext_grid is used as slack and others are converted to PV nodes internally;

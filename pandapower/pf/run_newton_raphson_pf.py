@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, an
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, GS, BS
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, GS, BS, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -69,8 +69,11 @@ def ppci_to_pfsoln(ppci, options):
             # consider buses with non-zero slack weights as if they were slack buses,
             # and gens with non-zero slack weights as if they were reference machines
             # this way, the function pfsoln will extract results for distributed slack gens, too
+            # also, the function pfsoln will extract results for the PQ buses for xwards
             gens_with_slack_weights = find(internal["gen"][:, SL_FAC] != 0)
-            buses_with_slack_weights = internal["gen"][gens_with_slack_weights, GEN_BUS].astype(int32)
+            # gen_buses_with_slack_weights = internal["gen"][gens_with_slack_weights, GEN_BUS].astype(int32)
+            buses_with_slack_weights = internal["bus"][find(internal["bus"][:, SL_FAC_BUS] != 0), BUS_I].astype(int32)
+            # buses_with_slack_weights = union1d(gen_buses_with_slack_weights, buses_with_slack_weights)
             ref = union1d(internal["ref"], buses_with_slack_weights)
             ref_gens = union1d(internal["ref_gens"], gens_with_slack_weights)
         else:
