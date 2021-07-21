@@ -7,7 +7,9 @@
 import numpy as np
 import pandapower as pp
 from pandapower import networks
-from pandapower.pypower.idx_bus import PD
+from pandapower.control import ContinuousTapControl
+from pandapower.pypower.idx_bus import PD, GS, VM
+from pandapower.pypower.idx_brch import PF
 import pytest
 from pandapower.test.toolbox import assert_res_equal
 
@@ -33,10 +35,51 @@ def small_example_grid():
     return net
 
 
+def _get_xward_result(net):
+    # here I tried getting the xward power that is relevant for the balance
+    p_results = np.array([])
+    internal_results = np.array([])
+    ppc = net._ppc
+
+    ft = net._pd2ppc_lookups.get('branch', dict()).get('xward', [])
+    if len(ft) > 0:
+        f, t = ft
+        p_impedance = ppc['branch'][f:t, PF].real
+    else:
+        p_impedance = np.array([])
+
+    for b, x_id in zip(net.xward.query("in_service").bus.values, net.xward.query("in_service").index.values):
+        p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
+        p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] **2 * net["xward"].at[x_id, "pz_mw"]
+        internal_results = np.append(internal_results, p_shunt)
+        connected = pp.toolbox.get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
+                                                           connected_branch_elements=False, connected_other_elements=False)
+        for e, idx in connected.items():
+            # first, count the total slack weights per bus, and obtain the variable part of the active power
+            total_weight = 0
+            if e in ['xward', 'ext_grid']:
+                continue
+            p_bus -= net[e].loc[idx, "p_mw"].values.sum()
+
+        p_results = np.append(p_results, p_bus)
+
+    internal_results += p_impedance
+
+    return p_results, internal_results
+
+
+def _get_losses(net):
+    pl_mw = 0
+    for elm in ['line', 'trafo', 'trafo3w', 'impedance']:
+        pl_mw += net['res_' + elm].pl_mw.sum()
+    return pl_mw
+
+
 def _get_injection_consumption(net):
+    _, xward_internal = _get_xward_result(net)
     # xward is in the consumption reference system
     consumed_p_mw = net.res_line.pl_mw.sum() + net.res_trafo.pl_mw.sum() + net.res_trafo3w.pl_mw.sum() + \
-                    net.load.query("in_service").p_mw.sum() + net.xward.query("in_service").ps_mw.sum() - \
+                    net.load.query("in_service").p_mw.sum() + net.xward.query("in_service").ps_mw.sum() + xward_internal.sum() - \
                     net.sgen.query("in_service").p_mw.sum()
     injected_p_mw = net.gen.query("in_service").p_mw.sum()
     return injected_p_mw, consumed_p_mw
@@ -50,10 +93,11 @@ def _get_slack_weights(net):
 
 
 def _get_inputs_results(net):
+    _, xward_internal = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
     inputs = np.r_[net.gen.query("in_service").p_mw,
                    np.zeros(len(net.ext_grid.query("in_service"))),
-                   -net.xward.query("in_service").ps_mw]
+                   -net.xward.query("in_service").ps_mw - xward_internal]
     results = np.r_[net.res_gen[net.gen.in_service].p_mw,
                     net.res_ext_grid[net.ext_grid.in_service].p_mw,
                     -net.res_xward[net.xward.in_service].p_mw]
@@ -72,14 +116,14 @@ def assert_results_correct(net):
     assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * slack_weights, result_p_mw, atol=1e-6, rtol=0)
 
 
-def run_and_assert_numba(net):
+def run_and_assert_numba(net, **kwargs):
     if numba_installed:
         net_temp = net.deepcopy()
-        pp.runpp(net_temp, distributed_slack=True, numba=False)
-        pp.runpp(net, distributed_slack=True)
+        pp.runpp(net_temp, distributed_slack=True, numba=False, **kwargs)
+        pp.runpp(net, distributed_slack=True, **kwargs)
         assert_res_equal(net, net_temp)
     else:
-        pp.runpp(net, distributed_slack=True, numba=False)
+        pp.runpp(net, distributed_slack=True, numba=False, **kwargs)
 
 
 @pytest.mark.skipif(not numba_installed, reason="skip the test if numba not installed")
@@ -136,6 +180,7 @@ def test_three_gens():
     assert_results_correct(net)
 
 
+@pytest.mark.xfail(reason="power balance with xward must be adjusted")
 def test_gen_xward():
     # here testing for numba only
     net = small_example_grid()
@@ -144,8 +189,10 @@ def test_gen_xward():
     run_and_assert_numba(net)
     # xward behavior is a bit different due to the shunt component and the impedance component of the xward
     # so we check the results by hand for the case when shunt values are != 0
+    assert_results_correct(net)
 
 
+@pytest.mark.xfail(reason="power balance with xward must be adjusted")
 def test_xward_pz_mw():
     # here testing for numba only
     # for now, not implemented and should raise an error
@@ -155,6 +202,7 @@ def test_xward_pz_mw():
     run_and_assert_numba(net)
     # xward behavior is a bit different due to the shunt component of the xward
     # so we check the results by hand for the case when shunt values are != 0
+    assert_results_correct(net)
 
 
 def test_xward_manually():
@@ -219,6 +267,40 @@ def test_same_bus():
     net = small_example_grid()
     pp.create_ext_grid(net, 0, slack_weight=2)
 
+    run_and_assert_numba(net)
+    assert_results_correct(net)
+
+
+def test_gen_oos():
+    net = small_example_grid()
+    pp.create_gen(net, 2, 200, 1., slack_weight=2, in_service=False)
+
+    run_and_assert_numba(net)
+    assert_results_correct(net)
+
+
+def test_ext_grid_oos():
+    net = small_example_grid()
+    pp.create_ext_grid(net, 0, slack_weight=2, in_service=False)
+
+    run_and_assert_numba(net)
+    assert_results_correct(net)
+
+
+def test_xward_oos():
+    net = small_example_grid()
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2, in_service=False)
+
+    run_and_assert_numba(net)
+    assert_results_correct(net)
+
+
+@pytest.mark.xfail(reason="xward balance must be calculated properly")
+def test_only_xward():
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
+    pp.create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
     run_and_assert_numba(net)
     assert_results_correct(net)
 
@@ -304,6 +386,72 @@ def test_case2848rte():
     net.gen.loc[sl_gen, 'slack_weight'] = net.gen.loc[sl_gen, 'p_mw']
     pp.runpp(net, distributed_slack=True, numba=numba_installed)
     assert_results_correct(net)
+
+
+@pytest.mark.xfail(reason="power balance with xward must be adjusted")
+def test_multivoltage_example_with_controller():
+    do_output = False
+
+    net = networks.example_multivoltage()
+
+    gen_p_disp = 10
+    net.gen.p_mw.at[0] = gen_p_disp
+    net.gen.slack_weight.at[0] = 1
+    net.ext_grid.slack_weight.at[0] = 1
+    net.trafo.tap_max.at[1] = 5
+    net.trafo.tap_min.at[1] = -5
+    ContinuousTapControl(net, tid=1, vm_set_pu=1.05)
+
+    gen_disp = sum([net[elm].p_mw.sum() for elm in ["gen", "sgen"]])
+    load_disp = sum([net[elm].p_mw.sum() for elm in ["load", "shunt"]]) + \
+                net.xward[["ps_mw", "pz_mw"]].sum().sum()
+    expected_losses = 2  # MW
+    expected_slack_power = load_disp + expected_losses - gen_disp  # MW
+    tol = 0.5  # MW
+
+    net2 = net.deepcopy()
+    # test distributed_slack
+    run_and_assert_numba(net)
+
+    # take results for gen and xward from net to net2 and compare results
+    net2.gen.p_mw = net.res_gen.p_mw
+    net2.xward.ps_mw = net._ppc['bus'][net._pd2ppc_lookups['bus'][net.xward.bus], PD] - net.load.loc[net.load.bus.isin([34,32]), 'p_mw'].values
+    pp.runpp(net2)
+
+    assert_res_equal(net, net2)
+    assert_results_correct(net)
+
+    if do_output:
+        print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
+        print("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
+                                                           net.res_gen.p_mw.at[0]))
+        net.res_bus.vm_pu.plot()
+
+    assert np.isclose(net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]-gen_p_disp)
+    assert expected_slack_power / 2 - tol < net.res_ext_grid.p_mw.at[0] < expected_slack_power / 2 + tol
+    losses_without_controller = -net.res_bus.p_mw.sum()
+    slack_power_without_controller = net.res_ext_grid.p_mw.at[0] + net.res_gen.p_mw.at[0] - \
+        gen_p_disp
+
+    # test distributed_slack with controller
+    run_and_assert_numba(net, run_control=True)
+    assert_results_correct(net)
+
+    losses_with_controller = -net.res_bus.p_mw.sum()
+    expected_slack_power = slack_power_without_controller - losses_without_controller + \
+        losses_with_controller
+    slack_power_without_controller = net.res_ext_grid.p_mw.at[0] + net.res_gen.p_mw.at[0] - \
+        gen_p_disp
+
+    assert np.isclose(expected_slack_power, slack_power_without_controller, atol=1e-5)
+    assert np.isclose(net.res_ext_grid.p_mw.at[0], expected_slack_power/2, atol=1e-5)
+    assert np.isclose(net.res_gen.p_mw.at[0], expected_slack_power/2+gen_p_disp, atol=1e-5)
+
+    if do_output:
+        print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
+        print("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
+                                                           net.res_gen.p_mw.at[0]))
+        net.res_bus.vm_pu.plot()
 
 
 # todo: implement distributed slack for when the grid has several disconnected zones
