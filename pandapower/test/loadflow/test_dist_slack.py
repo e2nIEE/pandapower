@@ -299,7 +299,7 @@ def test_case2848rte():
     net.ext_grid['slack_weight'] = 0
     sl_gen = net.gen.loc[net.gen.p_mw > 1000].index
     net.gen.loc[sl_gen, 'slack_weight'] = net.gen.loc[sl_gen, 'p_mw']
-    pp.runpp(net, distributed_slack=True)
+    pp.runpp(net, distributed_slack=True, numba=numba_installed)
     assert_results_correct(net)
 
 
