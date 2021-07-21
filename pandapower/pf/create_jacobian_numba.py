@@ -7,14 +7,15 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-DEBUG = False
+# DEBUG = False
 # DEBUG = True
 
 from numba import jit
+# import numba as nb
 
 # numpy is only used for debugging
-if DEBUG:
-    from numpy import zeros
+# if DEBUG:
+#     from numpy import zeros
 
 
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=False)
@@ -220,8 +221,8 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
     lref = lrefpv - lpv
 
     # dense J matrix for debugging
-    if DEBUG:
-        JJ = zeros(shape=(lrefpvpq+lpq, lrefpvpq+lpq))
+    # if DEBUG:
+    #     JJ = zeros(shape=(lrefpvpq+lpq, lrefpvpq+lpq))
 
     # nonzeros in J
     nnz = 0
@@ -232,37 +233,44 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
         nnzStart = nnz
         # iterate columns of J11 = dS_dVa.real at positions in pvpq
         # check entries in row pvpq[r] of dS_dV
-        r_start, r_end = Yp[refpvpq[r]], Yp[refpvpq[r] + 1]
-        for c in range(r_start, r_end):
+        # r_start, r_end = Yp[refpvpq[r]], Yp[refpvpq[r] + 1]
+        # for c in range(r_start, r_end):
+        for c in range(Yp[refpvpq[r]], Yp[refpvpq[r] + 1]):
             # check if column Yj is in pvpq
             bus_idx = Yj[c]
             cc = pvpq_lookup[bus_idx]
             # entries for J11 and J12
             lookup_idx = refpvpq[cc]
-            if lookup_idx == bus_idx and lookup_idx in pvpq:
+            # skip if in the "ref" columns:
+            skip = False
+            for refcol in range(lref): # this loop is way faster
+                if lookup_idx == refpvpq[refcol]:
+                    skip = True
+                    break
+            if lookup_idx == bus_idx and not skip:# and lookup_idx in pvpq:  # too slow
                 # entry found
                 # equals entry of J11: J[r,cc] = dVa_x[c].real
                 col = cc - lref
                 Jx[nnz] = dVa_x[c].real
                 Jj[nnz] = col
-                if DEBUG:
-                    JJ[r, col] = Jx[nnz]
+                # if DEBUG:
+                #     JJ[r, col] = Jx[nnz]
                 nnz += 1
                 # if entry is found in the "pq part" of pvpq = add entry of J12
                 if cc >= lrefpv:
                     col = cc + lpq - lref
                     Jx[nnz] = dVm_x[c].real
                     Jj[nnz] = col
-                    if DEBUG:
-                        JJ[r, col] = Jx[nnz]
+                    # if DEBUG:
+                    #     JJ[r, col] = Jx[nnz]
                     nnz += 1
 
         # add slack weights to the last column
         if slack_weights[refpvpq[r]] > 0:
             Jx[nnz] = slack_weights[refpvpq[r]]
             Jj[nnz] = lpvpq + lpq
-            if DEBUG:
-                JJ[r, lpvpq + lpq] = Jx[nnz]
+            # if DEBUG:
+            #     JJ[r, lpvpq + lpq] = Jx[nnz]
             nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
         Jp[r + 1] = nnz - nnzStart + Jp[r]
@@ -271,27 +279,33 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
     for r in range(lpq):
         nnzStart = nnz
         # iterate columns of J21 = dS_dVa.imag at positions in pvpq
-        r_start, r_end = Yp[pq[r]], Yp[pq[r] + 1]
-        for c in range(r_start, r_end):
+        # r_start, r_end = Yp[pq[r]], Yp[pq[r] + 1]
+        # for c in range(r_start, r_end):
+        for c in range(Yp[pq[r]], Yp[pq[r] + 1]):
             bus_idx = Yj[c]
             cc = pvpq_lookup[bus_idx]
             lookup_idx = refpvpq[cc]
-            if lookup_idx == bus_idx and lookup_idx in pvpq:
+            skip = False
+            for refcol in range(lref): # this loop is way faster
+                if lookup_idx == refpvpq[refcol]:
+                    skip = True
+                    break
+            if lookup_idx == bus_idx and not skip:# and lookup_idx in pvpq:   # too slow
                 # entry found
                 # equals entry of J21: J[r + lpvpq, cc] = dVa_x[c].imag
                 col = cc - lref
                 Jx[nnz] = dVa_x[c].imag
                 Jj[nnz] = col
-                if DEBUG:
-                    JJ[r+lrefpvpq, col] = Jx[nnz]
+                # if DEBUG:
+                #     JJ[r+lrefpvpq, col] = Jx[nnz]
                 nnz += 1
                 # if entry is found in the "pq part" of pvpq = Add entry of J22
                 if cc >= lrefpv:
                     col = cc + lpq - lref
                     Jx[nnz] = dVm_x[c].imag
                     Jj[nnz] = col
-                    if DEBUG:
-                        JJ[r+lrefpvpq, col] = Jx[nnz]
+                    # if DEBUG:
+                    #     JJ[r+lrefpvpq, col] = Jx[nnz]
                     nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
         Jp[r + lrefpvpq + 1] = nnz - nnzStart + Jp[r + lrefpvpq]
