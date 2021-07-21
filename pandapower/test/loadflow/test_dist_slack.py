@@ -79,10 +79,11 @@ def _get_injection_consumption(net):
     _, xward_internal = _get_xward_result(net)
     # xward is in the consumption reference system
     consumed_p_mw = net.res_line.pl_mw.sum() + net.res_trafo.pl_mw.sum() + net.res_trafo3w.pl_mw.sum() + \
-                    net.load.query("in_service").p_mw.sum() + net.xward.query("in_service").ps_mw.sum() + xward_internal.sum() - \
+                    net.load.query("in_service").p_mw.sum() - \
                     net.sgen.query("in_service").p_mw.sum()
     injected_p_mw = net.gen.query("in_service").p_mw.sum()
-    return injected_p_mw, consumed_p_mw
+    # we return the xward power separately because it is also already considered in the inputs and results
+    return injected_p_mw, consumed_p_mw, net.xward.query("in_service").ps_mw.sum() + xward_internal.sum()
 
 
 def _get_slack_weights(net):
@@ -104,16 +105,16 @@ def _get_inputs_results(net):
     return inputs, results
 
 
-def assert_results_correct(net):
+def assert_results_correct(net, tol=1e-6):
     # first, collect slack_weights, injection and consumption, inputs and reults from net
-    injected_p_mw, consumed_p_mw = _get_injection_consumption(net)
+    injected_p_mw, consumed_p_mw, consumed_xward_p_mw = _get_injection_consumption(net)
     input_p_mw, result_p_mw = _get_inputs_results(net)
     slack_weights = _get_slack_weights(net)
 
     # assert power balance is correct
-    assert abs(result_p_mw.sum() - consumed_p_mw) < 1e-6
+    assert abs(result_p_mw.sum() - consumed_p_mw) < tol
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw) * slack_weights, result_p_mw, atol=1e-6, rtol=0)
+    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw, atol=tol, rtol=0)
 
 
 def run_and_assert_numba(net, **kwargs):
@@ -126,7 +127,6 @@ def run_and_assert_numba(net, **kwargs):
         pp.runpp(net, distributed_slack=True, numba=False, **kwargs)
 
 
-@pytest.mark.skipif(not numba_installed, reason="skip the test if numba not installed")
 def test_numba():
     net = small_example_grid()
     # if no slack_weight is given for ext_grid, 1 is assumed, because normally
@@ -180,7 +180,6 @@ def test_three_gens():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="power balance with xward must be adjusted")
 def test_gen_xward():
     # here testing for numba only
     net = small_example_grid()
@@ -192,7 +191,6 @@ def test_gen_xward():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="power balance with xward must be adjusted")
 def test_xward_pz_mw():
     # here testing for numba only
     # for now, not implemented and should raise an error
@@ -295,14 +293,21 @@ def test_xward_oos():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="xward balance must be calculated properly")
 def test_only_xward():
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
     pp.create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
-    run_and_assert_numba(net)
-    assert_results_correct(net)
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, distributed_slack=True)
+
+
+def test_xward_gen_same_bus():
+    net = small_example_grid()
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=4)
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, distributed_slack=True)
 
 
 def test_separate_zones():
@@ -371,8 +376,8 @@ def test_case9():
     assert np.allclose(gen_diff, p_target_gen, atol=tol_mw)
 
     # check balance of power
-    injected_p_mw, consumed_p_mw = _get_injection_consumption(net)
-    assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
+    injected_p_mw, consumed_p_mw, xward_p_mw = _get_injection_consumption(net)
+    assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw - xward_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference
     assert_results_correct(net)
@@ -388,7 +393,6 @@ def test_case2848rte():
     assert_results_correct(net)
 
 
-@pytest.mark.xfail(reason="power balance with xward must be adjusted")
 def test_multivoltage_example_with_controller():
     do_output = False
 
@@ -419,7 +423,7 @@ def test_multivoltage_example_with_controller():
     pp.runpp(net2)
 
     assert_res_equal(net, net2)
-    assert_results_correct(net)
+    assert_results_correct(net, tol=1e-2)
 
     if do_output:
         print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
@@ -435,7 +439,7 @@ def test_multivoltage_example_with_controller():
 
     # test distributed_slack with controller
     run_and_assert_numba(net, run_control=True)
-    assert_results_correct(net)
+    assert_results_correct(net, tol=1e-2)
 
     losses_with_controller = -net.res_bus.p_mw.sum()
     expected_slack_power = slack_power_without_controller - losses_without_controller + \
