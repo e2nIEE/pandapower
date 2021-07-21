@@ -17,7 +17,8 @@ from scipy.sparse.linalg import spsolve
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
-from pandapower.pypower.idx_bus import SL_FAC
+from pandapower.pypower.idx_gen import PG
+from pandapower.pypower.idx_bus import PD, SL_FAC
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
@@ -55,7 +56,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     # initialize
     i = 0
     V = V0
-    slack = 0  # for dist_slack  # todo: pre-calculate from grid balance
     Va = angle(V)
     Vm = abs(V)
     dVa, dVm = None, None
@@ -106,6 +106,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     j7 = j6
     j8 = j6 + nref # j7:j8 - slacks
 
+    # make initial guess for the slack
+    slack = gen[:, PG].sum() - bus[:, PD].sum()
     # evaluate F(x0)
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     converged = _check_for_convergence(F, tol)
