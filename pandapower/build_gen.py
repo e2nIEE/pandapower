@@ -364,7 +364,14 @@ def _get_xward_pq_buses(net, ppc):
 def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
     """Unitise the slack contribution factors in each island to sum to 1."""
     subnets = _subnetworks(ppc)
-    gen_buses = np.r_[ppc['gen'][gen_mask, GEN_BUS].astype(np.int64), xward_pq_buses]
+    gen_buses = ppc['gen'][gen_mask, GEN_BUS].astype(np.int64)
+
+    # it is possible that xward and gen are at the same bus (but not reasonable)
+    if len(np.intersect1d(gen_buses, xward_pq_buses)):
+        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or SL buses."
+                                  "This configuration is not supported.")
+
+    gen_buses = np.r_[gen_buses, xward_pq_buses]
     slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
 
     # only 1 ext_grid (reference bus) supported and all others are considered as PV buses,
