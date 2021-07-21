@@ -162,6 +162,8 @@ def test_xward_manually():
     # pp.create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
     pp.create_xward(net_1, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
     run_and_assert_numba(net_1)
+    slack_power = (net_1.res_gen.p_mw.at[0] - net_1.gen.p_mw.at[0]) * 3  # factor 3 since gen has
+    # slack_weight==1 and xward has slack_weight==2
 
     # xward behavior is a bit different due to the shunt component of the xward
     # so we check the results by hand for the case when shunt values are != 0
@@ -173,6 +175,7 @@ def test_xward_manually():
     pp.create_line_from_parameters(net, 2, 3, 1, 0.02, 0.2, 0, 1)
 
     net.load.at[1, 'p_mw'] = net_1._ppc['bus'][net_1.xward.bus.at[0], PD]
+    assert np.isclose(200-net.load.at[1, 'p_mw'], slack_power*2/3, rtol=0, atol=1e-6)
     pp.runpp(net)
 
     assert np.isclose(net_1.res_gen.at[0, 'p_mw'], net.res_gen.at[0, 'p_mw'], rtol=0, atol=1e-6)
