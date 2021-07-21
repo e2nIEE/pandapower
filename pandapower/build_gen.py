@@ -352,23 +352,23 @@ def _get_xward_pq_buses(net, ppc):
     ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
     if len(ft) > 0:
         f, t = ft
-        xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int32)
+        xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int64)
         # xward_pv_buses = ppc['branch'][f:t, T_BUS]
         return xward_pq_buses
     else:
-        return np.array([], dtype=np.int32)
+        return np.array([], dtype=np.int64)
 
 
 def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
     """Unitise the slack contribution factors in each island to sum to 1."""
     subnets = _subnetworks(ppc)
-    gen_buses = np.r_[ppc['gen'][gen_mask, GEN_BUS].astype(np.int32), xward_pq_buses]
+    gen_buses = np.r_[ppc['gen'][gen_mask, GEN_BUS].astype(np.int64), xward_pq_buses]
     slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
 
     # only 1 ext_grid (reference bus) supported and all others are considered as PV buses,
     # 1 ext_grid is used as slack and others are converted to PV nodes internally;
     # calculate dist_slack for all SL and PV nodes that have non-zero slack weight:
-    buses_with_slack_weights = ppc['gen'][ppc['gen'][:, SL_FAC] != 0, GEN_BUS].astype(np.int32)
+    buses_with_slack_weights = ppc['gen'][ppc['gen'][:, SL_FAC] != 0, GEN_BUS].astype(np.int64)
     if np.sum(ppc['bus'][buses_with_slack_weights, BUS_TYPE] == REF) > 1:
         logger.info("Distributed slack calculation is implemented only for one reference type bus, "
                     "other reference buses will be converted to PV buses internally.")
