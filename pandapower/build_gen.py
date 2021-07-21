@@ -9,7 +9,7 @@ import numpy as np
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC
-from pandapower.pypower.idx_brch import F_BUS  #, T_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
 try:
@@ -353,7 +353,9 @@ def _get_xward_pq_buses(net, ppc):
     if len(ft) > 0:
         f, t = ft
         xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int64)
-        # xward_pv_buses = ppc['branch'][f:t, T_BUS]
+        xward_pv_buses = ppc['branch'][f:t, T_BUS].real.astype(np.int64)
+        # ignore the xward buses of xward elements that are out of service
+        xward_pq_buses = np.setdiff1d(xward_pq_buses, xward_pq_buses[ppc['bus'][xward_pv_buses, BUS_TYPE] == NONE])
         return xward_pq_buses
     else:
         return np.array([], dtype=np.int64)
