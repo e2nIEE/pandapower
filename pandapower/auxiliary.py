@@ -450,9 +450,9 @@ def _subnetworks(ppc):
     adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
                                       shape=(nobus, nobus))
 
-    # Set out of service buses to have no connections.
-    adj_matrix[oos_bus, :] = 0
-    adj_matrix[:, oos_bus] = 0
+    # Set out of service buses to have no connections (*=0 instead of =0 to avoid sparcity warning).
+    adj_matrix[oos_bus, :] *= 0
+    adj_matrix[:, oos_bus] *= 0
 
     traversed_buses = set()
     subnets = []
