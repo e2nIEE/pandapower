@@ -378,8 +378,11 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         sum_slack_weights = np.sum(slack_weights_gen[subnet_gen_mask])
         if np.isclose(sum_slack_weights, 0):
             # ppc['gen'][subnet_gen_mask, SL_FAC] = 0
-            raise ValueError('Distributed slack contribution factors in an '
-                             'island sum to zero.')
+            raise ValueError("Distributed slack contribution factors in "
+                             "island '%s' sum to zero." % str(subnet))
+        elif sum_slack_weights < 0:
+            raise ValueError("Distributed slack contribution factors in island '%s'" % str(subnet) +
+                             " sum to negative value. Please correct the data.")
         else:
             # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_slack_weights
             slack_weights_gen /= sum_slack_weights

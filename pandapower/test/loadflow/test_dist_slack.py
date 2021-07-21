@@ -206,7 +206,7 @@ def test_pvgen_ext_grid():
     pp.create_ext_grid(net, 2, slack_weight=2)
     net.gen.slack = False
 
-    pp.runpp(net, distributed_slack=True)
+    pp.runpp(net, distributed_slack=True, numba=numba_installed)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
