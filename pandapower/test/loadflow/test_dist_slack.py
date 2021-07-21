@@ -35,7 +35,9 @@ def small_example_grid():
 
 def _get_injection_consumption(net):
     # xward is in the consumption reference system
-    consumed_p_mw = net.load.query("in_service").p_mw.sum() + net.res_line.pl_mw.sum() + net.xward.query("in_service").ps_mw.sum()
+    consumed_p_mw = net.res_line.pl_mw.sum() + net.res_trafo.pl_mw.sum() + net.res_trafo3w.pl_mw.sum() + \
+                    net.load.query("in_service").p_mw.sum() + net.xward.query("in_service").ps_mw.sum() - \
+                    net.sgen.query("in_service").p_mw.sum()
     injected_p_mw = net.gen.query("in_service").p_mw.sum()
     return injected_p_mw, consumed_p_mw
 
@@ -175,6 +177,7 @@ def test_xward_manually():
 
     assert np.isclose(net_1.res_gen.at[0, 'p_mw'], net.res_gen.at[0, 'p_mw'], rtol=0, atol=1e-6)
     assert np.isclose(net_1.res_gen.at[0, 'q_mvar'], net.res_gen.at[0, 'q_mvar'], rtol=0, atol=1e-6)
+    assert np.isclose(net_1.res_bus.at[2, 'p_mw'], net.res_bus.at[2, 'p_mw'] + net.res_line.at[3, 'p_from_mw'], rtol=0, atol=1e-6)
     assert np.allclose(net_1.res_bus.vm_pu, net.res_bus.loc[0:2, 'vm_pu'], rtol=0, atol=1e-6)
     assert np.allclose(net_1.res_bus.va_degree, net.res_bus.loc[0:2, 'va_degree'], rtol=0, atol=1e-6)
 
@@ -287,6 +290,16 @@ def test_case9():
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference
+    assert_results_correct(net)
+
+
+def test_case2848rte():
+    # check how it works with a large grid
+    net = networks.case2848rte()
+    net.ext_grid['slack_weight'] = 0
+    sl_gen = net.gen.loc[net.gen.p_mw > 1000].index
+    net.gen.loc[sl_gen, 'slack_weight'] = net.gen.loc[sl_gen, 'p_mw']
+    pp.runpp(net, distributed_slack=True)
     assert_results_correct(net)
 
 
