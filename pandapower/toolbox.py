@@ -82,6 +82,20 @@ def branch_element_bus_dict(include_switch=False):
     return bebd
 
 
+def signing_system_value(elm):
+    """
+    Returns a 1 for all bus elements using the consumver viewpoint and a -1 for all bus elements
+    using the generator viewpoint.
+    """
+    generator_viewpoint_elms = ["ext_grid", "gen", "sgen"]
+    if elm in generator_viewpoint_elms:
+        return -1
+    elif elm in pp_elements(bus=False, branch_elements=False, other_elements=False):
+        return 1
+    else:
+        raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
+
+
 # def pq_from_cosphi(s, cosphi, qmode, pmode):
 #    """
 #    Calculates P/Q values from rated apparent power and cosine(phi) values.
@@ -156,16 +170,17 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
     if qmode in ("ind", "cap"):
-        logger.warning('capacitive or inductive behavior will be replaced by more clear terms '
-                        '"underexcited" (Q absorption, decreases voltage) and "overexcited" (Q injection, increases voltage).'
-                        'Please use "underexcited" in place of "ind" and "overexcited" in place of "cap".')
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
     if qmode == "ind" or qmode == "underexcited":
         qsign = 1 if pmode == "load" else -1
     elif qmode == "cap" or qmode == "overexcited":
         qsign = -1 if pmode == "load" else 1
     else:
-        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage) or '
-                         '"overexcited" (Q injection, increases voltage)' % qmode)
+        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
+                         ') or "overexcited" (Q injection, increases voltage)' % qmode)
 
     p = s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
@@ -214,7 +229,8 @@ def cosphi_from_pq(p, q):
 def _cosphi_from_pq(p, q):
     """
     Analog to pq_from_cosphi, but the other way around.
-    In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and "overexcited" (Q injection, increases voltage)
+    In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and
+    "overexcited" (Q injection, increases voltage)
     """
     if p == 0:
         cosphi = np.nan
@@ -1084,7 +1100,7 @@ def close_switch_at_line_with_two_open_switches(net):
     for _, switch in nl.groupby("element"):
         if len(switch.index) > 1:  # find all lines that have open switches at both ends
             # and close on of them
-            net.switch.at[switch.index[0], "closed"] = 1
+            net.switch.at[switch.index[0], "closed"] = True
             closed_switches.add(switch.index[0])
     if len(closed_switches) > 0:
         logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
@@ -2857,7 +2873,8 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # check switching state and add line switch if necessary:
     for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
+                             (net.switch.et == "l")].bus.values:
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
@@ -2909,3 +2926,55 @@ def merge_parallel_line(net, idx):
     net.line.at[idx, "max_i_ka"] = i_ka1
 
     return net
+
+
+def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], error=True,
+                                     add_info=True):
+    """
+    Merge generation plants connected to the same buses so that a maximum of one generation plants
+    per node remains.
+    Attention: gen_elms should always be given in order of slack, PV and PQ elements.
+    """
+    if add_info:
+        for elm in gen_elms:
+            net[elm]["includes_other_plants"] = False
+
+    # --- construct gen_df with all relevant plants data
+    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"])
+    cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
+    gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
+    gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
+    gen_df.reset_index(inplace=True)
+
+    # --- merge data and drop duplicated rows - directly in the net tables
+    something_merged = False
+    for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
+        idxs = gen_df.index[gen_df.bus == bus]
+        if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
+            message = "Generation plants connected to bus %i have different vm_pu." % bus
+            if error:
+                raise ValueError(message)
+            else:
+                logger.error(message + " Only the first value is considered.")
+        uniq_et = gen_df["elm_type"].at[idxs[0]]
+        uniq_idx = gen_df.at[idxs[0], "index"]
+
+        if add_info:  # add includes_other_plants information
+            net[uniq_et].at[uniq_idx, "includes_other_plants"] = True
+
+        # sum p_mw
+        col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
+        net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
+
+        # sum q_mvar (if available)
+        if "q_mvar" in net[uniq_et].columns:
+            net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
+
+        # drop duplicated elements
+        for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
+            dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
+                                      (gen_df.elm_type == elm), "index"].values
+            net[elm].drop(dupl_idx_elm, inplace=True)
+
+        something_merged |= True
+    return something_merged

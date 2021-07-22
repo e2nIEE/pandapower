@@ -79,6 +79,9 @@ MU_PMIN     = 22   # Kuhn-Tucker multiplier on lower Pg limit (u/MW)
 MU_QMAX     = 23   # Kuhn-Tucker multiplier on upper Qg limit (u/MVAr)
 MU_QMIN     = 24   # Kuhn-Tucker multiplier on lower Qg limit (u/MVAr)
 
+# Additional added by pandapower
+SL_FAC     = 25   # Slack contribution factor
+
 # Note: When a generator's PQ capability curve is not simply a box and the
 # upper Qg limit is binding, the multiplier on this constraint is split into
 # it's P and Q components and combined with the appropriate MU_Pxxx and
