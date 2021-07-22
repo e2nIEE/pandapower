@@ -1,6 +1,10 @@
 Change Log
 
-- [ADDED] Added distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
+- [ADDED] toolbox function merge_same_bus_generation_plants()
+
+[2.7.1]- 2021-07-22
+----------------------
+- [ADDED] distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
 
 [2.7.0]- 2021-07-15
 ----------------------
