@@ -1062,7 +1062,7 @@ def test_replace_gen_sgen():
         net = nw.case9()
         vm_set = [1.03, 1.02]
         net.gen["vm_pu"] = vm_set
-        net.gen["dspf"] = 1
+        net.gen["slack_weight"] = 1
         pp.runpp(net)
         assert list(net.res_gen.index.values) == [0, 1]
 
@@ -1071,9 +1071,9 @@ def test_replace_gen_sgen():
             pp.replace_gen_by_sgen(net)
         elif i == 1:
             pp.replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
-                "max_p_mw"], add_cols_to_keep=["dspf"])  # min_p_mw is not in cols_to_keep
+                "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
             assert np.allclose(net.sgen.index.values, [4, 1])
-            assert np.allclose(net.sgen.dspf.values, 1)
+            assert np.allclose(net.sgen.slack_weight.values, 1)
             assert "max_p_mw" in net.sgen.columns
             assert "min_p_mw" not in net.sgen.columns
         assert not net.gen.shape[0]
@@ -1088,9 +1088,9 @@ def test_replace_gen_sgen():
         if i == 0:
             pp.replace_sgen_by_gen(net2, [1])
         elif i == 1:
-            pp.replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["dspf"])
+            pp.replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
             assert np.allclose(net2.gen.index.values, [2])
-            assert np.allclose(net2.gen.dspf.values, 1)
+            assert np.allclose(net2.gen.slack_weight.values, 1)
         assert net2.gen.shape[0] == 1
         assert net2.res_gen.shape[0] == 1
         assert net2.gen.shape[0] == 1
