@@ -2944,7 +2944,6 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
     cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
     gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
     gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
-    gen_df["includes_other_plants"] = False
     gen_df.reset_index(inplace=True)
 
     # --- merge data and drop duplicated rows - directly in the net tables
