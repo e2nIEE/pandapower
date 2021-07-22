@@ -77,13 +77,17 @@ def _get_losses(net):
 
 def _get_injection_consumption(net):
     _, xward_internal = _get_xward_result(net)
+    total_pl_mw = _get_losses(net)
     # xward is in the consumption reference system
-    consumed_p_mw = net.res_line.pl_mw.sum() + net.res_trafo.pl_mw.sum() + net.res_trafo3w.pl_mw.sum() + \
+    # active power consumption by the internal elements of xward is not adjusted by the distributed slack calculation
+    # that is why we add the active power of the internal elements of the xward here
+    consumed_p_mw = total_pl_mw + \
                     net.load.query("in_service").p_mw.sum() - \
-                    net.sgen.query("in_service").p_mw.sum()
+                    net.sgen.query("in_service").p_mw.sum() + \
+                    xward_internal.sum()
     injected_p_mw = net.gen.query("in_service").p_mw.sum()
     # we return the xward power separately because it is also already considered in the inputs and results
-    return injected_p_mw, consumed_p_mw, net.xward.query("in_service").ps_mw.sum() + xward_internal.sum()
+    return injected_p_mw, consumed_p_mw, net.xward.query("in_service").ps_mw.sum()
 
 
 def _get_slack_weights(net):
@@ -94,18 +98,20 @@ def _get_slack_weights(net):
 
 
 def _get_inputs_results(net):
-    _, xward_internal = _get_xward_result(net)
+    # distributed slack calculation only adjusts the pq part of the xward active power consumption
+    # that is why we only consider the active power consumption by the PQ load of the xward here
+    xward_pq_res, _ = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
     inputs = np.r_[net.gen.query("in_service").p_mw,
                    np.zeros(len(net.ext_grid.query("in_service"))),
-                   -net.xward.query("in_service").ps_mw - xward_internal]
+                   -net.xward.query("in_service").ps_mw]
     results = np.r_[net.res_gen[net.gen.in_service].p_mw,
                     net.res_ext_grid[net.ext_grid.in_service].p_mw,
-                    -net.res_xward[net.xward.in_service].p_mw]
+                    -xward_pq_res]
     return inputs, results
 
 
-def assert_results_correct(net, tol=1e-6):
+def assert_results_correct(net, tol=1e-8):
     # first, collect slack_weights, injection and consumption, inputs and reults from net
     injected_p_mw, consumed_p_mw, consumed_xward_p_mw = _get_injection_consumption(net)
     input_p_mw, result_p_mw = _get_inputs_results(net)
@@ -117,6 +123,11 @@ def assert_results_correct(net, tol=1e-6):
     assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw, atol=tol, rtol=0)
 
 
+def check_xward_results(net, tol=1e-9):
+    xward_pq_res, xward_internal = _get_xward_result(net)
+    assert np.allclose(xward_pq_res + xward_internal, net.res_xward.p_mw, atol=tol, rtol=0)
+
+
 def run_and_assert_numba(net, **kwargs):
     if numba_installed:
         net_temp = net.deepcopy()
@@ -125,6 +136,16 @@ def run_and_assert_numba(net, **kwargs):
         assert_res_equal(net, net_temp)
     else:
         pp.runpp(net, distributed_slack=True, numba=False, **kwargs)
+
+
+def test_get_xward_result():
+    # here we test the helper function that calculates the internal and PQ load results separately
+    # it separates the results of other node ellments at the same bus, but only works for 1 xward at a bus
+    net = small_example_grid()
+    pp.create_xward(net, 2, 100, 0, 0, 0, 0.02, 0.2, 1)
+    pp.create_load(net, 2, 50, 0, 0, 0, 0.02, 0.2, 1)
+    pp.runpp(net)
+    check_xward_results(net)
 
 
 def test_numba():
@@ -189,6 +210,7 @@ def test_gen_xward():
     # xward behavior is a bit different due to the shunt component and the impedance component of the xward
     # so we check the results by hand for the case when shunt values are != 0
     assert_results_correct(net)
+    check_xward_results(net)
 
 
 def test_xward_pz_mw():
@@ -201,6 +223,7 @@ def test_xward_pz_mw():
     # xward behavior is a bit different due to the shunt component of the xward
     # so we check the results by hand for the case when shunt values are != 0
     assert_results_correct(net)
+    check_xward_results(net)
 
 
 def test_xward_manually():
@@ -423,7 +446,8 @@ def test_multivoltage_example_with_controller():
     pp.runpp(net2)
 
     assert_res_equal(net, net2)
-    assert_results_correct(net, tol=1e-2)
+    check_xward_results(net)
+    assert_results_correct(net)
 
     if do_output:
         print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
@@ -439,7 +463,8 @@ def test_multivoltage_example_with_controller():
 
     # test distributed_slack with controller
     run_and_assert_numba(net, run_control=True)
-    assert_results_correct(net, tol=1e-2)
+    check_xward_results(net)
+    assert_results_correct(net)
 
     losses_with_controller = -net.res_bus.p_mw.sum()
     expected_slack_power = slack_power_without_controller - losses_without_controller + \
