@@ -1347,7 +1347,17 @@ def test_merge_parallel_line():
 
 def test_merge_same_bus_generation_plants():
     gen_elms = ["ext_grid", "gen", "sgen"]
-    # test net
+
+    # --- test with case9
+    net = nw.case9()
+    buses = np.hstack([net[elm].bus.values for elm in gen_elms])
+    has_dupls = len(buses) > len(set(buses))
+
+    something_merged = tb.merge_same_bus_generation_plants(net)
+
+    assert has_dupls == something_merged
+
+    # --- test with case24_ieee_rts
     net = nw.case24_ieee_rts()
     net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
     net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
@@ -1359,9 +1369,10 @@ def test_merge_same_bus_generation_plants():
         len(dupl_buses)
 
     # run function
-    tb.merge_same_bus_generation_plants(net)
+    something_merged = tb.merge_same_bus_generation_plants(net)
 
     # check results
+    assert something_merged
     buses = np.hstack([net[elm].bus.values for elm in gen_elms])
     assert len(buses) == len(set(buses))  # no dupl buses in gen plant dfs
     n_plants = sum([net[elm].shape[0] for elm in gen_elms])

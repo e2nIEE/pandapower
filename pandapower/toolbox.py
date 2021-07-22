@@ -2947,6 +2947,7 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
     gen_df.reset_index(inplace=True)
 
     # --- merge data and drop duplicated rows - directly in the net tables
+    something_merged = False
     for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
         idxs = gen_df.index[gen_df.bus == bus]
         if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
@@ -2954,7 +2955,7 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
             if error:
                 raise ValueError(message)
             else:
-                logger.error(message + "Only the first value is considered.")
+                logger.error(message + " Only the first value is considered.")
         uniq_et = gen_df["elm_type"].at[idxs[0]]
         uniq_idx = gen_df.at[idxs[0], "index"]
 
@@ -2974,3 +2975,6 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
             dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
                                       (gen_df.elm_type == elm), "index"].values
             net[elm].drop(dupl_idx_elm, inplace=True)
+
+        something_merged |= True
+    return something_merged
