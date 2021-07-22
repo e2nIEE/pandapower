@@ -1345,5 +1345,44 @@ def test_merge_parallel_line():
     assert np.isclose(qloss_0, qloss_1)
 
 
+def test_merge_same_bus_generation_plants():
+    gen_elms = ["ext_grid", "gen", "sgen"]
+
+    # --- test with case9
+    net = nw.case9()
+    buses = np.hstack([net[elm].bus.values for elm in gen_elms])
+    has_dupls = len(buses) > len(set(buses))
+
+    something_merged = tb.merge_same_bus_generation_plants(net)
+
+    assert has_dupls == something_merged
+
+    # --- test with case24_ieee_rts
+    net = nw.case24_ieee_rts()
+    net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
+    net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
+
+    dupl_buses = [0,  1,  6, 12, 14, 21, 22]
+    n_plants = sum([net[elm].bus.isin(dupl_buses).sum() for elm in gen_elms])
+    assert n_plants > len(dupl_buses)  # check that in net are plants with same buses
+    expected_no_of_plants = sum([net[elm].shape[0] for elm in gen_elms]) - n_plants + \
+        len(dupl_buses)
+
+    # run function
+    something_merged = tb.merge_same_bus_generation_plants(net)
+
+    # check results
+    assert something_merged
+    buses = np.hstack([net[elm].bus.values for elm in gen_elms])
+    assert len(buses) == len(set(buses))  # no dupl buses in gen plant dfs
+    n_plants = sum([net[elm].shape[0] for elm in gen_elms])
+    assert n_plants == expected_no_of_plants
+    assert np.isclose(net.ext_grid.p_disp_mw.at[0], 95.1*2)  # correct value sum (p_disp)
+    assert np.isclose(net.gen.p_mw.at[0], 10*2 + 76*2)  # correct value sum (p_mw)
+    idx_sgen22 = net.sgen.index[net.sgen.bus == 22]
+    assert len(idx_sgen22) == 1
+    assert np.isclose(net.sgen.q_mvar.at[idx_sgen22[0]], 20 + 21)  # correct value sum (q_mvar)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-x"])
