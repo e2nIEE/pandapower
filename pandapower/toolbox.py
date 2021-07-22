@@ -2928,12 +2928,17 @@ def merge_parallel_line(net, idx):
     return net
 
 
-def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], error=True):
+def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], error=True,
+                                     add_info=True):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
     Attention: gen_elms should always be given in order of slack, PV and PQ elements.
     """
+    if add_info:
+        for elm in gen_elms:
+            net[elm]["includes_other_plants"] = False
+
     # --- construct gen_df with all relevant plants data
     cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"])
     cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
@@ -2953,6 +2958,9 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
                 logger.error(message + "Only the first value is considered.")
         uniq_et = gen_df["elm_type"].at[idxs[0]]
         uniq_idx = gen_df.at[idxs[0], "index"]
+
+        if add_info:  # add includes_other_plants information
+            net[uniq_et].at[uniq_idx, "includes_other_plants"] = True
 
         # sum p_mw
         col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
