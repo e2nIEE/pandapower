@@ -1062,7 +1062,7 @@ def test_replace_gen_sgen():
         net = nw.case9()
         vm_set = [1.03, 1.02]
         net.gen["vm_pu"] = vm_set
-        net.gen["dspf"] = 1
+        net.gen["slack_weight"] = 1
         pp.runpp(net)
         assert list(net.res_gen.index.values) == [0, 1]
 
@@ -1071,9 +1071,9 @@ def test_replace_gen_sgen():
             pp.replace_gen_by_sgen(net)
         elif i == 1:
             pp.replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
-                "max_p_mw"], add_cols_to_keep=["dspf"])  # min_p_mw is not in cols_to_keep
+                "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
             assert np.allclose(net.sgen.index.values, [4, 1])
-            assert np.allclose(net.sgen.dspf.values, 1)
+            assert np.allclose(net.sgen.slack_weight.values, 1)
             assert "max_p_mw" in net.sgen.columns
             assert "min_p_mw" not in net.sgen.columns
         assert not net.gen.shape[0]
@@ -1088,9 +1088,9 @@ def test_replace_gen_sgen():
         if i == 0:
             pp.replace_sgen_by_gen(net2, [1])
         elif i == 1:
-            pp.replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["dspf"])
+            pp.replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
             assert np.allclose(net2.gen.index.values, [2])
-            assert np.allclose(net2.gen.dspf.values, 1)
+            assert np.allclose(net2.gen.slack_weight.values, 1)
         assert net2.gen.shape[0] == 1
         assert net2.res_gen.shape[0] == 1
         assert net2.gen.shape[0] == 1
@@ -1343,6 +1343,45 @@ def test_merge_parallel_line():
     assert_series_equal(tbus_0, tbus_1)
     assert np.isclose(ploss_0, ploss_1, atol=1e-5)
     assert np.isclose(qloss_0, qloss_1)
+
+
+def test_merge_same_bus_generation_plants():
+    gen_elms = ["ext_grid", "gen", "sgen"]
+
+    # --- test with case9
+    net = nw.case9()
+    buses = np.hstack([net[elm].bus.values for elm in gen_elms])
+    has_dupls = len(buses) > len(set(buses))
+
+    something_merged = tb.merge_same_bus_generation_plants(net)
+
+    assert has_dupls == something_merged
+
+    # --- test with case24_ieee_rts
+    net = nw.case24_ieee_rts()
+    net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
+    net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
+
+    dupl_buses = [0,  1,  6, 12, 14, 21, 22]
+    n_plants = sum([net[elm].bus.isin(dupl_buses).sum() for elm in gen_elms])
+    assert n_plants > len(dupl_buses)  # check that in net are plants with same buses
+    expected_no_of_plants = sum([net[elm].shape[0] for elm in gen_elms]) - n_plants + \
+        len(dupl_buses)
+
+    # run function
+    something_merged = tb.merge_same_bus_generation_plants(net)
+
+    # check results
+    assert something_merged
+    buses = np.hstack([net[elm].bus.values for elm in gen_elms])
+    assert len(buses) == len(set(buses))  # no dupl buses in gen plant dfs
+    n_plants = sum([net[elm].shape[0] for elm in gen_elms])
+    assert n_plants == expected_no_of_plants
+    assert np.isclose(net.ext_grid.p_disp_mw.at[0], 95.1*2)  # correct value sum (p_disp)
+    assert np.isclose(net.gen.p_mw.at[0], 10*2 + 76*2)  # correct value sum (p_mw)
+    idx_sgen22 = net.sgen.index[net.sgen.bus == 22]
+    assert len(idx_sgen22) == 1
+    assert np.isclose(net.sgen.q_mvar.at[idx_sgen22[0]], 20 + 21)  # correct value sum (q_mvar)
 
 
 if __name__ == '__main__':
