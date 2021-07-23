@@ -40,9 +40,31 @@ def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cov
         # delete buffer file after calculation
         os.remove(buffer_file)
 
+# def _add_julia_package():
+    #     Pkg.add("PandaModels")
+    #     Pkg.build("PandaModels")
+    #     Pkg.update()
+    #     Pkg.resolve()
+
+# def _activate_dev_mode()
+    # if str(type(Base.find_package("PandaModels"))) == "<class 'NoneType'>":
+    #     print("PandaModels is not exist")
+    #     Pkg.Registry.update()
+    #     Pkg.add(url = "https://github.com/e2nIEE/PandaModels.jl") 
+    #     # Pkg.build()
+    #     Pkg.resolve()
+    #     Pkg.develop("PandaModels")
+    #     Pkg.build()
+    #     Pkg.resolve()
+    #     print("add PandaModels")
+    # Pkg.activate("PandaModels")
+    # Pkg.instantiate()
+    # Pkg.resolve()
+    # print("activate PandaModels")    
 
 
 def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
+# def _call_powermodels(buffer_file, julia_file, pkg = False, dev = False):  # pragma: no cover
     try:
         import julia
         from julia import Main
@@ -56,11 +78,20 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     except:
         raise UserWarning(
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
+       
+    # if Pkg:
+    # _add_julia_package()
+
+    
+    
         
     # Pkg.rm("PandaModels")
     # Pkg.resolve()
     # import two julia scripts and runs powermodels julia_file
 
+    #  elif dev:
+        # _activate_dev_mode()
+    #############################################################################
     if str(type(Base.find_package("PandaModels"))) == "<class 'NoneType'>":
         print("PandaModels is not exist")
         Pkg.Registry.update()
@@ -73,7 +104,7 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
         print("add PandaModels")
       
 
-    print(Base.find_package("PandaModels"))    
+    # print(Base.find_package("PandaModels"))    
     # Pkg_path = Base.find_package("PandaModels").split(".jl")[0]
 
     # try:
@@ -89,7 +120,8 @@ def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     Pkg.instantiate()
     Pkg.resolve()
     print("activate PandaModels")
-    
+    #############################################################################
+            
     try:    
         Main.using("PandaModels")
         print("using PandaModels")
