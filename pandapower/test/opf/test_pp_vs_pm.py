@@ -293,7 +293,7 @@ def test_opf_ext_grid_controllable_pm():
     pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
     net_new.ext_grid["controllable"] = True
     pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
-                    delete_buffer_file=False, pm_file_path="buffer_file.json", opf_flow_lim="I")
+                    opf_flow_lim="I")
 
     assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0599999600072285)
     assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.060000000015124)
