@@ -8,7 +8,7 @@ function run_powermodels(json_path)
     model = PP2PM.get_model(pm["pm_model"])
     #
     solver = PP2PM.get_solver(pm["pm_solver"], pm["pm_nl_solver"], pm["pm_mip_solver"],
-    pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"])
+    pm["pm_log_level"], pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"], pm["tol"])
 
     if haskey(pm["branch"]["1"],"c_rating_a")
         for (key, value) in pm["gen"]

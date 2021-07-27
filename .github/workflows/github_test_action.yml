@@ -6,8 +6,12 @@ name: pandapower
 on:
   push:
     branches: '*'
+    paths-ignore:
+      - 'CHANGELOG.rst'
   pull_request:
     branches: [ master, develop ]
+    paths-ignore:
+      - 'CHANGELOG.rst'
 
 jobs:
   build:
@@ -15,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8']
+        python-version: ['3.6', '3.7', '3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
@@ -63,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8']
+        python-version: ['3.6', '3.7', '3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
