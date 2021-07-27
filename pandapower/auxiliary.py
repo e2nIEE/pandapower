@@ -432,6 +432,40 @@ def _check_connectivity(ppc):
     return isolated_nodes, pus, qus
 
 
+def _subnetworks(ppc):
+    """
+    Return a list of lists of the connected buses of the network
+    :param ppc: pypower case file
+    :return:
+    """
+    br_status = ppc['branch'][:, BR_STATUS] == True
+    oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
+    nobranch = ppc['branch'][br_status, :].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    # Note BUS_TYPE is never REF when the generator is out of service.
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
+
+    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
+                                      shape=(nobus, nobus))
+
+    # Set out of service buses to have no connections (*=0 instead of =0 to avoid sparcity warning).
+    adj_matrix[oos_bus, :] *= 0
+    adj_matrix[:, oos_bus] *= 0
+
+    traversed_buses = set()
+    subnets = []
+    for slack in slacks:
+        if slack in traversed_buses:
+            continue
+        reachable = sp.sparse.csgraph.breadth_first_order(
+            adj_matrix, slack, directed=False, return_predecessors=False)
+        traversed_buses |= set(reachable)
+        subnets.append(list(reachable))
+    return subnets
+
+
 def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
     for i in range(len(ti)):
         if tis[i] and bis[ti[i]]:
@@ -493,7 +527,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
                      switch_rx_ratio, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
                      init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
-                     neglect_open_switch_branches=False, consider_line_temperature=False):
+                     neglect_open_switch_branches=False, consider_line_temperature=False,
+                     distributed_slack=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -513,6 +548,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "consider_line_temperature": consider_line_temperature,
+        "distributed_slack": distributed_slack,
         "delta": delta,
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
@@ -887,7 +923,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         max_iteration, tolerance_mva, trafo_model,
                         trafo_loading, enforce_q_lims, check_connectivity,
                         voltage_depend_loads, passed_parameters=None,
-                        consider_line_temperature=False, **kwargs):
+                        consider_line_temperature=False,
+                        distributed_slack=False, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -974,6 +1011,16 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_vm_pu = init
         init_va_degree = init
 
+    if distributed_slack:
+        false_slack_weight_elms = [elm for elm in {'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt',
+                                                   'storage', 'ward'} if "slack_weight" in net[elm].columns]
+        if len(false_slack_weight_elms):
+            logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' and 'xward'" +
+                           "only, not for '" + "', '".join(false_slack_weight_elms) + "'.")
+        if algorithm != 'nr':
+            raise NotImplementedError('Distributed slack is only implemented for Newton Raphson algorithm.')
+
+
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -983,7 +1030,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
-                     consider_line_temperature=consider_line_temperature)
+                     consider_line_temperature=consider_line_temperature,
+                     distributed_slack=distributed_slack)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,

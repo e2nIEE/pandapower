@@ -104,7 +104,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
-                 pm_time_limits=None, pm_log_level=0, **kwargs):  # pragma: no cover
+                 pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None, **kwargs):  # pragma: no cover
     """
     Runs a linearized power system optimization using PowerModels.jl.
 
@@ -166,14 +166,14 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
                      correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
                      pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim="S")
-    _runpm(net)
+    _runpm(net, delete_buffer_file, pm_file_path)
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
-                 opf_flow_lim="S", **kwargs):  # pragma: no cover
+                 opf_flow_lim="S", tol=1e-8, **kwargs):  # pragma: no cover
     """
     Runs a non-linear power system optimization using PowerModels.jl.
 
@@ -247,7 +247,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
-                     pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim)
+                     pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, tol=tol)
     _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file)
 
 
