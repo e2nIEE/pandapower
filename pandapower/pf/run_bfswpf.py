@@ -341,7 +341,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
         # testing termination criterion -
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=abs(V))
-        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq)
         # check tolerance
         converged = _check_for_convergence(F, tolerance_mva)
 

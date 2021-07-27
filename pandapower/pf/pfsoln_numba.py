@@ -12,7 +12,7 @@
 """
 
 from numpy import conj, zeros, complex128, abs, float64, sqrt, real
-from numpy import finfo, c_, flatnonzero as find
+from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
@@ -37,14 +37,18 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
     gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
 
+    # xward: add ref buses that are not at the generators
+    xbus = setdiff1d(ref, gbus)
+
     # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus
     Sbus = V[gbus] * conj(Ybus[gbus, :] * V - Ibus[gbus])
+    Sbus_xw = V[xbus] * conj(Ybus[xbus, :] * V - Ibus[xbus])
 
     _update_v(bus, V)
     # update gen results
     _update_q(baseMVA, bus, gen, gbus, Sbus, on)
-    _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens)
+    _update_p(baseMVA, bus, gen, ref, gbus, on, r_[Sbus, Sbus_xw], ref_gens)
 
     # ----- update/compute branch power flows -----
     branch = _update_branch_flows(Yf, Yt, V, baseMVA, branch)
