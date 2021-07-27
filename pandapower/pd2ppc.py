@@ -28,7 +28,7 @@ def _pd2ppc(net, sequence=None):
            and fill it in the branch matrix.
            Order: 1st: Line values, 2nd: Trafo values
         5. if opf: make opf objective (gencost)
-        6. convert internal ppci format for pypower powerflow / 
+        6. convert internal ppci format for pypower powerflow /
         opf without out of service elements and rearanged buses
 
     INPUT:
@@ -37,7 +37,7 @@ def _pd2ppc(net, sequence=None):
         ( 0 - Zero Sequence
           1 - Positive Sequence
           2 - Negative Sequence
-        ) 
+        )
 
     OUTPUT:
         **ppc** - The simple matpower format network. Which consists of:
@@ -56,7 +56,7 @@ def _pd2ppc(net, sequence=None):
                               , "gen_is": np.array([], dtype=bool)
                               }
         **ppci** - The "internal" pypower format network for PF calculations
-        
+
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
@@ -77,7 +77,7 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
-        # Calculates ppc1/ppc2 branch impedances from branch elements  
+        # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
@@ -119,7 +119,7 @@ def _pd2ppc(net, sequence=None):
 
     aux._replace_nans_with_default_limits(net, ppc)
 
-    # generates "internal" ppci format (for powerflow calc) 
+    # generates "internal" ppci format (for powerflow calc)
     # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
