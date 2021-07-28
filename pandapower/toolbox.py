@@ -2928,12 +2928,27 @@ def merge_parallel_line(net, idx):
     return net
 
 
-def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], error=True,
-                                     add_info=True):
+def merge_same_bus_generation_plants(net, add_info=True, error=True,
+                                     gen_elms=["ext_grid", "gen", "sgen"]):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
-    Attention: gen_elms should always be given in order of slack, PV and PQ elements.
+
+    ATTENTION:
+        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
+
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
+        elements dataframes. This column informs about which lines are the result of a merge of
+        generation plants.
+
+        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
+
+        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
+        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
     """
     if add_info:
         for elm in gen_elms:
@@ -2943,7 +2958,8 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
                 net[elm]["includes_other_plants"] = False
 
     # --- construct gen_df with all relevant plants data
-    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"])
+    limit_cols = ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"]+limit_cols)
     cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
     gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
     gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
@@ -2972,6 +2988,13 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
             net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
+
+        # sum limits
+        for col in limit_cols:
+            if col in gen_df.columns and not gen_df.loc[idxs, col].isnull().all():
+                if col not in net[uniq_et].columns:
+                    net[uniq_et][col] = np.nan
+                net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, col].sum()
 
         # drop duplicated elements
         for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
