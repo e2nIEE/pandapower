@@ -108,8 +108,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     # Set to zero to avoid nan
     pg_percent = np.nan_to_num(gen.pg_percent.values)
     vn_net = net.bus.loc[gen_buses, "vn_kv"].values
-    # Avoid warning by slight zero crossing caused 
-    sin_phi_gen = np.sqrt(max(0, 1 - gen.cos_phi.values**2))
+    # Avoid warning by slight zero crossing caused
+    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values**2, 0, None))
 
     # TODO: Check which is correct
     # gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
