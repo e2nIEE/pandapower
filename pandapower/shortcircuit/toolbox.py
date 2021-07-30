@@ -42,7 +42,7 @@ def detect_power_station_unit(net, mode="auto",
     net.gen["power_station_trafo"] = np.nan
 
     required_gen = net.gen.loc[net.bus.loc[net.gen.bus.values, "vn_kv"].values < max_gen_voltage_kv,:]
-    gen_bus = required_gen.loc[:, "bus"].values
+    required_gen_bus = required_gen.loc[:, "bus"].values
 
     if mode.lower() == "auto":
         required_trafo = net.trafo.loc[net.bus.loc[net.trafo.lv_bus.values, "vn_kv"].values < max_gen_voltage_kv, :]
@@ -67,14 +67,15 @@ def detect_power_station_unit(net, mode="auto",
         bus_dist = pd.Series(nx.single_source_dijkstra_path_length(g, t_lv_bus, weight='weight'))
 
         connected_bus_at_lv_side = bus_dist[bus_dist < max_distance_km].index.values
-        gen_bus_at_lv_side = np.intersect1d(connected_bus_at_lv_side, gen_bus)
+        gen_bus_at_lv_side = np.intersect1d(connected_bus_at_lv_side, required_gen_bus)
 
         if len(gen_bus_at_lv_side) == 1:
             # Check parallel trafo
             if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
                 raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
-            if np.in1d(net.gen.bus.values, gen_bus_at_lv_side).sum() > 1:
-                raise UserWarning("More than 1 gen detected at the lv side of a power station trafo")
+            if np.in1d(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
+                logger.info("More than 1 gen detected at the lv side of a power station trafo! Will not be considered as power station unit")
+                continue
             net.gen.loc[np.in1d(net.gen.bus.values, gen_bus_at_lv_side),
                         "power_station_trafo"] = t_ix
 
