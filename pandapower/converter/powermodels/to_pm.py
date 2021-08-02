@@ -4,7 +4,7 @@ import os
 import tempfile
 from os import remove
 from os.path import isfile
-import pathlib
+
 import numpy as np
 import pandas as pd
 
@@ -29,33 +29,21 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S", pm_log_level=0, tol=1e-8):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
-
     INPUT:
-
     **net** - pandapower net
-
     OPTIONAL:
     **pm_file_path** (str, None) - file path to *.json file to store pm data to
-
     **correct_pm_network_data** (bool, True) - correct some input data (e.g. angles, p.u. conversion)
-
     **delta** (float, 1e-8) - (small) offset to set for "hard" OPF limits.
-
     **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
     **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-
     **pm_solver** (str, "ipopt") - default solver to use.
-
     **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
-
     **pm_mip_solver** (str, "cbc") - default mip solver to use.
-
     **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
     Returns
     -------
     **pm** (json str) - PowerModels.jl data structure
@@ -71,7 +59,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_log_level=pm_log_level)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -96,6 +84,7 @@ def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net._pm = pm
     return net, pm, ppc, ppci
 
+
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -107,22 +96,6 @@ def dump_pm_json(pm, buffer_file=None):
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     return buffer_file
-
-# def dump_pm_json(pm, buffer_file=None):
-#     # dump pm dict to buffer_file (*.json)
-#     if buffer_file is None:
-#         # if no buffer file is provided a random file name is generated
-#         temp_name = next(tempfile._get_candidate_names())
-#         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
-
-#     else:
-#         temp_name = None
-        
-#     logger.debug("writing PowerModels data structure to %s" % buffer_file)
-
-#     with open(buffer_file, 'w') as outfile:
-#         json.dump(pm, outfile)
-#     return buffer_file, temp_name
 
 
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
@@ -368,7 +341,6 @@ def add_pm_options(pm, net):
     pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
     pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
     pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-    pm["tol"] = net._options["tol"] if "tol" in net._options else 1e-8
 
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
@@ -397,16 +369,13 @@ def build_ne_branch(net, ppc):
 def init_ne_line(net, new_line_index, construction_costs=None):
     """
     init function for new line dataframe, which specifies the possible new lines being built by power models tnep opt
-
     Parameters
     ----------
     net - pp net
     new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
     construction_costs (list, 0.) - costs of newly constructed lines
-
     Returns
     -------
-
     """
     # init dataframe
     net["ne_line"] = net["line"].loc[new_line_index, :]
@@ -417,69 +386,3 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     net["ne_line"].loc[new_line_index, "in_service"] = True
     # init res_ne_line to save built status afterwards
     net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
-    
-    
-    
-def convert_timeseries_to_multinet(net, profiles, buffer_file, temp_name):
-    pd2pm_lookup = net._pd2pm_lookups
-    
-    # gen_index = list()
-    load_p_index = list()
-    load_q_index = list()
-    n_ts = None
-    
-    for key, val in profiles.items():
-        n_ts = val.shape[0]
-        element = key[0]
-        el_lookup = pd2pm_lookup[element]
-        pm_index = el_lookup[el_lookup >= 0]
-        # if element == "gen":
-        #     gen_index.extend(list(pm_index))
-        # else:
-        if key[1] == "q_mvar":
-            load_q_index.extend(list(pm_index))
-        else:
-            load_p_index.extend(list(pm_index))
-        # controllable = element + "_controllable"
-        # if controllable in pd2pm_lookup and key[1] == "p_mw":
-        #     el_lookup = pd2pm_lookup[controllable]
-        #     pm_index = el_lookup[el_lookup >= 0]
-        #     gen_index.extend(list(pm_index))
-    if n_ts is None:
-        raise ValueError("No time series available")
-    
-    load_p = pd.DataFrame(0., index = load_p_index, columns = range(n_ts))
-    load_q = pd.DataFrame(0., index = load_q_index, columns = range(n_ts))
-    # gen_p = pd.DataFrame(0., index = gen_index, columns = range(n_ts))
-    
-    for key, val in profiles.items():
-        element = key[0]
-        el_lookup = pd2pm_lookup[element]
-        pm_index = el_lookup[el_lookup >= 0]
-        array_index = np.where([el_lookup >= 0])[1]
-        # ts = -val.values[:, array_index].T if "gen" in element else val.values[:, array_index].T
-        ts = val.values[:, array_index].T
-        # if element == "gen":
-        #     gen_p.loc[pm_index,:] = ts
-        # else:
-        if key[1] == "q_mvar":
-            load_q.loc[pm_index,:] = ts
-        else:
-            load_p.loc[pm_index,:] = ts
-    
-        # controllable = element + "_controllable"
-        # if controllable in pd2pm_lookup and key[1] == "p_mw":
-        #     el_lookup = pd2pm_lookup[controllable]
-        #     pm_index = el_lookup[el_lookup >= 0]
-        #     array_index = np.where([el_lookup >= 0])[1]
-        #     gen_p.loc[pm_index, :] = val.values[:, array_index].T
-    
-    # for file, df in zip(["load_p", "load_q", "gen_p"], [load_p, load_q, gen_p]):
-    for file, df in zip(["load_p", "load_q"], [load_p, load_q]):
-        if not df.empty:
-            pm_file = pathlib.Path(tempfile.gettempdir(), temp_name + "_" + file + ".json")
-            df.to_json(pm_file, orient="index")
-            buffer_file[file] = str(pm_file)
-    return buffer_file
-
-

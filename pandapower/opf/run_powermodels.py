@@ -36,53 +36,6 @@ def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cov
         # delete buffer file after calculation
         os.remove(buffer_file)
 
-
-# def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cover
-#     """
-#     Converts the pandapower net to a pm json file, saves it to disk, runs a PowerModels.jl julia function and reads
-#     the results back to the pandapower net
-
-#     INPUT
-#     ----------
-#     **net** - pandapower net
-
-#     OPTIONAL
-#     ----------
-#     **delete_buffer_file** (bool, True) - deletes the pm buffer json file if True.
-
-
-#     """
-#     # convert pandapower to power models file -> this is done in python
-#     net, pm, ppc, ppci = convert_to_pm_structure(net)
-#     # call optinal callback function
-#     if net._options["pp_to_pm_callback"] is not None:
-#         net._options["pp_to_pm_callback"](net, ppci, pm)
-#     # writes pm json to disk, which is loaded afterwards in julia
-#     if net._options.has_key(multinet):
-#         buffer_file = dict()
-#         buffer_file["pm"], temp_name  = dump_pm_json(pm)
-#         if net._options.has_key("profiles"):
-#             if profiles is None:
-#                 if net._options.has_key("n_time_steps"):
-#                     steps = net._options["n_time_steps"] 
-#                 else:
-#                     steps = None
-#                 profiles = profiles_from_ds(net, num_steps=steps)
-#             else:
-#                 profiles = net._options["profiles"]
-#         buffer_file = convert_timeseries_to_multinet(net, profiles, buffer_file, temp_name)  
-#     else:
-#         buffer_file, temp_name = dump_pm_json(pm)
-        
-#     # run power models optimization in julia
-#     result_pm = _call_powermodels(buffer_file, net._options["julia_file"])
-#     # read results and write back to net
-#     read_pm_results_to_net(net, ppc, ppci, result_pm)
-#     if pm_file_path is None and delete_buffer_file:
-#         # delete buffer file after calculation
-#         os.remove(buffer_file)
-
-
 def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # checks if julia works, otherwise raises an error
     try:
