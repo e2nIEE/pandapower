@@ -231,6 +231,17 @@ def _add_missing_columns(net):
             else:
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
 
+    # distributed slack
+    if "slack_weight" not in net.ext_grid:
+        net.ext_grid['slack_weight'] = 1.0
+
+    if "slack_weight" not in net.gen:
+        net.gen['slack_weight'] = 0.0
+
+    if "slack_weight" not in net.xward:
+        net.xward['slack_weight'] = 0.0
+
+
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
         for type in net.std_types[element].keys():
