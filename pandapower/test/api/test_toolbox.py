@@ -1359,9 +1359,17 @@ def test_merge_same_bus_generation_plants():
 
     # --- test with case24_ieee_rts
     net = nw.case24_ieee_rts()
+
+    # manipulate net for different functionality checks
+    # 1) q_mvar should be summed which is only possible if no gen or ext_grid has the same bus
     net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
     net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
+    # 2) remove limit columns or values to check whether merge_same_bus_generation_plants() can
+    # handle that
+    del net.sgen["max_q_mvar"]
+    net.sgen.min_p_mw.at[1] = np.nan
 
+    # prepare expatation values
     dupl_buses = [0,  1,  6, 12, 14, 21, 22]
     n_plants = sum([net[elm].bus.isin(dupl_buses).sum() for elm in gen_elms])
     assert n_plants > len(dupl_buses)  # check that in net are plants with same buses
@@ -1379,6 +1387,12 @@ def test_merge_same_bus_generation_plants():
     assert n_plants == expected_no_of_plants
     assert np.isclose(net.ext_grid.p_disp_mw.at[0], 95.1*2)  # correct value sum (p_disp)
     assert np.isclose(net.gen.p_mw.at[0], 10*2 + 76*2)  # correct value sum (p_mw)
+    assert np.isclose(net.gen.min_p_mw.at[0], 16*2 + 15.2)  # correct value sum (min_p_mw) (
+    # 1x 15.2 has been removed above)
+    assert np.isclose(net.gen.max_p_mw.at[0], 20*2 + 76*2)  # correct value sum (max_p_mw)
+    assert np.isclose(net.gen.min_q_mvar.at[8], -10 - 16*5)  # correct value sum (min_q_mvar)
+    assert np.isclose(net.gen.max_q_mvar.at[8], 16)  # correct value sum (max_q_mvar) (
+    # the sgen max_q_mvar column has been removed above)
     idx_sgen22 = net.sgen.index[net.sgen.bus == 22]
     assert len(idx_sgen22) == 1
     assert np.isclose(net.sgen.q_mvar.at[idx_sgen22[0]], 20 + 21)  # correct value sum (q_mvar)

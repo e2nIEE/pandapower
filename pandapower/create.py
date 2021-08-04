@@ -1377,7 +1377,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                 False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                 defaults to True if "controllable" column exists in DataFrame
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
+        flow calculation (active power balancing)
 
         powerflow
 
@@ -1389,9 +1390,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
+        short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for
+        short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1424,7 +1427,8 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     columns = ["name", "bus", "p_mw", "vm_pu", "sn_mva", "type", "slack", "in_service",
                "scaling", "slack_weight"]
-    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling, slack_weight]
+    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling,
+                 slack_weight]
 
     _set_entries(net, "gen", index, True, **dict(zip(columns, variables)))
 
