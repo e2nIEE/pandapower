@@ -249,13 +249,13 @@ def _add_missing_columns(net, elements_to_deserialize):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
 
     # distributed slack
-    if "slack_weight" not in net.ext_grid:
+    if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and "slack_weight" not in net.ext_grid:
         net.ext_grid['slack_weight'] = 1.0
 
-    if "slack_weight" not in net.gen:
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and "slack_weight" not in net.gen:
         net.gen['slack_weight'] = 0.0
 
-    if "slack_weight" not in net.xward:
+    if _check_elements_to_deserialize('xward', elements_to_deserialize) and "slack_weight" not in net.xward:
         net.xward['slack_weight'] = 0.0
 
 
