@@ -27,6 +27,8 @@ def _extract_results(net, ppc):
     _get_bus_results(net, ppc, bus_pq)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
+    else:
+        _remove_costs(net)
 
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
@@ -54,6 +56,11 @@ def _extract_results_se(net, ppc):
 
 def _get_costs(net, ppc):
     net.res_cost = ppc['obj']
+
+
+def _remove_costs(net):
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _get_aranged_lookup(net):
@@ -145,6 +152,8 @@ def reset_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _ppci_bus_to_ppc(result, ppc):
