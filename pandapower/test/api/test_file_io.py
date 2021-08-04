@@ -310,11 +310,11 @@ def test_deepcopy_controller():
     assert not ct1.equals(ct2)
 
 
-def test_table_selection_keep(tmp_path):
+def test_elements_to_deserialize(tmp_path):
     net = networks.mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net, filename)
-    net_select = pp.from_json(filename, table_selection=['bus', 'load'])
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)
@@ -339,11 +339,11 @@ def test_table_selection_keep(tmp_path):
     assert_net_equal(net, net_select)
 
 
-def test_table_selection_wo_keep(tmp_path):
+def test_elements_to_deserialize_wo_keep(tmp_path):
     net = networks.mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net, filename)
-    net_select = pp.from_json(filename, table_selection=['bus', 'load'], keep_unserialized=False)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'], keep_serialized_elements=False)
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)
