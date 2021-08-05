@@ -694,42 +694,84 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
-    eq = isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)
+    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
+        logger.warning("At least one net is not of type pandapowerNet.")
+        return False
+
     exclude_elms = [] if exclude_elms is None else list(exclude_elms)
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    if eq:
-        # for two networks make sure both have the same keys that do not start with "_"...
-        net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
-        net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
-        keys_to_check = set(net1_keys) & set(net2_keys)
-        key_difference = set(net1_keys) ^ set(net2_keys)
+    # for two networks make sure both have the same keys that do not start with "_"...
+    net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
+    net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+    keys_to_check = set(net1_keys) & set(net2_keys)
+    key_difference = set(net1_keys) ^ set(net2_keys)
+    not_checked_keys = list()
 
-        if len(key_difference) > 0:
-            logger.info("Networks entries mismatch at: %s" % key_difference)
-            if not check_only_results:
-                return False
+    if len(key_difference) > 0:
+        logger.warning("Networks entries mismatch at: %s" % key_difference)
+        if not check_only_results:
+            return False
 
-        # ... and then iter through the keys, checking for equality for each table
-        for df_name in list(keys_to_check):
-            # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
-            if (df_name != 'et' and not df_name.startswith("_")):
-                if check_only_results and not df_name.startswith("res_"):
-                    continue  # skip anything that is not a result table
+    # ... and then iter through the keys, checking for equality for each table
+    for key in list(keys_to_check):
 
-                if isinstance(net1[df_name], pd.DataFrame) and isinstance(net2[df_name],
-                                                                          pd.DataFrame):
-                    frames_equal = dataframes_equal(net1[df_name], net2[df_name], **kwargs)
-                    eq &= frames_equal
+        # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
+        if key == 'et' or key.startswith("_"):
+            continue
 
-                    if not frames_equal:
-                        not_equal.append(df_name)
+        if check_only_results and not key.startswith("res_"):
+            continue  # skip anything that is not a result table
+
+        if isinstance(net1[key], pd.DataFrame):
+            if not isinstance(net2[key], pd.DataFrame):
+                not_equal.append(key)
+            else:
+                if "object" in net1[key].columns and "object" in net2[key].columns and \
+                        isinstance(net1[key].object.dtype, object) and \
+                        isinstance(net1[key].object.dtype, object):
+                    logger.warning("net[%s]['object'] cannot be compared." % key)
+                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
+                                            net2[key][net2[key].columns.difference(["object"])],
+                                            **kwargs):
+                        not_equal.append(key)
+                elif not dataframes_equal(net1[key], net2[key], **kwargs):
+                    not_equal.append(key)
+
+        elif isinstance(net1[key], np.ndarray):
+            if not isinstance(net2[key], np.array):
+                not_equal.append(key)
+            else:
+                if version.parse(np.__version__) < version.parse("0.19"):
+                    if not compare_arrays(net1[key], net2[key]).all():
+                        not_equal.append(key)
+                else:
+                    if not np.array_equal(net1[key], net2[key], equal_nan=True):
+                        not_equal.append(key)
+
+        elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
+                isinstance(net1[key], complex):
+            if not np.isclose(net1[key], net2[key]):
+                not_equal.append(key)
+
+        else:
+            try:
+                is_eq = net1[key] == net2[key]
+                if not is_eq:
+                    not_equal.append(key)
+            except:
+                not_checked_keys.append(key)
+
+    if len(not_checked_keys) > 0:
+        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
+            not_checked_keys)))
 
     if len(not_equal) > 0:
-        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
-
-    return eq
+        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        return False
+    else:
+        return True
 
 
 def clear_result_tables(net):
