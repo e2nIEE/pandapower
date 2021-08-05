@@ -45,7 +45,7 @@ The power equation in the balanced three phase system is therefore given as :mat
 **Three Phase System (Unbalanced Load Flow)**
 
 For unbalanced three phase systems, the following conventions apply:
-	- voltage values are entered as phase-to-phase voltages
+    - voltage values are entered as phase-to-phase voltages
     - current values are entered as phase currents
     - But, Phase power values can be entered seperately in the new element **asymmetric_load** 
 
