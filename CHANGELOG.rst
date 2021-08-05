@@ -1,5 +1,6 @@
 Change Log
 
+- [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
 
 [2.7.1]- 2021-07-22
