@@ -181,8 +181,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
-    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
+    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
