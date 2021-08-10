@@ -18,7 +18,6 @@ You can find documentation for the individual network modules of pandapower here
 .. toctree::
     :maxdepth: 2
 
-    networks/simbench
     networks/example
     networks/test
     networks/cigre
