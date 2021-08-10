@@ -57,7 +57,7 @@ class OutputWriter(JSONSerializableClass):
         **output_path** (string, None) - Path to a folder where the output is written to.
 
         **output_file_type** (string, ".p") - output filetype to use.
-        Allowed file extensions: [*.xls, *.xlsx, *.csv, *.p, *.json]
+        Allowed file extensions: [.xls, .xlsx, .csv, .p, .json]
         Note: XLS has a maximum number of 256 rows.
 
         **csv_separator** (string, ";") - The separator used when writing to a csv file

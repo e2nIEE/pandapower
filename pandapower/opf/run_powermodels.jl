@@ -40,6 +40,9 @@ function run_powermodels(json_path)
                                         setting = Dict("output" => Dict("branch_flows" => true)))
     end
 
+    result["termination_status"] = string(result["termination_status"])
+    result["dual_status"] = string(result["dual_status"])
+    result["primal_status"] = string(result["primal_status"])
 
     return result
 end
