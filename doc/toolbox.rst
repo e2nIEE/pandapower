@@ -47,7 +47,7 @@ Result Information
 
 .. autofunction:: pandapower.nets_equal
 
-.. autofunction:: pandapower.clear_result_table
+.. autofunction:: pandapower.clear_result_tables
 
 ====================================
 Simulation Setup and Preparation
