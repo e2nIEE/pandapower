@@ -123,6 +123,7 @@ def test_opt_lav():
 
 def test_ql_qc():
     net = nw.case9()
+    net.sn_mva = 1.
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
