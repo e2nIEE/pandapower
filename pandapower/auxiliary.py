@@ -249,6 +249,9 @@ class pandapowerNet(ADict):
             for tb in res:
                 length = len(self[tb])
                 r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
+        if "res_cost" in self.keys():
+            r += "\n and the following result values:"
+            r += "\n   - %s" % "res_cost"
         return r
 
 

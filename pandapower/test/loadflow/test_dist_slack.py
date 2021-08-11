@@ -403,7 +403,7 @@ def test_case9():
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw - xward_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference
-    assert_results_correct(net)
+    assert_results_correct(net, tol=1e-6)
 
 
 def test_case2848rte():

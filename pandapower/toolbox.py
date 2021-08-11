@@ -42,7 +42,8 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                      ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
-                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus")])
+                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
+                     ("motor", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                      ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
@@ -693,42 +694,84 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
-    eq = isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)
+    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
+        logger.warning("At least one net is not of type pandapowerNet.")
+        return False
+
     exclude_elms = [] if exclude_elms is None else list(exclude_elms)
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    if eq:
-        # for two networks make sure both have the same keys that do not start with "_"...
-        net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
-        net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
-        keys_to_check = set(net1_keys) & set(net2_keys)
-        key_difference = set(net1_keys) ^ set(net2_keys)
+    # for two networks make sure both have the same keys that do not start with "_"...
+    net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
+    net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+    keys_to_check = set(net1_keys) & set(net2_keys)
+    key_difference = set(net1_keys) ^ set(net2_keys)
+    not_checked_keys = list()
 
-        if len(key_difference) > 0:
-            logger.info("Networks entries mismatch at: %s" % key_difference)
-            if not check_only_results:
-                return False
+    if len(key_difference) > 0:
+        logger.warning("Networks entries mismatch at: %s" % key_difference)
+        if not check_only_results:
+            return False
 
-        # ... and then iter through the keys, checking for equality for each table
-        for df_name in list(keys_to_check):
-            # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
-            if (df_name != 'et' and not df_name.startswith("_")):
-                if check_only_results and not df_name.startswith("res_"):
-                    continue  # skip anything that is not a result table
+    # ... and then iter through the keys, checking for equality for each table
+    for key in list(keys_to_check):
 
-                if isinstance(net1[df_name], pd.DataFrame) and isinstance(net2[df_name],
-                                                                          pd.DataFrame):
-                    frames_equal = dataframes_equal(net1[df_name], net2[df_name], **kwargs)
-                    eq &= frames_equal
+        # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
+        if key == 'et' or key.startswith("_"):
+            continue
 
-                    if not frames_equal:
-                        not_equal.append(df_name)
+        if check_only_results and not key.startswith("res_"):
+            continue  # skip anything that is not a result table
+
+        if isinstance(net1[key], pd.DataFrame):
+            if not isinstance(net2[key], pd.DataFrame):
+                not_equal.append(key)
+            else:
+                if "object" in net1[key].columns and "object" in net2[key].columns and \
+                        isinstance(net1[key].object.dtype, object) and \
+                        isinstance(net1[key].object.dtype, object):
+                    logger.warning("net[%s]['object'] cannot be compared." % key)
+                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
+                                            net2[key][net2[key].columns.difference(["object"])],
+                                            **kwargs):
+                        not_equal.append(key)
+                elif not dataframes_equal(net1[key], net2[key], **kwargs):
+                    not_equal.append(key)
+
+        elif isinstance(net1[key], np.ndarray):
+            if not isinstance(net2[key], np.array):
+                not_equal.append(key)
+            else:
+                if version.parse(np.__version__) < version.parse("0.19"):
+                    if not compare_arrays(net1[key], net2[key]).all():
+                        not_equal.append(key)
+                else:
+                    if not np.array_equal(net1[key], net2[key], equal_nan=True):
+                        not_equal.append(key)
+
+        elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
+                isinstance(net1[key], complex):
+            if not np.isclose(net1[key], net2[key]):
+                not_equal.append(key)
+
+        else:
+            try:
+                is_eq = net1[key] == net2[key]
+                if not is_eq:
+                    not_equal.append(key)
+            except:
+                not_checked_keys.append(key)
+
+    if len(not_checked_keys) > 0:
+        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
+            not_checked_keys)))
 
     if len(not_equal) > 0:
-        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
-
-    return eq
+        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        return False
+    else:
+        return True
 
 
 def clear_result_tables(net):
@@ -1531,15 +1574,15 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
-                p2[table] = net[table].loc[buses]
+                p2[table] = net[table].loc[buses.intersection(net[table].index)]
             else:
-                p2[table] = net[table].loc[p2[table[4:]].index]
+                p2[table] = net[table].loc[p2[table[4:]].index.intersection(net[table].index)]
     if "bus_geodata" in net:
-        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index[p2.bus.index.isin(
-            net.bus_geodata.index)]]
+        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index.intersection(
+            net.bus_geodata.index)]
     if "line_geodata" in net:
-        p2["line_geodata"] = net.line_geodata.loc[p2.line.index[p2.line.index.isin(
-            net.line_geodata.index)]]
+        p2["line_geodata"] = net.line_geodata.loc[p2.line.index.intersection(
+            net.line_geodata.index)]
 
     # switches
     p2["switch"] = net.switch.loc[
@@ -2519,13 +2562,12 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage",
-                     "asymmetric_load", "asymmetric_sgen"]:
-        element_table = net[element]
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element == "measurement":
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
                                                        (net.measurement.element_type == "bus")])
+    elif element in pp_elements(bus=False, branch_elements=False):
+        element_table = net[element]
+        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
         return {}
@@ -2928,19 +2970,38 @@ def merge_parallel_line(net, idx):
     return net
 
 
-def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], error=True,
-                                     add_info=True):
+def merge_same_bus_generation_plants(net, add_info=True, error=True,
+                                     gen_elms=["ext_grid", "gen", "sgen"]):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
-    Attention: gen_elms should always be given in order of slack, PV and PQ elements.
+
+    ATTENTION:
+        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
+
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
+        elements dataframes. This column informs about which lines are the result of a merge of
+        generation plants.
+
+        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
+
+        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
+        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
     """
     if add_info:
         for elm in gen_elms:
-            net[elm]["includes_other_plants"] = False
+            # adding column 'includes_other_plants' if missing or overwriting if its no bool column
+            if "includes_other_plants" not in net[elm].columns or net[elm][
+                    "includes_other_plants"].dtype != bool:
+                net[elm]["includes_other_plants"] = False
 
     # --- construct gen_df with all relevant plants data
-    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"])
+    limit_cols = ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"]+limit_cols)
     cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
     gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
     gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
@@ -2969,6 +3030,13 @@ def merge_same_bus_generation_plants(net, gen_elms=["ext_grid", "gen", "sgen"], 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
             net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
+
+        # sum limits
+        for col in limit_cols:
+            if col in gen_df.columns and not gen_df.loc[idxs, col].isnull().all():
+                if col not in net[uniq_et].columns:
+                    net[uniq_et][col] = np.nan
+                net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, col].sum()
 
         # drop duplicated elements
         for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
