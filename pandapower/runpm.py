@@ -19,14 +19,15 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
           pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", **kwargs):  # pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl. with a custom julia file.
-    
-    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+        Runs a power system optimization using PowerModels.jl. with a custom julia file.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
-    the active and reactive power are assigned as in a normal power flow. If True, the following
-    flexibilities apply:
+        Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+        Flexibilities can be defined in net.sgen / net.gen /net.load
+        net.sgen.controllable if a static generator is controllable. If False,
+        the active and reactive power are assigned as in a normal power flow. If True, the following
+        flexibilities apply:
+
         - net.sgen.min_p_mw / net.sgen.max_p_mw
         - net.sgen.min_q_mvar / net.sgen.max_q_mvar
         - net.load.min_p_mw / net.load.max_p_mw
@@ -37,54 +38,54 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
         - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
         - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
 
-    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
-    Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+        Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+        Otherwise, they are not respected as flexibilities.
+        Dc lines are controllable per default
 
-    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        How these costs are combined into a cost function depends on the cost_function parameter.
 
-    INPUT:
-        **net** - The pandapower format network
+        INPUT:
+            **net** - The pandapower format network
 
-    OPTIONAL:
-        **julia_file** (str, None) - path to a custom julia optimization file
+        OPTIONAL:
+            **julia_file** (str, None) - path to a custom julia optimization file
 
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+            **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+            **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
 
-        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
+            **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
 
-        **pm_solver** (str, "ipopt") - The "main" power models solver
+            **pm_solver** (str, "ipopt") - The "main" power models solver
 
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+            **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
 
-        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+            **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
 
-        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
-                                          {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-                                          
-        **pm_log_level** (int, 0) - solver log level in power models
+            **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                              {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
 
-        **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
-                                              optimization.
+            **pm_log_level** (int, 0) - solver log level in power models
 
-        **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
-                                       you want to keep the file after optimization, you should also set
-                                       delete_buffer_file to False!
+            **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
+                                                  optimization.
 
-        **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
-                                     "opf.flowlim" parameter
-                                    "S" - apparent power flow (limit in MVA),
-                                    "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+            **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
+                                           you want to keep the file after optimization, you should also set
+                                           delete_buffer_file to False!
 
-     """
+            **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+                                         "opf.flowlim" parameter
+                                        "S" - apparent power flow (limit in MVA),
+                                        "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+    """
     net._options = {}
     ac = True if "DC" not in pm_model else False
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl') if julia_file is None else julia_file
@@ -106,14 +107,15 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
                  pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None, **kwargs):  # pragma: no cover
     """
-    Runs a linearized power system optimization using PowerModels.jl.
+        Runs a linearized power system optimization using PowerModels.jl.
 
-    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+        Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
-    the active and reactive power are assigned as in a normal power flow. If True, the following
-    flexibilities apply:
+        Flexibilities can be defined in net.sgen / net.gen /net.load
+        net.sgen.controllable if a static generator is controllable. If False,
+        the active and reactive power are assigned as in a normal power flow. If True, the following
+        flexibilities apply:
+
         - net.sgen.min_p_mw / net.sgen.max_p_mw
         - net.sgen.min_q_mvar / net.sgen.max_q_mvar
         - net.load.min_p_mw / net.load.max_p_mw
@@ -124,35 +126,36 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
         - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
 
-    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
-    Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+        Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+        Otherwise, they are not respected as flexibilities.
+        Dc lines are controllable per default
 
-    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        How these costs are combined into a cost function depends on the cost_function parameter.
 
-    INPUT:
-        **net** - The pandapower format network
+        INPUT:
+            **net** - The pandapower format network
 
-    OPTIONAL:
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+        OPTIONAL:
+            **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
-        **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
+            **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
 
-        **pm_solver** (str, "ipopt") - The "main" power models solver
+            **pm_solver** (str, "ipopt") - The "main" power models solver
 
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+            **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
 
-        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
-                                          {"pm_time_limit": 300.}
-        
-        **pm_log_level** (int, 0) - solver log level in power models
-     """
+            **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                              {"pm_time_limit": 300.}
+
+            **pm_log_level** (int, 0) - solver log level in power models
+    """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
     ac = True if "DC" not in pm_model else False
 
@@ -175,14 +178,15 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                  opf_flow_lim="S", tol=1e-8, **kwargs):  # pragma: no cover
     """
-    Runs a non-linear power system optimization using PowerModels.jl.
+        Runs a non-linear power system optimization using PowerModels.jl.
 
-    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+        Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities can be defined in net.sgen / net.gen /net.load
-    net.sgen.controllable if a static generator is controllable. If False,
-    the active and reactive power are assigned as in a normal power flow. If True, the following
-    flexibilities apply:
+        Flexibilities can be defined in net.sgen / net.gen /net.load
+        net.sgen.controllable if a static generator is controllable. If False,
+        the active and reactive power are assigned as in a normal power flow. If True, the following
+        flexibilities apply:
+
         - net.sgen.min_p_mw / net.sgen.max_p_mw
         - net.sgen.min_q_mvar / net.sgen.max_q_mvar
         - net.load.min_p_mw / net.load.max_p_mw
@@ -193,48 +197,49 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
         - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
 
-    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
-    Otherwise, they are not respected as flexibilities.
-    Dc lines are controllable per default
+        Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+        Otherwise, they are not respected as flexibilities.
+        Dc lines are controllable per default
 
-    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
 
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        How these costs are combined into a cost function depends on the cost_function parameter.
 
-    INPUT:
-        **net** - The pandapower format network
+        INPUT:
+            **net** - The pandapower format network
 
-    OPTIONAL:
+        OPTIONAL:
+            **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+            **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
 
-        **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
+            **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
 
-        **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
+            **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
 
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+            **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                                              {"pm_time_limit": 300.}
 
-        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
-                                          {"pm_time_limit": 300.}
+            **pm_log_level** (int, 0) - solver log level in power models
 
-        **pm_log_level** (int, 0) - solver log level in power models
+            **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+                                                 "opf.flowlim" parameter
+                                                "S" - apparent power flow (limit in MVA),
+                                                "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
-        **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
-                                             "opf.flowlim" parameter
-                                            "S" - apparent power flow (limit in MVA),
-                                            "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+            **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
+                                                  optimization.
 
-        **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
-                                              optimization.
+            **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
+                                           you want to keep the file after optimization, you should also set
+                                           delete_buffer_file to False!
+    """
 
-        **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
-                                       you want to keep the file after optimization, you should also set
-                                       delete_buffer_file to False!
-         """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
     ac = True if "DC" not in pm_model else False
 

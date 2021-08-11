@@ -2627,6 +2627,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vector_group=None):
     """
     Adds a three-winding transformer in table net["trafo3w"].
+    The model currently only supports one tap-changer per 3W Transformer.
 
     Input:
         **net** (pandapowerNet) - The net within this transformer should be created
@@ -2694,9 +2695,6 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **name** (string, None) - Name of the 3-winding transformer
 
         **in_service** (boolean, True) - True for in_service or False for out of service
-
-        ** only considered in loadflow if calculate_voltage_angles = True
-        **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -3475,12 +3473,11 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **et** (string) - element type, one of "gen", "sgen", "ext_
-        grid", "load", "dcline",\
-            "storage"]
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load",
+                                "dcline", "storage"]
 
         **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) \
-            defines the costs between p(n) and p(n+1)
+                            defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power

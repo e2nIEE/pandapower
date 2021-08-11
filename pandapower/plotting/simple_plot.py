@@ -27,72 +27,66 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
                 bus_color="b", line_color='grey', trafo_color='k', ext_grid_color='y',
                 switch_color='k', library="igraph", show_plot=True, ax=None):
     """
-    Plots a pandapower network as simple as possible. If no geodata is available, artificial
-    geodata is generated. For advanced plotting see the tutorial
+        Plots a pandapower network as simple as possible. If no geodata is available, artificial
+        geodata is generated. For advanced plotting see the tutorial
 
-    INPUT:
-        **net** - The pandapower format network.
+        INPUT:
+            **net** - The pandapower format network.
 
-    OPTIONAL:
-        **respect_switches** (bool, False) - Respect switches if artificial geodata is created.
-
-                                            .. note::
+        OPTIONAL:
+            **respect_switches** (bool, False) - Respect switches if artificial geodata is created.
                                                 This Flag is ignored if plot_line_switches is True
 
-        **line_width** (float, 1.0) - width of lines
+            **line_width** (float, 1.0) - width of lines
 
-        **bus_size** (float, 1.0) - Relative size of buses to plot.
+            **bus_size** (float, 1.0) - Relative size of buses to plot.
+                                        The value bus_size is multiplied with mean_distance_between_buses, which equals the
+                                        distance between
+                                        the max geoocord and the min divided by 200.
+                                        mean_distance_between_buses = sum((net['bus_geodata'].max() - net['bus_geodata'].min()) / 200)
 
-            The value bus_size is multiplied with mean_distance_between_buses, which equals the
-            distance between
-            the max geoocord and the min divided by 200.
-            mean_distance_between_buses = sum((net['bus_geodata'].max()
-                                          - net['bus_geodata'].min()) / 200)
+            **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot. See bus sizes for details.
+                                                Note: ext_grids are plottet as rectangles
 
-        **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot.
+            **trafo_size** (float, 1.0) - Relative size of trafos to plot.
 
-            See bus sizes for details. Note: ext_grids are plottet as rectangles
+            **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
 
-        **trafo_size** (float, 1.0) - Relative size of trafos to plot.
+            **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
 
-        **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
+            **load_size** (float, 1.0) - Relative size of loads to plot.
 
-        **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
+            **sgen_size** (float, 1.0) - Relative size of sgens to plot.
 
-        **load_size** (float, 1.0) - Relative size of loads to plot.
+            **switch_size** (float, 2.0) - Relative size of switches to plot. See bus size for details
 
-        **sgen_size** (float, 1.0) - Relative size of sgens to plot.
+            **switch_distance** (float, 1.0) - Relative distance of the switch to its corresponding \
+                                               bus. See bus size for details
 
-        **switch_size** (float, 2.0) - Relative size of switches to plot. See bus size for details
+            **plot_line_switches** (bool, False) - Flag if line switches are plotted
 
-        **switch_distance** (float, 1.0) - Relative distance of the switch to its corresponding \
-                                           bus. See bus size for details
+            **scale_size** (bool, True) - Flag if bus_size, ext_grid_size, bus_size- and distance \
+                                          will be scaled with respect to grid mean distances
 
-        **plot_line_switches** (bool, False) - Flag if line switches are plotted
+            **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette. Usually colors[0] = "b".
 
-        **scale_size** (bool, True) - Flag if bus_size, ext_grid_size, bus_size- and distance \
-                                      will be scaled with respect to grid mean distances
+            **line_color** (String, 'grey') - Line Color. Init is grey
 
-        **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette.
-        Usually colors[0] = "b".
+            **trafo_color** (String, 'k') - Trafo Color. Init is black
 
-        **line_color** (String, 'grey') - Line Color. Init is grey
+            **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
 
-        **trafo_color** (String, 'k') - Trafo Color. Init is black
+            **switch_color** (String, 'k') - Switch Color. Init is black
 
-        **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+            **library** (String, "igraph") - library name to create generic coordinates (case of
+                                                missing geodata). "igraph" to use igraph package or "networkx" to use networkx package.
 
-        **switch_color** (String, 'k') - Switch Color. Init is black
+            **show_plot** (bool, True) - Shows plot at the end of plotting
 
-        **library** (String, "igraph") - library name to create generic coordinates (case of
-            missing geodata). "igraph" to use igraph package or "networkx" to use networkx package.
+            **ax** (object, None) - matplotlib axis to plot to
 
-        **show_plot** (bool, True) - Shows plot at the end of plotting
-
-		**ax** (object, None) - matplotlib axis to plot to
-
-    OUTPUT:
-        **ax** - axes of figure
+        OUTPUT:
+            **ax** - axes of figure
     """
     # don't hide lines if switches are plotted
     if plot_line_switches:
