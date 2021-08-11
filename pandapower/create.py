@@ -698,8 +698,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
             controllable loads in OPF
 
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF
-            Defaults to False if "controllable" column exists in DataFrame
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -947,7 +946,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
 
-        **kwargs are passed on to the create_load function
+    OPTIONAL:
+        same as in create_load, keyword arguments are passed to the create_load function
 
     OUTPUT:
         **index** (int) - The unique ID of the created load
@@ -985,7 +985,6 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **p_mw** (float) - The active power of the static generator  (positive for generation!)
 
     OPTIONAL:
-
         **q_mvar** (float, 0) - The reactive power of the sgen
 
         **sn_mva** (float, None) - Nominal power of the sgen
@@ -1013,9 +1012,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for \
             controllable sgens in OPF
 
-        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
-        powerflow
-            Defaults to False if "controllable" column exists in DataFrame
+        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
@@ -1306,9 +1304,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for a \
             controllable storage in OPF
 
-        **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
-        powerflow
-            Defaults to False if "controllable" column exists in DataFrame
+        **controllable** (bool, NaN) - Whether this storage is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created storage
@@ -2630,6 +2627,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vector_group=None):
     """
     Adds a three-winding transformer in table net["trafo3w"].
+    The model currently only supports one tap-changer per 3W Transformer.
 
     Input:
         **net** (pandapowerNet) - The net within this transformer should be created
@@ -2697,9 +2695,6 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **name** (string, None) - Name of the 3-winding transformer
 
         **in_service** (boolean, True) - True for in_service or False for out of service
-
-        ** only considered in loadflow if calculate_voltage_angles = True
-        **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -3147,7 +3142,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
         **loss_factor** (float) - loss factor tan(delta) of the capacitor bank
 
-        **kwargs are passed to the create_shunt function
+    OPTIONAL:
+        same as in create_shunt, keyword arguments are passed to the create_shunt function
 
 
     OUTPUT:
@@ -3347,7 +3343,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
         **max_q_from_mvar** - Maximum reactive power at from bus. Necessary for OPF
 
-        **max_q_to_mvar ** - Maximum reactive power at to bus. Necessary for OPF
+        **max_q_to_mvar** - Maximum reactive power at to bus. Necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -3477,12 +3473,11 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **et** (string) - element type, one of "gen", "sgen", "ext_
-        grid", "load", "dcline",\
-            "storage"]
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load",
+                                "dcline", "storage"]
 
         **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) \
-            defines the costs between p(n) and p(n+1)
+                            defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power

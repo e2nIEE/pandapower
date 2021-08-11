@@ -80,27 +80,28 @@ def cmap_continuous(cmap_list):
 
 def cmap_logarithmic(min_value, max_value, colors):
     """
-    Can be used to create a logarithmic colormap. The colormap itself has a linear segmentation of
-    the given colors. The values however will be matched to the colors based on a logarithmic
-    normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
-    normalization works).\nPlease note: There are numerous ways of how a logarithmic scale might
-    be created, the intermediate values on the scale are created automatically based on the minimum
-    and maximum given values in analogy to the LogNorm. Also, the logarithmic colormap can only be
-    used with at least 3 colors and increasing values which all have to be above 0.
+        Can be used to create a logarithmic colormap. The colormap itself has a linear segmentation of
+        the given colors. The values however will be matched to the colors based on a logarithmic
+        normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
+        normalization works).\nPlease note: There are numerous ways of how a logarithmic scale might
+        be created, the intermediate values on the scale are created automatically based on the minimum
+        and maximum given values in analogy to the LogNorm. Also, the logarithmic colormap can only be
+        used with at least 3 colors and increasing values which all have to be above 0.
 
-    INPUT:
-        - min_value (float) - the minimum value of the colorbar
+        INPUT:
+            **min_value** (float) - the minimum value of the colorbar
 
-        - max_value (float) - the maximum value for the colorbar
+            **max_value** (float) - the maximum value for the colorbar
 
-        - colors (list) - list of colors to be used for the colormap
+            **colors** (list) - list of colors to be used for the colormap
 
-    OUTPUT:
-        - cmap - matplotlib colormap
+        OUTPUT:
+            **cmap** - matplotlib colormap
 
-        - norm - matplotlib norm object
+            **norm** - matplotlib norm object
 
-    EXAMPLE:
+        EXAMPLE:
+
         >>> from pandapower.plotting import cmap_logarithmic, create_bus_collection, draw_collections
         >>> from pandapower.networks import mv_oberrhein
         >>> net = mv_oberrhein("generation")
@@ -109,7 +110,9 @@ def cmap_logarithmic(min_value, max_value, colors):
         >>> cmap, norm = cmap_logarithmic(min_value, max_value, colors)
         >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
         >>> draw_collections([bc])
+
     """
+
     num_values = len(colors)
     if num_values < 2:
         raise UserWarning("Cannot create a logarithmic colormap less than 2 colors.")
