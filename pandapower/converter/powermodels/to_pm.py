@@ -29,7 +29,7 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S", pm_tol=1e-8):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -43,6 +43,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     **pm_solver** (str, "ipopt") - default solver to use.
     **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
     **pm_mip_solver** (str, "cbc") - default mip solver to use.
+    **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
     **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
     Returns
     -------
@@ -59,7 +60,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -341,7 +342,8 @@ def add_pm_options(pm, net):
     pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
     pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
     pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-
+    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8
+    
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
         for key, val in net._options["pm_time_limits"].items():
