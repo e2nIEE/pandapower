@@ -448,6 +448,7 @@ def test_ots_opt2():
         assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
+@pytest.mark.xfail()
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_runpm_dc_pf():
     net = nw.simple_four_bus_system()
@@ -462,7 +463,7 @@ def test_runpm_dc_pf():
     
     assert np.allclose(va_pm, va_pp)
 
-
+@pytest.mark.xfail()
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")      
 def test_runpm_ac_pf():
     net = nw.simple_four_bus_system()
