@@ -342,8 +342,7 @@ def add_pm_options(pm, net):
     pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
     pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
     pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8
-    
+    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8    
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
         for key, val in net._options["pm_time_limits"].items():

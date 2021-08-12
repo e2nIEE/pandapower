@@ -84,8 +84,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
                                          "opf.flowlim" parameter
                                         "S" - apparent power flow (limit in MVA),
-                                        "I" - current magnitude (limit in MVA at 1 p.u. voltage)
-                                        
+                                        "I" - current magnitude (limit in MVA at 1 p.u. voltage)                                      
             **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
     """
     net._options = {}
@@ -349,8 +348,8 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1.0, correct_pm_network_data=True,
                       pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
-                      opf_flow_lim="S", charge_efficiency=1.0, discharge_efficiency=1.0, 
-                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-8, **kwargs):  # pragma: no cover
+                      opf_flow_lim="S", charge_efficiency=1.0, discharge_efficiency=1., 
+                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-8, **kwargs):  
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.
     INPUT:
