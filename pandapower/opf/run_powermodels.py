@@ -14,16 +14,12 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None):  # pragma: no cover
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PowerModels.jl julia function and reads
     the results back to the pandapower net
-
     INPUT
     ----------
     **net** - pandapower net
-
     OPTIONAL
     ----------
     **delete_buffer_file** (bool, True) - deletes the pm buffer json file if True.
-
-
     """
     logger = logging.getLogger("run_pm")
     logger.setLevel(logging.WARNING)

@@ -273,7 +273,7 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net_new.res_cost, 6925.0486)
 
 
-def test_opf_ext_grid_controllable():
+def test_opf_create_ext_grid_controllable():
     # load net
     net = case14_pm_file()
     # run pd2ppc with ext_grid controllable = False

@@ -204,12 +204,43 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     if is_controllable:
         net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
 
+    # add results from distributed slack calculation for xwards from ppc instead of the element table
+    if net._options['distributed_slack'] and element == "xward" and np.any(net.xward.loc[element_in_service, 'slack_weight'].values != 0):
+        _extract_dist_slack_pq_results(net, ppc, element, res_)
+
     if ac:
         # Q result in mvar to element
         net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
     return net
+
+
+def _extract_dist_slack_pq_results(net, ppc, element, res_):
+    node_elements = ['sgen', 'load', 'ward', 'xward', 'storage']
+    for b in net[element].bus.values:
+        connected = dict()
+        for e in node_elements:
+            conn = net[e].loc[net[e].in_service & (net[e].bus == b)].index.values
+            if len(conn) > 0:
+                connected.update({e: conn})
+
+        p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
+        # first, count the total slack weights per bus, and obtain the variable part of the active power
+        total_weight = 0
+        for e, idx in connected.items():
+            if 'slack_weight' in net[e].columns:
+                elm_weight = net[e].loc[idx, 'slack_weight'].values
+                if np.abs(elm_weight).sum() != 0:
+                    total_weight += np.abs(elm_weight)
+            p_bus -= net[e].loc[idx, 'ps_mw' if e in ["ward", "xward"] else "p_mw"].values.sum()
+
+        # now, distribute the variable part of the active power among the dist_slack elements
+        for e, idx in connected.items():
+            if 'slack_weight' in net[e].columns:
+                elm_weight = net[e].loc[idx, 'slack_weight'].values
+                if np.abs(elm_weight).sum() != 0:
+                    net[res_]["p_mw"] += p_bus * elm_weight / total_weight
 
 
 def write_pq_results_to_element_3ph(net, element):

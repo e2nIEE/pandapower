@@ -145,7 +145,8 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     if ac:
         _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
-        if pq.shape[0] == 0 and pv.shape[0] == 0:
+        if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack']:
+            # ommission not correct if distributed slack is used
             result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]

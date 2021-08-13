@@ -41,11 +41,11 @@ If you are not yet using Julia, install it. Note that you need a version that is
 Additional Solvers
 --------------------
 
-Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`_ are compatible to PowerModels.jl. To use these solvers, you first have to install the solver itself on your system and then the julia interface. Gurobi is very fast for linear problems such as the DC model and free for academic usage. Let's do this step by step for Gurobi:
+Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are compatible to PowerModels.jl. To use these solvers, you first have to install the solver itself on your system and then the julia interface. Gurobi is very fast for linear problems such as the DC model and free for academic usage. Let's do this step by step for Gurobi:
 
-1. Download and install from `Gurobi download <https://www.gurobi.com/downloads/>`_  (you'll need an account for this)
+1. Download and install from `Gurobi download <https://www.gurobi.com/downloads/>`__  (you'll need an account for this)
 
-2. Get your Gurobi license at `Gurobi license <https://www.gurobi.com/downloads/licenses/>`_ and download it (remember where you stored it).
+2. Get your Gurobi license at `Gurobi license <https://www.gurobi.com/downloads/licenses/>`__ and download it (remember where you stored it).
 
 3. Activate the license by calling :code:`grbgetkey YOUR_KEY` as described on the Gurobi license page.
 
@@ -91,7 +91,7 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`_ are com
 Usage
 ------
 
-The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_powermodels.ipynb>`_.
+The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_powermodels.ipynb>`__.
 
 .. autofunction:: pandapower.runpm_ac_opf
 
@@ -99,6 +99,6 @@ The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/p
 
 .. autofunction:: pandapower.runpm
 
-The TNEP optimization is explained in the `PowerModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/tnep_powermodels.ipynb>`_. Additional packages including "juniper" 
+The TNEP optimization is explained in the `PowerModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/tnep_powermodels.ipynb>`__. Additional packages including "juniper"
 
 .. autofunction:: pandapower.runpm_tnep

@@ -45,7 +45,7 @@ The power equation in the balanced three phase system is therefore given as :mat
 **Three Phase System (Unbalanced Load Flow)**
 
 For unbalanced three phase systems, the following conventions apply:
-	- voltage values are entered as phase-to-phase voltages
+    - voltage values are entered as phase-to-phase voltages
     - current values are entered as phase currents
     - But, Phase power values can be entered seperately in the new element **asymmetric_load** 
 
@@ -69,7 +69,14 @@ The value should not be relevant in most applications since all power values are
 
 **Signing System**
 
-There are three elements that have power values based on the generator viewpoint (positive active power means power generation), which are:
+The reference system for bus elements can be summarized with the following figure:
+
+.. image:: p_q_reference_system.png
+	:width: 12em
+	:alt: in consumer frame convention (load-like elements), P is positive for consumption Q is positive for absorption (underexcited behavior, decreases voltage). For generator frame convention (gen-like elements), the opposite applies.
+	:align: center
+
+There are three bus elements that have power values based on the generator viewpoint (positive active power means power generation), which are:
     - gen
     - sgen
     - ext_grid
