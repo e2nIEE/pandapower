@@ -14,16 +14,12 @@ def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cov
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PowerModels.jl julia function and reads
     the results back to the pandapower net
-
     INPUT
     ----------
     **net** - pandapower net
-
     OPTIONAL
     ----------
     **delete_buffer_file** (bool, True) - deletes the pm buffer json file if True.
-
-
     """
     # convert pandapower to power models file -> this is done in python
     net, pm, ppc, ppci = convert_to_pm_structure(net)
@@ -39,7 +35,6 @@ def _runpm(net, delete_buffer_file=True, pm_file_path = None):  # pragma: no cov
     if pm_file_path is None and delete_buffer_file:
         # delete buffer file after calculation
         os.remove(buffer_file)
-
 
 def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # checks if julia works, otherwise raises an error
