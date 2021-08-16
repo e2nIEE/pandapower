@@ -41,7 +41,7 @@ setup(
 	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17",
+    install_requires=["pandas>=0.17, <1",
                       "networkx",
                       "scipy",
                       "numpy>=0.11",

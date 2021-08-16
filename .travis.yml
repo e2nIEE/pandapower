@@ -16,8 +16,10 @@ install:
   #- conda update -q conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
+  - python setup.py install
+  - pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
          conda uninstall numba --yes;
     fi
@@ -28,7 +30,6 @@ install:
   - conda install -c conda-forge python-igraph --yes
   - pip install pytest pytest-cov
   - pip install codecov
-  - python setup.py install
   - conda list
   - conda info -a
 

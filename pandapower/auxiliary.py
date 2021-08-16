@@ -851,6 +851,26 @@ def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
+# BUG: this function is causing powermodels to consider the buses of a dclink 
+# 2 generators not bind by each other power. This leads to errors in the 
+# powerflow. A quick fix is to change the limits of gen to be fixed. 
+# TODO: change the way dclines are represented in PowerModels.
+# Research 'dcline' in powermodels github repo
+
+# def _add_dcline_gens(net):
+#     from pandapower.create import create_gen
+#     for dctab in net.dcline.itertuples():
+#         pfrom = dctab.p_mw
+#         pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+#         pmax = dctab.max_p_mw
+#         create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
+#                    min_p_mw=0, max_p_mw=pmax,
+#                    max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+#                    in_service=dctab.in_service)
+#         create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
+#                    min_p_mw=-pmax, max_p_mw=0,
+#                    max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+#                    in_service=dctab.in_service)
 
 def _add_dcline_gens(net):
     from pandapower.create import create_gen
@@ -859,12 +879,12 @@ def _add_dcline_gens(net):
         pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
         pmax = dctab.max_p_mw
         create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=0, max_p_mw=pmax,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
+                   min_p_mw=pto, max_p_mw=pto, max_q_mvar=dctab.max_q_to_mvar,
+                   min_q_mvar=dctab.min_q_to_mvar, in_service=dctab.in_service)
         create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-pmax, max_p_mw=0,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   min_p_mw=-pfrom, max_p_mw=-pfrom,
+                   max_q_mvar=dctab.max_q_from_mvar, 
+                   min_q_mvar=dctab.min_q_from_mvar, 
                    in_service=dctab.in_service)
 
 
@@ -922,7 +942,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 or np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
-    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
+    if ((algorithm not in ['nr', 'bfsw', 'iwamoto_nr', 'fdbx', 'fdxb'])
+        and (voltage_depend_loads == True)):
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
 

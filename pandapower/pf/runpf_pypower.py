@@ -51,7 +51,7 @@ def _runpf_pypower(ppci, options, **kwargs):
     init_va_degree, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
     if ac:  # AC formulation
-        if init_va_degree == "dc":
+        if isinstance(init_va_degree, str) and init_va_degree == "dc":
             ppci = _run_dc_pf(ppci)
             success = True
 

@@ -1,11 +1,12 @@
 import math
+import copy
 
 import numpy as np
 
 from pandapower.auxiliary import _clean_up
 from pandapower.converter import logger
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
-from pandapower.pypower.idx_bus import VA, VM
+from pandapower.pypower.idx_bus import VA, VM, LAM_P
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
@@ -15,8 +16,11 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     reads power models results from result_pm to ppc / ppci and then to pandapower net
     """
     # read power models results from result_pm to result (== ppc with results)
-    result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
+    net._pm_result_orig = result_pm
+    result_pm = _deep_copy_pm_results(result_pm)
+    result_pm = _convert_pm_units_to_pp_units(result_pm, net.sn_mva)
     net._pm_result = result_pm
+    result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     success = ppc["success"]
     if success:
         if not multinetwork:
@@ -59,10 +63,19 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
                 ppci["bus"][bus_idx, VM] = bus["vm"]
             if "va" in bus:
                 # replace nans with 0.(in case of SOCWR model for example
+<<<<<<< HEAD
                 ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
             if "w" in bus:
                 # SOCWR model has only w instead of vm values
                 ppci["bus"][bus_idx, VM] = bus["w"]
+=======
+                ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else bus["va"]
+            if "w" in bus:
+                # SOCWR model has only w instead of vm values
+                ppci["bus"][bus_idx, VM] = bus["w"]
+            if "lam_kcl_r" in bus:
+                ppci["bus"][bus_idx, LAM_P] = bus["lam_kcl_r"]
+>>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
 
         for i, gen in sol["gen"].items():
             gen_idx = int(i) - 1
@@ -117,3 +130,42 @@ def read_tnep_results(net):
         pp_idx = line_idx[int(pm_branch_idx) - 1]
         # built is a float, which is not exactly 1.0 or 0. sometimes
         net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
+
+
+def _deep_copy_pm_results(result_pm):
+    """Deep copy pm solution, to keep the original output of PowerModels."""
+    
+    pm = {key: (val if key != "solution" else copy.deepcopy(val))
+          for key, val in result_pm.items()}
+
+    return pm
+
+
+def _convert_pm_units_to_pp_units(result_pm, sn_mva):
+
+    rad2degree = lambda x: math.degrees(x) if x is not None else x
+    pu2mva = lambda x: x * sn_mva
+    
+    sol = result_pm["solution"]
+
+    # verifying if the solution is there
+    if "bus" in sol:
+        for i, bus in sol["bus"].items():
+            sol["bus"][i]["va"] = rad2degree(bus["va"])
+            # converting the unit of shadow prices (lagrange multiplier)
+            if "lam_kcl_r" in bus:
+                sol["bus"][i]["lam_kcl_r"] = -1 * bus["lam_kcl_r"] / sn_mva
+
+        for i, gen in sol["gen"].items():
+            for field in ["pg", "qg"]:
+                sol["gen"][i][field] = pu2mva(gen[field])
+
+        for element in ["branch", "dcline"]:
+            if element in sol:
+                for i, ele in sol[element].items():
+                    for field in ["pf", "pt", "qf", "qt"]:
+                        sol[element][i][field] = pu2mva(ele[field])
+
+    result_pm["solution"] = sol
+
+    return result_pm
