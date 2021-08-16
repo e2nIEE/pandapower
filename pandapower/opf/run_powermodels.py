@@ -57,8 +57,8 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
               
     if not Base.find_package("PandaModels"):
         print("PandaModels is not installed in julia. It is added now!")          
-        # Pkg.Registry.update()
-        Pkg.update()
+        Pkg.Registry.update()
+        # Pkg.update()
         Pkg.add("PandaModels")  
         
         if dev_mode:
