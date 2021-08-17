@@ -373,14 +373,14 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If yes, the following
     flexibilities apply:
-        - net.sgen.min_p_mw / net.sgen.max_p_mw
-        - net.gen.min_p_mw / net.gen.max_p_mw
-        - net.load.min_p_mw / net.load.max_p_mw
+    - net.sgen.min_p_mw / net.sgen.max_p_mw
+    - net.gen.min_p_mw / net.gen.max_p_mw
+    - net.load.min_p_mw / net.load.max_p_mw
 
-        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
-        - net.line.max_loading_percent
-        - net.trafo.max_loading_percent
-        - net.trafo3w.max_loading_percent
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+    - net.line.max_loading_percent
+    - net.trafo.max_loading_percent
+    - net.trafo3w.max_loading_percent
 
     INPUT:
         **net** - The pandapower format network

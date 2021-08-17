@@ -83,8 +83,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
                                          "opf.flowlim" parameter
-                                        "S" - apparent power flow (limit in MVA),
-                                        "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+                                         "S" - apparent power flow (limit in MVA),
+                                         "I" - current magnitude (limit in MVA at 1 p.u. voltage)
     """
     net._options = {}
     ac = True if "DC" not in pm_model else False
@@ -229,8 +229,8 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
                                                  "opf.flowlim" parameter
-                                                "S" - apparent power flow (limit in MVA),
-                                                "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+                                                 "S" - apparent power flow (limit in MVA),
+                                                 "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
             **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
                                                   optimization.

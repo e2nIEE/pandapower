@@ -776,7 +776,7 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
 
 def clear_result_tables(net):
     """
-    Clears all 'res_...' DataFrames in net.
+    Clears all ``res_`` DataFrames in net.
     """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
@@ -1766,6 +1766,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
 def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
     Creates lines by given impedances data, while the impedances are dropped.
+    
     INPUT:
         **net** - pandapower net
 
@@ -1804,6 +1805,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
+    
     INPUT:
         **net** - pandapower net
 
@@ -2318,7 +2320,8 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 
 def replace_ward_by_internal_elements(net, wards=None):
     """
-    Replaces wards by loads and shunts
+    Replaces wards by loads and shunts.
+    
     INPUT:
         **net** - pandapower net
 
@@ -2374,6 +2377,7 @@ def replace_ward_by_internal_elements(net, wards=None):
 def replace_xward_by_internal_elements(net, xwards=None):
     """
     Replaces xward by loads, shunts, impedance and generators
+    
     INPUT:
         **net** - pandapower net
 
@@ -2430,9 +2434,9 @@ def get_element_index(net, element, name, exact_match=True):
       **name** - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True) - 
+          True: Expects exactly one match, raises UserWarning otherwise.
+          False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -2456,26 +2460,27 @@ def get_element_indices(net, element, name, exact_match=True):
     INPUT:
       **net** - pandapower network
 
-      **element** (str or iterable of strings) - Element table to get indices from ("line", "bus",
-            "trafo" etc.)
+      **element** (str, string iterable) - Element table to get indices from
+      ("line", "bus", "trafo" etc.).
 
-      **name** (str or iterable of strings) - Name of the element to match.
+      **name** (str) - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True)
+      
+          - True: Expects exactly one match, raises UserWarning otherwise.
+          - False: returns all indices containing the name
 
     OUTPUT:
       **index** (list) - List of the indices of matching element(s).
 
     EXAMPLE:
-        import pandapower.networks as pn
-        import pandapower as pp
-        net = pn.example_multivoltage()
-        idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
-        idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
-        idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+        >>> import pandapower.networks as pn
+        >>> import pandapower as pp
+        >>> net = pn.example_multivoltage()
+        >>> idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        >>> idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        >>> idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
     """
     if isinstance(element, str) and isinstance(name, str):
         element = [element]
@@ -2523,11 +2528,16 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)    - True: open switches will be respected
-                                                  False: open switches will be ignored
-        **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
-                                                        respected
-                                                  False: in_service status will be ignored
+        **respect_switches** (boolean, True) 
+        
+            - True: open switches will be respected
+            - False: open switches will be ignored
+            
+        **respect_in_service** (boolean, False)
+        
+            - True: in_service status of connected lines will be respected
+            - False: in_service status will be ignored
+            
      OUTPUT:
         **connected_elements** (set) - Returns connected elements.
 
@@ -2598,19 +2608,29 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)        - True: open switches will be respected
-                                                      False: open switches will be ignored
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                            False: in_service status will be
-                                                            ignored
-        **consider** (iterable, ("l", "s", "t", "t3", "i"))    - Determines, which types of
+        **respect_switches** (boolean, True)
+        
+            - True: open switches will be respected
+            - False: open switches will be ignored
+             
+        **respect_in_service** (boolean, False)
+        
+            - True: in_service status of connected buses will be respected
+            - False: in_service status will be ignored
+            
+        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of 
         connections will be considered.
-                                                      l: lines
-                                                      s: switches
-                                                      t: trafos
-                                                      t3: trafo3ws
-                                                      i: impedances
+
+            l: lines
+
+            s: switches
+
+            t: trafos
+
+            t3: trafo3ws
+
+            i: impedances
+
      OUTPUT:
         **cl** (set) - Returns connected buses.
 
@@ -2708,17 +2728,25 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
 
         **element** (integer)
 
-        **et** (string)                             - Type of the source element:
-                                                      l, line: line
-                                                      s, switch: switch
-                                                      t, trafo: trafo
-                                                      t3, trafo3w: trafo3w
-                                                      i, impedance: impedance
+        **et** (string) - Type of the source element:
+
+            l, line: line
+
+            s, switch: switch
+
+            t, trafo: trafo
+
+            t3, trafo3w: trafo3w
+
+            i, impedance: impedance
 
      OPTIONAL:
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                      False: in_service status will be ignored
+        **respect_in_service** (boolean, False)
+
+        True: in_service status of connected buses will be respected
+
+        False: in_service status will be ignored
+
      OUTPUT:
         **cl** (set) - Returns connected switches.
 
