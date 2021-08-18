@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - 'CHANGELOG.rst'
   pull_request:
-    branches: [ master, develop ]
+    branches: '*'
     paths-ignore:
       - 'CHANGELOG.rst'
 
