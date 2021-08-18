@@ -58,7 +58,7 @@ def connected_components(mg, notravbuses=set()):
 
 
      OPTIONAL:
-     **notravbuses** (set) - Indices of notravbuses: lines connected to these buses are 
+     **notravbuses** (set) - Indices of notravbuses: lines connected to these buses are
      not being considered in the graph
 
      OUTPUT:

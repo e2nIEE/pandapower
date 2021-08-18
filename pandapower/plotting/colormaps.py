@@ -84,7 +84,7 @@ def cmap_logarithmic(min_value, max_value, colors):
         the given colors. The values however will be matched to the colors based on a logarithmic
         normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
         normalization works).
-        
+
         \nPlease note: {There are numerous ways of how a logarithmic scale might
                         be created, the intermediate values on the scale are created automatically based on the minimum
                         and maximum given values in analogy to the LogNorm. Also, the logarithmic colormap can only be

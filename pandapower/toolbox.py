@@ -1766,7 +1766,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
 def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
     Creates lines by given impedances data, while the impedances are dropped.
-    
+
     INPUT:
         **net** - pandapower net
 
@@ -1805,7 +1805,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
-    
+
     INPUT:
         **net** - pandapower net
 
@@ -2321,7 +2321,7 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 def replace_ward_by_internal_elements(net, wards=None):
     """
     Replaces wards by loads and shunts.
-    
+
     INPUT:
         **net** - pandapower net
 
@@ -2377,7 +2377,7 @@ def replace_ward_by_internal_elements(net, wards=None):
 def replace_xward_by_internal_elements(net, xwards=None):
     """
     Replaces xward by loads, shunts, impedance and generators
-    
+
     INPUT:
         **net** - pandapower net
 
@@ -2434,7 +2434,7 @@ def get_element_index(net, element, name, exact_match=True):
       **name** - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - 
+      **exact_match** (boolean, True) -
           True: Expects exactly one match, raises UserWarning otherwise.
           False: returns all indices containing the name
 
@@ -2467,7 +2467,7 @@ def get_element_indices(net, element, name, exact_match=True):
 
     OPTIONAL:
       **exact_match** (boolean, True)
-      
+
           - True: Expects exactly one match, raises UserWarning otherwise.
           - False: returns all indices containing the name
 
@@ -2528,16 +2528,16 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True) 
-        
+        **respect_switches** (boolean, True)
+
             - True: open switches will be respected
             - False: open switches will be ignored
-            
+
         **respect_in_service** (boolean, False)
-        
+
             - True: in_service status of connected lines will be respected
             - False: in_service status will be ignored
-            
+
      OUTPUT:
         **connected_elements** (set) - Returns connected elements.
 
@@ -2609,16 +2609,16 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
 
      OPTIONAL:
         **respect_switches** (boolean, True)
-        
+
             - True: open switches will be respected
             - False: open switches will be ignored
-             
+
         **respect_in_service** (boolean, False)
-        
+
             - True: in_service status of connected buses will be respected
             - False: in_service status will be ignored
-            
-        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of 
+
+        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of
         connections will be considered.
 
             l: lines
