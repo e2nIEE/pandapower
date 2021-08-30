@@ -61,10 +61,6 @@ class ContinuousTapControl(TrafoController):
         self.check_tap_bounds = check_tap_bounds
         self.vm_set_pu = vm_set_pu
         self.trafotype = trafotype
-        if trafotype == "2W":
-            net.trafo["tap_pos"] = net.trafo.tap_pos.astype(float)
-        elif trafotype == "3W":
-            net.trafo3w["tap_pos"] = net.trafo3w.tap_pos.astype(float)
         self.tol = tol
 
     def control_step(self, net):
@@ -78,6 +74,8 @@ class ContinuousTapControl(TrafoController):
             self.tap_pos = np.clip(self.tap_pos, self.tap_min, self.tap_max)
 
         # WRITE TO NET
+        if net[self.trafotable].tap_pos.dtype != "float":
+            net[self.trafotable].tap_pos = net[self.trafotable].tap_pos.astype(float)
         net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
     def is_converged(self, net):
