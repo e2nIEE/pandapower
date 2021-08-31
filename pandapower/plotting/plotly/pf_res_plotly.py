@@ -71,7 +71,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
             **cpos_load** (float, 1.1) - position of the loading percent colorbar
 
-            **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
+            **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
 
             **auto_open** (bool, True) - automatically open plot in browser
 

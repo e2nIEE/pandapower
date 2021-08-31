@@ -82,9 +82,11 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                                            delete_buffer_file to False!
 
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+
                                          "opf.flowlim" parameter:
                                              "S" - apparent power flow (limit in MVA),
-                                             "I" - current magnitude (limit in MVA at 1 p.u. voltage)                                    
+                                             "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+
             **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
     """
     net._options = {}
@@ -231,8 +233,8 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
                                                  "opf.flowlim" parameter
-                                                "S" - apparent power flow (limit in MVA),
-                                                "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+                                                 "S" - apparent power flow (limit in MVA),
+                                                 "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
             **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
                                                   optimization.
@@ -265,17 +267,27 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                opf_flow_lim="S", pm_tol=1e-8, **kwargs):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
+
     OPTIONAL:
-        **julia_file** (str, None) - path to a custom julia optimization file
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
-        **pm_solver** (str, "juniper") - The "main" power models solver
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
-        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+        **julia_file** (str, None) - path to a custom julia optimization file.
+        
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure.
+        
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it.
+        
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use.
+        
+        **pm_solver** (str, "juniper") - The "main" power models solver.
+        
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper).
+        
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper).
+        
         **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                           {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-        **pm_log_level** (int, 0) - solver log level in power model
+                                          
+        **pm_log_level** (int, 0) - solver log level in power model.
+        
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
      """
     julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
