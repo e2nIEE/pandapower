@@ -1,5 +1,6 @@
 Change Log
 
+- [ADDED] "results" initialization for runopp()
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
 

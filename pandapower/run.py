@@ -326,12 +326,13 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
                 These warnings are suppressed by this option, however keep in mind all other pypower
                 warnings are suppressed, too.
 
-            **init** (str, "flat") - init of starting opf vector. Options are "flat" or "pf"
+            **init** (str, "flat") - init of starting opf vector. Options are "flat", "pf" or "results"
 
                 Starting solution vector (x0) for opf calculations is determined by this flag. Options are:
                 "flat" (default): starting vector is (upper bound - lower bound) / 2
                 "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
                 convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
+                "results": voltage magnitude vector is taken from result table
 
             **delta** (float, 1e-10) - power tolerance
 
