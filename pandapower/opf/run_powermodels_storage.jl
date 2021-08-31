@@ -1,11 +1,7 @@
 using PowerModels
-using Ipopt
-using Gurobi
-using JuMP
 using .PP2PM
 
 import JSON
-
 function read_time_series(json_path)
     time_series = Dict()
     open(json_path, "r") do f

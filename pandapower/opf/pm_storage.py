@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 def add_storage_opf_settings(net, ppci, pm):
     # callback function to add storage settings. Must be called after initializing pm data structure since the
     # pm["storage"] dict is filled
@@ -52,7 +51,6 @@ def add_storage_opf_settings(net, ppci, pm):
             "discharge_efficiency": 1.0
         }
 
-
 def read_pm_storage_results(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
     pm_result = net._pm_result
@@ -90,3 +88,4 @@ def read_pm_storage_results(net):
     #                     print("\n")
 
     return storage_results
+

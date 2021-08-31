@@ -29,33 +29,22 @@ except ImportError:
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                      pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S"):
+                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S", pm_tol=1e-8):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
-
     INPUT:
-
     **net** - pandapower net
-
     OPTIONAL:
     **pm_file_path** (str, None) - file path to *.json file to store pm data to
-
     **correct_pm_network_data** (bool, True) - correct some input data (e.g. angles, p.u. conversion)
-
     **delta** (float, 1e-8) - (small) offset to set for "hard" OPF limits.
-
     **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
     **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-
     **pm_solver** (str, "ipopt") - default solver to use.
-
     **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
-
     **pm_mip_solver** (str, "cbc") - default mip solver to use.
-
+    **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
     **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
     Returns
     -------
     **pm** (json str) - PowerModels.jl data structure
@@ -71,7 +60,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim)
+                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
     buffer_file = dump_pm_json(pm, pm_file_path)
@@ -353,7 +342,7 @@ def add_pm_options(pm, net):
     pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
     pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
     pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-
+    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8    
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
         for key, val in net._options["pm_time_limits"].items():
@@ -381,16 +370,13 @@ def build_ne_branch(net, ppc):
 def init_ne_line(net, new_line_index, construction_costs=None):
     """
     init function for new line dataframe, which specifies the possible new lines being built by power models tnep opt
-
     Parameters
     ----------
     net - pp net
     new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
     construction_costs (list, 0.) - costs of newly constructed lines
-
     Returns
     -------
-
     """
     # init dataframe
     net["ne_line"] = net["line"].loc[new_line_index, :]
