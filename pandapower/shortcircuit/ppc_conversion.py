@@ -74,7 +74,7 @@ def _add_kt(net, ppc):
         branch[f:t, K_T] = kt
 
 def _add_xward_sc_z(net, ppc):
-    # TODO: Check if this should be ward or xward
+    # TODO Roman: Check if this should be ward or xward
     ward = net["xward"][net._is_elements_final["xward"]]
     if len(ward) == 0:
         return
@@ -248,3 +248,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
             bus_ppci.update({bus: ppci_gen})
 
     return non_ps_gen_bus, ppci, bus_ppci
+
+# TODO Roman: correction factor for 1ph cases
+
+# TODO Roman: Implementation wind generation units IEC 60909-2016

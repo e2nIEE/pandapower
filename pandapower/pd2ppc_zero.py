@@ -121,6 +121,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
                          sequence modelling \n Try : net.trafo[\"vector_group\"] = 'Dyn'" )
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
+        # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(int)
 
         if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
@@ -419,6 +420,7 @@ def _add_line_sc_impedance_zero(net, ppc):
 
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):
+    # TODO Roman: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if not "trafo3w" in branch_lookup:
         return

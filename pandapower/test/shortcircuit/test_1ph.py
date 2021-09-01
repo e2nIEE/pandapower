@@ -285,6 +285,7 @@ def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
 
+# TODO Roman: Fix this
 # @pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_small_with_gen_ps_unit_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
