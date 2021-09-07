@@ -1,5 +1,6 @@
 Change Log
 
+- [FIXED] poly_cost and pwl_cost consideration in merge_nets()
 - [ADDED] "results" initialization for runopp()
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()

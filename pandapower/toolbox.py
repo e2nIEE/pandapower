@@ -1613,11 +1613,11 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     def adapt_element_idx_references(net, element, element_type, offset=0):
         """
-        used for switch and measurement
+        used for switch, measurement, poly_cost and pwl_cost
         """
         # element_type[0] == "l" for "line", etc.:
         et = element_type[0] if element == "switch" else element_type
-        et_col = "et" if element == "switch" else "element_type"
+        et_col = "et" if element in ["switch", "poly_cost", "pwl_cost"] else "element_type"
         elements = net[element][net[element][et_col] == et]
         new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
         if len(new_index):
@@ -1633,6 +1633,9 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 adapt_element_idx_references(net1, element, "line")
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
                 adapt_element_idx_references(net1, element, "trafo")
+            if element in ["poly_cost", "pwl_cost"]:
+                for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
+                    adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":
                 ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
