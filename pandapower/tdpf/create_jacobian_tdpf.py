@@ -14,18 +14,122 @@ try:
 except ImportError:
     pass
 
-
-# todo: R0, R1, R2
 # todo: makeYbus
 # todo: adjust newton
 
+SIGMA = 5.670374419e-8
+# ALPHA = 4.03e-3
+ALPHA = 4e-3
 
-def calc_tau(R0, rho, q_mm2, c):
+
+def calc_r_temp(r_ref_ohm_per_m, t_end, t_ref=20, alpha=ALPHA):
+    return r_ref_ohm_per_m * (1 + alpha * (t_end - t_ref))
+
+
+def calc_t_ss(i_a, a0, a1, a2):
+    return a0 + a1 * i_a ** 2 + a2 * i_a ** 4
+
+
+def calc_t_transient(t_0_degree, t_s, i_a, a0, a1, a2, tau):
+    t_ss_degree = calc_t_ss(i_a, a0, a1, a2)
+    return t_ss_degree - (t_ss_degree - t_0_degree) * np.exp(-t_s/tau)
+
+
+def calc_a0_a1_a2_tau(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, mc_joule_per_m_k, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, gamma=0.5, epsilon=0.5):
+    r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_amb)
+    r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
+
+    h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb + 273) ** 3
+    kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb + 273) ** 2
+
+    h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb)
+
+    a0 = t_amb + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
+    a1 = r_amb_ohm_per_m / (h_r + h_c)
+    a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
+
     # rho = 2710  # kg/m³ # density of aluminum
     # c = 1.309e6  # J/kg°C
-    q_m2 = q_mm2 * 1e-6
-    m_kg_per_m = rho_kg_per_m3 * area_m2
-    tau = R0 * m_kg_per_m * c
+    tau = mc_joule_per_m_k / (h_r + h_c)
+
+    return a0, a1, a2, tau
+
+
+def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
+    rho_air = 101325 / (287.058 * (t_amb+273))  # pressure 1 atm. / (R_specific * T)
+    rho_air_relative = 1.  # relative air density
+    # r_f = 0.05 # roughness of conductors
+    r_f = 0.1 # roughness of conductors
+    w = rho_air * conductor_outer_diameter_m * v_m_per_s
+
+    if v_m_per_s < 0.5:
+        K = 0.55
+    elif wind_angle_degree < 24:
+        K = 0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08
+    else:
+        K = 0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9
+
+    h_cfl = 8.74 * K * w ** 0.471
+
+    h_cfh = 13.44 * K * w ** 0.633 if r_f <= 0.05 else 20.89 * K * w ** 0.8
+
+    h_cn = 8.1 * conductor_outer_diameter_m ** 0.75
+
+    h_c = np.maximum(np.maximum(h_cfl, h_cfh), h_cn)
+
+    return h_c
+
+#
+# def calc_a0_a1_a2_old(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, gamma=0.5, epsilon=0.5):
+#     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_amb)
+#     r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
+#     h_r = 4 * SIGMA * epsilon * (t_amb + 273) ** 3
+#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb + 273) ** 3
+#     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb)
+#     # R0 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c))
+#     R0 = 1 / (h_r + h_c)
+#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb + 273) ** 2
+#     R1 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c + kappa * (t_max - t_amb)))
+#     Ps = gamma * conductor_outer_diameter_m * s_w_per_square_meter
+#     #a0 = t_amb + R0 * Ps
+#     a0 = t_amb + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
+#     a1 = R0 * r_amb_ohm_per_m
+#     # a2 = R0 * R1 * r_max_ohm_per_m * (alpha * r_ref_ohm_per_m - kappa)
+#     a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
+#     return a0, a1, a2
+#
+#
+# def calc_h_c_old(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree):
+#     B1 = 0.178
+#     n1 = 0.633
+#     # rho_air = 1.2041  # kg_per_m3
+#     rho_air = 1.  # relative air density
+#
+#     if v_m_per_s < 0.5:
+#         K = 0.55
+#     elif wind_angle_degree < 24:
+#         K = 0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08
+#     else:
+#         K = 0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9
+#
+#     # K = 1.194 - np.cos(np.deg2rad(wind_angle_degree)) + (0.194 * np.cos(2 * np.deg2rad(wind_angle_degree))) + (0.368 * np.sin(2 * np.deg2rad(wind_angle_degree)))
+#
+#     h_cl = 3.07 / conductor_outer_diameter_m * K * (rho_air * conductor_outer_diameter_m * v_m_per_s) ** 0.471
+#
+#     h_ch = B1 / conductor_outer_diameter_m * K * (rho_air * conductor_outer_diameter_m * v_m_per_s) ** n1
+#
+#     h_c = np.maximum(h_cl, h_ch)
+#
+#     return h_c
+#
+#
+# def calc_tau_old(R0, q_mm2, rho, c, h_r, h_c):
+#     # rho = 2710  # kg/m³ # density of aluminum
+#     # c = 1.309e6  # J/kg°C
+#     q_m2 = q_mm2 * 1e-6
+#     m_kg_per_m = rho_kg_per_m3 * area_m2
+#     tau = m_kg_per_m * c / (h_r + h_c)
+#     return tau
 
 
 def create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J):
@@ -36,7 +140,7 @@ def create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, 
     Va = np.angle(V)
 
     A, B = calc_AB(branch, pvpq, pvpq_lookup, Va, Vm)
-    C = (1 - np.exp(-t/tau)) * (a1 + a2 * np.square(abs(I)))
+    C = (1 - np.exp(-t / tau)) * (a1 + a2 * np.square(abs(I)))
 
     J13 = create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A)
     J23 = create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B)
@@ -68,7 +172,6 @@ def calc_AB(branch, pvpq, pvpq_lookup, Va, Vm):
         i = pvpq_lookup[t]
         A[m, i] = np.square(Vm[m]) - Vm[m] * Vm[i] * np.cos(Va[m] - Va[i])
         B[m, i] = Vm[m] * Vm[i] * np.sin(Va[m] - Va[i])
-
 
     # for bus in pvpq:
     #     m = int(pvpq_lookup[bus])
@@ -321,7 +424,7 @@ if __name__ == "__main__":
     pp.runpp(net)
     ppc = net._ppc
     ppci = net._ppc
-    options=net._options
+    options = net._options
 
     # options
     tol = options['tolerance_mva']
@@ -365,7 +468,7 @@ if __name__ == "__main__":
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
-    pq_lookup = zeros(len(pvpq)+1, dtype=int)
+    pq_lookup = zeros(len(pvpq) + 1, dtype=int)
     pq_lookup[pq] = np.arange(len(pq))
 
     # get jacobian function
@@ -386,6 +489,10 @@ if __name__ == "__main__":
     # make initial guess for the slack
     slack = gen[:, PG].sum() - bus[:, PD].sum()
 
+    t_amb = 40
+    r_ref = net.line.r_ohm_per_km.values * 1e-3
+    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, )
+
     tau = np.ones(len(branch))
     a1 = np.ones(len(branch))
     a2 = np.ones(len(branch))
@@ -396,5 +503,3 @@ if __name__ == "__main__":
     J_base = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
     J = create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J_base)
-
-
