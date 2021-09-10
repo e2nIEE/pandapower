@@ -493,7 +493,7 @@ if __name__ == "__main__":
 
     t_amb = 40
     r_ref = net.line.r_ohm_per_km.values * 1e-3
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, )
+    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
 
     tau = np.ones(len(branch))
     a1 = np.ones(len(branch))

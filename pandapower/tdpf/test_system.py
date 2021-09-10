@@ -29,3 +29,5 @@ def test_grid():
     pp.create_load(net, 1, 600, 240)
     pp.create_load(net, 3, 1000, 400)
     pp.create_load(net, 4, 400, 160)
+
+    return net
