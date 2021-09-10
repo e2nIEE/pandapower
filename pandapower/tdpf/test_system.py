@@ -31,3 +31,10 @@ def test_grid():
     pp.create_load(net, 4, 400, 160)
 
     return net
+
+
+if __name__ == '__main__':
+    # from pandapower.tdpf.test_system import *
+    net = test_grid()
+    pp.set_user_pf_options(net, tdpf=True)
+    pp.runpp(net)

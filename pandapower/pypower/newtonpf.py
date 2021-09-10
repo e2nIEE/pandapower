@@ -11,17 +11,20 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack, float64
+from numpy import angle, sqrt, exp, linalg, conj, real, r_, Inf, arange, zeros, ones, max, zeros_like, column_stack, float64
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC
+from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
+from pandapower.pypower.idx_brch import BR_R, F_BUS
+
+from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf
 
 
-def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
+def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     """Solves the power flow using a full Newton's method.
     Solves for bus voltages given the full system admittance matrix (for
     all buses), the complex bus power injection vector (for all buses),
@@ -51,7 +54,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
     gen = ppci['gen']
+    branch = ppci['branch']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
+    tdpf = options['tdpf']
 
     # initialize
     i = 0
@@ -68,6 +73,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     else:
         Vm_it = None
         Va_it = None
+
+    T = ones(shape=len(branch)) * 40  # todo: consider lookups line/trafo, in_service etc.
+    T0 = ones(shape=len(branch)) * 40  # todo: consider lookups line/trafo, in_service etc.
 
     # set up indexing for updating V
     if dist_slack and len(ref) > 1:
@@ -91,6 +99,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
+    pq_lookup = zeros(len(pvpq) + 1, dtype=int)
+    pq_lookup[pq] = arange(len(pq))
+
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
 
@@ -106,21 +117,42 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     j7 = j6
     j8 = j6 + nref # j7:j8 - slacks
 
+
+    r_ref = branch[:, BR_R].copy()
+    alpha = ones(shape=len(branch)) * 0.004
+    T_ref = 20
+    t_amb = 40
+    t = 0
+
     # make initial guess for the slack
     slack = gen[:, PG].sum() - bus[:, PD].sum()
     # evaluate F(x0)
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
+    if tdpf:
+        Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
+        F_t = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+        F = r_[F, F_t]
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
     J = None
+
 
     # do Newton iterations
     while (not converged and i < max_it):
         # update iteration counter
         i = i + 1
 
+        if tdpf:
+            branch[:, BR_R] = r_ref * (1 + alpha * (T - T_ref))
+            Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+
         J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+
+        if tdpf:
+            a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
+            J = create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -131,9 +163,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
             Vm[pq] = Vm[pq] + dx[j5:j6]
         if dist_slack:
             slack = slack + dx[j7:j8]
+        if tdpf:
+            T = T + dx[j7:]
 
         # iwamoto multiplier to increase convergence
-        if iwamoto:
+        if iwamoto and not tdpf:
             Vm, Va = _iwamoto_step(Ybus, J, F, dx, pq, npv, npq, dVa, dVm, Vm, Va, pv, j1, j2, j3, j4, j5, j6)
 
         V = Vm * exp(1j * Va)
@@ -149,9 +183,29 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
 
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
 
+        if tdpf:
+            F_t = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+            F = r_[F, F_t]
+
         converged = _check_for_convergence(F, tol)
 
     return V, converged, i, J, Vm_it, Va_it
+
+
+def _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, t_0_degree, baseMVA):
+    # complex power at "from" bus
+    fbus = real(branch[:, F_BUS]).astype(int)
+    Sf = V[fbus] * conj(Yf[:, :] * V) * baseMVA
+    # complex power injected at "to" bus
+    # St = V[real(branch[br, T_BUS]).astype(int)] * conj(Yt[br, :] * V) * baseMVA
+
+    i_f = abs(Sf) / (abs(V[fbus]) * bus[fbus, BASE_KV].astype(float64)) / sqrt(3)
+
+    t_ss = a0 + a1 * i_f ** 2 + a2 * i_f ** 4
+
+    t_transient = t_ss - (t_ss - t_0_degree) * exp(-t/tau)
+
+    return t_transient - T
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):

@@ -426,6 +426,7 @@ if __name__ == "__main__":
     pp.runpp(net)
     ppc = net._ppc
     ppci = net._ppc
+    net._options['tdpf'] = True
     options = net._options
 
     # options
@@ -495,9 +496,6 @@ if __name__ == "__main__":
     r_ref = net.line.r_ohm_per_km.values * 1e-3
     a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
 
-    tau = np.ones(len(branch))
-    a1 = np.ones(len(branch))
-    a2 = np.ones(len(branch))
     t = 0
     alpha = np.ones(len(branch)) * 0.004
     r_ref = branch[:, BR_R].real.copy()
