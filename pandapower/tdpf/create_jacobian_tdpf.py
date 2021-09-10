@@ -418,9 +418,11 @@ if __name__ == "__main__":
     from pandapower.pypower.newtonpf import *
     from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
     from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+    from pandapower.tdpf.test_system import test_grid
 
-    net = pp.networks.case9()
-    net.line.loc[net.line.r_ohm_per_km == 0, 'r_ohm_per_km'] = 10.
+    # net = pp.networks.case9()
+    # net.line.loc[net.line.r_ohm_per_km == 0, 'r_ohm_per_km'] = 10.
+    net = test_grid()
     pp.runpp(net)
     ppc = net._ppc
     ppci = net._ppc
