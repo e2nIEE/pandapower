@@ -10,6 +10,7 @@ import pytest
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
 
+
 @pytest.fixture
 def net():
     v_base = 110              # 110kV Base Voltage
@@ -406,7 +407,7 @@ def test_3ph_isolated_nodes():
                              "c_nf_per_km": 230}, "example_type")
     # Loads on supplied buses
     pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
-                    p_c_mw=10, q_c_mvar=5)
+                              p_c_mw=10, q_c_mvar=5)
     pp.create_load(net, bus=busl, p_mw=7, q_mvar=0.070, name="Load 1")
     # Loads on unsupplied buses
     pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
