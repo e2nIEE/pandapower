@@ -4,7 +4,7 @@ from numpy.core.multiarray import zeros, empty, array
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 
 from pandapower.pypower.dSbus_dV import dSbus_dV
-from pandapower.pypower.idx_bus import BUS_I
+from pandapower.pypower.idx_bus import BUS_I, BASE_KV
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, BR_STATUS
 
 try:
@@ -134,9 +134,7 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
 #     return tau
 
 
-def create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J):
-    Sf, St = get_S_flows(branch, Yf, Yt, baseMVA, V)
-    I = Sf / V[pvpq_lookup[branch[:, F_BUS].real.astype(int)]] / np.sqrt(3)
+def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J):
 
     Vm = np.abs(V)
     Va = np.angle(V)
@@ -156,12 +154,19 @@ def create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, 
     return JJ
 
 
+def calc_I(Sf, bus, f_bus, V):
+    If = 1e3 * abs(Sf) / (abs(V[f_bus]) * bus[f_bus, BASE_KV].astype(float64)) / np.sqrt(3)
+    return If
+
+
 def get_S_flows(branch, Yf, Yt, baseMVA, V):
     br = branch[:, BR_STATUS].real.astype(bool)
-    Sf = V[np.real(branch[br, F_BUS]).astype(int)] * np.conj(Yf[br, :] * V) * baseMVA
+    f_bus = np.real(branch[br, F_BUS]).astype(int)
+    Sf = V[f_bus] * np.conj(Yf[br, :] * V) * baseMVA
     # complex power injected at "to" bus
-    St = V[np.real(branch[br, T_BUS]).astype(int)] * np.conj(Yt[br, :] * V) * baseMVA
-    return Sf, St
+    t_bus = np.real(branch[br, T_BUS]).astype(int)
+    St = V[t_bus] * np.conj(Yt[br, :] * V) * baseMVA
+    return Sf, St, f_bus, t_bus
 
 
 def calc_AB(branch, pvpq, pvpq_lookup, Va, Vm):
@@ -501,7 +506,9 @@ if __name__ == "__main__":
     t = 0
     alpha = np.ones(len(branch)) * 0.004
     r_ref = branch[:, BR_R].real.copy()
+    Sf, St, _, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
+    I = calc_I(Sf, bus, f_bus, V)
 
     J_base = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
-    J = create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J_base)
+    J = create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J_base)

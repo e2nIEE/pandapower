@@ -18,10 +18,10 @@ from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
-from pandapower.pypower.idx_brch import BR_R, F_BUS
+from pandapower.pypower.idx_bus import PD, SL_FAC
+from pandapower.pypower.idx_brch import BR_R
 
-from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf
+from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf, get_S_flows, calc_I
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -131,7 +131,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if tdpf:
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
-        F_t, T = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+        Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
+        I = calc_I(Sf, bus, f_bus, V)
+        F_t = _evaluate_dT(V, T, I, a0, a1, a2, tau, t, T0)
         F = r_[F, F_t]
     converged = _check_for_convergence(F, tol)
 
@@ -152,7 +154,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         if tdpf:
             a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
-            J = create_J_tdpf(branch, alpha, r_ref, Yf, Yt, baseMVA, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, J)
+            J = create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -184,7 +186,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
 
         if tdpf:
-            F_t, T = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+            Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
+            I = calc_I(Sf, bus, f_bus, V)
+            F_t = _evaluate_dT(V, T, I, a0, a1, a2, tau, t, T0)
             F = r_[F, F_t]
 
         converged = _check_for_convergence(F, tol)
@@ -192,20 +196,12 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     return V, converged, i, J, Vm_it, Va_it
 
 
-def _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, t_0_degree, baseMVA):
-    # complex power at "from" bus
-    fbus = real(branch[:, F_BUS]).astype(int)
-    Sf = V[fbus] * conj(Yf[:, :] * V) * baseMVA
-    # complex power injected at "to" bus
-    # St = V[real(branch[br, T_BUS]).astype(int)] * conj(Yt[br, :] * V) * baseMVA
-
-    i_f = 1e3 * abs(Sf) / (abs(V[fbus]) * bus[fbus, BASE_KV].astype(float64)) / sqrt(3)
-
-    t_ss = a0 + a1 * i_f ** 2 + a2 * i_f ** 4
+def _evaluate_dT(V, T, I, a0, a1, a2, tau, t, t_0_degree):
+    t_ss = a0 + a1 * I ** 2 + a2 * I ** 4
 
     t_transient = t_ss - (t_ss - t_0_degree) * exp(-t/tau)
 
-    return t_transient - T, t_transient
+    return t_transient - T
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
