@@ -2233,6 +2233,9 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
         'cols_to_keep' to be kept while replacing.
+
+    OUTPUT:
+        **new_idx** (list) - list of indices of the new elements
     """
     if old_elm == new_elm:
         logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
@@ -2241,6 +2244,8 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
         old_indices = net[old_elm].index
     else:
         old_indices = ensure_iterability(old_indices)
+    if not len(old_indices):
+        return []
     if new_indices is None:
         new_indices = [None] * len(old_indices)
     elif len(new_indices) != len(old_indices):
