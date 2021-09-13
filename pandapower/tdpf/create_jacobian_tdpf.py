@@ -44,9 +44,11 @@ def calc_a0_a1_a2_tau(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m,
 
     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb)
 
+    k2 = r_max_ohm_per_m / (h_r + h_c + kappa)
+
     a0 = t_amb + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
     a1 = r_amb_ohm_per_m / (h_r + h_c)
-    a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
+    a2 = k2 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * k2)
 
     # rho = 2710  # kg/m³ # density of aluminum
     # c = 1.309e6  # J/kg°C

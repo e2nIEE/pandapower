@@ -118,11 +118,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     j8 = j6 + nref # j7:j8 - slacks
 
 
-    r_ref = branch[:, BR_R].copy()
+    r_ref = branch[:, BR_R].real.copy()
     alpha = ones(shape=len(branch)) * 0.004
     T_ref = 20
     t_amb = 40
-    t = 0
+    t = 1e4
 
     # make initial guess for the slack
     slack = gen[:, PG].sum() - bus[:, PD].sum()
@@ -131,7 +131,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if tdpf:
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
-        F_t = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+        F_t, T = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
         F = r_[F, F_t]
     converged = _check_for_convergence(F, tol)
 
@@ -184,7 +184,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
 
         if tdpf:
-            F_t = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
+            F_t, T = _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, T0, baseMVA)
             F = r_[F, F_t]
 
         converged = _check_for_convergence(F, tol)
@@ -199,13 +199,13 @@ def _evaluate_dT(branch, bus, Yf, Yt, V, T, a0, a1, a2, tau, t, t_0_degree, base
     # complex power injected at "to" bus
     # St = V[real(branch[br, T_BUS]).astype(int)] * conj(Yt[br, :] * V) * baseMVA
 
-    i_f = abs(Sf) / (abs(V[fbus]) * bus[fbus, BASE_KV].astype(float64)) / sqrt(3)
+    i_f = 1e3 * abs(Sf) / (abs(V[fbus]) * bus[fbus, BASE_KV].astype(float64)) / sqrt(3)
 
     t_ss = a0 + a1 * i_f ** 2 + a2 * i_f ** 4
 
     t_transient = t_ss - (t_ss - t_0_degree) * exp(-t/tau)
 
-    return t_transient - T
+    return t_transient - T, t_transient
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
