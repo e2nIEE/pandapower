@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
+import os
 
 
 @pytest.fixture
