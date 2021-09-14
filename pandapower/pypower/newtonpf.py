@@ -11,15 +11,15 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, sqrt, exp, linalg, conj, real, r_, Inf, arange, zeros, ones, max, zeros_like, column_stack, float64
+from numpy import angle, sqrt, exp, linalg, conj, real, r_, Inf, arange, zeros, ones, max, zeros_like, column_stack, float64, array, square
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC
-from pandapower.pypower.idx_brch import BR_R
+from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
+from pandapower.pypower.idx_brch import BR_R, F_BUS, BR_R_OHM_PER_KM
 
 from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf, get_S_flows, calc_I
 
@@ -56,7 +56,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     gen = ppci['gen']
     branch = ppci['branch']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
-    tdpf = options['tdpf']
+    tdpf = options.get('tdpf', False)
+    tdpf_delay_s = options.get('tdpf_delay_s')
 
     # initialize
     i = 0
@@ -73,9 +74,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     else:
         Vm_it = None
         Va_it = None
-
-    T = ones(shape=len(branch)) * 40  # todo: consider lookups line/trafo, in_service etc.
-    T0 = ones(shape=len(branch)) * 40  # todo: consider lookups line/trafo, in_service etc.
 
     # set up indexing for updating V
     if dist_slack and len(ref) > 1:
@@ -117,12 +115,18 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     j7 = j6
     j8 = j6 + nref # j7:j8 - slacks
 
-
-    r_ref = branch[:, BR_R].real.copy()
-    alpha = ones(shape=len(branch)) * 0.004
+    T_base = 100  # T in p.u. for better convergence
     T_ref = 20
-    t_amb = 40
-    t = 1e4
+    # todo: enable using T0 as a start of previous time step?
+    T0 = ones(shape=len(branch)) * T_ref  # todo: consider lookups line/trafo, in_service etc.
+    T = T0 / T_base
+    r_ref_pu = branch[:, BR_R].real.copy()
+    v_base = bus[real(branch[:, F_BUS]).astype(int), BASE_KV]
+    z_base_ohm = square(v_base) / baseMVA
+    i_base_a = baseMVA / (v_base * sqrt(3))*1e3
+    r_ref_ohm_per_m = 1e-3 * branch[:, BR_R_OHM_PER_KM].real.copy()
+    alpha = ones(shape=len(branch)) * 0.004 # todo parameter ppc
+    t_amb = 40  # todo parameter ppc
 
     # make initial guess for the slack
     slack = gen[:, PG].sum() - bus[:, PD].sum()
@@ -130,11 +134,16 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     if tdpf:
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
+        # todo: use parameters in ppc
+        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb=t_amb, t_max=90, r_ref_ohm_per_m=r_ref_ohm_per_m, conductor_outer_diameter_m=18.2e-3,
+                                            mc_joule_per_m_k=525, v_m_per_s=0.5, wind_angle_degree=45, s_w_per_square_meter=1000)
         Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
         I = calc_I(Sf, bus, f_bus, V)
-        F_t = _evaluate_dT(V, T, I, a0, a1, a2, tau, t, T0)
-        F = r_[F, F_t]
+        i_pu = I / i_base_a
+        # initial guess for T:
+        T = _calc_T(V, I, a0, a1, a2, tau, tdpf_delay_s, T0) / T_base
+        F_t = _evaluate_dT(V, T * T_base, I, a0, a1, a2, tau, tdpf_delay_s, T0)
+        F = r_[F, F_t / T_base]
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
@@ -147,14 +156,17 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         i = i + 1
 
         if tdpf:
-            branch[:, BR_R] = r_ref * (1 + alpha * (T - T_ref))
+            # update the R and the Y-matrices
+            # todo: f and t for lines only
+            branch[:, BR_R] = r_ref_pu * (1 + alpha * (T * T_base - T_ref))
             Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
 
         J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         if tdpf:
-            a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
-            J = create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J)
+            # p.u. values for T, a1, a2, I, S
+            J = create_J_tdpf(branch, alpha, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s,
+                              a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, V, Sf / baseMVA, St / baseMVA, i_pu, J)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -188,20 +200,27 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if tdpf:
             Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
             I = calc_I(Sf, bus, f_bus, V)
-            F_t = _evaluate_dT(V, T, I, a0, a1, a2, tau, t, T0)
-            F = r_[F, F_t]
+            i_pu = I / i_base_a
+            # T = _calc_T(V, T, I, a0, a1, a2, tau, tdpf_delay_s, T0)
+            F_t = _evaluate_dT(V, T * T_base, I, a0, a1, a2, tau, tdpf_delay_s, T0)
+            F = r_[F, F_t / T_base]
 
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i, J, Vm_it, Va_it
+    return V, converged, i, J, Vm_it, Va_it, T * T_base
 
 
-def _evaluate_dT(V, T, I, a0, a1, a2, tau, t, t_0_degree):
+def _calc_T(V, I, a0, a1, a2, tau, tdpf_delay_s, t_0_degree):
     t_ss = a0 + a1 * I ** 2 + a2 * I ** 4
+    if tdpf_delay_s is not None:
+        t_transient = t_ss - (t_ss - t_0_degree) * exp(-tdpf_delay_s / tau)
+        return t_transient
+    return t_ss
 
-    t_transient = t_ss - (t_ss - t_0_degree) * exp(-t/tau)
 
-    return t_transient - T
+def _evaluate_dT(V, T, I, a0, a1, a2, tau, tdpf_delay_s, t_0_degree):
+    t_calc = _calc_T(V, I, a0, a1, a2, tau, tdpf_delay_s, t_0_degree)
+    return t_calc - T
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):

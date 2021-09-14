@@ -39,7 +39,8 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack']
+                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack',
+                           'tdpf', 'tdpf_delay_s']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -62,7 +63,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
-          run_control=False, distributed_slack=False, **kwargs):
+          run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
     """
     Runs a power flow
 
@@ -217,14 +218,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         run_control(**parameters)
     else:
         passed_parameters = _passed_runpp_parameters(locals())
-        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
-                            init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                            trafo_model=trafo_model, trafo_loading=trafo_loading,
-                            enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
-                            voltage_depend_loads=voltage_depend_loads,
-                            consider_line_temperature=consider_line_temperature,
-                            distributed_slack=distributed_slack,
-                            passed_parameters=passed_parameters, **kwargs)
+        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles, init=init,
+                            max_iteration=max_iteration, tolerance_mva=tolerance_mva, trafo_model=trafo_model, trafo_loading=trafo_loading,
+                            enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity, voltage_depend_loads=voltage_depend_loads,
+                            passed_parameters=passed_parameters, consider_line_temperature=consider_line_temperature,
+                            distributed_slack=distributed_slack, tdpf=tdpf, tdpf_delay_s=tdpf_delay_s, **kwargs)
         _check_bus_index_and_print_warning_if_high(net)
         _check_gen_index_and_print_warning_if_high(net)
         _powerflow(net, **kwargs)

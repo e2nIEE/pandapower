@@ -30,12 +30,13 @@ def calc_t_ss(i_a, a0, a1, a2):
     return a0 + a1 * i_a ** 2 + a2 * i_a ** 4
 
 
-def calc_t_transient(t_0_degree, t_s, i_a, a0, a1, a2, tau):
+def calc_t_transient(t_0_degree, tdpf_delay_s, i_a, a0, a1, a2, tau):
     t_ss_degree = calc_t_ss(i_a, a0, a1, a2)
-    return t_ss_degree - (t_ss_degree - t_0_degree) * np.exp(-t_s/tau)
+    return t_ss_degree - (t_ss_degree - t_0_degree) * np.exp(-tdpf_delay_s / tau)
 
 
-def calc_a0_a1_a2_tau(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, mc_joule_per_m_k, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, gamma=0.5, epsilon=0.5):
+def calc_a0_a1_a2_tau(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, mc_joule_per_m_k, v_m_per_s, wind_angle_degree,
+                      s_w_per_square_meter=300, alpha=ALPHA, gamma=0.5, epsilon=0.5):
     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_amb)
     r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
 
@@ -49,6 +50,7 @@ def calc_a0_a1_a2_tau(t_amb, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m,
     a0 = t_amb + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
     a1 = r_amb_ohm_per_m / (h_r + h_c)
     a2 = k2 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * k2)
+    # a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
 
     # rho = 2710  # kg/m³ # density of aluminum
     # c = 1.309e6  # J/kg°C
@@ -134,23 +136,28 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
 #     return tau
 
 
-def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J):
+def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, a1, a2, V, Sf, St, I, J):
 
     Vm = np.abs(V)
     Va = np.angle(V)
 
-    A, B = calc_AB(branch, pvpq, pvpq_lookup, Va, Vm)
-    C = (1 - np.exp(-t / tau)) * (a1 + a2 * np.square(abs(I)))
+    A, B = calc_AB(branch, pvpq, pvpq_lookup, Va, Vm)  # in p.u.
+    if tdpf_delay_s is not None:
+        C = (1 - np.exp(-tdpf_delay_s / tau)) * (a1 + a2 * np.square(abs(I)))  # absolute or in p.u. after multiplying a1 * i_base_a **2 and a2 * i_base_a ** 4
+    else:
+        C = (a1 + a2 * np.square(abs(I)))
 
+    # todo: optimize and speed-up the code for the matrices (vectorized and numba versions)
+    # todo: figure out the indexing for the pv buses
     J13 = create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A)
     J23 = create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B)
     J31 = create_J31(branch, alpha, pvpq, pvpq_lookup, B, C)
     J32 = create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm)
     J33 = create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I)
 
-    Jright = np.vstack([J13, J23])
-    Jbtm = np.hstack([J31, J32, J33])
-    JJ = np.vstack([np.hstack([J.toarray(), Jright]), Jbtm])
+    Jright = vstack([J13, J23], format="csr")
+    Jbtm = hstack([J31, J32, J33], format="csr")
+    JJ = vstack([hstack([J, Jright]), Jbtm], format="csr")
     return JJ
 
 
@@ -170,15 +177,22 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
 
 
 def calc_AB(branch, pvpq, pvpq_lookup, Va, Vm):
-    A = np.zeros(shape=(len(pvpq), len(pvpq)))
-    B = np.zeros(shape=(len(pvpq), len(pvpq)))
+    # A = np.zeros(shape=(len(pvpq), len(pvpq)))
+    # B = np.zeros(shape=(len(pvpq), len(pvpq)))
+    A = np.zeros(shape=(len(Vm), len(Vm)))
+    B = np.zeros(shape=(len(Vm), len(Vm)))
 
+    # todo: figure out the indexing for the pv buses
     for br in range(len(branch)):
         f, t = branch[br, [F_BUS, T_BUS]].real.astype(np.int64)
-        m = pvpq_lookup[f]
-        i = pvpq_lookup[t]
+        #m = pvpq_lookup[f]
+        #i = pvpq_lookup[t]
+        m = f
+        i = t
         A[m, i] = np.square(Vm[m]) - Vm[m] * Vm[i] * np.cos(Va[m] - Va[i])
+        A[i, m] = np.square(Vm[i]) - Vm[m] * Vm[i] * np.cos(Va[i] - Va[m])
         B[m, i] = Vm[m] * Vm[i] * np.sin(Va[m] - Va[i])
+        B[i, m] = Vm[m] * Vm[i] * np.sin(Va[i] - Va[m])
 
     # for bus in pvpq:
     #     m = int(pvpq_lookup[bus])
@@ -226,18 +240,21 @@ def create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A):
 
     for bus in pvpq:
         m = pvpq_lookup[bus]
+        # m = bus
         for brch in range(ncol):
             f = branch[brch, F_BUS].real.astype(np.int64)
             t = branch[brch, T_BUS].real.astype(np.int64)
-            i = pvpq_lookup[f]
-            j = pvpq_lookup[t]
+            # i = pvpq_lookup[f]
+            # j = pvpq_lookup[t]
+            i = f
+            j = t
             a = alpha[brch]
-            if m == i:
-                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[m, j] / r[brch] - 2 * Sf[brch].real)
-            elif m == j:
-                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[m, i] / r[brch] - 2 * Sf[brch].real)
+            if bus == i:
+                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[bus, j] / r[brch] - 2 * Sf[brch].real)
+            elif bus == j:
+                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[bus, i] / r[brch] - 2 * St[brch].real)
 
-    return J13
+    return sparse(J13)
 
 
 def create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B):
@@ -270,18 +287,21 @@ def create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B):
 
     for bus in pq:
         m = pq_lookup[bus]
+        # m = bus
         for brch in range(ncol):
             f = branch[brch, F_BUS].real.astype(int)
             t = branch[brch, T_BUS].real.astype(int)
-            i = pq_lookup[f]
-            j = pq_lookup[t]
+            # i = pq_lookup[f]
+            # j = pq_lookup[t]
+            i = f
+            j = t
             a = alpha[brch]
             if bus == i:
-                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[m, j] / r[brch] - 2 * Sf[brch].imag)
+                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[bus, j] / r[brch] - 2 * Sf[brch].imag)
             elif bus == j:
-                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[m, i] / r[brch] - 2 * Sf[brch].imag)
+                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[bus, i] / r[brch] - 2 * St[brch].imag)
 
-    return J23
+    return sparse(J23)
 
 
 def create_J31(branch, alpha, pvpq, pvpq_lookup, B, C):
@@ -318,17 +338,20 @@ def create_J31(branch, alpha, pvpq, pvpq_lookup, B, C):
     for row in range(nrow):
         f = branch[row, F_BUS].real.astype(int)
         t = branch[row, T_BUS].real.astype(int)
-        i = pvpq_lookup[f]
-        j = pvpq_lookup[t]
+        # i = pvpq_lookup[f]
+        # j = pvpq_lookup[t]
+        i = f
+        j = t
         a = alpha[row]
         for bus in pvpq:
             m = pvpq_lookup[bus]
-            if m == i:
-                J31[row, m] = (np.square(g[row]) + np.square(b[row])) * C[row] * B[m, j]
-            elif m == j:
-                J31[row, m] = -(np.square(g[row]) + np.square(b[row])) * C[row] * B[m, i]
+            # m = bus
+            if bus == i:
+                J31[row, m] = (np.square(g[row]) + np.square(b[row])) * C[row] * B[bus, j]
+            elif bus == j:
+                J31[row, m] = -(np.square(g[row]) + np.square(b[row])) * C[row] * B[bus, i]
 
-    return J31
+    return sparse(J31)
 
 
 def create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm):
@@ -365,19 +388,22 @@ def create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm):
     for row in range(nrow):
         f = branch[row, F_BUS].real.astype(int)
         t = branch[row, T_BUS].real.astype(int)
-        i = pq_lookup[f]
-        j = pq_lookup[t]
+        # i = pq_lookup[f]
+        # j = pq_lookup[t]
+        i = f
+        j = t
         a = alpha[row]
         for bus in pq:
             m = pq_lookup[bus]
-            if m == i:
-                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[m, j] / Vm[i]
-            elif m == j:
-                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[m, i] / Vm[j]
-            else:
-                J32[row, m] = 0
+            # m = bus
+            if bus == i:
+                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[bus, j] / Vm[i]
+            elif bus == j:
+                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[bus, i] / Vm[j]
+            # else:
+            #     J32[row, m] = 0
 
-    return J32
+    return sparse(J32)
 
 
 def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I):
@@ -415,7 +441,7 @@ def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I):
             if mn == ij:
                 J33[mn, ij] = -(1 + 2 * alpha[ij] * r_ref[ij] * g[ij] * np.square(abs(I[ij])))
 
-    return J33
+    return sparse(J33)
 
 
 if __name__ == "__main__":
@@ -433,7 +459,7 @@ if __name__ == "__main__":
     pp.runpp(net)
     ppc = net._ppc
     ppci = net._ppc
-    net._options['tdpf'] = True
+    pp.set_user_pf_options(net, tdpf=True)
     options = net._options
 
     # options
@@ -503,10 +529,10 @@ if __name__ == "__main__":
     r_ref = net.line.r_ohm_per_km.values * 1e-3
     a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb, 90, r_ref, 18.2e-3, 525, 0.5, 45, 1000)
 
-    t = 0
+    tdpf_delay_s = np.inf
     alpha = np.ones(len(branch)) * 0.004
     r_ref = branch[:, BR_R].real.copy()
-    Sf, St, _, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
+    Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
     I = calc_I(Sf, bus, f_bus, V)
 
     J_base = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)

@@ -87,7 +87,12 @@ def ppci_to_pfsoln(ppci, options):
             ref = internal["ref"]
             ref_gens = internal["ref_gens"]
 
-        _, pfsoln = _get_numba_functions(ppci, options)
+        makeYbus, pfsoln = _get_numba_functions(ppci, options)
+
+        if options["tdpf"]:
+            # needs to be updated to match the new R because of the temperature
+            internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
+
         result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
                       internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens)
         return result_pfsoln
@@ -154,12 +159,12 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     if lightsim2grid_available:
         V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, Sbus, V0, pv, pq, ppci, options)
     else:
-        V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
+        V, success, iterations, J, Vm_it, Va_it, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
                                   "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt})
+                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt, "T": T})
 
     return ppci, success, iterations
 

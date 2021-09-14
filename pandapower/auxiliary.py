@@ -528,7 +528,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
                      init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
                      neglect_open_switch_branches=False, consider_line_temperature=False,
-                     distributed_slack=False):
+                     distributed_slack=False, tdpf=False, tdpf_delay_s=None):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -548,6 +548,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "consider_line_temperature": consider_line_temperature,
+        "tdpf": tdpf,
+        "tdpf_delay_s": tdpf_delay_s,
         "distributed_slack": distributed_slack,
         "delta": delta,
         "trafo3w_losses": trafo3w_losses,
@@ -924,7 +926,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         trafo_loading, enforce_q_lims, check_connectivity,
                         voltage_depend_loads, passed_parameters=None,
                         consider_line_temperature=False,
-                        distributed_slack=False, **kwargs):
+                        distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -1031,7 +1033,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
                      consider_line_temperature=consider_line_temperature,
-                     distributed_slack=distributed_slack)
+                     distributed_slack=distributed_slack, tdpf=tdpf, tdpf_delay_s=tdpf_delay_s)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
