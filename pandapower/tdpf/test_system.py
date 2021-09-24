@@ -3,7 +3,7 @@ from pandapower.pypower.idx_brch import BR_R, F_BUS, BR_R_OHM_PER_KM
 
 
 def test_grid(load_scaling=1, sgen_scaling=1):
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=100)
     std_type = "490-AL1/64-ST1A 110.0"
     # r = 0.1188
     # std_type = "490-AL1/64-ST1A 220.0"
@@ -33,6 +33,8 @@ def test_grid(load_scaling=1, sgen_scaling=1):
     pp.create_load(net, 3, 1000, 400, scaling=load_scaling)
     pp.create_load(net, 4, 400, 160, scaling=load_scaling)
 
+    net.line.c_nf_per_km = 0
+
     return net
 
 
@@ -40,6 +42,7 @@ if __name__ == '__main__':
     # from pandapower.tdpf.test_system import *
     # first text steady-state results
     net = test_grid(load_scaling=0.25, sgen_scaling=0.5)
+    pp.runpp(net, tdpf=True)
     pp.runpp(net, tdpf=True, max_iteration=100, tolerance_mva=1e-6)
 
     net2 = test_grid(load_scaling=0.25, sgen_scaling=0.5)

@@ -150,7 +150,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
 
         if net["_options"].get("tdpf", False):
             T = ppc["internal"]["T"]
-            res_line_df["temperature_degree_celsius"] = T
+            res_line_df.loc[line_df.in_service, "temperature_degree_celsius"] = T
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     # create res_line_vals which are written to the pandas dataframe

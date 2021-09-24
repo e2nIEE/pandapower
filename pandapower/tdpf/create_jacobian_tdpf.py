@@ -136,29 +136,45 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
 #     return tau
 
 
-def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, a1, a2, V, Sf, St, I, J):
+def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, a1, a2, Vm, Va, i_square_pu, r_theta, J, r, x, g, b):
 
-    Vm = np.abs(V)
-    Va = np.angle(V)
+    C = (a1 + 2 * a2 * i_square_pu)
+    if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
+        C *= (1 - np.exp(-tdpf_delay_s / tau))
 
-    A, B = calc_AB(branch, pvpq, pvpq_lookup, Va, Vm)  # in p.u.
-    if tdpf_delay_s is not None:
-        C = (1 - np.exp(-tdpf_delay_s / tau)) * (a1 + a2 * np.square(abs(I)))  # absolute or in p.u. after multiplying a1 * i_base_a **2 and a2 * i_base_a ** 4
-    else:
-        C = (a1 + a2 * np.square(abs(I)))
+    dg_dT = (np.square(x) - np.square(r)) * alpha * r_ref / np.square(np.square(r) + np.square(x))
+    db_dT = 2 * x * r * alpha * r_ref / np.square(np.square(r) + np.square(x))
 
     # todo: optimize and speed-up the code for the matrices (vectorized and numba versions)
     # todo: figure out the indexing for the pv buses
-    J13 = create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A)
-    J23 = create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B)
-    J31 = create_J31(branch, alpha, pvpq, pvpq_lookup, B, C)
-    J32 = create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm)
-    J33 = create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I)
+    J13 = create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b, dg_dT, db_dT)
+    J23 = create_J23(branch, alpha, r_ref, pq, pq_lookup, Vm, Va, g, b, dg_dT, db_dT)
+    J31 = create_J31(branch, alpha, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g, b)
+    J32 = create_J32(branch, alpha, r_ref, pq, pq_lookup, Vm, Va, C, r_theta, g, b)
+    J33 = create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, i_square_pu, r_theta, Vm, Va, g, b, dg_dT)
 
     Jright = vstack([J13, J23], format="csr")
     Jbtm = hstack([J31, J32, J33], format="csr")
     JJ = vstack([hstack([J, Jright]), Jbtm], format="csr")
     return JJ
+
+
+def calc_i_square_pu(branch, Vm, Va):
+    r = branch[:, BR_R].real
+    x = branch[:, BR_X].real
+    g = r / (np.square(r) + np.square(x))
+    b = -x / (np.square(r) + np.square(x))
+
+    i = branch[:, F_BUS].real.astype(np.int64)
+    j = branch[:, T_BUS].real.astype(np.int64)
+
+    A = np.square(Vm[i]) + np.square(Vm[j]) - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])
+
+    i_square_pu = (np.square(g) + np.square(b)) * A
+
+    p_loss_pu = g * A
+
+    return i_square_pu, p_loss_pu
 
 
 def calc_I(Sf, bus, f_bus, V):
@@ -211,7 +227,7 @@ def calc_AB(branch, pvpq, pvpq_lookup, Va, Vm):
     return A, B
 
 
-def create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A):
+def create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b, dg_dT, db_dT):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -227,6 +243,12 @@ def create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A):
     R = Number temperature-dependent branches
 
     shape = (len(branch), len(bus))
+    :param b:
+    :param g:
+    :param dg_dT:
+    :param db_dT:
+    :param Vm:
+    :param Va:
     :param pvpq_lookup:
 
     """
@@ -234,30 +256,30 @@ def create_J13(branch, alpha, r_ref, pvpq, pvpq_lookup, Sf, St, A):
     ncol = len(branch)
     J13 = np.zeros(shape=(nrow, ncol))
 
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-
-    for bus in pvpq:
-        m = pvpq_lookup[bus]
+    for m in pvpq:
+        mm = pvpq_lookup[m]
         # m = bus
-        for brch in range(ncol):
-            f = branch[brch, F_BUS].real.astype(np.int64)
-            t = branch[brch, T_BUS].real.astype(np.int64)
-            # i = pvpq_lookup[f]
-            # j = pvpq_lookup[t]
-            i = f
-            j = t
-            a = alpha[brch]
-            if bus == i:
-                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[bus, j] / r[brch] - 2 * Sf[brch].real)
-            elif bus == j:
-                J13[m, brch] = a * r_ref[brch] * g[brch] * (A[bus, i] / r[brch] - 2 * St[brch].real)
+        for ij in range(ncol):
+            i = branch[ij, F_BUS].real.astype(np.int64)
+            j = branch[ij, T_BUS].real.astype(np.int64)
+
+            if m == i:
+                n = j
+            elif m == j:
+                n = i
+            else:
+                continue
+
+            A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
+            B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
+            p_mn = g[ij] * A_mn - b[ij] * B_mn
+            # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (A_mn / r[ij] - 2 * p_mn)
+            J13[mm, ij] = A_mn * dg_dT[ij] - B_mn * db_dT[ij]
 
     return sparse(J13)
 
 
-def create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B):
+def create_J23(branch, alpha, r_ref, pq, pq_lookup, Vm, Va, g, b, dg_dT, db_dT):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -273,6 +295,12 @@ def create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B):
         R = Number temperature-dependent branches
 
     shape = (len(bus), len(branch))
+    :param g:
+    :param b:
+    :param dg_dT:
+    :param db_dT:
+    :param Vm:
+    :param Va:
     :param pq_lookup:
 
     """
@@ -281,30 +309,30 @@ def create_J23(branch, alpha, r_ref, pq, pq_lookup, Sf, St, B):
     nrow = len(pq)
     J23 = np.zeros(shape=(nrow, ncol))
 
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-
-    for bus in pq:
-        m = pq_lookup[bus]
+    for m in pq:
+        mm = pq_lookup[m]
         # m = bus
-        for brch in range(ncol):
-            f = branch[brch, F_BUS].real.astype(int)
-            t = branch[brch, T_BUS].real.astype(int)
-            # i = pq_lookup[f]
-            # j = pq_lookup[t]
-            i = f
-            j = t
-            a = alpha[brch]
-            if bus == i:
-                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[bus, j] / r[brch] - 2 * Sf[brch].imag)
-            elif bus == j:
-                J23[m, brch] = a * r_ref[brch] * g[brch] * (B[bus, i] / r[brch] - 2 * St[brch].imag)
+        for ij in range(ncol):
+            i = branch[ij, F_BUS].real.astype(int)
+            j = branch[ij, T_BUS].real.astype(int)
+
+            if m == i:
+                n = j
+            elif m == j:
+                n = i
+            else:
+                continue
+
+            A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
+            B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
+            q_mn = -b[ij] * A_mn - g[ij] * B_mn
+            # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (B_mn / r[ij] - 2 * q_mn)
+            J23[mm, ij] = - A_mn * db_dT[ij] - B_mn * dg_dT[ij]
 
     return sparse(J23)
 
 
-def create_J31(branch, alpha, pvpq, pvpq_lookup, B, C):
+def create_J31(branch, alpha, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g, b):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -319,8 +347,13 @@ def create_J31(branch, alpha, pvpq, pvpq_lookup, B, C):
     M = Number of PQ buses
     R = Number temperature-dependent branches
 
-    shape = (len(branch), len(bus))
-    branch elements by row, bus elements by column
+    shape = (len(branch), len(m))
+    branch elements by row, m elements by column
+    :param g:
+    :param b:
+    :param r_theta:
+    :param Vm:
+    :param Va:
     :param pvpq_lookup:
 
     """
@@ -330,31 +363,28 @@ def create_J31(branch, alpha, pvpq, pvpq_lookup, B, C):
 
     J31 = np.zeros(shape=(nrow, ncol))
 
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-    b = -x / (np.square(r) + np.square(x))
+    for ij in range(nrow):
+        i = branch[ij, F_BUS].real.astype(int)
+        j = branch[ij, T_BUS].real.astype(int)
+        for m in pvpq:
+            mm = pvpq_lookup[m]
+            if m == i:
+                n = j
+                sign = 1
+            elif m == j:
+                n = i
+                sign = -1
+            else:
+                continue
 
-    for row in range(nrow):
-        f = branch[row, F_BUS].real.astype(int)
-        t = branch[row, T_BUS].real.astype(int)
-        # i = pvpq_lookup[f]
-        # j = pvpq_lookup[t]
-        i = f
-        j = t
-        a = alpha[row]
-        for bus in pvpq:
-            m = pvpq_lookup[bus]
-            # m = bus
-            if bus == i:
-                J31[row, m] = (np.square(g[row]) + np.square(b[row])) * C[row] * B[bus, j]
-            elif bus == j:
-                J31[row, m] = -(np.square(g[row]) + np.square(b[row])) * C[row] * B[bus, i]
+            B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
+            # J31[ij, mm] = sign * (g[ij] ** 2 + b[ij] ** 2) * C[ij] * B_mn
+            J31[ij, mm] = - 2 * r_theta[ij] * g[ij] * B_mn
 
     return sparse(J31)
 
 
-def create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm):
+def create_J32(branch, alpha, r_ref, pq, pq_lookup, Vm, Va, C, r_theta, g, b):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -369,8 +399,11 @@ def create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm):
         M = Number of PQ buses
         R = Number temperature-dependent branches
 
-    shape = (len(branch), len(bus))
-    branch elements by row, bus elements by column
+    shape = (len(branch), len(m))
+    branch elements by ij, m elements by column
+    :param g:
+    :param b:
+    :param r_theta:
     :param pq_lookup:
 
     """
@@ -380,33 +413,26 @@ def create_J32(branch, alpha, r_ref, pq, pq_lookup, A, C, Vm):
 
     J32 = np.zeros(shape=(nrow, ncol))
 
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-    b = -x / (np.square(r) + np.square(x))
+    for ij in range(nrow):
+        i = branch[ij, F_BUS].real.astype(int)
+        j = branch[ij, T_BUS].real.astype(int)
+        for m in pq:
+            mm = pq_lookup[m]
+            if m == i:
+                n = j
+            elif m == j:
+                n = i
+            else:
+                continue
 
-    for row in range(nrow):
-        f = branch[row, F_BUS].real.astype(int)
-        t = branch[row, T_BUS].real.astype(int)
-        # i = pq_lookup[f]
-        # j = pq_lookup[t]
-        i = f
-        j = t
-        a = alpha[row]
-        for bus in pq:
-            m = pq_lookup[bus]
-            # m = bus
-            if bus == i:
-                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[bus, j] / Vm[i]
-            elif bus == j:
-                J32[row, m] = 2 * (np.square(g[row]) + np.square(b[row])) * C[row] * A[bus, i] / Vm[j]
-            # else:
-            #     J32[row, m] = 0
+            A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
+            # J32[ij, mm] = 2 * (g[ij]**2 + b[ij]**2) * C[ij] * A_mn / Vm[m]
+            J32[ij, mm] = - 2 * r_theta[ij] * g[ij] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n]))
 
     return sparse(J32)
 
 
-def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I):
+def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, i_square_pu, r_theta, Vm, Va, g, b, dg_dT):
     """
      / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
      | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -423,6 +449,11 @@ def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I):
 
     shape = (len(branch), len(bus))
     branch elements by row, bus elements by column
+    :param g:
+    :param b:
+    :param dg_dT:
+    :param Vm:
+    :param r_theta:
     :param pvpq_lookup:
 
     """
@@ -431,16 +462,15 @@ def create_J33(branch, alpha, r_ref, pvpq, pvpq_lookup, I):
 
     J33 = np.zeros(shape=(nrow, nrow))
 
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-    b = -x / (np.square(r) + np.square(x))
+    k = (np.square(g) + np.square(b)) / g
+    p_loss_pu = i_square_pu / k
 
     for mn in range(nrow):
         for ij in range(nrow):
+            i, j = branch[ij, [F_BUS, T_BUS]].real.astype(int)
             if mn == ij:
-                J33[mn, ij] = -(1 + 2 * alpha[ij] * r_ref[ij] * g[ij] * np.square(abs(I[ij])))
-
+                # J33[mn, ij] = -(1 + 2 * alpha[ij] * r_ref[ij] * g[ij] * i_square_pu[ij])
+                J33[mn, ij] = 1 - r_theta[ij] * (Vm[i]**2 + Vm[j]**2 - 2*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j])) * dg_dT[ij]
     return sparse(J33)
 
 
@@ -537,4 +567,5 @@ if __name__ == "__main__":
 
     J_base = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
-    J = create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Sf, St, I, J_base)
+    J = create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, a1, a2, V, Va, i_square_pu, p_rated_loss_pu, J_base,
+                      r, x, g, b)

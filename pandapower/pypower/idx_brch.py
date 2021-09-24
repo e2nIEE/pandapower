@@ -91,6 +91,7 @@ BR_R_ASYM = 21
 BR_X_ASYM = 22
 BR_R_OHM_PER_KM = 23
 BR_LENGTH_KM = 24
+RATE_I = 25
 
 
-branch_cols = 25
+branch_cols = 26
