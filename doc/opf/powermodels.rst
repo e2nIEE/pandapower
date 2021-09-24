@@ -6,7 +6,7 @@ Optimization with PandaModels.jl
 Installation
 --------------
 
-If you are not yet using Julia, install it. Note that you need a version that is supported PowerModels, PyCall and pyjulia for the interface to work. Currently, `Julia 1.5 <https://julialang.org/downloads/oldreleases/>`_ is the most recent version of Julia that supports all these packages.
+If you are not yet using Julia, install it. Note that you need a version that is supported PowerModels, PyCall and pyjulia for the interface to work. Currently, `Julia 1.5 <https://julialang.org/downloads/oldreleases/>`_ is the most recent version of Julia that supports all these packages. 
 
 .. note:: You don't necessarily need a Julia IDE if you are using PandaModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation>`_. Also, PyCharm has a Julia Plugin.
 
@@ -45,11 +45,13 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are co
 
 1. Download and install from `Gurobi download <https://www.gurobi.com/downloads/>`__  (you'll need an account for this)
 
-2. Get your Gurobi license at `Gurobi license <https://www.gurobi.com/downloads/licenses/>`__ and download it (remember where you stored it).
+2. Run the file to get the gurobi folder, e.g., in linux you need to run :code:`tar -xzf gurobi<version>_linux64.tar.gz`
 
-3. Activate the license by calling :code:`grbgetkey YOUR_KEY` as described on the Gurobi license page.
+3. Get your Gurobi license at `Gurobi license <https://www.gurobi.com/downloads/licenses/>`__ and download it (remember where you stored it).
 
-4. Add some Gurobi paths and the license path to your local PATH environment variables. In linux you can just open your `.bashrc` file with, e.g., :code:`nano .bashrc` in your home folder and add:
+4. Activate the license by calling :code:`grbgetkey YOUR_KEY` as described on the Gurobi license page.
+
+5. Add some Gurobi paths and the license path to your local PATH environment variables. In linux you can just open your `.bashrc` file with, e.g., :code:`nano .bashrc` in your home folder and add:
 
 ::
 
@@ -73,7 +75,7 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are co
     export GRB_LICENSE_FILE="/PATH_TO_YOUR_LICENSE_DIR/gurobi.lic"
 
 
-5. Install the `julia - Gurobi interface <https://github.com/jump-dev/Gurobi.jl>`_ with
+7. Install the  `julia - Gurobi interface <https://github.com/jump-dev/Gurobi.jl>`_ and set the GUROBI_HOME environment with
 
     :code:`julia -e 'import Pkg; Pkg.add("Gurobi");'`
 
@@ -83,9 +85,9 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are co
 
    inside Julia package mode.
 
-6. Build and test your Gurobi installation by entering :code:`julia` prompt and then :code:`import Pkg; Pkg.build("Gurobi")`. This should compile without an error.
+8. Build and test your Gurobi installation by entering :code:`julia` prompt and then :code:`import Pkg; Pkg.build("Gurobi")`. This should compile without an error.
 
-7. Now, you can use Gurobi to solve your linear problems, e.g., the DC OPF, with :code:`runpm_dc_opf(net, pm_model="DCPPowerModel", pm_solver="gurobi")`
+9. Now, you can use Gurobi to solve your linear problems, e.g., the DC OPF, with :code:`runpm_dc_opf(net, pm_model="DCPPowerModel", pm_solver="gurobi")`
 
 
 Usage
