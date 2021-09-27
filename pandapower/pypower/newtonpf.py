@@ -143,7 +143,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         # todo: use parameters in ppc
         a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb=t_amb * T_base, t_max=80, r_ref_ohm_per_m=r_ref_ohm_per_m, conductor_outer_diameter_m=30.6e-3,
-                                            mc_joule_per_m_k=779, v_m_per_s=0.61, wind_angle_degree=90, s_w_per_square_meter=900, gamma=0.8, epsilon=0.8)
+                                            mc_joule_per_m_k=1490, v_m_per_s=0.61, wind_angle_degree=90, s_w_per_square_meter=900, gamma=0.8, epsilon=0.8)
         r = r_ref_pu
         x = branch[:, BR_X].real
         g = r / (np.square(r) + np.square(x))
