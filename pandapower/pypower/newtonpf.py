@@ -20,7 +20,7 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I, T_START, R_THETA
 
 from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf, calc_i_square_pu
 
@@ -118,20 +118,19 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     T_base = 100  # T in p.u. for better convergence
     # T_base = 1  # T in p.u. for better convergence
-    T_ref = 25 / T_base
+    T_ref = 20 / T_base
     # todo: enable using T0 as a start of previous time step?
-    T0 = ones(shape=len(branch)) * T_ref  # todo: consider lookups line/trafo, in_service etc.
-    T = T0 / T_base
-    i_max_a = branch[:, RATE_I].real.copy() * 1e3
+    T0 = branch[:, T_START].real / T_base  # todo: consider lookups line/trafo, in_service etc.
+    T = T0.copy()
+    i_max_a = branch[:, RATE_I].real * 1e3
     v_base = bus[real(branch[:, F_BUS]).astype(int), BASE_KV]
     z_base_ohm = np.square(v_base) / baseMVA
     r_ref_pu = branch[:, BR_R_OHM_PER_KM].real * branch[:, BR_LENGTH_KM].real / z_base_ohm
-    branch[:, BR_R] = r_ref_pu
     i_base_a = baseMVA / (v_base * np.sqrt(3))*1e3
     p_rated_loss_pu = np.square(i_max_a / i_base_a) * r_ref_pu
-    r_ref_ohm_per_m = 1e-3 * branch[:, BR_R_OHM_PER_KM].real.copy()
+    r_ref_ohm_per_m = 1e-3 * branch[:, BR_R_OHM_PER_KM].real
     alpha = ones(shape=len(branch)) * 0.004 * T_base # todo parameter ppc
-    t_amb = 25  # todo parameter ppc
+    t_amb = 40 / T_base  # todo parameter ppc
     tol_T = tol * 1e3
     converged_T = False
     p_loss_pu=0
@@ -143,19 +142,24 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if tdpf:
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         # todo: use parameters in ppc
-        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb=t_amb, t_max=90, r_ref_ohm_per_m=r_ref_ohm_per_m, conductor_outer_diameter_m=18.2e-3,
-                                            mc_joule_per_m_k=525, v_m_per_s=0.5, wind_angle_degree=45, s_w_per_square_meter=1000)
-        r = branch[:, BR_R].real
+        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb=t_amb * T_base, t_max=80, r_ref_ohm_per_m=r_ref_ohm_per_m, conductor_outer_diameter_m=30.6e-3,
+                                            mc_joule_per_m_k=779, v_m_per_s=0.61, wind_angle_degree=90, s_w_per_square_meter=900, gamma=0.8, epsilon=0.8)
+        r = r_ref_pu
         x = branch[:, BR_X].real
         g = r / (np.square(r) + np.square(x))
         b = -x / (np.square(r) + np.square(x))
         k = (np.square(g) + np.square(b)) / g
-        # r_theta = (a0-t_amb) / T_base / p_rated_loss_pu + p_rated_loss_pu * k * a1 * i_base_a ** 2 / T_base + np.square(k) * a2 * i_base_a ** 4 / T_base
-        r_theta = (25 / T_base) / p_rated_loss_pu
+        i_max_pu = i_max_a / i_base_a
+        # r_theta = (a0 / T_base - t_amb) / p_rated_loss_pu + k * a1 * i_base_a ** 2 / T_base + k * np.square(i_max_a/i_base_a) * a2 * i_base_a ** 4 / T_base
+        # r_theta = (a0 / T_base - t_amb) / p_rated_loss_pu + k * a1 * i_base_a ** 2 / T_base + np.square(k) * p_rated_loss_pu * a2 * i_base_a ** 4 / T_base
+        r_theta = calc_r_theta(g, b, t_amb, a0 / T_base, a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, np.square(i_max_pu), p_rated_loss_pu)
+        # r_theta = branch[:, R_THETA].real
+        # r_theta = np.clip(r_theta, 7, 18)
+        # r_theta = (25 / T_base) / p_rated_loss_pu
         # print('p_loss_rated_pu', p_rated_loss_pu)
         # print('p_loss_rated_mw', p_rated_loss_pu * baseMVA)
         # print('r_theta', r_theta)
-        i_square_pu, p_loss_pu = calc_i_square_pu(branch, Vm, Va)
+        i_square_pu, p_loss_pu = calc_i_square_pu(branch, g, b, Vm, Va)
         # initial guess for T:
         T = _calc_T(i_square_pu, a0 / T_base, a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, tau, tdpf_delay_s, T0)
         F_t = _evaluate_dT(T, i_square_pu, a0 / T_base, a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, tau, tdpf_delay_s, T0)
@@ -216,34 +220,29 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
 
         if tdpf:
-            i_square_pu, p_loss_pu = calc_i_square_pu(branch, Vm, Va)
+            i_square_pu, p_loss_pu = calc_i_square_pu(branch, g, b, Vm, Va)
             # T = _calc_T(i_square_pu, a0 / T_base, a1 * i_base_a ** 2 / T_base,
             #                   a2 * i_base_a ** 4 / T_base, tau, tdpf_delay_s, T0 / T_base)
             # print(T * T_base)
             # F_t = _evaluate_dT(T, i_square_pu, a0 / T_base, a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, tau, tdpf_delay_s, T0)
-            F_t = _evaluate_dT_sexauer(branch, Vm, Va, T, t_amb/T_base, r_theta)
+            F_t = _evaluate_dT_sexauer(branch, Vm, Va, T, t_amb, r_theta, g, tdpf_delay_s, T0, tau)
             converged = _check_for_convergence(F, tol) and _check_for_convergence(F_t, tol_T)
+            r_theta = calc_r_theta(g, b, t_amb, a0 / T_base, a1 * i_base_a ** 2 / T_base, a2 * i_base_a ** 4 / T_base, i_square_pu, p_loss_pu)
             F = r_[F, F_t]
         else:
             converged = _check_for_convergence(F, tol)
 
-    # print('iterations', i)
-    # print(J.toarray())
-    # print('p_loss_mw', p_loss_pu * baseMVA)
-    # print('i_ka', np.sqrt(i_square_pu) * i_base_a / 1e3)
-    # print('T', T * T_base)
     return V, converged, i, J, Vm_it, Va_it, T * T_base
 
 
-def _evaluate_dT_sexauer(branch, Vm, Va, T, t_amb, r_theta):
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-    b = -x / (np.square(r) + np.square(x))
-
+def _evaluate_dT_sexauer(branch, Vm, Va, T, t_amb, r_theta, g, tdpf_delay_s, T0, tau):
     i = branch[:, F_BUS].real.astype(int)
     j = branch[:, T_BUS].real.astype(int)
     t_rise = r_theta * (g * (np.square(Vm[i]) + np.square(Vm[j])) - 2*g*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j]))
+    if tdpf_delay_s is not None:
+        t_transient = t_amb + t_rise - (t_amb + t_rise - T0) * exp(-tdpf_delay_s / tau)
+        return T - t_transient
+
     return T - (t_amb + t_rise)
 
 
@@ -253,6 +252,14 @@ def _calc_T(i_square_pu, a0, a1, a2, tau, tdpf_delay_s, t_0_degree):
         t_transient = t_ss - (t_ss - t_0_degree) * exp(-tdpf_delay_s / tau)
         return t_transient
     return t_ss
+
+
+def calc_r_theta(g, b, t_amb, a0, a1, a2, i_square_pu, pl_pu):
+    # k = (np.square(g) + np.square(b)) / g
+    # r_theta = (a0 / T_base - t_amb) / p_rated_loss_pu + k * a1 * i_base_a ** 2 / T_base + k * np.square(i_max_a/i_base_a) * a2 * i_base_a ** 4 / T_base
+    t_rise = a0 - t_amb + a1 * i_square_pu + a2 * np.square(i_square_pu)
+    r_theta = t_rise / pl_pu
+    return r_theta
 
 
 def _evaluate_dT(T, i_square_pu, a0, a1, a2, tau, tdpf_delay_s, t_0_degree):

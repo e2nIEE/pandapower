@@ -138,7 +138,8 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
 
 def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, a1, a2, Vm, Va, i_square_pu, r_theta, J, r, x, g, b):
 
-    C = (a1 + 2 * a2 * i_square_pu)
+    # C = (a1 + 2 * a2 * i_square_pu)
+    C = np.ones(len(branch))
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
         C *= (1 - np.exp(-tdpf_delay_s / tau))
 
@@ -159,11 +160,7 @@ def create_J_tdpf(branch, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t
     return JJ
 
 
-def calc_i_square_pu(branch, Vm, Va):
-    r = branch[:, BR_R].real
-    x = branch[:, BR_X].real
-    g = r / (np.square(r) + np.square(x))
-    b = -x / (np.square(r) + np.square(x))
+def calc_i_square_pu(branch, g, b, Vm, Va):
 
     i = branch[:, F_BUS].real.astype(np.int64)
     j = branch[:, T_BUS].real.astype(np.int64)
@@ -379,7 +376,7 @@ def create_J31(branch, alpha, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g, b):
 
             B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
             # J31[ij, mm] = sign * (g[ij] ** 2 + b[ij] ** 2) * C[ij] * B_mn
-            J31[ij, mm] = - 2 * r_theta[ij] * g[ij] * B_mn
+            J31[ij, mm] = - 2 * r_theta[ij] * g[ij] * B_mn * C[ij]
 
     return sparse(J31)
 
@@ -427,7 +424,7 @@ def create_J32(branch, alpha, r_ref, pq, pq_lookup, Vm, Va, C, r_theta, g, b):
 
             A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
             # J32[ij, mm] = 2 * (g[ij]**2 + b[ij]**2) * C[ij] * A_mn / Vm[m]
-            J32[ij, mm] = - 2 * r_theta[ij] * g[ij] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n]))
+            J32[ij, mm] = - 2 * r_theta[ij] * g[ij] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[ij]
 
     return sparse(J32)
 
