@@ -266,30 +266,30 @@ def write_pq_results_to_element_3ph(net, element):
 
     element_in_service = _is_elements[element]
 
-    net[res_]["p_a_mw"] = pd.series(
+    net[res_]["p_a_mw"] = list(
         (el_data["p_mw"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
-        else pd.series(el_data["p_a_mw"].values * scaling * element_in_service)
+        else list(el_data["p_a_mw"].values * scaling * element_in_service)
 
-    net[res_]["p_b_mw"] = pd.series(
+    net[res_]["p_b_mw"] = list(
         (el_data["p_mw"].values / 3) * scaling * element_in_service)if element in ["load", "sgen"] \
-        else pd.series(el_data["p_b_mw"].values * scaling * element_in_service)
+        else list(el_data["p_b_mw"].values * scaling * element_in_service)
 
-    net[res_]["p_c_mw"] = pd.series(
+    net[res_]["p_c_mw"] = list(
         (el_data["p_mw"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
-        else pd.series(el_data["p_c_mw"].values * scaling * element_in_service)
+        else list(el_data["p_c_mw"].values * scaling * element_in_service)
     if ac:
         # Q result in kvar to element
-        net[res_]["q_a_mvar"] = pd.series(
+        net[res_]["q_a_mvar"] = list(
             (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
-            else pd.series(el_data["q_a_mvar"].values * scaling * element_in_service)
+            else list(el_data["q_a_mvar"].values * scaling * element_in_service)
 
-        net[res_]["q_b_mvar"] = pd.series(
+        net[res_]["q_b_mvar"] = list(
             (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
-            else pd.series(el_data["q_b_mvar"].values * scaling * element_in_service)
+            else list(el_data["q_b_mvar"].values * scaling * element_in_service)
 
-        net[res_]["q_c_mvar"] = pd.series(
+        net[res_]["q_c_mvar"] = list(
             (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
-            else pd.series(el_data["q_c_mvar"].values * scaling * element_in_service)
+            else list(el_data["q_c_mvar"].values * scaling * element_in_service)
 
     # update index of result table
     net[res_].index = net[element].index
