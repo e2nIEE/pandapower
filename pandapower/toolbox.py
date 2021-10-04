@@ -1835,7 +1835,7 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
     something_merged = False
     for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
         idxs = gen_df.index[gen_df.bus == bus]
-        if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
+        if "vm_pu" in gen_df.columns and len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
             message = "Generation plants connected to bus %i have different vm_pu." % bus
             if error:
                 raise ValueError(message)
