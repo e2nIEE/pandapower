@@ -61,7 +61,6 @@ def test_pandamodels_installation():
         Main.using("PandaModels")
         print("using PandaModels in its base mode!")
     except ImportError:
-        # assert False
         raise ImportError("cannot use PandaModels in its base mode")
         
         
