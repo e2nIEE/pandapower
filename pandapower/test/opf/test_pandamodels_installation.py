@@ -11,7 +11,6 @@ def test_julia_installation():
         from julia.core import UnsupportedPythonError
     except ImportError:
         UnsupportedPythonError = Exception
-        assert False
     
     try:
         from julia import Main   
@@ -24,28 +23,26 @@ def test_julia_installation():
     
     return status
  
+    
+ 
 julia_installed = test_julia_installation()
        
+
 @pytest.mark.slow
-@pytest.mark.dependency(depends=['test_julia_installation'])
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_julia_connection():
        
     try:
         import julia
     except:
-        # raise ImportError(
-        #     "install pyjulia properlly to run PandaModels.jl")
         assert False
         
     try:
         julia.Julia()
     except:
-        # raise AssertionError(
-        #     "cannot connect to julia, check pyjulia configuration")
         assert False
 
-        
+       
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 @pytest.mark.dependency(depends=['test_julia_connection'])
@@ -73,13 +70,13 @@ def test_pandamodels_installation():
         Main.using("PandaModels")
         print("using PandaModels in its base mode!")
     except:
-        # raise AssertionError("cannot use PandaModels in its base mode")
         assert False
+        
         
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 @pytest.mark.dependency(depends=['test_pandamodels_installation'])
-def test_pandamodels_dev_mode():
+def test_pandamodels_dev_mode(): 
     
     from julia import Main
     from julia import Pkg
@@ -89,8 +86,7 @@ def test_pandamodels_dev_mode():
         # remove PandaModels to reinstall it
         Pkg.rm("PandaModels")
         Pkg.resolve()
-
-         
+        
     Pkg.Registry.update()
     Pkg.add("PandaModels")  
     print("installing dev mode is a slow process!")  
@@ -107,7 +103,6 @@ def test_pandamodels_dev_mode():
         Main.using("PandaModels")
         print("using PandaModels in its dev mode!")
     except:
-        # raise AssertionError("cannot use PandaModels in its base mode")
         assert False
       
     # activate julia base mode
@@ -122,12 +117,12 @@ def test_pandamodels_dev_mode():
     Pkg.resolve()
     print("PandaModels is added to julia packages")
     
-    
 if __name__ == '__main__':
     
+    pytest.main([__file__])
     # test_julia_installation()
     # test_julia_connection()
     # test_pandamodels_installation()
     # test_pandamodels_dev_mode()
     
-    pytest.main([__file__])
+    
