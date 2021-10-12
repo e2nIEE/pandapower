@@ -79,6 +79,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     except ImportError:
         raise ImportError("cannot use PandaModels")
 
+
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
     return result_pm
