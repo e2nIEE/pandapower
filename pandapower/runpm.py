@@ -3,8 +3,6 @@
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 import os
-
-from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
@@ -14,7 +12,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
-          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
+          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
+          pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
         Runs a power system optimization using PowerModels.jl. with a custom julia file.
 
@@ -68,9 +67,11 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                                            you want to keep the file after optimization, you should also set
                                            delete_buffer_file to False!
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+
                                          "opf.flowlim" parameter:
                                              "S" - apparent power flow (limit in MVA),
-                                             "I" - current magnitude (limit in MVA at 1 p.u. voltage)                                    
+                                             "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+
             **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
             **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
     """
@@ -235,17 +236,27 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
+
     OPTIONAL:
-        **julia_file** (str, None) - path to a custom julia optimization file
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
-        **pm_solver** (str, "juniper") - The "main" power models solver
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
-        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+        **julia_file** (str, None) - path to a custom julia optimization file.
+        
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure.
+        
+        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it.
+        
+        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use.
+        
+        **pm_solver** (str, "juniper") - The "main" power models solver.
+        
+        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper).
+        
+        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper).
+        
         **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                           {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-        **pm_log_level** (int, 0) - solver log level in power model
+                                          
+        **pm_log_level** (int, 0) - solver log level in power model.
+        
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
         **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
      """
