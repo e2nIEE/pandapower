@@ -4,29 +4,40 @@
 
 import pytest
 
-@pytest.mark.slow
-def test_julia_installation():
+# @pytest.mark.slow
+# def test_julia_installation():
     
-    try:
-        from julia.core import UnsupportedPythonError
-    except ImportError:
-        UnsupportedPythonError = Exception
+#     try:
+#         from julia.core import UnsupportedPythonError
+#     except ImportError:
+#         UnsupportedPythonError = Exception
     
-    try:
-        from julia import Main   
-        status = True        
-    except (ImportError, RuntimeError, UnsupportedPythonError) as e:
-        status = False
-        print(e)
+#     try:
+#         from julia import Main   
+#         status = True        
+#     except (ImportError, RuntimeError, UnsupportedPythonError) as e:
+#         status = False
+#         print(e)
 
-    assert status 
+#     assert status 
     
-    return status
+#     return status
  
     
  
-julia_installed = test_julia_installation()
-       
+# julia_installed = test_julia_installation()
+
+try:
+    from julia.core import UnsupportedPythonError
+except ImportError:
+    UnsupportedPythonError = Exception
+try:
+    from julia import Main
+
+    julia_installed = True
+except (ImportError, RuntimeError, UnsupportedPythonError) as e:
+    julia_installed = False
+    print(e)     
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -35,7 +46,9 @@ def test_julia_connection():
     try:
         import julia
     except:
-        assert False
+        # assert False
+        raise ImportError(
+            "install pyjulia properlly to run PandaModels.jl")
         
     try:
         julia.Julia()
