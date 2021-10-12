@@ -3,8 +3,6 @@
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 import os
-
-from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
@@ -14,7 +12,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
-          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
+          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
+          pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
         Runs a power system optimization using PowerModels.jl. with a custom julia file.
 

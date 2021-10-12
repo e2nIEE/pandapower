@@ -1,5 +1,4 @@
 import os
-
 from pandapower.converter.powermodels.to_pm import convert_to_pm_structure, dump_pm_json
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
 
@@ -10,8 +9,8 @@ except ImportError:
 
 def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False): 
     """
-    Converts the pandapower net to a pm json file, saves it to disk, runs a PowerModels.jl julia function and reads
-    the results back to the pandapower net
+    Converts the pandapower net to a pm json file, saves it to disk, runs a PandaModels.jl, and reads
+    the results back to the pandapower net:
     INPUT
     ----------
     **net** - pandapower net
@@ -47,7 +46,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         from julia import Base
     except ImportError:
         raise ImportError(
-            "Please install pyjulia properlly to run pandapower with PowerModels.jl. \nMore info on https://pandapower.readthedocs.io/en/v2.6.0/opf/powermodels.html")
+            "Please install pyjulia properlly to run pandapower with PandaModels.jl.")
         
     try:
         julia.Julia()
@@ -56,9 +55,8 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
               
     if not Base.find_package("PandaModels"):
-        print("PandaModels is not installed in julia. It is added now!")          
+        print("PandaModels.jl is not installed in julia. It is added now!")          
         Pkg.Registry.update()
-        # Pkg.update()
         Pkg.add("PandaModels")  
         
         if dev_mode:
@@ -79,9 +77,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     except ImportError:
         raise ImportError("cannot use PandaModels")
 
-
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
+    
     return result_pm
 
 
