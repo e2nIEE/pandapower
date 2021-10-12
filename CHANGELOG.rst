@@ -27,7 +27,6 @@ Change Log
 - [CHANGED] ConstControl now writes values from the datasource to net at time_step instead of control_step, which ensures that the values for the time step are set before running the initial power flow
 - [CHANGED] replaced naming for "inductive" or "ind" by "underexcited" and "capacitive" or "cap" for "overexcited"
 
-
 [2.6.0]- 2021-03-09
 ----------------------
 - [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
