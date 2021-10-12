@@ -343,7 +343,7 @@ def _get_values(source, selection, lookup):
     """
     v = np.zeros(len(selection))
     for i, k in enumerate(selection):
-        v[i] = source[lookup[np.int64(k)]]
+        v[i] = source[lookup[np.int(k)]]
     return v
 
 
