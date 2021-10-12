@@ -776,7 +776,7 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
 
 def clear_result_tables(net):
     """
-    Clears all 'res_...' DataFrames in net.
+    Clears all ``res_`` DataFrames in net.
     """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
@@ -1613,11 +1613,11 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     def adapt_element_idx_references(net, element, element_type, offset=0):
         """
-        used for switch and measurement
+        used for switch, measurement, poly_cost and pwl_cost
         """
         # element_type[0] == "l" for "line", etc.:
         et = element_type[0] if element == "switch" else element_type
-        et_col = "et" if element == "switch" else "element_type"
+        et_col = "et" if element in ["switch", "poly_cost", "pwl_cost"] else "element_type"
         elements = net[element][net[element][et_col] == et]
         new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
         if len(new_index):
@@ -1633,6 +1633,9 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 adapt_element_idx_references(net1, element, "line")
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
                 adapt_element_idx_references(net1, element, "trafo")
+            if element in ["poly_cost", "pwl_cost"]:
+                for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
+                    adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":
                 ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
@@ -1660,6 +1663,213 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         if dev1 > tol or dev2 > tol:
             raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
     return net
+
+
+def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+    """
+    creates a power line in parallel to the existing power line based on the values of the new
+    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
+    impedance of the new line and the already existing line is equal to the impedance of the
+    replaced line. Or for electrical engineers:
+
+    Z0 = impedance of the existing line
+    Z1 = impedance of the replaced line
+    Z2 = impedance of the created line
+
+        --- Z2 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+
+    Parameters
+    ----------
+    net - pandapower net
+    idx (int) - idx of the existing line
+    std_type (str) - pandapower standard type
+    name (str, None) - name of the new power line
+    in_service (bool, False) - if the new power line is in service
+    **kwargs - additional line parameters you want to set for the new line
+
+    Returns
+    -------
+    new_idx (int) - index of the created power line
+
+    """
+
+    # impedance before changing the standard type
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+    bak = net.line.loc[idx, :].values
+
+    change_std_type(net, idx, std_type)
+
+    # impedance after changing the standard type
+    r1 = net.line.at[idx, "r_ohm_per_km"]
+    x1 = net.line.at[idx, "x_ohm_per_km"]
+    c1 = net.line.at[idx, "c_nf_per_km"]
+    g1 = net.line.at[idx, "g_us_per_km"]
+    i_ka1 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line parallel to the existing line
+    y1 = 1 / complex(r1, x1)
+    y0 = p0 / complex(r0, x0)
+    z2 = 1 / (y1 - y0)
+
+    # required parameters
+    c_nf_per_km = c1 * 1 - c0 * p0
+    r_ohm_per_km = z2.real
+    x_ohm_per_km = z2.imag
+    g_us_per_km = g1 * 1 - g0 * p0
+    max_i_ka = i_ka1 - i_ka0
+    name = "repl_" + str(idx) if name is None else name
+
+    # if this line is in service to the existing line, the power flow result should be the same as
+    # when replacing the existing line with the desired standard type
+    new_idx = create_line_from_parameters(
+        net, from_bus=net.line.at[idx, "from_bus"], to_bus=net.line.at[idx, "to_bus"],
+        length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
+        x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka,
+        g_us_per_km=g_us_per_km, in_service=in_service, name=name, **kwargs)
+    # restore the previous line parameters before changing the standard type
+    net.line.loc[idx, :] = bak
+
+    # check switching state and add line switch if necessary:
+    for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
+                             (net.switch.et == "l")].bus.values:
+            create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
+
+    return new_idx
+
+
+def merge_parallel_line(net, idx):
+    """
+    Changes the impedances of the parallel line so that it equals a single line.
+    Args:
+        net: pandapower net
+        idx: idx of the line to merge
+
+    Returns:
+        net
+
+    Z0 = impedance of the existing parallel lines
+    Z1 = impedance of the respective single line
+
+        --- Z0 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+    """
+    # impedance before changing the standard type
+
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line to the existing line
+    y0 = 1 / complex(r0, x0)
+    y1 = p0*y0
+    z1 = 1 / y1
+    r1 = z1.real
+    x1 = z1.imag
+
+    g1 = p0*g0
+    c1 = p0*c0
+    i_ka1 = p0*i_ka0
+
+    net.line.at[idx, "r_ohm_per_km"] = r1
+    net.line.at[idx, "parallel"] = 1
+    net.line.at[idx, "x_ohm_per_km"] = x1
+    net.line.at[idx, "c_nf_per_km"] = c1
+    net.line.at[idx, "g_us_per_km"] = g1
+    net.line.at[idx, "max_i_ka"] = i_ka1
+
+    return net
+
+
+def merge_same_bus_generation_plants(net, add_info=True, error=True,
+                                     gen_elms=["ext_grid", "gen", "sgen"]):
+    """
+    Merge generation plants connected to the same buses so that a maximum of one generation plants
+    per node remains.
+
+    ATTENTION:
+        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
+
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
+        elements dataframes. This column informs about which lines are the result of a merge of
+        generation plants.
+
+        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
+
+        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
+        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
+    """
+    if add_info:
+        for elm in gen_elms:
+            # adding column 'includes_other_plants' if missing or overwriting if its no bool column
+            if "includes_other_plants" not in net[elm].columns or net[elm][
+                    "includes_other_plants"].dtype != bool:
+                net[elm]["includes_other_plants"] = False
+
+    # --- construct gen_df with all relevant plants data
+    limit_cols = ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"]+limit_cols)
+    cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
+    gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
+    gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
+    gen_df.reset_index(inplace=True)
+
+    # --- merge data and drop duplicated rows - directly in the net tables
+    something_merged = False
+    for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
+        idxs = gen_df.index[gen_df.bus == bus]
+        if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
+            message = "Generation plants connected to bus %i have different vm_pu." % bus
+            if error:
+                raise ValueError(message)
+            else:
+                logger.error(message + " Only the first value is considered.")
+        uniq_et = gen_df["elm_type"].at[idxs[0]]
+        uniq_idx = gen_df.at[idxs[0], "index"]
+
+        if add_info:  # add includes_other_plants information
+            net[uniq_et].at[uniq_idx, "includes_other_plants"] = True
+
+        # sum p_mw
+        col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
+        net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
+
+        # sum q_mvar (if available)
+        if "q_mvar" in net[uniq_et].columns:
+            net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
+
+        # sum limits
+        for col in limit_cols:
+            if col in gen_df.columns and not gen_df.loc[idxs, col].isnull().all():
+                if col not in net[uniq_et].columns:
+                    net[uniq_et][col] = np.nan
+                net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, col].sum()
+
+        # drop duplicated elements
+        for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
+            dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
+                                      (gen_df.elm_type == elm), "index"].values
+            net[elm].drop(dupl_idx_elm, inplace=True)
+
+        something_merged |= True
+    return something_merged
 
 
 def create_replacement_switch_for_branch(net, element, idx):
@@ -1766,6 +1976,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
 def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
     Creates lines by given impedances data, while the impedances are dropped.
+
     INPUT:
         **net** - pandapower net
 
@@ -1804,6 +2015,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
+
     INPUT:
         **net** - pandapower net
 
@@ -2228,6 +2440,9 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
         'cols_to_keep' to be kept while replacing.
+
+    OUTPUT:
+        **new_idx** (list) - list of indices of the new elements
     """
     if old_elm == new_elm:
         logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
@@ -2236,6 +2451,8 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
         old_indices = net[old_elm].index
     else:
         old_indices = ensure_iterability(old_indices)
+    if not len(old_indices):
+        return []
     if new_indices is None:
         new_indices = [None] * len(old_indices)
     elif len(new_indices) != len(old_indices):
@@ -2318,7 +2535,8 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
 
 def replace_ward_by_internal_elements(net, wards=None):
     """
-    Replaces wards by loads and shunts
+    Replaces wards by loads and shunts.
+
     INPUT:
         **net** - pandapower net
 
@@ -2374,6 +2592,7 @@ def replace_ward_by_internal_elements(net, wards=None):
 def replace_xward_by_internal_elements(net, xwards=None):
     """
     Replaces xward by loads, shunts, impedance and generators
+
     INPUT:
         **net** - pandapower net
 
@@ -2430,9 +2649,9 @@ def get_element_index(net, element, name, exact_match=True):
       **name** - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True) -
+          True: Expects exactly one match, raises UserWarning otherwise.
+          False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -2456,26 +2675,27 @@ def get_element_indices(net, element, name, exact_match=True):
     INPUT:
       **net** - pandapower network
 
-      **element** (str or iterable of strings) - Element table to get indices from ("line", "bus",
-            "trafo" etc.)
+      **element** (str, string iterable) - Element table to get indices from
+      ("line", "bus", "trafo" etc.).
 
-      **name** (str or iterable of strings) - Name of the element to match.
+      **name** (str) - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True)
+
+          - True: Expects exactly one match, raises UserWarning otherwise.
+          - False: returns all indices containing the name
 
     OUTPUT:
       **index** (list) - List of the indices of matching element(s).
 
     EXAMPLE:
-        import pandapower.networks as pn
-        import pandapower as pp
-        net = pn.example_multivoltage()
-        idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
-        idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
-        idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+        >>> import pandapower.networks as pn
+        >>> import pandapower as pp
+        >>> net = pn.example_multivoltage()
+        >>> idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        >>> idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        >>> idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
     """
     if isinstance(element, str) and isinstance(name, str):
         element = [element]
@@ -2523,11 +2743,16 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)    - True: open switches will be respected
-                                                  False: open switches will be ignored
-        **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
-                                                        respected
-                                                  False: in_service status will be ignored
+        **respect_switches** (boolean, True)
+
+            - True: open switches will be respected
+            - False: open switches will be ignored
+
+        **respect_in_service** (boolean, False)
+
+            - True: in_service status of connected lines will be respected
+            - False: in_service status will be ignored
+
      OUTPUT:
         **connected_elements** (set) - Returns connected elements.
 
@@ -2598,19 +2823,29 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)        - True: open switches will be respected
-                                                      False: open switches will be ignored
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                            False: in_service status will be
-                                                            ignored
-        **consider** (iterable, ("l", "s", "t", "t3", "i"))    - Determines, which types of
+        **respect_switches** (boolean, True)
+
+            - True: open switches will be respected
+            - False: open switches will be ignored
+
+        **respect_in_service** (boolean, False)
+
+            - True: in_service status of connected buses will be respected
+            - False: in_service status will be ignored
+
+        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of
         connections will be considered.
-                                                      l: lines
-                                                      s: switches
-                                                      t: trafos
-                                                      t3: trafo3ws
-                                                      i: impedances
+
+            l: lines
+
+            s: switches
+
+            t: trafos
+
+            t3: trafo3ws
+
+            i: impedances
+
      OUTPUT:
         **cl** (set) - Returns connected buses.
 
@@ -2708,17 +2943,25 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
 
         **element** (integer)
 
-        **et** (string)                             - Type of the source element:
-                                                      l, line: line
-                                                      s, switch: switch
-                                                      t, trafo: trafo
-                                                      t3, trafo3w: trafo3w
-                                                      i, impedance: impedance
+        **et** (string) - Type of the source element:
+
+            l, line: line
+
+            s, switch: switch
+
+            t, trafo: trafo
+
+            t3, trafo3w: trafo3w
+
+            i, impedance: impedance
 
      OPTIONAL:
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                      False: in_service status will be ignored
+        **respect_in_service** (boolean, False)
+
+        True: in_service status of connected buses will be respected
+
+        False: in_service status will be ignored
+
      OUTPUT:
         **cl** (set) - Returns connected switches.
 
@@ -2839,210 +3082,3 @@ def get_gc_objects_dict():
         _type = type(obj)
         nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
     return nums_by_types
-
-
-def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
-    """
-    creates a power line in parallel to the existing power line based on the values of the new
-    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
-    impedance of the new line and the already existing line is equal to the impedance of the
-    replaced line. Or for electrical engineers:
-
-    Z0 = impedance of the existing line
-    Z1 = impedance of the replaced line
-    Z2 = impedance of the created line
-
-        --- Z2 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
-
-
-    Parameters
-    ----------
-    net - pandapower net
-    idx (int) - idx of the existing line
-    std_type (str) - pandapower standard type
-    name (str, None) - name of the new power line
-    in_service (bool, False) - if the new power line is in service
-    **kwargs - additional line parameters you want to set for the new line
-
-    Returns
-    -------
-    new_idx (int) - index of the created power line
-
-    """
-
-    # impedance before changing the standard type
-    r0 = net.line.at[idx, "r_ohm_per_km"]
-    p0 = net.line.at[idx, "parallel"]
-    x0 = net.line.at[idx, "x_ohm_per_km"]
-    c0 = net.line.at[idx, "c_nf_per_km"]
-    g0 = net.line.at[idx, "g_us_per_km"]
-    i_ka0 = net.line.at[idx, "max_i_ka"]
-    bak = net.line.loc[idx, :].values
-
-    change_std_type(net, idx, std_type)
-
-    # impedance after changing the standard type
-    r1 = net.line.at[idx, "r_ohm_per_km"]
-    x1 = net.line.at[idx, "x_ohm_per_km"]
-    c1 = net.line.at[idx, "c_nf_per_km"]
-    g1 = net.line.at[idx, "g_us_per_km"]
-    i_ka1 = net.line.at[idx, "max_i_ka"]
-
-    # complex resistance of the line parallel to the existing line
-    y1 = 1 / complex(r1, x1)
-    y0 = p0 / complex(r0, x0)
-    z2 = 1 / (y1 - y0)
-
-    # required parameters
-    c_nf_per_km = c1 * 1 - c0 * p0
-    r_ohm_per_km = z2.real
-    x_ohm_per_km = z2.imag
-    g_us_per_km = g1 * 1 - g0 * p0
-    max_i_ka = i_ka1 - i_ka0
-    name = "repl_" + str(idx) if name is None else name
-
-    # if this line is in service to the existing line, the power flow result should be the same as
-    # when replacing the existing line with the desired standard type
-    new_idx = create_line_from_parameters(
-        net, from_bus=net.line.at[idx, "from_bus"], to_bus=net.line.at[idx, "to_bus"],
-        length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
-        x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka,
-        g_us_per_km=g_us_per_km, in_service=in_service, name=name, **kwargs)
-    # restore the previous line parameters before changing the standard type
-    net.line.loc[idx, :] = bak
-
-    # check switching state and add line switch if necessary:
-    for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
-                             (net.switch.et == "l")].bus.values:
-            create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
-
-    return new_idx
-
-
-def merge_parallel_line(net, idx):
-    """
-    Changes the impedances of the parallel line so that it equals a single line.
-    Args:
-        net: pandapower net
-        idx: idx of the line to merge
-
-    Returns:
-        net
-
-    Z0 = impedance of the existing parallel lines
-    Z1 = impedance of the respective single line
-
-        --- Z0 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
-
-    """
-    # impedance before changing the standard type
-
-    r0 = net.line.at[idx, "r_ohm_per_km"]
-    p0 = net.line.at[idx, "parallel"]
-    x0 = net.line.at[idx, "x_ohm_per_km"]
-    c0 = net.line.at[idx, "c_nf_per_km"]
-    g0 = net.line.at[idx, "g_us_per_km"]
-    i_ka0 = net.line.at[idx, "max_i_ka"]
-
-    # complex resistance of the line to the existing line
-    y0 = 1 / complex(r0, x0)
-    y1 = p0*y0
-    z1 = 1 / y1
-    r1 = z1.real
-    x1 = z1.imag
-
-    g1 = p0*g0
-    c1 = p0*c0
-    i_ka1 = p0*i_ka0
-
-    net.line.at[idx, "r_ohm_per_km"] = r1
-    net.line.at[idx, "parallel"] = 1
-    net.line.at[idx, "x_ohm_per_km"] = x1
-    net.line.at[idx, "c_nf_per_km"] = c1
-    net.line.at[idx, "g_us_per_km"] = g1
-    net.line.at[idx, "max_i_ka"] = i_ka1
-
-    return net
-
-
-def merge_same_bus_generation_plants(net, add_info=True, error=True,
-                                     gen_elms=["ext_grid", "gen", "sgen"]):
-    """
-    Merge generation plants connected to the same buses so that a maximum of one generation plants
-    per node remains.
-
-    ATTENTION:
-        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
-
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
-        elements dataframes. This column informs about which lines are the result of a merge of
-        generation plants.
-
-        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
-
-        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
-        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
-    """
-    if add_info:
-        for elm in gen_elms:
-            # adding column 'includes_other_plants' if missing or overwriting if its no bool column
-            if "includes_other_plants" not in net[elm].columns or net[elm][
-                    "includes_other_plants"].dtype != bool:
-                net[elm]["includes_other_plants"] = False
-
-    # --- construct gen_df with all relevant plants data
-    limit_cols = ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
-    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"]+limit_cols)
-    cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
-    gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
-    gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
-    gen_df.reset_index(inplace=True)
-
-    # --- merge data and drop duplicated rows - directly in the net tables
-    something_merged = False
-    for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
-        idxs = gen_df.index[gen_df.bus == bus]
-        if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
-            message = "Generation plants connected to bus %i have different vm_pu." % bus
-            if error:
-                raise ValueError(message)
-            else:
-                logger.error(message + " Only the first value is considered.")
-        uniq_et = gen_df["elm_type"].at[idxs[0]]
-        uniq_idx = gen_df.at[idxs[0], "index"]
-
-        if add_info:  # add includes_other_plants information
-            net[uniq_et].at[uniq_idx, "includes_other_plants"] = True
-
-        # sum p_mw
-        col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
-        net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
-
-        # sum q_mvar (if available)
-        if "q_mvar" in net[uniq_et].columns:
-            net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
-
-        # sum limits
-        for col in limit_cols:
-            if col in gen_df.columns and not gen_df.loc[idxs, col].isnull().all():
-                if col not in net[uniq_et].columns:
-                    net[uniq_et][col] = np.nan
-                net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, col].sum()
-
-        # drop duplicated elements
-        for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
-            dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
-                                      (gen_df.elm_type == elm), "index"].values
-            net[elm].drop(dupl_idx_elm, inplace=True)
-
-        something_merged |= True
-    return something_merged

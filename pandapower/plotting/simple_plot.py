@@ -51,6 +51,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             **trafo_size** (float, 1.0) - Relative size of trafos to plot.
 
             **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
+            
+            **plot_gens** (bool, False) - Flag to decide whether gen symbols should be drawn.
 
             **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
 
