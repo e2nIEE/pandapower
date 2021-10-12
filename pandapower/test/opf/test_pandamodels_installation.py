@@ -1,43 +1,22 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import pytest
-
-# @pytest.mark.slow
-# def test_julia_installation():
-    
-#     try:
-#         from julia.core import UnsupportedPythonError
-#     except ImportError:
-#         UnsupportedPythonError = Exception
-    
-#     try:
-#         from julia import Main   
-#         status = True        
-#     except (ImportError, RuntimeError, UnsupportedPythonError) as e:
-#         status = False
-#         print(e)
-
-#     assert status 
-    
-#     return status
- 
-    
- 
-# julia_installed = test_julia_installation()
 
 try:
     from julia.core import UnsupportedPythonError
 except ImportError:
     UnsupportedPythonError = Exception
+    
+    
 try:
     from julia import Main
-
-    julia_installed = True
+    julia_installed = True 
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
     print(e)     
+
+
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -46,14 +25,13 @@ def test_julia_connection():
     try:
         import julia
     except:
-        # assert False
         raise ImportError(
-            "install pyjulia properlly to run PandaModels.jl")
-        
+            "install pyjulia properlly to run PandaModels.jl")     
     try:
         julia.Julia()
     except:
-        assert False
+        raise UserWarning(
+            "cannot connect to julia, check pyjulia configuration")
 
        
 @pytest.mark.slow
@@ -82,13 +60,14 @@ def test_pandamodels_installation():
     try:
         Main.using("PandaModels")
         print("using PandaModels in its base mode!")
-    except:
-        assert False
+    except ImportError:
+        # assert False
+        raise ImportError("cannot use PandaModels in its base mode")
         
         
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.dependency(depends=['test_pandamodels_installation'])
+@pytest.mark.dependency(depends=['test_julia_connection'])
 def test_pandamodels_dev_mode(): 
     
     from julia import Main
@@ -115,8 +94,9 @@ def test_pandamodels_dev_mode():
         Pkg.activate("PandaModels")
         Main.using("PandaModels")
         print("using PandaModels in its dev mode!")
-    except:
-        assert False
+    except ImportError:
+        # assert False
+        raise ImportError("cannot use PandaModels in its dev mode")
       
     # activate julia base mode
     Pkg.activate()
