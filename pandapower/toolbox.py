@@ -57,7 +57,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
-                res_elements=False):
+                cost_tables=False, res_elements=False):
     """
     Returns a set of pandapower elements.
     """
@@ -66,6 +66,8 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
     if other_elements:
         pp_elms |= {"measurement"}
+    if cost_tables:
+        pp_elms |= {"poly_cost", "pwl_cost"}
     return pp_elms
 
 
@@ -1850,6 +1852,14 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
         # sum p_mw
         col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
         net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
+
+        if "profiles" in net and col == "p_mw":
+            elm = "gen" if "gen" in gen_df["elm_type"].loc[idxs[1:]].unique() else "sgen"
+            net.profiles["%s.p_mw" % elm].loc[:, uniq_idx] = net.profiles["%s.p_mw" % elm].loc[
+                :, gen_df["index"].loc[idxs]].sum(axis=1)
+            net.profiles["%s.p_mw" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+            if elm == "gen":
+                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
