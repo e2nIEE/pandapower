@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.characteristic_control import CharacteristicControl
-from pandapower.control import Characteristic
+from pandapower.control.util.characteristic import Characteristic
 
 class TapDependentImpedance(CharacteristicControl):
     """
