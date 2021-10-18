@@ -20,7 +20,7 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I, T_START, R_THETA
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I, T_START, R_THETA, V_MPS
 
 from pandapower.tdpf.create_jacobian_tdpf import calc_a0_a1_a2_tau, create_J_tdpf, calc_i_square_pu
 
@@ -121,6 +121,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     T_ref = 20 / T_base
     # todo: enable using T0 as a start of previous time step?
     T0 = branch[:, T_START].real / T_base  # todo: consider lookups line/trafo, in_service etc.
+    v_m_per_s = branch[:, V_MPS].real
     T = T0.copy()
     i_max_a = branch[:, RATE_I].real * 1e3
     v_base = bus[real(branch[:, F_BUS]).astype(int), BASE_KV]
@@ -130,7 +131,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     p_rated_loss_pu = np.square(i_max_a / i_base_a) * r_ref_pu
     r_ref_ohm_per_m = 1e-3 * branch[:, BR_R_OHM_PER_KM].real
     alpha = ones(shape=len(branch)) * 0.004 * T_base # todo parameter ppc
-    t_amb = 40 / T_base  # todo parameter ppc
+    t_amb = 35 / T_base  # todo parameter ppc
     tol_T = tol * 1e3
     converged_T = False
     p_loss_pu=0
@@ -143,7 +144,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         # todo: use parameters in ppc
         a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb=t_amb * T_base, t_max=80, r_ref_ohm_per_m=r_ref_ohm_per_m, conductor_outer_diameter_m=30.6e-3,
-                                            mc_joule_per_m_k=1490, v_m_per_s=0.61, wind_angle_degree=90, s_w_per_square_meter=900, gamma=0.8, epsilon=0.8)
+                                            mc_joule_per_m_k=1490, v_m_per_s=v_m_per_s, wind_angle_degree=90, s_w_per_square_meter=900, gamma=0.8, epsilon=0.8)
         r = r_ref_pu
         x = branch[:, BR_X].real
         g = r / (np.square(r) + np.square(x))

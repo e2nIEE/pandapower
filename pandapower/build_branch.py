@@ -13,7 +13,7 @@ import pandas as pd
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I, T_START, R_THETA, branch_cols
+    BR_R_ASYM, BR_X_ASYM, BR_R_OHM_PER_KM, BR_LENGTH_KM, RATE_I, T_START, R_THETA, V_MPS, branch_cols
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 
 
@@ -144,6 +144,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, RATE_I] = line["max_i_ka"] * line["df"] * parallel
     branch[f:t, T_START] = line["temperature_degree_celsius"]
     branch[f:t, R_THETA] = line["r_theta"] if "r_theta" in line.columns else np.nan
+    branch[f:t, V_MPS] = line["v_m_per_s"] if "v_m_per_s" in line.columns else 0.6
 
     if mode == "sc":
         # temperature correction

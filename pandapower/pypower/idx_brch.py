@@ -94,6 +94,7 @@ BR_LENGTH_KM = 24
 RATE_I = 25
 T_START = 26
 R_THETA = 27
+V_MPS = 28
 
 
-branch_cols = 28
+branch_cols = 29

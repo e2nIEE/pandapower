@@ -66,12 +66,17 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb):
     r_f = 0.1 # roughness of conductors
     w = rho_air * conductor_outer_diameter_m * v_m_per_s
 
-    if v_m_per_s < 0.5:
-        K = 0.55
-    elif wind_angle_degree < 24:
-        K = 0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08
-    else:
-        K = 0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9
+    K = np.where(v_m_per_s < 0.5, 0.55,
+                 np.where(v_m_per_s < 24,
+                          0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08,
+                          0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9))
+
+    # if v_m_per_s < 0.5:
+    #     K = 0.55
+    # elif wind_angle_degree < 24:
+    #     K = 0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08
+    # else:
+    #     K = 0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9
 
     h_cfl = 8.74 * K * w ** 0.471
 
