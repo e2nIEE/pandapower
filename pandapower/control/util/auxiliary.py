@@ -132,7 +132,7 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         # query of parameters in net.controller dataframe
         idx = Int64Index(idx)
         for df_key in df_keys:
-            idx &= net.controller.index[net.controller[df_key] == parameters[df_key]]
+            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
         # query of parameters in controller object attributes
         idx = [i for i in idx if _controller_attributes_query(
             net.controller.object.loc[i], attributes_dict)]
@@ -201,7 +201,7 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
                     "same type controllers should be dropped.")
 
 
-def plot_characteristic(characteristic, start, stop, num=None):
+def plot_characteristic(characteristic, start, stop, num=20):
     x = np.linspace(start, stop, num)
     y = characteristic(x)
     if MATPLOTLIB_INSTALLED:

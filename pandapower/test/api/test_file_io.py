@@ -85,7 +85,6 @@ def test_json(net_in, tmp_path):
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
         from shapely.geometry import Point, LineString
-        from fiona.crs import from_epsg
         import geopandas as gpd
 
         for tab in ('bus_geodata', 'line_geodata'):
@@ -93,7 +92,7 @@ def test_json(net_in, tmp_path):
                 geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
             else:
                 geometry = net_geo[tab].coords.apply(LineString)
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=from_epsg(4326))
+            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
 
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
@@ -182,8 +181,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
-    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
+    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
@@ -309,6 +308,67 @@ def test_deepcopy_controller():
     assert ct1.equals(ct2)
     ct2.vm_set_pu = 1.02
     assert not ct1.equals(ct2)
+
+
+def test_elements_to_deserialize(tmp_path):
+    net = networks.mv_oberrhein()
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    pp.to_json(net, filename)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
+    for key, item in net_select.items():
+        if key in ['bus', 'load']:
+            assert isinstance(item, pd.DataFrame)
+        elif '_empty' in key:
+            assert isinstance(item, pd.DataFrame)
+        elif '_lookup' in key:
+            assert isinstance(item, dict)
+        elif key in ['std_types', 'user_pf_options']:
+            assert isinstance(item, dict)
+        elif '_ppc' in key:
+            assert item is None
+        elif key == '_is_elements' :
+            assert item is None
+        elif key in ['converged', 'OPF_converged']:
+            assert isinstance(item, bool)
+        elif key in ['f_hz', 'sn_mva']:
+            assert isinstance(item, float)
+        else:
+            assert isinstance(item, str)
+    pp.to_json(net_select, filename)
+    net_select = pp.from_json(filename)
+    assert_net_equal(net, net_select)
+
+
+def test_elements_to_deserialize_wo_keep(tmp_path):
+    net = networks.mv_oberrhein()
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    pp.to_json(net, filename)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'], keep_serialized_elements=False)
+    for key, item in net_select.items():
+        if key in ['bus', 'load']:
+            assert isinstance(item, pd.DataFrame)
+        elif '_empty' in key:
+            assert isinstance(item, pd.DataFrame)
+        elif '_lookup' in key:
+            assert isinstance(item, dict)
+        elif key in ['std_types', 'user_pf_options']:
+            assert isinstance(item, dict)
+        elif '_ppc' in key:
+            assert item is None
+        elif key == '_is_elements' :
+            assert item is None
+        elif key in ['converged', 'OPF_converged']:
+            assert isinstance(item, bool)
+        elif key in ['f_hz', 'sn_mva']:
+            assert isinstance(item, float)
+        else:
+            if isinstance(item, pd.DataFrame):
+                assert len(item) == 0
+            else:
+                assert isinstance(item, str)
+    pp.to_json(net_select, filename)
+    net_select = pp.from_json(filename)
+    assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
 @pytest.mark.skipif('geopandas' not in sys.modules, reason="requires the GeoPandas library")
