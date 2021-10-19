@@ -111,22 +111,20 @@ class DiscreteTapControl(TrafoController):
         """
         Checks if the voltage is within the desired voltage band, then returns True
         """
-        if not self.tid in net[self.trafotable].index or \
-           not net[self.trafotable].at[self.tid, 'in_service']:
+        tid_in_net = np.intersect1d(self.tid, net[self.trafotable].index)
+        if len(tid_in_net) == 0 or np.all(~net[self.trafotable].loc[tid_in_net, 'in_service']):
             return True
+
         vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
         self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
-        # render this controller converged if he cant reach the desired point
-        if self.tap_side_coeff * self.tap_sign == 1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos == self.tap_min:
-                return True
-            elif vm_pu > self.vm_upper_pu and self.tap_pos == self.tap_max:
-                return True
-        elif self.tap_side_coeff * self.tap_sign == -1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos == self.tap_max:
-                return True
-            elif vm_pu > self.vm_upper_pu and self.tap_pos == self.tap_min:
-                return True
-        return self.vm_lower_pu < vm_pu < self.vm_upper_pu
+        reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
+                                 ((vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min)) |
+                                 ((vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_max)),
+                                 ((vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_max)) |
+                                 ((vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_min)))
+
+        converged = reached_limit | self.vm_lower_pu < vm_pu < self.vm_upper_pu
+
+        return np.all(converged)
 
