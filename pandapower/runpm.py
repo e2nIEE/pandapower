@@ -1,23 +1,19 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 import os
-
-from pandapower import pp_dir
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.powermodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
 from pandapower.opf.run_powermodels import _runpm
 
-
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
-          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8, **kwargs):  # pragma: no cover
+          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
+          pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
         Runs a power system optimization using PowerModels.jl. with a custom julia file.
 
@@ -56,31 +52,20 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
         OPTIONAL:
             **julia_file** (str, None) - path to a custom julia optimization file
-
             **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
             **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
             **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
-
             **pm_solver** (str, "ipopt") - The "main" power models solver
-
             **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
-
             **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
-
             **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                               {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-
             **pm_log_level** (int, 0) - solver log level in power models
-
             **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
                                                   optimization.
-
             **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
                                            you want to keep the file after optimization, you should also set
                                            delete_buffer_file to False!
-
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
 
                                          "opf.flowlim" parameter:
@@ -88,28 +73,28 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                                              "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
             **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
+            **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
     """
-    net._options = {}
     ac = True if "DC" not in pm_model else False
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl') if julia_file is None else julia_file
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_solver=pm_solver, pm_model=pm_model,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf", pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
                      opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path = pm_file_path)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, pm_model="DCPPowerModel", pm_solver="ipopt",
                  pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None,
-                 pm_tol=1e-8, **kwargs):  # pragma: no cover
+                 pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
         Runs a linearized power system optimization using PowerModels.jl.
 
@@ -148,21 +133,15 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         OPTIONAL:
             **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
             **pm_model** (str, "DCPPowerModel") - model to use. Default is DC model
-
             **pm_solver** (str, "ipopt") - The "main" power models solver
-
             **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
             **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                               {"pm_time_limit": 300.}
-
             **pm_log_level** (int, 0) - solver log level in power models
             **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
+            **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
     """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
-
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -170,17 +149,17 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf",
                      correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_solver=pm_solver,
                      pm_time_limits=pm_time_limits, pm_log_level=pm_log_level, opf_flow_lim="S", pm_tol=pm_tol)
-    _runpm(net, delete_buffer_file, pm_file_path)
+    _runpm(net, delete_buffer_file, pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
-                 opf_flow_lim="S", pm_tol=1e-8, **kwargs):  # pragma: no cover
+                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
         Runs a non-linear power system optimization using PowerModels.jl.
 
@@ -219,33 +198,23 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
         OPTIONAL:
             **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
             **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-
             **pm_solver** (str, "ipopt") - default solver to use. If ipopt is not available use Ipopt
-
             **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
             **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                               {"pm_time_limit": 300.}
-
             **pm_log_level** (int, 0) - solver log level in power models
-
             **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
                                                  "opf.flowlim" parameter
-                                                 "S" - apparent power flow (limit in MVA),
-                                                 "I" - current magnitude (limit in MVA at 1 p.u. voltage)
-
+                                                "S" - apparent power flow (limit in MVA),
+                                                "I" - current magnitude (limit in MVA at 1 p.u. voltage)
             **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after
                                                   optimization.
-
             **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
                                            you want to keep the file after optimization, you should also set
                                            delete_buffer_file to False!
+            **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
     """
-
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels.jl')
-
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -253,18 +222,18 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)    
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf", pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
     
-    _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file)
+    _runpm(net, pm_file_path=pm_file_path, delete_buffer_file=delete_buffer_file, pdm_dev_mode=pdm_dev_mode)
 
 
 def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="DCPPowerModel", pm_solver=None, correct_pm_network_data=True,
                pm_nl_solver="ipopt", pm_mip_solver="cbc", pm_time_limits=None, pm_log_level=0,
-               opf_flow_lim="S", pm_tol=1e-8, **kwargs):  # pragma: no cover
+               opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
     Runs a non-linear transmission network extension planning (tnep) optimization using PowerModels.jl.
 
@@ -289,8 +258,8 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pm_log_level** (int, 0) - solver log level in power model.
         
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
+        **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_tnep.jl')
     ac = True if "DC" not in pm_model else False
     if pm_solver is None:
         if pm_model == "DCPPowerModel":
@@ -307,18 +276,19 @@ def runpm_tnep(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_tnep", pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_nl_solver=pm_nl_solver,
                      pm_mip_solver=pm_mip_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
-                     opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
+                     opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
     _runpm(net)
     read_tnep_results(net)
 
 
 def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-              pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt", pm_mip_solver="cbc",
-              correct_pm_network_data=True, pm_time_limits=None, pm_log_level=0, pm_tol=1e-8, **kwargs):  # pragma: no cover
+              pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt",
+              pm_mip_solver="cbc", correct_pm_network_data=True, pm_time_limits=None,
+              pm_log_level=0, pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
     Runs a non-linear optimal transmission switching (OTS) optimization using PowerModels.jl.
     OPTIONAL:
@@ -333,8 +303,8 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                                           {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
         **pm_log_level** (int, 0) - solver log level in power models
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
+        **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
      """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ots.jl')
     ac = True if "DC" not in pm_model else False
     if pm_solver is None:
         pm_solver = "juniper"
@@ -346,10 +316,10 @@ def runpm_ots(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file, pm_model=pm_model, pm_solver=pm_solver,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_ots", pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
-                     opf_flow_lim="S", pm_tol=pm_tol)
+                     opf_flow_lim="S", pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
     _runpm(net)
     read_ots_results(net)
 
@@ -358,7 +328,7 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
                       n_timesteps=24, time_elapsed=1., correct_pm_network_data=True,
                       pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
                       opf_flow_lim="S", charge_efficiency=1., discharge_efficiency=1., 
-                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-8, **kwargs):  
+                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  
     """
     Runs a non-linear power system optimization with storages and time series using PowerModels.jl.
     INPUT:
@@ -369,8 +339,8 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
         **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
                                           {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
         **pm_log_level** (int, 0) - solver log level in power models
-    """
-    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_storage.jl')
+        **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
+     """
     ac = True if "DC" not in pm_model else False
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -379,9 +349,9 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
                       enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                       voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                      pp_to_pm_callback=add_storage_opf_settings, julia_file=julia_file,
+                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_mn_storage",
                       correct_pm_network_data=correct_pm_network_data, pm_model=pm_model, pm_time_limits=pm_time_limits,
-                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
+                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
 
     net._options["n_time_steps"] = n_timesteps
     net._options["time_elapsed"] = time_elapsed
