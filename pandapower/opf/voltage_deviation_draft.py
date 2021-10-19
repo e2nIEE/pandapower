@@ -41,16 +41,11 @@ net.line["max_loading_percent"] = 500.0
 net.bus["pm_param/v_threshold"] = None
 # for buses with controllable sgen set threshold:
 net.bus["pm_param/v_threshold"].loc[net.sgen.bus] = 0.99   
-# add new column to line for reactive power flexibility:
-net.bus["pm_param/q_flex"] = None #TODO: where do u use this param?
-# for selected buses set reactive power flexibility:
-net.line["pm_param/q_flex"].loc[0] = 1.3 
-
-
-results = pp.runpm_vd(net, calculate_voltage_angles=True,
-                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                      n_timesteps=96, time_elapsed=0.25, correct_pm_network_data=True,
-                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
-                      delete_buffer_file=False, pm_file_path = None,
-                      pm_tol=1e-8, pdm_dev_mode=True)
+print("ok")
+# results = pp.runpm_vd(net, calculate_voltage_angles=True,
+#                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+#                       n_timesteps=96, time_elapsed=0.25, correct_pm_network_data=True,
+#                       pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
+#                       delete_buffer_file=False, pm_file_path = None,
+#                       pm_tol=1e-8, pdm_dev_mode=True)
 
