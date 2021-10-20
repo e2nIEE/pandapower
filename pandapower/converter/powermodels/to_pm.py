@@ -99,6 +99,7 @@ def convert_to_pm_structure(net, opf_flow_lim = "S"):
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
+    pm = add_params_to_pm(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -404,3 +405,33 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     net["ne_line"].loc[new_line_index, "in_service"] = True
     # init res_ne_line to save built status afterwards
     net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
+
+    
+def add_params_to_pm(net, pm):
+    # add user defined parameters to pm
+    for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
+        param_cols = [col for col in net[elm].columns if 'pm_param' in col]
+        if not param_cols:
+            continue
+        elif "user_defined_params" not in pm.keys():
+            pm["user_defined_params"] = dict()
+        params = [param_col.split("/")[-1] for param_col in param_cols]
+        for param, param_col in zip(params, param_cols): 
+            pd_idxs = net[elm].index[net[elm][param_col].notna()].tolist()
+            target_values = net[elm][param_col][pd_idxs].values.tolist()
+            if elm in ["line", "trafo"]:
+                start, end = net._pd2pm_lookups["branch"][elm]
+                pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs]
+                pm_idxs = [int(v) + start for v in pd_pos]
+            elif elm == "sgen":
+                pm_idxs = [int(v) for v in net._pd2pm_lookups[elm+"_controllable"][pd_idxs]]
+                elm = "gen"
+            else:
+                pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
+            df = pd.DataFrame(index=pm_idxs)
+            df["element"] = elm
+            df["element_index"] = pm_idxs
+            df["value"] = target_values
+            pm["user_defined_params"][param] = df.to_dict("index")
+        return pm
+
