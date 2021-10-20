@@ -29,6 +29,7 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
+    print("the json file for convertet net is stored in: ", buffer_file)
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
     # read results and write back to net
@@ -36,7 +37,9 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
     if pm_file_path is None and delete_buffer_file:
         # delete buffer file after calculation
         os.remove(buffer_file)
-   
+        print("the json file for convertet net is deleted from ", buffer_file)
+
+
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     try:
@@ -79,7 +82,6 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
-    
     return result_pm
 
 
