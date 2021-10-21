@@ -594,6 +594,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.xfail(reason="not complited yet")
 def test_timeseries_powermodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
