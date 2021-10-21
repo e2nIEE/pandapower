@@ -23,6 +23,7 @@ from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net
 import pandapower.control
 import pandapower.timeseries
+from copy import deepcopy
 
 try:
     from julia.core import UnsupportedPythonError
@@ -608,34 +609,20 @@ def test_timeseries_powermodels():
 
 
 def test_runpm_vd():
-    # import pandapower.networks as pn
-    net = pw.create_cigre_network_mv(with_der="pv_wind")
+
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
+
     net.sgen.p_mw = net.sgen.p_mw * 8
     net.sgen.sn_mva = net.sgen.sn_mva * 8
+    pp.runpp(net)
+    net_org = deepcopy(net)
 
-
-
-
-if __name__ == '__main__':
-    
-    # pytest.main([__file__])
-
-    import pandapower as pp
-    import pandapower.networks as nw
-
-    # get net
-    net = nw.create_cigre_network_mv(with_der="pv_wind")
-    # pp.runpp(net)
-    # add scale
-    net.sgen.p_mw = net.sgen.p_mw * 8  # TODO: why dont you scale up q?
-    net.sgen.sn_mva = net.sgen.sn_mva * 8  # TODO: why scale sn_mva?
-    # set controllable sgen
     net.load['controllable'] = False
     net.sgen['controllable'] = True
-    # set limits:
+
     net.sgen["max_p_mw"] = net.sgen.p_mw.values
-    net.sgen["min_p_mw"] = net.sgen.p_mw.values  # TODO: why min and max are same?
-    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328  # TODO: why * 0.328?
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
     net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
 
     net.bus["max_vm_pu"] = 1.1
@@ -654,11 +641,6 @@ if __name__ == '__main__':
     net.trafo["max_loading_percent"] = 500.0
     net.line["max_loading_percent"] = 500.0
 
-    # add new column to bus for voltage threshold:
-    net.bus["pm_param/threshold_v"] = None
-    # for buses with controllable sgen set threshold:
-    net.bus["pm_param/threshold_v"].loc[net.sgen.bus] = 0.99
-
     for idx in net.sgen.index:
         pp.create_poly_cost(net, idx, "sgen", 1.0)
 
@@ -668,8 +650,8 @@ if __name__ == '__main__':
     for idx in net.ext_grid.index:
         pp.create_poly_cost(net, idx, "ext_grid", 1.0)
 
-    # TODO: pm_logger
-    # TODO: specific results?
+    net.bus["pm_param/threshold_v"] = None
+    net.bus["pm_param/threshold_v"].loc[net.sgen.bus] = 0.99
 
     pp.runpm_vd(net, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
@@ -677,5 +659,11 @@ if __name__ == '__main__':
                 pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
                 delete_buffer_file=False, pm_file_path=None,
                 pm_tol=1e-8, pdm_dev_mode=True)
+
+    assert np.allclose(net.res_bus.vm_pu[net.sgen.bus], 0.99, atol=1e-2, rtol=1e-2)
+    assert np.not_equal(net_org.res_sgen.q_mvar.values.all(), net.res_sgen.q_mvar.values.all())
+
+if __name__ == '__main__':
+    pytest.main([__file__])
 
 
