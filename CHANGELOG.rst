@@ -1,7 +1,10 @@
 Change Log
 
+- [FIXED] poly_cost and pwl_cost consideration in merge_nets()
+- [ADDED] "results" initialization for runopp()
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
+- [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
 
 [2.7.1]- 2021-07-22
 ----------------------
