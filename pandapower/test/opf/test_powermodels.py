@@ -320,7 +320,6 @@ def test_voltage_angles():
         assert np.allclose(net.res_trafo3w.loading_percent, loading3w, atol=1e-2, rtol=1e-2, equal_nan=True)
 
 
-
 def tnep_grid():
     net = pp.create_empty_network()
 
@@ -607,11 +606,10 @@ def test_timeseries_powermodels():
     net.load['controllable'] = False
     pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
 
-
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+# @pytest.mark.xfail(reason="develop mode")
 def test_runpm_vd():
-
     net = nw.create_cigre_network_mv(with_der="pv_wind")
-
     net.sgen.p_mw = net.sgen.p_mw * 8
     net.sgen.sn_mva = net.sgen.sn_mva * 8
     pp.runpp(net)
@@ -619,34 +617,27 @@ def test_runpm_vd():
 
     net.load['controllable'] = False
     net.sgen['controllable'] = True
-
     net.sgen["max_p_mw"] = net.sgen.p_mw.values
     net.sgen["min_p_mw"] = net.sgen.p_mw.values
     net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
     net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
-
     net.bus["max_vm_pu"] = 1.1
     net.bus["min_vm_pu"] = 0.9
-
     net.ext_grid["max_q_mvar"] = 10000.0
     net.ext_grid["min_q_mvar"] = -10000.0
     net.ext_grid["max_p_mw"] = 10000.0
     net.ext_grid["min_p_mw"] = -10000.0
-
     net.gen["max_p_mw"] = net.gen.p_mw.values
     net.gen["min_p_mw"] = net.gen.p_mw.values
     net.gen["max_q_mvar"] = 10000.0
     net.gen["min_q_mvar"] = -10000.0
-
     net.trafo["max_loading_percent"] = 500.0
     net.line["max_loading_percent"] = 500.0
 
     for idx in net.sgen.index:
         pp.create_poly_cost(net, idx, "sgen", 1.0)
-
     for idx in net.gen.index:
         pp.create_poly_cost(net, idx, "gen", 1.0)
-
     for idx in net.ext_grid.index:
         pp.create_poly_cost(net, idx, "ext_grid", 1.0)
 
@@ -665,5 +656,6 @@ def test_runpm_vd():
 
 if __name__ == '__main__':
     pytest.main([__file__])
+
 
 
