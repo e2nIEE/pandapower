@@ -1859,7 +1859,8 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
                 :, gen_df["index"].loc[idxs]].sum(axis=1)
             net.profiles["%s.p_mw" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
             if elm == "gen":
-                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]],
+                                                    inplace=True)
 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
