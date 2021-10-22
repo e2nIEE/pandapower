@@ -8,12 +8,16 @@ Created on Fri Oct 15 2021
 """
 import pandapower as pp
 import pandapower.networks as nw
+from copy import deepcopy
+
 # get net
 net = nw.create_cigre_network_mv(with_der="pv_wind")
-# pp.runpp(net)
+
 # add scale 
 net.sgen.p_mw = net.sgen.p_mw * 8 #TODO: why dont you scale up q?
 net.sgen.sn_mva = net.sgen.sn_mva * 8 #TODO: why scale sn_mva?
+pp.runpp(net)
+net_org = deepcopy(net)
 # set controllable sgen
 net.load['controllable'] = False
 net.sgen['controllable'] = True
@@ -67,3 +71,8 @@ pp.runpm_vd(net, calculate_voltage_angles=True,
                       delete_buffer_file=False, pm_file_path=None,
                       pm_tol=1e-8, pdm_dev_mode=True)
 
+df = pd.DataFrame(columns=["org_vm_pu", "opt_vm_pu", "org_sgen_q_mvar","opt_sgen_q_mvar"])
+df.org_vm_pu = net_org.res_bus.vm_pu[net_org.sgen.bus]
+df.opt_vm_pu = net.res_bus.vm_pu[net.sgen.bus]
+df.org_sgen_q_mvar =  net_org.res_sgen.q_mvar.values
+df.opt_sgen_q_mvar = net.res_sgen.q_mvar.values

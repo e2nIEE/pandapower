@@ -104,7 +104,6 @@ def convert_to_pm_structure(net, opf_flow_lim = "S"):
     return net, pm, ppc, ppci
 
 
-
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -412,7 +411,7 @@ def add_params_to_pm(net, pm):
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
-            continue
+            return pm
         elif "user_defined_params" not in pm.keys():
             pm["user_defined_params"] = dict()
         params = [param_col.split("/")[-1] for param_col in param_cols]
