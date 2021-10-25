@@ -196,7 +196,7 @@ class CharacteristicControl(Controller):
         if hasattr(index, '__iter__') and len(index) > 1:
             values = np.array(shape=index.shape)
             for i, idx in enumerate(index):
-                values[i] = setattr(net[element]["object"].at[idx], object_attribute)
+                values[i] = getattr(net[element]["object"].at[idx], object_attribute)
         else:
             values = getattr(net[element]["object"].at[index], object_attribute)
         return values

@@ -30,22 +30,25 @@ def _check_necessary_opf_parameters(net, logger):
                 else:
                     controllables = net[element_type].index if element_type == 'gen' else []
 
-            missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
-            na_col = [col for col in set(columns)-set(missing_col) if
-                      net[element_type][col].isnull().any()]
-
             # --- logging for missing data in element tables with controllables
-            if len(controllables) and len(missing_col):
-                if element_type != "ext_grid":
-                    logger.error("These columns are missing in " + element_type + ": " +
-                                 str(missing_col))
-                    error = True
-                else:  # "ext_grid" -> no error due to missing columns at ext_grid
-                    logger.debug("These missing columns in ext_grid are considered in OPF as " +
-                                 "+- 1000 TW.: " + str(missing_col))
-            # determine missing values
-            if len(na_col):
-                missing_val.append(element_type)
+            if len(controllables):
+
+                missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
+                na_col = [col for col in set(columns)-set(missing_col) if
+                          net[element_type][col].isnull().any()]
+
+                if len(missing_col):
+                    if element_type != "ext_grid":
+                        logger.error("These columns are missing in " + element_type + ": " +
+                                     str(missing_col))
+                        error = True
+                    else:  # "ext_grid" -> no error due to missing columns at ext_grid
+                        logger.debug("These missing columns in ext_grid are considered in OPF as " +
+                                     "+- 1000 TW.: " + str(missing_col))
+
+                # determine missing values
+                if len(na_col):
+                    missing_val.append(element_type)
 
     if missing_val:
         logger.info("These elements have missing power constraint values, which are considered " +

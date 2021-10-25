@@ -460,16 +460,24 @@ def test_get_connected_lines_at_bus():
 
 def test_merge_and_split_nets():
     net1 = nw.mv_oberrhein()
+    pp.create_poly_cost(net1, 2, "sgen", 8)
+    pp.create_poly_cost(net1, 0, "sgen", 9)
     # TODO there are some geodata values in oberrhein without corresponding lines
     net1.line_geodata.drop(set(net1.line_geodata.index) - set(net1.line.index), inplace=True)
     n1 = len(net1.bus)
     pp.runpp(net1)
-    net2 = nw.create_cigre_network_mv()
+    net2 = nw.create_cigre_network_mv(with_der="pv_wind")
+    pp.create_poly_cost(net2, 3, "sgen", 10)
+    pp.create_poly_cost(net2, 0, "sgen", 11)
     pp.runpp(net2)
     net = pp.merge_nets(net1, net2)
     pp.runpp(net)
     assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
     assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
+
+    assert (net1.sgen.name.loc[net1.poly_cost.element].append(
+        net2.sgen.name.loc[net2.poly_cost.element]).values ==
+        net.sgen.name.loc[net.poly_cost.element].values).all()
 
     net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
     assert pp.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])

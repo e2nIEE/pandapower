@@ -297,8 +297,8 @@ def test_voltage_angles():
     net.bus.loc[:, "max_vm_pu"] = 1.1
     net.bus.loc[:, "min_vm_pu"] = .9
 
-    custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
-                               "test_files", "run_powermodels_custom.jl")
+    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
+    custom_file = "run_powermodels_custom"  #custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),"test_files", "run_powermodels_custom.jl")
 
     # load is zero since costs are high. PF results should be the same as OPF
     net.load.loc[1, "p_mw"] = 0.
@@ -482,8 +482,12 @@ def test_runpm_ac_pf():
     
     
 def assert_pf(net, dc=False):
-    custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
-                               "opf", "run_powermodels_powerflow.jl")
+    # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
+    #                            "opf", "run_powermodels_powerflow.jl")
+    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
+
+    custom_file = "run_powermodels_powerflow"
+
     if dc:
         # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
         pp.runpm(net, julia_file=custom_file, pm_model="DCMPPowerModel")
