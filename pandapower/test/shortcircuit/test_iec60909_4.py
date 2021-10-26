@@ -233,6 +233,29 @@ def iec_60909_4_2gen():
 
     return net
 
+
+def vde_232():
+    net = pp.create_empty_network()
+    # hv buses
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 21)
+
+    pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
+                       x0x_max=3.47927, r0x0_max=3.03361)
+    pp.create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16,
+                                          pfe_kw=0, i0_percent=0, tap_step_percent=1,
+                                          tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
+                                          vector_group="YNd",
+                                          vk0_percent=np.sqrt(np.square(0.95*15.99219) + np.square(0.5)),
+                                          vkr0_percent=0.5,
+                                          mag0_percent=100, mag0_rx=0,
+                                          si0_hv_partial=0.9,
+                                          pt_percent=12, oltc=True)
+    # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
+    pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
+    return net
+
+
 def test_iec_60909_4_3ph_small_without_gen():
     net = iec_60909_4_small()
     # Deactivate all gens
@@ -408,6 +431,12 @@ def test_detect_power_station_units():
 def test_sc_on_line():
     net = iec_60909_4()
     calc_sc_on_line(net, 2, 0.3)
+
+
+def test_vde_232():
+    net = vde_232()
+    sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
     
 
 if __name__ == '__main__':

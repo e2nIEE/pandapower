@@ -227,6 +227,30 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
 
     return net
 
+
+def vde_232():
+    net = pp.create_empty_network()
+    # hv buses
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 21)
+
+    pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
+                       x0x_max=3.47927, r0x0_max=3.03361)
+    pp.create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16,
+                                          pfe_kw=0, i0_percent=0, tap_step_percent=1,
+                                          tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
+                                          vector_group="YNd",
+                                          vk0_percent=np.sqrt(np.square(0.95*15.99219) + np.square(0.5)),
+                                          vkr0_percent=0.5,
+                                          mag0_percent=100, mag0_rx=0,
+                                          si0_hv_partial=0.9,
+                                          pt_percent=12, oltc=True)
+    # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
+    pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
+    return net
+
+
+
 def test_iec60909_example_4_one_trafo3w():
     net = iec_60909_4_small(n_t3=1)
 
@@ -298,6 +322,20 @@ def test_iec_60909_4_small_with_gen_ps_unit_1ph():
 
     # TODO: This needs to be fixed!!
     # assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
+
+
+def test_vde_232_with_gen_ps_unit_1ph():
+    net = vde_232()
+
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+
+    ikss_max = []
+    # ikss_min = []
+    # ip_min = []
+
+    # TODO: This needs to be fixed!!
+    # assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array(ikss_max), atol=1e-4)
+
 
 
 if __name__ == "__main__":
