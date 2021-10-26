@@ -90,7 +90,7 @@ class DiscreteTapControl(TrafoController):
         """
         Implements one step of the Discrete controller, always stepping only one tap position up or down
         """
-        if self.controlled_tid is None or (self.read_write_flag != 'single_index' and len(self.controlled_tid) == 0):
+        if self.nothing_to_do(net):
             return
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self.read_write_flag)
@@ -111,7 +111,7 @@ class DiscreteTapControl(TrafoController):
         """
         Checks if the voltage is within the desired voltage band, then returns True
         """
-        if self.controlled_tid is None or (self.read_write_flag != 'single_index' and len(self.controlled_tid) == 0):
+        if self.nothing_to_do(net):
             return True
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self.read_write_flag)

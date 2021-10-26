@@ -56,18 +56,28 @@ class TrafoController(Controller):
 
     def initialize_control(self, net):
         # in case changes applied to net in the meantime:
+        # the update occurs in case the in_service parameter of tranformers is changed in the meantime
         # update valid trafo and bus
         # update trafo tap parameters
-        # we assume side and tap_side_coeff do not change after the controller is created
+        # we assume side does not change after the controller is created
         self._set_valid_tid_controlled_bus(net)
+        if self.nothing_to_do(net):
+            return
         self._set_tap_parameters(net)
+        self._set_tap_side_coeff(net)
+
+    def nothing_to_do(self, net):
+        # if the controller shouldn't do anything, return True
+        if self.controlled_tid is None or (self.read_write_flag != 'single_index' and len(self.controlled_tid) == 0):
+            return True
+        return False
 
     def _set_tap_side_coeff(self, net):
-        tap_side = read_from_net(net, self.trafotable, self.tid, 'tap_side', self.read_write_flag)
+        tap_side = read_from_net(net, self.trafotable, self.controlled_tid, 'tap_side', self.read_write_flag)
         if (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.trafotype == "2W") or \
             (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.trafotype == "3W"):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
-                             "but received: %s for trafo %s" % (self.trafotable, tap_side, self.tid))
+                             "but received: %s for trafo %s" % (self.trafotable, tap_side, self.controlled_tid))
 
         self.tap_side_coeff = np.where(tap_side=='hv', 1, -1)
         self.tap_side_coeff[self.tap_step_percent < 0] *= -1
@@ -106,16 +116,16 @@ class TrafoController(Controller):
             logger.warning("All controlled buses are not valid: controller has no effect")
 
     def _set_tap_parameters(self, net):
-        self.tap_min = read_from_net(net, self.trafotable, self.tid, "tap_min", self.read_write_flag)
-        self.tap_max = read_from_net(net, self.trafotable, self.tid, "tap_max", self.read_write_flag)
-        self.tap_neutral = read_from_net(net, self.trafotable, self.tid, "tap_neutral", self.read_write_flag)
-        self.tap_step_percent = read_from_net(net, self.trafotable, self.tid, "tap_step_percent", self.read_write_flag)
-        self.tap_step_degree = read_from_net(net, self.trafotable, self.tid, "tap_step_degree", self.read_write_flag)
+        self.tap_min = read_from_net(net, self.trafotable, self.controlled_tid, "tap_min", self.read_write_flag)
+        self.tap_max = read_from_net(net, self.trafotable, self.controlled_tid, "tap_max", self.read_write_flag)
+        self.tap_neutral = read_from_net(net, self.trafotable, self.controlled_tid, "tap_neutral", self.read_write_flag)
+        self.tap_step_percent = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_percent", self.read_write_flag)
+        self.tap_step_degree = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_degree", self.read_write_flag)
 
         self.tap_sign = np.where(np.isnan(self.tap_step_degree), 1, np.sign(np.cos(np.deg2rad(self.tap_step_degree))))
         self.tap_sign = np.where((self.tap_sign == 0) | (np.isnan(self.tap_sign)), 1, self.tap_sign)
 
-        self.tap_pos = read_from_net(net, self.trafotable, self.tid, "tap_pos", self.read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
         self.tap_pos = np.where(np.isnan(self.tap_pos), self.tap_neutral, self.tap_pos)
 
         if np.any(np.isnan(self.tap_min)) or np.any(np.isnan(self.tap_max)) or np.any(np.isnan(self.tap_step_percent)):
@@ -134,7 +144,7 @@ class TrafoController(Controller):
         net.controller.at[self.index, 'recycle'] = recycle
 
     # def timestep(self, net):
-    #     self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
+    #     self.tap_pos = net[self.trafotable].at[self.controlled_tid, "tap_pos"]
 
     def __repr__(self):
         s = '%s of %s %s' % (self.__class__.__name__, self.trafotable, self.tid)
