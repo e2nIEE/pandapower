@@ -128,7 +128,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     collections = [bc, lc]
 
     # create ext_grid collections
-    #eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
+    # eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
     if len(net.ext_grid) > 0:
         sc = create_ext_grid_collection(net, size=ext_grid_size, orientation=0,
                                         ext_grids=net.ext_grid.index, patch_edgecolor=ext_grid_color,
