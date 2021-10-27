@@ -41,9 +41,16 @@ class TrafoController(Controller):
                  **kwargs):
         super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle,
                          **kwargs)
-        self.tid = tid
+
         self.trafotype = trafotype
-        self.read_write_flag = 'single_index' if isinstance(tid, numbers.Number) else 'loc'
+
+        # set read and write flag and make sure that tid is a numpy array (if several tid)
+        if isinstance(tid, numbers.Number):
+            self.tid = tid
+            self.read_write_flag = 'single_index'
+        else:
+            self.read_write_flag = 'loc'
+            self.tid = np.array(tid)
 
         self._set_side_trafotable(net, side)
         self._set_valid_tid_controlled_bus(net)
