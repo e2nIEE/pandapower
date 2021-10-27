@@ -11,6 +11,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
@@ -3082,3 +3083,24 @@ def get_gc_objects_dict():
         _type = type(obj)
         nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
     return nums_by_types
+
+
+def create_trafo_characteristics(net, trafotable, trafo_index, vk_percent_x, vk_percent_y, vkr_percent_x, vkr_percent_y):
+    if len(trafo_index) != len(vk_percent_x) or len(trafo_index) != len(vkr_percent_x) or \
+            len(trafo_index) != len(vk_percent_y) or len(trafo_index) != len(vkr_percent_y):
+        raise UserWarning("the lengths of the trafo index and points do not match!")
+
+    if 'tap_dependent_impedance' not in net[trafotable]:
+        net[trafotable]['tap_dependent_impedance'] = False
+
+    net[trafotable].loc[trafo_index, 'tap_dependent_impedance'] = True
+
+    for col in ('vk_percent_characteristic', 'vkr_percent_characteristic'):
+        if col not in net[trafotable]:
+            net[trafotable][col] = pd.Series(index=net[trafotable].index, dtype=object, data=None)
+        elif net[trafotable][col].dtype != object:
+            net[trafotable][col] = net[trafotable][col].astype(object)
+
+    for tid, vk_x, vk_y, vkr_x, vkr_y in zip(trafo_index, vk_percent_x, vk_percent_y, vkr_percent_x, vkr_percent_y):
+        net[trafotable].at[tid, 'vk_percent_characteristic'] = interp1d(vk_x, vk_y, kind='quadratic', fill_value='extrapolate')
+        net[trafotable].at[tid, 'vkr_percent_characteristic'] = interp1d(vkr_x, vkr_y, kind='quadratic', fill_value='extrapolate')

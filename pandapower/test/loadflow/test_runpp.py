@@ -1236,6 +1236,19 @@ def test_results_for_line_temperature():
     assert np.allclose(net.res_bus.va_degree, va_res_80, rtol=0, atol=1e-6)
 
 
+def test_tap_dependent_impedance():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+
+    pp.toolbox.create_trafo_characteristics(net, 'trafo', [0], [[-2, -1, 0, 1, 2]], [[5.5, 5.8, 6, 6.2, 6.5]],
+                                            [[-2, -1, 0, 1, 2]], [[1.4, 1.42, 1.44, 1.46, 1.48]])
+    pp.runpp(net)
+    # todo: trafo3w, check results
+
+
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid():
     # test several nets

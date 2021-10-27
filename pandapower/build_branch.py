@@ -418,13 +418,31 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     if sequence == 1:
         vk_percent = get_trafo_values(trafo_df, "vk_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
+
+        if "tap_dependent_impedance" in trafo_df:
+            tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+            tap_pos = get_trafo_values(trafo_df, "tap_pos")
+            vk_percent_characteristic = get_trafo_values(trafo_df, "vk_percent_characteristic")
+            vkr_percent_characteristic = get_trafo_values(trafo_df, "vkr_percent_characteristic")
+
+            vk_percent = np.where(tap_dependent_impedance,
+                                  [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_percent_characteristic)],
+                                  vk_percent)
+            vkr_percent = np.where(tap_dependent_impedance,
+                                   [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vkr_percent_characteristic)],
+                                   vkr_percent)
+
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr0_percent")
     else:
         raise UserWarning("Unsupported sequence")
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * (3* sn_mva)  if mode == 'pf_3ph' else\
-    np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
+
+    # adjust for low voltage side voltage converter:
+    if mode == 'pf_3ph':
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * (3 * sn_mva)
+    else:
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_mva
 
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
