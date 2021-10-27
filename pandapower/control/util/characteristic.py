@@ -7,6 +7,7 @@ from builtins import zip
 from builtins import object
 
 from numpy import interp
+from scipy.interpolate import interp1d
 from pandapower.io_utils import JSONSerializableClass
 
 
@@ -115,3 +116,27 @@ class Characteristic(JSONSerializableClass):
         :return: The corresponding target value of this characteristics
         """
         return interp(x, self.x_vals, self.y_vals)
+
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+
+class SplineCharacteristic(Characteristic):
+    json_excludes = ["self", "__class__", "_interpolator"]
+    def __init__(self, x_values, y_values):
+        super().__init__(x_values=x_values, y_values=y_values)
+
+    @property
+    def interpolator(self):
+        return self._interpolator
+
+    @interpolator.getter
+    def interpolator(self):
+        if not hasattr(self, '_interpolator'):
+            self._interpolator = interp1d(self.x_vals, self.y_vals, kind='quadratic', fill_value='extrapolate')
+        return self._interpolator
+
+    def __call__(self, x):
+        return self.interpolator(x)
+
