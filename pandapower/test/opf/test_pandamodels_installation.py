@@ -36,7 +36,7 @@ def test_julia_connection():
        
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.dependency(depends=['test_julia_connection'])
+# @pytest.mark.dependency(depends=['test_julia_connection'])
 def test_pandamodels_installation():
     
     from julia import Main
@@ -66,7 +66,7 @@ def test_pandamodels_installation():
         
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.dependency(depends=['test_julia_connection'])
+# @pytest.mark.dependency(depends=['test_julia_connection'])
 def test_pandamodels_dev_mode(): 
     
     from julia import Main
@@ -110,11 +110,6 @@ def test_pandamodels_dev_mode():
     print("PandaModels is added to julia packages")
     
 if __name__ == '__main__':
-    
     pytest.main([__file__])
-    # test_julia_installation()
-    # test_julia_connection()
-    # test_pandamodels_installation()
-    # test_pandamodels_dev_mode()
-    
+
     
