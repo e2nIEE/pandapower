@@ -72,7 +72,8 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         print("Successfully added PandaModels")
 
-    if dev_mode or "julia\dev\PandaModels" in Base.find_package("PandaModels").split(".jl")[0]:
+    # if dev_mode or "julia\dev\PandaModels" in Base.find_package("PandaModels").split(".jl")[0]:
+    if dev_mode:
         Pkg.activate("PandaModels")
 
     try:
