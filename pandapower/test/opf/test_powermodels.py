@@ -607,7 +607,7 @@ def test_timeseries_powermodels():
     pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-# @pytest.mark.xfail(reason="develop mode")
+@pytest.mark.xfail(reason="develop mode")
 def test_runpm_vd():
     net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.sgen.p_mw = net.sgen.p_mw * 8
@@ -656,6 +656,5 @@ def test_runpm_vd():
 
 if __name__ == '__main__':
     pytest.main([__file__])
-
 
 

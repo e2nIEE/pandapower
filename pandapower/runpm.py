@@ -372,7 +372,7 @@ def runpm_vd(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
-                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):  # pragma: no cover
+                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=True, **kwargs):  # pragma: no cover
     """
         Runs a non-linear power system optimization using PowerModels.jl.
 
