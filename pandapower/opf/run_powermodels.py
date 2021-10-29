@@ -69,26 +69,24 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
             print("installing dev mode is a slow process!")
             Pkg.resolve()
             Pkg.develop("PandaModels")
+            # add pandamodels dependencies: slow process
             Pkg.instantiate()
             
         Pkg.build()
         Pkg.resolve()
         print("Successfully added PandaModels")
-        # print(Base.find_package("PandaModels"))
-    # if dev_mode or "julia\dev\PandaModels" in Base.find_package("PandaModels").split(".jl")[0]:
-    #     Pkg.activate("PandaModels")
+
     if dev_mode:
         Pkg.develop("PandaModels")
-        # print(Base.find_package("PandaModels"))
-        if ".julia\dev\PandaModels" or ".julia/dev/PandaModels" in Base.find_package("PandaModels"):
-            # print("from dev", Base.find_package("PandaModels"))
-            Pkg.activate("PandaModels")
-        else:
-            # Pkg.develop("PandaModels")
-            # add pandamodels dependencies: slow process
-            Pkg.build()
-            Pkg.resolve()
-            Pkg.activate("PandaModels")
+        Pkg.activate("PandaModels")
+
+        # if ".julia\dev\PandaModels" or ".julia/dev/PandaModels" in Base.find_package("PandaModels"):
+        #     Pkg.activate("PandaModels")
+        # else:
+        #     Pkg.build()
+        #     Pkg.resolve()
+        #     Pkg.activate("PandaModels")
+
     try:
         Main.using("PandaModels")
     except ImportError:
@@ -96,5 +94,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
+    
+    if dev_mode:
+        Pkg.activate()
+        Pkg.free("PandaModels")
     return result_pm
 

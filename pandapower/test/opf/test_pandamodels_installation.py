@@ -99,15 +99,16 @@ def test_pandamodels_dev_mode():
       
     # activate julia base mode
     Pkg.activate()
+    Pkg.free("PandaModels")
     # remove dev mod
-    Pkg.rm("PandaModels")
+    # Pkg.rm("PandaModels")
     Pkg.resolve()
     # reinstall base mode
-    Pkg.Registry.update()
-    Pkg.add("PandaModels")  
-    Pkg.build()
-    Pkg.resolve()
-    print("PandaModels is added to julia packages")
+    # Pkg.Registry.update()
+    # Pkg.add("PandaModels")
+    # Pkg.build()
+    # Pkg.resolve()
+    # print("PandaModels is added to julia packages")
     
 if __name__ == '__main__':
     pytest.main([__file__])
