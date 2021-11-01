@@ -197,6 +197,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         # TODO: This equation needs to be checked!
         # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
         z0_k = (r_sc + x_sc * 1j) / parallel
+
+
+
         y0_k = 1 / z0_k #adding admittance for "pi" model
         if mode == "sc":# or trafo_model == "pi":
             from pandapower.shortcircuit.idx_bus import C_MAX
@@ -205,6 +208,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
                                                 sn_mva, cmax)
             z0_k *= kt
             y0_k = 1 / z0_k
+
+            # z_0THV is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
+            vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
+            z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_mva)
+            # todo: differentiate ks and kt
+
         # =============================================================================
         #       Transformer magnetising impedance for zero sequence
         # =============================================================================
@@ -436,6 +445,24 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
 
     r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
+    # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
+    # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0
+
+    #
+    # already implemented:
+    #   YNyd
+    #   YYnd
+    #   YNynd
+    # still missing:
+    #   YNdd
+    # not relevant (for 1ph):
+    #   Yyd
+    #   Yyy
+    #   Ydd
+    #   Ydy
+    #   Yyd
+    #   Ddd
+
     n_t3 = net.trafo3w.shape[0]
     for t3_ix in np.arange(n_t3):
         t3 = net.trafo3w.iloc[t3_ix, :]
@@ -444,7 +471,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             x[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
             r[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
         elif t3.vector_group.lower() == "ynyd":
-            # Correction for YnYD
+            # Correction for YNyd
             # z3->y3
             ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]

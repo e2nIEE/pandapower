@@ -53,6 +53,7 @@ def add_network(net, vector_group):
     return l1, l2, t1
 
 def test_1ph_shortcircuit():
+    # vector groups without "N" have no impact on the 1ph
     results = {
                  "Yy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
                 ,"Yyn": [0.52209347337, 2.5145986133,  1.6737892808,  1.1117955913 ]
@@ -245,6 +246,7 @@ def vde_232():
                                           mag0_percent=100, mag0_rx=0,
                                           si0_hv_partial=0.9,
                                           pt_percent=12, oltc=True)
+    net.trafo['zn_ohm'] = 22
     # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
     pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
     return net

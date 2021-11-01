@@ -183,6 +183,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
 
         if np.any(ps_trafo_oltc_mask):
+            # x_g here is x''_d -> ks is correct
+            # todo: if the voltage U_G is permanently higher than U_rG, then U_Gmax = U_rG*(1+p_G)
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
                 ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_mask])
             ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_SG] = ks[ps_trafo_oltc_mask]
@@ -193,8 +195,11 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_G] = kg[ps_trafo_oltc_mask]
 
         if np.any(~ps_trafo_oltc_mask):
-            kso = (v_q/v_g/(1 + p_g)) * (v_trafo_lv/v_trafo_hv) *\
-                ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask]) * (1 - p_t[~ps_trafo_oltc_mask])
+            # (1+-p_t) in the standard
+            # (1-p_t) is used if the highest partial short-circuit current of the power station unit at the high-voltage side of the unit transformer is searched for
+            # if the unit transformer has no off-load taps or if no such taps are permanently used -> 1-p_t = 1
+            kso = (v_q / (v_g * (1 + p_g))) * (v_trafo_lv / v_trafo_hv) * (1 - p_t[~ps_trafo_oltc_mask]) * \
+                  ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
 
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_SG] = kso[~ps_trafo_oltc_mask]
             ppc["branch"][ps_trafo_ppc_ix[~ps_trafo_oltc_mask], K_ST] = kso[~ps_trafo_oltc_mask]
