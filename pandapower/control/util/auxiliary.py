@@ -203,11 +203,15 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
                     "same type controllers should be dropped.")
 
 
-def plot_characteristic(characteristic, start, stop, num=20):
+def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel=None):
     x = np.linspace(start, stop, num)
     y = characteristic(x)
     if MATPLOTLIB_INSTALLED:
         plt.plot(x, y, marker='x')
+        if xlabel is not None:
+            plt.xlabel(xlabel)
+        if ylabel is not None:
+            plt.ylabel(ylabel)
     else:
         logger.info("matplotlib not installed. y-values: %s" % y)
 
