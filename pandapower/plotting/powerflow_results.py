@@ -99,7 +99,7 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
     if index_subset is None:
         index_subset = net[element].index
     loadings = net["res_%s" % element].loading_percent.values[net["res_%s" % element].index.isin(index_subset)]
-    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis="range")
+    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis=[0, 100])
     for l in list(boxplot.keys()):
         plt.setp(boxplot[l], lw=3)
         if l == "medians":
