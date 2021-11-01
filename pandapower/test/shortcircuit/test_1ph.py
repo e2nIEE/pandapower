@@ -246,9 +246,9 @@ def vde_232():
                                           mag0_percent=100, mag0_rx=0,
                                           si0_hv_partial=0.9,
                                           pt_percent=12, oltc=True)
-    net.trafo['zn_ohm'] = 22
+    net.trafo['xn_ohm'] = 22
     # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
-    pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
+    pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5)
     return net
 
 
