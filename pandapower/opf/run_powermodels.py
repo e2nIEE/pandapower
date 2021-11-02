@@ -90,9 +90,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
 
-    if dev_mode:
-        Pkg.activate()
-        Pkg.free("PandaModels")
-        Pkg.resolve()
+    # if dev_mode:
+    #     Pkg.activate()
+    #     Pkg.free("PandaModels")
+    #     Pkg.resolve()
     return result_pm
 
