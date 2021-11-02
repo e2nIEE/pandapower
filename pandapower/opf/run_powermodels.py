@@ -78,14 +78,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     if dev_mode:
         Pkg.develop("PandaModels")
+        Pkg.build()
+        Pkg.resolve()
         Pkg.activate("PandaModels")
-
-        # if ".julia\dev\PandaModels" or ".julia/dev/PandaModels" in Base.find_package("PandaModels"):
-        #     Pkg.activate("PandaModels")
-        # else:
-        #     Pkg.build()
-        #     Pkg.resolve()
-        #     Pkg.activate("PandaModels")
 
     try:
         Main.using("PandaModels")
@@ -95,8 +90,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     Main.buffer_file = buffer_file
     result_pm = Main.eval(julia_file + "(buffer_file)")
 
-    # if dev_mode:
-    #     Pkg.activate()
-    #     Pkg.free("PandaModels")
+    if dev_mode:
+        Pkg.activate()
+        Pkg.free("PandaModels")
+        Pkg.resolve()
     return result_pm
 
