@@ -284,7 +284,7 @@ def test_opf_create_ext_grid_controllable():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.xfail()
+@pytest.mark.xfail(reason="not complited yet")
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case14_pm_file()
