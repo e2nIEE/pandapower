@@ -284,14 +284,18 @@ def test_opf_create_ext_grid_controllable():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.xfail()
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case14_pm_file()
+
     net_old = copy.deepcopy(net)
-    net_new = copy.deepcopy(net)
-    # run pd2ppc with ext_grid controllable = False
+    pp.runpp(net_old)
     pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
+
+    net_new = copy.deepcopy(net)
     net_new.ext_grid["controllable"] = True
+    pp.runpp(net_new)
     pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
                     opf_flow_lim="I")
 
@@ -304,3 +308,4 @@ def test_opf_ext_grid_controllable_pm():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
+
