@@ -608,7 +608,6 @@ def test_timeseries_powermodels():
     pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail(reason="develop mode")
 def test_runpm_vd():
     net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.sgen.p_mw = net.sgen.p_mw * 8
@@ -650,7 +649,7 @@ def test_runpm_vd():
                 n_timesteps=96, time_elapsed=0.25, correct_pm_network_data=True,
                 pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
                 delete_buffer_file=False, pm_file_path=None,
-                pm_tol=1e-8, pdm_dev_mode=True)
+                pm_tol=1e-8, pdm_dev_mode=False)
 
     assert np.allclose(net.res_bus.vm_pu[net.sgen.bus], 0.99, atol=1e-2, rtol=1e-2)
     assert np.not_equal(net_org.res_sgen.q_mvar.values.all(), net.res_sgen.q_mvar.values.all())
