@@ -58,6 +58,68 @@
         "min_q_mvar": "float64"
       }
     },
+    "motor": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"pn_mech_mw\",\"loading_percent\",\"cos_phi\",\"cos_phi_n\",\"efficiency_percent\",\"efficiency_n_percent\",\"lrc_pu\",\"vn_kv\",\"scaling\",\"in_service\",\"rx\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "int64",
+        "pn_mech_mw": "float64",
+        "loading_percent": "float64",
+        "cos_phi": "float64",
+        "cos_phi_n": "float64",
+        "efficiency_percent": "float64",
+        "efficiency_n_percent": "float64",
+        "lrc_pu": "float64",
+        "vn_kv": "float64",
+        "scaling": "float64",
+        "in_service": "bool",
+        "rx": "float64"
+      }
+    },
+    "asymmetric_load": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\",\"sn_mva\",\"scaling\",\"in_service\",\"type\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "uint32",
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64",
+        "sn_mva": "float64",
+        "scaling": "float64",
+        "in_service": "bool",
+        "type": "object"
+      }
+    },
+    "asymmetric_sgen": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"current_source\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "int64",
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64",
+        "sn_mva": "float64",
+        "scaling": "float64",
+        "in_service": "bool",
+        "type": "object",
+        "current_source": "bool"
+      }
+    },
     "storage": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -80,7 +142,7 @@
     "gen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"controllable\",\"in_service\",\"name\",\"p_mw\",\"scaling\",\"sn_mva\",\"type\",\"vm_pu\",\"slack\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\"],\"index\":[0,1,10,100,101,102,103,104,105,106,107,108,109,11,110,111,112,113,114,115,116,117,118,119,12,120,121,122,123,124,125,126,127,128,129,13,130,131,132,133,134,135,136,137,138,139,14,140,141,142,143,144,145,146,147,148,149,15,150,151,152,153,154,155,156,157,158,159,16,160,161,162,163,164,165,166,167,168,169,17,170,171,172,173,174,175,176,177,178,179,18,180,181,182,183,184,185,186,187,188,189,19,190,191,192,193,194,195,196,197,198,199,2,20,200,201,202,203,204,205,206,207,208,209,21,210,211,212,213,214,215,216,217,218,219,22,220,221,222,223,224,225,226,227,228,229,23,230,231,232,233,234,235,236,237,238,239,24,240,241,242,243,244,245,246,25,26,27,28,29,3,30,31,32,33,34,35,36,37,38,39,4,40,41,42,43,44,45,46,47,48,49,5,50,51,52,53,54,55,56,57,58,59,6,60,61,62,63,64,65,66,67,68,69,7,70,71,72,73,74,75,76,77,78,79,8,80,81,82,83,84,85,86,87,88,89,9,90,91,92,93,94,95,96,97,98,99],\"data\":[[21,true,true,null,180.0,1.0,null,null,1.06818,false,221.0,110.0,162.0,-61.0],[22,true,true,null,180.0,1.0,null,null,1.06818,false,200.0,140.0,140.0,-25.0],[67,true,true,null,210.0,1.0,null,null,1.08636,false,225.0,129.0,120.0,-14.0],[1588,true,true,null,215.0,1.0,null,null,1.09091,false,225.0,120.0,120.0,-10.0],[1647,true,true,null,32.0,1.0,null,null,1.07273,false,32.0,0.0,0.0,0.0],[1655,true,true,null,90.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0],[1657,true,true,null,120.0,1.0,null,null,1.08182,false,120.0,79.0,73.0,-1.0],[1667,true,true,null,125.0,1.0,null,null,1.09091,false,125.0,70.0,83.0,-5.0],[1680,true,true,null,100.0,1.0,null,null,1.08182,false,119.0,80.0,80.0,-25.0],[1738,true,true,null,10.0,1.0,null,null,1.07273,false,12.0,0.0,0.0,0.0],[1741,true,true,null,12.0,1.0,null,null,1.08182,false,4.0,0.0,0.0,0.0],[1745,true,true,null,215.0,1.0,null,null,1.08182,false,15.0,0.0,131.0,-6.0],[1768,true,true,null,43.0,1.0,null,null,1.08182,false,46.0,3.0,35.0,-6.0],[68,true,true,null,225.0,1.0,null,null,1.08636,false,225.0,129.0,120.0,-14.0],[1953,true,true,null,14.0,1.0,null,null,1.08182,false,14.0,2.0,9.300000000000001,1.9],[1981,true,true,null,123.0,1.0,null,null,1.08182,false,123.0,70.0,79.0,0.0],[1982,true,true,null,100.0,1.0,null,null,1.08182,false,161.0,55.0,114.0,-27.0],[1983,true,true,null,100.0,1.0,null,null,1.08182,false,161.0,55.0,114.0,-27.0],[1992,true,true,null,110.0,1.0,null,null,1.08182,false,110.0,80.0,15.0,0.0],[2099,true,true,null,38.0,1.0,null,null,1.08182,false,40.0,5.0,26.0,13.0],[2143,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,140.0,-35.0],[2145,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,140.0,-35.0],[2213,true,true,null,30.0,1.0,null,null,1.07273,false,32.0,27.0,0.0,0.0],[2234,true,true,null,10.0,1.0,null,null,1.06364,false,11.0,0.0,0.0,0.0],[70,true,true,null,225.0,1.0,null,null,1.0325,false,225.0,129.0,99.0,-10.0],[2236,true,true,null,110.0,1.0,null,null,1.09091,false,120.0,100.0,85.0,-15.0],[2252,true,true,null,2.5,1.0,null,null,1.08182,false,3.0,1.0,0.0,0.0],[2255,true,true,null,1.8,1.0,null,null,1.08182,false,4.0,2.0,0.0,0.0],[2266,true,true,null,1.5,1.0,null,null,1.1,false,5.0,0.0,0.0,0.0],[2270,true,true,null,1.3,1.0,null,null,1.09091,false,1.0,0.0,0.0,0.0],[2273,true,true,null,25.0,1.0,null,null,1.06364,false,50.0,15.0,30.0,0.0],[2299,true,true,null,150.0,1.0,null,null,1.1,false,222.0,90.0,117.0,-19.0],[2305,true,true,null,20.0,1.0,null,null,1.04545,false,29.0,10.0,8.0,0.0],[2309,true,true,null,50.0,1.0,null,null,1.07273,false,55.0,15.0,49.0,-7.0],[2315,true,true,null,1.7,1.0,null,null,1.00909,false,2.0,0.0,0.0,0.0],[91,true,true,null,220.0,1.0,null,null,1.08182,false,220.0,140.0,134.0,-7.0],[2321,true,true,null,2.44,1.0,null,null,1.03636,false,6.0,2.0,0.0,0.0],[2322,true,true,null,52.700000000000003,1.0,null,null,1.08182,false,55.0,10.0,15.0,0.0],[2323,true,true,null,5.0,1.0,null,null,1.08182,false,5.0,1.0,2.0,0.0],[2336,true,true,null,2.7,1.0,null,null,1.02727,false,4.0,3.0,0.0,0.0],[2344,true,true,null,4.0,1.0,null,null,1.03636,false,30.0,4.0,0.0,0.0],[2348,true,true,null,2.5,1.0,null,null,1.05455,false,12.0,2.0,0.0,0.0],[2356,true,true,null,0.5,1.0,null,null,1.08182,false,7.0,0.0,0.0,0.0],[2367,true,true,null,1.1,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0],[2369,true,true,null,1.46,1.0,null,null,1.05455,false,3.0,1.0,0.0,0.0],[2374,true,true,null,3.0,1.0,null,null,1.05455,false,3.0,1.0,1.25,0.0],[92,true,true,null,225.0,1.0,null,null,1.08182,false,225.0,140.0,131.0,-6.0],[2378,true,true,null,2.5,1.0,null,null,1.03636,false,4.0,3.0,0.0,0.0],[2382,true,true,null,0.3,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0],[2389,true,true,null,2.25,1.0,null,null,1.03636,false,10.0,2.0,0.0,0.0],[2402,true,true,null,50.0,1.0,null,null,1.1,false,50.0,40.0,12.0,0.0],[2403,true,true,null,20.0,1.0,null,null,1.08182,false,28.0,20.0,10.0,0.0],[2407,true,true,null,3.9,1.0,null,null,1.04545,false,10.0,4.0,0.0,0.0],[2432,true,true,null,2.4,1.0,null,null,1.04545,false,4.0,2.0,0.0,0.0],[2437,true,true,null,2.5,1.0,null,null,1.02727,false,4.0,3.0,0.0,0.0],[2446,true,true,null,2.0,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0],[2455,true,true,null,1.9,1.0,null,null,1.08182,false,4.0,0.0,0.0,0.0],[95,true,true,null,383.0,1.0,null,null,1.0375,false,383.0,180.0,213.0,-30.0],[2494,true,true,null,1.6,1.0,null,null,1.03636,false,2.0,1.0,0.0,0.0],[2495,true,true,null,0.22,1.0,null,null,1.08182,false,0.0,0.0,0.0,0.0],[2520,true,true,null,0.7,1.0,null,null,1.03636,false,1.0,1.0,0.0,0.0],[2521,true,true,null,0.3,1.0,null,null,1.04545,false,0.0,0.0,0.0,0.0],[2523,true,true,null,3.0,1.0,null,null,1.02727,false,6.0,3.0,0.0,0.0],[2526,true,true,null,2.0,1.0,null,null,1.06364,false,4.0,2.0,0.0,0.0],[2534,true,true,null,180.0,1.0,null,null,1.09091,false,200.0,150.0,111.0,-18.0],[2546,true,true,null,1.63,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0],[2547,true,true,null,0.3,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0],[2554,true,true,null,6.0,1.0,null,null,1.03636,false,20.0,6.0,0.0,0.0],[112,true,true,null,19.0,1.0,null,null,1.07727,false,21.0,0.0,0.0,0.0],[2573,true,true,null,50.0,1.0,null,null,1.1,false,65.0,40.0,15.0,0.0],[2581,true,true,null,0.23,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0],[2584,true,true,null,2.0,1.0,null,null,1.07273,false,6.0,1.0,0.0,0.0],[2590,true,true,null,0.2,1.0,null,null,1.09091,false,1.0,0.0,0.0,0.0],[2592,true,true,null,2.7,1.0,null,null,1.01818,false,4.0,2.0,0.0,0.0],[2596,true,true,null,9.0,1.0,null,null,1.04545,false,31.0,0.0,0.0,0.0],[2597,true,true,null,9.0,1.0,null,null,1.04545,false,31.0,0.0,0.0,0.0],[2599,true,true,null,2.5,1.0,null,null,1.04545,false,7.0,2.0,0.0,0.0],[2615,true,true,null,0.7,1.0,null,null,1.1,false,1.0,0.0,0.0,0.0],[2616,true,true,null,1.0,1.0,null,null,1.06364,false,1.0,0.0,0.0,0.0],[118,true,true,null,215.0,1.0,null,null,1.08182,false,225.0,120.0,120.0,-10.0],[2618,true,true,null,2.22,1.0,null,null,1.06364,false,6.0,2.0,0.0,0.0],[2620,true,true,null,2.0,1.0,null,null,1.07273,false,4.0,2.0,0.0,0.0],[2626,true,true,null,2.5,1.0,null,null,1.00909,false,6.0,2.0,0.0,0.0],[2628,true,true,null,2.5,1.0,null,null,1.00909,false,4.0,3.0,0.0,0.0],[2629,true,true,null,2.0,1.0,null,null,1.06364,false,4.0,2.0,0.0,0.0],[2643,true,true,null,2.5,1.0,null,null,1.09091,false,10.0,2.0,1.03,0.0],[2648,true,true,null,1.69,1.0,null,null,1.07273,false,2.0,1.0,0.0,0.0],[2649,true,true,null,2.52,1.0,null,null,1.05455,false,4.0,2.0,0.0,0.0],[2654,true,true,null,0.2,1.0,null,null,1.0,false,0.0,0.0,0.0,0.0],[2666,true,true,null,225.0,1.0,null,null,1.09091,false,235.0,94.0,145.0,-38.0],[119,true,true,null,215.0,1.0,null,null,1.08182,false,225.0,120.0,120.0,-10.0],[2678,true,true,null,95.0,1.0,null,null,1.07273,false,108.0,70.0,70.0,0.0],[2683,true,true,null,5.5,1.0,null,null,1.09091,false,8.0,0.0,2.0,0.0],[2684,true,true,null,2.5,1.0,null,null,1.1,false,16.0,2.0,0.0,0.0],[2690,true,true,null,1.7,1.0,null,null,1.07273,false,10.0,2.0,0.0,0.0],[2694,true,true,null,0.3,1.0,null,null,1.06364,false,0.0,0.0,0.0,0.0],[2697,true,true,null,0.9,1.0,null,null,1.06364,false,1.0,1.0,0.0,0.0],[2773,true,true,null,5.0,1.0,null,null,1.04545,false,11.0,3.0,10.0,0.0],[2780,true,true,null,1.0,1.0,null,null,1.03636,false,1.0,0.0,0.0,0.0],[2790,true,true,null,0.7,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0],[2793,true,true,null,45.0,1.0,null,null,1.05455,false,55.0,0.0,41.700000000000003,6.0],[120,true,true,null,115.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0],[2796,true,true,null,0.4,1.0,null,null,1.08182,false,1.0,0.0,1.0,0.0],[2802,true,true,null,1.8,1.0,null,null,1.04545,false,3.0,0.0,1.0,0.0],[2810,true,true,null,0.3,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0],[2813,true,true,null,49.0,1.0,null,null,1.06364,false,55.0,26.0,35.0,4.0],[2822,true,true,null,0.2,1.0,null,null,1.01818,false,1.0,0.0,0.0,0.0],[2825,true,true,null,0.2,1.0,null,null,1.02727,false,0.0,0.0,0.0,0.0],[2826,true,true,null,0.3,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0],[2827,true,true,null,1.0,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0],[2829,true,true,null,0.4,1.0,null,null,1.02727,false,1.0,0.0,0.1,0.0],[2832,true,true,null,8.0,1.0,null,null,1.09091,false,26.0,0.0,0.0,0.0],[34,true,true,null,345.0,1.0,null,null,1.09545,false,370.0,240.0,190.0,-19.0],[121,true,true,null,115.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0],[2835,true,true,null,10.0,1.0,null,null,1.03636,false,13.0,2.0,5.0,0.0],[2841,true,true,null,4.5,1.0,null,null,1.07273,false,6.0,0.0,0.0,0.0],[2845,true,true,null,53.0,1.0,null,null,1.07273,false,55.0,26.0,35.0,6.0],[2855,true,true,null,4.8,1.0,null,null,1.07273,false,18.0,0.0,0.0,0.0],[2856,true,true,null,4.8,1.0,null,null,1.08182,false,22.0,0.0,0.0,0.0],[2874,true,true,null,3.2,1.0,null,null,1.05455,false,4.0,1.0,3.0,1.0],[2879,true,true,null,16.0,1.0,null,null,1.03636,false,16.0,0.0,12.0,0.0],[2886,true,true,null,10.0,1.0,null,null,1.05455,false,12.0,5.0,9.300000000000001,1.0],[2888,true,true,null,12.0,1.0,null,null,1.04545,false,41.0,0.0,1.0,0.0],[2899,true,true,null,0.85,1.0,null,null,1.08182,false,2.0,0.0,0.0,0.0],[132,true,true,null,115.0,1.0,null,null,1.07727,false,120.0,70.0,79.0,0.0],[2908,true,true,null,25.0,1.0,null,null,1.03636,false,25.0,0.0,18.780000000000001,0.0],[2919,true,true,null,0.2,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0],[2929,true,true,null,13.199999999999999,1.0,null,null,1.02727,false,13.0,0.0,10.5,0.0],[2932,true,true,null,0.3,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0],[2933,true,true,null,5.0,1.0,null,null,1.07273,false,20.0,5.0,18.75,0.0],[2950,true,true,null,0.5,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0],[2956,true,true,null,0.8,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0],[2961,true,true,null,1.1,1.0,null,null,1.08182,false,2.0,1.0,0.5,0.0],[2989,true,true,null,0.1,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0],[2992,true,true,null,0.2,1.0,null,null,1.06364,false,3.0,0.0,0.0,0.0],[133,true,true,null,105.0,1.0,null,null,1.07273,false,110.0,80.0,31.0,0.0],[2996,true,true,null,11.1,1.0,null,null,1.07273,false,15.0,0.0,0.0,0.0],[2998,true,true,null,0.3,1.0,null,null,1.02727,false,0.0,0.0,0.1,0.0],[3007,true,true,null,0.3,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0],[3019,true,true,null,0.9,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0],[3028,true,true,null,0.1,1.0,null,null,1.08182,false,0.0,0.0,0.0,0.0],[3033,true,true,null,1.4,1.0,null,null,1.02727,false,4.0,0.0,0.0,0.0],[3037,true,true,null,0.49,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0],[3042,true,true,null,32.0,1.0,null,null,1.05455,false,32.0,0.0,24.0,0.0],[3044,true,true,null,4.8,1.0,null,null,1.03636,false,18.0,0.0,2.0,0.0],[3047,true,true,null,3.4,1.0,null,null,1.06364,false,18.0,0.0,0.0,0.0],[141,true,true,null,205.0,1.0,null,null,1.08182,false,215.0,135.0,135.0,-35.0],[3059,true,true,null,17.600000000000001,1.0,null,null,1.09091,false,50.0,0.0,1.0,0.0],[3064,true,true,null,4.0,1.0,null,null,1.07273,false,9.0,0.0,0.0,0.0],[3066,true,true,null,0.2,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0],[3068,true,true,null,9.6,1.0,null,null,1.06364,false,35.0,0.0,0.0,0.0],[3072,true,true,null,26.699999999999999,1.0,null,null,1.06364,false,27.0,0.0,17.0,-10.0],[3073,true,true,null,21.600000000000001,1.0,null,null,1.06364,false,27.0,0.0,17.0,-10.0],[3085,true,true,null,4.0,1.0,null,null,1.08182,false,24.0,0.0,0.0,0.0],[3086,true,true,null,4.0,1.0,null,null,1.08182,false,24.0,0.0,0.0,0.0],[3096,true,true,null,2.7,1.0,null,null,1.04545,false,4.0,0.0,2.2,0.5],[3102,true,true,null,129.0,1.0,null,null,1.1,false,150.0,108.0,50.0,0.0],[142,true,true,null,215.0,1.0,null,null,1.08182,false,215.0,135.0,135.0,-35.0],[3112,true,true,null,0.0,1.0,null,null,1.043,false,0.0,0.0,9999.0,-9999.0],[3113,true,true,null,0.0,1.0,null,null,1.04309,false,0.0,0.0,9999.0,-9999.0],[3114,true,true,null,0.0,1.0,null,null,1.03798,false,0.0,0.0,9999.0,-9999.0],[3115,true,true,null,0.0,1.0,null,null,1.02647,false,502.0,502.0,9999.0,-9999.0],[3116,true,true,null,0.0,1.0,null,null,1.08259,false,0.0,0.0,9999.0,-9999.0],[3117,true,true,null,0.0,1.0,null,null,1.0424,false,109.0,109.0,9999.0,-9999.0],[3118,true,true,null,57.600000000000001,1.0,null,null,0.98438,false,112.0,0.0,0.0,0.0],[143,true,true,null,225.0,1.0,null,null,1.0375,false,225.0,135.0,140.0,-36.0],[151,true,true,null,110.0,1.0,null,null,1.06818,false,120.0,100.0,85.0,-15.0],[152,true,true,null,110.0,1.0,null,null,1.06818,false,120.0,100.0,85.0,-15.0],[168,true,true,null,180.0,1.0,null,null,1.08182,false,205.0,135.0,111.0,-21.0],[169,true,true,null,180.0,1.0,null,null,1.08182,false,232.0,100.0,119.0,-31.0],[35,true,true,null,370.0,1.0,null,null,1.09545,false,370.0,240.0,190.0,-19.0],[170,true,true,null,200.0,1.0,null,null,1.0325,false,222.0,90.0,102.0,-15.0],[171,true,true,null,200.0,1.0,null,null,1.0325,false,222.0,90.0,102.0,-15.0],[176,true,true,null,261.0,1.0,null,null,1.09091,false,261.0,104.0,127.0,-35.0],[177,true,true,null,235.0,1.0,null,null,1.09091,false,235.0,94.0,145.0,-38.0],[179,true,true,null,206.0,1.0,null,null,1.03,false,206.0,120.0,103.0,-17.0],[187,true,true,null,180.0,1.0,null,null,1.05455,false,225.0,150.0,112.0,-32.0],[188,true,true,null,200.0,1.0,null,null,1.05455,false,200.0,150.0,112.0,-32.0],[189,true,true,null,400.0,1.0,null,null,1.005,false,464.0,186.0,294.0,-259.0],[235,true,true,null,179.0,1.0,null,null,1.0375,false,179.0,-200.0,105.0,-62.0],[236,true,true,null,0.0,1.0,null,null,1.0375,false,179.0,-200.0,160.0,-100.0],[37,true,true,null,370.0,1.0,null,null,1.04,false,370.0,240.0,190.0,-19.0],[239,true,true,null,224.0,1.0,null,null,1.09091,false,250.0,113.0,150.0,0.0],[250,true,true,null,15.0,1.0,null,null,1.08182,false,23.0,7.0,20.0,0.0],[266,true,true,null,1.5,1.0,null,null,1.07273,false,2.0,0.0,1.0,0.0],[267,true,true,null,1.6,1.0,null,null,1.06364,false,2.0,0.0,1.0,0.0],[300,true,true,null,5.0,1.0,null,null,1.04545,false,5.0,1.0,3.75,0.0],[301,true,true,null,2.79,1.0,null,null,1.04545,false,5.0,1.0,3.75,0.0],[315,true,true,null,350.0,1.0,null,null,1.0,false,370.0,240.0,190.0,-19.0],[368,true,true,null,9.16,1.0,null,null,1.07273,false,30.0,0.0,4.0,0.0],[401,true,true,null,0.9,1.0,null,null,1.08182,false,1.0,0.0,1.0,0.0],[408,true,true,null,20.0,1.0,null,null,1.07545,false,30.0,11.0,7.0,0.0],[54,true,true,null,205.0,1.0,null,null,1.09091,false,215.0,110.0,152.0,-33.0],[410,true,true,null,20.0,1.0,null,null,1.07273,false,55.0,20.0,15.0,0.0],[414,true,true,null,30.0,1.0,null,null,1.07273,false,60.0,25.0,40.0,0.0],[427,true,true,null,2.0,1.0,null,null,1.07273,false,3.0,2.0,3.0,0.0],[491,true,true,null,38.0,1.0,null,null,1.07273,false,52.0,15.0,57.0,-22.0],[492,true,true,null,47.0,1.0,null,null,1.07273,false,55.0,15.0,57.0,-22.0],[493,true,true,null,47.0,1.0,null,null,1.08182,false,55.0,15.0,57.0,-22.0],[494,true,true,null,55.0,1.0,null,null,1.07273,false,55.0,15.0,57.0,-22.0],[516,true,true,null,180.0,1.0,null,null,1.09091,false,226.0,120.0,162.0,-61.0],[517,true,true,null,15.0,1.0,null,null,1.1,false,17.0,10.0,12.0,0.0],[541,true,true,null,0.3,1.0,null,null,1.08182,false,0.0,0.0,0.2,0.0],[55,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,110.0,149.0,-33.0],[586,true,true,null,4.0,1.0,null,null,1.06364,false,7.0,1.0,4.7,3.8],[598,true,true,null,2.5,1.0,null,null,1.07273,false,3.0,2.0,2.0,0.0],[662,true,true,null,1.0,1.0,null,null,1.05455,false,2.0,1.0,0.7,0.0],[739,true,true,null,52.0,1.0,null,null,1.05455,false,52.0,37.0,35.0,2.0],[740,true,true,null,30.0,1.0,null,null,1.05455,false,30.0,10.0,25.0,2.0],[761,true,true,null,1.4,1.0,null,null,1.04545,false,2.0,1.0,0.7,0.0],[763,true,true,null,1.0,1.0,null,null,1.06364,false,1.0,0.0,1.0,0.0],[771,true,true,null,20.0,1.0,null,null,1.05455,false,20.0,9.0,30.0,2.0],[772,true,true,null,80.0,1.0,null,null,1.05455,false,97.0,30.0,65.0,6.0],[808,true,true,null,1.0,1.0,null,null,1.07273,false,8.0,1.0,4.0,0.0],[56,true,true,null,225.0,1.0,null,null,1.09091,false,225.0,110.0,149.0,-33.0],[843,true,true,null,2.5,1.0,null,null,1.07273,false,3.0,0.0,0.0,0.0],[875,true,true,null,93.0,1.0,null,null,1.08182,false,93.0,0.0,30.0,0.0],[921,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,149.0,-33.0],[984,true,true,null,8.5,1.0,null,null,1.08182,false,30.0,0.0,0.0,0.0],[989,true,true,null,0.3,1.0,null,null,1.06364,false,2.0,0.0,0.0,0.0],[1010,true,true,null,190.0,1.0,null,null,1.09091,false,225.0,129.0,120.0,-14.0],[1056,true,true,null,6.1,1.0,null,null,1.07273,false,12.0,0.0,30.0,0.0],[1066,true,true,null,5.0,1.0,null,null,1.08182,false,8.0,0.0,0.0,0.0],[1070,true,true,null,60.0,1.0,null,null,1.09091,false,68.0,5.0,23.0,0.0],[1085,true,true,null,110.0,1.0,null,null,1.08182,false,125.0,92.0,74.0,-15.0],[57,true,true,null,330.0,1.0,null,null,1.035,false,535.0,255.0,363.0,-47.0],[1086,true,true,null,110.0,1.0,null,null,1.08182,false,125.0,85.0,74.0,-15.0],[1131,true,true,null,31.0,1.0,null,null,1.08182,false,31.0,0.0,0.0,0.0],[1163,true,true,null,35.0,1.0,null,null,1.08182,false,78.0,11.0,41.200000000000003,0.0],[1187,true,true,null,43.0,1.0,null,null,1.08182,false,55.0,42.0,45.0,-10.0],[1188,true,true,null,43.0,1.0,null,null,1.08182,false,55.0,42.0,45.0,-10.0],[1262,true,true,null,110.0,1.0,null,null,1.08182,false,113.0,32.0,110.0,-40.0],[1267,true,true,null,6.0,1.0,null,null,1.08182,false,17.0,0.0,0.0,0.0],[1288,true,true,null,370.0,1.0,null,null,1.09091,false,386.0,180.0,216.0,-32.0],[1289,true,true,null,370.0,1.0,null,null,1.09091,false,383.0,180.0,187.0,-30.0],[1301,true,true,null,15.0,1.0,null,null,1.08182,false,20.0,0.0,0.0,0.0],[58,true,true,null,330.0,1.0,null,null,1.035,false,560.0,250.0,348.0,-100.0],[1428,true,true,null,25.0,1.0,null,null,1.07273,false,25.0,10.0,0.0,0.0],[1446,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0],[1447,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0],[1448,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0],[1475,true,true,null,69.0,1.0,null,null,1.08182,false,70.0,21.0,52.5,0.0],[1476,true,true,null,69.0,1.0,null,null,1.08182,false,70.0,21.0,52.5,0.0],[1545,true,true,null,7.0,1.0,null,null,1.08182,false,15.0,3.0,0.0,0.0],[1546,true,true,null,5.5,1.0,null,null,1.07273,false,6.0,0.0,0.0,0.0],[1586,true,true,null,48.0,1.0,null,null,1.08182,false,55.0,20.0,41.0,-6.5],[1587,true,true,null,215.0,1.0,null,null,1.09091,false,230.0,120.0,113.0,-5.0]]}",
+      "_object": "{\"columns\":[\"bus\",\"controllable\",\"in_service\",\"name\",\"p_mw\",\"scaling\",\"sn_mva\",\"type\",\"vm_pu\",\"slack\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\",\"slack_weight\"],\"index\":[0,1,10,100,101,102,103,104,105,106,107,108,109,11,110,111,112,113,114,115,116,117,118,119,12,120,121,122,123,124,125,126,127,128,129,13,130,131,132,133,134,135,136,137,138,139,14,140,141,142,143,144,145,146,147,148,149,15,150,151,152,153,154,155,156,157,158,159,16,160,161,162,163,164,165,166,167,168,169,17,170,171,172,173,174,175,176,177,178,179,18,180,181,182,183,184,185,186,187,188,189,19,190,191,192,193,194,195,196,197,198,199,2,20,200,201,202,203,204,205,206,207,208,209,21,210,211,212,213,214,215,216,217,218,219,22,220,221,222,223,224,225,226,227,228,229,23,230,231,232,233,234,235,236,237,238,239,24,240,241,242,243,244,245,246,25,26,27,28,29,3,30,31,32,33,34,35,36,37,38,39,4,40,41,42,43,44,45,46,47,48,49,5,50,51,52,53,54,55,56,57,58,59,6,60,61,62,63,64,65,66,67,68,69,7,70,71,72,73,74,75,76,77,78,79,8,80,81,82,83,84,85,86,87,88,89,9,90,91,92,93,94,95,96,97,98,99],\"data\":[[21,true,true,null,180.0,1.0,null,null,1.06818,false,221.0,110.0,162.0,-61.0,0.0],[22,true,true,null,180.0,1.0,null,null,1.06818,false,200.0,140.0,140.0,-25.0,0.0],[67,true,true,null,210.0,1.0,null,null,1.08636,false,225.0,129.0,120.0,-14.0,0.0],[1588,true,true,null,215.0,1.0,null,null,1.09091,false,225.0,120.0,120.0,-10.0,0.0],[1647,true,true,null,32.0,1.0,null,null,1.07273,false,32.0,0.0,0.0,0.0,0.0],[1655,true,true,null,90.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0,0.0],[1657,true,true,null,120.0,1.0,null,null,1.08182,false,120.0,79.0,73.0,-1.0,0.0],[1667,true,true,null,125.0,1.0,null,null,1.09091,false,125.0,70.0,83.0,-5.0,0.0],[1680,true,true,null,100.0,1.0,null,null,1.08182,false,119.0,80.0,80.0,-25.0,0.0],[1738,true,true,null,10.0,1.0,null,null,1.07273,false,12.0,0.0,0.0,0.0,0.0],[1741,true,true,null,12.0,1.0,null,null,1.08182,false,4.0,0.0,0.0,0.0,0.0],[1745,true,true,null,215.0,1.0,null,null,1.08182,false,15.0,0.0,131.0,-6.0,0.0],[1768,true,true,null,43.0,1.0,null,null,1.08182,false,46.0,3.0,35.0,-6.0,0.0],[68,true,true,null,225.0,1.0,null,null,1.08636,false,225.0,129.0,120.0,-14.0,0.0],[1953,true,true,null,14.0,1.0,null,null,1.08182,false,14.0,2.0,9.300000000000001,1.9,0.0],[1981,true,true,null,123.0,1.0,null,null,1.08182,false,123.0,70.0,79.0,0.0,0.0],[1982,true,true,null,100.0,1.0,null,null,1.08182,false,161.0,55.0,114.0,-27.0,0.0],[1983,true,true,null,100.0,1.0,null,null,1.08182,false,161.0,55.0,114.0,-27.0,0.0],[1992,true,true,null,110.0,1.0,null,null,1.08182,false,110.0,80.0,15.0,0.0,0.0],[2099,true,true,null,38.0,1.0,null,null,1.08182,false,40.0,5.0,26.0,13.0,0.0],[2143,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,140.0,-35.0,0.0],[2145,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,140.0,-35.0,0.0],[2213,true,true,null,30.0,1.0,null,null,1.07273,false,32.0,27.0,0.0,0.0,0.0],[2234,true,true,null,10.0,1.0,null,null,1.06364,false,11.0,0.0,0.0,0.0,0.0],[70,true,true,null,225.0,1.0,null,null,1.0325,false,225.0,129.0,99.0,-10.0,0.0],[2236,true,true,null,110.0,1.0,null,null,1.09091,false,120.0,100.0,85.0,-15.0,0.0],[2252,true,true,null,2.5,1.0,null,null,1.08182,false,3.0,1.0,0.0,0.0,0.0],[2255,true,true,null,1.8,1.0,null,null,1.08182,false,4.0,2.0,0.0,0.0,0.0],[2266,true,true,null,1.5,1.0,null,null,1.1,false,5.0,0.0,0.0,0.0,0.0],[2270,true,true,null,1.3,1.0,null,null,1.09091,false,1.0,0.0,0.0,0.0,0.0],[2273,true,true,null,25.0,1.0,null,null,1.06364,false,50.0,15.0,30.0,0.0,0.0],[2299,true,true,null,150.0,1.0,null,null,1.1,false,222.0,90.0,117.0,-19.0,0.0],[2305,true,true,null,20.0,1.0,null,null,1.04545,false,29.0,10.0,8.0,0.0,0.0],[2309,true,true,null,50.0,1.0,null,null,1.07273,false,55.0,15.0,49.0,-7.0,0.0],[2315,true,true,null,1.7,1.0,null,null,1.00909,false,2.0,0.0,0.0,0.0,0.0],[91,true,true,null,220.0,1.0,null,null,1.08182,false,220.0,140.0,134.0,-7.0,0.0],[2321,true,true,null,2.44,1.0,null,null,1.03636,false,6.0,2.0,0.0,0.0,0.0],[2322,true,true,null,52.700000000000003,1.0,null,null,1.08182,false,55.0,10.0,15.0,0.0,0.0],[2323,true,true,null,5.0,1.0,null,null,1.08182,false,5.0,1.0,2.0,0.0,0.0],[2336,true,true,null,2.7,1.0,null,null,1.02727,false,4.0,3.0,0.0,0.0,0.0],[2344,true,true,null,4.0,1.0,null,null,1.03636,false,30.0,4.0,0.0,0.0,0.0],[2348,true,true,null,2.5,1.0,null,null,1.05455,false,12.0,2.0,0.0,0.0,0.0],[2356,true,true,null,0.5,1.0,null,null,1.08182,false,7.0,0.0,0.0,0.0,0.0],[2367,true,true,null,1.1,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0,0.0],[2369,true,true,null,1.46,1.0,null,null,1.05455,false,3.0,1.0,0.0,0.0,0.0],[2374,true,true,null,3.0,1.0,null,null,1.05455,false,3.0,1.0,1.25,0.0,0.0],[92,true,true,null,225.0,1.0,null,null,1.08182,false,225.0,140.0,131.0,-6.0,0.0],[2378,true,true,null,2.5,1.0,null,null,1.03636,false,4.0,3.0,0.0,0.0,0.0],[2382,true,true,null,0.3,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0,0.0],[2389,true,true,null,2.25,1.0,null,null,1.03636,false,10.0,2.0,0.0,0.0,0.0],[2402,true,true,null,50.0,1.0,null,null,1.1,false,50.0,40.0,12.0,0.0,0.0],[2403,true,true,null,20.0,1.0,null,null,1.08182,false,28.0,20.0,10.0,0.0,0.0],[2407,true,true,null,3.9,1.0,null,null,1.04545,false,10.0,4.0,0.0,0.0,0.0],[2432,true,true,null,2.4,1.0,null,null,1.04545,false,4.0,2.0,0.0,0.0,0.0],[2437,true,true,null,2.5,1.0,null,null,1.02727,false,4.0,3.0,0.0,0.0,0.0],[2446,true,true,null,2.0,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0,0.0],[2455,true,true,null,1.9,1.0,null,null,1.08182,false,4.0,0.0,0.0,0.0,0.0],[95,true,true,null,383.0,1.0,null,null,1.0375,false,383.0,180.0,213.0,-30.0,0.0],[2494,true,true,null,1.6,1.0,null,null,1.03636,false,2.0,1.0,0.0,0.0,0.0],[2495,true,true,null,0.22,1.0,null,null,1.08182,false,0.0,0.0,0.0,0.0,0.0],[2520,true,true,null,0.7,1.0,null,null,1.03636,false,1.0,1.0,0.0,0.0,0.0],[2521,true,true,null,0.3,1.0,null,null,1.04545,false,0.0,0.0,0.0,0.0,0.0],[2523,true,true,null,3.0,1.0,null,null,1.02727,false,6.0,3.0,0.0,0.0,0.0],[2526,true,true,null,2.0,1.0,null,null,1.06364,false,4.0,2.0,0.0,0.0,0.0],[2534,true,true,null,180.0,1.0,null,null,1.09091,false,200.0,150.0,111.0,-18.0,0.0],[2546,true,true,null,1.63,1.0,null,null,1.04545,false,3.0,1.0,0.0,0.0,0.0],[2547,true,true,null,0.3,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0,0.0],[2554,true,true,null,6.0,1.0,null,null,1.03636,false,20.0,6.0,0.0,0.0,0.0],[112,true,true,null,19.0,1.0,null,null,1.07727,false,21.0,0.0,0.0,0.0,0.0],[2573,true,true,null,50.0,1.0,null,null,1.1,false,65.0,40.0,15.0,0.0,0.0],[2581,true,true,null,0.23,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0,0.0],[2584,true,true,null,2.0,1.0,null,null,1.07273,false,6.0,1.0,0.0,0.0,0.0],[2590,true,true,null,0.2,1.0,null,null,1.09091,false,1.0,0.0,0.0,0.0,0.0],[2592,true,true,null,2.7,1.0,null,null,1.01818,false,4.0,2.0,0.0,0.0,0.0],[2596,true,true,null,9.0,1.0,null,null,1.04545,false,31.0,0.0,0.0,0.0,0.0],[2597,true,true,null,9.0,1.0,null,null,1.04545,false,31.0,0.0,0.0,0.0,0.0],[2599,true,true,null,2.5,1.0,null,null,1.04545,false,7.0,2.0,0.0,0.0,0.0],[2615,true,true,null,0.7,1.0,null,null,1.1,false,1.0,0.0,0.0,0.0,0.0],[2616,true,true,null,1.0,1.0,null,null,1.06364,false,1.0,0.0,0.0,0.0,0.0],[118,true,true,null,215.0,1.0,null,null,1.08182,false,225.0,120.0,120.0,-10.0,0.0],[2618,true,true,null,2.22,1.0,null,null,1.06364,false,6.0,2.0,0.0,0.0,0.0],[2620,true,true,null,2.0,1.0,null,null,1.07273,false,4.0,2.0,0.0,0.0,0.0],[2626,true,true,null,2.5,1.0,null,null,1.00909,false,6.0,2.0,0.0,0.0,0.0],[2628,true,true,null,2.5,1.0,null,null,1.00909,false,4.0,3.0,0.0,0.0,0.0],[2629,true,true,null,2.0,1.0,null,null,1.06364,false,4.0,2.0,0.0,0.0,0.0],[2643,true,true,null,2.5,1.0,null,null,1.09091,false,10.0,2.0,1.03,0.0,0.0],[2648,true,true,null,1.69,1.0,null,null,1.07273,false,2.0,1.0,0.0,0.0,0.0],[2649,true,true,null,2.52,1.0,null,null,1.05455,false,4.0,2.0,0.0,0.0,0.0],[2654,true,true,null,0.2,1.0,null,null,1.0,false,0.0,0.0,0.0,0.0,0.0],[2666,true,true,null,225.0,1.0,null,null,1.09091,false,235.0,94.0,145.0,-38.0,0.0],[119,true,true,null,215.0,1.0,null,null,1.08182,false,225.0,120.0,120.0,-10.0,0.0],[2678,true,true,null,95.0,1.0,null,null,1.07273,false,108.0,70.0,70.0,0.0,0.0],[2683,true,true,null,5.5,1.0,null,null,1.09091,false,8.0,0.0,2.0,0.0,0.0],[2684,true,true,null,2.5,1.0,null,null,1.1,false,16.0,2.0,0.0,0.0,0.0],[2690,true,true,null,1.7,1.0,null,null,1.07273,false,10.0,2.0,0.0,0.0,0.0],[2694,true,true,null,0.3,1.0,null,null,1.06364,false,0.0,0.0,0.0,0.0,0.0],[2697,true,true,null,0.9,1.0,null,null,1.06364,false,1.0,1.0,0.0,0.0,0.0],[2773,true,true,null,5.0,1.0,null,null,1.04545,false,11.0,3.0,10.0,0.0,0.0],[2780,true,true,null,1.0,1.0,null,null,1.03636,false,1.0,0.0,0.0,0.0,0.0],[2790,true,true,null,0.7,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0,0.0],[2793,true,true,null,45.0,1.0,null,null,1.05455,false,55.0,0.0,41.700000000000003,6.0,0.0],[120,true,true,null,115.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0,0.0],[2796,true,true,null,0.4,1.0,null,null,1.08182,false,1.0,0.0,1.0,0.0,0.0],[2802,true,true,null,1.8,1.0,null,null,1.04545,false,3.0,0.0,1.0,0.0,0.0],[2810,true,true,null,0.3,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0,0.0],[2813,true,true,null,49.0,1.0,null,null,1.06364,false,55.0,26.0,35.0,4.0,0.0],[2822,true,true,null,0.2,1.0,null,null,1.01818,false,1.0,0.0,0.0,0.0,0.0],[2825,true,true,null,0.2,1.0,null,null,1.02727,false,0.0,0.0,0.0,0.0,0.0],[2826,true,true,null,0.3,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0,0.0],[2827,true,true,null,1.0,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0,0.0],[2829,true,true,null,0.4,1.0,null,null,1.02727,false,1.0,0.0,0.1,0.0,0.0],[2832,true,true,null,8.0,1.0,null,null,1.09091,false,26.0,0.0,0.0,0.0,0.0],[34,true,true,null,345.0,1.0,null,null,1.09545,false,370.0,240.0,190.0,-19.0,0.0],[121,true,true,null,115.0,1.0,null,null,1.08182,false,120.0,70.0,73.0,-1.0,0.0],[2835,true,true,null,10.0,1.0,null,null,1.03636,false,13.0,2.0,5.0,0.0,0.0],[2841,true,true,null,4.5,1.0,null,null,1.07273,false,6.0,0.0,0.0,0.0,0.0],[2845,true,true,null,53.0,1.0,null,null,1.07273,false,55.0,26.0,35.0,6.0,0.0],[2855,true,true,null,4.8,1.0,null,null,1.07273,false,18.0,0.0,0.0,0.0,0.0],[2856,true,true,null,4.8,1.0,null,null,1.08182,false,22.0,0.0,0.0,0.0,0.0],[2874,true,true,null,3.2,1.0,null,null,1.05455,false,4.0,1.0,3.0,1.0,0.0],[2879,true,true,null,16.0,1.0,null,null,1.03636,false,16.0,0.0,12.0,0.0,0.0],[2886,true,true,null,10.0,1.0,null,null,1.05455,false,12.0,5.0,9.300000000000001,1.0,0.0],[2888,true,true,null,12.0,1.0,null,null,1.04545,false,41.0,0.0,1.0,0.0,0.0],[2899,true,true,null,0.85,1.0,null,null,1.08182,false,2.0,0.0,0.0,0.0,0.0],[132,true,true,null,115.0,1.0,null,null,1.07727,false,120.0,70.0,79.0,0.0,0.0],[2908,true,true,null,25.0,1.0,null,null,1.03636,false,25.0,0.0,18.780000000000001,0.0,0.0],[2919,true,true,null,0.2,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0,0.0],[2929,true,true,null,13.199999999999999,1.0,null,null,1.02727,false,13.0,0.0,10.5,0.0,0.0],[2932,true,true,null,0.3,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0,0.0],[2933,true,true,null,5.0,1.0,null,null,1.07273,false,20.0,5.0,18.75,0.0,0.0],[2950,true,true,null,0.5,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0,0.0],[2956,true,true,null,0.8,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0,0.0],[2961,true,true,null,1.1,1.0,null,null,1.08182,false,2.0,1.0,0.5,0.0,0.0],[2989,true,true,null,0.1,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0,0.0],[2992,true,true,null,0.2,1.0,null,null,1.06364,false,3.0,0.0,0.0,0.0,0.0],[133,true,true,null,105.0,1.0,null,null,1.07273,false,110.0,80.0,31.0,0.0,0.0],[2996,true,true,null,11.1,1.0,null,null,1.07273,false,15.0,0.0,0.0,0.0,0.0],[2998,true,true,null,0.3,1.0,null,null,1.02727,false,0.0,0.0,0.1,0.0,0.0],[3007,true,true,null,0.3,1.0,null,null,1.07273,false,1.0,0.0,0.0,0.0,0.0],[3019,true,true,null,0.9,1.0,null,null,1.08182,false,1.0,0.0,0.0,0.0,0.0],[3028,true,true,null,0.1,1.0,null,null,1.08182,false,0.0,0.0,0.0,0.0,0.0],[3033,true,true,null,1.4,1.0,null,null,1.02727,false,4.0,0.0,0.0,0.0,0.0],[3037,true,true,null,0.49,1.0,null,null,1.05455,false,0.0,0.0,0.0,0.0,0.0],[3042,true,true,null,32.0,1.0,null,null,1.05455,false,32.0,0.0,24.0,0.0,0.0],[3044,true,true,null,4.8,1.0,null,null,1.03636,false,18.0,0.0,2.0,0.0,0.0],[3047,true,true,null,3.4,1.0,null,null,1.06364,false,18.0,0.0,0.0,0.0,0.0],[141,true,true,null,205.0,1.0,null,null,1.08182,false,215.0,135.0,135.0,-35.0,0.0],[3059,true,true,null,17.600000000000001,1.0,null,null,1.09091,false,50.0,0.0,1.0,0.0,0.0],[3064,true,true,null,4.0,1.0,null,null,1.07273,false,9.0,0.0,0.0,0.0,0.0],[3066,true,true,null,0.2,1.0,null,null,1.07273,false,0.0,0.0,0.0,0.0,0.0],[3068,true,true,null,9.6,1.0,null,null,1.06364,false,35.0,0.0,0.0,0.0,0.0],[3072,true,true,null,26.699999999999999,1.0,null,null,1.06364,false,27.0,0.0,17.0,-10.0,0.0],[3073,true,true,null,21.600000000000001,1.0,null,null,1.06364,false,27.0,0.0,17.0,-10.0,0.0],[3085,true,true,null,4.0,1.0,null,null,1.08182,false,24.0,0.0,0.0,0.0,0.0],[3086,true,true,null,4.0,1.0,null,null,1.08182,false,24.0,0.0,0.0,0.0,0.0],[3096,true,true,null,2.7,1.0,null,null,1.04545,false,4.0,0.0,2.2,0.5,0.0],[3102,true,true,null,129.0,1.0,null,null,1.1,false,150.0,108.0,50.0,0.0,0.0],[142,true,true,null,215.0,1.0,null,null,1.08182,false,215.0,135.0,135.0,-35.0,0.0],[3112,true,true,null,0.0,1.0,null,null,1.043,false,0.0,0.0,9999.0,-9999.0,0.0],[3113,true,true,null,0.0,1.0,null,null,1.04309,false,0.0,0.0,9999.0,-9999.0,0.0],[3114,true,true,null,0.0,1.0,null,null,1.03798,false,0.0,0.0,9999.0,-9999.0,0.0],[3115,true,true,null,0.0,1.0,null,null,1.02647,false,502.0,502.0,9999.0,-9999.0,0.0],[3116,true,true,null,0.0,1.0,null,null,1.08259,false,0.0,0.0,9999.0,-9999.0,0.0],[3117,true,true,null,0.0,1.0,null,null,1.0424,false,109.0,109.0,9999.0,-9999.0,0.0],[3118,true,true,null,57.600000000000001,1.0,null,null,0.98438,false,112.0,0.0,0.0,0.0,0.0],[143,true,true,null,225.0,1.0,null,null,1.0375,false,225.0,135.0,140.0,-36.0,0.0],[151,true,true,null,110.0,1.0,null,null,1.06818,false,120.0,100.0,85.0,-15.0,0.0],[152,true,true,null,110.0,1.0,null,null,1.06818,false,120.0,100.0,85.0,-15.0,0.0],[168,true,true,null,180.0,1.0,null,null,1.08182,false,205.0,135.0,111.0,-21.0,0.0],[169,true,true,null,180.0,1.0,null,null,1.08182,false,232.0,100.0,119.0,-31.0,0.0],[35,true,true,null,370.0,1.0,null,null,1.09545,false,370.0,240.0,190.0,-19.0,0.0],[170,true,true,null,200.0,1.0,null,null,1.0325,false,222.0,90.0,102.0,-15.0,0.0],[171,true,true,null,200.0,1.0,null,null,1.0325,false,222.0,90.0,102.0,-15.0,0.0],[176,true,true,null,261.0,1.0,null,null,1.09091,false,261.0,104.0,127.0,-35.0,0.0],[177,true,true,null,235.0,1.0,null,null,1.09091,false,235.0,94.0,145.0,-38.0,0.0],[179,true,true,null,206.0,1.0,null,null,1.03,false,206.0,120.0,103.0,-17.0,0.0],[187,true,true,null,180.0,1.0,null,null,1.05455,false,225.0,150.0,112.0,-32.0,0.0],[188,true,true,null,200.0,1.0,null,null,1.05455,false,200.0,150.0,112.0,-32.0,0.0],[189,true,true,null,400.0,1.0,null,null,1.005,false,464.0,186.0,294.0,-259.0,0.0],[235,true,true,null,179.0,1.0,null,null,1.0375,false,179.0,-200.0,105.0,-62.0,0.0],[236,true,true,null,0.0,1.0,null,null,1.0375,false,179.0,-200.0,160.0,-100.0,0.0],[37,true,true,null,370.0,1.0,null,null,1.04,false,370.0,240.0,190.0,-19.0,0.0],[239,true,true,null,224.0,1.0,null,null,1.09091,false,250.0,113.0,150.0,0.0,0.0],[250,true,true,null,15.0,1.0,null,null,1.08182,false,23.0,7.0,20.0,0.0,0.0],[266,true,true,null,1.5,1.0,null,null,1.07273,false,2.0,0.0,1.0,0.0,0.0],[267,true,true,null,1.6,1.0,null,null,1.06364,false,2.0,0.0,1.0,0.0,0.0],[300,true,true,null,5.0,1.0,null,null,1.04545,false,5.0,1.0,3.75,0.0,0.0],[301,true,true,null,2.79,1.0,null,null,1.04545,false,5.0,1.0,3.75,0.0,0.0],[315,true,true,null,350.0,1.0,null,null,1.0,false,370.0,240.0,190.0,-19.0,0.0],[368,true,true,null,9.16,1.0,null,null,1.07273,false,30.0,0.0,4.0,0.0,0.0],[401,true,true,null,0.9,1.0,null,null,1.08182,false,1.0,0.0,1.0,0.0,0.0],[408,true,true,null,20.0,1.0,null,null,1.07545,false,30.0,11.0,7.0,0.0,0.0],[54,true,true,null,205.0,1.0,null,null,1.09091,false,215.0,110.0,152.0,-33.0,0.0],[410,true,true,null,20.0,1.0,null,null,1.07273,false,55.0,20.0,15.0,0.0,0.0],[414,true,true,null,30.0,1.0,null,null,1.07273,false,60.0,25.0,40.0,0.0,0.0],[427,true,true,null,2.0,1.0,null,null,1.07273,false,3.0,2.0,3.0,0.0,0.0],[491,true,true,null,38.0,1.0,null,null,1.07273,false,52.0,15.0,57.0,-22.0,0.0],[492,true,true,null,47.0,1.0,null,null,1.07273,false,55.0,15.0,57.0,-22.0,0.0],[493,true,true,null,47.0,1.0,null,null,1.08182,false,55.0,15.0,57.0,-22.0,0.0],[494,true,true,null,55.0,1.0,null,null,1.07273,false,55.0,15.0,57.0,-22.0,0.0],[516,true,true,null,180.0,1.0,null,null,1.09091,false,226.0,120.0,162.0,-61.0,0.0],[517,true,true,null,15.0,1.0,null,null,1.1,false,17.0,10.0,12.0,0.0,0.0],[541,true,true,null,0.3,1.0,null,null,1.08182,false,0.0,0.0,0.2,0.0,0.0],[55,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,110.0,149.0,-33.0,0.0],[586,true,true,null,4.0,1.0,null,null,1.06364,false,7.0,1.0,4.7,3.8,0.0],[598,true,true,null,2.5,1.0,null,null,1.07273,false,3.0,2.0,2.0,0.0,0.0],[662,true,true,null,1.0,1.0,null,null,1.05455,false,2.0,1.0,0.7,0.0,0.0],[739,true,true,null,52.0,1.0,null,null,1.05455,false,52.0,37.0,35.0,2.0,0.0],[740,true,true,null,30.0,1.0,null,null,1.05455,false,30.0,10.0,25.0,2.0,0.0],[761,true,true,null,1.4,1.0,null,null,1.04545,false,2.0,1.0,0.7,0.0,0.0],[763,true,true,null,1.0,1.0,null,null,1.06364,false,1.0,0.0,1.0,0.0,0.0],[771,true,true,null,20.0,1.0,null,null,1.05455,false,20.0,9.0,30.0,2.0,0.0],[772,true,true,null,80.0,1.0,null,null,1.05455,false,97.0,30.0,65.0,6.0,0.0],[808,true,true,null,1.0,1.0,null,null,1.07273,false,8.0,1.0,4.0,0.0,0.0],[56,true,true,null,225.0,1.0,null,null,1.09091,false,225.0,110.0,149.0,-33.0,0.0],[843,true,true,null,2.5,1.0,null,null,1.07273,false,3.0,0.0,0.0,0.0,0.0],[875,true,true,null,93.0,1.0,null,null,1.08182,false,93.0,0.0,30.0,0.0,0.0],[921,true,true,null,205.0,1.0,null,null,1.09091,false,225.0,135.0,149.0,-33.0,0.0],[984,true,true,null,8.5,1.0,null,null,1.08182,false,30.0,0.0,0.0,0.0,0.0],[989,true,true,null,0.3,1.0,null,null,1.06364,false,2.0,0.0,0.0,0.0,0.0],[1010,true,true,null,190.0,1.0,null,null,1.09091,false,225.0,129.0,120.0,-14.0,0.0],[1056,true,true,null,6.1,1.0,null,null,1.07273,false,12.0,0.0,30.0,0.0,0.0],[1066,true,true,null,5.0,1.0,null,null,1.08182,false,8.0,0.0,0.0,0.0,0.0],[1070,true,true,null,60.0,1.0,null,null,1.09091,false,68.0,5.0,23.0,0.0,0.0],[1085,true,true,null,110.0,1.0,null,null,1.08182,false,125.0,92.0,74.0,-15.0,0.0],[57,true,true,null,330.0,1.0,null,null,1.035,false,535.0,255.0,363.0,-47.0,0.0],[1086,true,true,null,110.0,1.0,null,null,1.08182,false,125.0,85.0,74.0,-15.0,0.0],[1131,true,true,null,31.0,1.0,null,null,1.08182,false,31.0,0.0,0.0,0.0,0.0],[1163,true,true,null,35.0,1.0,null,null,1.08182,false,78.0,11.0,41.200000000000003,0.0,0.0],[1187,true,true,null,43.0,1.0,null,null,1.08182,false,55.0,42.0,45.0,-10.0,0.0],[1188,true,true,null,43.0,1.0,null,null,1.08182,false,55.0,42.0,45.0,-10.0,0.0],[1262,true,true,null,110.0,1.0,null,null,1.08182,false,113.0,32.0,110.0,-40.0,0.0],[1267,true,true,null,6.0,1.0,null,null,1.08182,false,17.0,0.0,0.0,0.0,0.0],[1288,true,true,null,370.0,1.0,null,null,1.09091,false,386.0,180.0,216.0,-32.0,0.0],[1289,true,true,null,370.0,1.0,null,null,1.09091,false,383.0,180.0,187.0,-30.0,0.0],[1301,true,true,null,15.0,1.0,null,null,1.08182,false,20.0,0.0,0.0,0.0,0.0],[58,true,true,null,330.0,1.0,null,null,1.035,false,560.0,250.0,348.0,-100.0,0.0],[1428,true,true,null,25.0,1.0,null,null,1.07273,false,25.0,10.0,0.0,0.0,0.0],[1446,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0,0.0],[1447,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0,0.0],[1448,true,true,null,17.0,1.0,null,null,1.08182,false,25.0,0.0,0.0,0.0,0.0],[1475,true,true,null,69.0,1.0,null,null,1.08182,false,70.0,21.0,52.5,0.0,0.0],[1476,true,true,null,69.0,1.0,null,null,1.08182,false,70.0,21.0,52.5,0.0,0.0],[1545,true,true,null,7.0,1.0,null,null,1.08182,false,15.0,3.0,0.0,0.0,0.0],[1546,true,true,null,5.5,1.0,null,null,1.07273,false,6.0,0.0,0.0,0.0,0.0],[1586,true,true,null,48.0,1.0,null,null,1.08182,false,55.0,20.0,41.0,-6.5,0.0],[1587,true,true,null,215.0,1.0,null,null,1.09091,false,230.0,120.0,113.0,-5.0,0.0]]}",
       "orient": "split",
       "dtype": {
         "bus": "uint32",
@@ -96,7 +158,8 @@
         "max_p_mw": "float64",
         "min_p_mw": "float64",
         "max_q_mvar": "float64",
-        "min_q_mvar": "float64"
+        "min_q_mvar": "float64",
+        "slack_weight": "float64"
       }
     },
     "switch": {
@@ -133,7 +196,7 @@
     "ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"in_service\",\"name\",\"va_degree\",\"vm_pu\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\"],\"index\":[0],\"data\":[[36,true,null,0.0,1.04,370.0,240.0,190.0,-19.0]]}",
+      "_object": "{\"columns\":[\"bus\",\"in_service\",\"name\",\"va_degree\",\"vm_pu\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\",\"slack_weight\"],\"index\":[0],\"data\":[[36,true,null,0.0,1.04,370.0,240.0,190.0,-19.0,1.0]]}",
       "orient": "split",
       "dtype": {
         "bus": "uint32",
@@ -144,7 +207,8 @@
         "max_p_mw": "float64",
         "min_p_mw": "float64",
         "max_q_mvar": "float64",
-        "min_q_mvar": "float64"
+        "min_q_mvar": "float64",
+        "slack_weight": "float64"
       }
     },
     "line": {
@@ -297,7 +361,7 @@
     "xward": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"in_service\",\"slack_weight\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -309,7 +373,8 @@
         "r_ohm": "float64",
         "x_ohm": "float64",
         "vm_pu": "float64",
-        "in_service": "bool"
+        "in_service": "bool",
+        "slack_weight": "float64"
       }
     },
     "measurement": {
@@ -358,13 +423,14 @@
     "controller": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\",\"in_service\",\"order\",\"level\",\"recycle\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"object\",\"in_service\",\"order\",\"level\",\"initial_run\",\"recycle\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "object": "object",
         "in_service": "bool",
         "order": "float64",
         "level": "object",
+        "initial_run": "bool",
         "recycle": "bool"
       }
     },
@@ -388,11 +454,11 @@
         "coords": "object"
       }
     },
-    "version": "2.2.1",
+    "version": "2.7.1",
     "converged": true,
     "name": "",
     "f_hz": 50,
-    "sn_mva": 1.0,
+    "sn_mva": 100,
     "std_types": {
       "line": {
         "NAYY 4x150 SE": {
@@ -1272,6 +1338,16 @@
         "q_mvar": "float64"
       }
     },
+    "res_motor": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
     "res_sgen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -1354,6 +1430,341 @@
         "va_from_degree": "float64",
         "vm_to_pu": "float64",
         "va_to_degree": "float64"
+      }
+    },
+    "res_asymmetric_load": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_asymmetric_sgen": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_bus_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "vm_pu": "float64",
+        "va_degree": "float64",
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_line_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_from_mw": "float64",
+        "q_from_mvar": "float64",
+        "p_to_mw": "float64",
+        "q_to_mvar": "float64",
+        "pl_mw": "float64",
+        "ql_mvar": "float64",
+        "i_from_ka": "float64",
+        "i_to_ka": "float64",
+        "i_ka": "float64",
+        "vm_from_pu": "float64",
+        "va_from_degree": "float64",
+        "vm_to_pu": "float64",
+        "va_to_degree": "float64",
+        "loading_percent": "float64"
+      }
+    },
+    "res_trafo_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_hv_mw": "float64",
+        "q_hv_mvar": "float64",
+        "p_lv_mw": "float64",
+        "q_lv_mvar": "float64",
+        "pl_mw": "float64",
+        "ql_mvar": "float64",
+        "i_hv_ka": "float64",
+        "i_lv_ka": "float64",
+        "vm_hv_pu": "float64",
+        "va_hv_degree": "float64",
+        "vm_lv_pu": "float64",
+        "va_lv_degree": "float64",
+        "loading_percent": "float64"
+      }
+    },
+    "res_trafo3w_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_mv_mw\",\"q_mv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_mv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_mv_pu\",\"va_mv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"va_internal_degree\",\"vm_internal_pu\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_hv_mw": "float64",
+        "q_hv_mvar": "float64",
+        "p_mv_mw": "float64",
+        "q_mv_mvar": "float64",
+        "p_lv_mw": "float64",
+        "q_lv_mvar": "float64",
+        "pl_mw": "float64",
+        "ql_mvar": "float64",
+        "i_hv_ka": "float64",
+        "i_mv_ka": "float64",
+        "i_lv_ka": "float64",
+        "vm_hv_pu": "float64",
+        "va_hv_degree": "float64",
+        "vm_mv_pu": "float64",
+        "va_mv_degree": "float64",
+        "vm_lv_pu": "float64",
+        "va_lv_degree": "float64",
+        "va_internal_degree": "float64",
+        "vm_internal_pu": "float64",
+        "loading_percent": "float64"
+      }
+    },
+    "res_impedance_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_from_mw": "float64",
+        "q_from_mvar": "float64",
+        "p_to_mw": "float64",
+        "q_to_mvar": "float64",
+        "pl_mw": "float64",
+        "ql_mvar": "float64",
+        "i_from_ka": "float64",
+        "i_to_ka": "float64"
+      }
+    },
+    "res_bus_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_line_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_trafo_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_trafo3w_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_ext_grid_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_gen_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_sgen_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_bus_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"vm_a_pu\",\"va_a_degree\",\"vm_b_pu\",\"va_b_degree\",\"vm_c_pu\",\"va_c_degree\",\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "vm_a_pu": "float64",
+        "va_a_degree": "float64",
+        "vm_b_pu": "float64",
+        "va_b_degree": "float64",
+        "vm_c_pu": "float64",
+        "va_c_degree": "float64",
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64"
+      }
+    },
+    "res_line_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_a_from_mw\",\"q_a_from_mvar\",\"p_b_from_mw\",\"q_b_from_mvar\",\"q_c_from_mvar\",\"p_a_to_mw\",\"q_a_to_mvar\",\"p_b_to_mw\",\"q_b_to_mvar\",\"p_c_to_mw\",\"q_c_to_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_from_ka\",\"i_a_to_ka\",\"i_b_from_ka\",\"i_b_to_ka\",\"i_c_from_ka\",\"i_c_to_ka\",\"i_a_ka\",\"i_b_ka\",\"i_c_ka\",\"i_n_from_ka\",\"i_n_to_ka\",\"i_n_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_a_from_mw": "float64",
+        "q_a_from_mvar": "float64",
+        "p_b_from_mw": "float64",
+        "q_b_from_mvar": "float64",
+        "q_c_from_mvar": "float64",
+        "p_a_to_mw": "float64",
+        "q_a_to_mvar": "float64",
+        "p_b_to_mw": "float64",
+        "q_b_to_mvar": "float64",
+        "p_c_to_mw": "float64",
+        "q_c_to_mvar": "float64",
+        "p_a_l_mw": "float64",
+        "q_a_l_mvar": "float64",
+        "p_b_l_mw": "float64",
+        "q_b_l_mvar": "float64",
+        "p_c_l_mw": "float64",
+        "q_c_l_mvar": "float64",
+        "i_a_from_ka": "float64",
+        "i_a_to_ka": "float64",
+        "i_b_from_ka": "float64",
+        "i_b_to_ka": "float64",
+        "i_c_from_ka": "float64",
+        "i_c_to_ka": "float64",
+        "i_a_ka": "float64",
+        "i_b_ka": "float64",
+        "i_c_ka": "float64",
+        "i_n_from_ka": "float64",
+        "i_n_to_ka": "float64",
+        "i_n_ka": "float64",
+        "loading_a_percent": "float64",
+        "loading_b_percent": "float64",
+        "loading_c_percent": "float64"
+      }
+    },
+    "res_trafo_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_a_hv_mw\",\"q_a_hv_mvar\",\"p_b_hv_mw\",\"q_b_hv_mvar\",\"p_c_hv_mw\",\"q_c_hv_mvar\",\"p_a_lv_mw\",\"q_a_lv_mvar\",\"p_b_lv_mw\",\"q_b_lv_mvar\",\"p_c_lv_mw\",\"q_c_lv_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_hv_ka\",\"i_a_lv_ka\",\"i_b_hv_ka\",\"i_b_lv_ka\",\"i_c_hv_ka\",\"i_c_lv_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_a_hv_mw": "float64",
+        "q_a_hv_mvar": "float64",
+        "p_b_hv_mw": "float64",
+        "q_b_hv_mvar": "float64",
+        "p_c_hv_mw": "float64",
+        "q_c_hv_mvar": "float64",
+        "p_a_lv_mw": "float64",
+        "q_a_lv_mvar": "float64",
+        "p_b_lv_mw": "float64",
+        "q_b_lv_mvar": "float64",
+        "p_c_lv_mw": "float64",
+        "q_c_lv_mvar": "float64",
+        "p_a_l_mw": "float64",
+        "q_a_l_mvar": "float64",
+        "p_b_l_mw": "float64",
+        "q_b_l_mvar": "float64",
+        "p_c_l_mw": "float64",
+        "q_c_l_mvar": "float64",
+        "i_a_hv_ka": "float64",
+        "i_a_lv_ka": "float64",
+        "i_b_hv_ka": "float64",
+        "i_b_lv_ka": "float64",
+        "i_c_hv_ka": "float64",
+        "i_c_lv_ka": "float64",
+        "loading_a_percent": "float64",
+        "loading_b_percent": "float64",
+        "loading_c_percent": "float64",
+        "loading_percent": "float64"
+      }
+    },
+    "res_ext_grid_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64"
+      }
+    },
+    "res_shunt_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_load_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_sgen_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_storage_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64"
+      }
+    },
+    "res_asymmetric_load_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64"
+      }
+    },
+    "res_asymmetric_sgen_3ph": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_a_mw": "float64",
+        "q_a_mvar": "float64",
+        "p_b_mw": "float64",
+        "q_b_mvar": "float64",
+        "p_c_mw": "float64",
+        "q_c_mvar": "float64"
       }
     },
     "user_pf_options": {},

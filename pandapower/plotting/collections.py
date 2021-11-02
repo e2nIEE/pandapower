@@ -366,7 +366,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
         **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
 
-        **kwargs - key word arguments are passed to the patch function
+        **kwargs** - key word arguments are passed to the patch function
 
     OUTPUT:
         **pc** - patch collection
@@ -428,7 +428,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
-        **kwargs - key word arguments are passed to the patch function
+        **kwargs** - key word arguments are passed to the patch function
 
     OUTPUT:
         **lc** - line collection
@@ -651,7 +651,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
          **infofunc** (function, None) - infofunction for the patch element
 
-        **kwargs - key word arguments are passed to the patch function
+        **kwargs** - key word arguments are passed to the patch function
 
     OUTPUT:
         **lc** - line collection
