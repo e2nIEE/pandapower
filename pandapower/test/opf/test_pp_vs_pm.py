@@ -303,5 +303,4 @@ def test_opf_ext_grid_controllable_pm():
 
 
 if __name__ == "__main__":
-    test_opf_ext_grid_controllable()
-    # pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"])
