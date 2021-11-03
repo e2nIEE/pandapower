@@ -2577,21 +2577,22 @@ def replace_ward_by_internal_elements(net, wards=None):
 
     # --- result data
     if net.res_ward.shape[0]:
-        sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
-        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards] != 0, 1)
+        sign_in_service = np.multiply(net.ward.in_service.loc[wards].values, 1)
+        sign_not_isolated = np.multiply(net.res_ward.vm_pu.loc[wards].values != 0, 1)
         to_add_load = net.res_ward.loc[wards, ["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
-        to_add_load.p_mw = net.ward.ps_mw[wards].values * sign_in_service * sign_not_isolated
-        to_add_load.q_mvar = net.ward.qs_mvar[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.p_mw = net.ward.ps_mw.loc[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.q_mvar = net.ward.qs_mvar.loc[wards].values * sign_in_service * \
+            sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
 
         to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
-        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values ** 2 * net.ward.pz_mw[wards].values * \
-            sign_in_service * sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[
+        to_add_shunt.p_mw = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.pz_mw.loc[
             wards].values * sign_in_service * sign_not_isolated
-        to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
+        to_add_shunt.q_mvar = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.qz_mvar.loc[
+            wards].values * sign_in_service * sign_not_isolated
+        to_add_shunt.vm_pu = net.res_ward.vm_pu.loc[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
         net.res_ward.drop(wards, inplace=True)
