@@ -23,7 +23,7 @@ from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
 from pandas.testing import assert_series_equal, assert_frame_equal
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.auxiliary import pandapowerNet, get_free_id
 from pandapower.create import create_empty_network
 
 try:
@@ -600,9 +600,11 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False):
+    def add_to_net(self, net, element, index=None, column="object", overwrite=False):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
+        if index is None:
+            index = get_free_id(net[element])
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
@@ -610,6 +612,7 @@ class JSONSerializableClass(object):
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
         net[element].at[index, column] = self
+        return index
 
     def equals(self, other):
 

@@ -280,13 +280,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq1_eur_per_mvar", dtype("f8")),
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
+        'characteristic': [
+            ('object', dtype(object))
+        ],
         'controller': [
             ('object', dtype(object)),
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
             ('initial_run', "bool"),
-            ("recycle", dtype(object)),
+            ("recycle", dtype(object))
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],

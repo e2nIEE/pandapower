@@ -233,6 +233,10 @@ def create_trafo_characteristics(net, trafotable, trafo_index, vk_percent_x, vk_
             net[trafotable][col] = net[trafotable][col].astype(object)
 
     for tid, vk_x, vk_y, vkr_x, vkr_y in zip(trafo_index, vk_percent_x, vk_percent_y, vkr_percent_x, vkr_percent_y):
-        net[trafotable].at[tid, 'vk_percent_characteristic'] = SplineCharacteristic(vk_x, vk_y)
-        net[trafotable].at[tid, 'vkr_percent_characteristic'] = SplineCharacteristic(vkr_x, vkr_y)
+        s1 = SplineCharacteristic(vk_x, vk_y)
+        net[trafotable].at[tid, 'vk_percent_characteristic'] = s1.add_to_net(net, "characteristic")
+        s2 = SplineCharacteristic(vkr_x, vkr_y)
+        net[trafotable].at[tid, 'vkr_percent_characteristic'] = s2.add_to_net(net, "characteristic")
+
+
 

@@ -26,15 +26,11 @@ class Controller(JSONSerializableClass):
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
                  matching_params=None, **kwargs):
         super().__init__()
-        # add oneself to net, creating the ['controller'] DataFrame, if necessary
-        if index is None:
-            index = get_free_id(net.controller)
         self.matching_params = dict() if matching_params is None else matching_params
-        self.index = index
-        self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order,
-                                   level=level, index=index, recycle=recycle,
-                                   drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                   overwrite=overwrite, matching_params=matching_params, **kwargs)
+        # add oneself to net, creating the ['controller'] DataFrame, if necessary
+        self.index = self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order, level=level,
+                                                index=index, recycle=recycle, drop_same_existing_ctrl=drop_same_existing_ctrl,
+                                                overwrite=overwrite, matching_params=matching_params, **kwargs)
 
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
@@ -89,14 +85,14 @@ class Controller(JSONSerializableClass):
         dtypes = net.controller.dtypes
 
         # use base class method to raise an error if the object is in DF and overwrite = False
-        super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
+        # if the index is None, the base class is in charge of obtaining the next free index in the data frame
+        added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
 
-        columns = ['object', 'in_service', 'initial_run', 'recycle']
-        net.controller.loc[index,columns] = (self, in_service, initial_run, recycle)
-        net.controller['order'][index] = order
-        net.controller['level'][index] = level
+        columns = ['in_service', 'order', 'level', 'initial_run', 'recycle']
+        net.controller.loc[added_index,columns] = (in_service, order, level, initial_run, recycle)
 
         _preserve_dtypes(net.controller, dtypes)
+        return added_index
 
     def time_step(self, net, time):
         """

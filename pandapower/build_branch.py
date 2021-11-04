@@ -260,7 +260,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
+    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence, characteristic=net.get("characteristic"))
 
     if mode == "sc":
         y = 0
@@ -408,11 +408,10 @@ def _replace_nan(array, value=0):
     array[mask] = value
     return array
 
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1):
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
-
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
@@ -421,9 +420,18 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
 
         if "tap_dependent_impedance" in trafo_df:
             tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        else:
+            tap_dependent_impedance = False
+
+        if np.any(tap_dependent_impedance):
+            if characteristic is None:
+                raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
+
             tap_pos = get_trafo_values(trafo_df, "tap_pos")
-            vk_percent_characteristic = get_trafo_values(trafo_df, "vk_percent_characteristic")
-            vkr_percent_characteristic = get_trafo_values(trafo_df, "vkr_percent_characteristic")
+            vk_percent_characteristic_idx = get_trafo_values(trafo_df, "vk_percent_characteristic")
+            vk_percent_characteristic = characteristic.loc[vk_percent_characteristic_idx[tap_dependent_impedance], 'object'].values
+            vkr_percent_characteristic_idx = get_trafo_values(trafo_df, "vkr_percent_characteristic")
+            vkr_percent_characteristic = characteristic.loc[vkr_percent_characteristic_idx[tap_dependent_impedance], 'object'].values
 
             vk_percent = np.where(tap_dependent_impedance,
                                   [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_percent_characteristic)],
