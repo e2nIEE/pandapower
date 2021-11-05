@@ -866,6 +866,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
+    # todo: add here characteristics
     vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
     vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
     sn = np.stack([t3.sn_hv_mva.values, t3.sn_mv_mva.values, t3.sn_lv_mva.values])
