@@ -1897,6 +1897,14 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
     entries["max_i_ka"] = lineparam["max_i_ka"]
     entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+
+    zero_ohm = ['r0_ohm_per_km', 'x0_ohm_per_km', 'c0_nf_per_km']
+    if all(p in lineparam for p in zero_ohm) and not any(isnan(lineparam[p]) for p in zero_ohm):
+        entries["r0_ohm_per_km"] = lineparam["r0_ohm_per_km"]
+        entries["x0_ohm_per_km"] = lineparam["x0_ohm_per_km"]
+        entries["c0_nf_per_km"] = lineparam["c0_nf_per_km"]
+        entries["g0_us_per_km"] = lineparam["g0_us_per_km"] if "g0_us_per_km" in lineparam else 0.
+
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
 
