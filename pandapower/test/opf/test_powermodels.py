@@ -641,8 +641,8 @@ def test_runpm_vd():
     for idx in net.ext_grid.index:
         pp.create_poly_cost(net, idx, "ext_grid", 1.0)
 
-    net.bus["pm_param/threshold_v"] = None
-    net.bus["pm_param/threshold_v"].loc[net.sgen.bus] = 0.99
+    net.bus["pm_param/setpoint_v"] = None
+    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
 
     pp.runpm_vd(net, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
