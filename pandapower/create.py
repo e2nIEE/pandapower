@@ -1933,7 +1933,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
-        **c_nf_per_km** (float) - line capacitance in nano Farad per km
+        **c_nf_per_km** (float) - line capacitance (line-to-earth) in nano Farad per km
 
         **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
 
