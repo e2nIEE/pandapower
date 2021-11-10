@@ -78,7 +78,7 @@ def correct_dtypes(net, error):
         if error:
             raise ValueError(msg)
         else:
-            logger.warning(msg)
+            logger.info(msg)
 
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
