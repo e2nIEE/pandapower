@@ -329,11 +329,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_asymmetric_load": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_motor": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                             ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_shunt": [("p_mw", "f8"),
@@ -3460,7 +3460,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     return index
 
 
-def create_pwl_cost(net, element, et, points, power_type="p", index=None):
+def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -3485,6 +3485,8 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
 
@@ -3498,6 +3500,9 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
@@ -3508,7 +3513,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -3541,6 +3546,8 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
 
@@ -3549,6 +3556,9 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
 
         create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "poly_cost", index)
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
@@ -3567,6 +3577,13 @@ def _get_index_with_check(net, table, index, name=None):
     if index in net[table].index:
         raise UserWarning("A %s with the id %s already exists" % (name, index))
     return index
+
+
+def _cost_existance_check(net, element, et):
+    return (bool(net.poly_cost.shape[0]) and
+            np_any((net.poly_cost.element == element).values & (net.poly_cost.et == et).values)) \
+        or (bool(net.pwl_cost.shape[0]) and
+            np_any((net.pwl_cost.element == element & net.pwl_cost.et == et).values))
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):

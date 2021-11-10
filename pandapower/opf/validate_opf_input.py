@@ -72,3 +72,8 @@ def _check_necessary_opf_parameters(net, logger):
 
     if error:
         raise KeyError("OPF parameters are not set correctly. See error log.")
+
+    # --- log multiple costs to elements
+    if pd.concat([net.poly_cost[["element", "et"]], net.pwl_cost[["element", "et"]]]).duplicated(
+            ).any():
+        raise UserWarning("There are multiple costs to one or multiple elements.")
