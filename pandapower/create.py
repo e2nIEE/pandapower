@@ -676,7 +676,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -761,7 +762,8 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **name** (list of strings, default None) - The name for this load
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the load
 
@@ -847,6 +849,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **name** (string, default: None) - The name for this load
 
         **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string,default: wye) -  type variable to classify three ph load: delta/wye
 
@@ -994,7 +997,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
 
@@ -1082,7 +1086,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **name** (list of strings, default None) - The name for this sgen
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the sgen
 
@@ -1186,7 +1191,8 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
 
@@ -1286,7 +1292,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the storage
 
