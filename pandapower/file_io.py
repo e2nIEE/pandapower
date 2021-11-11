@@ -12,11 +12,23 @@ from warnings import warn
 import numpy
 import pandas as pd
 from packaging import version
+import sys
+try:
+    import xlsxwriter
+    xlsxwriter_INSTALLED = True
+except ImportError:
+    xlsxwriter_INSTALLED = False
+try:
+    import openpyxl
+    openpyxl_INSTALLED = True
+except ImportError:
+    openpyxl_INSTALLED = False
 
-import pandapower.io_utils as io_utils
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
+import pandapower.io_utils as io_utils
 
 
 def to_pickle(net, filename):
@@ -66,6 +78,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         >>> pp.to_excel(net, "example2.xlsx")  # relative path
 
     """
+    if not xlsxwriter_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     dict_net = io_utils.to_dict_of_dfs(net, include_results=include_results,
                                        include_empty_tables=include_empty_tables)
@@ -180,6 +194,8 @@ def from_excel(filename, convert=True):
     elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
+        if not openpyxl_INSTALLED:
+            soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
         xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:

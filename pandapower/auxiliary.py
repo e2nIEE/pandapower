@@ -59,6 +59,13 @@ lightsim2grid_available = True if newtonpf_ls is not None else False
 logger = logging.getLogger(__name__)
 
 
+def soft_dependency_error(fct_name, required_packages):
+    required_packages = required_packages if isinstance(required_packages, str) else \
+        "','".join(required_packages)
+    raise ImportError("Some pandapower functionality use modules outside the setup.py "
+                      "requirements: %s requires '%s'." % (fct_name, required_packages))
+
+
 class ADict(dict, MutableMapping):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

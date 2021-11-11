@@ -46,11 +46,9 @@ setup(
                       "networkx>=2.5",
                       "scipy<=1.6.0",
                       "numpy>=0.11",
-                      "packaging",
-                      "xlsxwriter",
-                      "xlrd",
-                      "openpyxl",
-                      "cryptography"],
+                      "packaging"],
+    # optional_requirer=["matplotlib", "geopandas", "xlsxwriter", "openpyxl", "shapely",
+    #                    "base64", "hashlib", "cryptography", "zlib"]
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
         "plotting": ["plotly", "matplotlib", "python-igraph"],
