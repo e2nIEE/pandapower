@@ -216,27 +216,24 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         logger.info("matplotlib not installed. y-values: %s" % y)
 
 
-def create_trafo_characteristics(net, trafotable, trafo_index, vk_percent_x, vk_percent_y, vkr_percent_x, vkr_percent_y):
-    if len(trafo_index) != len(vk_percent_x) or len(trafo_index) != len(vkr_percent_x) or \
-            len(trafo_index) != len(vk_percent_y) or len(trafo_index) != len(vkr_percent_y):
+def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
+    if len(trafo_index) != len(x_points) or len(trafo_index) != len(y_points):
         raise UserWarning("the lengths of the trafo index and points do not match!")
 
     if 'tap_dependent_impedance' not in net[trafotable]:
         net[trafotable]['tap_dependent_impedance'] = False
 
     net[trafotable].loc[trafo_index, 'tap_dependent_impedance'] = True
+    col = f"{variable}_characteristic"
 
-    for col in ('vk_percent_characteristic', 'vkr_percent_characteristic'):
-        if col not in net[trafotable]:
-            net[trafotable][col] = pd.Series(index=net[trafotable].index, dtype=object, data=None)
-        elif net[trafotable][col].dtype != object:
-            net[trafotable][col] = net[trafotable][col].astype(object)
+    if col not in net[trafotable]:
+        net[trafotable][col] = pd.Series(index=net[trafotable].index, dtype=object, data=None)
+    elif net[trafotable][col].dtype != object:
+        net[trafotable][col] = net[trafotable][col].astype(object)
 
-    for tid, vk_x, vk_y, vkr_x, vkr_y in zip(trafo_index, vk_percent_x, vk_percent_y, vkr_percent_x, vkr_percent_y):
-        s1 = SplineCharacteristic(vk_x, vk_y)
-        net[trafotable].at[tid, 'vk_percent_characteristic'] = s1.add_to_net(net, "characteristic")
-        s2 = SplineCharacteristic(vkr_x, vkr_y)
-        net[trafotable].at[tid, 'vkr_percent_characteristic'] = s2.add_to_net(net, "characteristic")
+    for tid, x_p, y_p in zip(trafo_index, x_points, y_points):
+        s = SplineCharacteristic(x_p, y_p)
+        net[trafotable].at[tid, col] = s.add_to_net(net, "characteristic")
 
 
 

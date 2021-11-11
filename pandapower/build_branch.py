@@ -408,6 +408,46 @@ def _replace_nan(array, value=0):
     array[mask] = value
     return array
 
+
+def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
+    if trafotype == "2W":
+        vk_variables = ("vk_percent", "vkr_percent")
+    elif trafotype == "3W":
+        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent", "vk_lv_percent", "vkr_lv_percent")
+    else:
+        raise UserWarning("Unknown trafotype")
+
+    if "tap_dependent_impedance" in trafo_df:
+        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        tap_pos = get_trafo_values(trafo_df, "tap_pos")
+    else:
+        tap_dependent_impedance = False
+        tap_pos = None
+
+    use_tap_dependent_impedance = np.any(tap_dependent_impedance)
+
+    if use_tap_dependent_impedance and characteristic is None:
+            raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
+
+    vals = ()
+
+    for vk_var in vk_variables:
+        vk_value = get_trafo_values(trafo_df, vk_var)
+        if use_tap_dependent_impedance:
+            vals += (_calc_tap_dependent_value(trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance, characteristic),)
+        else:
+            vals += (vk_value,)
+
+    return vals
+
+
+def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance, characteristic):
+    vk_characteristic_idx = get_trafo_values(trafo_df, f"{variable}_characteristic")
+    vk_characteristic = characteristic.loc[vk_characteristic_idx[tap_dependent_impedance], 'object'].values
+    return np.where(tap_dependent_impedance,
+                    [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)], value)
+
+
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None):
     """
     Calculates (Vectorized) the resitance and reactance according to the
@@ -415,30 +455,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        vk_percent = get_trafo_values(trafo_df, "vk_percent")
-        vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
-
-        if "tap_dependent_impedance" in trafo_df:
-            tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
-        else:
-            tap_dependent_impedance = False
-
-        if np.any(tap_dependent_impedance):
-            if characteristic is None:
-                raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
-
-            tap_pos = get_trafo_values(trafo_df, "tap_pos")
-            vk_percent_characteristic_idx = get_trafo_values(trafo_df, "vk_percent_characteristic")
-            vk_percent_characteristic = characteristic.loc[vk_percent_characteristic_idx[tap_dependent_impedance], 'object'].values
-            vkr_percent_characteristic_idx = get_trafo_values(trafo_df, "vkr_percent_characteristic")
-            vkr_percent_characteristic = characteristic.loc[vkr_percent_characteristic_idx[tap_dependent_impedance], 'object'].values
-
-            vk_percent = np.where(tap_dependent_impedance,
-                                  [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_percent_characteristic)],
-                                  vk_percent)
-            vkr_percent = np.where(tap_dependent_impedance,
-                                   [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vkr_percent_characteristic)],
-                                   vkr_percent)
+        vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
 
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
@@ -838,7 +855,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
     if sequence==1:
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode)
+        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode, characteristic=net.get('characteristic'))
     elif sequence==0:
         if mode != "sc":
             raise NotImplementedError("0 seq impedance calculation only implemented for short-circuit calculation!")
@@ -865,10 +882,11 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
-    # todo: add here characteristics
-    vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
-    vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
+def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic):
+    vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+
+    vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
+    vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
     sn = np.stack([t3.sn_hv_mva.values, t3.sn_mv_mva.values, t3.sn_lv_mva.values])
 
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
