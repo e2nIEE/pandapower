@@ -8,6 +8,7 @@ Change Log
 - [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
 - [ADDED] multiple costs check in create functions and runopp
 - [ADDED] correct_dtypes() function for fileIO convert
+- [FIXED] revise to_ppc() and to_mpc() init behaviour
 
 [2.7.1]- 2021-07-22
 ----------------------
