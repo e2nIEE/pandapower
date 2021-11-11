@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import importlib
 import json
@@ -57,7 +58,6 @@ try:
     import fiona
     import fiona.crs
     import geopandas
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False

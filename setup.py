@@ -47,13 +47,18 @@ setup(
                       "scipy<=1.6.0",
                       "numpy>=0.11",
                       "packaging"],
-    # optional_requirer=["matplotlib", "geopandas", "xlsxwriter", "openpyxl", "shapely",
-    #                    "base64", "hashlib", "cryptography", "zlib"]
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph"],
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "shapely", "pyproj", "base64", "hashlib", "zlib"],
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"]},
+        "performance": ["ortools"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "fiona", "geopandas"],
+        "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
+                "plotly", "matplotlib", "python-igraph", "geopandas", "shapely", "pyproj", "base64", "hashlib", "zlib",
+                "pytest", "pytest-xdist",
+                "ortools",
+                "xlsxwriter", "openpyxl", "cryptography", "fiona"  # , "geopandas" already above
+                ]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
