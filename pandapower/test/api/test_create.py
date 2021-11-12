@@ -174,6 +174,15 @@ def test_create_lines():
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 2
     assert len(set(net.line.r_ohm_per_km)) == 1
 
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10)
+    b2 = pp.create_bus(net, 10)
+    l = pp.create_lines(net, [b1, b1], [b2, b2], 4, std_type=["48-AL1/8-ST1A 10.0", 'NA2XS2Y 1x240 RM/25 6/10 kV'])
+    assert len(net.line) == 2
+    assert len(net.line_geodata) == 0
+    assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
+    assert sum(net.line.std_type == 'NA2XS2Y 1x240 RM/25 6/10 kV') == 1
+
     # with geodata
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -831,4 +840,5 @@ def test_create_gens_raise_except():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_create.py"])
+    test_create_lines()
+   #pytest.main(["test_create.py"])
