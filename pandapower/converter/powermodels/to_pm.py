@@ -43,28 +43,37 @@ class NumpyEncoder(json.JSONEncoder):
             return None
         return json.JSONEncoder.default(self, obj)
 
-def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True, ac=True,
-                     trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                     pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
+def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calculate_voltage_angles=True,
+                     ac=True, silence=True, trafo_model="t", delta=1e-8, trafo3w_losses="hv",
+                     check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel", pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim = "S", pm_tol=1e-8):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
-    **net** - pandapower net
+        @param net:  - pandapower net
     OPTIONAL:
-    **pm_file_path** (str, None) - file path to *.json file to store pm data to
-    **correct_pm_network_data** (bool, True) - correct some input data (e.g. angles, p.u. conversion)
-    **delta** (float, 1e-8) - (small) offset to set for "hard" OPF limits.
-    **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-    **pm_model** (str, "ACPPowerModel") - model to use. Default is AC model
-    **pm_solver** (str, "ipopt") - default solver to use.
-    **pm_nl_solver** (str, "ipopt") - default nonlinear solver to use.
-    **pm_mip_solver** (str, "cbc") - default mip solver to use.
-    **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
-    **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
+        @param pm_file_path: (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If
+            you want to keep the file after optimization, you should also set delete_buffer_file to False!
+        @param correct_pm_network_data: (bool, True) - checks if network data is correct. If not tries to correct it
+        @param silence: (bool, True) - Suppresses information and warning messages output by PowerModels
+        @param pm_model: (str, "ACPPowerModel") - The PowerModels.jl model to use
+        @param pm_solver: (str, "ipopt") - The "main" power models solver
+        @param pm_mip_solver: (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+        @param pm_nl_solver: (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
+        @param pm_time_limits: (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like
+                {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+        @param pm_log_level: (int, 0) - solver log level in power models
+        @param delete_buffer_file: (Bool, True) - If True, the .json file used by powermodels will be deleted after
+                optimization.
+        @param pp_to_pm_callback: (function, None) - callback function to add data to the PowerModels data structure
+        @param opf_flow_lim: (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+                "opf.flowlim" parameter:
+                    "S" - apparent power flow (limit in MVA),
+                    "I" - current magnitude (limit in MVA at 1 p.u. voltage)
+        @param pm_tol: (float, 1e-8) - default desired convergence tolerance for solver to use.
+
     Returns
     -------
-    **pm** (json str) - PowerModels.jl data structure
     """
 
     net._options = {}
@@ -76,7 +85,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True, calcu
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
-                     correct_pm_network_data=correct_pm_network_data, pm_mip_solver=pm_mip_solver,
+                     correct_pm_network_data=correct_pm_network_data, silence=silence, pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
     net, pm, ppc, ppci = convert_to_pm_structure(net)
@@ -367,6 +376,7 @@ def add_pm_options(pm, net):
     else:
         pm["pm_time_limit"], pm["pm_nl_time_limit"], pm["pm_mip_time_limit"] = np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
+    pm["silence"] = net._options["silence"]
     return pm
 
 
