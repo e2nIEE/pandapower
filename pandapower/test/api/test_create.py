@@ -840,5 +840,4 @@ def test_create_gens_raise_except():
 
 
 if __name__ == '__main__':
-    test_create_lines()
-   #pytest.main(["test_create.py"])
+   pytest.main(["test_create.py"])
