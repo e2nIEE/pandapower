@@ -86,6 +86,8 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None):
 
     # add switches
     mask = net.switch.et.values == "b"
+    if respect_switches:
+        mask &= ~open_switches
     bus_mask = _get_element_mask_from_nodes(net, "switch", ["element", "bus"], buses)
     for switch in net.switch[mask & bus_mask].itertuples():
         g.add_edge(pp_bus_mapping[switch.element],
