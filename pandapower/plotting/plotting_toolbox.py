@@ -21,7 +21,7 @@ def _rotate_dim2(arr, ang):
 
 
 def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
-                         sgen_size=1.0, switch_size=2.0, switch_distance=1.0):
+                         sgen_size=1.0, switch_size=2.0, switch_distance=1.0, gen_size=1.0):
     """
     Calculates the size for most collection types according to the distance between min and max
     geocoord so that the collections fit the plot nicely
@@ -58,7 +58,8 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
         "switch_distance": switch_distance * mean_distance_between_buses * 2,
         "load": load_size * mean_distance_between_buses,
         "sgen": sgen_size * mean_distance_between_buses,
-        "trafo": trafo_size * mean_distance_between_buses
+        "trafo": trafo_size * mean_distance_between_buses,
+        "gen": gen_size * mean_distance_between_buses
     }
     return sizes
 
