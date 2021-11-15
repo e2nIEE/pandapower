@@ -54,12 +54,12 @@ setup(
         "performance": ["ortools"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly", "matplotlib", "python-igraph", "geopandas", "hashlib", "zlib",
+                "plotly", "matplotlib", "python-igraph", "geopandas", "zlib",
                 "pytest", "pytest-xdist",
                 "ortools",
                 "xlsxwriter", "openpyxl", "cryptography"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
-    # base64 produces problems, so it is not included to "all"
+    # "hashlib", "base64" produces problems, so it is not included to "all"
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
