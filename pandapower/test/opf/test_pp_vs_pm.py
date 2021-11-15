@@ -32,6 +32,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+# test data from :https://github.com/lanl-ansi/PowerModels.jl/blob/master/test/data/matpower/case5_clm.m
 def case5_pm_matfile_I():
     mpc = {"branch": array([
         [1, 2, 0.00281, 0.0281, 0.00712, 400.0, 0.0, 0.0, 0.0, 0.0, 1, -30.0, 30.0],
@@ -146,6 +147,7 @@ def test_opf_create_ext_grid_controllable():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.mark.xfail(reason="needs update in PdM and to_pm file")
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case5_pm_matfile_I()
@@ -169,4 +171,26 @@ def test_opf_ext_grid_controllable_pm():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
+
+    # # load net
+    # net = case5_pm_matfile_I()
+    # 
+    # net_old = copy.deepcopy(net)
+    # pp.runpp(net_old)
+    # pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=True, opf_flow_lim="I",
+    #                 delete_buffer_file=False, pdm_dev_mode=True)
+    # 
+    # # net_new = copy.deepcopy(net)
+    # # net_new.ext_grid["controllable"] = True
+    # # pp.runpp(net_new)
+    # # pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
+    # #                 opf_flow_lim="I", delete_buffer_file=False, pdm_dev_mode=True)
+    # 
+    # # assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
+    # # assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
+    # #
+    # # assert np.isclose(net_old.res_cost, 17082.8)
+    # # assert np.isclose(net_new.res_cost, 17015.5635)
+
+
 
