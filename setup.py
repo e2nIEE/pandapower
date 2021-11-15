@@ -49,16 +49,16 @@ setup(
                       "packaging"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "shapely", "pyproj", "base64", "hashlib", "zlib"],
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "base64", "hashlib", "zlib"],  # "shapely", "pyproj" are depedencies of geopandas and so already available
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "fiona", "geopandas"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly", "matplotlib", "python-igraph", "geopandas", "shapely", "base64", "hashlib", "zlib",  # "pyproj" is a depedency of geopandas and so already available
+                "plotly", "matplotlib", "python-igraph", "geopandas", "base64", "hashlib", "zlib",
                 "pytest", "pytest-xdist",
                 "ortools",
-                "xlsxwriter", "openpyxl", "cryptography", "fiona"  # "geopandas" already in line of plotting dependecies
-                ]},
+                "xlsxwriter", "openpyxl", "cryptography"
+                ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
