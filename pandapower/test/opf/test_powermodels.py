@@ -587,12 +587,7 @@ def test_runpm_vd():
     net.bus["pm_param/setpoint_v"] = None
     net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
 
-    pp.runpm_vd(net, calculate_voltage_angles=True,
-                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                n_timesteps=96, time_elapsed=0.25, correct_pm_network_data=True,
-                pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
-                delete_buffer_file=False, pm_file_path=None,
-                pm_tol=1e-8, pdm_dev_mode=True)
+    pp.runpm_vd(net)
 
     assert np.allclose(net.res_bus.vm_pu[net.sgen.bus], 0.99, atol=1e-2, rtol=1e-2)
     assert np.not_equal(net_org.res_sgen.q_mvar.values.all(), net.res_sgen.q_mvar.values.all())
