@@ -147,7 +147,6 @@ def test_opf_create_ext_grid_controllable():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.xfail(reason="needs update in PdM and to_pm file")
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case5_pm_matfile_I()
