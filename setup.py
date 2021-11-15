@@ -49,7 +49,7 @@ setup(
                       "packaging"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "base64", "hashlib", "zlib"],  # "shapely", "pyproj" are depedencies of geopandas and so already available
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],  # "shapely", "pyproj" are depedencies of geopandas and so already available; "base64", "hashlib", "zlib" produce installing problems, so it is not include
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
@@ -59,7 +59,7 @@ setup(
                 "ortools",
                 "xlsxwriter", "openpyxl", "cryptography"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
-    # "hashlib", "zlib", "base64" produces problems, so it is not included to "all"
+    # "hashlib", "zlib", "base64" produce installing problems, so it is not included
     packages=find_packages(),
     include_package_data=True,
     classifiers=classifiers
