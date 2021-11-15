@@ -33,8 +33,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install .
-        pip install numpydoc sphinx sphinx_rtd_theme plotly matplotlib python-igraph geopandas base64 hashlib zlib pytest pytest-xdist ortools xlsxwriter openpyxl cryptography
+        pip install .["all"]
         if ${{ matrix.python-version == '3.7' }}; then python -m pip install pypower; fi
         if ${{ matrix.python-version != '3.6' }}; then python -m pip install numba; fi
     - name: Install Julia
