@@ -11,6 +11,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+import pandas.testing as pdt
 from packaging import version
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
@@ -246,31 +247,44 @@ def _cosphi_from_pq(p, q):
     return cosphi, s, qmode, pmode
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
+def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
     """
-    Returns a boolean whether the nets are equal or not.
+    Returns a boolean whether the given two dataframes are equal or not.
     """
-    if ignore_index_order:
-        x_df.sort_index(axis=1, inplace=True)
-        y_df.sort_index(axis=1, inplace=True)
-        x_df.sort_index(axis=0, inplace=True)
-        y_df.sort_index(axis=0, inplace=True)
-    # eval if two DataFrames are equal, with regard to a tolerance
-    if x_df.shape == y_df.shape:
-        if x_df.shape[0]:
-            # we use numpy.allclose to grant a tolerance on numerical values
-            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
-                                          y_df.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-        else:
-            numerical_equal = True
-        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
-        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
-            y_df.select_dtypes(exclude=[np.number]))
+    if "tol" in kwargs:
+        if "atol" in kwargs:
+            raise ValueError("'atol' and 'tol' are given to dataframes_equal(). Don't use 'tol' "
+                             "anymore.")
+        logger.warning("in dataframes_equal() parameter 'tol' is deprecated. Use 'atol' instead.")
+        kwargs["atol"] = kwargs.pop("tol")
 
-        return numerical_equal & rest_equal
-    else:
+    if ignore_index_order:
+        df1 = df1.sort_index().sort_index(axis=1)
+        df2 = df2.sort_index().sort_index(axis=1)
+
+    # --- pandas implementation
+    try:
+        pdt.assert_frame_equal(df1, df2, **kwargs)
+        return True
+    except AssertionError:
         return False
+
+    # --- alternative (old) implementation
+    # if df1.shape == df2.shape:
+    #     if df1.shape[0]:
+    #         # we use numpy.allclose to grant a tolerance on numerical values
+    #         numerical_equal = np.allclose(df1.select_dtypes(include=[np.number]),
+    #                                       df2.select_dtypes(include=[np.number]),
+    #                                       atol=tol, equal_nan=True)
+    #     else:
+    #         numerical_equal = True
+    #     # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+    #     rest_equal = df1.select_dtypes(exclude=[np.number]).equals(
+    #         df2.select_dtypes(exclude=[np.number]))
+
+    #     return numerical_equal & rest_equal
+    # else:
+    #     return False
 
 
 def compare_arrays(x, y):
@@ -691,10 +705,23 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
 
 def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
     """
-    Compares the DataFrames of two networks. The networks are considered equal
-    if they share the same keys and values, except of the
-    'et' (elapsed time) entry which differs depending on
-    runtime conditions and entries stating with '_'.
+    Returns a boolean whether the two given pandapower networks are equal.
+
+    pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
+
+    INPUT:
+        **net1** (pandapower net)
+
+        **net2** (pandapower net)
+
+    OPTIONAL:
+        **check_only_results** (bool, False) - if True, only result tables (starting with "res_")
+        are compared
+
+        **exclude_elms** (list, None) - list of element tables which should be ignored in the
+        comparison
+
+        **kwargs** - key word arguments for dataframes_equal()
     """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
@@ -704,27 +731,25 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    # for two networks make sure both have the same keys that do not start with "_"...
-    net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
-    net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+    # for two networks make sure both have the same keys
+    if check_only_results:
+        net1_keys = [key for key in net1.keys() if key[:4] == "res_" and not (key in exclude_elms)]
+        net2_keys = [key for key in net2.keys() if key[:4] == "res_" and not (key in exclude_elms)]
+    else:
+        net1_keys = [key for key in net1.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et")]
+        net2_keys = [key for key in net2.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et")]
     keys_to_check = set(net1_keys) & set(net2_keys)
     key_difference = set(net1_keys) ^ set(net2_keys)
     not_checked_keys = list()
 
     if len(key_difference) > 0:
         logger.warning("Networks entries mismatch at: %s" % key_difference)
-        if not check_only_results:
-            return False
+        return False
 
     # ... and then iter through the keys, checking for equality for each table
     for key in list(keys_to_check):
-
-        # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
-        if key == 'et' or key.startswith("_"):
-            continue
-
-        if check_only_results and not key.startswith("res_"):
-            continue  # skip anything that is not a result table
 
         if isinstance(net1[key], pd.DataFrame):
             if not isinstance(net2[key], pd.DataFrame):
@@ -742,7 +767,7 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                     not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):
-            if not isinstance(net2[key], np.array):
+            if not isinstance(net2[key], np.ndarray):
                 not_equal.append(key)
             else:
                 if version.parse(np.__version__) < version.parse("0.19"):

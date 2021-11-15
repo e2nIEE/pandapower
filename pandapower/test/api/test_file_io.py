@@ -385,7 +385,7 @@ def test_empty_geo_dataframe():
     net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
     s = pp.to_json(net)
     net1 = pp.from_json_string(s)
-    assert assert_net_equal(net, net1)
+    assert_net_equal(net, net1)
 
 
 if __name__ == "__main__":
