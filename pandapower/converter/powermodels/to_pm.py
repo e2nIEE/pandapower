@@ -279,9 +279,9 @@ def ppc_to_pm(net, ppci):
             f = int(row[F_BUS].real) # from bus of this line
             vr = ppci["bus"][f][BASE_KV]
             branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["c_rating_a"] = branch["c_rating_a"] / ppci["baseMVA"]
-            # branch["c_rating_b"] = row[RATE_B].real
-            # branch["c_rating_c"] = row[RATE_C].real
+            branch["c_rating_a"] = branch["c_rating_a"]
+            branch["c_rating_b"] = row[RATE_B].real
+            branch["c_rating_c"] = row[RATE_C].real
         else:
             logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
 
