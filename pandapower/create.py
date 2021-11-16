@@ -3521,7 +3521,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
     element = element if not hasattr(element, "__iter__") else element[0]
-    if check and _cost_existance_check(net, element, et):
+    if check and _cost_existance_check(net, element, et, power_type=power_type):
         raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
@@ -3599,11 +3599,22 @@ def _get_index_with_check(net, table, index, name=None):
     return index
 
 
-def _cost_existance_check(net, element, et):
-    return (bool(net.poly_cost.shape[0]) and
-            np_any((net.poly_cost.element == element).values & (net.poly_cost.et == et).values)) \
-        or (bool(net.pwl_cost.shape[0]) and
-            np_any((net.pwl_cost.element == element & net.pwl_cost.et == et).values))
+def _cost_existance_check(net, element, et, power_type=None):
+    if power_type is None:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values))
+    else:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values &
+                       (net.pwl_cost.power_type == power_type).values))
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):
