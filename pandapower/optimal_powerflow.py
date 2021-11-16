@@ -6,6 +6,7 @@
 
 import warnings
 from sys import stdout
+from numpy import allclose
 
 from pandapower.pypower.add_userfcn import add_userfcn
 from pandapower.pypower.ppoption import ppoption
@@ -19,6 +20,13 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.results import _copy_results_ppci_to_ppc, init_results, verify_results, \
     _extract_results
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OPFNotConverged(ppException):
@@ -34,6 +42,11 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
 
     if not "OPF_FLOW_LIM" in kwargs:
         kwargs["OPF_FLOW_LIM"] = 2
+
+    if net["_options"]["voltage_depend_loads"] and not (
+            allclose(net.load.const_z_percent.values, 0) and
+            allclose(net.load.const_i_percent.values, 0)):
+        logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
 
     ppopt = ppoption(VERBOSE=verbose, PF_DC=not ac, INIT=init, **kwargs)
     net["OPF_converged"] = False
