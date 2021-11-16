@@ -217,7 +217,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         run_control(**parameters)
     else:
         passed_parameters = _passed_runpp_parameters(locals())
-        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+        _init_runpp_options(net, algorithm=algorithm,
+                            calculate_voltage_angles=calculate_voltage_angles,
                             init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
                             trafo_model=trafo_model, trafo_loading=trafo_loading,
                             enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
