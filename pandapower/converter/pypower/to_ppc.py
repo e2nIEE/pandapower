@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from numpy import allclose
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio=2,
-           check_connectivity=True, voltage_depend_loads=True, init="results", mode=None):
+           check_connectivity=True, voltage_depend_loads=False, init="results", mode=None):
     """
      This function converts a pandapower net to a pypower case file.
 
@@ -52,7 +53,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
             perfomed. If check finds unsupplied buses, they are set out of service in the ppc
 
-        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. \
+        **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads. \
         If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. \
         net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
@@ -106,6 +107,13 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=True,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
+
+    if net["_options"]["voltage_depend_loads"] and not (
+            allclose(net.load.const_z_percent.values, 0) and
+            allclose(net.load.const_i_percent.values, 0)):
+        logger.error("to_ppc() does not consider voltage depend loads. The z and i parts of "
+                     "voltage depend loads are set to additional columns 13 and 14 but the p/q part"
+                     " is still unchanged.")
 
     #  do the conversion
     _, ppci = _pd2ppc(net)
