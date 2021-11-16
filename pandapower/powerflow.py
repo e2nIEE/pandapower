@@ -77,7 +77,7 @@ def _powerflow(net, **kwargs):
     # store variables
     net["_ppc"] = ppc
 
-    if not "VERBOSE" in kwargs:
+    if "VERBOSE" not in kwargs:
         kwargs["VERBOSE"] = 0
 
     # ----- run the powerflow -----
@@ -104,8 +104,9 @@ def _recycled_powerflow(net, **kwargs):
         result = _run_dc_pf(ppci)
         _ppci_to_net(result, net)
         return
-    if not algorithm in ['nr', 'iwamoto_nr'] and ac:
-        raise ValueError("recycle is only available with Newton-Raphson power flow. Choose algorithm='nr'")
+    if algorithm not in ['nr', 'iwamoto_nr'] and ac:
+        raise ValueError("recycle is only available with Newton-Raphson power flow. Choose "
+                         "algorithm='nr'")
 
     recycle = options["recycle"]
     ppc = net["_ppc"]
