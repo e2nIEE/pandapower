@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import importlib
 import json
@@ -12,7 +13,7 @@ import sys
 import types
 import weakref
 from functools import partial
-from inspect import isclass, signature, _findclass
+from inspect import isclass, _findclass
 from warnings import warn
 
 import networkx
@@ -23,7 +24,28 @@ from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
 from pandas.testing import assert_series_equal, assert_frame_equal
 
-from pandapower.auxiliary import pandapowerNet
+try:
+    from cryptography.fernet import Fernet
+    cryptography_INSTALLED = True
+except ImportError:
+    cryptography_INSTALLED = False
+try:
+    import hashlib
+    hashlib_INSTALLED = True
+except ImportError:
+    hashlib_INSTALLED = False
+try:
+    import base64
+    base64_INSTALLED = True
+except ImportError:
+    base64_INSTALLED = False
+try:
+    import zlib
+    zlib_INSTALLED = True
+except:
+    zlib_INSTALLED = False
+
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error
 from pandapower.create import create_empty_network
 
 try:
@@ -36,7 +58,6 @@ try:
     import fiona
     import fiona.crs
     import geopandas
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -539,9 +560,10 @@ def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry)
 
 
 def encrypt_string(s, key, compress=True):
-    from cryptography.fernet import Fernet
-    import hashlib
-    import base64
+    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
+        cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
+    if len(missing_packages):
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
@@ -556,20 +578,18 @@ def encrypt_string(s, key, compress=True):
 
 
 def decrypt_string(s, key):
-    from cryptography.fernet import Fernet
-    import hashlib
-    import base64
+    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
+        cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
+    if len(missing_packages):
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
 
     s = s.encode()
     s = cipher_suite.decrypt(s)
-    try:
-        import zlib
+    if zlib_INSTALLED:
         s = zlib.decompress(s)
-    except:
-        pass
     s = s.decode()
     return s
 

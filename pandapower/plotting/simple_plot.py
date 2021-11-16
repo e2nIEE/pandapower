@@ -103,7 +103,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord
         sizes = get_collection_sizes(net, bus_size, ext_grid_size, trafo_size,
-                                     load_size, sgen_size, switch_size, switch_distance)
+                                     load_size, sgen_size, switch_size, switch_distance, gen_size)
         bus_size = sizes["bus"]
         ext_grid_size = sizes["ext_grid"]
         trafo_size = sizes["trafo"]
@@ -111,6 +111,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         load_size = sizes["load"]
         switch_size = sizes["switch"]
         switch_distance = sizes["switch_distance"]
+        gen_size = sizes["gen"]
 
     # create bus collections to plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)

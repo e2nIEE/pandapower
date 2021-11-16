@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import json
 import os
@@ -21,8 +22,14 @@ from pandapower.timeseries import DFData
 
 try:
     import geopandas as gpd
+    GEOPANDAS_INSTALLED = True
 except ImportError:
-    pass
+    GEOPANDAS_INSTALLED = False
+try:
+    import shapely
+    SHAPELY_INSTALLED = True
+except ImportError:
+    SHAPELY_INSTALLED = False
 
 
 @pytest.fixture(params=[1])
@@ -74,14 +81,16 @@ def test_json_basic(net_in, tmp_path):
 
 def test_json_controller_none():
     try:
-        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'), convert=False)
+        pp.from_json(os.path.join(pp_dir, 'test', 'test_files',
+                                  'controller_containing_NoneNan.json'), convert=False)
     except:
         raise (UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
 
 def test_json(net_in, tmp_path):
     filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
-    try:
+
+    if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
         from shapely.geometry import Point, LineString
@@ -101,8 +110,6 @@ def test_json(net_in, tmp_path):
         # assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net_out.bus_geodata.geometry.iat[0], Point)
         assert isinstance(net_out.line_geodata.geometry.iat[0], LineString)
-    except (NameError, ImportError):
-        pass
 
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
@@ -371,7 +378,7 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
-@pytest.mark.skipif('geopandas' not in sys.modules, reason="requires the GeoPandas library")
+@pytest.mark.skipif(GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
     net = pp.create_empty_network()
     net.bus_geodata['geometry'] = None
@@ -379,6 +386,7 @@ def test_empty_geo_dataframe():
     s = pp.to_json(net)
     net1 = pp.from_json_string(s)
     assert assert_net_equal(net, net1)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
