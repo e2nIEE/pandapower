@@ -393,7 +393,7 @@
       "orient": "split",
       "dtype": {
         "power_type": "object",
-        "element": "object",
+        "element": "uint32",
         "et": "object",
         "points": "object"
       }
@@ -401,10 +401,10 @@
     "poly_cost": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"element\",\"et\",\"cp0_eur\",\"cp1_eur_per_mw\",\"cp2_eur_per_mw2\",\"cq0_eur\",\"cq1_eur_per_mvar\",\"cq2_eur_per_mvar2\"],\"index\":[0,1,2,3,4,5],\"data\":[[0.0,\"ext_grid\",0.0,2.0,0.02,0.0,0.0,0.0],[0.0,\"gen\",0.0,1.75,0.0175,0.0,0.0,0.0],[1.0,\"gen\",0.0,1.0,0.0625,0.0,0.0,0.0],[2.0,\"gen\",0.0,3.25,0.00834,0.0,0.0,0.0],[3.0,\"gen\",0.0,3.0,0.025,0.0,0.0,0.0],[4.0,\"gen\",0.0,3.0,0.025,0.0,0.0,0.0]]}",
+      "_object": "{\"columns\":[\"element\",\"et\",\"cp0_eur\",\"cp1_eur_per_mw\",\"cp2_eur_per_mw2\",\"cq0_eur\",\"cq1_eur_per_mvar\",\"cq2_eur_per_mvar2\"],\"index\":[0,1,2,3,4,5],\"data\":[[0,\"ext_grid\",0.0,2.0,0.02,0.0,0.0,0.0],[0,\"gen\",0.0,1.75,0.0175,0.0,0.0,0.0],[1,\"gen\",0.0,1.0,0.0625,0.0,0.0,0.0],[2,\"gen\",0.0,3.25,0.00834,0.0,0.0,0.0],[3,\"gen\",0.0,3.0,0.025,0.0,0.0,0.0],[4,\"gen\",0.0,3.0,0.025,0.0,0.0,0.0]]}",
       "orient": "split",
       "dtype": {
-        "element": "object",
+        "element": "uint32",
         "et": "object",
         "cp0_eur": "float64",
         "cp1_eur_per_mw": "float64",
@@ -425,7 +425,7 @@
         "order": "float64",
         "level": "object",
         "initial_run": "bool",
-        "recycle": "bool"
+        "recycle": "object"
       }
     },
     "line_geodata": {

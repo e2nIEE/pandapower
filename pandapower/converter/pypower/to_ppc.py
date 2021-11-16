@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio=2,
            check_connectivity=True, voltage_depend_loads=True, init="results", mode=None):
-
     """
      This function converts a pandapower net to a pypower case file.
 
@@ -91,6 +90,15 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
     else:
         mode = "pf"
 
+    # check init values
+    if init != "flat":
+        if not net.res_bus.shape[0]:
+            raise UserWarning("res_bus is empty. Change the input parameter 'init' to 'flat' or "
+                              "add result values to allow initialization with 'results'.")
+        elif len(net.bus.index.difference(net.res_bus.index)):
+            raise ValueError("The res_bus indices doesn't fit to the bus indices. Change the "
+                             "input parameter 'init' to flat or correct the res_bus table.")
+
     # select elements in service
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -98,8 +106,10 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=True,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
+
     #  do the conversion
     _, ppci = _pd2ppc(net)
     ppci['branch'] = ppci['branch'].real
-#    ppci.pop('internal')
+    # ppci.pop('internal')
+
     return ppci
