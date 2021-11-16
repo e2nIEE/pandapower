@@ -133,9 +133,9 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
                        '(Q injection, increases voltage). Please use "underexcited" ' +
                        'in place of "ind" and "overexcited" in place of "cap".')
     if qmode == "ind" or qmode == "underexcited":
-        qsign = 1 if pmode == "load" else -1
+        qsign = 1
     elif qmode == "cap" or qmode == "overexcited":
-        qsign = -1 if pmode == "load" else 1
+        qsign = -1
     else:
         raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
                          ') or "overexcited" (Q injection, increases voltage)' % qmode)
