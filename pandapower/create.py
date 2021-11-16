@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from operator import itemgetter
+
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64
@@ -12,7 +14,7 @@ from packaging import version
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
-from pandapower.std_types import add_basic_std_types, load_std_type
+from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
 
 try:
     import pplog as logging
@@ -1898,14 +1900,25 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                "in_service": in_service}
 
     # add std type data
-    lineparam = load_std_type(net, std_type, "line")
-    entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-    entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-    entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
-    entries["max_i_ka"] = lineparam["max_i_ka"]
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
-    if "type" in lineparam:
-        entries["type"] = lineparam["type"]
+    if isinstance(std_type, str):
+        lineparam = load_std_type(net, std_type, "line")
+        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+        entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+        entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
+        entries["max_i_ka"] = lineparam["max_i_ka"]
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        if "type" in lineparam:
+            entries["type"] = lineparam["type"]
+    else:
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
+        entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
+        entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
+        entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
+        entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
+        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
+                                          [0.] * len(lineparam)))
+        entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
+                                   [None] * len(lineparam)))
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
@@ -2905,9 +2918,9 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "tap_max": tap_max, "tap_min": tap_min,
                "in_service": array(in_service).astype(bool_), "name": name,
                "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None,
-               "vk0_hv_percent":vk0_hv_percent, "vk0_mv_percent":vk0_mv_percent,
-               "vk0_lv_percent":vk0_lv_percent, "vkr0_hv_percent":vkr0_hv_percent,
-               "vkr0_mv_percent":vkr0_mv_percent, "vkr0_lv_percent":vkr0_lv_percent,
+               "vk0_hv_percent": vk0_hv_percent, "vk0_mv_percent": vk0_mv_percent,
+               "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
+               "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
                "vector_group": vector_group}
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
@@ -3508,7 +3521,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
     element = element if not hasattr(element, "__iter__") else element[0]
-    if check and _cost_existance_check(net, element, et):
+    if check and _cost_existance_check(net, element, et, power_type=power_type):
         raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
@@ -3586,11 +3599,22 @@ def _get_index_with_check(net, table, index, name=None):
     return index
 
 
-def _cost_existance_check(net, element, et):
-    return (bool(net.poly_cost.shape[0]) and
-            np_any((net.poly_cost.element == element).values & (net.poly_cost.et == et).values)) \
-        or (bool(net.pwl_cost.shape[0]) and
-            np_any((net.pwl_cost.element == element & net.pwl_cost.et == et).values))
+def _cost_existance_check(net, element, et, power_type=None):
+    if power_type is None:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values))
+    else:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values &
+                       (net.pwl_cost.power_type == power_type).values))
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):

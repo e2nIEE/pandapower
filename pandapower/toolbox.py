@@ -100,56 +100,13 @@ def signing_system_value(elm):
         raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
 
 
-# def pq_from_cosphi(s, cosphi, qmode, pmode):
-#    """
-#    Calculates P/Q values from rated apparent power and cosine(phi) values.
-#       - s: rated apparent power
-#       - cosphi: cosine phi of the
-#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
-#       - pmode: "load" for load or "gen" for generation
-#    As all other pandapower functions this function is based on the consumer viewpoint. For active
-#    power, that means that loads are positive and generation is negative. For reactive power,
-#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
-#    """
-#    s = np.array(ensure_iterability(s))
-#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
-#    qmode = np.array(ensure_iterability(qmode, len(s)))
-#    pmode = np.array(ensure_iterability(pmode, len(s)))
-#
-#    # qmode consideration
-#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
-#    if len(unknown_qmode):
-#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
-#    qmode_is_ohm = qmode == "ohm"
-#    if any(cosphi[qmode_is_ohm] != 1):
-#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-#    qsign = np.ones(qmode.shape)
-#    qsign[qmode == "cap"] = -1
-#
-#    # pmode consideration
-#    unknown_pmode = set(pmode) - set(["load", "gen"])
-#    if len(unknown_pmode):
-#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
-#    psign = np.ones(pmode.shape)
-#    psign[pmode == "gen"] = -1
-#
-#    # calculate p and q
-#    p = psign * s * cosphi
-#    q = qsign * np.sqrt(s ** 2 - p ** 2)
-#
-#    if len(p) > 1:
-#        return p, q
-#    else:
-#        return p[0], q[0]
-
-
 def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
 
        - s: rated apparent power
        - cosphi: cosine phi of the
-       - qmode: "underexcided" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+       - qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
        - pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
@@ -158,18 +115,16 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     overexcited behavior (Q injection, increases voltage) with negative values.
     """
     if hasattr(s, "__iter__"):
-        s = ensure_iterability(s)
-        cosphi = ensure_iterability(cosphi, len(s))
-        qmode = ensure_iterability(qmode, len(s))
-        pmode = ensure_iterability(pmode, len(s))
-        p, q = [], []
-        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
-            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
-            p.append(p_)
-            q.append(q_)
-        return np.array(p), np.array(q)
+        len_ = len(s)
+    elif hasattr(cosphi, "__iter__"):
+        len_ = len(cosphi)
+    elif not isinstance(qmode, str) and hasattr(qmode, "__iter__"):
+        len_ = len(qmode)
+    elif not isinstance(pmode, str) and hasattr(pmode, "__iter__"):
+        len_ = len(pmode)
     else:
         return _pq_from_cosphi(s, cosphi, qmode, pmode)
+    return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
@@ -179,63 +134,83 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
                        '(Q injection, increases voltage). Please use "underexcited" ' +
                        'in place of "ind" and "overexcited" in place of "cap".')
     if qmode == "ind" or qmode == "underexcited":
-        qsign = 1 if pmode == "load" else -1
+        qsign = 1
     elif qmode == "cap" or qmode == "overexcited":
-        qsign = -1 if pmode == "load" else 1
+        qsign = -1
     else:
         raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
                          ') or "overexcited" (Q injection, increases voltage)' % qmode)
 
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
+
     p = s * cosphi
-    q = qsign * np.sqrt(s ** 2 - p ** 2)
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
 
 
-# def cosphi_from_pq(p, q):
-#    """
-#    Analog to pq_from_cosphi, but other way around.
-#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-#    """
-#    p = np.array(ensure_iterability(p))
-#    q = np.array(ensure_iterability(q, len(p)))
-#    if len(p) != len(q):
-#        raise ValueError("p and q must have the same length.")
-#    p_is_zero = np.array(p == 0)
-#    cosphi = np.empty(p.shape)
-#    if sum(p_is_zero):
-#        cosphi[p_is_zero] = np.nan
-#        logger.warning("A cosphi from p=0 is undefined.")
-#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-#    s = (p ** 2 + q ** 2) ** 0.5
-#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
-#    if len(p) > 1:
-#        return cosphi, s, qmode, pmode
-#    else:
-#        return cosphi[0], s[0], qmode[0], pmode[0]
+def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
+    if len_ is None:
+        s = np.array(ensure_iterability(s))
+        len_ = len(s)
+    else:
+        s = np.array(ensure_iterability(s, len_))
+    cosphi = np.array(ensure_iterability(cosphi, len_))
+    qmode = np.array(ensure_iterability(qmode, len_))
+    pmode = np.array(ensure_iterability(pmode, len_))
+
+    # "ind" -> "underexcited", "cap" -> "overexcited"
+    is_ind = qmode == "ind"
+    is_cap = qmode == "cap"
+    if any(is_ind) or any(is_cap):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
+    qmode[is_ind] = "underexcited"
+    qmode[is_cap] = "overexcited"
+
+    # qmode consideration
+    unknown_qmode = set(qmode) - set(["underexcited", "overexcited"])
+    if len(unknown_qmode):
+        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+    qsign = np.ones(qmode.shape)
+    qsign[qmode == "overexcited"] = -1
+
+    # pmode consideration
+    unknown_pmode = set(pmode) - set(["load", "gen"])
+    if len(unknown_pmode):
+        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+    psign = np.ones(pmode.shape)
+    psign[pmode == "gen"] = -1
+
+    # calculate p and q
+    p = s * cosphi
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
+
+    return p, q
 
 
 def cosphi_from_pq(p, q):
-    if hasattr(p, "__iter__"):
-        assert len(p) == len(q)
-        s, cosphi, qmode, pmode = [], [], [], []
-        for p_, q_ in zip(p, q):
-            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
-            s.append(s_)
-            cosphi.append(cosphi_)
-            qmode.append(qmode_)
-            pmode.append(pmode_)
-        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
-    else:
-        return _cosphi_from_pq(p, q)
-
-
-def _cosphi_from_pq(p, q):
     """
     Analog to pq_from_cosphi, but the other way around.
     In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and
     "overexcited" (Q injection, increases voltage)
     """
+    if hasattr(p, "__iter__"):
+        len_ = len(p)
+    elif hasattr(q, "__iter__"):
+        len_ = len(q)
+    else:
+        return _cosphi_from_pq(p, q)
+    return _cosphi_from_pq_bulk(p, q, len_=len_)
+
+
+def _cosphi_from_pq(p, q):
     if p == 0:
         cosphi = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
@@ -243,7 +218,26 @@ def _cosphi_from_pq(p, q):
         cosphi = np.cos(np.arctan(q / p))
     s = (p ** 2 + q ** 2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "underexcited", "overexcited"][int(np.sign(q))]
+    qmode = ["underexcited", "underexcited", "overexcited"][int(np.sign(q))]
+    return cosphi, s, qmode, pmode
+
+
+def _cosphi_from_pq_bulk(p, q, len_=None):
+    if len_ is None:
+        p = np.array(ensure_iterability(p))
+        len_ = len(p)
+    else:
+        p = np.array(ensure_iterability(p, len_))
+    q = np.array(ensure_iterability(q, len_))
+    p_is_zero = np.array(p == 0)
+    cosphi = np.empty(p.shape)
+    if sum(p_is_zero):
+        cosphi[p_is_zero] = np.nan
+        logger.warning("A cosphi from p=0 is undefined.")
+    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
+    s = (p ** 2 + q ** 2) ** 0.5
+    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+    qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(int)]
     return cosphi, s, qmode, pmode
 
 
