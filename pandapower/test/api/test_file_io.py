@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import json
 import os
@@ -21,8 +22,14 @@ from pandapower.timeseries import DFData
 
 try:
     import geopandas as gpd
+    GEOPANDAS_INSTALLED = True
 except ImportError:
-    pass
+    GEOPANDAS_INSTALLED = False
+try:
+    import shapely
+    SHAPELY_INSTALLED = True
+except ImportError:
+    SHAPELY_INSTALLED = False
 
 
 @pytest.fixture(params=[1])
@@ -74,14 +81,16 @@ def test_json_basic(net_in, tmp_path):
 
 def test_json_controller_none():
     try:
-        pp.from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'), convert=False)
+        pp.from_json(os.path.join(pp_dir, 'test', 'test_files',
+                                  'controller_containing_NoneNan.json'), convert=False)
     except:
         raise (UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
 
 def test_json(net_in, tmp_path):
     filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
-    try:
+
+    if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
         from shapely.geometry import Point, LineString
@@ -101,8 +110,6 @@ def test_json(net_in, tmp_path):
         # assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net_out.bus_geodata.geometry.iat[0], Point)
         assert isinstance(net_out.line_geodata.geometry.iat[0], LineString)
-    except (NameError, ImportError):
-        pass
 
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
@@ -181,8 +188,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
-    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
+    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
@@ -310,7 +317,68 @@ def test_deepcopy_controller():
     assert not ct1.equals(ct2)
 
 
-@pytest.mark.skipif('geopandas' not in sys.modules, reason="requires the GeoPandas library")
+def test_elements_to_deserialize(tmp_path):
+    net = networks.mv_oberrhein()
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    pp.to_json(net, filename)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
+    for key, item in net_select.items():
+        if key in ['bus', 'load']:
+            assert isinstance(item, pd.DataFrame)
+        elif '_empty' in key:
+            assert isinstance(item, pd.DataFrame)
+        elif '_lookup' in key:
+            assert isinstance(item, dict)
+        elif key in ['std_types', 'user_pf_options']:
+            assert isinstance(item, dict)
+        elif '_ppc' in key:
+            assert item is None
+        elif key == '_is_elements' :
+            assert item is None
+        elif key in ['converged', 'OPF_converged']:
+            assert isinstance(item, bool)
+        elif key in ['f_hz', 'sn_mva']:
+            assert isinstance(item, float)
+        else:
+            assert isinstance(item, str)
+    pp.to_json(net_select, filename)
+    net_select = pp.from_json(filename)
+    assert_net_equal(net, net_select)
+
+
+def test_elements_to_deserialize_wo_keep(tmp_path):
+    net = networks.mv_oberrhein()
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    pp.to_json(net, filename)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'], keep_serialized_elements=False)
+    for key, item in net_select.items():
+        if key in ['bus', 'load']:
+            assert isinstance(item, pd.DataFrame)
+        elif '_empty' in key:
+            assert isinstance(item, pd.DataFrame)
+        elif '_lookup' in key:
+            assert isinstance(item, dict)
+        elif key in ['std_types', 'user_pf_options']:
+            assert isinstance(item, dict)
+        elif '_ppc' in key:
+            assert item is None
+        elif key == '_is_elements' :
+            assert item is None
+        elif key in ['converged', 'OPF_converged']:
+            assert isinstance(item, bool)
+        elif key in ['f_hz', 'sn_mva']:
+            assert isinstance(item, float)
+        else:
+            if isinstance(item, pd.DataFrame):
+                assert len(item) == 0
+            else:
+                assert isinstance(item, str)
+    pp.to_json(net_select, filename)
+    net_select = pp.from_json(filename)
+    assert_net_equal(net, net_select, name_selection=['bus', 'load'])
+
+
+@pytest.mark.skipif(GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
     net = pp.create_empty_network()
     net.bus_geodata['geometry'] = None
@@ -318,6 +386,7 @@ def test_empty_geo_dataframe():
     s = pp.to_json(net)
     net1 = pp.from_json_string(s)
     assert assert_net_equal(net, net1)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])

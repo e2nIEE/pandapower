@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from operator import itemgetter
+
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64
@@ -12,7 +14,7 @@ from packaging import version
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
-from pandapower.std_types import add_basic_std_types, load_std_type
+from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
 
 try:
     import pplog as logging
@@ -129,6 +131,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("scaling", "f8"),
                 ("slack", "bool"),
                 ("in_service", 'bool'),
+                ("slack_weight", 'f8'),
                 ("type", dtype(object))],
         "switch": [("bus", "i8"),
                    ("element", "i8"),
@@ -149,6 +152,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
+                     ("slack_weight", 'f8'),
                      ("in_service", 'bool')],
         "line": [("name", dtype(object)),
                  ("std_type", dtype(object)),
@@ -256,6 +260,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
+                  ("slack_weight", 'f8'),
                   ("in_service", "bool")],
         "measurement": [("name", dtype(object)),
                         ("measurement_type", dtype(object)),
@@ -326,9 +331,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_asymmetric_load": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_motor": [("p_mw", "f8"),
                              ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
@@ -673,7 +678,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -695,8 +701,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
             controllable loads in OPF
 
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF
-            Defaults to False if "controllable" column exists in DataFrame
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -759,7 +764,8 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **name** (list of strings, default None) - The name for this load
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the load
 
@@ -845,6 +851,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **name** (string, default: None) - The name for this load
 
         **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string,default: wye) -  type variable to classify three ph load: delta/wye
 
@@ -944,7 +951,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
 
-        **kwargs are passed on to the create_load function
+    OPTIONAL:
+        same as in create_load, keyword arguments are passed to the create_load function
 
     OUTPUT:
         **index** (int) - The unique ID of the created load
@@ -982,7 +990,6 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **p_mw** (float) - The active power of the static generator  (positive for generation!)
 
     OPTIONAL:
-
         **q_mvar** (float, 0) - The reactive power of the sgen
 
         **sn_mva** (float, None) - Nominal power of the sgen
@@ -992,7 +999,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
 
@@ -1010,9 +1018,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for \
             controllable sgens in OPF
 
-        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
-        powerflow
-            Defaults to False if "controllable" column exists in DataFrame
+        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
@@ -1081,7 +1088,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **name** (list of strings, default None) - The name for this sgen
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the sgen
 
@@ -1185,7 +1193,8 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
 
@@ -1285,7 +1294,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the storage
 
@@ -1303,9 +1313,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for a \
             controllable storage in OPF
 
-        **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
-        powerflow
-            Defaults to False if "controllable" column exists in DataFrame
+        **controllable** (bool, NaN) - Whether this storage is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
         **index** (int) - The unique ID of the created storage
@@ -1340,7 +1349,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=None,
-               in_service=True):
+               in_service=True, slack_weight=0.0):
     """
     Adds a generator to the network.
 
@@ -1373,6 +1382,10 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                 generator in OPF
                 False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
                 defaults to True if "controllable" column exists in DataFrame
+
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
+        flow calculation (active power balancing)
+
         powerflow
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
@@ -1383,9 +1396,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
+        short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for
+        short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1417,8 +1432,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     index = _get_index_with_check(net, "gen", index, name="generator")
 
     columns = ["name", "bus", "p_mw", "vm_pu", "sn_mva", "type", "slack", "in_service",
-               "scaling"]
-    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling]
+               "scaling", "slack_weight"]
+    variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling,
+                 slack_weight]
 
     _set_entries(net, "gen", index, True, **dict(zip(columns, variables)))
 
@@ -1455,7 +1471,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                 min_q_mvar=None, min_p_mw=None, max_p_mw=None, min_vm_pu=None, max_vm_pu=None,
                 scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
                 xdss_pu=None, rdss_ohm=None, cos_phi=None, pg_percent=None, power_station_trafo=None,
-                in_service=True, **kwargs):
+                in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -1512,6 +1528,8 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
             OPF
 
@@ -1544,7 +1562,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "name": name, "type": type, "slack": slack}
+               "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type, "slack": slack}
 
     _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
     _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
@@ -1635,7 +1653,8 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None, r0x0_max=nan, x0x_max=nan, controllable=nan, **kwargs):
+                    index=None, r0x0_max=nan, x0x_max=nan, controllable=nan,
+                    slack_weight=1.0, **kwargs):
     """
     Creates an external grid connection.
 
@@ -1682,6 +1701,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
@@ -1705,8 +1726,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
-    entries = dict(zip(["bus", "name", "vm_pu", "va_degree", "in_service"],
-                       [bus, name, vm_pu, va_degree, bool(in_service)]))
+    entries = dict(zip(["bus", "name", "vm_pu", "va_degree", "in_service", "slack_weight"],
+                       [bus, name, vm_pu, va_degree, bool(in_service), slack_weight]))
     _set_entries(net, "ext_grid", index, **entries, **kwargs)
 
     # OPF limits
@@ -1879,14 +1900,25 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                "in_service": in_service}
 
     # add std type data
-    lineparam = load_std_type(net, std_type, "line")
-    entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-    entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-    entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
-    entries["max_i_ka"] = lineparam["max_i_ka"]
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
-    if "type" in lineparam:
-        entries["type"] = lineparam["type"]
+    if isinstance(std_type, str):
+        lineparam = load_std_type(net, std_type, "line")
+        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+        entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+        entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
+        entries["max_i_ka"] = lineparam["max_i_ka"]
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        if "type" in lineparam:
+            entries["type"] = lineparam["type"]
+    else:
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
+        entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
+        entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
+        entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
+        entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
+        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
+                                          [0.] * len(lineparam)))
+        entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
+                                   [None] * len(lineparam)))
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
@@ -1921,7 +1953,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
-        **c_nf_per_km** (float) - line capacitance in nano Farad per km
+        **c_nf_per_km** (float) - line capacitance (line-to-earth) in nano Farad per km
 
         **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
 
@@ -2615,6 +2647,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vector_group=None):
     """
     Adds a three-winding transformer in table net["trafo3w"].
+    The model currently only supports one tap-changer per 3W Transformer.
 
     Input:
         **net** (pandapowerNet) - The net within this transformer should be created
@@ -2682,9 +2715,6 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **name** (string, None) - Name of the 3-winding transformer
 
         **in_service** (boolean, True) - True for in_service or False for out of service
-
-        ** only considered in loadflow if calculate_voltage_angles = True
-        **The model currently only supports one tap-changer per 3W Transformer.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -2888,9 +2918,9 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "tap_max": tap_max, "tap_min": tap_min,
                "in_service": array(in_service).astype(bool_), "name": name,
                "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None,
-               "vk0_hv_percent":vk0_hv_percent, "vk0_mv_percent":vk0_mv_percent,
-               "vk0_lv_percent":vk0_lv_percent, "vkr0_hv_percent":vkr0_hv_percent,
-               "vkr0_mv_percent":vkr0_mv_percent, "vkr0_lv_percent":vkr0_lv_percent,
+               "vk0_hv_percent": vk0_hv_percent, "vk0_mv_percent": vk0_mv_percent,
+               "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
+               "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
                "vector_group": vector_group}
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
@@ -3132,7 +3162,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
         **loss_factor** (float) - loss factor tan(delta) of the capacitor bank
 
-        **kwargs are passed to the create_shunt function
+    OPTIONAL:
+        same as in create_shunt, keyword arguments are passed to the create_shunt function
 
 
     OUTPUT:
@@ -3251,7 +3282,7 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
 
 def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, in_service=True,
-                 name=None, index=None):
+                 name=None, index=None, slack_weight=0.0):
     """
     Creates an extended ward equivalent.
 
@@ -3277,6 +3308,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+
     OUTPUT:
         xward id
     """
@@ -3285,8 +3318,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
     columns = ["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "r_ohm", "x_ohm", "vm_pu", "name",
-               "in_service"]
-    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, in_service]
+               "slack_weight", "in_service"]
+    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, slack_weight, in_service]
     _set_entries(net, "xward", index, **dict(zip(columns, values)))
 
     return index
@@ -3330,7 +3363,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
         **max_q_from_mvar** - Maximum reactive power at from bus. Necessary for OPF
 
-        **max_q_to_mvar ** - Maximum reactive power at to bus. Necessary for OPF
+        **max_q_to_mvar** - Maximum reactive power at to bus. Necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -3447,7 +3480,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     return index
 
 
-def create_pwl_cost(net, element, et, points, power_type="p", index=None):
+def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -3460,17 +3493,19 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load", "dcline",\
-            "storage"]
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load",
+                                "dcline", "storage"]
 
         **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) \
-            defines the costs between p(n) and p(n+1)
+                            defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
+
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
 
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
@@ -3485,6 +3520,9 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et, power_type=power_type):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
@@ -3495,7 +3533,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -3528,6 +3566,8 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
 
@@ -3536,6 +3576,9 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
 
         create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "poly_cost", index)
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
@@ -3554,6 +3597,24 @@ def _get_index_with_check(net, table, index, name=None):
     if index in net[table].index:
         raise UserWarning("A %s with the id %s already exists" % (name, index))
     return index
+
+
+def _cost_existance_check(net, element, et, power_type=None):
+    if power_type is None:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values))
+    else:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values &
+                       (net.pwl_cost.power_type == power_type).values))
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):

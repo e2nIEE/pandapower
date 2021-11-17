@@ -19,9 +19,11 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
+        
         - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and max_i_ka (for lines)
         - sn_mva, vn_hv_kv, vn_lv_kv, vk_percent, vkr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
         - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vk_hv_percent, vk_mv_percent, vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
+    
     additional parameters can be added and later loaded into pandapower with the function
     "parameter_from_std_type".
 
@@ -158,6 +160,9 @@ def load_std_type(net, name, element="line"):
         return library[name]
     else:
         raise UserWarning("Unknown standard %s type %s" % (element, name))
+
+def check_entry_in_std_type(param, entry, else_val):
+    return param[entry] if entry in param else else_val
 
 
 def std_type_exists(net, name, element="line"):
@@ -312,7 +317,8 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
 
 def add_zero_impedance_parameters(net):
     """
-    Adds all parameters required for zero sequence impedance calculations
+    Adds all parameters required for zero sequence impedance calculations.
+    
     INPUT:
         **net** - pandapower network
         

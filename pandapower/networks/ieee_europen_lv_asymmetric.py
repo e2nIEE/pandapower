@@ -14,7 +14,9 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566"):
     """
     Loads the IEEE European LV network, a generic 0.416 kV network serviced by one 0.8 MVA MV/LV
     transformer station. The network supplies 906 LV buses and 55 1-PH loads
-    The network layout is mostly radial
+    The network layout is mostly radial.
+
+    The data source can be found at https://cmte.ieee.org/pes-testfeeders/resources/
 
     The network can be loaded with three different scenarios for On-Peak and Off-Peak load
     which are defined by scaling factors for loads / generators.

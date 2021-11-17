@@ -15,7 +15,7 @@ For all given Dickert LV Networks (in numbers: 12) the number of delivery points
 The next figure shows the topology of the paper's example with lv network with mid-range, cable type
 and in good case:
 
-.. image:: /pics/networks/example_of_dickert_lv-feeders_for_neutral-range_cable.PNG
+.. image:: /pics/networks/example_of_dickert_lv-feeders_for_mid-range_cable.PNG
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 34%

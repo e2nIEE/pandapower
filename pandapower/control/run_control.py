@@ -252,18 +252,20 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     Function is running control loops for the controllers specified in net.controller
 
     INPUT:
-   **net** - pandapower network with controllers included in net.controller
+        **net** - pandapower network with controllers included in net.controller
 
     OPTIONAL:
-       **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
-       **max_iter** (int, 30) - The maximum number of iterations for controller to converge
+        **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
+
+        **max_iter** (int, 30) - The maximum number of iterations for controller to converge
 
     KWARGS:
-        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired
-                                                   (only relevant if ctrl_varibales is None, otherwise it needs
+        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired \
+                                                   (only relevant if ctrl_varibales is None, otherwise it needs \
                                                    to be defined in ctrl_variables anyway)
-        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not
-                                           (only relevant if ctrl_varibales is None, otherwise it needs
+
+        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not \
+                                           (only relevant if ctrl_varibales is None, otherwise it needs \
                                            to be defined in ctrl_variables anyway)
 
     Runs controller until each one converged or max_iter is hit.
@@ -272,6 +274,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     2. Calculate an inital power flow (if it is enabled, i.e. setting the initial_run veriable to True)
     3. Repeats the following steps in ascending order of controller_order until total convergence of all
        controllers for each level:
+
         a) Evaluate individual convergence for all controllers in the level
         b) Call control_step() for all controllers in the level on diverged controllers
         c) Calculate power flow (or optionally another function like runopf or whatever you defined)

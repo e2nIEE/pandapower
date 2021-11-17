@@ -2,17 +2,11 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import csv
-import random
-from functools import reduce
-from pandapower.auxiliary import ADict
-
+import sys
 import numpy as np
-import pandas
-
-import pandas as pd
 from pandas import Int64Index
 
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.toolbox import ensure_iterability
 try:
     import matplotlib.pyplot as plt
@@ -132,7 +126,8 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         # query of parameters in net.controller dataframe
         idx = Int64Index(idx)
         for df_key in df_keys:
-            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
+            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[
+                df_key]])
         # query of parameters in controller object attributes
         idx = [i for i in idx if _controller_attributes_query(
             net.controller.object.loc[i], attributes_dict)]
@@ -202,9 +197,8 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
 
 
 def plot_characteristic(characteristic, start, stop, num=20):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     x = np.linspace(start, stop, num)
     y = characteristic(x)
-    if MATPLOTLIB_INSTALLED:
-        plt.plot(x, y, marker='x')
-    else:
-        logger.info("matplotlib not installed. y-values: %s" % y)
+    plt.plot(x, y, marker='x')
