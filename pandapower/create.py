@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from operator import itemgetter
+
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64
@@ -12,7 +14,7 @@ from packaging import version
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
-from pandapower.std_types import add_basic_std_types, load_std_type
+from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
 
 try:
     import pplog as logging
@@ -329,11 +331,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_asymmetric_load": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                                       ("q_mvar", "f8")],
         "_empty_res_motor": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
+                             ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_shunt": [("p_mw", "f8"),
@@ -676,7 +678,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -761,7 +764,8 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **name** (list of strings, default None) - The name for this load
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the load
 
@@ -847,6 +851,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **name** (string, default: None) - The name for this load
 
         **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string,default: wye) -  type variable to classify three ph load: delta/wye
 
@@ -994,7 +999,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
 
@@ -1082,7 +1088,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **name** (list of strings, default None) - The name for this sgen
 
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the sgen
 
@@ -1186,7 +1193,8 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar of all phases.
 
         **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
 
@@ -1286,7 +1294,8 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the storage
 
@@ -1891,22 +1900,40 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                "in_service": in_service}
 
     # add std type data
-    lineparam = load_std_type(net, std_type, "line")
-    entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-    entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-    entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
-    entries["max_i_ka"] = lineparam["max_i_ka"]
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
 
     zero_ohm = ['r0_ohm_per_km', 'x0_ohm_per_km', 'c0_nf_per_km']
-    if all(p in lineparam for p in zero_ohm) and not any(isnan(lineparam[p]) for p in zero_ohm):
-        entries["r0_ohm_per_km"] = lineparam["r0_ohm_per_km"]
-        entries["x0_ohm_per_km"] = lineparam["x0_ohm_per_km"]
-        entries["c0_nf_per_km"] = lineparam["c0_nf_per_km"]
-        entries["g0_us_per_km"] = lineparam["g0_us_per_km"] if "g0_us_per_km" in lineparam else 0.
 
-    if "type" in lineparam:
-        entries["type"] = lineparam["type"]
+    if isinstance(std_type, str):
+        lineparam = load_std_type(net, std_type, "line")
+        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+        entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+        entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
+        entries["max_i_ka"] = lineparam["max_i_ka"]
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        if all(p in lineparam for p in zero_ohm) and not any(isnan(lineparam[p]) for p in zero_ohm):
+            entries["r0_ohm_per_km"] = lineparam["r0_ohm_per_km"]
+            entries["x0_ohm_per_km"] = lineparam["x0_ohm_per_km"]
+            entries["c0_nf_per_km"] = lineparam["c0_nf_per_km"]
+            entries["g0_us_per_km"] = lineparam["g0_us_per_km"] if "g0_us_per_km" in lineparam else 0.
+
+        if "type" in lineparam:
+            entries["type"] = lineparam["type"]
+    else:
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
+        entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
+        entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
+        entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
+        entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
+        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
+                                          [0.] * len(lineparam)))
+        entries["r0_ohm_per_km"] = list(map(itemgetter("r0_ohm_per_km"), lineparam))
+        entries["x0_ohm_per_km"] = list(map(itemgetter("x0_ohm_per_km"), lineparam))
+        entries["c0_nf_per_km"] = list(map(itemgetter("c0_nf_per_km"), lineparam))
+        entries["g0_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g0_us_per_km"] * len(lineparam),
+                                           [0.] * len(lineparam)))
+                                          
+        entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
+                                   [None] * len(lineparam)))
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
@@ -1941,7 +1968,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
-        **c_nf_per_km** (float) - line capacitance in nano Farad per km
+        **c_nf_per_km** (float) - line capacitance (line-to-earth) in nano Farad per km
 
         **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
 
@@ -2906,9 +2933,9 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "tap_max": tap_max, "tap_min": tap_min,
                "in_service": array(in_service).astype(bool_), "name": name,
                "tap_at_star_point": array(tap_at_star_point).astype(bool_), "std_type": None,
-               "vk0_hv_percent":vk0_hv_percent, "vk0_mv_percent":vk0_mv_percent,
-               "vk0_lv_percent":vk0_lv_percent, "vkr0_hv_percent":vkr0_hv_percent,
-               "vkr0_mv_percent":vkr0_mv_percent, "vkr0_lv_percent":vkr0_lv_percent,
+               "vk0_hv_percent": vk0_hv_percent, "vk0_mv_percent": vk0_mv_percent,
+               "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
+               "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
                "vector_group": vector_group}
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
@@ -3468,7 +3495,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     return index
 
 
-def create_pwl_cost(net, element, et, points, power_type="p", index=None):
+def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -3493,6 +3520,8 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
 
@@ -3506,6 +3535,9 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et, power_type=power_type):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
@@ -3516,7 +3548,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -3549,6 +3581,8 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
     OUTPUT:
         **index** (int) - The unique ID of created cost entry
 
@@ -3557,6 +3591,9 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
 
         create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
     """
+    element = element if not hasattr(element, "__iter__") else element[0]
+    if check and _cost_existance_check(net, element, et):
+        raise UserWarning("There already exist costs for %s %i" % (et, element))
 
     index = _get_index_with_check(net, "poly_cost", index)
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
@@ -3575,6 +3612,24 @@ def _get_index_with_check(net, table, index, name=None):
     if index in net[table].index:
         raise UserWarning("A %s with the id %s already exists" % (name, index))
     return index
+
+
+def _cost_existance_check(net, element, et, power_type=None):
+    if power_type is None:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values))
+    else:
+        return (bool(net.poly_cost.shape[0]) and
+                np_any((net.poly_cost.element == element).values &
+                       (net.poly_cost.et == et).values)) \
+            or (bool(net.pwl_cost.shape[0]) and
+                np_any((net.pwl_cost.element == element).values &
+                       (net.pwl_cost.et == et).values &
+                       (net.pwl_cost.power_type == power_type).values))
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):
