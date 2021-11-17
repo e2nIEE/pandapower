@@ -78,7 +78,7 @@ def pf_not_converged(time_step, ts_variables):
         raise ts_variables['errors'][0]
 
 
-def implement_time_step(controller_order, time_step):
+def control_time_step(controller_order, time_step):
     for levelorder in controller_order:
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
@@ -119,7 +119,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
     pf_converged = True
     # run time step function for each controller
 
-    implement_time_step(ts_variables['controller_order'], time_step)
+    control_time_step(ts_variables['controller_order'], time_step)
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
