@@ -697,7 +697,8 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
+def nets_equal(net1, net2, check_only_results=False, check_without_results=False, exclude_elms=None,
+               **kwargs):
     """
     Returns a boolean whether the two given pandapower networks are equal.
 
@@ -712,6 +713,9 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
         **check_only_results** (bool, False) - if True, only result tables (starting with "res_")
         are compared
 
+        **check_without_results** (bool, False) - if True, result tables (starting with "res_")
+        are ignored for comparison
+
         **exclude_elms** (list, None) - list of element tables which should be ignored in the
         comparison
 
@@ -721,19 +725,27 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
         logger.warning("At least one net is not of type pandapowerNet.")
         return False
 
+    if check_without_results and check_only_results:
+        raise UserWarning("Please provide only one of the options to check without results or to "
+                          "exclude results in comparison.")
+
     exclude_elms = [] if exclude_elms is None else list(exclude_elms)
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
     # for two networks make sure both have the same keys
     if check_only_results:
-        net1_keys = [key for key in net1.keys() if key[:4] == "res_" and not (key in exclude_elms)]
-        net2_keys = [key for key in net2.keys() if key[:4] == "res_" and not (key in exclude_elms)]
+        net1_keys = [key for key in net1.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
+        net2_keys = [key for key in net2.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
     else:
         net1_keys = [key for key in net1.keys() if not (
-            key.startswith("_") or key in exclude_elms or key == "et")]
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
         net2_keys = [key for key in net2.keys() if not (
-            key.startswith("_") or key in exclude_elms or key == "et")]
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
     keys_to_check = set(net1_keys) & set(net2_keys)
     key_difference = set(net1_keys) ^ set(net2_keys)
     not_checked_keys = list()
