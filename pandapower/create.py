@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64
+    all as np_all, float64, uint32
 from packaging import version
 
 from pandapower import __version__
@@ -1891,6 +1891,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
 
     """
+    # breakpoint()
+    from_buses = [from_buses] if (type(from_buses) == int or type(from_buses) == uint32) else from_buses
+    to_buses = [to_buses] if (type(to_buses) == int or type(to_buses) == uint32) else to_buses
+
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
@@ -1902,13 +1906,15 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     # add std type data
     if isinstance(std_type, str):
         lineparam = load_std_type(net, std_type, "line")
-        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-        entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-        entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
-        entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
-        if "type" in lineparam:
-            entries["type"] = lineparam["type"]
+        # entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+        # entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
+        # entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
+        # entries["max_i_ka"] = lineparam["max_i_ka"]
+        # entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        # if "type" in lineparam:
+        #     entries["type"] = lineparam["type"]
+        lineparam["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0
+        entries.update(lineparam)
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
