@@ -5,7 +5,7 @@
 import copy
 import functools
 import os
-from time import time
+from time import time, perf_counter
 from types import FunctionType
 
 import numpy as np
@@ -108,7 +108,7 @@ class OutputWriter(JSONSerializableClass):
         # output list contains functools.partial with tables, variables, index...
         self.output_list = []
         # real time is tracked to save results to disk regularly
-        self.cur_realtime = time()
+        self.cur_realtime = perf_counter()
         # total time steps to calculate
         self.time_steps = time_steps
         # add output_writer to net
@@ -248,7 +248,7 @@ class OutputWriter(JSONSerializableClass):
     def dump(self, net, recycle_options=None):
         append = False if self.time_step == self.time_steps[-1] else True
         self.dump_to_file(net, append=append, recycle_options=recycle_options)
-        self.cur_realtime = time()  # reset real time counter for next period
+        self.cur_realtime = perf_counter()  # reset real time counter for next period
 
     def save_results(self, net, time_step, pf_converged, ctrl_converged, recycle_options=None):
         # Saves the results of the current time step to a matrix,
@@ -268,7 +268,7 @@ class OutputWriter(JSONSerializableClass):
 
         # if write time is exceeded or it is the last time step, data is written
         if self.write_time is not None:
-            if time() - self.cur_realtime > self.write_time:
+            if perf_counter() - self.cur_realtime > self.write_time:
                 self.dump(net)
         if self.time_step == self.time_steps[-1]:
             self.dump(net, recycle_options)
