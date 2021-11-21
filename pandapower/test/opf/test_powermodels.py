@@ -455,9 +455,6 @@ def assert_pf(net, dc=False):
 def test_pm_ac_powerflow_simple():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
-    assert_pf(net)
-    net = nw.simple_four_bus_system()
-    net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net, dc=False)
 
 
@@ -508,7 +505,6 @@ def test_pp_to_pm_conversion(net_3w_trafo_opf):
     net = net_3w_trafo_opf
     pm_S = convert_pp_to_pm(net)
     pm_I = convert_pp_to_pm(net, opf_flow_lim="I")
-
 
 
 def test_pm_to_pp_conversion(simple_opf_test_net):
