@@ -5,7 +5,7 @@
 import copy
 import functools
 import os
-from time import time, perf_counter
+from time import perf_counter
 from types import FunctionType
 
 import numpy as np

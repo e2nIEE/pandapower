@@ -5,7 +5,7 @@
 
 
 
-from time import perf_counter, time  # alternatively use import timeit.default_timer as time
+from time import perf_counter  # alternatively use import timeit.default_timer as time
 
 import numpy as np
 import scipy as sp

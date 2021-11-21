@@ -6,7 +6,7 @@
 @author: Shankho Ghosh (sghosh) (started Feb 2018)
 @author: Alexander Prostejovsky (alepros), Technical University of Denmark
 """
-from time import time, perf_counter
+from time import perf_counter
 import numpy as np
 from pandapower import LoadflowNotConverged
 from pandapower.pypower.pfsoln import pfsoln

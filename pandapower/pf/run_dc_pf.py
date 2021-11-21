@@ -5,7 +5,7 @@
 
 
 
-from time import time, perf_counter
+from time import perf_counter
 
 from numpy import pi, zeros, real, bincount
 

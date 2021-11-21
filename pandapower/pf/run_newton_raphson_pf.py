@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from time import time, perf_counter
+from time import perf_counter
 
 from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32
 

@@ -12,7 +12,7 @@
 """Runs a power flow.
 """
 
-from time import time, perf_counter
+from time import perf_counter
 from packaging import version
 from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d
 

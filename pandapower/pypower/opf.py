@@ -10,7 +10,7 @@
 """Solves an optimal power flow.
 """
 
-from time import time, perf_counter
+from time import perf_counter
 
 from numpy import zeros, c_, shape
 from pandapower.pypower.idx_brch import MU_ANGMAX
