@@ -1913,19 +1913,16 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
 
-        # create comprehensive set of std_type params and add them to entries if they are new
-        # since 'g_us_per_km' needs to be specified but is often not part of std_type, it has to be added
+        # create comprehensive set of std_type params
+        # since 'g_us_per_km' needs to be specified for powerflow calc, but is often not part of std_type,
+        # it needs to be treated special here
         params = set()
         [params.add(list(lineparam[i].keys())[x]) for i in range(len(lineparam)) for x in range(len(lineparam[i].keys()))]
         params.add('g_us_per_km')
+        
         for p in params:
-            entries[p] = entries[p] if p in entries else []
-
-        # update entries with all the values
-        for line in lineparam:
-            line['g_us_per_km'] = line['g_us_per_km'] if 'g_us_per_km' in line else 0
-            for param in params:
-                entries[param] = entries[param] + [line[param]] if param in line else entries[param] + [None]
+            else_val = [None] if p != 'g_us_per_km' else [0]
+            entries[p] = list(map(check_entry_in_std_type, lineparam, [p] * len(lineparam), else_val * len(lineparam)))
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
