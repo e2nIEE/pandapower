@@ -10,7 +10,7 @@
 """Solves an optimal power flow.
 """
 
-from time import time
+from time import perf_counter
 
 from numpy import zeros, c_, shape
 from pandapower.pypower.idx_brch import MU_ANGMAX
@@ -147,7 +147,7 @@ def opf(ppc, ppopt):
     @author: Richard Lincoln
     """
     ##----- initialization -----
-    t0 = time()         ## start timer
+    t0 = perf_counter()         ## start timer
 
     ## process input arguments
     ppc, ppopt = opf_args2(ppc, ppopt)
@@ -185,7 +185,7 @@ def opf(ppc, ppopt):
     #     results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
 
     ##-----  finish preparing output  -----
-    et = time() - t0      ## compute elapsed time
+    et = perf_counter() - t0      ## compute elapsed time
 
     results['et'] = et
     results['success'] = success
