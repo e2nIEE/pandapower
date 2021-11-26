@@ -443,9 +443,11 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
 def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance, characteristic):
     vk_characteristic_idx = get_trafo_values(trafo_df, f"{variable}_characteristic")
-    vk_characteristic = characteristic.loc[vk_characteristic_idx[tap_dependent_impedance], 'object'].values
+    vk_characteristic = np.zeros_like(tap_dependent_impedance, dtype="object")
+    vk_characteristic[tap_dependent_impedance] = characteristic.loc[vk_characteristic_idx[tap_dependent_impedance], 'object'].values
+    # here dtype must be float otherwise the load flow calculation will fail
     return np.where(tap_dependent_impedance,
-                    [c(t).item() if f else None for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)], value)
+                    [c(t).item() if f else np.nan for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)], value)
 
 
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None):
