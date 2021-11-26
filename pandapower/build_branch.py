@@ -447,7 +447,8 @@ def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_
     vk_characteristic[tap_dependent_impedance] = characteristic.loc[vk_characteristic_idx[tap_dependent_impedance], 'object'].values
     # here dtype must be float otherwise the load flow calculation will fail
     return np.where(tap_dependent_impedance,
-                    [c(t).item() if f else np.nan for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)], value)
+                    [c(t).item() if f else np.nan for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)],
+                    value)#.astype(np.float64)  # astype not necessary, but if it fails then uncommenting this may help
 
 
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None):
