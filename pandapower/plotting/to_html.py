@@ -194,8 +194,8 @@ def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=
 
     tables = []
     if show_tables:
-        for name in ['bus', 'trafo', 'line', 'load', 'ext_grid', 'gen', 'sgen',
-                     'res_bus', 'res_trafo', 'res_line', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen']:
+        for name in ['bus', 'trafo', 'line', 'dcline', 'load', 'ext_grid', 'gen', 'sgen',
+                     'res_bus', 'res_trafo', 'res_line', 'res_dcline', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen']:
             item = getattr(net, name)
             table = TABLE(TR(*map(TH, item.columns)),
                           *[TR(*map(TD, row)) for row in item.values])

@@ -6,7 +6,6 @@ try:
     import pplog as logging
 except ImportError:
     import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -21,18 +20,16 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
     ----------
     **delete_buffer_file** (bool, True) - deletes the pm buffer json file if True.
     **pm_file_path** -path to save the converted net json file.
-    **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
+    **pdm_dev_mode** (bool, False) - If True, the develop mode of PdM is called.
     """
-    # logger = logging.getLogger("run_pm")
-    # logger.setLevel(logging.WARNING)
     # convert pandapower to power models file -> this is done in python
     net, pm, ppc, ppci = convert_to_pm_structure(net)
-    # call optinal callback function
+    # call optional callback function
     if net._options["pp_to_pm_callback"] is not None:
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
-    print("the json file for convertet net is stored in: ", buffer_file)
+    logger.debug("the json file for converted net is stored in: %s" % buffer_file)
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
     # read results and write back to net
@@ -40,7 +37,7 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
     if pm_file_path is None and delete_buffer_file:
         # delete buffer file after calculation
         os.remove(buffer_file)
-        print("the json file for convertet net is deleted from ", buffer_file)
+        logger.debug("the json file for converted net is deleted from %s" % buffer_file)
 
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
@@ -52,7 +49,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         from julia import Base
     except ImportError:
         raise ImportError(
-            "Please install pyjulia properlly to run pandapower with PandaModels.jl.")
+            "Please install pyjulia properly to run pandapower with PandaModels.jl.")
         
     try:
         julia.Julia()
@@ -61,12 +58,12 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
               
     if not Base.find_package("PandaModels"):
-        print("PandaModels.jl is not installed in julia. It is added now!")
+        logger.info("PandaModels.jl is not installed in julia. It is added now!")
         Pkg.Registry.update()
         Pkg.add("PandaModels")  
         
         if dev_mode:
-            print("installing dev mode is a slow process!")
+            logger.info("installing dev mode is a slow process!")
             Pkg.resolve()
             Pkg.develop("PandaModels")
             # add pandamodels dependencies: slow process
@@ -74,7 +71,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
             
         Pkg.build()
         Pkg.resolve()
-        print("Successfully added PandaModels")
+        logger.info("Successfully added PandaModels")
 
     if dev_mode:
         Pkg.develop("PandaModels")

@@ -6,7 +6,7 @@
 @author: Shankho Ghosh (sghosh) (started Feb 2018)
 @author: Alexander Prostejovsky (alepros), Technical University of Denmark
 """
-from time import time
+from time import perf_counter
 import numpy as np
 from pandapower import LoadflowNotConverged
 from pandapower.pypower.pfsoln import pfsoln
@@ -471,7 +471,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     outer_tolerance_mva = 3e-8
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
-    t0 = time()
+    t0 = perf_counter()
     while (s_mismatch > outer_tolerance_mva).any() and count < 30*max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
@@ -522,7 +522,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v_012_it = v_012_new
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
-    et = time() - t0
+    et = perf_counter() - t0
     success = (count < 30 * max_iteration)
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
