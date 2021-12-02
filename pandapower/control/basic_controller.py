@@ -86,17 +86,10 @@ class Controller(JSONSerializableClass):
         else:
             log_same_type_existing_controllers(net, type(self), index=index, **kwargs)
 
-        dtypes = net.controller.dtypes
-
         # use base class method to raise an error if the object is in DF and overwrite = False
-        super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
-
-        columns = ['object', 'in_service', 'initial_run', 'recycle']
-        net.controller.loc[index,columns] = (self, in_service, initial_run, recycle)
-        net.controller['order'][index] = order
-        net.controller['level'][index] = level
-
-        _preserve_dtypes(net.controller, dtypes)
+        fill_dict = {"in_service": in_service, "initial_run": initial_run, "recycle": recycle}
+        super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
+                           fill_dict=fill_dict)
 
     def time_step(self, net, time):
         """

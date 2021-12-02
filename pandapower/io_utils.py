@@ -621,7 +621,7 @@ class JSONSerializableClass(object):
         return d
 
     def add_to_net(self, net, element, index, column="object", overwrite=False,
-                   preserve_dtypes=False):
+                   preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
         if index in net[element].index.values:
@@ -630,12 +630,18 @@ class JSONSerializableClass(object):
                 logger.info("Updating %s with index %s" % (element, index))
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
+
+        dtypes = None
         if preserve_dtypes:
             dtypes = net[element].dtypes
-            net[element].at[index, column] = self
+
+        if fill_dict is not None:
+            for k, v in fill_dict.items():
+                net[element].at[index, k] = v
+        net[element].at[index, column] = self
+
+        if preserve_dtypes:
             _preserve_dtypes(net[element], dtypes)
-        else:
-            net[element].at[index, column] = self
 
     def equals(self, other):
 
