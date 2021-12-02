@@ -1162,7 +1162,7 @@ def test_replace_pq_elmtype():
     check_elm_shape(net, {"storage": 0, "sgen": 0})
     net.sgen = net_orig.sgen
     net.storage = net_orig.storage
-    net.poly_cost.element = net.poly_cost.element.astype(np.uint32)
+    net.poly_cost.element = net.poly_cost.element.astype(net_orig.poly_cost.dtypes["element"])
     assert pp.nets_equal(net_orig, net)
 
 
