@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from time import time
+from time import perf_counter
 
 from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32
 
@@ -42,7 +42,7 @@ def _run_newton_raphson_pf(ppci, options):
     options(dict) - options for the power flow
 
     """
-    t0 = time()
+    t0 = perf_counter()
     # we cannot run DC pf before running newton with distributed slack because the slacks come pre-solved after the DC pf
     if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
         if options['distributed_slack']:
@@ -59,7 +59,7 @@ def _run_newton_raphson_pf(ppci, options):
         ppci, success, iterations = _run_ac_pf_without_qlims_enforced(ppci, options)
         # update data matrices with solution store in ppci
         bus, gen, branch = ppci_to_pfsoln(ppci, options)
-    et = time() - t0
+    et = perf_counter() - t0
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci
 
