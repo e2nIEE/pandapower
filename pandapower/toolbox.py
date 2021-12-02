@@ -22,7 +22,12 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 import networkx as nx
-from networkx.utils.misc import graphs_equal
+
+try:
+    from networkx.utils.misc import graphs_equal
+    GRAPHS_EQUAL_POSSIBLE = True
+except ImportError:
+    GRAPHS_EQUAL_POSSIBLE = False
 
 try:
     import pplog as logging
@@ -795,8 +800,13 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
                 not_equal.append(key)
 
         elif isinstance(net1[key], nx.Graph):
-            if not graphs_equal(net1[key], net2[key]):
-                not_equal.append(key)
+            if GRAPHS_EQUAL_POSSIBLE:
+                if not graphs_equal(net1[key], net2[key]):
+                    not_equal.append(key)
+            else:
+                # Maybe there is a better way, but at least this could be checked
+                if net1[key].nodes != net2[key].nodes or net1[key].edges != net2[key].edges:
+                    not_equal.append(key)
 
         else:
             try:
