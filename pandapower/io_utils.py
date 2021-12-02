@@ -45,7 +45,7 @@ try:
 except:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import pandapowerNet, soft_dependency_error
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
 try:
@@ -620,7 +620,8 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False):
+    def add_to_net(self, net, element, index, column="object", overwrite=False,
+                   preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
         if index in net[element].index.values:
@@ -629,7 +630,18 @@ class JSONSerializableClass(object):
                 logger.info("Updating %s with index %s" % (element, index))
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
+
+        dtypes = None
+        if preserve_dtypes:
+            dtypes = net[element].dtypes
+
+        if fill_dict is not None:
+            for k, v in fill_dict.items():
+                net[element].at[index, k] = v
         net[element].at[index, column] = self
+
+        if preserve_dtypes:
+            _preserve_dtypes(net[element], dtypes)
 
     def equals(self, other):
 
@@ -731,7 +743,7 @@ def json_pandapowernet(obj):
     logger.debug('pandapowerNet')
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
     for k, item in net_dict.items():
-        if (isinstance(item, str) and '_module' in item):
+        if isinstance(item, str) and '_module' in item:
             net_dict[k] = json.loads(item)
     d = with_signature(obj, net_dict)
     return d
