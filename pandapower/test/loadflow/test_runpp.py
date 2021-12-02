@@ -474,7 +474,7 @@ def test_test_sn_mva():
         pp.runpp(net1)
         pp.runpp(net2)
         try:
-            assert_net_equal(net1, net2)
+            assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except:
             raise UserWarning("Result difference due to sn_mva after adding %s" %
                               net1.last_added_case)
