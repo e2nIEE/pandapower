@@ -108,7 +108,7 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame()
+        net[res_element] = pd.DataFrame(index=pd.Int64Index([]))
 
 
 def init_element(net, element, suffix=None):
