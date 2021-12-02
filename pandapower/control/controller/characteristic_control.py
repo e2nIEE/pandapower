@@ -47,13 +47,15 @@ class CharacteristicControl(Controller):
 
         **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
     """
-    def __init__(self, net, output_element, output_variable, output_element_index, input_element, input_variable, input_element_index,
-                 characteristic, tol=1e-3, in_service=True, order=0, level=0, drop_same_existing_ctrl=False, matching_params=None,
-                 **kwargs):
+    def __init__(self, net, output_element, output_variable, output_element_index, input_element,
+                 input_variable, input_element_index, characteristic, tol=1e-3, in_service=True,
+                 order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         if matching_params is None:
-            matching_params = {"element": output_element, "input_variable": input_variable, "output_variable": output_variable,
+            matching_params = {"element": output_element, "input_variable": input_variable,
+                               "output_variable": output_variable,
                                "element_index": input_element_index}
-        super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
+        super().__init__(net, in_service=in_service, order=order, level=level,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
         self.input_element = input_element
         self.input_variable = input_variable

@@ -92,7 +92,7 @@ class Controller(JSONSerializableClass):
         fill_dict = {"in_service": in_service, "initial_run": initial_run, "recycle": recycle,
                      "order": order, "level": level}
         super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
-                           fill_dict=fill_dict)
+                           fill_dict=fill_dict, preserve_dtypes=True)
 
     def time_step(self, net, time):
         """
