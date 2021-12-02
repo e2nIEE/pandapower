@@ -21,6 +21,8 @@ from pandapower.create import create_switch, create_line_from_parameters, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
+import networkx as nx
+from networkx.utils.misc import graphs_equal
 
 try:
     import pplog as logging
@@ -698,7 +700,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
 
 
 def nets_equal(net1, net2, check_only_results=False, check_without_results=False, exclude_elms=None,
-               **kwargs):
+               name_selection=None, **kwargs):
     """
     Returns a boolean whether the two given pandapower networks are equal.
 
@@ -719,6 +721,8 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
         **exclude_elms** (list, None) - list of element tables which should be ignored in the
         comparison
 
+        **name_selection** (list, None) - list of element tables which should be compared
+
         **kwargs** - key word arguments for dataframes_equal()
     """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
@@ -734,7 +738,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
     not_equal = []
 
     # for two networks make sure both have the same keys
-    if check_only_results:
+    if name_selection is not None:
+        net1_keys = net2_keys = name_selection
+    elif check_only_results:
         net1_keys = [key for key in net1.keys() if key.startswith("res_")
                      and key not in exclude_elms]
         net2_keys = [key for key in net2.keys() if key.startswith("res_")
@@ -786,6 +792,10 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
         elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
                 isinstance(net1[key], complex):
             if not np.isclose(net1[key], net2[key]):
+                not_equal.append(key)
+
+        elif isinstance(net1[key], nx.Graph):
+            if not graphs_equal(net1[key], net2[key]):
                 not_equal.append(key)
 
         else:

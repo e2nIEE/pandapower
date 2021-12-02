@@ -58,7 +58,7 @@ def test_excel(net_in, tmp_path):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
 
-    # test in user_pf_options are equal
+    # test if user_pf_options are equal
     pp.set_user_pf_options(net_in, tolerance_mva=1e3)
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
@@ -350,7 +350,8 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     net = networks.mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net, filename)
-    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'], keep_serialized_elements=False)
+    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'],
+                              keep_serialized_elements=False)
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)
