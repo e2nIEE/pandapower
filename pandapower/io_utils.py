@@ -190,6 +190,8 @@ def from_dict_of_dfs(dodfs):
     net = create_empty_network()
     for c in dodfs["parameters"].columns:
         net[c] = dodfs["parameters"].at[0, c]
+        if c == "name" and pd.isnull(net[c]):
+            net[c] = ''
     for item, table in dodfs.items():
         if item in ("parameters", "dtypes"):
             continue
@@ -454,7 +456,17 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
-        return json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+        mg = json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+        edges = list()
+        for (n1, n2, e) in mg.edges:
+            attr = {k: v for k, v in mg.get_edge_data(n1, n2, key=e).items() if
+                    k not in ("json_id", "json_key")}
+            attr["key"] = e
+            edges.append((n1, n2, attr))
+        mg.clear_edges()
+        for n1, n2, ed in edges:
+            mg.add_edge(n1, n2, **ed)
+        return mg
 
     @from_serializable.register(class_name="method")
     def method(self):
