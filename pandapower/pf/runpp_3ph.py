@@ -150,9 +150,8 @@ def _load_mapping(net, ppci1):
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
               max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
-              trafo_loading="current", enforce_q_lims=False, numba=True,
-              recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
-              delta_q=0, v_debug=False, **kwargs):
+              trafo_loading="current",
+              **kwargs):
     """
  runpp_3ph: Performs Unbalanced/Asymmetric/Three Phase Load flow
 
@@ -364,8 +363,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         passed_parameters = _passed_runpp_parameters(locals())
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
-    if numba:
-        numba = _check_if_numba_is_installed(numba)
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
@@ -396,16 +393,16 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio,
+                     trafo_model=trafo_model,
+                     mode=mode,
                      init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=None,
-                     voltage_depend_loads=False, delta=delta_q,
+                     recycle=None,
+                     voltage_depend_loads=False,
                      neglect_open_switch_branches=neglect_open_switch_branches
                      )
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,
-                    only_v_results=only_v_results, v_debug=v_debug, use_umfpack=use_umfpack,
+                    ac=ac, algorithm="nr", max_iteration=max_iteration,
+                    only_v_results=only_v_results,
                     permc_spec=permc_spec)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
@@ -413,12 +410,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # =========================================================================
     # pd2ppc conversion
     # =========================================================================
-    _, ppci1 = _pd2ppc_recycle(net, 1, recycle=recycle)
+    _, ppci1 = _pd2ppc_recycle(net, 1)
 
-    _, ppci2 = _pd2ppc_recycle(net, 2, recycle=recycle)
+    _, ppci2 = _pd2ppc_recycle(net, 2)
     gs_eg, bs_eg = _add_ext_grid_sc_impedance(net, ppci2)
 
-    _, ppci0 = _pd2ppc_recycle(net, 0, recycle=recycle)
+    _, ppci0 = _pd2ppc_recycle(net, 0)
 
     _,        bus0, gen0, branch0,      _,      _,      _ = _get_pf_variables_from_ppci(ppci0)
     base_mva, bus1, gen1, branch1, sl_bus,      _, pq_bus = _get_pf_variables_from_ppci(ppci1)
@@ -437,7 +434,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # =========================================================================
 
     ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, _,\
-        y_0_t, y_1_t, _ = _get_y_bus(ppci0, ppci1, ppci2, recycle)
+        y_0_t, y_1_t, _ = _get_y_bus(ppci0, ppci1, ppci2)
     # =========================================================================
     # Initial voltage values
     # =========================================================================
