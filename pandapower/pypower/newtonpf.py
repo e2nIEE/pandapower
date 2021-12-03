@@ -107,7 +107,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     j8 = j6 + nref # j7:j8 - slacks
 
     # make initial guess for the slack
-    slack = gen[:, PG].sum() - bus[:, PD].sum()
+    slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     converged = _check_for_convergence(F, tol)
