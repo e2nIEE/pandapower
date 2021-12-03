@@ -22,6 +22,7 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 import networkx as nx
+from pandapower.io_utils import JSONSerializableClass
 
 try:
     from networkx.utils.misc import graphs_equal
@@ -775,10 +776,15 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
                 if "object" in net1[key].columns and "object" in net2[key].columns and \
                         isinstance(net1[key].object.dtype, object) and \
                         isinstance(net1[key].object.dtype, object):
-                    logger.warning("net[%s]['object'] cannot be compared." % key)
-                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
-                                            net2[key][net2[key].columns.difference(["object"])],
-                                            **kwargs):
+                    df1 = copy.deepcopy(net1[key])
+                    df2 = copy.deepcopy(net2[key])
+                    df1["object"] = df1["object"].apply(
+                        lambda obj: obj if not isinstance(obj, JSONSerializableClass)
+                        else obj.to_json())
+                    df2["object"] = df2["object"].apply(
+                        lambda obj: obj if not isinstance(obj, JSONSerializableClass)
+                        else obj.to_json())
+                    if not dataframes_equal(df1, df2, **kwargs):
                         not_equal.append(key)
                 elif not dataframes_equal(net1[key], net2[key], **kwargs):
                     not_equal.append(key)
