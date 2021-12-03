@@ -6,15 +6,15 @@
 import copy
 import json
 import os
-import sys
 
 import numpy as np
+import pandas as pd
+import pytest
+
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
 import pandapower.topology as topology
-import pandas as pd
-import pytest
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
