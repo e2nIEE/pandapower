@@ -159,22 +159,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         **net** - The pandapower format network
 
     OPTIONAL:
-        **algorithm** (str, "nr") - algorithm that is used to solve the power
-        flow problem.
-
-            The following algorithms are available:
-
-                - "nr" Newton-Raphson (pypower implementation with numba accelerations)
-
-                Used only for positive sequence network
-
-                Zero and Negative sequence networks use Current Injection method
-
-                Vnew = Y.inv * Ispecified ( from s_abc/v_abc old)
-
-                Icalculated = Y * Vnew
-
-
         **calculate_voltage_angles** (bool, "auto") - consider voltage angles
         in loadflow calculation
 
@@ -189,6 +173,20 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
             The network voltage level is defined as the maximum rated voltage
             of any bus in the network that is connected to a line.
+
+        **init**
+        Allows to define initialization specifically for
+        voltage magnitudes. Only works with init == "auto"!
+
+            - "auto": all buses are initialized with the mean value of all
+              voltage controlled elements in the grid
+            - "flat" for flat start from 1.0
+            - "results": voltage magnitude vector is taken from result table
+            - a float with which all voltage magnitudes are initialized
+            - an iterable with a voltage magnitude value for each bus
+              (length and order has to match with the buses in net.bus)
+            - a pandas Series with a voltage magnitude value for each bus
+              (indexes have to match the indexes in net.bus)
 
 
         **max_iteration** (int, "auto") - maximum number of iterations carried
@@ -225,111 +223,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
             - "power" - transformer loading is given as ratio of apparent
                         power flow to the rated apparent power of the transformer.
 
-        **enforce_q_lims** (bool, False) (Not tested with 3 Phase load flow)
-        - respect generator reactive power limits
-
-            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar
-            are respected in the loadflow. This is done by running a second
-            loadflow if reactive power limits are violated at any generator,
-            so that the runtime for the loadflow will increase if reactive
-            power has to be curtailed.
-
-            Note: enforce_q_lims only works if algorithm="nr"!
-
-
-        **check_connectivity** (bool, True) - Perform an extra connectivity
-        test after the conversion from pandapower to PYPOWER.
-
-            If True, an extra connectivity test based on SciPy Compressed
-            Sparse Graph Routines is perfomed. If check finds unsupplied buses,
-            they are set out of service in the ppc
-
-        **voltage_depend_loads** (bool, True)
-        (Not tested with 3 Phase load flow) - consideration of voltage-dependent loads.
-
-            If False, ``net.load.const_z_percent`` and ``net.load.const_i_percent``
-            are not considered, i.e. ``net.load.p_mw`` and ``net.load.q_mvar``
-            are considered as constant-power loads.
-
-        **consider_line_temperature** (bool, False) (Not tested with 3 Phase
-        load flow) - adjustment of line impedance based on provided line temperature.
-
-            If True, ``net.line`` must contain a column ``temperature_degree_celsius``.
-            The temperature dependency coefficient alpha must be provided in
-            the ``net.line.alpha`` column, otherwise the default value of 0.004 is used.
-
-
         **KWARGS**:
-
-        **numba** (bool, True) - Activation of numba JIT compiler in the
-        newton solver
-
-            If set to True, the numba JIT compiler is used to generate
-            matrices for the powerflow, which leads to significant speed
-            improvements.
-
-        **switch_rx_ratio** (float, 2)
-
-        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches.
-        If impedance is zero, buses connected by a closed bus-bus switch
-        are fused to model an ideal bus. Otherwise, they are modelled
-        as branches with resistance defined as z_ohm column in switch
-        table and this parameter
-
-        **delta_q**
-
-        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims"
-        in kvar - helps convergence in some cases.
-
-        **trafo3w_losses**
-
-        (Not tested with 3 Phase load flow) - defines where open loop losses of three-winding
-        transformers are considered. Valid options are "hv", "mv", "lv"
-        for HV/MV/LV side or "star" for the star point.
-
-        **v_debug** (bool, False) (Not tested with 3 Phase load flow) - if True,
-        voltage values in each newton-raphson iteration are logged in the ppc.
-
-        **init_vm_pu** (string/float/array/Series, None) (Not tested with 3
-        Phase load flow) - Allows to define initialization specifically for
-        voltage magnitudes. Only works with ``init == "auto"``!
-
-            - "auto": all buses are initialized with the mean value of all
-              voltage controlled elements in the grid
-            - "flat" for flat start from 1.0
-            - "results": voltage magnitude vector is taken from result table
-            - a float with which all voltage magnitudes are initialized
-            - an iterable with a voltage magnitude value for each bus
-              (length and order has to match with the buses in net.bus)
-            - a pandas Series with a voltage magnitude value for each bus
-              (indexes have to match the indexes in net.bus)
-
-         **init_va_degree** (string/float/array/Series, None) (Not tested with
-         3 Phase load flow) - Allows to define initialization specifically for voltage angles.
-         Only works with ``init == "auto"``!
-
-            - "auto": voltage angles are initialized from DC power flow
-              if angles are calculated or as 0 otherwise
-            - "dc": voltage angles are initialized from DC power flow
-            - "flat" for flat start from 0
-            - "results": voltage angle vector is taken from result table
-            - a float with which all voltage angles are initialized
-            - an iterable with a voltage angle value for each bus (length
-              and order has to match with the buses in net.bus)
-            - a pandas Series with a voltage angle value for each bus (indexes
-              have to match the indexes in net.bus)
-
-        **recycle** (dict, none) - Reuse of internal powerflow variables for
-        time series calculation.
-
-            Contains a dict with the following parameters:
-            bus_pq: If True PQ values of buses are updated
-
-            gen: If True Sbus and the gen table in the ppc are recalculated
-
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from
-
-            ppc["internal"] and not reconstructed
 
         **neglect_open_switch_branches** (bool, False)
 
