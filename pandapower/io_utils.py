@@ -318,7 +318,9 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
 
 
 def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
+    # this function shall make sure that for the given classes, no default string functions are
+    # used, but the registered ones (to_serializable registry)
+    if isinstance(obj, (pandapowerNet, tuple, numpy.floating)):
         return False
     return isinstance(obj, cls)
 
@@ -802,13 +804,28 @@ def json_array(obj):
 @to_serializable.register(numpy.integer)
 def json_npint(obj):
     logger.debug("integer")
-    return int(obj)
+    d = with_signature(obj, int(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numpy.floating)
 def json_npfloat(obj):
     logger.debug("floating")
-    return float(obj)
+    if numpy.isnan(obj):
+        d = with_signature(obj, str(obj), obj_module="numpy")
+    else:
+        d = with_signature(obj, float(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
+
+
+@to_serializable.register(numpy.bool_)
+def json_npbool(obj):
+    logger.debug("boolean")
+    d = with_signature(obj, "true" if obj else "false", obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numbers.Number)
