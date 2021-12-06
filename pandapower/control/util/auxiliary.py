@@ -217,19 +217,26 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
 
 
 def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
+    # first, set the missing columns
+    columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
+               "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
+
+    if 'tap_dependent_impedance' not in net[trafotable]:
+        net[trafotable]['tap_dependent_impedance'] = pd.Series(index=net[trafotable].index, dtype=bool, data=False)
+
+    for c in columns[trafotable]:
+        if c not in net[trafotable]:
+            net[trafotable][c] = pd.Series(index=net[trafotable].index, dtype=np.float64, data=np.nan)
+
+    # check shape of input data
     if len(trafo_index) != len(x_points) or len(trafo_index) != len(y_points):
         raise UserWarning("the lengths of the trafo index and points do not match!")
 
-    if 'tap_dependent_impedance' not in net[trafotable]:
-        net[trafotable]['tap_dependent_impedance'] = False
-
+    # set the flag for the trafo table
     net[trafotable].loc[trafo_index, 'tap_dependent_impedance'] = True
-    col = f"{variable}_characteristic"
 
-    if col not in net[trafotable]:
-        net[trafotable][col] = pd.Series(index=net[trafotable].index, dtype=object, data=None)
-    elif net[trafotable][col].dtype != object:
-        net[trafotable][col] = net[trafotable][col].astype(object)
+    # create characteristics for the specified variable and set their indices in the trafo table
+    col = f"{variable}_characteristic"
 
     for tid, x_p, y_p in zip(trafo_index, x_points, y_points):
         s = SplineCharacteristic(x_p, y_p)
@@ -252,12 +259,10 @@ def trafo_characteristics_diagnostic(net):
         for col in cols:
             if col not in net[trafo_table]:
                 logger.info("%s: %s is missing" % (trafo_table, col))
-            elif net[trafo_table][col].dtype != object:
-                logger.info("%s: %s is not of type object" % (trafo_table, col))
             elif net[trafo_table].loc[tap_dependent_impedance, col].isnull().any():
                 logger.info("%s: %s is missing for some trafos" % (trafo_table, col))
             elif len(set(net[trafo_table].loc[tap_dependent_impedance, col]) - set(net.characteristic.index)) > 0:
                 logger.info("%s: %s contains invalid characteristics indices" % (trafo_table, col))
             else:
-                logger.info(f"{trafo_table}: {col} has {len(net[trafo_table][col].dropna())} characteristics")
+                logger.debug(f"{trafo_table}: {col} has {len(net[trafo_table][col].dropna())} characteristics")
 
