@@ -426,28 +426,41 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
     use_tap_dependent_impedance = np.any(tap_dependent_impedance)
 
-    if use_tap_dependent_impedance and characteristic is None:
+    if use_tap_dependent_impedance:
+        # is net.characteristic table in net?
+        if characteristic is None:
             raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
+
+        # if any but 1 characteristic is missing per trafo, we assume it's by design; but if all are misiing, we raise error
+        # first, we read all characteristic indices
+        all_characteristic_idx = np.vstack([get_trafo_values(trafo_df, f"{v}_characteristic") for v in vk_variables]).T
+        # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
+        all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
+        if np.any(all_missing):
+            trafo_index = trafo_df['index'] if isinstance(trafo_df, dict) else trafo_df.index.values
+            raise UserWarning(f"At least one characteristic must be defined for {trafotype} trafo: {trafo_index[all_missing]}")
 
     vals = ()
 
-    for vk_var in vk_variables:
+    for c, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
         if use_tap_dependent_impedance:
-            vals += (_calc_tap_dependent_value(trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance, characteristic),)
+            vals += (_calc_tap_dependent_value(trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
+                                               characteristic, all_characteristic_idx[:, c]),)
         else:
             vals += (vk_value,)
 
     return vals
 
 
-def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance, characteristic):
-    vk_characteristic_idx = get_trafo_values(trafo_df, f"{variable}_characteristic")
+def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance, characteristic, characteristic_idx):
+    # we skip the trafos with NaN characteristics even if tap_dependent_impedance is True (we already checked for missing characteristics)
+    relevant_idx = tap_dependent_impedance & ~np.isnan(characteristic_idx)
     vk_characteristic = np.zeros_like(tap_dependent_impedance, dtype="object")
-    vk_characteristic[tap_dependent_impedance] = characteristic.loc[vk_characteristic_idx[tap_dependent_impedance], 'object'].values
+    vk_characteristic[relevant_idx] = characteristic.loc[characteristic_idx[relevant_idx], 'object'].values
     # here dtype must be float otherwise the load flow calculation will fail
-    return np.where(tap_dependent_impedance,
-                    [c(t).item() if f else np.nan for f, t, c in zip(tap_dependent_impedance, tap_pos, vk_characteristic)],
+    return np.where(relevant_idx,
+                    [c(t).item() if f else np.nan for f, t, c in zip(relevant_idx, tap_pos, vk_characteristic)],
                     value)#.astype(np.float64)  # astype not necessary, but if it fails then uncommenting this may help
 
 
