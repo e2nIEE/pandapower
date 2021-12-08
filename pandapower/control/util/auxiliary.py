@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import numpy as np
-from pandas import Int64Index
+from pandas import Int64Index, Series
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.toolbox import ensure_iterability
@@ -214,11 +214,11 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
                "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
 
     if 'tap_dependent_impedance' not in net[trafotable]:
-        net[trafotable]['tap_dependent_impedance'] = pd.Series(index=net[trafotable].index, dtype=bool, data=False)
+        net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=bool, data=False)
 
     for c in columns[trafotable]:
         if c not in net[trafotable]:
-            net[trafotable][c] = pd.Series(index=net[trafotable].index, dtype=np.float64, data=np.nan)
+            net[trafotable][c] = Series(index=net[trafotable].index, dtype=np.float64, data=np.nan)
 
     # check shape of input data
     if len(trafo_index) != len(x_points) or len(trafo_index) != len(y_points):
