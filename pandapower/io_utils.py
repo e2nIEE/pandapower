@@ -22,7 +22,11 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
-from pandas.testing import assert_series_equal, assert_frame_equal
+
+try:
+    from pandas.testing import assert_series_equal, assert_frame_equal
+except ImportError:
+    from pandas.util.testing import assert_series_equal, assert_frame_equal
 
 try:
     from cryptography.fernet import Fernet

@@ -9,11 +9,10 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 
+import networkx as nx
 import numpy as np
 import pandas as pd
-import pandas.testing as pdt
 from packaging import version
-
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -21,7 +20,11 @@ from pandapower.create import create_switch, create_line_from_parameters, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
-import networkx as nx
+
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 
 try:
     from networkx.utils.misc import graphs_equal
