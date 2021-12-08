@@ -15,10 +15,10 @@ def test_tap_dependent_impedance_control():
     pp.create_ext_grid(net, b1)
     pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
 
-    characteristic_vk = Characteristic.from_points(((0, 13.5), (10, 12.3), (20, 11.1)))
-    characteristic_vkr = Characteristic.from_points(((0, 0.52), (10, 0.5), (20, 0.53)))
-    TapDependentImpedance(net, 0, characteristic_vk, output_variable='vk_percent', restore=False)
-    TapDependentImpedance(net, 0, characteristic_vkr, output_variable='vkr_percent', restore=False)
+    characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
+    characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
+    TapDependentImpedance(net, 0, characteristic_vk.index, output_variable='vk_percent', restore=False)
+    TapDependentImpedance(net, 0, characteristic_vkr.index, output_variable='vkr_percent', restore=False)
 
     pp.runpp(net, run_control=True)
     assert net.trafo.vk_percent.at[0] == 12.3
@@ -43,10 +43,10 @@ def test_tap_dependent_impedance_restore():
     pp.create_load(net, b2, 20)
     pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
 
-    characteristic_vk = Characteristic.from_points(((0, 13.5), (10, 12.3), (20, 11.1)))
-    characteristic_vkr = Characteristic.from_points(((0, 0.52), (10, 0.5), (20, 0.53)))
-    TapDependentImpedance(net, 0, characteristic_vk, output_variable='vk_percent', restore=True)
-    TapDependentImpedance(net, 0, characteristic_vkr, output_variable='vkr_percent', restore=True)
+    characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
+    characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
+    TapDependentImpedance(net, 0, characteristic_vk.index, output_variable='vk_percent', restore=True)
+    TapDependentImpedance(net, 0, characteristic_vkr.index, output_variable='vkr_percent', restore=True)
 
     pp.runpp(net, run_control=True)
     # remember the losses for the neutral position

@@ -30,17 +30,17 @@ class Characteristic(JSONSerializableClass):
     is desired, linear rising to a max. of 20kW at 1.05pu
 
     # You can give points by lists of x/y-values
-    >>> c = Characteristic(x_values=[0.95, 1.05], y_values=[10, 20])
+    >>> c = Characteristic(net, x_values=[0.95, 1.05],y_values=[10, 20])
     >>> c.target(x=1.0)
     15.0
 
     # or pass a list of points (x,y)
-    >>> c = Characteristic.from_points(points=[(0.95, 10), (1.05, 20)])
+    >>> c = Characteristic.from_points(net,points=[(0.95, 10), (1.05, 20)])
     >>> c.target(x=1.0)
     15.0
 
     # or in a simple case from a gradient, its zero crossing and the maximal values for y
-    >>> c = Characteristic.from_gradient(zero_crossing=-85, gradient=100, y_min=10, y_max=20)
+    >>> c = Characteristic.from_gradient(net,zero_crossing=-85,gradient=100,y_min=10,y_max=20)
     >>> c.target(x=1.0)
     15.0
 
@@ -52,7 +52,7 @@ class Characteristic(JSONSerializableClass):
 
     # Create a curve with many points and ask for the difference between the y-value being measured
     and the expected y-value for a given x-value
-    >>> c = Characteristic.from_points(points=[(1,2),(2,4),(3,2),(42,24)])
+    >>> c = Characteristic.from_points(net,points=[(1,2),(2,4),(3,2),(42,24)])
     >>> c.diff(x=2.5, measured=3)
     0.0
 
@@ -64,21 +64,22 @@ class Characteristic(JSONSerializableClass):
     False
     """
 
-    def __init__(self, x_values, y_values):
+    def __init__(self, net, x_values, y_values):
         super().__init__()
         self.x_vals = x_values
         self.y_vals = y_values
+        self.index = super().add_to_net(net, "characteristic")
 
     @classmethod
-    def from_points(cls, points):
+    def from_points(cls, net, points):
         unzipped = list(zip(*points))
-        return cls(unzipped[0], unzipped[1])
+        return cls(net, unzipped[0], unzipped[1])
 
     @classmethod
-    def from_gradient(cls, zero_crossing, gradient, y_min, y_max):
+    def from_gradient(cls, net, zero_crossing, gradient, y_min, y_max):
         x_left = (y_min - zero_crossing) / float(gradient)
         x_right = (y_max - zero_crossing) / float(gradient)
-        return cls([x_left, x_right], [y_min, y_max])
+        return cls(net, [x_left, x_right], [y_min, y_max])
 
     def diff(self, x, measured):
         """
@@ -124,8 +125,8 @@ class Characteristic(JSONSerializableClass):
 
 class SplineCharacteristic(Characteristic):
     json_excludes = ["self", "__class__", "_interpolator"]
-    def __init__(self, x_values, y_values):
-        super().__init__(x_values=x_values, y_values=y_values)
+    def __init__(self, net, x_values, y_values):
+        super().__init__(net, x_values=x_values, y_values=y_values)
 
     @property
     def interpolator(self):

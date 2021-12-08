@@ -28,6 +28,10 @@ class Controller(JSONSerializableClass):
         super().__init__()
         self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
+        # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
+        # it is still needed in JSONSerializableClass because it is used for characteristics
+        if index is None and "controller" in net.keys():
+            index = get_free_id(net.controller)
         self.index = self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order, level=level,
                                                 index=index, recycle=recycle, drop_same_existing_ctrl=drop_same_existing_ctrl,
                                                 overwrite=overwrite, matching_params=matching_params, **kwargs)

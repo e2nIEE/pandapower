@@ -419,6 +419,8 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
     if "tap_dependent_impedance" in trafo_df:
         tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        if np.any(np.isnan(tap_dependent_impedance)):
+            raise UserWarning("tap_dependent_impedance has NaN values, but must be of type bool and set to True or False")
         tap_pos = get_trafo_values(trafo_df, "tap_pos")
     else:
         tap_dependent_impedance = False
@@ -433,7 +435,11 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
         # if any but 1 characteristic is missing per trafo, we assume it's by design; but if all are misiing, we raise error
         # first, we read all characteristic indices
-        all_characteristic_idx = np.vstack([get_trafo_values(trafo_df, f"{v}_characteristic") for v in vk_variables]).T
+        # we also allow that some columns are not included in the net.trafo table
+        all_columns = trafo_df.keys() if isinstance(trafo_df, dict) else trafo_df.columns.values
+        all_characteristic_idx = np.vstack([get_trafo_values(trafo_df, f"{v}_characteristic")
+                                            if f"{v}_characteristic" in all_columns else np.full(len(tap_dependent_impedance), np.nan)
+                                            for v in vk_variables]).T
         # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):

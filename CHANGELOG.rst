@@ -4,7 +4,9 @@ Change Log
 - [ADDED] "results" initialization for runopp()
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
+- [ADDED] new object table "characteristic", new class "Characteristic" and "SplineCharacteristic" that are callable and return a value based on input according to a specified curve
 - [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
+- [ADDED] tap dependent impedance internally in build_branch: transformer (2W, 3W) parameters (e.g. vk_percent, vkr_percent) are adjusted according to the tap position based on a specified characteristic in the optional columns
 
 [2.7.1]- 2021-07-22
 ----------------------

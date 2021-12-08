@@ -239,8 +239,8 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
     col = f"{variable}_characteristic"
 
     for tid, x_p, y_p in zip(trafo_index, x_points, y_points):
-        s = SplineCharacteristic(x_p, y_p)
-        net[trafotable].at[tid, col] = s.add_to_net(net, "characteristic")
+        s = SplineCharacteristic(net, x_p, y_p)
+        net[trafotable].at[tid, col] = s.index
 
 
 def trafo_characteristics_diagnostic(net):
