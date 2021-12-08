@@ -9,10 +9,10 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from packaging import version
-
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -20,6 +20,17 @@ from pandapower.create import create_switch, create_line_from_parameters, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
+
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
+
+try:
+    from networkx.utils.misc import graphs_equal
+    GRAPHS_EQUAL_POSSIBLE = True
+except ImportError:
+    GRAPHS_EQUAL_POSSIBLE = False
 
 try:
     import pplog as logging
@@ -57,7 +68,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
-                res_elements=False):
+                cost_tables=False, res_elements=False):
     """
     Returns a set of pandapower elements.
     """
@@ -66,6 +77,8 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
     if other_elements:
         pp_elms |= {"measurement"}
+    if cost_tables:
+        pp_elms |= {"poly_cost", "pwl_cost"}
     return pp_elms
 
 
@@ -97,56 +110,13 @@ def signing_system_value(elm):
         raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
 
 
-# def pq_from_cosphi(s, cosphi, qmode, pmode):
-#    """
-#    Calculates P/Q values from rated apparent power and cosine(phi) values.
-#       - s: rated apparent power
-#       - cosphi: cosine phi of the
-#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
-#       - pmode: "load" for load or "gen" for generation
-#    As all other pandapower functions this function is based on the consumer viewpoint. For active
-#    power, that means that loads are positive and generation is negative. For reactive power,
-#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
-#    """
-#    s = np.array(ensure_iterability(s))
-#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
-#    qmode = np.array(ensure_iterability(qmode, len(s)))
-#    pmode = np.array(ensure_iterability(pmode, len(s)))
-#
-#    # qmode consideration
-#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
-#    if len(unknown_qmode):
-#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
-#    qmode_is_ohm = qmode == "ohm"
-#    if any(cosphi[qmode_is_ohm] != 1):
-#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-#    qsign = np.ones(qmode.shape)
-#    qsign[qmode == "cap"] = -1
-#
-#    # pmode consideration
-#    unknown_pmode = set(pmode) - set(["load", "gen"])
-#    if len(unknown_pmode):
-#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
-#    psign = np.ones(pmode.shape)
-#    psign[pmode == "gen"] = -1
-#
-#    # calculate p and q
-#    p = psign * s * cosphi
-#    q = qsign * np.sqrt(s ** 2 - p ** 2)
-#
-#    if len(p) > 1:
-#        return p, q
-#    else:
-#        return p[0], q[0]
-
-
 def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
 
        - s: rated apparent power
        - cosphi: cosine phi of the
-       - qmode: "underexcided" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+       - qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
        - pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
@@ -155,18 +125,16 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     overexcited behavior (Q injection, increases voltage) with negative values.
     """
     if hasattr(s, "__iter__"):
-        s = ensure_iterability(s)
-        cosphi = ensure_iterability(cosphi, len(s))
-        qmode = ensure_iterability(qmode, len(s))
-        pmode = ensure_iterability(pmode, len(s))
-        p, q = [], []
-        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
-            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
-            p.append(p_)
-            q.append(q_)
-        return np.array(p), np.array(q)
+        len_ = len(s)
+    elif hasattr(cosphi, "__iter__"):
+        len_ = len(cosphi)
+    elif not isinstance(qmode, str) and hasattr(qmode, "__iter__"):
+        len_ = len(qmode)
+    elif not isinstance(pmode, str) and hasattr(pmode, "__iter__"):
+        len_ = len(pmode)
     else:
         return _pq_from_cosphi(s, cosphi, qmode, pmode)
+    return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
@@ -176,63 +144,83 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
                        '(Q injection, increases voltage). Please use "underexcited" ' +
                        'in place of "ind" and "overexcited" in place of "cap".')
     if qmode == "ind" or qmode == "underexcited":
-        qsign = 1 if pmode == "load" else -1
+        qsign = 1
     elif qmode == "cap" or qmode == "overexcited":
-        qsign = -1 if pmode == "load" else 1
+        qsign = -1
     else:
         raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
                          ') or "overexcited" (Q injection, increases voltage)' % qmode)
 
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
+
     p = s * cosphi
-    q = qsign * np.sqrt(s ** 2 - p ** 2)
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
 
 
-# def cosphi_from_pq(p, q):
-#    """
-#    Analog to pq_from_cosphi, but other way around.
-#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-#    """
-#    p = np.array(ensure_iterability(p))
-#    q = np.array(ensure_iterability(q, len(p)))
-#    if len(p) != len(q):
-#        raise ValueError("p and q must have the same length.")
-#    p_is_zero = np.array(p == 0)
-#    cosphi = np.empty(p.shape)
-#    if sum(p_is_zero):
-#        cosphi[p_is_zero] = np.nan
-#        logger.warning("A cosphi from p=0 is undefined.")
-#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-#    s = (p ** 2 + q ** 2) ** 0.5
-#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
-#    if len(p) > 1:
-#        return cosphi, s, qmode, pmode
-#    else:
-#        return cosphi[0], s[0], qmode[0], pmode[0]
+def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
+    if len_ is None:
+        s = np.array(ensure_iterability(s))
+        len_ = len(s)
+    else:
+        s = np.array(ensure_iterability(s, len_))
+    cosphi = np.array(ensure_iterability(cosphi, len_))
+    qmode = np.array(ensure_iterability(qmode, len_))
+    pmode = np.array(ensure_iterability(pmode, len_))
+
+    # "ind" -> "underexcited", "cap" -> "overexcited"
+    is_ind = qmode == "ind"
+    is_cap = qmode == "cap"
+    if any(is_ind) or any(is_cap):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
+    qmode[is_ind] = "underexcited"
+    qmode[is_cap] = "overexcited"
+
+    # qmode consideration
+    unknown_qmode = set(qmode) - set(["underexcited", "overexcited"])
+    if len(unknown_qmode):
+        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+    qsign = np.ones(qmode.shape)
+    qsign[qmode == "overexcited"] = -1
+
+    # pmode consideration
+    unknown_pmode = set(pmode) - set(["load", "gen"])
+    if len(unknown_pmode):
+        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+    psign = np.ones(pmode.shape)
+    psign[pmode == "gen"] = -1
+
+    # calculate p and q
+    p = s * cosphi
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
+
+    return p, q
 
 
 def cosphi_from_pq(p, q):
-    if hasattr(p, "__iter__"):
-        assert len(p) == len(q)
-        s, cosphi, qmode, pmode = [], [], [], []
-        for p_, q_ in zip(p, q):
-            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
-            s.append(s_)
-            cosphi.append(cosphi_)
-            qmode.append(qmode_)
-            pmode.append(pmode_)
-        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
-    else:
-        return _cosphi_from_pq(p, q)
-
-
-def _cosphi_from_pq(p, q):
     """
     Analog to pq_from_cosphi, but the other way around.
     In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and
     "overexcited" (Q injection, increases voltage)
     """
+    if hasattr(p, "__iter__"):
+        len_ = len(p)
+    elif hasattr(q, "__iter__"):
+        len_ = len(q)
+    else:
+        return _cosphi_from_pq(p, q)
+    return _cosphi_from_pq_bulk(p, q, len_=len_)
+
+
+def _cosphi_from_pq(p, q):
     if p == 0:
         cosphi = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
@@ -240,35 +228,67 @@ def _cosphi_from_pq(p, q):
         cosphi = np.cos(np.arctan(q / p))
     s = (p ** 2 + q ** 2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "underexcited", "overexcited"][int(np.sign(q))]
+    qmode = ["underexcited", "underexcited", "overexcited"][int(np.sign(q))]
     return cosphi, s, qmode, pmode
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
-    """
-    Returns a boolean whether the nets are equal or not.
-    """
-    if ignore_index_order:
-        x_df.sort_index(axis=1, inplace=True)
-        y_df.sort_index(axis=1, inplace=True)
-        x_df.sort_index(axis=0, inplace=True)
-        y_df.sort_index(axis=0, inplace=True)
-    # eval if two DataFrames are equal, with regard to a tolerance
-    if x_df.shape == y_df.shape:
-        if x_df.shape[0]:
-            # we use numpy.allclose to grant a tolerance on numerical values
-            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
-                                          y_df.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-        else:
-            numerical_equal = True
-        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
-        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
-            y_df.select_dtypes(exclude=[np.number]))
-
-        return numerical_equal & rest_equal
+def _cosphi_from_pq_bulk(p, q, len_=None):
+    if len_ is None:
+        p = np.array(ensure_iterability(p))
+        len_ = len(p)
     else:
+        p = np.array(ensure_iterability(p, len_))
+    q = np.array(ensure_iterability(q, len_))
+    p_is_zero = np.array(p == 0)
+    cosphi = np.empty(p.shape)
+    if sum(p_is_zero):
+        cosphi[p_is_zero] = np.nan
+        logger.warning("A cosphi from p=0 is undefined.")
+    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
+    s = (p ** 2 + q ** 2) ** 0.5
+    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+    qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(int)]
+    return cosphi, s, qmode, pmode
+
+
+def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
+    """
+    Returns a boolean whether the given two dataframes are equal or not.
+    """
+    if "tol" in kwargs:
+        if "atol" in kwargs:
+            raise ValueError("'atol' and 'tol' are given to dataframes_equal(). Don't use 'tol' "
+                             "anymore.")
+        logger.warning("in dataframes_equal() parameter 'tol' is deprecated. Use 'atol' instead.")
+        kwargs["atol"] = kwargs.pop("tol")
+
+    if ignore_index_order:
+        df1 = df1.sort_index().sort_index(axis=1)
+        df2 = df2.sort_index().sort_index(axis=1)
+
+    # --- pandas implementation
+    try:
+        pdt.assert_frame_equal(df1, df2, **kwargs)
+        return True
+    except AssertionError:
         return False
+
+    # --- alternative (old) implementation
+    # if df1.shape == df2.shape:
+    #     if df1.shape[0]:
+    #         # we use numpy.allclose to grant a tolerance on numerical values
+    #         numerical_equal = np.allclose(df1.select_dtypes(include=[np.number]),
+    #                                       df2.select_dtypes(include=[np.number]),
+    #                                       atol=tol, equal_nan=True)
+    #     else:
+    #         numerical_equal = True
+    #     # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+    #     rest_equal = df1.select_dtypes(exclude=[np.number]).equals(
+    #         df2.select_dtypes(exclude=[np.number]))
+
+    #     return numerical_equal & rest_equal
+    # else:
+    #     return False
 
 
 def compare_arrays(x, y):
@@ -687,42 +707,69 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
+def nets_equal(net1, net2, check_only_results=False, check_without_results=False, exclude_elms=None,
+               name_selection=None, **kwargs):
     """
-    Compares the DataFrames of two networks. The networks are considered equal
-    if they share the same keys and values, except of the
-    'et' (elapsed time) entry which differs depending on
-    runtime conditions and entries stating with '_'.
+    Returns a boolean whether the two given pandapower networks are equal.
+
+    pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
+
+    INPUT:
+        **net1** (pandapower net)
+
+        **net2** (pandapower net)
+
+    OPTIONAL:
+        **check_only_results** (bool, False) - if True, only result tables (starting with "res_")
+        are compared
+
+        **check_without_results** (bool, False) - if True, result tables (starting with "res_")
+        are ignored for comparison
+
+        **exclude_elms** (list, None) - list of element tables which should be ignored in the
+        comparison
+
+        **name_selection** (list, None) - list of element tables which should be compared
+
+        **kwargs** - key word arguments for dataframes_equal()
     """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
         return False
 
+    if check_without_results and check_only_results:
+        raise UserWarning("Please provide only one of the options to check without results or to "
+                          "exclude results in comparison.")
+
     exclude_elms = [] if exclude_elms is None else list(exclude_elms)
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    # for two networks make sure both have the same keys that do not start with "_"...
-    net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
-    net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+    # for two networks make sure both have the same keys
+    if name_selection is not None:
+        net1_keys = net2_keys = name_selection
+    elif check_only_results:
+        net1_keys = [key for key in net1.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
+        net2_keys = [key for key in net2.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
+    else:
+        net1_keys = [key for key in net1.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
+        net2_keys = [key for key in net2.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
     keys_to_check = set(net1_keys) & set(net2_keys)
     key_difference = set(net1_keys) ^ set(net2_keys)
     not_checked_keys = list()
 
     if len(key_difference) > 0:
         logger.warning("Networks entries mismatch at: %s" % key_difference)
-        if not check_only_results:
-            return False
+        return False
 
     # ... and then iter through the keys, checking for equality for each table
     for key in list(keys_to_check):
-
-        # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
-        if key == 'et' or key.startswith("_"):
-            continue
-
-        if check_only_results and not key.startswith("res_"):
-            continue  # skip anything that is not a result table
 
         if isinstance(net1[key], pd.DataFrame):
             if not isinstance(net2[key], pd.DataFrame):
@@ -740,7 +787,7 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                     not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):
-            if not isinstance(net2[key], np.array):
+            if not isinstance(net2[key], np.ndarray):
                 not_equal.append(key)
             else:
                 if version.parse(np.__version__) < version.parse("0.19"):
@@ -754,6 +801,15 @@ def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs
                 isinstance(net1[key], complex):
             if not np.isclose(net1[key], net2[key]):
                 not_equal.append(key)
+
+        elif isinstance(net1[key], nx.Graph):
+            if GRAPHS_EQUAL_POSSIBLE:
+                if not graphs_equal(net1[key], net2[key]):
+                    not_equal.append(key)
+            else:
+                # Maybe there is a better way, but at least this could be checked
+                if net1[key].nodes != net2[key].nodes or net1[key].edges != net2[key].edges:
+                    not_equal.append(key)
 
         else:
             try:
@@ -1835,7 +1891,7 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
     something_merged = False
     for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
         idxs = gen_df.index[gen_df.bus == bus]
-        if len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
+        if "vm_pu" in gen_df.columns and len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
             message = "Generation plants connected to bus %i have different vm_pu." % bus
             if error:
                 raise ValueError(message)
@@ -1850,6 +1906,15 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
         # sum p_mw
         col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
         net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
+
+        if "profiles" in net and col == "p_mw":
+            elm = "gen" if "gen" in gen_df["elm_type"].loc[idxs[1:]].unique() else "sgen"
+            net.profiles["%s.p_mw" % elm].loc[:, uniq_idx] = net.profiles["%s.p_mw" % elm].loc[
+                :, gen_df["index"].loc[idxs]].sum(axis=1)
+            net.profiles["%s.p_mw" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+            if elm == "gen":
+                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]],
+                                                    inplace=True)
 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
@@ -2566,21 +2631,22 @@ def replace_ward_by_internal_elements(net, wards=None):
 
     # --- result data
     if net.res_ward.shape[0]:
-        sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
-        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards] != 0, 1)
+        sign_in_service = np.multiply(net.ward.in_service.loc[wards].values, 1)
+        sign_not_isolated = np.multiply(net.res_ward.vm_pu.loc[wards].values != 0, 1)
         to_add_load = net.res_ward.loc[wards, ["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
-        to_add_load.p_mw = net.ward.ps_mw[wards].values * sign_in_service * sign_not_isolated
-        to_add_load.q_mvar = net.ward.qs_mvar[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.p_mw = net.ward.ps_mw.loc[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.q_mvar = net.ward.qs_mvar.loc[wards].values * sign_in_service * \
+            sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
 
         to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
-        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values ** 2 * net.ward.pz_mw[wards].values * \
-            sign_in_service * sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[
+        to_add_shunt.p_mw = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.pz_mw.loc[
             wards].values * sign_in_service * sign_not_isolated
-        to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
+        to_add_shunt.q_mvar = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.qz_mvar.loc[
+            wards].values * sign_in_service * sign_not_isolated
+        to_add_shunt.vm_pu = net.res_ward.vm_pu.loc[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
         net.res_ward.drop(wards, inplace=True)

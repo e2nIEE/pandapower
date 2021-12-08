@@ -2,17 +2,11 @@
 
 # Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import csv
-import random
-from functools import reduce
-from pandapower.auxiliary import ADict
-
+import sys
 import numpy as np
-import pandas
-
-import pandas as pd
 from pandas import Int64Index
 
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.toolbox import ensure_iterability
 from .characteristic import SplineCharacteristic
 
@@ -204,17 +198,15 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
 
 
 def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel=None):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     x = np.linspace(start, stop, num)
     y = characteristic(x)
-    if MATPLOTLIB_INSTALLED:
-        plt.plot(x, y, marker='x')
-        if xlabel is not None:
-            plt.xlabel(xlabel)
-        if ylabel is not None:
-            plt.ylabel(ylabel)
-    else:
-        logger.info("matplotlib not installed. y-values: %s" % y)
-
+    plt.plot(x, y, marker='x')
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
 
 def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
     # first, set the missing columns

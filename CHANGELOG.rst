@@ -5,8 +5,13 @@ Change Log
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
 - [ADDED] new object table "characteristic", new class "Characteristic" and "SplineCharacteristic" that are callable and return a value based on input according to a specified curve
+- [FIXED] toolbox replace_ward_by_internal_elements() index usage
 - [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
 - [ADDED] tap dependent impedance internally in build_branch: transformer (2W, 3W) parameters (e.g. vk_percent, vkr_percent) are adjusted according to the tap position based on a specified characteristic in the optional columns
+- [ADDED] multiple costs check in create functions and runopp
+- [ADDED] correct_dtypes() function for fileIO convert
+- [FIXED] revise to_ppc() and to_mpc() init behaviour
+- [CHANGED] import requirements / dependencies
 
 [2.7.1]- 2021-07-22
 ----------------------
