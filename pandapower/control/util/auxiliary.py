@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import numpy as np
+import pandas as pd
 from pandas import Int64Index, Series
 
 from pandapower.auxiliary import soft_dependency_error
@@ -209,34 +210,46 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         plt.ylabel(ylabel)
 
 def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
-    # first, set the missing columns
-    columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
-               "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
+    # create characteristics for the specified variable and set their indices in the trafo table
+    col = f"{variable}_characteristic"
+    # check if the variable is a valid attribute of the trafo table
+    supported_columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
+                         "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
+    if col not in supported_columns[trafotable]:
+        raise UserWarning("Variable %s is not supported for table %s" % (variable, trafotable))
+
+    # check inputs, check if 1 trafo or multiple, verify shape of x_points and y_points and trafo_index
+    if hasattr(trafo_index, '__iter__'):
+        single_mode = False
+        if not (len(trafo_index) == len(x_points) == len(y_points)):
+            raise UserWarning("The lengths of the trafo index and points do not match!")
+    else:
+        single_mode = True
+        if (len(x_points) != len(y_points)):
+            raise UserWarning("The lengths of the points do not match!")
 
     if 'tap_dependent_impedance' not in net[trafotable]:
         net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
 
-    for c in columns[trafotable]:
-        if c not in net[trafotable]:
-            net[trafotable][c] = Series(index=net[trafotable].index, dtype="Int64")
-
-    # check shape of input data
-    if len(trafo_index) != len(x_points) or len(trafo_index) != len(y_points):
-        raise UserWarning("the lengths of the trafo index and points do not match!")
+    if col not in net[trafotable]:
+        net[trafotable][col] = Series(index=net[trafotable].index, dtype="Int64")
 
     # set the flag for the trafo table
     net[trafotable].loc[trafo_index, 'tap_dependent_impedance'] = True
 
-    # create characteristics for the specified variable and set their indices in the trafo table
-    col = f"{variable}_characteristic"
+    if single_mode:
+        zip_params = zip([trafo_index], [x_points], [y_points])
+    else:
+        zip_params = zip(trafo_index, x_points, y_points)
 
-    for tid, x_p, y_p in zip(trafo_index, x_points, y_points):
+    for tid, x_p, y_p in zip_params:
+        # create the characteristic and set its index in the trafotable
         s = SplineCharacteristic(net, x_p, y_p)
         net[trafotable].at[tid, col] = s.index
 
 
 def trafo_characteristics_diagnostic(net):
-    logger.info("Checking trafo characteristics")
+    logger.info("Checking transformer characteristics")
     cols2w = ["vk_percent_characteristic", "vkr_percent_characteristic"]
     cols3w = [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]
     for trafo_table, cols in zip(["trafo", "trafo3w"], [cols2w, cols3w]):
@@ -247,9 +260,9 @@ def trafo_characteristics_diagnostic(net):
             continue
         # check if there are any missing characteristics
         tap_dependent_impedance = net[trafo_table]['tap_dependent_impedance'].values
-        logger.info(f"{trafo_table}: found {sum(tap_dependent_impedance)} trafos with tap-dependent impedance")
+        logger.info(f"{trafo_table}: found {sum(tap_dependent_impedance)} transformer(s) with tap-dependent impedance")
         if len(np.intersect1d(net[trafo_table].columns, cols)) == 0:
-            logger.warning("No columns defined for transformaer tap characteristics in %s. "
+            logger.warning("No columns defined for transformer tap characteristics in %s. "
                            "Power flow calculation will raise an error." % trafo_table)
         elif net[trafo_table].loc[tap_dependent_impedance, np.intersect1d(cols, net[trafo_table].columns)].isnull().all(axis=1).any():
             logger.warning(f"Some transformers in {trafo_table} table have tap_dependent_impedance set to True, "
@@ -257,10 +270,26 @@ def trafo_characteristics_diagnostic(net):
         for col in cols:
             if col not in net[trafo_table]:
                 logger.info("%s: %s is missing" % (trafo_table, col))
+                continue
             elif net[trafo_table].loc[tap_dependent_impedance, col].isnull().any():
-                logger.info("%s: %s is missing for some trafos" % (trafo_table, col))
+                logger.info("%s: %s is missing for some transformers" % (trafo_table, col))
             elif len(set(net[trafo_table].loc[tap_dependent_impedance, col]) - set(net.characteristic.index)) > 0:
                 logger.info("%s: %s contains invalid characteristics indices" % (trafo_table, col))
             else:
                 logger.debug(f"{trafo_table}: {col} has {len(net[trafo_table][col].dropna())} characteristics")
+
+            # chack if any characteristics have value at the neutral point that deviates from the transformer parameter
+            variable = col.replace("_characteristic", "")
+            for tid in net[trafo_table].index[tap_dependent_impedance]:
+                tap_neutral = net[trafo_table].tap_neutral.fillna(0).at[tid]
+                s_id = net[trafo_table][col].at[tid]
+                if pd.isnull(s_id):
+                    continue
+                s = net.characteristic.object.at[s_id]
+                s_val = s(tap_neutral)
+                var_val = net[trafo_table].at[tid, variable]
+                if not np.isclose(s_val, var_val, rtol=0, atol=1e-6):
+                    logger.warning(f"The characteristic value of {s_val} at the neutral tap position {tap_neutral} "
+                                   f"does not match the value {var_val} of {variable} for the {trafo_table} with index {tid} "
+                                   f"(deviation of {s_val-var_val})")
 
