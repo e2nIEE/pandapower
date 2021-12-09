@@ -214,11 +214,11 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
                "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
 
     if 'tap_dependent_impedance' not in net[trafotable]:
-        net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=bool, data=False)
+        net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
 
     for c in columns[trafotable]:
         if c not in net[trafotable]:
-            net[trafotable][c] = Series(index=net[trafotable].index, dtype=np.float64, data=np.nan)
+            net[trafotable][c] = Series(index=net[trafotable].index, dtype="Int64")
 
     # check shape of input data
     if len(trafo_index) != len(x_points) or len(trafo_index) != len(y_points):
@@ -247,7 +247,13 @@ def trafo_characteristics_diagnostic(net):
             continue
         # check if there are any missing characteristics
         tap_dependent_impedance = net[trafo_table]['tap_dependent_impedance'].values
-        logger.info(f"{trafo_table}: found {len(tap_dependent_impedance[tap_dependent_impedance])} trafos with tap-dependent impedance")
+        logger.info(f"{trafo_table}: found {sum(tap_dependent_impedance)} trafos with tap-dependent impedance")
+        if len(np.intersect1d(net[trafo_table].columns, cols)) == 0:
+            logger.warning("No columns defined for transformaer tap characteristics in %s. "
+                           "Power flow calculation will raise an error." % trafo_table)
+        elif net[trafo_table].loc[tap_dependent_impedance, np.intersect1d(cols, net[trafo_table].columns)].isnull().all(axis=1).any():
+            logger.warning(f"Some transformers in {trafo_table} table have tap_dependent_impedance set to True, "
+                           f"but no defined characteristics. Power flow calculation will raise an error.")
         for col in cols:
             if col not in net[trafo_table]:
                 logger.info("%s: %s is missing" % (trafo_table, col))

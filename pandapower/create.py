@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64
+    all as np_all, float64, intersect1d
 from packaging import version
 
 from pandapower import __version__
@@ -2259,9 +2259,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
     if vk_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")  # Int64Dtype
     if vkr_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2426,9 +2426,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
     if vk_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")
     if vkr_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
 
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
@@ -2583,9 +2583,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     if tap_dependent_impedance is not None:
         _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
     if vk_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_percent_characteristic",  vk_percent_characteristic)
+        _add_series_to_entries(entries, index, "vk_percent_characteristic",  vk_percent_characteristic, "Int64")
     if vkr_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_percent_characteristic", vkr_percent_characteristic)
+        _add_series_to_entries(entries, index, "vkr_percent_characteristic", vkr_percent_characteristic, "Int64")
 
     _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
     _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
@@ -2734,17 +2734,17 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
 
     return index
 
@@ -2921,17 +2921,17 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
 
     return index
 
@@ -3117,17 +3117,17 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     if tap_dependent_impedance is not None:
         _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
     if vk_hv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic, "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_hv_percent_characteristic", vkr_hv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vkr_hv_percent_characteristic", vkr_hv_percent_characteristic, "Int64")
     if vk_mv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_mv_percent_characteristic", vk_mv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vk_mv_percent_characteristic", vk_mv_percent_characteristic, "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_mv_percent_characteristic", vkr_mv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vkr_mv_percent_characteristic", vkr_mv_percent_characteristic, "Int64")
     if vk_lv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic, "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic)
+        _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic, "Int64")
 
     _set_multiple_entries(net, "trafo3w", index, **entries, **kwargs)
 
@@ -3874,15 +3874,13 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         set_value = True
     if set_value:
         if column not in net[element].columns:
-            # # unclear why this if-clause is necessary, so commenting out for now
-            # if isinstance(default_val, str) \
-            #         and version.parse(pd.__version__) < version.parse("1.0"):
-            #     net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
-            #                                             dtype=dtyp)
-            # else:
-            # # this does not work properly (only sets 1 entry but not all to default_nan):
-            #     net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
-            net[element].loc[:, column] = pd.Series(data=default_val, index=net[element].index, dtype=dtyp)
+            # this part is for compatibility with pandas < 1.0, can be removed if pandas >= 1.0 is required in setup.py
+            if isinstance(default_val, str) \
+                    and version.parse(pd.__version__) < version.parse("1.0"):
+                net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
+                                                        dtype=dtyp)
+            else:
+                net[element].loc[:, column] = pd.Series(data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
@@ -3928,7 +3926,8 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
     dtypes = None
     if preserve_dtypes:
-        dtypes = net[table].dtypes
+        # only get dtypes of columns that are set and that are already present in the table
+        dtypes = net[table][intersect1d(net[table].columns, list(entries.keys()))].dtypes
 
     for col, val in entries.items():
         net[table].at[index, col] = val

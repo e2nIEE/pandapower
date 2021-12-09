@@ -437,9 +437,12 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         # first, we read all characteristic indices
         # we also allow that some columns are not included in the net.trafo table
         all_columns = trafo_df.keys() if isinstance(trafo_df, dict) else trafo_df.columns.values
-        all_characteristic_idx = np.vstack([get_trafo_values(trafo_df, f"{v}_characteristic")
-                                            if f"{v}_characteristic" in all_columns else np.full(len(tap_dependent_impedance), np.nan)
-                                            for v in vk_variables]).T
+        char_columns = [v for v in vk_variables if f"{v}_characteristic" in all_columns]
+        if len(char_columns) == 0:
+            raise UserWarning(f"At least one of the columns for characteristics ({[v+'_characteristic' for v in vk_variables]}) "
+                              f"must be defined for {trafotype} trafo")
+        # must cast to float64 unfortunately, because numpy.vstack casts arrays to object because it doesn't know pandas.NA, np.isnan fails
+        all_characteristic_idx = np.vstack([get_trafo_values(trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]).T
         # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):
@@ -450,7 +453,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
     for c, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
-        if use_tap_dependent_impedance:
+        if use_tap_dependent_impedance and vk_var in char_columns:
             vals += (_calc_tap_dependent_value(trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
                                                characteristic, all_characteristic_idx[:, c]),)
         else:
