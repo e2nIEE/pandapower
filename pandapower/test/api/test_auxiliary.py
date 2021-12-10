@@ -247,7 +247,7 @@ def test_create_trafo_characteristics():
     assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
     assert net.trafo3w.tap_dependent_impedance.at[0]
     assert "vk_mv_percent_characteristic" in net.trafo3w.columns
-    assert net.trafo3w.at[0, 'vk_hv_percent_characteristic'] == 3
+    assert net.trafo3w.at[0, 'vk_mv_percent_characteristic'] == 3
     assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
     assert "vkr_mv_percent_characteristic" not in net.trafo3w.columns
     assert "vk_lv_percent_characteristic" not in net.trafo3w.columns
