@@ -130,6 +130,14 @@ class SplineCharacteristic(Characteristic):
 
     @property
     def interpolator(self):
+        """
+        We need to store the interpolator in a property because we need to serialize
+        the characteristic. Instead of storing the serialized interpolator, we store the
+        x_values and y_values (the attribute _interpolator is ecluded from serialization by
+        adding it to json_excludes). For it to work, we need to recreate the interpolator on
+        demand. As soon as the characteristic is called, if the interpolator is there,
+        we can use it. If not, we recreate it.
+        """
         return self._interpolator
 
     @interpolator.getter
@@ -139,5 +147,18 @@ class SplineCharacteristic(Characteristic):
         return self._interpolator
 
     def __call__(self, x):
+        """
+        This method allows calling the SciPy interpolator object directly.
+        Codacy is complaining about this, but it is not a problem.
+        Parameters
+        ----------
+        x : float
+            The x-value at which the current y-value is interpolated for.
+
+        Returns
+        -------
+        float
+            The interpolated y-value.
+        """
         return self.interpolator(x)
 
