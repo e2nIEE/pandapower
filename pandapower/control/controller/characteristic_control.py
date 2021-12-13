@@ -10,7 +10,7 @@ from pandapower.control.basic_controller import Controller
 class CharacteristicControl(Controller):
     """
     Controller that adjusts a certain parameter of an element in pandapower net based on a specified input parameter in pandapower net,
-    according to a provided characteristic.
+    according to a provided characteristic. The characteristic is specified by the index in the net.characteristic table.
     Example: change the tap position of the transformers (net.trafo.tap_pos) based on transformer loading (net.res_trafo.loading_percent)
     according to a specified linear relationship. To this end, the input element is "res_trafo", the input variable is "loading_percent",
     the output element is "trafo" and the output variable is "tap_pos". The relationship between the values of the input and output
@@ -35,9 +35,8 @@ class CharacteristicControl(Controller):
 
         **input_element_index** (int or list or numpy array) - index of elements in the input element table
 
-        **characteristic** (object of class Characteristic, or a scipy interpolator object) - characteristic curve that describes the
-                                                                                                relationship between the input and
-                                                                                                output values
+        **characteristic_index** (int) - index of the characteristic curve that describes the relationship between the input and
+                                         output values
 
         **tol** (float) - tolerance for convergence
 
@@ -48,7 +47,7 @@ class CharacteristicControl(Controller):
         **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
     """
     def __init__(self, net, output_element, output_variable, output_element_index, input_element,
-                 input_variable, input_element_index, characteristic, tol=1e-3, in_service=True,
+                 input_variable, input_element_index, characteristic_index, tol=1e-3, in_service=True,
                  order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"element": output_element, "input_variable": input_variable,
@@ -63,7 +62,7 @@ class CharacteristicControl(Controller):
         self.output_element = output_element
         self.output_variable = output_variable
         self.output_element_index = output_element_index
-        self.characteristic = characteristic
+        self.characteristic_index = characteristic_index
         self.tol = tol
         self.applied = False
         self.values = None
@@ -107,7 +106,7 @@ class CharacteristicControl(Controller):
         # read input values
         input_values = self.read_from_net(net)
         # calculate set values
-        self.values = self.characteristic(input_values)
+        self.values = net.characteristic.object.at[self.characteristic_index](input_values)
         # read previous set values
         output_values = self.read_from_net(net, output=True)
         # compare old and new set values

@@ -28,6 +28,7 @@ try:
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal
 
+from pandapower.auxiliary import pandapowerNet, get_free_id
 try:
     from cryptography.fernet import Fernet
     cryptography_INSTALLED = True
@@ -638,10 +639,12 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False,
+    def add_to_net(self, net, element, index=None, column="object", overwrite=False,
                    preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
+        if index is None:
+            index = get_free_id(net[element])
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
@@ -660,6 +663,8 @@ class JSONSerializableClass(object):
 
         if preserve_dtypes:
             _preserve_dtypes(net[element], dtypes)
+
+        return index
 
     def equals(self, other):
 
