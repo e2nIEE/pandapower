@@ -188,7 +188,6 @@ def test_level_in_service(net):
 
 
 def test_matching_params(net):
-
     c0 = DummyController(net)
     c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([0, 1]))
@@ -197,9 +196,14 @@ def test_matching_params(net):
     c3 = DummyController(net, matching_params={"level": 0, "order": 0, "in_service": True},
                          drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([1, 3]))
+    assert net.controller.object.at[3] is not c2
+    assert net.controller.object.at[3] is c3
+    assert c2 not in net.controller.object.values
     c4 = DummyController(net, in_service=False, drop_same_existing_ctrl=True,
                          matching_params={"level": 0, "order": 0, "in_service": False})
     assert not len(net.controller.index.difference([1, 3, 4]))
+    assert net.controller.object.at[3] is c3
+    assert net.controller.object.at[4] is c4
 
 
 if __name__ == '__main__':

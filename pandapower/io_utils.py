@@ -22,8 +22,13 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
-from pandas.testing import assert_series_equal, assert_frame_equal
 
+try:
+    from pandas.testing import assert_series_equal, assert_frame_equal
+except ImportError:
+    from pandas.util.testing import assert_series_equal, assert_frame_equal
+
+from pandapower.auxiliary import pandapowerNet, get_free_id
 try:
     from cryptography.fernet import Fernet
     cryptography_INSTALLED = True
@@ -45,7 +50,7 @@ try:
 except:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import pandapowerNet, soft_dependency_error
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
 try:
@@ -190,6 +195,8 @@ def from_dict_of_dfs(dodfs):
     net = create_empty_network()
     for c in dodfs["parameters"].columns:
         net[c] = dodfs["parameters"].at[0, c]
+        if c == "name" and pd.isnull(net[c]):
+            net[c] = ''
     for item, table in dodfs.items():
         if item in ("parameters", "dtypes"):
             continue
@@ -316,7 +323,9 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
 
 
 def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
+    # this function shall make sure that for the given classes, no default string functions are
+    # used, but the registered ones (to_serializable registry)
+    if isinstance(obj, (pandapowerNet, tuple, numpy.floating)):
         return False
     return isinstance(obj, cls)
 
@@ -454,7 +463,17 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
-        return json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+        mg = json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+        edges = list()
+        for (n1, n2, e) in mg.edges:
+            attr = {k: v for k, v in mg.get_edge_data(n1, n2, key=e).items() if
+                    k not in ("json_id", "json_key")}
+            attr["key"] = e
+            edges.append((n1, n2, attr))
+        mg.clear_edges()
+        for n1, n2, ed in edges:
+            mg.add_edge(n1, n2, **ed)
+        return mg
 
     @from_serializable.register(class_name="method")
     def method(self):
@@ -620,16 +639,32 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False):
+    def add_to_net(self, net, element, index=None, column="object", overwrite=False,
+                   preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
+        if index is None:
+            index = get_free_id(net[element])
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
                 logger.info("Updating %s with index %s" % (element, index))
             else:
                 raise UserWarning("%s with index %s already exists" % (element, index))
+
+        dtypes = None
+        if preserve_dtypes:
+            dtypes = net[element].dtypes
+
+        if fill_dict is not None:
+            for k, v in fill_dict.items():
+                net[element].at[index, k] = v
         net[element].at[index, column] = self
+
+        if preserve_dtypes:
+            _preserve_dtypes(net[element], dtypes)
+
+        return index
 
     def equals(self, other):
 
@@ -731,7 +766,7 @@ def json_pandapowernet(obj):
     logger.debug('pandapowerNet')
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
     for k, item in net_dict.items():
-        if (isinstance(item, str) and '_module' in item):
+        if isinstance(item, str) and '_module' in item:
             net_dict[k] = json.loads(item)
     d = with_signature(obj, net_dict)
     return d
@@ -778,13 +813,28 @@ def json_array(obj):
 @to_serializable.register(numpy.integer)
 def json_npint(obj):
     logger.debug("integer")
-    return int(obj)
+    d = with_signature(obj, int(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numpy.floating)
 def json_npfloat(obj):
     logger.debug("floating")
-    return float(obj)
+    if numpy.isnan(obj):
+        d = with_signature(obj, str(obj), obj_module="numpy")
+    else:
+        d = with_signature(obj, float(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
+
+
+@to_serializable.register(numpy.bool_)
+def json_npbool(obj):
+    logger.debug("boolean")
+    d = with_signature(obj, "true" if obj else "false", obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numbers.Number)

@@ -34,7 +34,7 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
-        raise NotImplementedError
+            raise NotImplementedError
         pp.create_pwl_cost(net, gen_lookup.element.at[idx],
                            gen_lookup.element_type.at[idx],
                            ppc['gencost'][idx, 4:], type)

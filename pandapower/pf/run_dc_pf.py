@@ -5,7 +5,7 @@
 
 
 
-from time import time
+from time import perf_counter
 
 from numpy import pi, zeros, real, bincount
 
@@ -18,7 +18,7 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 def _run_dc_pf(ppci):
-    t0 = time()
+    t0 = perf_counter()
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _, refgen = _get_pf_variables_from_ppci(ppci)
 
     ## initial state
@@ -54,7 +54,7 @@ def _run_dc_pf(ppci):
     gen[refgen, PG] = real(gen[refgen, PG] + (B[refgenbus, :] * Va - Pbus[refgenbus]) * baseMVA / ext_grids_bus[refgenbus])
 
     # store results from DC powerflow for AC powerflow
-    et = time() - t0
+    et = perf_counter() - t0
     success = True
     iterations = 1
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
