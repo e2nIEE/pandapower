@@ -204,7 +204,7 @@ class Controller(BasicCtrl):
         super().initialize_control(net)
 
     def is_converged(self, net):
-        super().is_converged(net)
+        return super().is_converged(net)
 
     def control_step(self, net):
         super().control_step(net)
