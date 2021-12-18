@@ -16,7 +16,7 @@ from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 

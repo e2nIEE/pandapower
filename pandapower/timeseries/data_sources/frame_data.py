@@ -6,7 +6,7 @@
 from pandapower.timeseries.data_source import DataSource
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 

@@ -13,7 +13,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

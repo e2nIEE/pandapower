@@ -20,7 +20,7 @@ from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_re
     get_batch_trafo_results, get_batch_bus_results
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 logger = pplog.getLogger(__name__)

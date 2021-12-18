@@ -34,7 +34,7 @@ from pandapower.estimation.idx_brch import (P_FROM, P_FROM_IDX, P_FROM_STD,
                                             branch_cols_se)
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)

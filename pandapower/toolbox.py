@@ -33,7 +33,7 @@ except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

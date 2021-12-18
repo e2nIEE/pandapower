@@ -27,7 +27,7 @@ from pandapower.results_gen import _get_gen_results
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

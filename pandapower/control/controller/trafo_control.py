@@ -7,7 +7,7 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
