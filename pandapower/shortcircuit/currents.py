@@ -51,6 +51,12 @@ def _calc_ikss(net, ppci, bus_idx):
 
     _current_source_current(net, ppci)
 
+    # add SKSS to current source fault buses
+    bus_idx = np.intersect1d(np.flatnonzero(ppci["bus"][:, IKCV]), np.flatnonzero(~np.isnan(ppci["bus"][:, IKCV])))
+    if fault == "3ph":
+        ppci["bus"][bus_idx, SKSS] += np.sqrt(3) * ppci["bus"][bus_idx, IKCV] * ppci["bus"][bus_idx, BASE_KV]
+
+
 
 def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     case = net._options["case"]
