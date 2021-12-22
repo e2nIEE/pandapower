@@ -25,7 +25,7 @@ def simplest_test_grid(generator_type, step_up_trafo=False):
     if generator_type == "async_doubly_fed":
         pp.create_sgen(net, b1, 0, 0, 2.5, current_source=False,
                        generator_type=generator_type, max_ik_ka=0.388, kappa=1.7, rx=0.1)
-    elif generator_type == "full_size_converter":
+    elif generator_type == "current_source":
         pp.create_sgen(net, b1, 0, 0, 2.5, generator_type=generator_type, current_source=True, k=1.3, rx=0.1)
     elif generator_type == "async":
         pp.create_sgen(net, b1, 0, 0, 2.5, generator_type=generator_type, current_source=False, rx=0.1, lrc_pu=5)
