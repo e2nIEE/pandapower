@@ -964,7 +964,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                current_source=True):
+                current_source=True, generator_type="current_source", max_ik_ka=nan, kappa=nan, lrc_pu=nan):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1018,7 +1018,24 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
-            specified as motor so that sgen is treated as asynchronous motor
+            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
+            short-circuit calculation for all generator types
+
+        **generator_type** (str, "current_source") - can be one of "current_source" \
+            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
+            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
+            generator in the context of the short-circuit calculations of wind power station units
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+            current. Relevant if the generator_type is "async".
+
+        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
+            generator_type is "async_doubly_fed".
+
+        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+            current, referred to the high-voltage side (provided by the manufacturer). \
+            Relevant if the generator_type is "async_doubly_fed".
 
         **current_source** (bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1045,10 +1062,21 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "sgen")
     _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, k, "k", "sgen")
-    _create_column_and_set_value(net, index, rx, "rx", "sgen")
     _create_column_and_set_value(net, index, controllable, "controllable", "sgen", dtyp=bool_,
                                  default_val=False, default_for_nan=True)
+    _create_column_and_set_value(net, index, rx, "rx", "sgen") # rx is always required
+    _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
+                                 default_val="current_source", default_for_nan=True)
+    if generator_type == "current_source":
+        _create_column_and_set_value(net, index, k, "k", "sgen")
+    elif generator_type == "async":
+        _create_column_and_set_value(net, index, lrc_pu, "lrc_pu", "sgen")
+    elif generator_type == "async_doubly_fed":
+        _create_column_and_set_value(net, index, max_ik_ka, "max_ik_ka", "sgen")
+        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
+    else:
+        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+                          f"Must be one of 'current_source', 'async', 'async_doubly_fed'")
 
     return index
 
@@ -1056,7 +1084,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=None, min_p_mw=None,
                  max_q_mvar=None, min_q_mvar=None, controllable=None, k=None, rx=None,
-                 current_source=True, **kwargs):
+                 current_source=True, generator_type="current_source", max_ik_ka=nan,
+                 kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1110,8 +1139,25 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
-        **rx** (list of floats, NaN) - R/X ratio for short circuit impedance. Only relevant if type\
-            is specified as motor so that sgen is treated as asynchronous motor
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
+            short-circuit calculation for all generator types
+
+        **generator_type** (str, "current_source") - can be one of "current_source" \
+            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
+            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
+            generator in the context of the short-circuit calculations of wind power station units
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+            current. Relevant if the generator_type is "async".
+
+        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
+            generator_type is "async_doubly_fed".
+
+        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+            current, referred to the high-voltage side (provided by the manufacturer). \
+            Relevant if the generator_type is "async_doubly_fed".
 
         **current_source** (list of bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1136,10 +1182,21 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
     _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
     _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "k", k)
-    _add_series_to_entries(entries, index, "rx", rx)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
+    _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
+    _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
+                                 default_val="current_source", default_for_nan=True)
+    if generator_type == "current_source":
+        _add_series_to_entries(entries, index, "k", k)
+    elif generator_type == "async":
+        _add_series_to_entries(entries, index, "lrc_pu", lrc_pu)
+    elif generator_type == "async_doubly_fed":
+        _add_series_to_entries(entries, index, "max_ik_ka", max_ik_ka)
+        _add_series_to_entries(entries, index, "kappa", kappa)
+    else:
+        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+                          f"Must be one of 'current_source', 'async', 'async_doubly_fed'")
 
     _set_multiple_entries(net, "sgen", index, **entries, **kwargs)
 
