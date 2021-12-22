@@ -242,7 +242,7 @@ def test_wind_park():
 
 def test_wind_power_station_unit():
     # full size converter (current source)
-    net = simplest_test_grid('full_size_converter')
+    net = simplest_test_grid('current_source')
     sc.calc_sc(net, ip=True)
 
     vn_kv = net.bus.vn_kv.at[0]
