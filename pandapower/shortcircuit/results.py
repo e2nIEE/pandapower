@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
-from pandapower.pypower.idx_bus import BUS_TYPE
+from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ip_f", "branch_ip_t",
@@ -80,6 +80,11 @@ def _get_bus_results(net, ppc, ppc_0, bus):
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
         net.res_bus_sc["xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM]
+        # in trafo3w, we add very high numbers (1e10) as impedances to block current
+        # here, we need to replace such high values by np.inf
+        baseZ = ppc_0["bus"][ppc_index, BASE_KV] ** 2 / ppc_0["baseMVA"]
+        net.res_bus_sc["xk0_ohm"].loc[net.res_bus_sc["xk0_ohm"]/baseZ > 1e9] = np.inf
+        net.res_bus_sc["rk0_ohm"].loc[net.res_bus_sc["rk0_ohm"]/baseZ > 1e9] = np.inf
     else:
         net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]
@@ -91,6 +96,10 @@ def _get_bus_results(net, ppc, ppc_0, bus):
     # Export also equivalent rk, xk on the calculated bus
     net.res_bus_sc["rk_ohm"] = ppc["bus"][ppc_index, R_EQUIV_OHM]
     net.res_bus_sc["xk_ohm"] = ppc["bus"][ppc_index, X_EQUIV_OHM]
+    # if for some reason (e.g. contribution of ext_grid set close to 0) we used very high values for rk, xk, we replace them by np.inf
+    baseZ = ppc["bus"][ppc_index, BASE_KV] ** 2 / ppc["baseMVA"]
+    net.res_bus_sc["rk_ohm"].loc[net.res_bus_sc["rk_ohm"] / baseZ > 1e9] = np.inf
+    net.res_bus_sc["xk_ohm"].loc[net.res_bus_sc["xk_ohm"] / baseZ > 1e9] = np.inf
 
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 
