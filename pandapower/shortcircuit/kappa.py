@@ -29,7 +29,9 @@ def _add_kappa_to_ppc(net, ppc):
         kappa = _kappa_method_b(net, ppc)
     else:
         raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
-    ppc["bus"][:, KAPPA] = kappa
+    # ppc["bus"][:, KAPPA] = kappa
+    # if kappa is already defined in a previous step (e.g. for sgen DFIG kappa is provided by the manufacturer)
+    ppc["bus"][:, KAPPA] = np.where(np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA])
 
 
 def _kappa(rx):
