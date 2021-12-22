@@ -17,10 +17,10 @@ import pandas as pd
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
-from pandapower.pypower.idx_bus import GS, BS
-from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS
+from pandapower.pypower.idx_bus import GS, BS, BASE_KV
+from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
 from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
-    PS_TRAFO_IX, GS_P, BS_P
+    PS_TRAFO_IX, GS_P, BS_P, KAPPA
 from pandapower.shortcircuit.idx_brch import K_T, K_ST
 
 def _get_is_ppci_bus(net, bus):
@@ -40,6 +40,7 @@ def _init_ppc(net):
     # Add parameter K into ppc
     _add_kt(net, ppc)
     _add_gen_sc_z_kg_ks(net, ppc)
+    _add_sgen_sc_z(net, ppc)
     _add_xward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
@@ -91,6 +92,51 @@ def _add_xward_sc_z(net, ppc):
     buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
+
+
+def _add_sgen_sc_z(net, ppc):
+    # implement wind power station unit
+    # implement doubly fed asynchronous generator
+    # todo: what is this "_is_elements_final" thing?
+    # sgen_wd = net.sgen.loc[net._is_elements_final["sgen"] & (net.sgen.generator_type=="async_doubly_fed")]
+    sgen_wd = net.sgen.loc[net.sgen.in_service & (net.sgen.generator_type=="async_doubly_fed")]
+    if len(sgen_wd) > 0:
+        sgen_buses = sgen_wd.bus.values
+        sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
+
+        vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
+        base_z_ohm = vn_net ** 2 / net.sn_mva
+
+        z_wd_ohm = np.sqrt(2) * sgen_wd.kappa * net.bus.loc[sgen_buses, "vn_kv"].values / (np.sqrt(3) * sgen_wd.max_ik_ka)
+        z_wd_complex_ohm = (sgen_wd.rx + 1j) * z_wd_ohm / (np.sqrt(1+sgen_wd.rx**2))
+        z_wd_complex_pu = z_wd_complex_ohm / base_z_ohm
+        y_wd_pu = 1 / z_wd_complex_pu.values
+
+        bus_idx, sgen_gs, sgen_bs = _sum_by_group(sgen_buses_ppc, y_wd_pu.real, y_wd_pu.imag)
+        ppc['bus'][bus_idx, GS] = sgen_gs
+        ppc['bus'][bus_idx, BS] = sgen_bs
+
+        # add kappa for peak current
+        ppc['bus'][sgen_buses_ppc, KAPPA] = sgen_wd.kappa.values
+
+    sgen_g = net.sgen.loc[net.sgen.in_service & (net.sgen.generator_type=="async")]
+    if len(sgen_g) > 0:
+        sgen_buses = sgen_g.bus.values
+        sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
+
+        vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
+        base_z_ohm = vn_net ** 2 / net.sn_mva
+
+        i_rg_ka = sgen_g.sn_mva / (vn_net * np.sqrt(3))
+        z_g_ohm = 1 / sgen_g.lrc_pu * np.square(vn_net) / sgen_g.sn_mva
+        z_g_complex_ohm = (sgen_g.rx + 1j) * z_g_ohm / (np.sqrt(1 + np.square(sgen_g.rx)))
+        z_g_complex_pu = z_g_complex_ohm / base_z_ohm
+        y_g_pu = 1 / z_g_complex_pu.values
+
+        bus_idx, sgen_gs, sgen_bs = _sum_by_group(sgen_buses_ppc, y_g_pu.real, y_g_pu.imag)
+        ppc['bus'][bus_idx, GS] = sgen_gs
+        ppc['bus'][bus_idx, BS] = sgen_bs
+
 
 def _add_gen_sc_z_kg_ks(net, ppc):
     gen = net["gen"][net._is_elements_final["gen"]]
