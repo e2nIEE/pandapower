@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandapower as pp
 
-import networks as nw
+import pandapower.networks
 import pandapower.grid_equivalents
 
 try:
@@ -226,7 +226,7 @@ def test_basic_usecases():
 
 
 def test_case9_with_slack_generator_in_external_net():
-    net = nw.case9()
+    net = pp.networks.case9()
     net.sn_mva = 1.
     idx = pp.replace_ext_grid_by_gen(net)
     net.gen.slack.loc[idx] = True
@@ -311,7 +311,7 @@ def test_case9_with_slack_generator_in_external_net():
 def test_adopt_columns_to_separated_eq_elms():
 
     # --- gen_separate
-    net = nw.case9()
+    net = pp.networks.case9()
     net.sn_mva = 1.
     pp.replace_ext_grid_by_gen(net, slack=True)
     net.gen.index = [1, 2, 0]
@@ -328,7 +328,7 @@ def test_adopt_columns_to_separated_eq_elms():
             eq_net.gen.origin_id.loc[eq_net.poly_cost.element].values).all()
 
     # --- sgen_separate0
-    net = nw.case9()
+    net = pp.networks.case9()
     net.sn_mva = 1.
     pp.replace_gen_by_sgen(net)
     net.sgen["origin_id"] = ["sgen_%i" % i for i in range(net.sgen.shape[0])]
@@ -342,7 +342,7 @@ def test_adopt_columns_to_separated_eq_elms():
 
 @pytest.mark.skipif(not group_imported, reason="Group is not installed")
 def test_equivalent_groups():
-    net = nw.example_multivoltage()
+    net = pp.networks.example_multivoltage()
     for elm in pp.pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
@@ -392,7 +392,7 @@ def test_equivalent_groups():
 
 
 # def test_shifter_degree():
-#     net = nw.example_multivoltage()
+#     net = pp.networks.example_multivoltage()
 #     net.trafo.shift_degree[0] = 30
 #     net.trafo.shift_degree[1] = -60
 #     net.trafo3w.shift_mv_degree[0] = 90
