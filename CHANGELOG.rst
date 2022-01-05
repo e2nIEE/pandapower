@@ -12,6 +12,7 @@ Change Log
 - [ADDED] correct_dtypes() function for fileIO convert
 - [FIXED] revise to_ppc() and to_mpc() init behaviour
 - [CHANGED] import requirements / dependencies
+- [ADDED] functions to obtain grid equivalents (power system reduction with REI, Ward, X-Ward methods)
 
 [2.7.1]- 2021-07-22
 ----------------------
