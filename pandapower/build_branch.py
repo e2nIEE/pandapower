@@ -263,13 +263,14 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
 
     if mode == "sc":
-        y = 0
+        y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-            kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
-                                                trafo_df.sn_mva, cmax)
+            # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
+            # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
+            kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
             r *= kt
             x *= kt
     else:
@@ -775,7 +776,7 @@ def _end_temperature_correction_factor(net, short_circuit=False):
     return r_correction_for_temperature
 
 
-def _transformer_correction_factor(vk, vkr, sn, cmax):
+def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
     """
         2W-Transformer impedance correction factor in short circuit calculations,
         based on the IEC 60909-0:2016 standard.
@@ -787,12 +788,23 @@ def _transformer_correction_factor(vk, vkr, sn, cmax):
 
         Returns:
             kt: transformer impedance correction factor for short-circuit calculations
+
+    Parameters
+    ----------
+    trafo_df
+
         """
+
+    if "power_station_unit" in trafo_df.columns:
+        power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
+    else:
+        power_station_unit = np.zeros(len(trafo_df)).astype(bool)
+
     zt = vk / 100 / sn
     rt = vkr / 100 / sn
     xt = np.sqrt(zt ** 2 - rt ** 2)
     kt = 0.95 * cmax / (1 + .6 * xt * sn)
-    return kt
+    return np.where(~power_station_unit, kt, 1)
 
 
 def get_is_lines(net):
@@ -847,7 +859,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
     if mode == "sc":
-        kt = _transformer_correction_factor(vk_3w, vkr_3w, sn, 1.1)
+        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
@@ -872,7 +884,7 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
     vkr0_2w_delta = z_br_to_bus_vector(vkr0_3w, sn)
 
     # Only for "sc", calculated with positive sequence value
-    kt = _transformer_correction_factor(vk_3w, vkr_3w, sn, 1.1)
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 

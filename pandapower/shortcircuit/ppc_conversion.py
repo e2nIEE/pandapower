@@ -70,8 +70,7 @@ def _add_kt(net, ppc):
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
         cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
-        kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
-                                            trafo_df.sn_mva, cmax)
+        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
         branch[f:t, K_T] = kt
 
 def _add_xward_sc_z(net, ppc):
@@ -84,6 +83,7 @@ def _add_xward_sc_z(net, ppc):
     ward_buses_ppc = bus_lookup[ward_buses]
 
     vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+    # todo fix zbase
     r_ward, x_ward = ward["r_ohm"].values, ward["x_ohm"].values
     z_ward = (r_ward + x_ward*1j)
     z_ward_pu = z_ward / vn_net ** 2
@@ -99,6 +99,9 @@ def _add_sgen_sc_z(net, ppc):
     # implement doubly fed asynchronous generator
     # todo: what is this "_is_elements_final" thing?
     # sgen_wd = net.sgen.loc[net._is_elements_final["sgen"] & (net.sgen.generator_type=="async_doubly_fed")]
+    if len(net.sgen) == 0:
+        return
+
     sgen_wd = net.sgen.loc[net.sgen.in_service & (net.sgen.generator_type=="async_doubly_fed")]
     if len(sgen_wd) > 0:
         sgen_buses = sgen_wd.bus.values
@@ -157,20 +160,22 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     # Avoid warning by slight zero crossing caused
     sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values**2, 0, None))
 
-    # TODO: Check which is correct
-    # gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])
-    gen_baseZ = vn_net ** 2
+    # todo: division by net.sn_mva is correct but why does it cause tests to fail????
+    gen_base_z_ohm = vn_net ** 2# / net.sn_mva
     r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
     z_gen = (r_gen + x_gen * 1j)
-    z_gen_pu = z_gen / gen_baseZ
+    z_gen_pu = z_gen / gen_base_z_ohm
     y_gen_pu = 1 / z_gen_pu
 
+    # this includes the Z_G from equation 21 by adding g and b to the ppc bus table
     buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen_pu.real, y_gen_pu.imag)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
 
     # Calculate K_G
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
+    # if the terminal voltage of the generator is permanently different from the nominal voltage of the generator, it may be
+    # reqired to have a correction for U_{rG} as below (compare to equation 18) when calculating maximum SC current:
     kg = vn_net/(vn_gen * (1+pg_percent/100)) * cmax / (1 + xdss_pu * sin_phi_gen)
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
@@ -187,7 +192,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     if np.any(large_hv_gens):
         r_gen_p[large_hv_gens] = 0.05 * x_gen[large_hv_gens]
     z_gen_p = (r_gen_p + x_gen * 1j)
-    z_gen_p_pu = z_gen_p / gen_baseZ
+    z_gen_p_pu = z_gen_p / gen_base_z_ohm
     y_gen_p_pu = 1 / z_gen_p_pu
 
     # GS_P/GS_B will only be updated here
@@ -255,8 +260,9 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
 
-def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
+def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     ppci = deepcopy(ppci_orig)
+    base_z_ohm = ppci['bus'][:, BASE_KV] ** 2 / net.sn_mva
 
     non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]
     ps_gen_bus = ppci_bus[~np.isnan(ppci["bus"][ppci_bus, K_SG])]
@@ -267,18 +273,19 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
     if np.any(ps_trafo_mask):
         ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
         ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(int)
+        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(int)
         ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
+        # if zero_sequence:
+        #     ppci["bus"][np.ix_(ps_trafo_ppci_hv_bus, [BS])] += 1/(3 * 22 / (110 ** 2))
 
     if np.any(ps_gen_bus_mask):
-        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
-            ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
-        ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *=\
-            ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])] / ppci["branch"][np.ix_(ps_trafo_mask, [K_T])]
+        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /= ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
+        # Then, the R and X are multiplied by K_S (named K_ST here)
+        ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *= ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])]
 
     gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
     if np.any(gen_bus_mask):
-        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /=\
-            ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
+        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
 
     bus_ppci = {}
     if ps_gen_bus.size > 0:
@@ -287,14 +294,12 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus):
             if not np.isfinite(ppci_gen["bus"][bus, K_SG]):
                 raise UserWarning("Parameter error of K SG")
             # Correct ps gen bus
-            ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /=\
-                (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
+            ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /= (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
 
             # Correct ps transfomer
             trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
             # Calculating SC inside power system unit
-            ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= \
-                ppci_gen["branch"][trafo_ix, K_ST]
+            ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= ppci_gen["branch"][trafo_ix, K_ST]
 
             bus_ppci.update({bus: ppci_gen})
 

@@ -77,6 +77,41 @@ def test_1ph_shortcircuit():
     for vc, result in results.items():
         check_results(net, vc, result)
 
+
+def test_1ph_shortcircuit_3w():
+    # vector groups without "N" have no impact on the 1ph
+    # here we check both functions, with Y invertion and with LU factorization for individual buses
+    # The cuirrents are taken from the calculation with commercial software for reference
+    results = {
+                "ddd":  [1.5193429, 0, 0],
+                "ddy":  [1.5193429, 0, 0],
+                "dyd":  [1.5193429, 0, 0],
+                "dyy":  [1.5193429, 0, 0],
+                "ydd":  [1.5193429, 0, 0],
+                "ydy":  [1.5193429, 0, 0],
+                "yyd":  [1.5193429, 0, 0],
+                "yyy":  [1.5193429, 0, 0],
+                "ynyd": [1.783257, 0, 0],
+                "yndy": [1.79376470, 0, 0], # ok
+                "yynd": [1.5193429, 3.339398, 0],
+                "ydyn": [1.5193429, 0, 8.836452], # ok
+                "ynynd": [1.783257, 3.499335, 0],
+                "yndyn": [1.79376470, 0, 9.04238714], # ok
+                "yndd": [1.843545, 0, 0],
+                "ynyy": [1.5193429, 0, 0] # ok but why?
+               }
+
+    for vg, result in results.items():
+        net = single_3w_trafo_grid(vg)
+        sc.calc_sc(net, fault="1ph", case="max")
+        assert np.allclose(net.res_bus_sc.ikss_ka.values, result, rtol=0, atol=1e-6)
+
+        net2 = single_3w_trafo_grid(vg)
+        for bus in net2.bus.index.values:
+            sc.calc_sc(net2, fault="1ph", case="max", inverse_y=False, bus=bus)
+            assert np.allclose(net.res_bus_sc.ikss_ka.at[bus], net2.res_bus_sc.ikss_ka.at[bus], rtol=0, atol=1e-9)
+
+
 def test_1ph_shortcircuit_min():
     results = {
                  "Yy":  [0.52209346201, 0.66632662571, 0.66756160176, 0.72517293174]
@@ -152,6 +187,30 @@ def test_1ph_with_switches():
         pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
         sc.calc_sc(net, fault="1ph", case="max")
         check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
+
+
+def single_3w_trafo_grid(vector_group):
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=380.)
+    b2 = pp.create_bus(net, vn_kv=110.)
+    b3 = pp.create_bus(net, vn_kv=30.)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800,
+                       rx_max=0.1, x0x_max=1, r0x0_max=0.1,
+                       rx_min=0.1, x0x_min=1, r0x0_min=0.1)
+
+    pp.create_transformer3w_from_parameters(net,
+                                            hv_bus=b1, mv_bus=b2, lv_bus=b3,
+                                            vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
+                                            sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50,
+                                            pfe_kw=0, i0_percent=0,
+                                            vk_hv_percent=21, vkr_hv_percent=.26,
+                                            vk_mv_percent=7, vkr_mv_percent=.16,
+                                            vk_lv_percent=10., vkr_lv_percent=.16,
+                                            vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
+                                            vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
+                                            vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714,
+                                            vector_group=vector_group)
+    return net
 
 
 def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
@@ -236,7 +295,7 @@ def vde_232():
     pp.create_bus(net, 21)
 
     pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
-                       x0x_max=3.47927, r0x0_max=3.03361)
+                       x0x_max=3.47927, r0x0_max=3.03361*0.20328/3.47927)
     pp.create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16,
                                           pfe_kw=0, i0_percent=0, tap_step_percent=1,
                                           tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
@@ -245,10 +304,21 @@ def vde_232():
                                           vkr0_percent=0.5,
                                           mag0_percent=100, mag0_rx=0,
                                           si0_hv_partial=0.9,
-                                          pt_percent=12, oltc=True)
+                                          pt_percent=12, oltc=True,
+                                          power_station_unit=True)
     net.trafo['xn_ohm'] = 22
     # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
     pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5)
+
+    # z_q
+    u_nq = 110
+    i_kqss = 13.61213
+    z_q = 1.1 * u_nq / (np.sqrt(3) * i_kqss)
+    rx_max = 0.20328
+    x_q = z_q / np.sqrt(1+rx_max**2)
+    x_0q = x_q * 3.47927
+    r_0q = x_0q * 3.03361*0.20328/3.47927
+    z_0q = r_0q + 1j*x_0q
     return net
 
 
@@ -327,17 +397,15 @@ def test_iec_60909_4_small_with_gen_ps_unit_1ph():
 
 
 def test_vde_232_with_gen_ps_unit_1ph():
+    # IEC 60909-4:2021, example from section 4.4.2
+    # from pandapower.test.shortcircuit.test_1ph import *
+    # from pandapower.pypower.idx_bus import *
     net = vde_232()
 
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-
-    ikss_max = []
-    # ikss_min = []
-    # ip_min = []
-
-    # TODO: This needs to be fixed!!
-    # assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array(ikss_max), atol=1e-4)
-
+    assert np.isclose(net.res_bus_sc.at[0, 'ikss_ka'], 9.04979, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'rk0_ohm'], 2.09392, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'xk0_ohm'], 14.3989, rtol=0, atol=1e-4)
 
 
 if __name__ == "__main__":

@@ -30,8 +30,8 @@ def iec_60909_4():
     T_T6 = pp.create_bus(net, vn_kv=10)
     H = pp.create_bus(net, vn_kv=30.)
 
-    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1)
-    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=0.1, r0x0_max=0.1)
+    pp.create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=0.1, r0x0_max=0.1)
 
     # t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
     #     pfe_kw=0, i0_percent=0,
@@ -41,13 +41,14 @@ def iec_60909_4():
         pfe_kw=[0], i0_percent=[0],
         vn_hv_kv=[115.], vn_lv_kv=[21], vk_percent=[16], vkr_percent=[0.5],
         pt_percent=[12], oltc=[True])
+    net.trafo.loc[t1[0], 'power_station_unit'] = True
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                   power_station_trafo=t1[0])
 
     t2 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
         pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
-        oltc=False)
+        oltc=False, power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
@@ -144,7 +145,7 @@ def iec_60909_4_small(with_xward=False):
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
         pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
         vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
-        shift_degree=5, vector_group="YNd")
+        shift_degree=5, vector_group="YNd", power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t1)
@@ -197,7 +198,8 @@ def iec_60909_4_small_gen_only():
 
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
         pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
-        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, vector_group="YNd")
+        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, vector_group="YNd",
+                                               power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t1)
@@ -216,13 +218,13 @@ def iec_60909_4_2gen():
     t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
         pfe_kw=0, i0_percent=0,
         vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
-        pt_percent=12, oltc=True)
+        pt_percent=12, oltc=True, power_station_unit=True)
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                   power_station_trafo=t1)
 
     t2 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
-        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False)
+        pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False, power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
@@ -316,6 +318,7 @@ def test_iec_60909_4_3ph_2gen():
 def test_iec_60909_4_3ph_2gen_no_ps_detection():
     net = iec_60909_4_2gen()
     net.gen.power_station_trafo = np.nan
+    net.trafo.power_station_unit = False
     net.gen.at[0, "in_service"] = False
     net.gen = net.gen.query("in_service")
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")

@@ -2174,7 +2174,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1, df=1.):
+                       index=None, max_loading_percent=nan, parallel=1, df=1., xn_ohm=None):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2273,6 +2273,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_entries(net, "trafo", index, **v)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2291,7 +2292,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan,
-                                       pt_percent=nan, oltc=False, **kwargs):
+                                       pt_percent=nan, oltc=False, xn_ohm=None, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2429,6 +2430,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                      default_val=None)
     _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
 
@@ -2441,7 +2443,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         vector_group=None, index=None, max_loading_percent=None,
                                         parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
                                         mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        pt_percent=nan, oltc=False, **kwargs):
+                                        pt_percent=nan, oltc=False, xn_ohm=None, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2560,6 +2562,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
     _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
     _add_series_to_entries(entries, index, "pt_percent", pt_percent)
+    _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
 
     _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
 
