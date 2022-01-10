@@ -2,9 +2,10 @@ import json
 import math
 import os
 import tempfile
+
 from os import remove
 from os.path import isfile
-
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
@@ -463,7 +464,7 @@ def add_params_to_pm(net, pm):
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
-            return pm
+            continue
         elif "user_defined_params" not in pm.keys():
             pm["user_defined_params"] = dict()
         params = [param_col.split("/")[-1] for param_col in param_cols]
@@ -480,8 +481,19 @@ def add_params_to_pm(net, pm):
             else:
                 pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
             df = pd.DataFrame(index=pm_idxs)
-            df["element"] = elm
+            df["element"] = elm if elm not in ["line", "trafo"] else "branch"
             df["element_index"] = pm_idxs
+            df["element_pp_index"] = pd_idxs
             df["value"] = target_values
-            pm["user_defined_params"][param] = df.to_dict("index")
-        return pm
+            pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
+        if elm in ["line", "trafo"]:
+            for k in pm["user_defined_params"]["side"].keys():
+                side = pm["user_defined_params"]["side"][k]["value"]
+                side_bus_f = side + "_bus"
+                side_bus_t = "from_bus" if side == "to" else "to_bus"
+                pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
+                pm["user_defined_params"]["setpoint_q"][k]["f_bus"] = \
+                    net._pd2pm_lookups["bus"][net.line[side_bus_f][pd_idx]]
+                pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
+                    net._pd2pm_lookups["bus"][net.line[side_bus_t][pd_idx]]
+    return pm

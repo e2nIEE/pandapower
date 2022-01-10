@@ -30,6 +30,7 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
     logger.debug("the json file for converted net is stored in: %s" % buffer_file)
+    print("the json file for converted net is stored in: %s" % buffer_file)
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
     # read results and write back to net
@@ -73,11 +74,11 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         logger.info("Successfully added PandaModels")
 
-    if dev_mode:
-        Pkg.develop("PandaModels")
-        Pkg.build()
-        Pkg.resolve()
-        Pkg.activate("PandaModels")
+    # if dev_mode:
+        # Pkg.develop("PandaModels")
+        # Pkg.build()
+        # Pkg.resolve()
+        # Pkg.activate("PandaModels")
 
     try:
         Main.using("PandaModels")
@@ -93,3 +94,26 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     #     Pkg.resolve()
     return result_pm
 
+
+# # just for you delete it later
+# def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
+#     # checks if julia works, otherwise raises an error
+#     try:
+#         import julia
+#         from julia import Main
+#     except ImportError:
+#         raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
+#     try:
+#         j = julia.Julia()
+#     except:
+#         raise UserWarning(
+#             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
+
+#     # import two julia scripts and runs powermodels julia_file
+#     # Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
+#     try:
+#         run_powermodels = Main.include(julia_file)
+#     except ImportError:
+#         raise UserWarning("File %s could not be imported" % julia_file)
+#     result_pm = run_powermodels(buffer_file)
+#     return result_pm
