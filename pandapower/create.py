@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64
+    all as np_all, float64, intersect1d
 from packaging import version
 
 from pandapower import __version__
@@ -282,13 +282,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("cq1_eur_per_mvar", dtype("f8")),
                       ("cq2_eur_per_mvar2", dtype("f8"))
                       ],
+        'characteristic': [
+            ('object', dtype(object))
+        ],
         'controller': [
             ('object', dtype(object)),
             ('in_service', "bool"),
             ('order', "float64"),
             ('level', dtype(object)),
             ('initial_run', "bool"),
-            ("recycle", dtype(object)),
+            ("recycle", dtype(object))
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -2137,7 +2140,9 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1, df=1.):
+                       index=None, max_loading_percent=nan, parallel=1, df=1.,
+                       tap_dependent_impedance=None, vk_percent_characteristic=None,
+                       vkr_percent_characteristic=None):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2184,6 +2189,20 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
+
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2237,6 +2256,13 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
+    if tap_dependent_impedance is not None:
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+    if vk_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")  # Int64Dtype
+    if vkr_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
+
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
 
@@ -2254,7 +2280,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan,
-                                       pt_percent=nan, oltc=False, **kwargs):
+                                       pt_percent=nan, oltc=False, tap_dependent_impedance=None,
+                                       vk_percent_characteristic=None,
+                                       vkr_percent_characteristic=None, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2334,6 +2362,20 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
         **pt_percent** (float, nan) - (short circuit only)
 
         **oltc** (bool, False) - (short circuit only)
@@ -2381,6 +2423,13 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     _set_entries(net, "trafo", index, **v, **kwargs)
 
+    if tap_dependent_impedance is not None:
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+    if vk_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")
+    if vkr_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
+
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
         _create_column_and_set_value(net, index, vk0_percent, "vk0_percent", "trafo")
@@ -2404,7 +2453,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         vector_group=None, index=None, max_loading_percent=None,
                                         parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
                                         mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        pt_percent=nan, oltc=False, **kwargs):
+                                        pt_percent=nan, oltc=False, tap_dependent_impedance=None,
+                                        vk_percent_characteristic=None,
+                                        vkr_percent_characteristic=None, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2485,6 +2536,20 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
         **pt_percent** (float, nan) - (short circuit only)
 
         **oltc** (bool, False) - (short circuit only)
@@ -2515,6 +2580,13 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
                "pt_percent": pt_percent, "oltc": oltc}
 
+    if tap_dependent_impedance is not None:
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+    if vk_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vk_percent_characteristic",  vk_percent_characteristic, "Int64")
+    if vkr_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vkr_percent_characteristic", vkr_percent_characteristic, "Int64")
+
     _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
     _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
     _add_series_to_entries(entries, index, "mag0_percent", mag0_percent)
@@ -2531,7 +2603,10 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
-                         tap_at_star_point=False):
+                         tap_at_star_point=False, tap_dependent_impedance=None,
+                         vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
+                         vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
+                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -2566,6 +2641,32 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
         **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
+
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2630,6 +2731,21 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
+    if tap_dependent_impedance is not None:
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+    if vk_hv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+    if vkr_hv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+    if vk_mv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+    if vkr_mv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+    if vk_lv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+    if vkr_lv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+
     return index
 
 
@@ -2644,7 +2760,10 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          max_loading_percent=nan, tap_at_star_point=False,
                                          vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
                                          vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-                                         vector_group=None):
+                                         vector_group=None, tap_dependent_impedance=None,
+                                         vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
+                                         vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
+                                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None):
     """
     Adds a three-winding transformer in table net["trafo3w"].
     The model currently only supports one tap-changer per 3W Transformer.
@@ -2718,6 +2837,32 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
 
         **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
@@ -2773,6 +2918,21 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
+    if tap_dependent_impedance is not None:
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+    if vk_hv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+    if vkr_hv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+    if vk_mv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+    if vkr_mv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+    if vk_lv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+    if vkr_lv_percent_characteristic is not None:
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+
     return index
 
 
@@ -2787,7 +2947,10 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                                           tap_at_star_point=False,
                                           vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
                                           vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-                                          vector_group=None, **kwargs):
+                                          vector_group=None, tap_dependent_impedance=None,
+                                          vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
+                                          vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
+                                          vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -2866,6 +3029,32 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **tap_dependent_impedance** (boolean) - True if transformer impedance must be adjusted dependent \
+            on the tap position of the trabnsformer. Requires the additional columns \
+            "vk_percent_characteristic" and "vkr_percent_characteristic" that reference the index of the \
+            characteristic from the table net.characteristic. A convenience function \
+            pandapower.control.create_trafo_characteristics can be used to create the SplineCharacteristic \
+            objects, add the relevant columns and set up the references to the characteristics. \
+            The function pandapower.control.trafo_characteristics_diagnostic can be used for sanity checks.
+
+        **vk_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_hv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_mv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vk_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **vkr_lv_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
+            the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
 
         **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
@@ -2924,6 +3113,21 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "vector_group": vector_group}
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+
+    if tap_dependent_impedance is not None:
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+    if vk_hv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic, "Int64")
+    if vkr_hv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vkr_hv_percent_characteristic", vkr_hv_percent_characteristic, "Int64")
+    if vk_mv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vk_mv_percent_characteristic", vk_mv_percent_characteristic, "Int64")
+    if vkr_mv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vkr_mv_percent_characteristic", vkr_mv_percent_characteristic, "Int64")
+    if vk_lv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic, "Int64")
+    if vkr_lv_percent_characteristic is not None:
+        _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic, "Int64")
 
     _set_multiple_entries(net, "trafo3w", index, **entries, **kwargs)
 
@@ -3670,12 +3874,13 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         set_value = True
     if set_value:
         if column not in net[element].columns:
+            # this part is for compatibility with pandas < 1.0, can be removed if pandas >= 1.0 is required in setup.py
             if isinstance(default_val, str) \
                     and version.parse(pd.__version__) < version.parse("1.0"):
                 net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
                                                         dtype=dtyp)
             else:
-                net[element].loc[:, column] = pd.Series(default_val, dtype=dtyp)
+                net[element].loc[:, column] = pd.Series(data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
@@ -3721,7 +3926,8 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
     dtypes = None
     if preserve_dtypes:
-        dtypes = net[table].dtypes
+        # only get dtypes of columns that are set and that are already present in the table
+        dtypes = net[table][intersect1d(net[table].columns, list(entries.keys()))].dtypes
 
     for col, val in entries.items():
         net[table].at[index, col] = val
