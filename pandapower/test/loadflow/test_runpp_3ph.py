@@ -321,7 +321,8 @@ def check_bus_voltages(net, result, trafo_vector_group):
 
     tolerances = {'YNyn': 1e-07,
                   'Dyn': 1e-07,
-                  'Yzn': 1e-03}
+                  'Yzn': 1e-03,
+                  'Yyn': 1e-07}
 
     assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group]):
