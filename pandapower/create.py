@@ -1195,8 +1195,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
     _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
-    _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
-                                 default_val="current_source", default_for_nan=True)
+    _add_series_to_entries(entries, index, "generator_type", generator_type, dtyp="str",
+                                 default_val="current_source")
     if generator_type == "current_source":
         _add_series_to_entries(entries, index, "k", k)
     elif generator_type == "async":

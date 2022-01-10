@@ -367,7 +367,8 @@ def test_trafo_asym():
     for bushv in [10]:
         for tap_ps in [0]:
             for loadtyp in ["delta", "wye", "delta_wye", "bal_wye"]:
-                for vc in ["YNyn", "Dyn", "Yzn"]:  # ,"Yyn"]:
+                # for vc in ["YNyn", "Dyn", "Yzn"]:  # ,"Yyn"]:
+                for vc in ["YNyn", "Dyn", "Yzn", "Yyn"]:
                     net = pp.create_empty_network(sn_mva=100)
                     make_nw(net, bushv, tap_ps, loadtyp, vc)
                     runpp_3ph_with_consistency_checks(net)

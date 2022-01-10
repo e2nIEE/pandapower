@@ -92,7 +92,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
     if k_st is None:
-        k_st = np.ones(len(trafo_df))
+        k_st = np.ones(len(ppc['branch']))
     if "xn_ohm" not in trafo_df.columns:
         trafo_df["xn_ohm"] = 0.
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
@@ -222,7 +222,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
             z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva)
 
-        y0_k = 1 / (z0_k * k_st_tr + 3j * z_n)  # adding admittance for "pi" model
+            z0_k = z0_k * k_st_tr + 3j * z_n
+
+        y0_k = 1 / z0_k  # adding admittance for "pi" model
+        # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n)  # adding admittance for "pi" model
 
         # =============================================================================
         #       Transformer magnetising impedance for zero sequence
