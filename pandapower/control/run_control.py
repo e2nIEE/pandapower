@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -178,8 +178,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
     errors = ctrl_variables['errors']
     try:
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
-    except errors:
-
+    except errors as err:
+        net._ppc = None
         if ctrl_variables['continue_on_divergence']:
             # give a chance to controllers to "repair" the control step if load flow
             # didn't converge
@@ -192,6 +192,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 run_funct(net, **kwargs)
             except errors:
                 pass
+        else:
+            raise err
     ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
     return ctrl_variables
 

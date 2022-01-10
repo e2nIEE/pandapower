@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -1690,6 +1690,8 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
                 adapt_element_idx_references(net1, element, "trafo")
             if element in ["poly_cost", "pwl_cost"]:
+                net1[element]["element"] = [net1[row.et].index.get_loc(row.element) for row in net1[
+                    element].itertuples()]
                 for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
                     adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":
