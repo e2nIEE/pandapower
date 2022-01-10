@@ -30,7 +30,6 @@ import copy
 from collections.abc import MutableMapping
 
 import numpy as np
-import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
 import six
@@ -935,7 +934,7 @@ def _replace_nans_with_default_limits(net, ppc):
     for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
                                     ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
         limits = ppc[matrix][:, [column]]
-        ncn.copyto(limits, default, where=np.isnan(limits))
+        np.copyto(limits, default, where=np.isnan(limits))
         ppc[matrix][:, [column]] = limits
 
 
