@@ -324,9 +324,7 @@ def check_bus_voltages(net, result, trafo_vector_group):
                   'Yzn': 1e-03,
                   'Yyn': 1e-07}
 
-    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group])
-    if not np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_vm_pu, result)
+    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group], rtol=0), f"Incorrect results for {trafo_vector_group}"
 
 
 def check_line_currents(net, result, trafo_vector_group):
