@@ -161,7 +161,7 @@ def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
         for i in range(len(switch_changes)):
             pp.create_switch(net, bus=switch_changes[i][1], element=switch_changes[i][2],
                              et=switch_changes[i][0])
-    pp.runpp(net, max_iteration=30)
+    pp.runpp(net, init='dc', max_iteration=30)
     #  --- get net_eq
     net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
                                                 return_internal=return_internal,
