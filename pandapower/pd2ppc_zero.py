@@ -14,13 +14,15 @@ from pandapower.build_gen import _build_gen_ppc
 #from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE
+from pandapower.shortcircuit.idx_brch import branch_cols_sc
+from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe,\
      get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
+from pandapower.pd2ppc import _ppc2ppci, _init_ppc
+
 
 def _pd2ppc_zero(net, k_st, sequence=0):
-    from pandapower.pd2ppc import _ppc2ppci, _init_ppc
-
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.
@@ -73,7 +75,6 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     mode = net._options["mode"]
     ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
     if mode == "sc":
-        from pandapower.shortcircuit.idx_brch import branch_cols_sc
         branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc ))
@@ -213,7 +214,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # print(z0_k * (110**2))
 
         if mode == "sc":# or trafo_model == "pi":
-            from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax)
             z0_k *= kt
@@ -372,7 +372,6 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]
 
     if mode == "sc":
-        from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
         case = net._options["case"]
     else:
         case = "max"
