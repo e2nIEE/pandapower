@@ -2283,7 +2283,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     }
     ti = load_std_type(net, std_type, "trafo")
 
-    v.update({
+    updates = {
         "sn_mva": ti["sn_mva"],
         "vn_hv_kv": ti["vn_hv_kv"],
         "vn_lv_kv": ti["vn_lv_kv"],
@@ -2297,7 +2297,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "tap_phase_shifter": ti["tap_phase_shifter"] if "tap_phase_shifter" in ti
                                                         and pd.notnull(
             ti["tap_phase_shifter"]) else False
-    })
+    }
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+        if zero_param in ti:
+            updates[zero_param] = ti[zero_param]
+    v.update(updates)
     for tp in ("tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent",
                "tap_step_degree"):
         if tp in ti:
