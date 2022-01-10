@@ -56,6 +56,7 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     xward_parameter["x_ohm"] = -1 / xward_parameter.shunt.values.imag * \
                                np.square(net_external.bus.vn_kv[xward_parameter.bus_pd.values].values) / \
                                net_external.sn_mva / 2
+    xward_parameter["x_ohm"][np.isneginf(xward_parameter["x_ohm"])] = 1e-6
     xward_parameter["vm_pu"] = net_external.res_bus.vm_pu[xward_parameter.bus_pd.values].values
 
     return xward_parameter, impedance_parameter

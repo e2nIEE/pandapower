@@ -227,7 +227,7 @@ def test_nets_ib_by_bus_zone_with_boundary_branches():
 
     # --- check eq_type
     for separate_eqs in [False, True]:
-        eq_types = ["load", "rei", "ward"]  # , "xward"]  # TODO
+        eq_types = ["load", "rei", "ward" , "xward"]
         if separate_eqs:
             eq_types = eq_types[:1]
         for eq_type in eq_types:
