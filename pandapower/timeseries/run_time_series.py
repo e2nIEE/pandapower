@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 from collections.abc import Iterable
@@ -281,10 +281,10 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     return ts_variables
 
 
-def cleanup(ts_variables):
+def cleanup(net, ts_variables):
     if isinstance(ts_variables["recycle_options"], dict):
         # Todo: delete internal variables and dumped results which are not needed
-        pass
+        net._ppc = None  # remove _ppc because if recycle == True and a new timeseries calculation is started with a different setup (in_service of lines or trafos, open switches etc.) it can lead to a disaster
 
 
 def print_progress(i, time_step, time_steps, verbose, **kwargs):
@@ -346,4 +346,4 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated
-    cleanup(ts_variables)
+    cleanup(net, ts_variables)
