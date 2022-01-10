@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -34,7 +34,7 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
-        raise NotImplementedError
+            raise NotImplementedError
         pp.create_pwl_cost(net, gen_lookup.element.at[idx],
                            gen_lookup.element_type.at[idx],
                            ppc['gencost'][idx, 4:], type)
@@ -269,9 +269,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 vn_lv_kv=vn_lv_kv, vk_percent=sign(xk) * zk * sn * 100 / baseMVA,
                 vkr_percent=rk * sn * 100 / baseMVA, max_loading_percent=100,
                 pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
-                tap_step_percent=abs(ratio_1) if ratio_1 else nan,
-                tap_pos=sign(ratio_1) if ratio_1 else nan,
-                tap_side=tap_side if ratio_1 else None, tap_neutral=0 if ratio_1 else nan)
+                tap_step_percent=abs(ratio_1), tap_pos=sign(ratio_1),
+                tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
     # --- gencost -> create polynomial_cost, piecewise_cost

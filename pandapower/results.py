@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -108,7 +108,7 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame()
+        net[res_element] = pd.DataFrame(index=pd.Int64Index([]))
 
 
 def init_element(net, element, suffix=None):

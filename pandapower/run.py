@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -217,7 +217,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         run_control(**parameters)
     else:
         passed_parameters = _passed_runpp_parameters(locals())
-        _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+        _init_runpp_options(net, algorithm=algorithm,
+                            calculate_voltage_angles=calculate_voltage_angles,
                             init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
                             trafo_model=trafo_model, trafo_loading=trafo_loading,
                             enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
 
@@ -272,7 +272,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     # remove out of service buses
     if not include_out_of_service:
         for b in net.bus.index[~net.bus.in_service.values]:
-            mg.remove_node(b)
+            if b in mg:
+                mg.remove_node(b)
 
     return mg
 

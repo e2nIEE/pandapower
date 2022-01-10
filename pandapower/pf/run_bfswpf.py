@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 
-from time import time  # alternatively use import timeit.default_timer as time
+from time import perf_counter  # alternatively use import timeit.default_timer as time
 
 import numpy as np
 import scipy as sp
@@ -376,7 +376,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     :param options: pf options
     :return: results (pypower style), success (flag about PF convergence)
     """
-    time_start = time()  # starting pf calculation timing
+    time_start = perf_counter()  # starting pf calculation timing
 
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
@@ -449,7 +449,7 @@ def _run_bfswpf(ppci, options, **kwargs):
             V_final[buses_shifted_from_root] *= np.exp(1j * np.pi / 180 * shift_degree)
 
     # #----- output results to ppc ------
-    ppci["et"] = time() - time_start  # pf time end
+    ppci["et"] = perf_counter() - time_start  # pf time end
 
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)

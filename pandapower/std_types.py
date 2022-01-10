@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -160,6 +160,9 @@ def load_std_type(net, name, element="line"):
         return library[name]
     else:
         raise UserWarning("Unknown standard %s type %s" % (element, name))
+
+def check_entry_in_std_type(param, entry, else_val):
+    return param[entry] if entry in param else else_val
 
 
 def std_type_exists(net, name, element="line"):

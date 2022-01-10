@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from pandapower.auxiliary import get_free_id, _preserve_dtypes
+
+from pandapower.auxiliary import get_free_id
 from pandapower.control.util.auxiliary import \
-        drop_same_type_existing_controllers, log_same_type_existing_controllers
+    drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
 
 try:
@@ -26,15 +27,16 @@ class Controller(JSONSerializableClass):
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
                  matching_params=None, **kwargs):
         super().__init__()
-        # add oneself to net, creating the ['controller'] DataFrame, if necessary
-        if index is None:
-            index = get_free_id(net.controller)
         self.matching_params = dict() if matching_params is None else matching_params
-        self.index = index
-        self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run, order=order,
-                                   level=level, index=index, recycle=recycle,
-                                   drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                   overwrite=overwrite, matching_params=matching_params, **kwargs)
+        # add oneself to net, creating the ['controller'] DataFrame, if necessary
+        # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
+        # it is still needed in JSONSerializableClass because it is used for characteristics
+        if index is None and "controller" in net.keys():
+            index = get_free_id(net.controller)
+        self.index = self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run,
+                                                order=order, level=level, index=index, recycle=recycle,
+                                                drop_same_existing_ctrl=drop_same_existing_ctrl,
+                                                overwrite=overwrite, matching_params=matching_params, **kwargs)
 
     def __repr__(self):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
@@ -65,7 +67,6 @@ class Controller(JSONSerializableClass):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-
     def add_controller_to_net(self, net, in_service, initial_run, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
         """
@@ -78,7 +79,9 @@ class Controller(JSONSerializableClass):
 
             **index** (int) - index
 
-            **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values. This is mostly needed for time series calculations
+            **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used \
+                                 with prestored values. This is mostly needed for time series \
+                                 calculations
 
         """
         if drop_same_existing_ctrl:
@@ -86,17 +89,13 @@ class Controller(JSONSerializableClass):
         else:
             log_same_type_existing_controllers(net, type(self), index=index, **kwargs)
 
-        dtypes = net.controller.dtypes
-
         # use base class method to raise an error if the object is in DF and overwrite = False
-        super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite)
-
-        columns = ['object', 'in_service', 'initial_run', 'recycle']
-        net.controller.loc[index,columns] = (self, in_service, initial_run, recycle)
-        net.controller['order'][index] = order
-        net.controller['level'][index] = level
-
-        _preserve_dtypes(net.controller, dtypes)
+        # if the index is None, the base class is in charge of obtaining the next free index in the data frame
+        fill_dict = {"in_service": in_service, "initial_run": initial_run, "recycle": recycle,
+                     "order": order, "level": level}
+        added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
+                           fill_dict=fill_dict, preserve_dtypes=True)
+        return added_index
 
     def time_step(self, net, time):
         """

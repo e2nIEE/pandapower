@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -36,7 +36,7 @@ def test_julia_connection():
        
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.dependency(depends=['test_julia_connection'])
+# @pytest.mark.dependency(depends=['test_julia_connection'])
 def test_pandamodels_installation():
     
     from julia import Main
@@ -66,7 +66,7 @@ def test_pandamodels_installation():
         
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.dependency(depends=['test_julia_connection'])
+# @pytest.mark.dependency(depends=['test_julia_connection'])
 def test_pandamodels_dev_mode(): 
     
     from julia import Main
@@ -99,22 +99,10 @@ def test_pandamodels_dev_mode():
       
     # activate julia base mode
     Pkg.activate()
-    # remove dev mod
-    Pkg.rm("PandaModels")
+    Pkg.free("PandaModels")
     Pkg.resolve()
-    # reinstall base mode
-    Pkg.Registry.update()
-    Pkg.add("PandaModels")  
-    Pkg.build()
-    Pkg.resolve()
-    print("PandaModels is added to julia packages")
-    
+
 if __name__ == '__main__':
-    
     pytest.main([__file__])
-    # test_julia_installation()
-    # test_julia_connection()
-    # test_pandamodels_installation()
-    # test_pandamodels_dev_mode()
-    
+
     

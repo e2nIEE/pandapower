@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -749,8 +749,8 @@ def test_cosphi_from_pq():
     assert pd.Series(cosphi[[5, 6, 7]]).isnull().all()
     assert np.allclose(s, (p ** 2 + q ** 2) ** 0.5)
     assert all(pmode == np.array(["load"] * 5 + ["undef"] * 3 + ["gen"] * 3))
-    ind_cap_ohm = ["underexcited", "overexcited", "ohm"]
-    assert all(qmode == np.array(ind_cap_ohm + ["underexcited", "overexcited"] + ind_cap_ohm * 2))
+    ind_cap_ind = ["underexcited", "overexcited", "underexcited"]
+    assert all(qmode == np.array(ind_cap_ind + ["underexcited", "overexcited"] + ind_cap_ind * 2))
 
 
 def test_create_replacement_switch_for_branch():
@@ -1162,6 +1162,7 @@ def test_replace_pq_elmtype():
     check_elm_shape(net, {"storage": 0, "sgen": 0})
     net.sgen = net_orig.sgen
     net.storage = net_orig.storage
+    net.poly_cost.element = net.poly_cost.element.astype(net_orig.poly_cost.dtypes["element"])
     assert pp.nets_equal(net_orig, net)
 
 
