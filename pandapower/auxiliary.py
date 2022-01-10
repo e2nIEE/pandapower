@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,7 +30,6 @@ import copy
 from collections.abc import MutableMapping
 
 import numpy as np
-import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
 import six
@@ -268,6 +267,10 @@ class pandapowerNet(ADict):
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.iteritems()):
         if df.dtypes.at[item] != dtype:
+            if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
+                raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
+                                  f"NaN are casted to True by default, which can lead to errors. "
+                                  f"Replace NaN values with True or False first.")
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
@@ -931,7 +934,7 @@ def _replace_nans_with_default_limits(net, ppc):
     for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
                                     ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
         limits = ppc[matrix][:, [column]]
-        ncn.copyto(limits, default, where=np.isnan(limits))
+        np.copyto(limits, default, where=np.isnan(limits))
         ppc[matrix][:, [column]] = limits
 
 

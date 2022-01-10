@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
+import pandapower.control
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
     example_simple, simple_four_bus_system, example_multivoltage
@@ -22,7 +23,7 @@ from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
 
 
@@ -1234,6 +1235,63 @@ def test_results_for_line_temperature():
 
     assert np.allclose(net.res_bus.vm_pu, vm_res_80, rtol=0, atol=1e-6)
     assert np.allclose(net.res_bus.va_degree, va_res_80, rtol=0, atol=1e-6)
+
+
+def test_tap_dependent_impedance():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+
+    b4 = pp.create_bus(net, vn_kv=0.9)
+    b5 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b4, lv_bus=b5,
+                                            vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
+                                            sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
+                                            vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
+                                            tap_pos=0, tap_step_percent=1., tap_min=-2, tap_max=2)
+
+    net_backup = net.deepcopy()
+
+    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.5, 5.8, 6, 6.2, 6.5]])
+    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vkr_percent", [[-2, -1, 0, 1, 2]], [[1.4, 1.42, 1.44, 1.46, 1.48]])
+    pp.control.create_trafo_characteristics(net, 'trafo', [1], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.4, 5.7, 6, 6.1, 6.4]])
+
+    # test alternative way to set up tap dependence impedance characteristic
+    pp.control.SplineCharacteristic(net, [-2, -1, 0, 1, 2], [0.95, 0.98, 1, 1.02, 1.05])
+    net.trafo3w['tap_dependent_impedance'] = True
+    net.trafo3w['vk_hv_percent_characteristic'] = 3
+
+    pp.runpp(net)
+    pp.runpp(net_backup)
+    assert_res_equal(net, net_backup)
+
+    net.trafo.tap_pos.at[0] = 2
+    net_backup.trafo.tap_pos.at[0] = 2
+    net_backup.trafo.vk_percent.at[0] = 6.5
+    net_backup.trafo.vkr_percent.at[0] = 1.48
+
+    pp.runpp(net)
+    pp.runpp(net_backup)
+    assert_res_equal(net, net_backup)
+
+    net.trafo.tap_pos.at[1] = -2
+    net_backup.trafo.tap_pos.at[1] = -2
+    net_backup.trafo.vk_percent.at[1] = 5.4
+
+    pp.runpp(net)
+    pp.runpp(net_backup)
+    assert_res_equal(net, net_backup)
+
+    net.trafo3w.tap_pos.at[0] = 2
+    net_backup.trafo3w.tap_pos.at[0] = 2
+    net_backup.trafo3w.vk_hv_percent.at[0] = 1.05
+
+    pp.runpp(net)
+    pp.runpp(net_backup)
+    assert_res_equal(net, net_backup)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")

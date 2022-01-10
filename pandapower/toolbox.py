@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -9,11 +9,10 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 
+import networkx as nx
 import numpy as np
 import pandas as pd
-import pandas.testing as pdt
 from packaging import version
-
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -21,7 +20,11 @@ from pandapower.create import create_switch, create_line_from_parameters, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
-import networkx as nx
+
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 
 try:
     from networkx.utils.misc import graphs_equal
@@ -1687,6 +1690,8 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
                 adapt_element_idx_references(net1, element, "trafo")
             if element in ["poly_cost", "pwl_cost"]:
+                net1[element]["element"] = [net1[row.et].index.get_loc(row.element) for row in net1[
+                    element].itertuples()]
                 for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
                     adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -19,7 +19,8 @@ def test_continuous_p():
 
     c = control.ContinuousTapControl(net, t, 1., tol=eps)
 
-    tc = control.USetTapControl(net, 0, characteristic=Characteristic([10, 20], [0.95, 1.05]), tol=eps)
+    characteristic = Characteristic(net, [10, 20], [0.95, 1.05])
+    tc = control.USetTapControl(net, 0, characteristic.index, tol=eps)
 
     # create 20kW load
     lid = pp.create_load(net, lv, 20)
@@ -71,7 +72,8 @@ def test_continuous_i():
     c = control.ContinuousTapControl(net, t, 1., tol=eps)
 
     # a different characteristic for i_lv_ka rather than for p_lv_mw
-    tc = control.USetTapControl(net, 0, variable='i_lv_ka', characteristic=Characteristic([0.315, 0.55], [0.95, 1.05]), tol=eps)
+    characteristic = Characteristic(net, [0.315, 0.55], [0.95, 1.05])
+    tc = control.USetTapControl(net, 0, characteristic.index, variable='i_lv_ka', tol=eps)
 
     # create 20kW load
     lid = pp.create_load(net, lv, 20)

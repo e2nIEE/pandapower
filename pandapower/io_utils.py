@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -22,8 +22,13 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
-from pandas.testing import assert_series_equal, assert_frame_equal
 
+try:
+    from pandas.testing import assert_series_equal, assert_frame_equal
+except ImportError:
+    from pandas.util.testing import assert_series_equal, assert_frame_equal
+
+from pandapower.auxiliary import pandapowerNet, get_free_id
 try:
     from cryptography.fernet import Fernet
     cryptography_INSTALLED = True
@@ -318,7 +323,9 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
 
 
 def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
+    # this function shall make sure that for the given classes, no default string functions are
+    # used, but the registered ones (to_serializable registry)
+    if isinstance(obj, (pandapowerNet, tuple, numpy.floating)):
         return False
     return isinstance(obj, cls)
 
@@ -632,10 +639,12 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False,
+    def add_to_net(self, net, element, index=None, column="object", overwrite=False,
                    preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
+        if index is None:
+            index = get_free_id(net[element])
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
@@ -654,6 +663,8 @@ class JSONSerializableClass(object):
 
         if preserve_dtypes:
             _preserve_dtypes(net[element], dtypes)
+
+        return index
 
     def equals(self, other):
 
@@ -802,13 +813,28 @@ def json_array(obj):
 @to_serializable.register(numpy.integer)
 def json_npint(obj):
     logger.debug("integer")
-    return int(obj)
+    d = with_signature(obj, int(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numpy.floating)
 def json_npfloat(obj):
     logger.debug("floating")
-    return float(obj)
+    if numpy.isnan(obj):
+        d = with_signature(obj, str(obj), obj_module="numpy")
+    else:
+        d = with_signature(obj, float(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
+
+
+@to_serializable.register(numpy.bool_)
+def json_npbool(obj):
+    logger.debug("boolean")
+    d = with_signature(obj, "true" if obj else "false", obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numbers.Number)
