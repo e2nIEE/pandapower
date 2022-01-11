@@ -93,7 +93,7 @@ def create_passive_external_net_for_ward_addmittance(net, all_external_buses,
     for elm in ["sgen", "gen", "load", "storage"]:
         target_idx = net[elm].index[net[elm].bus.isin(all_external_buses)]
         net[elm].drop(target_idx, inplace=True)
-    pp.runpp(net, calculate_voltage_angles=calc_volt_angles)
+    pp.runpp(net, calculate_voltage_angles=calc_volt_angles, init="dc", max_iteration=100)
 
 
 def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no_power,
@@ -147,7 +147,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles)
+    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles, init="dc", max_iteration=100)
 
     eq_power.p_mw -= \
         pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
@@ -222,7 +222,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles, max_iteration=50)
+    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles, init="dc", max_iteration=100)
 
     eq_power.p_mw -= \
         pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
@@ -292,7 +292,7 @@ def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True):
                                    va_degree=net.res_bus.va_degree[bus],
                                    name="assist_ext_grid")
 
-    pp.runpp(net, calculate_voltage_angles=calc_volt_angles)
+    pp.runpp(net, calculate_voltage_angles=calc_volt_angles, init="dc", max_iteration=100)
     for i in power_eq.index:
         power_eq.power_eq[i] = net.res_ext_grid.p_mw[net.ext_grid.bus == power_eq.bus[i]].values + \
                                1j * net.res_ext_grid.q_mvar[net.ext_grid.bus == power_eq.bus[i]].values
