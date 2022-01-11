@@ -458,11 +458,11 @@ def check_network(net):
         #                   "Currently, the get_equivalent function can not reduce "
         #                   "a network with non-zero shift_degree accurately.")
 
-    # --- condition 2:
-    if not np.isclose(net.sn_mva, 1.):
-        raise ValueError("the net.sn_mva is not 1.0. Currently, "
-                         "the get_equivalent function might not reduce "
-                         "a network with non-one net.sn_mva accurately.")
+    # # --- condition 2:
+    # if not np.isclose(net.sn_mva, 1.):
+    #     raise ValueError("the net.sn_mva is not 1.0. Currently, "
+    #                      "the get_equivalent function might not reduce "
+    #                      "a network with non-one net.sn_mva accurately.")
 
 
 def get_boundary_vp(net_eq, bus_lookups):

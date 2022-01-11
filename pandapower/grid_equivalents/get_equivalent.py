@@ -42,20 +42,7 @@ def try_runpp(net, calc_volt_angles=True, v_boundary=None, p_boundary=None):
         # pp.runpp(net, calculate_voltage_angles=calc_volt_angles,
         #           tolerance_mva=1e-6, max_iteration=100)
     except pp.LoadflowNotConverged:
-        try:
-            pp.runpp(net, init="results",
-                     tolerance_mva=1e-6,
-                     max_iteration=100)
-        except pp.LoadflowNotConverged:
-            try:
-                pp.runpp(net, init="dc",
-                         tolerance_mva=1e-6,
-                         max_iteration=100)
-            except pp.LoadflowNotConverged:
-                from RPC2 import runampl
-                net, results = runampl(net, mode="ac_pf", init="flat")
-                assert results["converged"]
-    return net
+        pp.runpp(net, init="dc", tolerance_mva=1e-6, max_iteration=100)
 
 
 def get_equivalent(net, eq_type, boundary_buses, internal_buses,
@@ -281,7 +268,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             net_eq, net_internal, eq_type, show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
         # run final power flow and phase adaptaion
-        net_eq = try_runpp(net_eq, calculate_voltage_angles, v_boundary, p_boundary)
+        try_runpp(net_eq, calculate_voltage_angles, v_boundary, p_boundary)
     else:
         drop_assist_elms_by_creating_ext_net(net_eq)
         logger.debug("Only the equivalent net is returned.")
