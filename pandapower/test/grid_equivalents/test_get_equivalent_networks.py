@@ -67,10 +67,10 @@ def test_networks():
         net = pn.case30()
         net.sn_mva = 1.
         pp.runpp(net)
-        max_error, related_values = get_max_error(
-            net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
-            buses_out_of_service=[9])
-        assert max_error < epsilon
+        # max_error, related_values = get_max_error(
+        #     net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
+        #     buses_out_of_service=[9])
+        # assert max_error < epsilon
 
         max_error, related_values = get_max_error(
             net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True)
