@@ -556,9 +556,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
 
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
-        **coords** (array, default None, shape= (,2L)) - busbar coordinates to plot the bus with \
-            multiple points. coords is typically a list of tuples (start and endpoint of the \
-            busbar) [(x1, y1), (x2, y2)]
+        **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
+        the bus with multiple points. coords is typically a list of tuples (start and endpoint of
+        the busbar) - Example: [(x1, y1), (x2, y2)]
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -579,7 +579,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
     if coords is not None:
-        net["bus_geodata"].loc[index, "coords"] = coords
+        net["bus_geodata"].at[index, "coords"] = coords
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
@@ -608,7 +608,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
+        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses, default None) -
+        coordinates used for plotting
 
         **type** (string, default "b") - Type of the bus. "n" - auxilary node,
         "b" - busbar, "m" - muff
@@ -620,6 +621,12 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
 
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
+
+        **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
+        coordinates to plot the bus with multiple points. coords is typically a list of tuples
+        (start and endpoint of the busbar) - Example for 3 buses:
+        [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
