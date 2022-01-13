@@ -3641,7 +3641,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
     if side is None and element_type in ("line", "trafo"):
-        raise UserWarning("The element type {} requires a value in 'element'".format(element_type))
+        raise UserWarning("The element type '{element_type}' requires a value in 'side'")
 
     if meas_type in ("v", "va"):
         element_type = "bus"
