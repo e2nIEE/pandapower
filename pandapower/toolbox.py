@@ -1663,7 +1663,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
     continuous indizes in order to avoid duplicates.
     """
     net = copy.deepcopy(net1)
-    net1 = copy.deepcopy(net1)
+    # net1 = copy.deepcopy(net1)  # commented to save time. net1 will not be changed (only by runpp)
     net2 = copy.deepcopy(net2)
     if create_continuous_bus_indices:
         create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
@@ -1690,33 +1690,40 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
                 adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
-                adapt_element_idx_references(net1, element, "line")
+                adapt_element_idx_references(net, element, "line")
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
-                adapt_element_idx_references(net1, element, "trafo")
+                adapt_element_idx_references(net, element, "trafo")
             if element in ["poly_cost", "pwl_cost"]:
-                net1[element]["element"] = [net1[row.et].index.get_loc(row.element) for row in net1[
-                    element].itertuples()]
+                net[element]["element"] = [np.nan if row.element not in net1[row.et].index.values \
+                                            else net1[row.et].index.get_loc(row.element) for row in
+                                            net1[element].itertuples()]
+                if net[element]["element"].isnull().any():
+                    # this case could also be checked using get_false_links()
+                    logger.warning(f"Some net1[{element}] does not link to an existing element."
+                                   "These are dropped.")
+                    net[element].drop(net[element].index[net[element].element.isnull()],
+                                       inplace=True)
+                    net[element]["element"] = net[element]["element"].astype(int)
                 for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
                     adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":
                 ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
-                net1.line_geodata.set_index(np.array(ni), inplace=True)
+                net.line_geodata.set_index(np.array(ni), inplace=True)
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
-            dtypes = net1[element].dtypes
+            dtypes = net[element].dtypes
             try:
-                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
+                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
                                          sort=False)
             except:
                 # pandas legacy < 0.21
-                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
     # update standard types of net by data of net2
     for type_ in net.std_types.keys():
-        # net2.std_types[type_].update(net1.std_types[type_])  # if net1.std_types have priority
-        net.std_types[type_].update(net2.std_types[type_])
+        net.std_types[type_].update(net2.std_types[type_])  # net2.std_types have priority
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
@@ -3154,3 +3161,58 @@ def get_gc_objects_dict():
         _type = type(obj)
         nums_by_types[_type] = nums_by_types.get(_type, 0) + 1
     return nums_by_types
+
+
+def false_elm_links(net, elm, col, target_elm):
+    """
+    Returns which indices have links to elements of other element tables which does not exist in the
+    net.
+
+    EXAMPLE 1:
+        elm = "line"
+        col = "to_bus"
+        target_elm = "bus"
+
+    EXAMPLE 2:
+        elm = "poly_cost"
+        col = "element"
+        target_elm = net["poly_cost"]["et"]
+    """
+    if isinstance(target_elm, str):
+        return net[elm][col].index[~net[elm][col].isin(net[target_elm].index)]
+    else:  # target_elm is an iterable, e.g. a Series such as net["poly_cost"]["et"]
+        df = pd.DataFrame({"element": net[elm][col].values, "et": target_elm,
+                           "indices": net[elm][col].index.values})
+        df = df.set_index("et")
+        false_links = pd.Index([])
+        for et in df.index:
+            false_links = false_links.union(pd.Index(df.loc[et].indices.loc[
+                ~df.loc[et].element.isin(net[et].index)]))
+        return false_links
+
+
+def false_elm_links_loop(net, elms=None):
+    """
+    Returns a dict of elements which indices have links to elements of other element tables which
+    does not exist in the net.
+    This function is an outer loop for get_false_links() applications.
+    """
+    false_links = dict()
+    elms = elms if elms is not None else pp_elements(bus=False, cost_tables=True)
+    bebd = branch_element_bus_dict(include_switch=True)
+    for elm in elms:
+        if net[elm].shape[0]:
+            fl = pd.Index([])
+            # --- define col and target_elm
+            if elm in bebd.keys():
+                for col in bebd[elm]:
+                    fl = fl.union(false_elm_links(net, elm, col, "bus"))
+            elif elm in {"poly_cost", "pwl_cost"}:
+                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["et"]))
+            elif elm == "measurement":
+                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["element_type"]))
+            else:
+                fl = fl.union(false_elm_links(net, elm, "bus", "bus"))
+            if len(fl):
+                false_links[elm] = fl
+    return false_links

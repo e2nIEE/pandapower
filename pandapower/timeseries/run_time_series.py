@@ -83,6 +83,11 @@ def control_time_step(controller_order, time_step):
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
 
+def finalize_step(controller_order, time_step):
+    for levelorder in controller_order:
+        for ctrl, net in levelorder:
+            ctrl.finalize_step(net, time_step)
+
 
 def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
     output_writer = net["output_writer"].iat[0, 0]
@@ -118,7 +123,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
 
     try:
         # calls controller init, control steps and run function (runpp usually is called in here)
-        run_control_fct(net, run_control=False, ctrl_variables=ts_variables, **kwargs)
+        run_control_fct(net, ctrl_variables=ts_variables, **kwargs)
     except ControllerNotConverged:
         ctrl_converged = False
         # If controller did not converge do some stuff
@@ -129,6 +134,8 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
         pf_not_converged(time_step, ts_variables)
 
     output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables)
+
+    finalize_step(ts_variables['controller_order'], time_step)
 
 
 def _check_controller_recyclability(net):
@@ -260,9 +267,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control
-    ts_variables = prepare_run_ctrl(net, None, **kwargs)
-    # run function to be called in run_control - default is pp.runpp, but can be runopf or whatever you like
-    ts_variables["run"] = run
+    ts_variables = prepare_run_ctrl(net, None, run=run, **kwargs)
     # recycle options, which define what can be recycled
     ts_variables["recycle_options"] = recycle_options
     # time steps to be calculated (list or range)
@@ -271,8 +276,6 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["continue_on_divergence"] = continue_on_divergence
     # print settings
     ts_variables["verbose"] = verbose
-    # errors to be considered as exception
-    ts_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     if logger.level != 10 and verbose:
         # simple progress bar
