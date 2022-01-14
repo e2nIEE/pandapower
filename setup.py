@@ -26,7 +26,7 @@ classifiers = [
 
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
-    versions = set(re.findall('3.[0-9]', lines))
+    versions = set(re.findall('3.[0-10]', lines))
     for version in versions:
         classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
 
@@ -44,8 +44,8 @@ setup(
     license='BSD',
     install_requires=["pandas>=0.17",
                       "networkx>=2.5",
-                      "scipy<=1.6.0",
-                      "numpy>=0.11",
+                      "scipy",
+                      "numpy",
                       "packaging"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
