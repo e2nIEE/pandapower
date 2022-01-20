@@ -26,11 +26,9 @@ except ImportError:
     pass
 
 try:
-    from lightsim2grid.newtonpf import newtonpf as newton_ls
-    lightsim2grid_available = True
+    from lightsim2grid.newtonpf import newtonpf_new as newton_ls
 except ImportError:
     newton_ls = None
-    lightsim2grid_available = False
 
 
 def _run_newton_raphson_pf(ppci, options):
@@ -151,8 +149,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    if lightsim2grid_available:
-        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, Sbus, V0, pv, pq, ppci, options)
+    if options["lightsim2grid"]:
+        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
     else:
         V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
 
