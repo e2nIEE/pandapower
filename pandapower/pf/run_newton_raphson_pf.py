@@ -27,9 +27,9 @@ except ImportError:
 
 try:
     from lightsim2grid.newtonpf import newtonpf as newton_ls
-
     lightsim2grid_available = True
 except ImportError:
+    newton_ls = None
     lightsim2grid_available = False
 
 
