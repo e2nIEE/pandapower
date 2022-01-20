@@ -46,6 +46,7 @@ except ImportError:
     from .pf.no_numba import jit
 
 try:
+    import lightsim2grid.newtonpf_new as newtonpf_ls
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
