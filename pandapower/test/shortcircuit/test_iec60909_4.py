@@ -114,7 +114,7 @@ def iec_60909_4():
                                             vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
                                             vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
                                             vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="Yyd")
+                                            vector_group="YNynd")
     pp.create_transformer3w_from_parameters(net,
                                             hv_bus=b5, mv_bus=b6, lv_bus=T_T6,
                                             vn_hv_kv=115., vn_mv_kv=10.5, vn_lv_kv=10.5,
@@ -126,7 +126,7 @@ def iec_60909_4():
                                             vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
                                             vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
                                             vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="Yynd")
+                                            vector_group="YNynd")  # reactor is 100 Ohm
 
     pp.create_motor(net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88,
                     efficiency_n_percent=97.5,
