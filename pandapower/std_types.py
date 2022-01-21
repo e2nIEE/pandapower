@@ -344,11 +344,15 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "x0_ohm_per_km")
     parameter_from_std_type(net, "endtemp_degree")
 
-    # add zero seq. parameters for ext_grid
-    net.ext_grid['s_sc_max_mva'] = None
-    net.ext_grid['rx_max'] = None
-    net.ext_grid['x0x_max'] = None
-    net.ext_grid['r0x0_max'] = None
+    # add zero seq. parameters for ext_grid and apply standard values
+    if 's_sc_max_mva' not in net.ext_grid.columns:
+        net.ext_grid['s_sc_max_mva'] = 1000
+    if 'rx_max' not in net.ext_grid.columns:
+        net.ext_grid['rx_max'] = 0.1
+    if 'x0x_max' not in net.ext_grid.columns:
+        net.ext_grid['x0x_max'] = 1
+    if 'r0x0_max' not in net.ext_grid.columns:
+        net.ext_grid['r0x0_max'] = 0.1
 
 
 def add_temperature_coefficient(net, fill=None):
