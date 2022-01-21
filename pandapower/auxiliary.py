@@ -752,6 +752,8 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_dependend_loa
                         "Falling back to pandapower implementation.")
         return False
     if algorithm != 'nr':  # todo implement lightsim2grid dc power flow and gauss-seidel power flow
+        if lightsim2grid == "auto":
+            return False
         raise NotImplementedError(f"option 'lightsim2grid' is True but the algorithm {algorithm} not implemented.")
     if voltage_dependend_loads:
         if lightsim2grid != "auto":
