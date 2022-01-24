@@ -6,7 +6,7 @@
 
 from time import perf_counter
 
-from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32
+from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32, sum as np_sum, abs as np_abs
 
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -149,6 +149,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
+    _ = np_sum(np_abs(Ybus))
     if options["lightsim2grid"] and not options["distributed_slack"]:
         V, success, iterations, J, Vm_it, Va_it = newton_ls_old(Ybus, Sbus, V0, pv, pq, ppci, options)
     elif options["lightsim2grid"]:
