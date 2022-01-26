@@ -48,6 +48,7 @@ setup(
                       "packaging",
 					  "xlsxwriter",
 					  "xlrd",
+                      "tqdm",
 					  "cryptography"],
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
