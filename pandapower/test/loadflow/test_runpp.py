@@ -813,10 +813,12 @@ def test_get_internal():
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
+    slack_weights = np.zeros(shape=V.shape)
+    slack_weights[ref] = 1
 
-    J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights=None, dist_slack=False)
+    J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights=slack_weights, dist_slack=dist_slack)
 
-    assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
+    assert np.allclose(J.toarray(), J_intern.toarray(), atol=1e-4, rtol=0)
     # get J for all other algorithms
 
 
