@@ -80,9 +80,6 @@ def test_set_user_pf_options():
     assert net._options['tolerance_mva'] == 1e-2
     assert net._options['max_iteration'] == 20
 
-    # todo check if kwargs also work with user_pf_options
-
-
 
 def test_kwargs_with_user_options():
     net = example_simple()
@@ -91,6 +88,12 @@ def test_kwargs_with_user_options():
     pp.set_user_pf_options(net, trafo3w_losses="lv")
     pp.runpp(net)
     assert net._options["trafo3w_losses"] == "lv"
+
+    # check providing the kwargs options in runpp overrides user_pf_options
+    pp.set_user_pf_options(net, init_vm_pu="results")
+    pp.runpp(net, init_vm_pu="flat")
+    assert net.user_pf_options["init_vm_pu"] == "results"
+    assert net._options["init_vm_pu"] == "flat"
 
 
 @pytest.mark.xfail(reason="Until now there was no way found to dynamically identify "
