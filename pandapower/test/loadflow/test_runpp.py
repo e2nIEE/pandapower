@@ -80,9 +80,6 @@ def test_set_user_pf_options():
     assert net._options['tolerance_mva'] == 1e-2
     assert net._options['max_iteration'] == 20
 
-    # todo check if kwargs also work with user_pf_options
-
-
 
 def test_kwargs_with_user_options():
     net = example_simple()
