@@ -204,10 +204,9 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     """
 
-    # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
+    # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
-    recycle = kwargs.get("recycle", None)
-    if isinstance(recycle, dict) and _internal_stored(net):
+    if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
         _recycled_powerflow(net, **kwargs)
         return
 
@@ -425,17 +424,21 @@ def _passed_runpp_parameters(local_parameters):
     :return: dictionary of explicitly passed parameters
     """
     net = local_parameters.pop("net")
-    if not ("user_pf_options" in net.keys() and len(net.user_pf_options) > 0):
+    if "user_pf_options" not in net.keys() or len(net.user_pf_options) == 0:
         return None
-    try:
-        default_parameters = {k: v.default for k, v in inspect.signature(runpp).parameters.items()}
-    except:
-        args, varargs, keywords, defaults = inspect.getfullargspec(runpp)
-        default_parameters = dict(zip(args[-len(defaults):], defaults))
-    default_parameters.update({"init": "auto"})
+    # default_parameters contains the parameters that are specified for the runpp function by default in its definition
+    args, varargs, keywords, defaults, *_ = inspect.getfullargspec(runpp)
+    default_parameters = dict(zip(args[1:], defaults))
 
+    # we want to also include the parameters that are optional (passed in "kwargs")!
+    # that is why we include the parameters that are also not in default_parameters
+    # maybe the part "if key not in default_parameters.keys()" is redundant, idk
+    kwargs_parameters = local_parameters.pop('kwargs', None)
     passed_parameters = {
         key: val for key, val in local_parameters.items()
-        if key in default_parameters.keys() and val != default_parameters.get(key, None)}
+        if key not in default_parameters.keys() or val != default_parameters.get(key, None)}
+    # passed_parameters should have the "kwargs" parameters in the same level as other parameters
+    # (not nested in "kwargs: {...}") for them to be considered later on, otherwise they will be ignored
+    passed_parameters.update(kwargs_parameters)
 
     return passed_parameters
