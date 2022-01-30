@@ -12,18 +12,10 @@ import pandapower.shortcircuit as sc
 from pandapower.shortcircuit.toolbox import detect_power_station_unit, calc_sc_on_line
 
 
-def trafo_zero_sequence_from_relation(vk_percent, vkr_percent, x0_x, r0_r):
-    # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
-    vkr0_percent = vkr_percent * r0_r
-    vki_percent = np.sqrt(vk_percent**2 - vkr_percent**2)
-    vki0_percent = vki_percent * x0_x
-    vk0_percent = np.sqrt(vkr0_percent**2 + vki0_percent**2)
-    return vk0_percent, vkr0_percent
-
-
 def iec_60909_4():
     net = pp.create_empty_network()
-    net.sn_mva = 23
+    # net.sn_mva = 23
+    net.sn_mva = 1
 
     b1 = pp.create_bus(net, vn_kv=380.)
     b2 = pp.create_bus(net, vn_kv=110.)
@@ -53,15 +45,20 @@ def iec_60909_4():
                                                vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
                                                pt_percent=12, oltc=True, vk0_percent=vk0_percent,
                                                vkr0_percent=vkr0_percent, xn_ohm=22, vector_group="YNd",
-                                               mag0_percent=100)
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9,
+                                               tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                               tap_side="hv", tap_step_percent=0.1, power_station_unit=True)
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
-                  power_station_trafo=t1[0])
+                  power_station_trafo=t1)
 
     t2 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
                                                pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12,
                                                vkr_percent=0.5,
-                                               oltc=False, vk0_percent=12, vkr0_percent=0.5, vector_group="Yd")
+                                               oltc=False, vk0_percent=12, vkr0_percent=0.5, vector_group="Yd",
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9,
+                                               tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                               tap_side="hv", tap_step_percent=0.1, power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
@@ -70,7 +67,7 @@ def iec_60909_4():
     # pp.create_gen(net, b6, p_mw=0.9 * 100, vn_kv=10.5,
     #               xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=5)
     # Add gen 3
-    pp.create_gen(net, b6, p_mw=0.9 * 100, vn_kv=10.5,
+    pp.create_gen(net, b6, p_mw=0, vn_kv=10.5,
                   xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=0)
 
     vk0_hv_percent, vkr0_hv_percent = trafo_zero_sequence_from_relation(21, 0.26, 2.1, 1.)
@@ -84,10 +81,12 @@ def iec_60909_4():
                                             vk_hv_percent=21, vkr_hv_percent=.26,
                                             vk_mv_percent=7, vkr_mv_percent=.16,
                                             vk_lv_percent=10., vkr_lv_percent=.16,
-                                            vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
-                                            vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
-                                            vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="YNyd")  # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
+                                            vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
+                                            vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
+                                            vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286,
+                                            vector_group="YNyd",
+                                            tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                            tap_side="hv", tap_step_percent=0.1)  # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
     pp.create_transformer3w_from_parameters(net,
                                             hv_bus=b1, mv_bus=b2, lv_bus=b8,
                                             vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
@@ -96,10 +95,12 @@ def iec_60909_4():
                                             vk_hv_percent=21, vkr_hv_percent=.26,
                                             vk_mv_percent=7, vkr_mv_percent=.16,
                                             vk_lv_percent=10., vkr_lv_percent=.16,
-                                            vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
-                                            vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
-                                            vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="Yynd")
+                                            vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
+                                            vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
+                                            vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286,
+                                            vector_group="Yynd",
+                                            tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                            tap_side="hv", tap_step_percent=0.1)
 
     vk0_hv_percent, vkr0_hv_percent = trafo_zero_sequence_from_relation(12, 0.5, 1, 1.)
     vk0_mv_percent, vkr0_mv_percent = trafo_zero_sequence_from_relation(12, 0.5, 1, 1.)
@@ -112,10 +113,12 @@ def iec_60909_4():
                                             vk_hv_percent=12, vkr_hv_percent=.5,
                                             vk_mv_percent=12, vkr_mv_percent=.5,
                                             vk_lv_percent=12, vkr_lv_percent=.5,
-                                            vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
-                                            vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
-                                            vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="YNynd")
+                                            vk0_hv_percent=12, vkr0_hv_percent=0.5,
+                                            vk0_mv_percent=12, vkr0_mv_percent=0.5,
+                                            vk0_lv_percent=12, vkr0_lv_percent=0.5,
+                                            vector_group="Yyd",
+                                            tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                            tap_side="hv", tap_step_percent=0.1)
     pp.create_transformer3w_from_parameters(net,
                                             hv_bus=b5, mv_bus=b6, lv_bus=T_T6,
                                             vn_hv_kv=115., vn_mv_kv=10.5, vn_lv_kv=10.5,
@@ -124,10 +127,12 @@ def iec_60909_4():
                                             vk_hv_percent=12, vkr_hv_percent=.5,
                                             vk_mv_percent=12, vkr_mv_percent=.5,
                                             vk_lv_percent=12, vkr_lv_percent=.5,
-                                            vk0_hv_percent=vk0_hv_percent, vkr0_hv_percent=vkr0_hv_percent,
-                                            vk0_mv_percent=vk0_mv_percent, vkr0_mv_percent=vkr0_mv_percent,
-                                            vk0_lv_percent=vk0_lv_percent, vkr0_lv_percent=vkr0_lv_percent,
-                                            vector_group="YNynd")  # reactor is 100 Ohm
+                                            vk0_hv_percent=12, vkr0_hv_percent=0.5,
+                                            vk0_mv_percent=12, vkr0_mv_percent=0.5,
+                                            vk0_lv_percent=12, vkr0_lv_percent=0.5,
+                                            vector_group="Yynd",
+                                            tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                            tap_side="hv", tap_step_percent=0.1)  # reactor is 100 Ohm
 
     pp.create_motor(net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88,
                     efficiency_n_percent=97.5,
@@ -164,8 +169,8 @@ def iec_60909_4():
     pp.create_line_from_parameters(net, b6, b7, name="L6",
         c_nf_per_km=0, max_i_ka=0,
         length_km=1, r_ohm_per_km=0.082, x_ohm_per_km=0.086,
-        r0_ohm_per_km=0, x0_ohm_per_km=0, c0_nf_per_km=0, g0_us_per_km=0)
-
+        r0_ohm_per_km=0.082, x0_ohm_per_km=0.086, c0_nf_per_km=0, g0_us_per_km=0)
+    # bus F for 1ph fault: 1, 2, 3, 4
     return net
 
 def iec_60909_4_small(with_xward=False):
