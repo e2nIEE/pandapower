@@ -15,6 +15,7 @@ from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
+import numpy as np
 
 try:
     import pplog as logging
@@ -514,7 +515,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
 
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Index([], dtype=np.int64))
     if add_stdtypes:
         add_basic_std_types(net)
     else:
