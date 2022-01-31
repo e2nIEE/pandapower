@@ -15,6 +15,7 @@ import weakref
 from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
+import numpy as np
 
 import networkx
 import numpy
@@ -28,24 +29,29 @@ try:
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal
 
-from pandapower.auxiliary import pandapowerNet, get_free_id
+from pandapower.auxiliary import get_free_id
+
 try:
     from cryptography.fernet import Fernet
+
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import hashlib
+
     hashlib_INSTALLED = True
 except ImportError:
     hashlib_INSTALLED = False
 try:
     import base64
+
     base64_INSTALLED = True
 except ImportError:
     base64_INSTALLED = False
 try:
     import zlib
+
     zlib_INSTALLED = True
 except:
     zlib_INSTALLED = False
@@ -63,6 +69,7 @@ try:
     import fiona
     import fiona.crs
     import geopandas
+
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -283,7 +290,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int64Index
                 try:
-                    df_index = pd.Int64Index(df_dict['index'])
+                    df_index = pd.Index(df_dict['index'], dtype=np.int64)
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
@@ -582,7 +589,7 @@ def encrypt_string(s, key, compress=True):
     missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
         cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
@@ -600,7 +607,7 @@ def decrypt_string(s, key):
     missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
         cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
@@ -931,4 +938,5 @@ if SHAPELY_INSTALLED:
 
 if __name__ == '__main__':
     import pandapower as pp
+
     net = pp.from_json(r'edis_zone_3_6.json')

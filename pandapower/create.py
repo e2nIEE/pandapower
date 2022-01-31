@@ -3920,7 +3920,7 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
         df["coords"] = geodata
 
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[geo_table] = net[geo_table].append(df, sort=False)
+        net[geo_table] = pd.concat([net[geo_table],df], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net[geo_table] = net[geo_table].append(df)
