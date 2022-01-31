@@ -39,15 +39,13 @@ def iec_60909_4():
     #     pfe_kw=0, i0_percent=0,
     #     vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
     #     pt_percent=12, oltc=True)
-    vk0_percent, vkr0_percent = trafo_zero_sequence_from_relation(16, 0.5, 0.95, 1.)
     t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
                                                pfe_kw=0, i0_percent=0,
                                                vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
-                                               pt_percent=12, oltc=True, vk0_percent=vk0_percent,
-                                               vkr0_percent=vkr0_percent, xn_ohm=22, vector_group="YNd",
-                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9,
-                                               tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
-                                               tap_side="hv", tap_step_percent=0.1, power_station_unit=True)
+                                               pt_percent=12, oltc=True, vk0_percent=12,
+                                               vkr0_percent=12, xn_ohm=22, vector_group="YNd",
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                               power_station_unit=True)
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
                   xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                   power_station_trafo=t1)
@@ -56,9 +54,8 @@ def iec_60909_4():
                                                pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12,
                                                vkr_percent=0.5,
                                                oltc=False, vk0_percent=12, vkr0_percent=0.5, vector_group="Yd",
-                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9,
-                                               tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
-                                               tap_side="hv", tap_step_percent=0.1, power_station_unit=True)
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                               power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t2)
@@ -70,9 +67,6 @@ def iec_60909_4():
     pp.create_gen(net, b6, p_mw=0, vn_kv=10.5,
                   xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=0)
 
-    vk0_hv_percent, vkr0_hv_percent = trafo_zero_sequence_from_relation(21, 0.26, 2.1, 1.)
-    vk0_mv_percent, vkr0_mv_percent = trafo_zero_sequence_from_relation(7, 0.16, 2.1, 1.)
-    vk0_lv_percent, vkr0_lv_percent = trafo_zero_sequence_from_relation(10, 0.16, 2.1, 1.)
     pp.create_transformer3w_from_parameters(net,
                                             hv_bus=b1, mv_bus=b2, lv_bus=H,
                                             vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
@@ -102,9 +96,6 @@ def iec_60909_4():
                                             tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
                                             tap_side="hv", tap_step_percent=0.1)
 
-    vk0_hv_percent, vkr0_hv_percent = trafo_zero_sequence_from_relation(12, 0.5, 1, 1.)
-    vk0_mv_percent, vkr0_mv_percent = trafo_zero_sequence_from_relation(12, 0.5, 1, 1.)
-    vk0_lv_percent, vkr0_lv_percent = trafo_zero_sequence_from_relation(12, 0.5, 1, 1.)
     pp.create_transformer3w_from_parameters(net,
                                             hv_bus=b5, mv_bus=b6, lv_bus=T_T5,
                                             vn_hv_kv=115., vn_mv_kv=10.5, vn_lv_kv=10.5,
@@ -191,7 +182,7 @@ def iec_60909_4_small(with_xward=False):
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
         pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
         vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
-        shift_degree=5, vector_group="YNd", power_station_unit=True)
+        shift_degree=5, vector_group="Yd", power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
                   slack=True, power_station_trafo=t1)
@@ -244,7 +235,7 @@ def iec_60909_4_small_gen_only():
 
     t1 = pp.create_transformer_from_parameters(net, b3, HG2, sn_mva=100,
         pfe_kw=0, i0_percent=0, vn_hv_kv=120., vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5,
-        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, vector_group="YNd",
+        vk0_percent=12, vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, vector_group="Yd",
                                                power_station_unit=True)
     pp.create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5,
                   xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100, pg_percent=7.5,
