@@ -935,8 +935,3 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
-
-if __name__ == '__main__':
-    import pandapower as pp
-
-    net = pp.from_json(r'edis_zone_3_6.json')
