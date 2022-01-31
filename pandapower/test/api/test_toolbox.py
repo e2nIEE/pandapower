@@ -1275,8 +1275,6 @@ def test_repl_to_line_with_switch():
 
     for testindex in net.line.index:
         if net.line.in_service.loc[testindex]:
-            # todo print weg
-            print("testing line " + str(testindex))
             line = net.line.loc[testindex]
             fbus = line.from_bus
             tbus = line.to_bus
