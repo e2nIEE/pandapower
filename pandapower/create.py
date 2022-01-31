@@ -3962,7 +3962,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
 
     # extend the table by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[table] = net[table].append(dd, sort=False)
+        net[table] = pd.concat([net[table],dd], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net[table] = net[table].append(dd)
