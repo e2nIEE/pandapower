@@ -67,8 +67,8 @@ def _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack):
             J10 = sparse(slack_weights[rows_pvpq].reshape(-1,1))
             J20 = sparse(zeros(shape=(len(pq), 1)))
             J = vstack([
-                hstack([J13, J11, J10]),
-                hstack([J23, J21, J20])
+                hstack([J10, J11, J12]),
+                hstack([J20, J21, J22])
             ], format="csr")
         else:
             J = vstack([
