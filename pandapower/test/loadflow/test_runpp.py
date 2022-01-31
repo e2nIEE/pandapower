@@ -89,6 +89,12 @@ def test_kwargs_with_user_options():
     pp.runpp(net)
     assert net._options["trafo3w_losses"] == "lv"
 
+    # check providing the kwargs options in runpp overrides user_pf_options
+    pp.set_user_pf_options(net, init_vm_pu="results")
+    pp.runpp(net, init_vm_pu="flat")
+    assert net.user_pf_options["init_vm_pu"] == "results"
+    assert net._options["init_vm_pu"] == "flat"
+
 
 @pytest.mark.xfail(reason="Until now there was no way found to dynamically identify "
                           "the arguments passed to runpp, so if the user options are "

@@ -15,6 +15,7 @@ from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
+import numpy as np
 
 try:
     import pplog as logging
@@ -514,7 +515,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
 
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Index([], dtype=np.int64))
     if add_stdtypes:
         add_basic_std_types(net)
     else:
@@ -3919,7 +3920,7 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
         df["coords"] = geodata
 
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[geo_table] = net[geo_table].append(df, sort=False)
+        net[geo_table] = pd.concat([net[geo_table],df], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net[geo_table] = net[geo_table].append(df)
@@ -3961,7 +3962,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
 
     # extend the table by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[table] = net[table].append(dd, sort=False)
+        net[table] = pd.concat([net[table],dd], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net[table] = net[table].append(dd)
