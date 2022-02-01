@@ -42,8 +42,8 @@ def iec_60909_4():
     t1 = pp.create_transformer_from_parameters(net, b4, HG1, sn_mva=150,
                                                pfe_kw=0, i0_percent=0,
                                                vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
-                                               pt_percent=12, oltc=True, vk0_percent=12,
-                                               vkr0_percent=12, xn_ohm=22, vector_group="YNd",
+                                               pt_percent=12, oltc=True, vk0_percent=15.2,
+                                               vkr0_percent=0.5, xn_ohm=22, vector_group="YNd",
                                                mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
                                                power_station_unit=True)
     pp.create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21,
