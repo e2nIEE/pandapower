@@ -51,7 +51,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz, validate_conversion)
-    if len(ppc["mpc_additional_data"]) != 0:
+    if "mpc_additional_data" in ppc:
         net["mpc_additional_data"] = ppc["mpc_additional_data"]
 
     return net
@@ -96,15 +96,12 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         except:
             logger.info('gencost is not in mpc')
 
-        additional_data = False
         for k in mpc[casename_mpc_file]._fieldnames:
             if k not in ppc:
-                additional_data = True
                 ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
 
-        if additional_data:
+        if "mpc_additional_data" in ppc:
             logger.info('added fields %s in mpc_additional_data' % list(ppc["mpc_additional_data"].keys()))
-
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')
