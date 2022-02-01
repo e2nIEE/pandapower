@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 try:
-    from lightsim2grid.newtonpf import newtonpf_new as newton_ls, newtonpf_old as newton_ls_old
+    from lightsim2grid.newtonpf import newtonpf_new as newton_ls
 except ImportError:
     newton_ls = None
 
@@ -149,9 +149,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    if options["lightsim2grid"] and not options["distributed_slack"]:
-        V, success, iterations, J, Vm_it, Va_it = newton_ls_old(Ybus.tocsc(), Sbus, V0, pv, pq, ppci, options)
-    elif options["lightsim2grid"]:
+    if options["lightsim2grid"]:
         V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus.tocsc(), Sbus, V0, ref, pv, pq, ppci, options)
     else:
         V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
