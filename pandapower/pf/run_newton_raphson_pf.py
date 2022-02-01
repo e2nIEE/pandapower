@@ -22,8 +22,9 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
+    numba_installed = True
 except ImportError:
-    pass
+    numba_installed = False
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newton_ls
@@ -106,7 +107,7 @@ def _get_numba_functions(ppci, options):
     """
     pfsoln from pypower maybe slow in some cases. This function chooses the fastest for the given pf calculation
     """
-    if options["numba"]:
+    if options["numba"] and numba_installed:
         makeYbus = makeYbus_numba
         shunt_in_net = any(ppci["bus"][:, BS]) or any(ppci["bus"][:, GS])
         # faster pfsoln function if only one slack is in the grid and no gens

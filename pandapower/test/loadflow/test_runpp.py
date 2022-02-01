@@ -25,6 +25,14 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_xwar
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
+from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+
+
+try:
+    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    numba_installed = True
+except ImportError:
+    numba_installed = False
 
 
 def test_minimal_net(**kwargs):
@@ -820,6 +828,23 @@ def test_get_internal():
 
     assert np.allclose(J.toarray(), J_intern.toarray(), atol=1e-4, rtol=0)
     # get J for all other algorithms
+
+
+def test_Ybus_format():
+    net = example_simple()
+    pp.runpp(net)
+    _, ppci = _pd2ppc(net)
+
+    Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
+    for Y in (Ybus, Yf, Yt):
+        assert Y.has_canonical_format
+        assert Y.has_sorted_indices
+
+    if numba_installed:
+        Ybus, Yf, Yt = makeYbus_numba(ppci["baseMVA"], ppci["bus"], ppci["branch"])
+        for Y in (Ybus, Yf, Yt):
+            assert Y.has_canonical_format
+            assert Y.has_sorted_indices
 
 
 def test_storage_pf():
