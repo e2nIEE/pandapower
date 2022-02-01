@@ -218,7 +218,11 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
         v_trafo_hv, v_trafo_lv = ps_trafo["vn_hv_kv"].values, ps_trafo["vn_lv_kv"].values
         v_q = net.bus.loc[ps_trafo["hv_bus"].values, "vn_kv"].values
-        x_t = ps_trafo["vk_percent"].values / 100
+        sn_trafo_mva = ps_trafo["sn_mva"].values
+        Z_t = ps_trafo["vk_percent"].values / 100 * np.square(v_trafo_hv) / sn_trafo_mva
+        R_t = ps_trafo["vkr_percent"].values / 100 * np.square(v_trafo_hv) / sn_trafo_mva
+        X_t = np.sqrt(np.square(Z_t) - np.square(R_t))
+        x_t = X_t / (np.square(v_trafo_hv) / sn_trafo_mva)
         p_t = ps_trafo["pt_percent"].values / 100
 
         if np.any(np.isnan(p_t)):
