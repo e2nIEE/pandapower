@@ -44,7 +44,7 @@ setup(
     license='BSD',
     install_requires=["pandas>=0.17",
                       "networkx>=2.5",
-                      "scipy<=1.6.0",
+                      "scipy",
                       "numpy>=0.11",
                       "packaging"],
     extras_require={
