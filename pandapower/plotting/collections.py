@@ -1189,7 +1189,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
 
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
-                     axes_visible=(False, False), copy_collections=True, draw=True):
+                     axes_visible=(False, False), copy_collections=True, draw=True, aspect=('equal', 'datalim'),
+                     autoscale=(True, True, True)):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -1231,8 +1232,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         # removes bounding box of the plot also
         ax.axis("off")
     if set_aspect:
-        ax.set_aspect('equal', 'datalim')
-    ax.autoscale_view(True, True, True)
+        ax.set_aspect(aspect[0], aspect[1])
+    ax.autoscale_view(autoscale[0], autoscale[1], autoscale[2])
     ax.margins(.02)
     if draw:
         plt.draw()
