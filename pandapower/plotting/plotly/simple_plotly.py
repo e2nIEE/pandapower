@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -191,20 +191,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                       respect_separators,
                                       color=branch_color, width=branch_width,
                                       infofunc=hoverinfo)
+    trans_trace = []
     # ----- Trafos ------
     if 'trafo' in net:
         hoverinfo = hoverinfo_func(net, element=trans_element)
-        trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
+        trans_trace += create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net:
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace = create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5, trace_name='3w_trafos',
+        trans_trace += create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5, trace_name='3w_trafos',
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
-    else:
-        trans_trace = []
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square

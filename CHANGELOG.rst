@@ -1,13 +1,18 @@
 Change Log
 
+- [ADDED] toolbox functions false_elm_links() and false_elm_links_loop()
 - [FIXED] poly_cost and pwl_cost consideration in merge_nets()
 - [ADDED] "results" initialization for runopp()
 - [CHANGED] toolbox function nets_equal()
 - [ADDED] toolbox function merge_same_bus_generation_plants()
+- [ADDED] new object table "characteristic", new class "Characteristic" and "SplineCharacteristic" that are callable and return a value based on input according to a specified curve
+- [FIXED] toolbox replace_ward_by_internal_elements() index usage
 - [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
-
-[2.7.1]- 2021-07-22
-----------------------
+- [ADDED] tap dependent impedance internally in build_branch: transformer (2W, 3W) parameters (e.g. vk_percent, vkr_percent) are adjusted according to the tap position based on a specified characteristic in the optional columns
+- [ADDED] multiple costs check in create functions and runopp
+- [ADDED] correct_dtypes() function for fileIO convert
+- [FIXED] revise to_ppc() and to_mpc() init behaviour
+- [CHANGED] import requirements / dependencies
 - [ADDED] distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
 
 [2.7.0]- 2021-07-15

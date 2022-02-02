@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -23,6 +23,7 @@ from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net
 import pandapower.control
 import pandapower.timeseries
+from copy import deepcopy
 
 try:
     from julia.core import UnsupportedPythonError
@@ -297,27 +298,24 @@ def test_voltage_angles():
     net.bus.loc[:, "max_vm_pu"] = 1.1
     net.bus.loc[:, "min_vm_pu"] = .9
 
-    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-    custom_file = "run_powermodels_custom"  #custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),"test_files", "run_powermodels_custom.jl")
-
     # load is zero since costs are high. PF results should be the same as OPF
     net.load.loc[1, "p_mw"] = 0.
+
     pp.runpp(net, calculate_voltage_angles=True)
     va_degree = net.res_bus.loc[:, "va_degree"].values
     vm_pu = net.res_bus.loc[:, "vm_pu"].values
     loading3w = net.res_trafo3w.loc[:, "loading_percent"].values
 
-    for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
-        run(net, calculate_voltage_angles=True)
-        consistency_checks(net)
+    net_opf = copy.deepcopy(net)
+    pp.runpm_ac_opf(net_opf)
 
-        assert 30. < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 32.
-        assert 10. < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4]) % 360 < 11.
-        assert np.isnan(net.res_bus.va_degree.at[b5])
-        assert np.allclose(net.res_bus.va_degree.values, va_degree, atol=1e-6, rtol=1e-6, equal_nan=True)
-        assert np.allclose(net.res_bus.vm_pu.values, vm_pu, atol=1e-6, rtol=1e-6, equal_nan=True)
-        assert np.allclose(net.res_trafo3w.loading_percent, loading3w, atol=1e-2, rtol=1e-2, equal_nan=True)
+    assert 30. < (net_opf.res_bus.va_degree.at[b1] - net_opf.res_bus.va_degree.at[b3]) % 360 < 32.
+    assert 10. < (net_opf.res_bus.va_degree.at[b1] - net_opf.res_bus.va_degree.at[b4]) % 360 < 11.
+    assert np.isnan(net_opf.res_bus.va_degree.at[b5])
 
+    assert np.allclose(net_opf.res_bus.va_degree.values, va_degree, atol=1e-6, rtol=1e-6, equal_nan=True)
+    assert np.allclose(net_opf.res_bus.vm_pu.values, vm_pu, atol=1e-6, rtol=1e-6, equal_nan=True)
+    assert np.allclose(net_opf.res_trafo3w.loading_percent, loading3w, atol=1e-2, rtol=1e-2, equal_nan=True)
 
 
 def tnep_grid():
@@ -411,28 +409,9 @@ def test_storage_opt():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-@pytest.mark.xfail(reason="OTS does not correctly consider net.sn_mva. Probably the impedances [pu]"
-                   " are not correctly calculated.")
+# @pytest.mark.xfail(reason="OTS does not correctly consider net.sn_mva. Probably the impedances [pu]"
+#                    " are not correctly calculated.")
 def test_ots_opt():
-    net = nw.case5()
-    branch_status = net["line"].loc[:, "in_service"].values
-    assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]).astype(bool), branch_status.astype(bool))
-    pp.runpm_ots(net)
-    branch_status = net["res_line"].loc[:, "in_service"].values
-    pp.runpp(net)
-    net.line.loc[:, "in_service"] = branch_status.astype(bool)
-    pp.runpp(net)
-    try:
-        assert np.array_equal(np.array([1, 1, 1, 0, 1, 0]).astype(bool), branch_status.astype(bool))
-    except AssertionError:
-        assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
-
-
-@pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-def test_ots_opt2():
-    """ This is a copy of test_ots_opt() which passes, since net.sn_mva is set to 1.0. If
-    test_ots_opt() passes too, this function can be removed. """
     net = nw.case5()
     net.sn_mva = 1.
     branch_status = net["line"].loc[:, "in_service"].values
@@ -447,64 +426,27 @@ def test_ots_opt2():
     except AssertionError:
         assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
-
-@pytest.mark.xfail()
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-def test_runpm_dc_pf():
-    net = nw.simple_four_bus_system()
-    net.trafo.loc[0, "shift_degree"] = 0. 
-    
-    pp.runpm_dc_pf(net) 
-    
-    va_pm = copy.copy(net.bus.va_degree)
-
-    pp.rundcpp(net, calculate_voltage_angles=True)
-    va_pp = copy.copy(net.bus.va_degree)
-    
-    assert np.allclose(va_pm, va_pp)
-
-@pytest.mark.xfail()
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")      
-def test_runpm_ac_pf():
-    net = nw.simple_four_bus_system()
-    net.trafo.loc[0, "shift_degree"] = 0.
-    
-    pp.runpm_ac_pf(net)   
-    va_pm = copy.copy(net.bus.va_degree)
-    vm_pm = copy.copy(net.bus.vm_pu)
-
-    pp.runpp(net, calculate_voltage_angles=True)   
-    va_pp = copy.copy(net.bus.va_degree)
-    vm_pp = copy.copy(net.bus.vm_pu)
-
-    assert np.allclose(va_pm, va_pp)
-    assert np.allclose(vm_pm, vm_pp)
-    
-    
 def assert_pf(net, dc=False):
-    # custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.__file__)),
-    #                            "opf", "run_powermodels_powerflow.jl")
-    # custom_file = os.path.join(pp_dir, "opf", "PpPmInterface", "src", "pm_models", "run_powermodels.jl")
-
-    custom_file = "run_powermodels_powerflow"
-
     if dc:
-        # see https://github.com/lanl-ansi/PowerModels.jl/issues/612 for details
-        pp.runpm(net, julia_file=custom_file, pm_model="DCMPPowerModel")
+        model="DCMPPowerModel"
     else:
-        pp.runpm(net, julia_file=custom_file, pm_model="ACPPowerModel")
+        model="ACPPowerModel"
 
-    va_pm = copy.copy(net.res_bus.va_degree)
-    vm_pm = copy.copy(net.res_bus.vm_pu)
+    pp.runpm_pf(net, pm_model=model)
+
+    va_pm = copy.deepcopy(net.res_bus.va_degree)
+    vm_pm = copy.deepcopy(net.res_bus.vm_pu)
 
     if dc:
         pp.rundcpp(net, calculate_voltage_angles=True)
     else:
         pp.runpp(net, calculate_voltage_angles=True)
-    va_pp = copy.copy(net.res_bus.va_degree)
-    vm_pp = copy.copy(net.res_bus.vm_pu)
+
+    va_pp = copy.deepcopy(net.res_bus.va_degree)
+    vm_pp = copy.deepcopy(net.res_bus.vm_pu)
 
     assert np.allclose(va_pm, va_pp)
+
     if not dc:
         assert np.allclose(vm_pm, vm_pp)
 
@@ -513,11 +455,10 @@ def assert_pf(net, dc=False):
 def test_pm_ac_powerflow_simple():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
-    assert_pf(net)
+    assert_pf(net, dc=False)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_simple():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
@@ -529,11 +470,10 @@ def test_pm_ac_powerflow_shunt():
     net = nw.simple_four_bus_system()
     pp.create_shunt(net, 2, q_mvar=-0.5)
     net.trafo.loc[0, "shift_degree"] = 0.
-    assert_pf(net)
+    assert_pf(net, dc=False)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_shunt():
     net = nw.simple_four_bus_system()
     pp.create_shunt(net, 2, q_mvar=-0.5)
@@ -546,15 +486,15 @@ def test_pm_ac_powerflow_tap():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 30.
     net.trafo.loc[0, "tap_pos"] = -2.
-    assert_pf(net)
+    assert_pf(net, dc=False)
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-# @pytest.mark.xfail(reason="DCMPPowerModel not released yet")
 def test_pm_dc_powerflow_tap():
     net = nw.simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net, dc=True)
+
     net.trafo.loc[0, "shift_degree"] = 30.
     net.trafo.loc[0, "tap_pos"] = -2.
     assert_pf(net, dc=True)
@@ -565,7 +505,6 @@ def test_pp_to_pm_conversion(net_3w_trafo_opf):
     net = net_3w_trafo_opf
     pm_S = convert_pp_to_pm(net)
     pm_I = convert_pp_to_pm(net, opf_flow_lim="I")
-
 
 
 def test_pm_to_pp_conversion(simple_opf_test_net):
@@ -594,6 +533,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.xfail(reason="not complited yet")
 def test_timeseries_powermodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
@@ -606,7 +546,47 @@ def test_timeseries_powermodels():
     net.load['controllable'] = False
     pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
 
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_vd():
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
+    net.sgen.p_mw = net.sgen.p_mw * 8
+    net.sgen.sn_mva = net.sgen.sn_mva * 8
+    pp.runpp(net)
+    net_org = deepcopy(net)
+
+    net.load['controllable'] = False
+    net.sgen['controllable'] = True
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
+    net.bus["max_vm_pu"] = 1.1
+    net.bus["min_vm_pu"] = 0.9
+    net.ext_grid["max_q_mvar"] = 10000.0
+    net.ext_grid["min_q_mvar"] = -10000.0
+    net.ext_grid["max_p_mw"] = 10000.0
+    net.ext_grid["min_p_mw"] = -10000.0
+    net.gen["max_p_mw"] = net.gen.p_mw.values
+    net.gen["min_p_mw"] = net.gen.p_mw.values
+    net.gen["max_q_mvar"] = 10000.0
+    net.gen["min_q_mvar"] = -10000.0
+    net.trafo["max_loading_percent"] = 500.0
+    net.line["max_loading_percent"] = 500.0
+
+    for idx in net.sgen.index:
+        pp.create_poly_cost(net, idx, "sgen", 1.0)
+    for idx in net.gen.index:
+        pp.create_poly_cost(net, idx, "gen", 1.0)
+    for idx in net.ext_grid.index:
+        pp.create_poly_cost(net, idx, "ext_grid", 1.0)
+
+    net.bus["pm_param/setpoint_v"] = None
+    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
+
+    pp.runpm_vd(net)
+
+    assert np.allclose(net.res_bus.vm_pu[net.sgen.bus], 0.99, atol=1e-2, rtol=1e-2)
+    assert np.not_equal(net_org.res_sgen.q_mvar.values.all(), net.res_sgen.q_mvar.values.all())
 
 if __name__ == '__main__':
-    
     pytest.main([__file__])

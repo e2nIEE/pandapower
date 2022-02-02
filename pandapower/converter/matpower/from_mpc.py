@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -51,6 +51,9 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz, validate_conversion)
+    if "mpc_additional_data" in ppc:
+        net._options.update(ppc["mpc_additional_data"])
+        logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
     return net
 
@@ -93,6 +96,10 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
             ppc['gencost'] = mpc[casename_mpc_file].gencost
         except:
             logger.info('gencost is not in mpc')
+
+        for k in mpc[casename_mpc_file]._fieldnames:
+            if k not in ppc:
+                ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')

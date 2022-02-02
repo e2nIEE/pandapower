@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -50,7 +50,7 @@ def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc, suffix="_est")
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 
@@ -108,7 +108,7 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame()
+        net[res_element] = pd.DataFrame(index=pd.Index([], dtype=np.int64))
 
 
 def init_element(net, element, suffix=None):

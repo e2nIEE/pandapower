@@ -1,20 +1,25 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import sys
 import copy
 import inspect
 from itertools import combinations
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import LineCollection, PatchCollection, Collection
-from matplotlib.font_manager import FontProperties
-from matplotlib.patches import Circle, Rectangle, PathPatch
-from matplotlib.textpath import TextPath
-from matplotlib.transforms import Affine2D
 from pandas import isnull
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.textpath import TextPath
+    from matplotlib.transforms import Affine2D
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
@@ -28,7 +33,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class CustomTextPath(TextPath):
+class CustomTextPath():
     """
     Create a path from the text. This class provides functionality for deepcopy, which is not
     implemented for TextPath.
@@ -46,6 +51,8 @@ class CustomTextPath(TextPath):
         size : font size
         prop : font property
         """
+        if not MATPLOTLIB_INSTALLED:
+            soft_dependency_error("class CustomTextPath", "matplotlib")
         if prop is None:
             prop = FontProperties()
         TextPath.__init__(self, xy, s, size=size, prop=prop,
@@ -79,6 +86,8 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
 
         **kwargs** - Any other keyword-arguments will be passed to the PatchCollection.
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     tp = []
     # we convert TextPaths to PathPatches to create a PatchCollection
     if hasattr(size, "__iter__"):
@@ -150,6 +159,8 @@ def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=No
     :type kwargs:
     :return: pc - patch collection for the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if len(coords) == 0:
         return None
 
@@ -193,6 +204,8 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     :type kwargs:
     :return: lc - line collection for the given coordinates
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
@@ -241,6 +254,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         - line_coll - connecting line collection
 
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
     assert len(node_coords) == len(angles), \
         "The length of coordinates does not match the length of the orientation angles!"
@@ -307,6 +322,8 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
         - patch_coll - patch collection representing the branch element\
         - line_coll - line collection connecting the patches with the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if infos is None:
         infos_pc = []
         infos_lc = []
@@ -602,6 +619,8 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     OUTPUT:
         **lc** - line collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     trafos = get_index_array(trafos, net.trafo3w.index)
 
     if bus_geodata is None:
@@ -720,6 +739,8 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
 
         **pc** - patch collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
 
     if bus_geodata is None:
@@ -1055,6 +1076,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
     OUTPUT:
         **switches** - patch collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     lbs_switches = net.switch.index[net.switch.et == "l"]
 
     color = kwargs.pop("color", "k")
@@ -1152,6 +1175,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     OUTPUT:
         **switches**, **helper_lines** - tuple of patch collections
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     lbs_switches = net.switch.index[net.switch.et == "b"]
     color = kwargs.pop("color", "k")
     switch_patches = []
@@ -1212,7 +1237,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     OUTPUT:
         **ax** - matplotlib axes
     """
-
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if ax is None:
         plt.figure(facecolor="white", figsize=figsize)
         plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
@@ -1241,6 +1267,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 
 def add_single_collection(c, ax, plot_colorbars, copy_collections):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error("add_single_collection()", "matplotlib")
     if copy_collections:
         c = copy.deepcopy(c)
     ax.add_collection(c)
@@ -1252,6 +1280,8 @@ def add_single_collection(c, ax, plot_colorbars, copy_collections):
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error("add_collections_to_axes()", "matplotlib")
     for i, c in enumerate(collections):
         if Collection in inspect.getmro(c.__class__):
             # if Collection is in one of the base classes of c
