@@ -1354,6 +1354,35 @@ def test_lightsim2grid_extgrid():
     test_ext_grid_and_gen_at_one_bus(lightsim2grid=True)
 
 
+def test_lightsim2grid_option():
+    net = simple_four_bus_system()
+    pp.runpp(net)
+    assert net._options["lightsim2grid"] == lightsim2grid_available
+
+    pp.runpp(net, lightsim2grid=False)
+    assert not net._options["lightsim2grid"]
+
+    pp.runpp(net, algorithm="gs")
+    assert not net._options["lightsim2grid"]
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, algorithm="gs", lightsim2grid=True)
+
+    net.load["const_z_percent"] = 100.
+    pp.runpp(net, voltage_depend_loads=True)
+    assert not net._options["lightsim2grid"]
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, voltage_depend_loads=True, lightsim2grid=True)
+
+    pp.create_ext_grid(net, 1, 1.)
+    pp.runpp(net)
+    assert not net._options["lightsim2grid"]
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, lightsim2grid=True)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
 #    test_minimal_net()
