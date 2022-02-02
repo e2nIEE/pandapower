@@ -52,7 +52,8 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz, validate_conversion)
     if "mpc_additional_data" in ppc:
-        net["mpc_additional_data"] = ppc["mpc_additional_data"]
+        net._options.update(ppc["mpc_additional_data"])
+        logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
     return net
 
@@ -99,9 +100,6 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         for k in mpc[casename_mpc_file]._fieldnames:
             if k not in ppc:
                 ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
-
-        if "mpc_additional_data" in ppc:
-            logger.info('added fields %s in mpc_additional_data' % list(ppc["mpc_additional_data"].keys()))
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')
