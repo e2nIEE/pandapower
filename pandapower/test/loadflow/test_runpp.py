@@ -1354,10 +1354,18 @@ def test_lightsim2grid_extgrid():
     test_ext_grid_and_gen_at_one_bus(lightsim2grid=True)
 
 
+@pytest.mark.skipif(lightsim2grid_available, reason="only relevant if lightsim2grid is not installed")
+def test_lightsim2grid_option_basic():
+    net = simple_four_bus_system()
+    pp.runpp(net)
+    assert not net._options["lightsim2grid"]
+
+
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_option():
     net = simple_four_bus_system()
     pp.runpp(net)
-    assert net._options["lightsim2grid"] == lightsim2grid_available
+    assert net._options["lightsim2grid"]
 
     pp.runpp(net, lightsim2grid=False)
     assert not net._options["lightsim2grid"]
