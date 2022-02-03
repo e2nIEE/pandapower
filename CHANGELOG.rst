@@ -14,6 +14,7 @@ Change Log
 - [FIXED] revise to_ppc() and to_mpc() init behaviour
 - [CHANGED] import requirements / dependencies
 - [ADDED] distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
+- [CHANGED] improved the integration with the package lightim2grid (fast power flow backend written in C++), add the test coverage for using lightsim2grid
 
 [2.7.0]- 2021-07-15
 ----------------------
