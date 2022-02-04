@@ -162,8 +162,8 @@ def test_nets_equal():
 
     # not detecting alternated value if difference is beyond tolerance
     net["load"]["p_mw"][net["load"].index[0]] += 0.0001
-    assert tb.nets_equal(original, net, tol=0.1)
-    assert tb.nets_equal(net, original, tol=0.1)
+    assert tb.nets_equal(original, net, atol=0.1)
+    assert tb.nets_equal(net, original, atol=0.1)
 
 
 def test_clear_result_tables():

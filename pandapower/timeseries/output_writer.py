@@ -404,7 +404,7 @@ class OutputWriter(JSONSerializableClass):
 
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
-            index = net[table.split("res_")[-1]].index
+            index = net[table.split("res_")[-1].replace("_3ph", "")].index
         if not hasattr(index, '__iter__'):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):

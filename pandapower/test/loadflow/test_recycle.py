@@ -125,6 +125,7 @@ def test_recycle_trafo_bus_gen(recycle_net):
 
 def test_result_index_unsorted():
     net = pp.create_empty_network()
+    pp.set_user_pf_options(net, tolerance_mva=1e-9)
 
     b1 = pp.create_bus(net, vn_kv=0.4, index=4)
     b2 = pp.create_bus(net, vn_kv=0.4, index=2)
@@ -141,7 +142,7 @@ def test_result_index_unsorted():
     pp.runpp(net_recycle, recycle=dict(trafo=True, bus_pq=True, gen=True))
     pp.runpp(net)
 
-    assert nets_equal(net, net_recycle, tol=1e-12)
+    assert nets_equal(net, net_recycle, atol=1e-12)
 
 
 if __name__ == "__main__":
