@@ -51,12 +51,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.8' }}
         run: |
-          pytest --splits 5 --group ${{ matrix.group }}
+          pytest --splits 10 --group ${{ matrix.group }}
       - name: Test with pytest and Codecov
         if: ${{ matrix.python-version == '3.8' }}
         run: |
           pip install pytest-cov
-          pytest --cov=./ --cov-report=xml --splits 5 --group ${{ matrix.group }}
+          pytest --cov=./ --cov-report=xml --splits 10 --group ${{ matrix.group }}
       - name: Upload coverage to Codecov
         if: ${{ matrix.python-version == '3.8' }}
         uses: codecov/codecov-action@v1
