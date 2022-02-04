@@ -1,6 +1,6 @@
 Change Log
 
-[2.8.0]- 2021-07-15
+[2.8.0]- 2022-02-04
 ----------------------
 - [ADDED] toolbox functions false_elm_links() and false_elm_links_loop()
 - [FIXED] poly_cost and pwl_cost consideration in merge_nets()
