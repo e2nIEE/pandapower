@@ -144,6 +144,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S"):
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
+    pm = add_time_series_to_pm(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -497,3 +498,34 @@ def add_params_to_pm(net, pm):
                 pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
                     net._pd2pm_lookups["bus"][net.line[side_bus_t][pd_idx]]
     return pm
+
+
+def add_time_series_to_pm(net, pm, from_time_step=0, to_time_step=10):
+    from pandapower.control import ConstControl
+    if len(net.controller):
+        load_dict, gen_dict = {}, {}
+        pm["time_series"] = {"load": load_dict, "gen": gen_dict,
+                             "from_time_step": from_time_step+1, 
+                             "to_time_step": to_time_step+1} 
+        for idx, content in net.controller.iterrows():
+            if not type(content["object"]) == ConstControl:
+                continue
+            else:
+                element = content["object"].__dict__["matching_params"]["element"]
+                variable = content["object"].__dict__["matching_params"]["variable"]
+                elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
+                values = content["object"].data_source.df.values
+                for pd_ei in elm_idxs:
+                    if element == "sgen" and net[element].controllable[pd_ei]:
+                        pm_ei = net._pd2pm_lookups[element+"_controllable"][pd_ei]
+                        pm_elm = "gen"
+                    else:
+                        pm_ei = net._pd2pm_lookups[element][pd_ei]
+                        pm_elm = "load"
+                    if str(pm_ei) not in list(pm["time_series"][pm_elm].keys()):
+                        pm["time_series"][pm_elm][str(pm_ei)] = {}
+                    pm["time_series"][pm_elm][str(pm_ei)][variable] = \
+                        {str(m):n for m, n in enumerate(list(values[from_time_step:to_time_step, pd_ei]))}
+    return pm
+    
+    
