@@ -482,9 +482,9 @@ def test_merge_and_split_nets():
     assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
     assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
-    assert (net1.sgen.name.loc[net1.poly_cost.element].append(
-        net2.sgen.name.loc[net2.poly_cost.element]).values ==
-        net.sgen.name.loc[net.poly_cost.element].values).all()
+    assert np.array_equal(
+        pd.concat([net1.sgen.name.loc[net1.poly_cost.element], net2.sgen.name.loc[net2.poly_cost.element]]).values,
+        net.sgen.name.loc[net.poly_cost.element].values)
 
     net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
     assert pp.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
