@@ -64,11 +64,11 @@ def _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack):
         J21 = dS_dVa[array([pq]).T, cols_pvpq].imag
         J22 = dS_dVm[array([pq]).T, pq].imag
         if dist_slack:
-            J13 = sparse(slack_weights[rows_pvpq].reshape(-1,1))
-            J23 = sparse(zeros(shape=(len(pq), 1)))
+            J10 = sparse(slack_weights[rows_pvpq].reshape(-1,1))
+            J20 = sparse(zeros(shape=(len(pq), 1)))
             J = vstack([
-                hstack([J11, J12, J13]),
-                hstack([J21, J22, J23])
+                hstack([J10, J11, J12]),
+                hstack([J20, J21, J22])
             ], format="csr")
         else:
             J = vstack([

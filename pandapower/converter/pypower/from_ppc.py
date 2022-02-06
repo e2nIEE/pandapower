@@ -299,6 +299,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
 
+    net._options = {}
+    net._options["gen_lookup"] = gen_lookup
+
     return net
 
 
