@@ -5,7 +5,7 @@ from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.characteristic_control import CharacteristicControl
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
-from pandapower.control.controller.trafo.USetTapControl import USetTapControl
+from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
 from pandapower.control.controller.trafo_control import TrafoController
 

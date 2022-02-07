@@ -6,7 +6,7 @@
 from pandapower.control.controller.characteristic_control import CharacteristicControl
 from pandapower.control.util.characteristic import Characteristic
 
-class USetTapControl(CharacteristicControl):
+class VmSetTapControl(CharacteristicControl):
     """
     Controller that adjusts the setpoint of a local tap changer voltage control based on a load flow result (e.g. p_lv_mw, i_lv_ka etc.)
     according to a defined characteristic.
