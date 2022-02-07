@@ -51,7 +51,7 @@ try:
 except ImportError:
     lightsim2grid_available = False
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

@@ -22,7 +22,7 @@ from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init
     verify_results, _ppci_bus_to_ppc, _ppci_other_to_ppc
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

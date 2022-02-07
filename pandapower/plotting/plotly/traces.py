@@ -16,7 +16,7 @@ from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_tok
     MapboxTokenMissing
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)

@@ -10,7 +10,7 @@ from pandapower.powerflow import _pd2ppc
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

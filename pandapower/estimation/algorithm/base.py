@@ -15,7 +15,7 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)

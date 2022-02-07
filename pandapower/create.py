@@ -18,7 +18,7 @@ from pandapower.std_types import add_basic_std_types, load_std_type, check_entry
 import numpy as np
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
