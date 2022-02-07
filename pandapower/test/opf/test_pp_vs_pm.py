@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.pypower.idx_bus import BUS_I, VMAX, VMIN, BUS_TYPE, REF
@@ -32,8 +32,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+# test data from :https://github.com/lanl-ansi/PowerModels.jl/blob/master/test/data/matpower/case5_clm.m
 def case5_pm_matfile_I():
-    
     mpc = {"branch": array([
         [1, 2, 0.00281, 0.0281, 0.00712, 400.0, 0.0, 0.0, 0.0, 0.0, 1, -30.0, 30.0],
         [1, 4, 0.00304, 0.0304, 0.00658, 426, 0.0, 0.0, 0.0, 0.0, 1, -30.0, 30.0],
@@ -63,7 +63,7 @@ def case5_pm_matfile_I():
     ]), "version": 2, "baseMVA": 100.0}
 
     net = from_ppc(mpc, f_hz=50)
-    
+
     return net
     
 
@@ -136,11 +136,11 @@ def test_opf_ext_grid_controllable():
     assert np.isclose(net_new.res_cost, 17015.5635)
 
 
-def test_opf_ext_grid_controllable():
+def test_opf_create_ext_grid_controllable():
     # load net
     net = case5_pm_matfile_I()
     # run pd2ppc with ext_grid controllable = False
-    pp.create_ext_grid(net, bus=0, controllable=True)
+    pp.create_ext_grid(net, bus=1, controllable=True)
     pp.runopp(net)
     assert np.isclose(net.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0641399999827315)
 
@@ -150,13 +150,16 @@ def test_opf_ext_grid_controllable():
 def test_opf_ext_grid_controllable_pm():
     # load net
     net = case5_pm_matfile_I()
+
     net_old = copy.deepcopy(net)
-    net_new = copy.deepcopy(net)
-    # run pd2ppc with ext_grid controllable = False
+    pp.runpp(net_old)
     pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
+
+    net_new = copy.deepcopy(net)
     net_new.ext_grid["controllable"] = True
+    pp.runpp(net_new)
     pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
-                    delete_buffer_file=False, pm_file_path="buffer_file.json", opf_flow_lim="I")
+                    opf_flow_lim="I")
 
     assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
     assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
@@ -166,5 +169,8 @@ def test_opf_ext_grid_controllable_pm():
 
 
 if __name__ == "__main__":
-    test_opf_ext_grid_controllable()
-    # pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"])
+
+
+
+

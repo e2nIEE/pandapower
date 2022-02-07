@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 try:
@@ -108,7 +108,8 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     # Set to zero to avoid nan
     pg_percent = np.nan_to_num(gen.pg_percent.values)
     vn_net = net.bus.loc[gen_buses, "vn_kv"].values
-    sin_phi_gen = np.sqrt(1 - gen.cos_phi.values**2)
+    # Avoid warning by slight zero crossing caused
+    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values**2, 0, None))
 
     # TODO: Check which is correct
     # gen_baseZ = (vn_net ** 2 / ppc["baseMVA"])

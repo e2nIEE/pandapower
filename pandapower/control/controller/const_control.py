@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -55,8 +55,8 @@ class ConstControl(Controller):
         dropped
 
     .. note:: If multiple elements are represented with one controller, the data source must have
-    integer columns. At the moment, only the DFData format is tested for the multiple const
-    control.
+        integer columns. At the moment, only the DFData format is tested for the multiple const
+        control.
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,

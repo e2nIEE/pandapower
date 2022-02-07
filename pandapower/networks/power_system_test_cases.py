@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -684,7 +684,7 @@ def GBreducednetwork():
     """
     Calls the json file GBreducednetwork.json which data is provided by `W. A. Bukhsh, Ken \
     McKinnon, Network data of real transmission networks, April 2013  \
-    <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`_.
+    <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`__.
     This data is a representative model of electricity transmission network in Great Britain (GB). \
     It was originally developed at the University of Strathclyde in 2010.
 
@@ -726,7 +726,7 @@ def iceland():
     """
     Calls the json file iceland.json which data is provided by `W. A. Bukhsh, Ken McKinnon, Network \
     data of real transmission networks, April 2013  \
-    <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`_.
+    <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`__.
     This data represents electricity transmission network of Iceland. It consists of 118 nodes, \
     206 branches and 35 generators. It was originally developed in PSAT format by Patrick McNabb, \
     Durham University in January 2011.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -90,13 +90,13 @@ def check_for_initial_run(controller_order):
     return False
 
 
-def ctrl_variables_default(net):
+def ctrl_variables_default(net, **kwargs):
     ctrl_variables = dict()
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
-    ctrl_variables["run"] = pp.runpp
+    ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
@@ -119,7 +119,7 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     ctrl_var = ctrl_variables
 
     if ctrl_variables is None:
-        ctrl_variables = ctrl_variables_default(net)
+        ctrl_variables = ctrl_variables_default(net, **kwargs)
 
     if ('continue_on_divergence') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         div = kwargs.pop('continue_on_divergence')
@@ -178,8 +178,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
     errors = ctrl_variables['errors']
     try:
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
-    except errors:
-
+    except errors as err:
+        net._ppc = None
         if ctrl_variables['continue_on_divergence']:
             # give a chance to controllers to "repair" the control step if load flow
             # didn't converge
@@ -192,6 +192,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 run_funct(net, **kwargs)
             except errors:
                 pass
+        else:
+            raise err
     ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
     return ctrl_variables
 
@@ -252,18 +254,20 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     Function is running control loops for the controllers specified in net.controller
 
     INPUT:
-   **net** - pandapower network with controllers included in net.controller
+        **net** - pandapower network with controllers included in net.controller
 
     OPTIONAL:
-       **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
-       **max_iter** (int, 30) - The maximum number of iterations for controller to converge
+        **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
+
+        **max_iter** (int, 30) - The maximum number of iterations for controller to converge
 
     KWARGS:
-        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired
-                                                   (only relevant if ctrl_varibales is None, otherwise it needs
+        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired \
+                                                   (only relevant if ctrl_varibales is None, otherwise it needs \
                                                    to be defined in ctrl_variables anyway)
-        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not
-                                           (only relevant if ctrl_varibales is None, otherwise it needs
+
+        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not \
+                                           (only relevant if ctrl_varibales is None, otherwise it needs \
                                            to be defined in ctrl_variables anyway)
 
     Runs controller until each one converged or max_iter is hit.
@@ -272,6 +276,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     2. Calculate an inital power flow (if it is enabled, i.e. setting the initial_run veriable to True)
     3. Repeats the following steps in ascending order of controller_order until total convergence of all
        controllers for each level:
+
         a) Evaluate individual convergence for all controllers in the level
         b) Call control_step() for all controllers in the level on diverged controllers
         c) Calculate power flow (or optionally another function like runopf or whatever you defined)
