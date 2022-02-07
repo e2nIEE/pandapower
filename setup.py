@@ -26,7 +26,7 @@ classifiers = [
 
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
-    versions = set(re.findall('3.[0-9]', lines))
+    versions = set(re.findall('3.[7-9]', lines))
     for version in versions:
         classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
 
@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.7.0',
+    version='2.8.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -51,12 +51,12 @@ setup(
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
         "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],  # "shapely", "pyproj" are depedencies of geopandas and so already available; "base64", "hashlib", "zlib" produce installing problems, so it is not include
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"],
+        "performance": ["ortools"],#, "lightsim2grid"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly", "matplotlib", "python-igraph", "geopandas",
                 "pytest", "pytest-xdist",
-                "ortools",
+                "ortools",# lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
