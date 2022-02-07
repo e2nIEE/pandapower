@@ -6,4 +6,5 @@
 from pandapower.control.controller.characteristic_control import CharacteristicControl
 
 class USetTapControl(CharacteristicControl):
-    raise UserWarning("USetTapControl has been renamed. Use VmSetTapControl instead.")
+    def __init__(self, **kwargs):
+        raise UserWarning("USetTapControl has been renamed. Use VmSetTapControl instead.")
