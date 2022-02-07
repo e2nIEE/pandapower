@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.7', '3.8', '3.9' ]
-        group: [ 1, 2, 3, 4, 5,6,7,8,9,10 ]
+        group: [ 1, 2, 3, 4 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -51,12 +51,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.8' }}
         run: |
-          pytest --splits 10 --group ${{ matrix.group }}
+          pytest --splits 4 --group ${{ matrix.group }}
       - name: Test with pytest and Codecov
         if: ${{ matrix.python-version == '3.8' }}
         run: |
           pip install pytest-cov
-          pytest --cov=./ --cov-report=xml --splits 10 --group ${{ matrix.group }}
+          pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }}
       - name: Upload coverage to Codecov
         if: ${{ matrix.python-version == '3.8' }}
         uses: codecov/codecov-action@v1
