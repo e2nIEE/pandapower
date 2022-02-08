@@ -14,7 +14,7 @@ from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

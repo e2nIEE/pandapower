@@ -20,7 +20,7 @@ def test_continuous_p():
     c = control.ContinuousTapControl(net, t, 1., tol=eps)
 
     characteristic = Characteristic(net, [10, 20], [0.95, 1.05])
-    tc = control.USetTapControl(net, 0, characteristic.index, tol=eps)
+    tc = control.VmSetTapControl(net, 0, characteristic.index, tol=eps)
 
     # create 20kW load
     lid = pp.create_load(net, lv, 20)
@@ -73,7 +73,7 @@ def test_continuous_i():
 
     # a different characteristic for i_lv_ka rather than for p_lv_mw
     characteristic = Characteristic(net, [0.315, 0.55], [0.95, 1.05])
-    tc = control.USetTapControl(net, 0, characteristic.index, variable='i_lv_ka', tol=eps)
+    tc = control.VmSetTapControl(net, 0, characteristic.index, variable='i_lv_ka', tol=eps)
 
     # create 20kW load
     lid = pp.create_load(net, lv, 20)

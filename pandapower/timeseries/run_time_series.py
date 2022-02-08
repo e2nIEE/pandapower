@@ -13,7 +13,7 @@ from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 

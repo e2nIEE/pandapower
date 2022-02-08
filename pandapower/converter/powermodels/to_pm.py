@@ -22,7 +22,7 @@ from pandapower.results import init_results
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

@@ -12,7 +12,7 @@ from pandapower.pypower.idx_cost import MODEL, NCOST, COST, PW_LINEAR, POLYNOMIA
 from pandapower.pypower.idx_gen import PMIN, PMAX
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
