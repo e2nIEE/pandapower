@@ -26,7 +26,7 @@ classifiers = [
 
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
-    versions = set(re.findall('3.[7-9]', lines))
+    versions = set(re.findall('3.[7-9]', lines)) | set(re.findall('3.1[0-9]', lines))
     for version in versions:
         classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
 
@@ -39,7 +39,7 @@ setup(
     author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
     long_description=long_description,
-	long_description_content_type='text/x-rst',
+    long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
     install_requires=["pandas>=0.17",
@@ -49,14 +49,17 @@ setup(
                       "packaging"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],  # "shapely", "pyproj" are depedencies of geopandas and so already available; "base64", "hashlib", "zlib" produce installing problems, so it is not include
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
+        # "shapely", "pyproj" are depedencies of geopandas and so already available;
+        # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"],#, "lightsim2grid"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
+        "performance": ["ortools"],  # , "lightsim2grid"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
+        # "fiona" is a depedency of geopandas and so already available
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly", "matplotlib", "python-igraph", "geopandas",
                 "pytest", "pytest-xdist",
-                "ortools",# lightsim2grid,
+                "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
