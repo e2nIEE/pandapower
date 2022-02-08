@@ -10,7 +10,7 @@ import scipy.io
 from pandapower.converter.pypower import from_ppc
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -98,8 +98,8 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
             logger.info('gencost is not in mpc')
 
         for k in mpc[casename_mpc_file]._fieldnames:
-            if k not in ppc:
-                ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
+           if k not in ppc:
+               ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')

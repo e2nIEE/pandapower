@@ -12,7 +12,7 @@ from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

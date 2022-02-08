@@ -14,7 +14,7 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

@@ -20,7 +20,7 @@ except ImportError:
     IGRAPH_INSTALLED = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
