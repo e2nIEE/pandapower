@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, auto_open=True):
+                  bus_size=10, filename="temp-plot.html", auto_open=True):
     """
     Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.
@@ -66,12 +66,46 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
         **bus_size** (float, 10.0) -  size of buses to plot.
 
+        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
+
         **auto_open** (bool, True) - automatically open plot in browser
 
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
 
     """
+    # getting connected componenets without consideration of trafos
+    graph = create_nxgraph(net, include_trafos=False)
+    vlev_buses = connected_components(graph)
+    # getting unique sets of buses for each voltage level
+    vlev_bus_dict = {}
+    for vl_buses in vlev_buses:
+        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
+            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
+        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
+        if vlev_bus_dict.get(vn_kv):
+            vlev_bus_dict[vn_kv].update(vl_buses)
+        else:
+            vlev_bus_dict[vn_kv] = vl_buses
+
+    # create a default colormap for voltage levels
+    nvlevs = len(vlev_bus_dict)
+    colors = get_plotly_color_palette(nvlevs)
+    colors_dict = colors_dict or dict(zip(vlev_bus_dict.keys(), colors))
+    color_buses_dict = {colors_dict[vlev]: buses for vlev, buses in vlev_bus_dict.items()}
+
+    return bus_dicted_plotly(
+        net, color_buses_dict, respect_switches=respect_switches, use_line_geodata=use_line_geodata,
+        on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
+        aspectratio=aspectratio, line_width=line_width,
+        bus_size=bus_size, filename=filename, auto_open=auto_open)
+
+
+def bus_dicted_plotly(
+    net, color_buses_dict, respect_switches=True, use_line_geodata=None, on_map=False,
+    projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
+    bus_size=10, filename="temp-plot.html", auto_open=True):
+    """ Internal function of vlevel_plotly() """
     version_check()
     # create geocoord if none are available
     if 'line_geodata' not in net:
@@ -99,31 +133,11 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geodata = False
 
-    # getting connected componenets without consideration of trafos
-    graph = create_nxgraph(net, include_trafos=False)
-    vlev_buses = connected_components(graph)
-    # getting unique sets of buses for each voltage level
-    vlev_bus_dict = {}
-    for vl_buses in vlev_buses:
-        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
-            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
-        if vlev_bus_dict.get(vn_kv):
-            vlev_bus_dict[vn_kv].update(vl_buses)
-        else:
-            vlev_bus_dict[vn_kv] = vl_buses
-
-    # create a default colormap for voltage levels
-    nvlevs = len(vlev_bus_dict)
-    colors = get_plotly_color_palette(nvlevs)
-    colors_dict = colors_dict or dict(zip(vlev_bus_dict.keys(), colors))
-
     # creating traces for buses and lines for each voltage level
     bus_traces = []
     line_traces = []
-    for vn_kv, buses_vl in vlev_bus_dict.items():
+    for vlev_color, buses_vl in color_buses_dict.items():
 
-        vlev_color = colors_dict[vn_kv]
         bus_trace_vlev = create_bus_trace(
             net, buses=buses_vl, size=bus_size, legendgroup=str(vn_kv), color=vlev_color,
             trace_name='buses {0} kV'.format(vn_kv))
@@ -143,7 +157,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
     return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                        aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                       auto_open=auto_open)
+                       filename=filename, auto_open=auto_open)
 
 
 if __name__ == '__main__':
