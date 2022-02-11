@@ -437,7 +437,7 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
 
 def test_trafo_asym():
     nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
-    for trafo_vector_group in ["YNyn", "Dyn", "Yzn", "Yyn"]:
+    for trafo_vector_group in ["YNyn", "Dyn", "Yzn", "Yyn", "YNd", "YNy"]:
         net = pp.from_pickle(nw_dir + '/runpp_3ph Validation.p')
         net['trafo'].vector_group = trafo_vector_group
         runpp_3ph_with_consistency_checks(net)
