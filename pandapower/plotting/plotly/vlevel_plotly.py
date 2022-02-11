@@ -141,6 +141,7 @@ def bus_dicted_plotly(
     # creating traces for buses and lines for each voltage level
     bus_traces = []
     line_traces = []
+    traced_lines = set()
     for bus_group_legend in bus_groups:
         buses_vl, vlev_color, legend_group = bus_group_legend
 
@@ -152,12 +153,21 @@ def bus_dicted_plotly(
 
         vlev_lines = net.line[net.line.from_bus.isin(buses_vl) &
                               net.line.to_bus.isin(buses_vl)].index.tolist()
+        traced_lines |= set(vlev_lines)
         line_trace_vlev = create_line_trace(
             net, lines=vlev_lines, use_line_geodata=use_line_geodata,
             respect_switches=respect_switches, legendgroup=legend_group, color=vlev_color,
             width=line_width, trace_name=f'lines {legend_group}')
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev
+
+    # creating traces for other lines
+    line_trace_other = create_line_trace(
+        net, lines=net.line.index.difference(traced_lines).tolist(),
+        use_line_geodata=use_line_geodata, respect_switches=respect_switches,
+        color="grey", width=line_width)
+    if line_trace_vlev is not None:
+        line_traces += line_trace_other
 
     trafo_traces = create_trafo_trace(net, color='gray', width=line_width * 2)
 
