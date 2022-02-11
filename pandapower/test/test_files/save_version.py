@@ -12,4 +12,4 @@ import os
 net = nw.example_multivoltage()
 control.DiscreteTapControl(net, 1, 1.02, 1.03)
 pp.runpp(net, run_control=True)
-pp.to_json(net, os.path.join("old_versions", "example_%s.json"%pp.__version__))
+pp.to_json(net, os.path.join("old_versions", "example_%s.json" % pp.__version__))

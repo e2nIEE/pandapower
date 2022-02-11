@@ -3,7 +3,7 @@ from pandapower.converter.powermodels.to_pm import convert_to_pm_structure, dump
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)

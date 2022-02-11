@@ -16,7 +16,7 @@ from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 
@@ -94,11 +94,11 @@ def test_ctrl_unconverged(net):
     DivergentController(net)
 
     with pytest.raises(ct.ControllerNotConverged):
-        run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3)
+        run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, verbose=False)
 
     # assert no exceptions but appropriate output in outputwriter
     run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3,
-                   continue_on_divergence=True)
+                   continue_on_divergence=True, verbose=False)
 
     for i, out in enumerate(output_writer.output["Parameters"].controller_unstable):
         if i % 2 == 0:

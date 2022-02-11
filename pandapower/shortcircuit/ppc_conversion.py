@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

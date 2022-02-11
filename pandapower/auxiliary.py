@@ -46,15 +46,15 @@ except ImportError:
     from .pf.no_numba import jit
 
 try:
-    from lightsim2grid.newtonpf import newtonpf as newtonpf_ls
+    from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
+    lightsim2grid_available = True
 except ImportError:
-    newtonpf_ls = None
+    lightsim2grid_available = False
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
-lightsim2grid_available = True if newtonpf_ls is not None else False
 logger = logging.getLogger(__name__)
 
 
@@ -356,7 +356,7 @@ def _get_values(source, selection, lookup):
     """
     v = np.zeros(len(selection))
     for i, k in enumerate(selection):
-        v[i] = source[lookup[np.int(k)]]
+        v[i] = source[lookup[np.int64(k)]]
     return v
 
 
@@ -736,33 +736,37 @@ def _check_if_numba_is_installed(numba):
     return numba
 
 
-def _deactive(msg):
-    logger.error(msg)
-    return False
+def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack):
+    """
+    Implement some checks to decide whether the package lightsim2grid can be used. The package implements a backend for
+     power flow calculation in C++ and provides a speed-up. If lightsim2grid is "auto" (default), we don't bombard the
+     user with messages. Otherwise, if lightsim2grid is True bus cannot be used, we inform the user abot it.
+    """
+    if not lightsim2grid:
+        return False  # early return :)
 
+    if not lightsim2grid_available:
+        if lightsim2grid != "auto":
+            logger.info("option 'lightsim2grid' is True but the module lightsim2grid could not be imported. "
+                        "Falling back to pandapower implementation.")
+        return False
+    if algorithm != 'nr':  # todo implement lightsim2grid dc power flow and gauss-seidel power flow
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError(f"option 'lightsim2grid' is True but the algorithm {algorithm} not implemented.")
+    if voltage_depend_loads:
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and voltage-dependent loads detected.")
+    if (len(net.ext_grid.query("in_service")) + len(net.gen.query("slack & in_service"))) > 1 and not distributed_slack:
+        # lightsim2grid implements distributed_slack similarly to pandapower, but does not accept multiple slacks
+        # otherwise
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and multiple ext_grids are found, "
+                                  "but distributed_slack=False.")
 
-def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_dependend_loads, algorithm,
-                                       enforce_q_lims):
-    if lightsim2grid:
-        if not lightsim2grid_available:
-            return _deactive("option 'lightsim2grid' is True activates but module cannot be "
-                             "imported. lightsim2grid gets deactivet.")
-        if algorithm != 'nr':
-            raise ValueError("option 'lightsim2grid' is True activates but algorithm is not 'nr'.")
-        if voltage_dependend_loads:
-            return _deactive("option 'lightsim2grid' is True but voltage dependend loads are in "
-                             "your grid. lightsim2grid gets deactivet.")
-        if enforce_q_lims:
-            return _deactive("option 'lightsim2grid' is True and enforce_q_lims is True. This is "
-                             "not supported. lightsim2grid gets deactivet.")
-        if len(net.ext_grid) > 1:
-            return _deactive("option 'lightsim2grid' is True and multiple ext_grids are in the "
-                             "grid. lightsim2grid gets deactivet.")
-        if np.any(net.gen.bus.isin(net.ext_grid.bus)):
-            return _deactive("option 'lightsim2grid' is True and gens are at slack buses."
-                             "lightsim2grid gets deactivet.")
-
-    return lightsim2grid
+    return True
 
 
 # =============================================================================
@@ -968,7 +972,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    lightsim2grid = kwargs.get("lightsim2grid", False)
+    lightsim2grid = kwargs.get("lightsim2grid", "auto")
 
     if "init" in overrule_options:
         init = overrule_options["init"]
@@ -982,8 +986,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 or np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
-    lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
-                                                       algorithm, enforce_q_lims)
+    lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
+                                                       distributed_slack)
 
     ac = True
     mode = "pf"

@@ -162,8 +162,8 @@ def test_nets_equal():
 
     # not detecting alternated value if difference is beyond tolerance
     net["load"]["p_mw"][net["load"].index[0]] += 0.0001
-    assert tb.nets_equal(original, net, tol=0.1)
-    assert tb.nets_equal(net, original, tol=0.1)
+    assert tb.nets_equal(original, net, atol=0.1)
+    assert tb.nets_equal(net, original, atol=0.1)
 
 
 def test_clear_result_tables():
@@ -482,9 +482,9 @@ def test_merge_and_split_nets():
     assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
     assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
-    assert (net1.sgen.name.loc[net1.poly_cost.element].append(
-        net2.sgen.name.loc[net2.poly_cost.element]).values ==
-        net.sgen.name.loc[net.poly_cost.element].values).all()
+    assert np.array_equal(
+        pd.concat([net1.sgen.name.loc[net1.poly_cost.element], net2.sgen.name.loc[net2.poly_cost.element]]).values,
+        net.sgen.name.loc[net.poly_cost.element].values)
 
     net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
     assert pp.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
@@ -1275,8 +1275,6 @@ def test_repl_to_line_with_switch():
 
     for testindex in net.line.index:
         if net.line.in_service.loc[testindex]:
-            # todo print weg
-            print("testing line " + str(testindex))
             line = net.line.loc[testindex]
             fbus = line.from_bus
             tbus = line.to_bus

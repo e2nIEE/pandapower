@@ -14,7 +14,7 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV
 import pandapower as pp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
@@ -298,6 +298,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
+
+    net._options = {}
+    net._options["gen_lookup"] = gen_lookup
 
     return net
 

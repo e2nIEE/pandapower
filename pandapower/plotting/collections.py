@@ -26,7 +26,7 @@ from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_
     position_on_busbar, get_index_array
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

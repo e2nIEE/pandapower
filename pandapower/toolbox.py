@@ -33,7 +33,7 @@ except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -733,6 +733,24 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
         **kwargs** - key word arguments for dataframes_equal()
     """
+    not_equal, not_checked_keys = _nets_equal_keys(
+        net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
+        **kwargs)
+    if len(not_checked_keys) > 0:
+        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
+            not_checked_keys)))
+
+    if len(not_equal) > 0:
+        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        return False
+    else:
+        return True
+
+
+def _nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
+                     name_selection, **kwargs):
+    """ Returns a lists of keys which are 1) not equal and 2) not checked.
+    Used within nets_equal(). """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
         return False
@@ -818,16 +836,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
                     not_equal.append(key)
             except:
                 not_checked_keys.append(key)
-
-    if len(not_checked_keys) > 0:
-        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
-            not_checked_keys)))
-
-    if len(not_equal) > 0:
-        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
-        return False
-    else:
-        return True
+    return not_equal, not_checked_keys
 
 
 def clear_result_tables(net):

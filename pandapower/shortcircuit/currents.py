@@ -217,9 +217,9 @@ def _calc_branch_currents(net, ppci, bus_idx):
         V_ikss = V_ikss[:, bus_idx]
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
-        V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex)
+        V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
         for ix, b in enumerate(bus_idx):
-            ikss = np.zeros(n_bus, dtype=np.complex)
+            ikss = np.zeros(n_bus, dtype=np.complex128)
             ikss[b] = ppci["bus"][b, IKSS1] * baseI[b]
             V_ikss[:, ix] = ybus_fact(ikss)
 
@@ -241,7 +241,7 @@ def _calc_branch_currents(net, ppci, bus_idx):
             V = np.dot((current * baseI), Zbus).T
         else:
             ybus_fact = ppci["internal"]["ybus_fact"]
-            V = np.zeros((n_bus, n_sc_bus), dtype=np.complex)
+            V = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
             for ix, b in enumerate(bus_idx):
                 V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
 
