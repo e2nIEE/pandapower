@@ -171,7 +171,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                              modelling \n Try : net.trafo[\"si0_hv_partial\"] = 0.9 " )
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
-        power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
+        if "power_station_unit" in trafos.columns:
+            power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
+        else:
+            power_station_unit = np.zeros(len(trafos), dtype=bool)
         in_service = trafos["in_service"].astype(int)
 
         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
