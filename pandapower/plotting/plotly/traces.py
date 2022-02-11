@@ -303,7 +303,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     ys = []
     if use_branch_geodata:
         for line_ind, _ in branches.iterrows():
-            line_coords = net[branch_element+'_geodata'].loc[line_ind, 'coords']
+            line_coords = net[branch_element+'_geodata'].at[line_ind, 'coords']
             linex, liney = list(zip(*line_coords))
             xs += linex
             xs += [None]
@@ -576,7 +576,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         except:
             pass
     if len(no_go_branches) > 0:
-        no_go_branches_to_plot = net[branch_element].loc[no_go_branches]
+        no_go_branches_to_plot = net[branch_element].loc[list(no_go_branches)]
         for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
             line_trace = dict(type='scatter',
