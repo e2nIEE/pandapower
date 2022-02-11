@@ -209,7 +209,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # TODO: This equation needs to be checked!
         # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_hv
-        z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
+        # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
+        z0_k = (r_sc + x_sc * 1j) / parallel
         z_n_ohm = trafos["xn_ohm"].fillna(0).values
         k_st_tr = trafos["k_st"].fillna(1).values
 
