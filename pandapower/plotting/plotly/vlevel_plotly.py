@@ -92,21 +92,26 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     nvlevs = len(vlev_bus_dict)
     colors = get_plotly_color_palette(nvlevs)
     colors_dict = colors_dict or dict(zip(vlev_bus_dict.keys(), colors))
-    color_buses_dict = {colors_dict[vlev]: buses for vlev, buses in vlev_bus_dict.items()}
+    bus_groups = [(buses, colors_dict[vlev], f"{vlev} kV") for vlev, buses in vlev_bus_dict.items()]
 
     return bus_dicted_plotly(
-        net, color_buses_dict, respect_switches=respect_switches, use_line_geodata=use_line_geodata,
-        on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
-        aspectratio=aspectratio, line_width=line_width,
+        net, bus_groups, respect_switches=respect_switches,
+        use_line_geodata=use_line_geodata, on_map=on_map, projection=projection,
+        map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
         bus_size=bus_size, filename=filename, auto_open=auto_open)
 
 
 def bus_dicted_plotly(
-    net, color_buses_dict, respect_switches=True, use_line_geodata=None, on_map=False,
-    projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
+    net, bus_groups, respect_switches=True, use_line_geodata=None,
+    on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
     bus_size=10, filename="temp-plot.html", auto_open=True):
-    """ Internal function of vlevel_plotly() """
+    """
+    Internal function of vlevel_plotly()
+
+    **bus_groups** - list of tuples consisting of set of bus indices, color, legendgroup
+    """
     version_check()
+
     # create geocoord if none are available
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])
@@ -136,11 +141,12 @@ def bus_dicted_plotly(
     # creating traces for buses and lines for each voltage level
     bus_traces = []
     line_traces = []
-    for vlev_color, buses_vl in color_buses_dict.items():
+    for bus_group_legend in bus_groups:
+        buses_vl, vlev_color, legend_group = bus_group_legend
 
         bus_trace_vlev = create_bus_trace(
-            net, buses=buses_vl, size=bus_size, legendgroup=str(vn_kv), color=vlev_color,
-            trace_name='buses {0} kV'.format(vn_kv))
+            net, buses=buses_vl, size=bus_size, legendgroup=legend_group, color=vlev_color,
+            trace_name=f'buses {legend_group}')
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
@@ -148,8 +154,8 @@ def bus_dicted_plotly(
                               net.line.to_bus.isin(buses_vl)].index.tolist()
         line_trace_vlev = create_line_trace(
             net, lines=vlev_lines, use_line_geodata=use_line_geodata,
-            respect_switches=respect_switches, legendgroup=str(vn_kv), color=vlev_color,
-            width=line_width, trace_name='lines {0} kV'.format(vn_kv))
+            respect_switches=respect_switches, legendgroup=legend_group, color=vlev_color,
+            width=line_width, trace_name=f'lines {legend_group}')
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev
 
