@@ -171,6 +171,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                              modelling \n Try : net.trafo[\"si0_hv_partial\"] = 0.9 " )
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
+        power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
         in_service = trafos["in_service"].astype(int)
 
         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
@@ -209,23 +210,23 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_hv
         z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
-        z_n = trafos["xn_ohm"].fillna(0).values / ((vn_hv ** 2) / net.sn_mva)
+        z_n_ohm = trafos["xn_ohm"].fillna(0).values
         k_st_tr = trafos["k_st"].fillna(1).values
-        # print(z0_k * (110**2))
 
         if mode == "sc":# or trafo_model == "pi":
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax)
             z0_k *= kt
 
+            # different formula must be applied for power station unit transformers:
             # z_0THV is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
-            z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva)
-
-            z0_k = z0_k * k_st_tr + 3j * z_n
+            z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva) / parallel
+            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_hv ** 2) / net.sn_mva)
+            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
-        # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n)  # adding admittance for "pi" model
+        # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n_ohm)  # adding admittance for "pi" model
 
         # =============================================================================
         #       Transformer magnetising impedance for zero sequence

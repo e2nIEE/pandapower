@@ -164,6 +164,29 @@ def iec_60909_4():
     # bus F for 1ph fault: 1, 2, 3, 4
     return net
 
+
+def iec_60909_4_t1():
+    net = pp.create_empty_network()
+    # net.sn_mva = 23
+    net.sn_mva = 1
+    pp.create_bus(net, vn_kv=110.)
+    pp.create_bus(net, vn_kv=20.)
+
+    #pp.create_ext_grid(net, 0, s_sc_max_mva=0.000001, rx_max=0.1, x0x_max=3, r0x0_max=0.15)
+
+    t1 = pp.create_transformer_from_parameters(net, 0, 1, sn_mva=150,
+                                               pfe_kw=0, i0_percent=0,
+                                               vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
+                                               pt_percent=12, oltc=True, vk0_percent=15.2,
+                                               vkr0_percent=0.5, xn_ohm=22, vector_group="YNd",
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                               power_station_unit=True)
+    pp.create_gen(net, 1, p_mw=0.85 * 150, vn_kv=21,
+                  xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
+                  power_station_trafo=t1)
+    return net
+
+
 def iec_60909_4_small(with_xward=False):
     net = pp.create_empty_network()
     net.sn_mva = 23
