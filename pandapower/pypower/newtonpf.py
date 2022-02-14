@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -97,17 +97,16 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
     nref = len(ref)
     npv = len(pv)
     npq = len(pq)
-    j1 = 0
-    j2 = npv  # j1:j2 - V angle of pv buses
+    j0 = 0
+    j1 = nref if dist_slack else 0
+    j2 = j1 + npv  # j1:j2 - V angle of pv buses
     j3 = j2
     j4 = j2 + npq  # j3:j4 - V angle of pq buses
     j5 = j4
     j6 = j4 + npq  # j5:j6 - V mag of pq buses
-    j7 = j6
-    j8 = j6 + nref # j7:j8 - slacks
 
     # make initial guess for the slack
-    slack = gen[:, PG].sum() - bus[:, PD].sum()
+    slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     converged = _check_for_convergence(F, tol)
@@ -124,13 +123,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options):
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
+        if dist_slack:
+            slack = slack + dx[j0:j1]
         if npv and not iwamoto:
             Va[pv] = Va[pv] + dx[j1:j2]
         if npq and not iwamoto:
             Va[pq] = Va[pq] + dx[j3:j4]
             Vm[pq] = Vm[pq] + dx[j5:j6]
-        if dist_slack:
-            slack = slack + dx[j7:j8]
 
         # iwamoto multiplier to increase convergence
         if iwamoto:

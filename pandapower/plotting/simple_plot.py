@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -103,7 +103,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord
         sizes = get_collection_sizes(net, bus_size, ext_grid_size, trafo_size,
-                                     load_size, sgen_size, switch_size, switch_distance)
+                                     load_size, sgen_size, switch_size, switch_distance, gen_size)
         bus_size = sizes["bus"]
         ext_grid_size = sizes["ext_grid"]
         trafo_size = sizes["trafo"]
@@ -111,6 +111,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         load_size = sizes["load"]
         switch_size = sizes["switch"]
         switch_distance = sizes["switch_distance"]
+        gen_size = sizes["gen"]
 
     # create bus collections to plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
@@ -128,11 +129,11 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     collections = [bc, lc]
 
     # create ext_grid collections
-    eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
-    if len(eg_buses_with_geo_coordinates) > 0:
-        sc = create_ext_grid_collection(net, size=ext_grid_size, orientation=0, ext_grids=eg_buses_with_geo_coordinates)
-        # sc = create_bus_collection(net, eg_buses_with_geo_coordinates, patch_type="rect",
-        #                            size=ext_grid_size, color=ext_grid_color, zorder=11)
+    # eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
+    if len(net.ext_grid) > 0:
+        sc = create_ext_grid_collection(net, size=ext_grid_size, orientation=0,
+                                        ext_grids=net.ext_grid.index, patch_edgecolor=ext_grid_color,
+                                        zorder=11)
         collections.append(sc)
 
     # create trafo collection if trafo is available

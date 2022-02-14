@@ -68,3 +68,34 @@ USetTapControl
 
 .. autoclass:: pandapower.control.controller.trafo.USetTapControl.USetTapControl
     :members:
+
+-------------
+
+**********************
+TapDependentImpedance
+**********************
+
+.. autoclass:: pandapower.control.controller.trafo.TapDependentImpedance.TapDependentImpedance
+    :members:
+
+
+Characteristic
+==============
+
+The following classes enable the definition of characteristics for the controllers.
+
+***************
+Characteristic
+***************
+
+.. autoclass:: pandapower.control.util.characteristic.Characteristic
+    :members:
+
+-------------
+
+********************
+SplineCharacteristic
+********************
+
+.. autoclass:: pandapower.control.util.characteristic.SplineCharacteristic
+    :members:

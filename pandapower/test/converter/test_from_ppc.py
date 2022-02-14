@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,7 +21,7 @@ except ImportError:
     pypower_installed = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except:
     import logging
 
@@ -53,7 +53,7 @@ def test_from_ppc():
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, tol=1.e-9)
+    assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
 
 def test_validate_from_ppc():
@@ -110,12 +110,12 @@ def test_case9_conversion():
     # compare loadflow results
     pp.runpp(net)
     pp.runpp(net2)
-    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
+    assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
     # compare optimal powerflow results
     pp.runopp(net, delta=1e-16)
     pp.runopp(net2, delta=1e-16)
-    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
+    assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
 @pytest.mark.skipif(pypower_installed == False, reason="needs pypower installation")
