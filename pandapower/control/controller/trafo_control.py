@@ -43,14 +43,7 @@ class TrafoController(Controller):
                          **kwargs)
 
         self.trafotype = trafotype
-
-        # set read and write flag and make sure that tid is a numpy array (if several tid)
-        if isinstance(tid, numbers.Number):
-            self.tid = tid
-            self.read_write_flag = 'single_index'
-        else:
-            self.read_write_flag = 'loc'
-            self.tid = np.array(tid)
+        self.tid = tid
 
         self._set_side_trafotable(net, side)
         self._set_valid_tid_controlled_bus(net)
@@ -60,6 +53,24 @@ class TrafoController(Controller):
         self.tol = tol
 
         self.set_recycle(net)
+
+    @property
+    def read_write_flag(self):
+        """
+        this property is to define, which function to use to write and read data in net: at or loc
+        """
+        return self._read_write_flag
+
+    @read_write_flag.getter
+    def read_write_flag(self):
+        if not hasattr(self, '_read_write_flag'):
+            # set read and write flag and make sure that tid is a numpy array (if several tid)
+            if isinstance(self.tid, numbers.Number):
+                self._read_write_flag = 'single_index'
+            else:
+                self._read_write_flag = 'loc'
+                self.tid = np.array(self.tid)
+        return self._read_write_flag
 
     def initialize_control(self, net):
         # in case changes applied to net in the meantime:
