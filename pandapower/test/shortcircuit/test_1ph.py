@@ -10,10 +10,12 @@ import numpy as np
 import os
 import pytest
 
+
 def check_results(net, vc, result):
     res_ika = net.res_bus_sc[(net.bus.zone==vc) & (net.bus.in_service)].ikss_ka.values
     if not np.allclose(result, res_ika):
         raise ValueError("Incorrect results for vector group %s"%vc, res_ika, result)
+
 
 def add_network(net, vector_group):
     b1 = pp.create_bus(net, 110, zone=vector_group, index=pp.get_free_id(net.bus))
@@ -51,6 +53,7 @@ def add_network(net, vector_group):
     pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
     pp.add_zero_impedance_parameters(net)
     return l1, l2, t1
+
 
 def test_1ph_shortcircuit():
     # vector groups without "N" have no impact on the 1ph
@@ -137,6 +140,7 @@ def test_1ph_shortcircuit_min():
         for vc, result in results.items():
             check_results(net, vc, result)
 
+
 def test_iec60909_example_4():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
@@ -149,6 +153,7 @@ def test_iec60909_example_4():
         assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
         assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
 
+
 def test_iec60909_example_4_bus_selection():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
@@ -159,6 +164,7 @@ def test_iec60909_example_4_bus_selection():
                                             "ikss_ka"], 35.53066312)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
                                             "ikss_ka"], 34.89135137)
+
 
 def test_iec60909_example_4_bus_selection_br_res():
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
@@ -174,6 +180,7 @@ def test_iec60909_example_4_bus_selection_br_res():
                                             "ikss_ka"], 35.53066312)
         assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
                                             "ikss_ka"], 34.89135137)
+
 
 def test_1ph_with_switches():
     for inv_y in (False, True):
@@ -288,6 +295,26 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
     return net
 
 
+def iec_60909_4_t1():
+    net = pp.create_empty_network()
+    # net.sn_mva = 23
+    net.sn_mva = 1
+    pp.create_bus(net, vn_kv=110.)
+    pp.create_bus(net, vn_kv=20.)
+
+    t1 = pp.create_transformer_from_parameters(net, 0, 1, sn_mva=150,
+                                               pfe_kw=0, i0_percent=0,
+                                               vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
+                                               pt_percent=12, oltc=True, vk0_percent=15.2,
+                                               vkr0_percent=0.5, xn_ohm=22, vector_group="YNd",
+                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                               power_station_unit=True)
+    pp.create_gen(net, 1, p_mw=0.85 * 150, vn_kv=21,
+                  xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
+                  power_station_trafo=t1)
+    return net
+
+
 def vde_232():
     net = pp.create_empty_network()
     # hv buses
@@ -305,9 +332,9 @@ def vde_232():
                                           mag0_percent=100, mag0_rx=0,
                                           si0_hv_partial=0.9,
                                           pt_percent=12, oltc=True,
-                                          power_station_unit=True)
-    net.trafo['xn_ohm'] = 22
-    # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
+                                          power_station_unit=True,
+                                          xn_ohm=22)
+
     pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5)
 
     # z_q
@@ -322,7 +349,6 @@ def vde_232():
     return net
 
 
-
 def test_iec60909_example_4_one_trafo3w():
     net = iec_60909_4_small(n_t3=1)
 
@@ -335,6 +361,7 @@ def test_iec60909_example_4_one_trafo3w():
     sc.calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
 
+
 def test_iec60909_example_4_two_trafo3w():
     net = iec_60909_4_small(n_t3=2)
 
@@ -342,6 +369,7 @@ def test_iec60909_example_4_two_trafo3w():
 
     sc.calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_2t3), atol=1e-4)
+
 
 def test_iec60909_example_4_two_trafo3w_two_earth():
     net = iec_60909_4_small(n_t3=2, num_earth=2)
@@ -359,7 +387,7 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
     sc.calc_sc(net, fault="1ph", case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+
 def test_iec_60909_4_small_with_t2_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
     net.gen = net.gen.iloc[0:0, :]
@@ -369,7 +397,7 @@ def test_iec_60909_4_small_with_t2_1ph():
     # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
+
 def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
     net.gen.power_station_trafo=np.nan
@@ -381,8 +409,6 @@ def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
 
-# TODO Roman: Fix this
-# @pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_small_with_gen_ps_unit_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
 
@@ -402,6 +428,14 @@ def test_vde_232_with_gen_ps_unit_1ph():
     # from pandapower.pypower.idx_bus import *
     net = vde_232()
 
+    sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    assert np.isclose(net.res_bus_sc.at[0, 'ikss_ka'], 9.04979, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'rk0_ohm'], 2.09392, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'xk0_ohm'], 14.3989, rtol=0, atol=1e-4)
+
+
+def test_t1_iec60909_4():
+    net = iec_60909_4_t1()
     sc.calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     assert np.isclose(net.res_bus_sc.at[0, 'ikss_ka'], 9.04979, rtol=0, atol=1e-4)
     assert np.isclose(net.res_bus_sc.at[0, 'rk0_ohm'], 2.09392, rtol=0, atol=1e-4)
