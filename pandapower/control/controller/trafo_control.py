@@ -45,7 +45,7 @@ class TrafoController(Controller):
         self.trafotype = trafotype
         self.tid = tid
 
-        self._set_side_trafotable(net, side)
+        self._set_side_trafotable(side)
         self._set_valid_tid_controlled_bus(net)
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
@@ -97,11 +97,15 @@ class TrafoController(Controller):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
                              "but received: %s for trafo %s" % (self.trafotable, tap_side, self.controlled_tid))
 
-        self.tap_side_coeff = np.where(tap_side=='hv', 1, -1)
-        self.tap_side_coeff[self.tap_step_percent < 0] *= -1
+        if self.read_write_flag == "single_index":
+            self.tap_side_coeff = 1 if tap_side == 'hv' else -1
+            if self.tap_step_percent < 0:
+                self.tap_side_coeff *= -1
+        else:
+            self.tap_side_coeff = np.where(tap_side=='hv', 1, -1)
+            self.tap_side_coeff[self.tap_step_percent < 0] *= -1
 
-
-    def _set_side_trafotable(self, net, side):
+    def _set_side_trafotable(self, side):
         if self.trafotype == "2W":
             if side not in ["hv", "lv"]:
                 raise UserWarning("side has to be 'hv' or 'lv' for high/low voltage, "
@@ -140,11 +144,17 @@ class TrafoController(Controller):
         self.tap_step_percent = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_percent", self.read_write_flag)
         self.tap_step_degree = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_degree", self.read_write_flag)
 
-        self.tap_sign = np.where(np.isnan(self.tap_step_degree), 1, np.sign(np.cos(np.deg2rad(self.tap_step_degree))))
-        self.tap_sign = np.where((self.tap_sign == 0) | (np.isnan(self.tap_sign)), 1, self.tap_sign)
-
         self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
-        self.tap_pos = np.where(np.isnan(self.tap_pos), self.tap_neutral, self.tap_pos)
+        if self.read_write_flag == "single_index":
+            self.tap_sign = 1 if np.isnan(self.tap_step_degree) else np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
+            if (self.tap_sign == 0) | (np.isnan(self.tap_sign)):
+                self.tap_sign = 1
+            if np.isnan(self.tap_pos):
+                self.tap_pos = self.tap_neutral
+        else:
+            self.tap_sign = np.where(np.isnan(self.tap_step_degree), 1, np.sign(np.cos(np.deg2rad(self.tap_step_degree))))
+            self.tap_sign = np.where((self.tap_sign == 0) | (np.isnan(self.tap_sign)), 1, self.tap_sign)
+            self.tap_pos = np.where(np.isnan(self.tap_pos), self.tap_neutral, self.tap_pos)
 
         if np.any(np.isnan(self.tap_min)) or np.any(np.isnan(self.tap_max)) or np.any(np.isnan(self.tap_step_percent)):
             logger.error("Trafo-Controller has been initialized with NaN values, check "
