@@ -231,6 +231,13 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
     for r in range(lrefpvpq):
         # nnzStar is necessary to calculate nonzeros per row
         nnzStart = nnz
+        # add slack weights to the first column
+        if slack_weights[refpvpq[r]] > 0:
+            Jx[nnz] = slack_weights[refpvpq[r]]
+            Jj[nnz] = 0
+            # if DEBUG:
+            #     JJ[r, 0] = Jx[nnz]
+            nnz += 1
         # iterate columns of J11 = dS_dVa.real at positions in pvpq
         # check entries in row pvpq[r] of dS_dV
         # r_start, r_end = Yp[refpvpq[r]], Yp[refpvpq[r] + 1]
@@ -250,7 +257,7 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
             if lookup_idx == bus_idx and not skip:# and lookup_idx in pvpq:  # too slow
                 # entry found
                 # equals entry of J11: J[r,cc] = dVa_x[c].real
-                col = cc - lref
+                col = cc
                 Jx[nnz] = dVa_x[c].real
                 Jj[nnz] = col
                 # if DEBUG:
@@ -258,20 +265,12 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
                 nnz += 1
                 # if entry is found in the "pq part" of pvpq = add entry of J12
                 if cc >= lrefpv:
-                    col = cc + lpq - lref
+                    col = cc + lpq
                     Jx[nnz] = dVm_x[c].real
                     Jj[nnz] = col
                     # if DEBUG:
                     #     JJ[r, col] = Jx[nnz]
                     nnz += 1
-
-        # add slack weights to the last column
-        if slack_weights[refpvpq[r]] > 0:
-            Jx[nnz] = slack_weights[refpvpq[r]]
-            Jj[nnz] = lpvpq + lpq
-            # if DEBUG:
-            #     JJ[r, lpvpq + lpq] = Jx[nnz]
-            nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
         Jp[r + 1] = nnz - nnzStart + Jp[r]
 
@@ -293,7 +292,7 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
             if lookup_idx == bus_idx and not skip:# and lookup_idx in pvpq:   # too slow
                 # entry found
                 # equals entry of J21: J[r + lpvpq, cc] = dVa_x[c].imag
-                col = cc - lref
+                col = cc
                 Jx[nnz] = dVa_x[c].imag
                 Jj[nnz] = col
                 # if DEBUG:
@@ -301,7 +300,7 @@ def create_J_ds(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp
                 nnz += 1
                 # if entry is found in the "pq part" of pvpq = Add entry of J22
                 if cc >= lrefpv:
-                    col = cc + lpq - lref
+                    col = cc + lpq
                     Jx[nnz] = dVm_x[c].imag
                     Jj[nnz] = col
                     # if DEBUG:

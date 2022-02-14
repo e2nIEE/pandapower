@@ -3,9 +3,9 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
+
 import numpy as np
-import pandas as pd
-from pandas import Int64Index, Series
+from pandas import Index, Series
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.toolbox import ensure_iterability
@@ -13,12 +13,13 @@ from .characteristic import SplineCharacteristic
 
 try:
     import matplotlib.pyplot as plt
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 
@@ -88,7 +89,7 @@ def _controller_attributes_query(controller, parameters):
 
     if complete_match and not element_index_match:
         intersect_elms = set(ensure_iterability(controller.__getattribute__("element_index"))) & \
-            set(ensure_iterability(parameters["element_index"]))
+                         set(ensure_iterability(parameters["element_index"]))
         if len(intersect_elms):
             logger.info("'element_index' has an intersection of " + str(intersect_elms) +
                         " with Controller %i" % controller.index)
@@ -127,7 +128,7 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         attributes_keys = list(set(parameters.keys()) - set(df_keys))
         attributes_dict = {k: parameters[k] for k in attributes_keys}
         # query of parameters in net.controller dataframe
-        idx = Int64Index(idx)
+        idx = Index(idx, dtype=np.int64)
         for df_key in df_keys:
             idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
         # query of parameters in controller object attributes
@@ -200,7 +201,7 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
 
 def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel=None):
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     x = np.linspace(start, stop, num)
     y = characteristic(x)
     plt.plot(x, y, marker='x')
@@ -209,12 +210,14 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
     if ylabel is not None:
         plt.ylabel(ylabel)
 
+
 def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
     # create characteristics for the specified variable and set their indices in the trafo table
     col = f"{variable}_characteristic"
     # check if the variable is a valid attribute of the trafo table
     supported_columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
-                         "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in ["", "r"]]}
+                         "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in
+                                     ["", "r"]]}
     if col not in supported_columns[trafotable]:
         raise UserWarning("Variable %s is not supported for table %s" % (variable, trafotable))
 

@@ -7,7 +7,7 @@ import pandapower as pp
 import numpy as np
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 
@@ -90,13 +90,13 @@ def check_for_initial_run(controller_order):
     return False
 
 
-def ctrl_variables_default(net):
+def ctrl_variables_default(net, **kwargs):
     ctrl_variables = dict()
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
-    ctrl_variables["run"] = pp.runpp
+    ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
@@ -119,7 +119,7 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     ctrl_var = ctrl_variables
 
     if ctrl_variables is None:
-        ctrl_variables = ctrl_variables_default(net)
+        ctrl_variables = ctrl_variables_default(net, **kwargs)
 
     if ('continue_on_divergence') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         div = kwargs.pop('continue_on_divergence')
