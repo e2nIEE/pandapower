@@ -487,8 +487,8 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     node_geodata = node_element + "_geodata"
     use_branch_geodata = use_branch_geodata if net[branch_geodata].shape[0] > 0 else False
     if use_branch_geodata:
-        branches_to_plot = branches_to_plot.loc[list(set(branches_to_plot.index) &
-                                                set(net[branch_geodata].index))]
+        branches_to_plot = branches_to_plot.loc[np.intersect1d(branches_to_plot.index,
+                                                               net[branch_geodata].index)]
     else:
         branches_with_geodata = branches_to_plot['from_'+node_element].isin(
                                                     net[node_geodata].index) & \
