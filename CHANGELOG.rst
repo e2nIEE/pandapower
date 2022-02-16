@@ -2,6 +2,7 @@ Change Log
 
 [CHANGED] rename u by vm (voltage magnitude) in file and functions names
 [ADDED] added support for Python 3.10
+[FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
 
 [2.8.0]- 2022-02-06
 ----------------------
