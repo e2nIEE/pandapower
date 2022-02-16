@@ -82,15 +82,19 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
-    - name: Install pandapipes
+    - name: Install pandapipes and simbench
       run: |
         python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
+        python -m pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
     - name: List of installed packages
       run: |
         pip list
     - name: Test pandapipes
       run: |
         python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
+    - name: Test simbench
+      run: |
+        python -c 'from simbench import sb_dir; import pytest; import sys; ec = pytest.main([sb_dir]); sys.exit(ec)'
 
   linting:
     # run flake8 and check for errors
