@@ -33,7 +33,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class CustomTextPath():
+class CustomTextPath(TextPath):
     """
     Create a path from the text. This class provides functionality for deepcopy, which is not
     implemented for TextPath.
