@@ -94,14 +94,14 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     colors_dict = colors_dict or dict(zip(vlev_bus_dict.keys(), colors))
     bus_groups = [(buses, colors_dict[vlev], f"{vlev} kV") for vlev, buses in vlev_bus_dict.items()]
 
-    return bus_dicted_plotly(
+    return _draw_colored_bus_groups_plotly(
         net, bus_groups, respect_switches=respect_switches,
         use_line_geodata=use_line_geodata, on_map=on_map, projection=projection,
         map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
         bus_size=bus_size, filename=filename, auto_open=auto_open)
 
 
-def bus_dicted_plotly(
+def _draw_colored_bus_groups_plotly(
     net, bus_groups, respect_switches=True, use_line_geodata=None,
     on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
     bus_size=10, filename="temp-plot.html", auto_open=True):
