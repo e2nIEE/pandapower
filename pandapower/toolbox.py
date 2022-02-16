@@ -1464,7 +1464,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     closed_switches = set()
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
-        len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
@@ -2041,7 +2041,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
-        replaced[elm] = net[elm].loc[affected_elements]
+        replaced[elm] = net[elm].loc[list(affected_elements)]
 
         if drop_affected:
             if elm == 'line':
