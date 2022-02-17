@@ -72,11 +72,11 @@ def append_set_to_dict(dict_, set_, keys):
     for pos, _ in enumerate(keys[:-1]):
         if isinstance(getFromDict(dict_, keys[:pos]), dict):
             if keys[pos] not in getFromDict(dict_, keys[:pos]).keys():
-                setInDict(dict_, keys[:pos + 1], dict())
+                setInDict(dict_, keys[:pos+1], dict())
         else:
             raise ValueError("This function expects a dict for 'getFromDict(dict_, " +
                              str(keys[:pos]) + ")', not a" + str(type(getFromDict(
-                dict_, keys[:pos]))))
+                                 dict_, keys[:pos]))))
 
     # set the value
     setSetInDict(dict_, keys, set_)
@@ -174,9 +174,49 @@ def get_branch_power(net, bus, power_type, branches_dict=None):
             for bus_type in bus_types:
                 if bus_type in net[elm].columns and net[elm][bus_type].at[idx] == bus:
                     col = power_type[0] + "_" + bus_type.split("_")[0] + power_type[1:]
-                    power -= net["res_" + elm][col].at[idx]
+                    power -= net["res_"+elm][col].at[idx]
                     break
     return power
+
+
+def _create_eq_elms(net, buses, elm, branches=None, idx_start=None, sign=1,
+                    name=None, zone=None, other_zone=None, **kwargs):
+    """
+    Internal function of create_eq_loads() or create_eq_gens()
+    """
+    name = name if name is not None else f"equivalent {elm}"
+
+    # --- check existing results and return if not available
+    cols = {"load": ["p_mw", "q_mvar"], "gen": ["p_mw", "vm_pu"]}[elm]
+    if len(buses - set(net.res_bus.index)) or net.res_bus.loc[
+            buses, cols].isnull().any().any():
+        logger.warning(f"No {elm}s could be added to 'net_ib_eq_load' since bus results " +
+                       "are missing.")
+        return pd.Index()
+
+    # --- run functionality
+    if branches is not None:
+        branches_has_buses_keys = not len(set(branches.keys()).symmetric_difference(set(buses)))
+    names = pp.ensure_iterability(name, len(buses))
+
+    new_idx = []
+    for no, (bus, name) in enumerate(zip(buses, names)):
+        bra = branches if branches is None or not branches_has_buses_keys else branches[bus]
+        idx = idx_start + no if idx_start is not None else None
+
+        p = sign * get_branch_power(net, bus, "p_mw", bra)
+        if elm == "load":
+            q = sign * get_branch_power(net, bus, "q_mvar", bra)
+            new = pp.create_load(net, bus, p, q, name=name, index=idx, **kwargs)
+        elif elm == "gen":
+            vm = net.res_bus.vm_pu.at[bus]
+            new = pp.create_gen(net, bus, p, vm, name=name, index=idx, **kwargs)
+        else:
+            raise NotImplementedError(f"elm={elm} is not implemented.")
+        if "origin_id" in net[elm].columns:
+            net[elm].origin_id.loc[new] = eq_name(elm, other_zone, zone, number=no)
+        new_idx.append(new)
+    return pd.Index(new_idx)
 
 
 def create_eq_loads(net, buses, branches=None, idx_start=None, sign=1,
@@ -217,31 +257,15 @@ def create_eq_loads(net, buses, branches=None, idx_start=None, sign=1,
     OUTPUT:
         new_idx - list of indices of the new loads
     """
+    return _create_eq_elms(net, buses, "load", branches=branches, idx_start=idx_start, sign=sign,
+                           name=name, zone=zone, other_zone=other_zone, **kwargs)
 
-    # --- check existing results and return if not available
-    if len(buses - set(net.res_bus.index)) or net.res_bus.loc[
-        buses, ["p_mw", "q_mvar"]].isnull().any().any():
-        logger.warning("No loads could be added to 'net_ib_eq_load' since bus results " +
-                       "are missing.")
-        return pd.Index()
 
-    # --- run functionality
-    if branches is not None:
-        branches_has_buses_keys = not len(set(branches.keys()).symmetric_difference(set(buses)))
-    names = pp.ensure_iterability(name, len(buses))
-
-    new_idx = []
-    for no, (bus, name) in enumerate(zip(buses, names)):
-        bra = branches if branches is None or not branches_has_buses_keys else branches[bus]
-        idx = idx_start + no if idx_start is not None else None
-
-        p = get_branch_power(net, bus, "p_mw", bra)
-        q = get_branch_power(net, bus, "q_mvar", bra)
-        new = pp.create_load(net, bus, p, q, name=name, index=idx, **kwargs)
-        if "origin_id" in net.load.columns:
-            net.load.origin_id.loc[new] = eq_name("load", other_zone, zone, number=no)
-        new_idx.append(new)
-    return pd.Index(new_idx)
+def create_eq_gens(net, buses, branches=None, idx_start=None, sign=-1,
+                   name="equivalent gen", zone=None, other_zone=None, **kwargs):
+    """ Same as create_eq_loads """
+    return _create_eq_elms(net, buses, "gen", branches=branches, idx_start=idx_start, sign=sign,
+                           name=name, zone=zone, other_zone=other_zone, **kwargs)
 
 
 def split_grid_by_bus_zone(net, boundary_bus_zones=None, eq_type=None, separate_eqs=True,
@@ -323,7 +347,6 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
              3: {"line": {1}}
              }
     """
-
     def append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_cols):
         """ iterate throw all boundaries which matches this_zone and add the other_zone_bus to
         boundary_buses """
@@ -348,10 +371,10 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 
     zones = net.bus.zone.unique()
     boundary_branches = {zone if net.bus.zone.dtype == object else zone.item():
-                             dict() for zone in zones}
+                         dict() for zone in zones}
     boundary_branches["all"] = dict()
     boundary_buses = {zone if net.bus.zone.dtype == object else zone.item():
-                          {"all": set(), "internal": set(), "external": set()} for zone in zones}
+                      {"all": set(), "internal": set(), "external": set()} for zone in zones}
     boundary_buses["all"] = set()
 
     for elm, buses in branch_dict.items():
@@ -381,7 +404,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
             for zone in set(boundaries[zone_cols].values.flatten()):
 
                 # determine which columns belong to this zone and which not
-                this_zone_col = np.zeros(boundaries.shape[0]) * np.nan
+                this_zone_col = np.zeros(boundaries.shape[0])*np.nan
                 for i, _ in enumerate(buses):
                     this_zone_col[boundaries[zone_cols[i]] == zone] = i
                 this_zone_col = pd.Series(this_zone_col).dropna().astype(int)
@@ -391,7 +414,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                     other_zone_col1.loc[other_zone_col1 < 0] = 0
                     other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=int),
                                                 index=this_zone_col.index) - \
-                                      this_zone_col - other_zone_col1
+                        this_zone_col - other_zone_col1
 
                 # fill zone dependant values to boundary_branches and boundary_buses
                 boundary_branches[zone][elm] = set(boundaries.index[this_zone_col.index])
@@ -403,7 +426,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                 boundary_buses[zone]["all"] |= ext | nint
                 if len(buses) == 3:
                     ext = set(boundaries[buses].values[
-                                  other_zone_col2.index, other_zone_col2.values])
+                        other_zone_col2.index, other_zone_col2.values])
                     boundary_buses[zone]["external"] |= ext
                     boundary_buses[zone]["all"] |= ext
 
@@ -453,7 +476,7 @@ def nets_ib_by_bus_zone_with_boundary_branches(
         boundary boundary branches as well as "all" boundary branches
     """
     eq_type = eq_type if not isinstance(eq_type, str) else eq_type.lower()
-    if eq_type is not None and eq_type not in ["load", "rei", "ward", "xward"]:
+    if eq_type is not None and eq_type not in ["load", "gen", "rei", "ward", "xward"]:
         raise ValueError("eq_type %s is unknown." % str(eq_type))
 
     nets_ib = dict()  # internal + boundary: the internal and up to the external boundary buses
@@ -462,7 +485,7 @@ def nets_ib_by_bus_zone_with_boundary_branches(
 
     # --- define nets_ib with consideration of eq_type (very similar to part of
     # split_grid_by_bus_zone_with_boundary_buses())
-    n_add_load1 = 1
+    n_add_elm1 = 1
     fully_included_boundary_buses = set()
     for zone in boundary_buses.keys():
         if zone == "all":
@@ -495,16 +518,17 @@ def nets_ib_by_bus_zone_with_boundary_branches(
         if eq_type is None:
             continue
 
-        elif eq_type == "load" and not separate_eqs:
-            eq_loads = create_eq_loads(nets_ib[zone], boundary_buses[zone]["external"],
-                                       idx_start=net.load.index.values.max() + n_add_load1,
-                                       zone=zone)
-            n_add_load1 += len(eq_loads)
+        elif eq_type in ["load", "gen"] and not separate_eqs:
+            create_eq_fct = {"load": create_eq_loads, "gen": create_eq_gens}[eq_type]
+            eq_elms = create_eq_fct(nets_ib[zone], boundary_buses[zone]["external"],
+                                    idx_start=net[eq_type].index.values.max()+n_add_elm1,
+                                    zone=zone)
+            n_add_elm1 += len(eq_elms)
             if group_imported:
                 elm_col = kwargs.get("elm_col", None)
                 if elm_col is not None:
-                    eq_loads = nets_ib[zone]["load"][elm_col].loc[eq_loads]
-                Group(nets_ib[zone], {"load": eq_loads}, name=eq_name("load", zone=zone),
+                    eq_elms = nets_ib[zone][eq_type][elm_col].loc[eq_elms]
+                Group(nets_ib[zone], {eq_type: eq_elms}, name=eq_name(eq_type, zone=zone),
                       elm_col=elm_col)
             continue
 
@@ -512,21 +536,23 @@ def nets_ib_by_bus_zone_with_boundary_branches(
             logger.error("With separate_eqs is False, this point should not be"
                          "reached. Hereafter other_zones are iterated")
             continue
+
         for other_zone, bb in boundary_buses[zone].items():
             if other_zone in ["all", "internal", "external"]:
                 continue
 
-            if eq_type == "load" and separate_eqs:
-                eq_loads = create_eq_loads(nets_ib[zone], bb,
-                                           idx_start=net.load.index.values.max() + n_add_load1,
-                                           zone=zone, other_zone=other_zone)
-                n_add_load1 += len(eq_loads)
+            if eq_type in ["load", "gen"] and separate_eqs:
+                create_eq_fct = {"load": create_eq_loads, "gen": create_eq_gens}[eq_type]
+                eq_elms = create_eq_fct(nets_ib[zone], bb,
+                                        idx_start=net[eq_type].index.values.max()+n_add_elm1,
+                                        zone=zone, other_zone=other_zone)
+                n_add_elm1 += len(eq_elms)
                 if group_imported:
                     elm_col = kwargs.get("elm_col", None)
                     if elm_col is not None:
-                        eq_loads = nets_ib[zone]["load"][elm_col].loc[eq_loads]
-                    Group(nets_ib[zone], {"load": eq_loads},
-                          name=eq_name("load", other_zone, zone), elm_col=elm_col)
+                        eq_elms = nets_ib[zone][eq_type][elm_col].loc[eq_elms]
+                    Group(nets_ib[zone], {eq_type: eq_elms},
+                          name=eq_name(eq_type, other_zone, zone), elm_col=elm_col)
 
             elif eq_type in ["rei", "ward", "xward"] and separate_eqs:
                 raise NotImplementedError("eq_type '%s' and separate_eqs is %s is not implemented" %
@@ -591,7 +617,7 @@ def split_grid_by_bus_zone_with_boundary_buses(
         raise ValueError("'all' is not a proper zone name.")  # all is used later for other purpose
 
     eq_type = eq_type if not isinstance(eq_type, str) else eq_type.lower()
-    if eq_type is not None and eq_type not in ["load", "rei", "ward", "xward"]:
+    if eq_type is not None and eq_type not in ["load", "gen", "rei", "ward", "xward"]:
         raise ValueError("eq_type %s is unknown." % str(eq_type))
 
     boundary_bus_zones = pp.ensure_iterability(boundary_bus_zones)
@@ -630,7 +656,7 @@ def split_grid_by_bus_zone_with_boundary_buses(
             # boundary_buses by another bus_group -> same zone without connection
 
             message = "Zone " + str(zone) + " exist in multiple bus groups. These are the" + \
-                      " zones of the bus groups: " + str(zones)
+                " zones of the bus groups: " + str(zones)
             if only_connected_groups:
                 raise ValueError(message)
             else:
@@ -655,7 +681,7 @@ def split_grid_by_bus_zone_with_boundary_buses(
 
     # --- define nets_ib with consideration of eq_type (very similar to part of
     # split_grid_by_bus_zone_with_boundary_branches())
-    n_add_load1 = 1
+    n_add_elm1 = 1
     fully_included_boundary_buses = set()
     for zone, buses in nets_ib_buses.items():
 
@@ -676,15 +702,17 @@ def split_grid_by_bus_zone_with_boundary_buses(
         if eq_type is None:
             continue
 
-        elif eq_type == "load" and not separate_eqs:
-            eq_loads = create_eq_loads(nets_ib[zone], boundary_buses[zone]["all"], zone=zone,
-                                       idx_start=net.load.index.values.max() + n_add_load1)
-            n_add_load1 += len(eq_loads)
+        elif eq_type in ["load", "gen"] and not separate_eqs:
+            create_eq_fct = {"load": create_eq_loads, "gen": create_eq_gens}[eq_type]
+            eq_elms = create_eq_fct(nets_ib[zone], boundary_buses[zone]["all"],
+                                    idx_start=net[eq_type].index.values.max()+n_add_elm1,
+                                    zone=zone)
+            n_add_elm1 += len(eq_elms)
             if group_imported:
                 elm_col = kwargs.get("elm_col", None)
                 if elm_col is not None:
-                    eq_loads = nets_ib[zone]["load"][elm_col].loc[eq_loads]
-                Group(nets_ib[zone], {"load": eq_loads}, name=eq_name("load", zone=zone),
+                    eq_elms = nets_ib[zone][eq_type][elm_col].loc[eq_elms]
+                Group(nets_ib[zone], {eq_type: eq_elms}, name=eq_name(eq_type, zone=zone),
                       elm_col=elm_col)
             continue
 
@@ -696,16 +724,17 @@ def split_grid_by_bus_zone_with_boundary_buses(
             if other_zone in ["all", "external", "internal"]:
                 continue
 
-            if eq_type == "load" and separate_eqs:
-                eq_loads = create_eq_loads(nets_ib[zone], bb,
-                                           idx_start=net.load.index.values.max() + n_add_load1,
-                                           name="equivalent load", zone=zone, other_zone=other_zone)
-                n_add_load1 += len(eq_loads)
+            if eq_type in ["load", "gen"] and separate_eqs:
+                create_eq_fct = {"load": create_eq_loads, "gen": create_eq_gens}[eq_type]
+                eq_elms = create_eq_fct(nets_ib[zone], bb,
+                                        idx_start=net[eq_type].index.values.max()+n_add_elm1,
+                                        zone=zone, other_zone=other_zone)
+                n_add_elm1 += len(eq_elms)
                 if group_imported:
                     elm_col = kwargs.get("elm_col", None)
                     if elm_col is not None:
-                        eq_loads = nets_ib[zone]["load"][elm_col].loc[eq_loads]
-                    Group(nets_ib[zone], {"load": eq_loads},
+                        eq_elms = nets_ib[zone][eq_type][elm_col].loc[eq_elms]
+                    Group(nets_ib[zone], {eq_type: eq_elms},
                           name=eq_name(eq_type, other_zone, zone),
                           elm_col=elm_col)
 
@@ -771,7 +800,7 @@ def split_grid_by_bus_zone_with_boundary_branches(net, **kwargs):
         nets_i[zone]["bus"].sort_index(inplace=True)
         if kwargs.get("with_oos_eq_loads", False):
             create_eq_loads(nets_i[zone], boundary_buses[zone]["internal"],
-                            idx_start=net.load.index.values.max() + n_add_load2,
+                            idx_start=net.load.index.values.max()+n_add_load2,
                             zone=zone, in_service=False)
             n_add_load2 += (nets_i[zone].load.name == "equivalent load").sum()
 
@@ -792,7 +821,7 @@ def split_grid_by_bus_zone_with_boundary_branches(net, **kwargs):
         nets_ib_eq_load[zone] = deepcopy(nets_ib0[zone])
         create_eq_loads(nets_ib_eq_load[zone], boundary_buses[zone]["external"],
                         boundary_branches[zone], zone=zone,
-                        idx_start=net.load.index.values.max() + n_add_load1)
+                        idx_start=net.load.index.values.max()+n_add_load1)
         n_add_load1 += (nets_ib_eq_load[zone].load.name == "equivalent load").sum()
 
         # nets_b (only the boundary branches)
@@ -827,10 +856,10 @@ def dict_sum_value(dict1, dict2):
 
 
 def is_res_table_with_same_idx(net, elm):
-    return "res_" + elm in net.keys() and \
-           isinstance(net["res_" + elm], pd.DataFrame) and \
-           net["res_" + elm].shape[0] == net[elm].shape[0] and \
-           all(net["res_" + elm].index == net[elm].index)
+    return "res_"+elm in net.keys() and \
+           isinstance(net["res_"+elm], pd.DataFrame) and \
+           net["res_"+elm].shape[0] == net[elm].shape[0] and \
+           all(net["res_"+elm].index == net[elm].index)
 
 
 def _sort_from_to_buses(net, elm, idx):
@@ -855,7 +884,7 @@ def sort_from_to_buses(net, elm):
         assert not set(cols) - set(net[elm].columns)
 
         idx_to_sort = net[elm].index.values[np.argsort(net[elm][cols].values, axis=1)[
-                                            :, 0].astype(bool)]
+            :, 0].astype(bool)]
 
         if len(idx_to_sort):
 
@@ -864,7 +893,7 @@ def sort_from_to_buses(net, elm):
 
             # sort result table
             if is_res_table_with_same_idx(net, elm):
-                _sort_from_to_buses(net, "res_" + elm, idx_to_sort)
+                _sort_from_to_buses(net, "res_"+elm, idx_to_sort)
 
             # correct side entries in measurement table
             if net["measurement"].shape[0]:
@@ -872,7 +901,7 @@ def sort_from_to_buses(net, elm):
                     (net.measurement.element_type == elm) &
                     (net.measurement.element.isin(idx_to_sort))]
                 from_meas_idx_to_sort = meas_idx_to_sort[net.measurement.side.loc[
-                                                             meas_idx_to_sort] == "from"]
+                    meas_idx_to_sort] == "from"]
                 net.measurement.loc[from_meas_idx_to_sort] = "to"
                 net.measurement.loc[meas_idx_to_sort.difference(from_meas_idx_to_sort)] = "from"
 
@@ -897,8 +926,8 @@ def sort_net_dfs(net, dfs=None):
 
             # sort and reindex result table
             if is_res_table_with_same_idx(net, elm):
-                net["res_" + elm] = net["res_" + elm].loc[net[elm].index]
-                net["res_" + elm].index = range(net[elm].shape[0])
+                net["res_"+elm] = net["res_"+elm].loc[net[elm].index]
+                net["res_"+elm].index = range(net[elm].shape[0])
 
             # reindex
             net[elm].index = range(net[elm].shape[0])
@@ -924,7 +953,7 @@ def split_grid_at_hvmv_connections(net, calc_volt_angles=True):
 
     # all mv boundary buses
     mv_bbs = set(net.trafo.lv_bus.loc[hvmv_trafos]) | set(net.trafo3w.lv_bus.loc[
-                                                              hv_mv_trafo3ws]) | set(net.trafo3w.mv_bus.loc[hvmvmv_trafo3ws])
+        hv_mv_trafo3ws]) | set(net.trafo3w.mv_bus.loc[hvmvmv_trafo3ws])
 
     mg = top.create_nxgraph(net, include_trafos=net.trafo.index.difference(hvmv_trafos),
                             include_trafo3ws=net.trafo3w.index.difference(hv_mv_trafo3ws))
@@ -959,16 +988,16 @@ def split_grid_at_hvmv_connections(net, calc_volt_angles=True):
         # store information on controllability
         conn_gen = pp.get_connected_elements(net, "gen", busgroup, respect_switches=False)
         if "controllable" not in net.gen.columns and len(conn_gen) or \
-                "controllable" in net.gen.columns and net.gen.controllable.loc[conn_gen].any() or \
-                "controllable" in net.sgen.columns and net.sgen.controllable.any() and \
-                net.sgen.controllable.loc[pp.get_connected_elements(
-                    net, "sgen", busgroup, respect_switches=False)].any() or \
-                "controllable" in net.load.columns and net.load.controllable.any() and \
-                net.load.controllable.loc[pp.get_connected_elements(
-                    net, "load", busgroup, respect_switches=False)].any() or \
-                "controllable" in net.storage.columns and net.storage.controllable.any() and \
-                net.storage.controllable.loc[pp.get_connected_elements(
-                    net, "storage", busgroup, respect_switches=False)].any():
+            "controllable" in net.gen.columns and net.gen.controllable.loc[conn_gen].any() or \
+            "controllable" in net.sgen.columns and net.sgen.controllable.any() and \
+            net.sgen.controllable.loc[pp.get_connected_elements(
+                net, "sgen", busgroup, respect_switches=False)].any() or \
+            "controllable" in net.load.columns and net.load.controllable.any() and \
+            net.load.controllable.loc[pp.get_connected_elements(
+                net, "load", busgroup, respect_switches=False)].any() or \
+            "controllable" in net.storage.columns and net.storage.controllable.any() and \
+            net.storage.controllable.loc[pp.get_connected_elements(
+                net, "storage", busgroup, respect_switches=False)].any():
             pass
         else:
             continue
@@ -1006,13 +1035,13 @@ def split_grid_at_hvmv_connections(net, calc_volt_angles=True):
         for bb in bbs:
             powers = net.res_trafo.loc[pp.get_connected_elements(
                 net, "trafo", bb, respect_switches=False) & hvmv_trafos, [
-                                           "p_lv_mw", "q_lv_mvar"]].sum(axis=0).values
+                    "p_lv_mw", "q_lv_mvar"]].sum(axis=0).values
             powers += net.res_trafo3w.loc[pp.get_connected_elements(
                 net, "trafo3w", bb, respect_switches=False) & hv_mv_trafo3ws, [
-                                              "p_lv_mw", "q_lv_mvar"]].sum(axis=0).values
+                    "p_lv_mw", "q_lv_mvar"]].sum(axis=0).values
             powers += net.res_trafo3w.loc[pp.get_connected_elements(
                 net, "trafo3w", bb, respect_switches=False) & hvmvmv_trafo3ws, [
-                                              "p_mv_mw", "q_mv_mvar"]].sum(axis=0).values
+                    "p_mv_mw", "q_mv_mvar"]].sum(axis=0).values
             eq_sgens = eq_sgens.append({'name': "mv_%s_%i" % (zones[0], iterators[zones[0]]),
                                         'bus': bb,
                                         "p": powers[0],
@@ -1062,7 +1091,7 @@ def split_grid_at_hvmv_connections(net, calc_volt_angles=True):
         hv_net.res_trafo3w.loc[hvmvmv_trafo3ws, ["p_lv_mw", "q_lv_mvar"]].values
     sgens_powers.loc[eq_sgens.bus, ["p", "q"]] -= eq_sgens[["p", "q"]].values
     sgens_powers.drop(sgens_powers.loc[eq_sgens.bus].index[
-                          np.isclose(sgens_powers.loc[eq_sgens.bus].values, 0).all(axis=1)], inplace=True)
+        np.isclose(sgens_powers.loc[eq_sgens.bus].values, 0).all(axis=1)], inplace=True)
     new_sgen2 = pp.create_sgens(hv_net, sgens_powers.index, sgens_powers.p.values,
                                 sgens_powers.q.values, controllable=False, name="mv_eq")
 
@@ -1110,7 +1139,7 @@ def hard_merging_nets(net1, net2, allow_reindexing=True, reindex_first=True, add
                     elm, elm) + str(list(dupl_idx)))
             else:
                 max_idx = max(net1[elm].index.values.max(), net2[elm].index.values.max())
-                new_index = np.arange(max_idx + 1, max_idx + 1 + len(dupl_idx))
+                new_index = np.arange(max_idx+1, max_idx+1+len(dupl_idx))
                 if reindex_first:
                     pp.reindex_elements(net2, elm, new_index, dupl_idx)
                 else:
@@ -1161,20 +1190,16 @@ def merge_grid_at_hvmv_connections(hv_net, mv_nets):
     return hv_net
 
 
+def get_connected_switch_buses(net, boundary_buses):
+    boundary_buses_inclusive_bswitch = set()
+    mg_sw = top.create_nxgraph(net, include_trafos=False,
+                               include_trafo3ws=False,
+                               respect_switches=True,
+                               include_lines=False,
+                               include_impedances=False)
+    for bbus in boundary_buses:
+        boundary_buses_inclusive_bswitch |= set(top.connected_component(mg_sw, bbus))
+    return boundary_buses_inclusive_bswitch
+
 if __name__ == "__main__":
-
-    if 1:  # split and merge by bus zones - both directions
-        import RPC2
-
-        net1 = RPC2.TSO_DSO_net()
-        _, _, nets_i, _, _, _, nets_b = split_grid_by_bus_zone_with_boundary_branches(net1)
-        net2 = merge_splitted_grid_by_bus_zone(nets_i, nets_b)
-        net2["OPF_converged"] = net1["OPF_converged"]
-        assert pp.nets_equal(net1, net2)
-    if 1:  # split and merge at hv mv connection - both directions
-        import RPC2
-
-        net1 = RPC2.TSO_DSO_net()
-        mv_nets, hv_net = split_grid_at_hvmv_connections(net1)
-        net2 = merge_grid_at_hvmv_connections(hv_net, mv_nets)
-        assert pp.nets_equal(net1, net2)
+    pass

@@ -74,7 +74,6 @@ def run_basic_usecases(eq_type, net=None):
     # UC3: merge eq_net3 with subnet_rest
     eq_net3 = pp.grid_equivalents.merge_internal_net_and_equivalent_external_net(eq_net3a, subnet_rest, eq_type)
     pp.runpp(eq_net3, calculate_voltage_angles=True)
-    del net['phase_shifter_actived']
     assert pp.nets_equal(net, create_test_net())
     return eq_net1, eq_net2, eq_net3
 
@@ -347,7 +346,6 @@ def test_equivalent_groups():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
 
-    # TODO: get_equivalent cannot handle shift_degree != 0
     net.trafo["shift_degree"] = 0
     net.trafo3w["shift_mv_degree"] = 0
     net.trafo3w["shift_lv_degree"] = 0
@@ -391,30 +389,30 @@ def test_equivalent_groups():
         assert len(net_eq2.group.object.at[1].elms_dict[elm]) == no
 
 
-# def test_shifter_degree():
-#     net = pp.networks.example_multivoltage()
-#     net.trafo.shift_degree[0] = 30
-#     net.trafo.shift_degree[1] = -60
-#     net.trafo3w.shift_mv_degree[0] = 90
-#     net.trafo3w.shift_lv_degree[0] = 150
-#     net.gen.drop(net.gen.index, inplace=True)
-#     pp.runpp(net, calculate_voltage_angles=True)
-#     boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
-#         list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
-#     i = net.ext_grid.bus.values[0]
-#     for b in boundary_buses:
-#         print(b)
-#         net_rei = pp.grid_equivalents.get_equivalent(net, "rei", [b], [i],
-#                                      calculate_voltage_angles=True)
-#         all_i_buses = net_rei.bus_lookups["origin_all_internal_buses"]
-#         vm_error = max(abs(net_rei.res_bus.vm_pu[all_i_buses].values -
-#                             net.res_bus.vm_pu[all_i_buses].values))
-#         va_error = max(abs(net_rei.res_bus.va_degree[all_i_buses].values -
-#                             net.res_bus.va_degree[all_i_buses].values))
-#         print("vm_error", vm_error)
-#         print("va_error", va_error)
-#         assert vm_error < 1e-5
-#         assert va_error < 1e-5
+def test_shifter_degree():
+    net = pp.networks.example_multivoltage()
+    net.trafo.shift_degree[0] = 30
+    net.trafo.shift_degree[1] = -60
+    net.trafo3w.shift_mv_degree[0] = 90
+    net.trafo3w.shift_lv_degree[0] = 150
+    pp.runpp(net, calculate_voltage_angles=True)
+    
+    boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
+        list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
+    i = net.ext_grid.bus.values[0]
+    
+    for eq_type in  ["rei"]:
+        for b in boundary_buses:
+            net_rei = pp.grid_equivalents.get_equivalent(net, eq_type, [b], [i],
+                                      calculate_voltage_angles=True,
+                                      sgen_separate=False)
+            all_i_buses = net_rei.bus_lookups["origin_all_internal_buses"]
+            vm_error = max(abs(net_rei.res_bus.vm_pu[all_i_buses].values -
+                                net.res_bus.vm_pu[all_i_buses].values))
+            va_error = max(abs(net_rei.res_bus.va_degree[all_i_buses].values -
+                                net.res_bus.va_degree[all_i_buses].values))
+            assert vm_error < 1e-3
+            assert va_error < 0.5
 
 
 if __name__ == "__main__":
