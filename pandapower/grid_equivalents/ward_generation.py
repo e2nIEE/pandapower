@@ -229,7 +229,8 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles)
+    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles, 
+             tolerance_mva=1e-6, max_iteration=100)
 
     eq_power.p_mw -= \
         pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
