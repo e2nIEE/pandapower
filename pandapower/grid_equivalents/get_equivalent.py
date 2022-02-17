@@ -23,7 +23,7 @@ try:
 except ImportError:
     group_imported = False
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import loggingg
 

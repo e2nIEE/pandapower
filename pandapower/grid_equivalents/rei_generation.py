@@ -12,7 +12,7 @@ import uuid
 from functools import reduce
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

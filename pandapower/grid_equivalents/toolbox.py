@@ -12,7 +12,7 @@ from pandapower.grid_equivalents.get_equivalent import get_equivalent, \
     merge_internal_net_and_equivalent_external_net
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

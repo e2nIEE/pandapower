@@ -9,7 +9,7 @@ import uuid
 from pandapower.auxiliary import _init_runpp_options
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
