@@ -68,7 +68,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
         hover_index = net.ext_grid.bus.tolist()
     else:
         return None
-    hoverinfo = pd.Series(index=hover_index, data=hoverinfo)
+    hoverinfo = pd.Series(index=hover_index, data=hoverinfo, dtype=object)
     if sub_index is not None:
         hoverinfo = hoverinfo.loc[list(sub_index)]
     return hoverinfo

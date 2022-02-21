@@ -526,11 +526,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     branch_traces = []
     for col_i, (idx, branch) in enumerate(branches_to_plot.iterrows()):
         line_color = color
-        line_info = branch['name']
+        line_info = branch['name'] if infofunc is None else infofunc.at[idx]
         if cmap is not None:
             try:
                 line_color = cmap_branches[col_i]
-                line_info = branch['name'] if infofunc is None else infofunc.loc[idx]
             except IndexError:
                 logger.warning("No color and info for {} {:d} (name: {}) available".format(
                     branch_element, idx, branch['name']))
