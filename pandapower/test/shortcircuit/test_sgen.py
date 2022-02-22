@@ -35,6 +35,41 @@ def simplest_test_grid(generator_type, step_up_trafo=False):
     return net
 
 
+def wind_park_grid(case):
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110, index=1)
+    pp.create_buses(net, 13, 20)
+
+    pp.create_ext_grid(net, 1, 1, s_sc_max_mva=10.5 * 110 * np.sqrt(3), rx_max=0.1)
+
+    pp.create_transformer_from_parameters(net, 1, 2, 31.5, 110, 20, 0.6, 12, 0, 0)
+
+    pp.create_line_from_parameters(net, 2, 3, 13.1, 0.0681, 0.102, 0, 1e3, 'L1', parallel=2)
+
+    from_buses = np.array([3, 4, 3, 6, 7, 7, 3, 10, 11, 11, 12])
+    to_buses = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 13])
+    length_km = [1.1, 0.55, 0.79, 0.17, 0.4, 0.55, 0.95, 0.24, 0.29, 0.15, 0.495]
+    names = [f"L{i}" for i in range(2, 13)]
+    pp.create_lines_from_parameters(net, from_buses, to_buses, length_km, 0.211, 0.122, 0, 1e3, names)
+
+    sgen_buses = np.array([4, 5, 6, 8, 9, 10, 12, 13, 3, 14])
+    if case=="all_async_doubly_fed":
+        pp.create_sgens(net, sgen_buses, 0, 0, 2.5, rx=0.1, current_source=False,
+                        generator_type="async_doubly_fed", max_ik_ka=0.388, kappa=1.7)
+    elif case == "all_full_size_converter":
+        pp.create_sgens(net, sgen_buses, 0, 0, 2.5, rx=0.1, k=1.3, current_source=True,
+                        generator_type="current_source")
+    elif case == "mixed":
+        pp.create_sgens(net, sgen_buses[:5], 0, 0, 2.5, rx=0.1, current_source=False,
+                        generator_type="async_doubly_fed", max_ik_ka=0.388, kappa=1.7)
+        pp.create_sgens(net, sgen_buses[5:], 0, 0, 2.5, rx=0.1, k=1.3, current_source=True,
+                        generator_type="current_source")
+    else:
+        raise NotImplementedError(f"case {case} not implemented")
+
+    return net
+
+
 def wind_park_example():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=110., index=1)
@@ -238,6 +273,33 @@ def test_wind_park():
     sc.calc_sc(net, ip=True)
     assert np.isclose(net.res_bus_sc.ikss_ka.at[2], 3.9034, rtol=1e-4)
     assert np.isclose(net.res_bus_sc.ip_ka.at[2], 7.3746, rtol=1e-4)
+
+
+def test_wind_park_1():
+    # example from IEC 60909-4 section 8.5
+    net = wind_park_grid("all_async_doubly_fed")
+    sc.calc_sc(net)
+    ikss_ka = [10.745, 9.045, 6.978, 6.385, 6.095, 6.568, 6.478, 6.262,
+               6.184, 6.513, 6.394, 6.247, 5.993, 6.313]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-3, rtol=0)
+
+
+def test_wind_park_2():
+    # example from IEC 60909-4 section 8.6
+    net = wind_park_grid("all_full_size_converter")
+    sc.calc_sc(net)
+    ikss_ka = [10.671,  8.387,  6.161,  5.728,  5.522, 5.852, 5.787, 5.633,
+               5.577, 5.797, 5.708, 5.600, 5.419, 5.651]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1.5e-3, rtol=0)
+
+
+def test_wind_park_3():
+    # example from IEC 60909-4 section 8.7
+    net = wind_park_grid("mixed")
+    sc.calc_sc(net)
+    ikss_ka = [10.713,  8.734,  6.570,  6.078,  5.834, 6.232, 6.157, 5.976,
+               5.910, 6.124, 6.015, 5.884, 5.666, 5.946]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-3, rtol=0)
 
 
 def test_wind_power_station_unit():
