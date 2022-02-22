@@ -303,7 +303,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     ys = []
     if use_branch_geodata:
         for line_ind, _ in branches.iterrows():
-            line_coords = net[branch_element+'_geodata'].loc[line_ind, 'coords']
+            line_coords = net[branch_element+'_geodata'].at[line_ind, 'coords']
             linex, liney = list(zip(*line_coords))
             xs += linex
             xs += [None]
@@ -480,14 +480,15 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         else:
             raise NotImplementedError("respect separtors is only implements for switches, "
                                       "not for {}s.".format(separator_element))
-    branches_to_plot = net[branch_element].loc[set(net[branch_element].index) & (set(branches) - no_go_branches)]
+    branches_to_plot = net[branch_element].loc[list(set(net[branch_element].index) &
+                                                    (set(branches) - no_go_branches))]
     no_go_branches_to_plot = None
     branch_geodata = branch_element + "_geodata"
     node_geodata = node_element + "_geodata"
     use_branch_geodata = use_branch_geodata if net[branch_geodata].shape[0] > 0 else False
     if use_branch_geodata:
-        branches_to_plot = branches_to_plot.loc[set(branches_to_plot.index) &
-                                                set(net[branch_geodata].index)]
+        branches_to_plot = branches_to_plot.loc[np.intersect1d(branches_to_plot.index,
+                                                               net[branch_geodata].index)]
     else:
         branches_with_geodata = branches_to_plot['from_'+node_element].isin(
                                                     net[node_geodata].index) & \
@@ -575,7 +576,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         except:
             pass
     if len(no_go_branches) > 0:
-        no_go_branches_to_plot = net[branch_element].loc[no_go_branches]
+        no_go_branches_to_plot = net[branch_element].loc[list(no_go_branches)]
         for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
             line_trace = dict(type='scatter',

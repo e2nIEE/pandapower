@@ -192,6 +192,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_mva
         tap_hv = np.square(vn_trafo_hv / vn_hv) * net.sn_mva
         if mode == 'pf_3ph':
+            if vector_group not in ["YNyn", "Dyn", "Yzn"]:
+                raise NotImplementedError("Calculation of 3-phase power flow is only implemented for the transformer "
+                                          "vector groups 'YNyn', 'Dyn', 'Yzn'")
             # =============================================================================
             #     Changing base from transformer base to Network base to get Zpu(Net)
             #     Zbase = (kV).squared/S_mva
