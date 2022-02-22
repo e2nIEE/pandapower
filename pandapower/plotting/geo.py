@@ -102,33 +102,6 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     return transform(in_proj, out_proj, x, y)
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
-    """
-    Sets coordinates in net.line_geodata based on the from_bus and to_bus x,y coordinates
-    in net.bus_geodata
-    :param net: pandapowerNet
-    :param line_index: index of lines, coordinates of which will be set from bus geodata (all lines if None)
-    :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
-    :return: None
-    """
-    line_index = line_index if line_index is not None else net.line.index
-    if not overwrite:
-        line_index = setdiff1d(line_index, net.line_geodata.index)
-    failed = []
-    for lidx in line_index:
-        b1 = net.line.from_bus.at[lidx]
-        b2 = net.line.to_bus.at[lidx]
-        if b1 in net.bus_geodata.index and b2 in net.bus_geodata.index:
-            coords = [(net.bus_geodata.x.at[int(b1)], net.bus_geodata.y.at[int(b1)]),
-                      (net.bus_geodata.x.at[int(b2)], net.bus_geodata.y.at[int(b2)])]
-            net.line_geodata.loc[lidx, "coords"] = coords
-        else:
-            failed.append(lidx)
-
-    if len(failed) > 0:
-        logger.info(f"failed to set coordinates of {len(failed)} lines")
-
-
 def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
     """
     Extracts information on bus and line geodata from the geometries of a geopandas geodataframe.
