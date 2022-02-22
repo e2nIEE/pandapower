@@ -29,16 +29,15 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
         hoverinfo = (
                 "Index: " + net.bus.index.astype(str) + '<br />' +
                 "Name: " + net.bus['name'].astype(str) + '<br />' +
-                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str)\
-            .tolist()
+                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str).tolist()
     elif element == "line":
         hoverinfo = (
                 "Index: " + net.line.index.astype(str) + '<br />' +
                 "Name: " + net.line['name'].astype(str) + '<br />' +
                 'Length: ' + net.line['length_km'].round(precision).astype(str) + ' km' + '<br />' +
-                'R: ' + (net.line['length_km'] * net.line['r_ohm_per_km']).round(precision).astype(str)
+                'R: ' + (net.line['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm' + '<br />'
-                + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km']).round(precision).astype(str)
+                + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm' + '<br />').tolist()
     elif element == "trafo":
         hoverinfo = (
@@ -47,7 +46,6 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 'V_n HV: ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'V_n LV: ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'Tap pos.: ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
-
     elif element == "trafo3w":
         hoverinfo = (
                 "Index: " + net.trafo3w.index.astype(str) + '<br />' +
@@ -56,9 +54,6 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 'V_n MV: ' + net.trafo3w['vn_mv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'V_n LV: ' + net.trafo3w['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'Tap pos.: ' + net.trafo3w['tap_pos'].astype(str) + '<br />').tolist()
-
-
-
     elif element == "ext_grid":
         hoverinfo = (
                 "Index: " + net.ext_grid.index.astype(str) + '<br />' +
