@@ -12,6 +12,7 @@ from itertools import chain
 import networkx as nx
 import numpy as np
 import pandas as pd
+import numbers
 from packaging import version
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
@@ -3301,7 +3302,7 @@ def _detect_read_write_flag(net, element, index, variable):
     if variable.startswith('object'):
         # write to object attribute
         return "object", variable.split(".")[1]
-    elif isinstance(index, int):
+    elif isinstance(index, numbers.Number):
         # use .at if element_index is integer for speedup
         return "single_index", variable
     # commenting this out for now, see issue 609

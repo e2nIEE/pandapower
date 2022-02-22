@@ -93,8 +93,8 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return
 
-        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self.read_write_flag)
-        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
 
         increment = np.where(self.tap_side_coeff * self.tap_sign == 1,
                              np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos > self.tap_min), -1,
@@ -105,7 +105,7 @@ class DiscreteTapControl(TrafoController):
         self.tap_pos += increment
 
         # WRITE TO NET
-        write_to_net(net, self.trafotable, self.controlled_tid, 'tap_pos', self.tap_pos, self.read_write_flag)
+        write_to_net(net, self.trafotable, self.controlled_tid, 'tap_pos', self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
         """
@@ -114,8 +114,8 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return True
 
-        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self.read_write_flag)
-        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
 
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |

@@ -5,7 +5,7 @@
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import read_from_net, write_to_net
+from pandapower.toolbox import read_from_net, write_to_net, _detect_read_write_flag
 import numbers
 
 try:
@@ -54,23 +54,11 @@ class TrafoController(Controller):
 
         self.set_recycle(net)
 
-    @property
-    def read_write_flag(self):
-        """
-        this property is to define, which function to use to write and read data in net: at or loc
-        """
-        return self._read_write_flag
-
-    @read_write_flag.getter
-    def read_write_flag(self):
-        if not hasattr(self, '_read_write_flag'):
-            # set read and write flag and make sure that tid is a numpy array (if several tid)
-            if isinstance(self.tid, numbers.Number):
-                self._read_write_flag = 'single_index'
-            else:
-                self._read_write_flag = 'loc'
-                self.tid = np.array(self.tid)
-        return self._read_write_flag
+    def _set_read_write_flag(self):
+        # if someone changes indices of the controller from single index to array and vice versa
+        self._read_write_flag, _ = _detect_read_write_flag(net, self.trafotable, self.tid, "tap_pos")
+        if self._read_write_flag == 'loc':
+            self.tid = np.array(self.tid)
 
     def initialize_control(self, net):
         # in case changes applied to net in the meantime:
@@ -78,6 +66,7 @@ class TrafoController(Controller):
         # update valid trafo and bus
         # update trafo tap parameters
         # we assume side does not change after the controller is created
+        self._set_read_write_flag()
         self._set_valid_tid_controlled_bus(net)
         if self.nothing_to_do(net):
             return
@@ -86,18 +75,18 @@ class TrafoController(Controller):
 
     def nothing_to_do(self, net):
         # if the controller shouldn't do anything, return True
-        if self.controlled_tid is None or (self.read_write_flag != 'single_index' and len(self.controlled_tid) == 0):
+        if self.controlled_tid is None or (self._read_write_flag != 'single_index' and len(self.controlled_tid) == 0):
             return True
         return False
 
     def _set_tap_side_coeff(self, net):
-        tap_side = read_from_net(net, self.trafotable, self.controlled_tid, 'tap_side', self.read_write_flag)
+        tap_side = read_from_net(net, self.trafotable, self.controlled_tid, 'tap_side', self._read_write_flag)
         if (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.trafotype == "2W") or \
             (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.trafotype == "3W"):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
                              "but received: %s for trafo %s" % (self.trafotable, tap_side, self.controlled_tid))
 
-        if self.read_write_flag == "single_index":
+        if self._read_write_flag == "single_index":
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
             if self.tap_step_percent < 0:
                 self.tap_side_coeff *= -1
@@ -122,12 +111,12 @@ class TrafoController(Controller):
         self.side = side
 
     def _set_valid_tid_controlled_bus(self, net):
-        self.trafobus = read_from_net(net, self.trafotable, self.tid, self.side + '_bus', self.read_write_flag)
-        element_in_service = read_from_net(net, self.trafotable, self.tid, 'in_service', self.read_write_flag)
+        self.trafobus = read_from_net(net, self.trafotable, self.tid, self.side + '_bus', self._read_write_flag)
+        element_in_service = read_from_net(net, self.trafotable, self.tid, 'in_service', self._read_write_flag)
         ext_grid_bus = np.isin(self.trafobus, net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values)
         tid_in_net = np.isin(self.tid, net[self.trafotable].index.values)
         controlled = np.logical_and(np.logical_and(element_in_service, tid_in_net), np.logical_not(ext_grid_bus))
-        if self.read_write_flag == 'single_index':
+        if self._read_write_flag == 'single_index':
             self.controlled_tid = self.tid if controlled else None
             self.controlled_bus = self.trafobus if controlled else None
         else:
@@ -138,14 +127,14 @@ class TrafoController(Controller):
             logger.warning("All controlled buses are not valid: controller has no effect")
 
     def _set_tap_parameters(self, net):
-        self.tap_min = read_from_net(net, self.trafotable, self.controlled_tid, "tap_min", self.read_write_flag)
-        self.tap_max = read_from_net(net, self.trafotable, self.controlled_tid, "tap_max", self.read_write_flag)
-        self.tap_neutral = read_from_net(net, self.trafotable, self.controlled_tid, "tap_neutral", self.read_write_flag)
-        self.tap_step_percent = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_percent", self.read_write_flag)
-        self.tap_step_degree = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_degree", self.read_write_flag)
+        self.tap_min = read_from_net(net, self.trafotable, self.controlled_tid, "tap_min", self._read_write_flag)
+        self.tap_max = read_from_net(net, self.trafotable, self.controlled_tid, "tap_max", self._read_write_flag)
+        self.tap_neutral = read_from_net(net, self.trafotable, self.controlled_tid, "tap_neutral", self._read_write_flag)
+        self.tap_step_percent = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_percent", self._read_write_flag)
+        self.tap_step_degree = read_from_net(net, self.trafotable, self.controlled_tid, "tap_step_degree", self._read_write_flag)
 
-        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
-        if self.read_write_flag == "single_index":
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
+        if self._read_write_flag == "single_index":
             self.tap_sign = 1 if np.isnan(self.tap_step_degree) else np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
             if (self.tap_sign == 0) | (np.isnan(self.tap_sign)):
                 self.tap_sign = 1

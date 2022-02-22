@@ -49,19 +49,19 @@ class ContinuousTapControl(TrafoController):
         self.vm_set_pu = vm_set_pu
 
     def _set_t_nom(self, net):
-        vn_hv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_hv_kv', self.read_write_flag)
-        hv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'hv_bus', self.read_write_flag)
-        vn_hv_bus_kv = read_from_net(net, "bus", hv_bus, 'vn_kv', self.read_write_flag)
+        vn_hv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_hv_kv', self._read_write_flag)
+        hv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'hv_bus', self._read_write_flag)
+        vn_hv_bus_kv = read_from_net(net, "bus", hv_bus, 'vn_kv', self._read_write_flag)
 
         if self.trafotype == "3W" and self.side == "mv":
-            vn_mv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_mv_kv', self.read_write_flag)
-            mv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'mv_bus', self.read_write_flag)
-            vn_mv_bus_kv = read_from_net(net, "bus", mv_bus, 'vn_kv', self.read_write_flag)
+            vn_mv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_mv_kv', self._read_write_flag)
+            mv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'mv_bus', self._read_write_flag)
+            vn_mv_bus_kv = read_from_net(net, "bus", mv_bus, 'vn_kv', self._read_write_flag)
             self.t_nom = vn_mv_kv / vn_hv_kv * vn_hv_bus_kv / vn_mv_bus_kv
         else:
-            vn_lv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_lv_kv', self.read_write_flag)
-            lv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'lv_bus', self.read_write_flag)
-            vn_lv_bus_kv = read_from_net(net, "bus", lv_bus, 'vn_kv', self.read_write_flag)
+            vn_lv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_lv_kv', self._read_write_flag)
+            lv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'lv_bus', self._read_write_flag)
+            vn_lv_bus_kv = read_from_net(net, "bus", lv_bus, 'vn_kv', self._read_write_flag)
             self.t_nom = vn_lv_kv / vn_hv_kv * vn_hv_bus_kv / vn_lv_bus_kv
 
     def initialize_control(self, net):
@@ -75,7 +75,7 @@ class ContinuousTapControl(TrafoController):
         if self.nothing_to_do(net):
             return
 
-        delta_vm_pu = read_from_net(net, "res_bus", self.controlled_bus, 'vm_pu', self.read_write_flag) - self.vm_set_pu
+        delta_vm_pu = read_from_net(net, "res_bus", self.controlled_bus, 'vm_pu', self._read_write_flag) - self.vm_set_pu
         tc = delta_vm_pu / self.tap_step_percent * 100 / self.t_nom
         self.tap_pos = self.tap_pos + tc * self.tap_side_coeff * self.tap_sign
         if self.check_tap_bounds:
@@ -85,7 +85,7 @@ class ContinuousTapControl(TrafoController):
         # necessary in case the dtype of the column is int
         if net[self.trafotable].tap_pos.dtype != "float":
             net[self.trafotable].tap_pos = net[self.trafotable].tap_pos.astype(float)
-        write_to_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.tap_pos, self.read_write_flag)
+        write_to_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
         """
@@ -95,8 +95,8 @@ class ContinuousTapControl(TrafoController):
         if self.nothing_to_do(net):
             return True
 
-        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self.read_write_flag)
-        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.read_write_flag)
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
         difference = 1 - self.vm_set_pu / vm_pu
 
         if self.check_tap_bounds:
