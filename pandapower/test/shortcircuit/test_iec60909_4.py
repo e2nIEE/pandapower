@@ -21,7 +21,7 @@ def wind_park_grid():
 
     pp.create_transformer_from_parameters(net, 1, 2, 31.5, 110, 20, 0.6, 12, 0, 0)
 
-    pp.create_line_from_parameters(net, 2, 3, 0.1, 0.0681, 0.102, 0, 1e3, 'L1', parallel=2)
+    pp.create_line_from_parameters(net, 2, 3, 13.1, 0.0681, 0.102, 0, 1e3, 'L1', parallel=2)
 
     from_buses = np.array([3, 4, 3, 6, 7, 7, 3, 10, 11, 11, 12])
     to_buses = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 13])
@@ -30,10 +30,10 @@ def wind_park_grid():
     pp.create_lines_from_parameters(net, from_buses, to_buses, length_km, 0.211, 0.122, 0, 1e3, names)
 
     sgen_buses = np.array([4, 5, 6, 8, 9, 10, 12, 13, 3, 14])
-    # pp.create_sgens(net, sgen_buses, 0, 0, 2.5, rx=0.1, current_source=False,
-    #                 generator_type="async_doubly_fed", max_ik_ka=0.388, kappa=1.7)
     pp.create_sgens(net, sgen_buses, 0, 0, 2.5, rx=0.1, current_source=False,
-                    generator_type="async", lrc_pu=5)
+                    generator_type="async_doubly_fed", max_ik_ka=0.388, kappa=1.7)
+    # pp.create_sgens(net, sgen_buses, 0, 0, 2.5, rx=0.1, current_source=False,
+    #                 generator_type="async", lrc_pu=5)
 
     return net
 
