@@ -12,7 +12,7 @@ import pandapower as pp
 import pandapower.networks as nw
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -37,7 +37,7 @@ jobs:
         if ${{ matrix.python-version == '3.7' }}; then python -m pip install pypower; fi
         if ${{ matrix.python-version != '3.7' }}; then python -m pip install numba; fi
         if ${{ matrix.python-version == '3.7' }}; then python -m pip install lightsim2grid; fi
-        if ${{ matrix.python-version == '3.9' }}; then python -m pip install lightsim2grid; fi
+        if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
     - name: Install Julia
       if: ${{ matrix.python-version == '3.7' }}
       run: |
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v2
@@ -82,15 +82,19 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
-    - name: Install pandapipes
+    - name: Install pandapipes and simbench
       run: |
         python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
+        python -m pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
     - name: List of installed packages
       run: |
         pip list
     - name: Test pandapipes
       run: |
         python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
+    - name: Test simbench
+      run: |
+        python -c 'from simbench import sb_dir; import pytest; import sys; ec = pytest.main([sb_dir]); sys.exit(ec)'
 
   linting:
     # run flake8 and check for errors
