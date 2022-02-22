@@ -184,9 +184,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
                                                              node_geodata=net.bus_geodata,
                                                              table_name="line_geodata", node_name="bus_geodata")
 
-    net.line_geodata.drop(np.intersect1d(net.line_geodata.index, line_index_successful), inplace=True)
-    net.line_geodata = pd.concat([net.line_geodata, pd.DataFrame(index=line_index_successful,
-                                               columns=["coords"], data=np.nan)]).reindex(index=net.line.index)
+    net.line_geodata = net.line_geodata.reindex(net.line.index)
     net.line_geodata.loc[line_index_successful, 'coords'] = coords
 
     num_failed = len(line_index) - len(line_index_successful)
