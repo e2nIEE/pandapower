@@ -319,10 +319,9 @@ def check_bus_voltages(net, result, trafo_vector_group):
     #         max_tol = tol
     # print('Voltage Magnitude for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
 
-    tolerances = {'YNyn': 1e-07,
-                  'Dyn': 1e-07,
-                  'Yzn': 1e-03,
-                  'Yyn': 1e-07}
+    tolerances = {'YNyn': 1e-05,
+                  'Dyn': 1e-05,
+                  'Yzn': 1e-03}
 
     assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group], rtol=0), f"Incorrect results for {trafo_vector_group}"
 
