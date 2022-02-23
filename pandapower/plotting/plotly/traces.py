@@ -77,7 +77,8 @@ def get_line_neutral(coord):
 
 
 def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="white", infofunc=None,
-                             trace_name='edge_center', use_line_geodata=False):
+                             trace_name='edge_center', use_line_geodata=False, showlegend=False,
+                             legendgroup=None):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -106,7 +107,8 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     # color = get_plotly_color(color)
 
     center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                        marker=dict(color=color, size=size, symbol=patch_type))
+                        marker=dict(color=color, size=size, symbol=patch_type),
+                        showlegend=showlegend, legendgroup=legendgroup)
 
     if not use_line_geodata:
         center_trace['x'], center_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
@@ -334,7 +336,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
 
 
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
-                      color='grey', infofunc=None, trace_name='lines', legendgroup=None,
+                      color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
                       cmax=None, cpos=1.1):
     """
@@ -535,7 +537,8 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                     branch_element, idx, branch['name']))
 
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color))
+                          line=Line(width=width, color=color), showlegend=False,
+                          legendgroup=legendgroup)
 
         line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
                                                                       branches_to_plot.loc[idx:idx],
@@ -547,6 +550,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         line_trace['text'] = line_info
 
         branch_traces.append(line_trace)
+
+    # enable legend for one element to make the legend group show up in the legend:
+    branch_traces[0]["showlegend"] = True
+
     if show_colorbar and cmap is not None:
 
         cmin = cmap_vals.min() if cmin is None else cmin
@@ -575,12 +582,14 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         except:
             pass
     if len(no_go_branches) > 0:
+        ng_traces = []
         no_go_branches_to_plot = net[branch_element].loc[list(no_go_branches)]
         for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected branches',
-                              line=Line(width=width / 2, color='grey', dash='dot'))
+                              line=Line(width=width / 2, color='grey', dash='dot'),
+                              legendgroup="disconnected " + legendgroup, showlegend=False)
 
             line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
                                                                           no_go_branches_to_plot.loc[
@@ -594,10 +603,11 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             except (KeyError, IndexError, AttributeError):
                 line_trace["text"] = branch['name']
 
-            branch_traces.append(line_trace)
+            ng_traces.append(line_trace)
+        # enable legend for one element to make the legend group show up in the legend:
+        ng_traces[0]["showlegend"] = True
+        branch_traces += ng_traces
 
-            if legendgroup:
-                line_trace['legendgroup'] = legendgroup
     # sort infofunc so that it is the correct order lines_to_plot + no_go_lines_to_plot
     if infofunc is not None:
         if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
@@ -611,8 +621,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             sorted_idx += no_go_branches_to_plot.index.tolist()
         infofunc = infofunc.loc[sorted_idx]
     center_trace = create_edge_center_trace(branch_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_branch_geodata)
+                                            use_line_geodata=use_branch_geodata,
+                                            showlegend=False, legendgroup=legendgroup)
     branch_traces.append(center_trace)
+
     return branch_traces
 
 
@@ -715,7 +727,8 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         for from_bus1, to_bus1 in connections:
 
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
-                                 hoverinfo='text', mode='lines', name=trace_name)
+                                 hoverinfo='text', mode='lines', name=trace_name,
+                               legendgroup="transformer", showlegend=False)
 
             trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
@@ -725,9 +738,11 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
                 trafo_trace[k] = [from_bus, (from_bus + to_bus) / 2, to_bus]
 
             trafo_traces.append(trafo_trace)
+    trafo_traces[0]["showlegend"] = True
 
     center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
-                                                    use_line_geodata=use_line_geodata)
+                                                    use_line_geodata=use_line_geodata,
+                                            showlegend=False, legendgroup="transformer")
     trafo_traces.append(center_trace)
     return trafo_traces
 
