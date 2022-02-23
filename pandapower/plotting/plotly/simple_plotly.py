@@ -74,7 +74,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
 def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=1,
                   bus_size=10, ext_grid_size=20.0, bus_color="blue", line_color='grey',
-                  trafo_color='green',trafo3w_color='green', ext_grid_color="yellow", filename='temp-plot.html', auto_open=True):
+                  trafo_color='green',trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True):
     """
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
@@ -129,6 +130,8 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
 
         **auto_open** (bool, True) - automatically open plot in browser
 
+        **showlegend** (bool, True) - If True, a legend will be shown
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
@@ -142,14 +145,15 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                   ext_grid_size, bus_color, line_color, trafo_color,trafo3w_color, ext_grid_color,
                                   node_element, branch_element, trans_element, trans3w_element, separator_element,
                                   create_line_trace, create_bus_trace, get_hoverinfo, filename,
-                                  auto_open=auto_open)
+                                  auto_open=auto_open, showlegend=showlegend)
 
 
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
                            figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
                            branch_color, trafo_color,trafo3w_color, ext_grid_color, node_element, branch_element,
                            trans_element, trans3w_element, separator_element, branch_trace_func, node_trace_func,
-                           hoverinfo_func, filename='temp-plot.html', auto_open=True):
+                           hoverinfo_func, filename='temp-plot.html', auto_open=True,
+                           showlegend=True):
     version_check()
     # create geocoord if none are available
     branch_geodata = branch_element + "_geodata"
@@ -210,5 +214,5 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                         infofunc=hoverinfo, trace_name='external_grid',
                                         node_element=node_element, branch_element=branch_element)
     return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
-                       aspectratio=aspectratio, figsize=figsize, on_map=on_map,
-                       map_style=map_style, filename=filename, auto_open=auto_open)
+                       showlegend=showlegend, aspectratio=aspectratio, figsize=figsize,
+                       on_map=on_map, map_style=map_style, filename=filename, auto_open=auto_open)
