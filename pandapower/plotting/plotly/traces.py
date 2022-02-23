@@ -177,9 +177,23 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     """
     node_element = 'bus'
     branch_element = 'line'
-    return _create_node_trace(net, buses, size, patch_type, color, infofunc, trace_name,
-                              legendgroup, cmap, cmap_vals, cbar_title, cmin, cmax, cpos,
-                              colormap_column, node_element, branch_element)
+    return _create_node_trace(net,
+                              nodes=buses,
+                              size=size,
+                              patch_type=patch_type,
+                              color=color,
+                              infofunc=infofunc,
+                              trace_name=trace_name,
+                              legendgroup=legendgroup,
+                              cmap=cmap,
+                              cmap_vals=cmap_vals,
+                              cbar_title=cbar_title,
+                              cmin=cmin,
+                              cmax=cmax,
+                              cpos=cpos,
+                              colormap_column=colormap_column,
+                              node_element=node_element,
+                              branch_element=branch_element)
 
 
 def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue', infofunc=None,
@@ -338,7 +352,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
-                      cmax=None, cpos=1.1):
+                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent'):
     """
     Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the
     more generic _create_line_trace function.
@@ -385,10 +399,26 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     node_element = "bus"
     separator_element = "switch"
 
-    return _create_branch_trace(net, lines, use_line_geodata, respect_switches, width, color,
-                                infofunc, trace_name, legendgroup, cmap, cbar_title, show_colorbar,
-                                cmap_vals, cmin, cmax, cpos, branch_element, separator_element,
-                                node_element)
+    return _create_branch_trace(net=net,
+                                branches=lines,
+                                use_branch_geodata=use_line_geodata,
+                                respect_separators=respect_switches,
+                                width=width,
+                                color=color,
+                                infofunc=infofunc,
+                                trace_name=trace_name,
+                                legendgroup=legendgroup,
+                                cmap=cmap,
+                                cbar_title=cbar_title,
+                                show_colorbar=show_colorbar,
+                                cmap_vals=cmap_vals,
+                                cmin=cmin,
+                                cmax=cmax,
+                                cpos=cpos,
+                                branch_element=branch_element,
+                                separator_element=separator_element,
+                                node_element=node_element,
+                                cmap_vals_category=cmap_vals_category)
 
 
 def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_separators=False,
