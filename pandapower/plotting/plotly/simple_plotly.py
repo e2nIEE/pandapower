@@ -140,12 +140,32 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     trans_element = "trafo"
     trans3w_element = "trafo3w"
     separator_element = "switch"
-    return _simple_plotly_generic(net, respect_switches, use_line_geodata, on_map, projection,
-                                  map_style, figsize, aspectratio, line_width, bus_size,
-                                  ext_grid_size, bus_color, line_color, trafo_color,trafo3w_color, ext_grid_color,
-                                  node_element, branch_element, trans_element, trans3w_element, separator_element,
-                                  create_line_trace, create_bus_trace, get_hoverinfo, filename,
-                                  auto_open=auto_open, showlegend=showlegend)
+    return _simple_plotly_generic(net=net,
+                                  respect_separators=respect_switches,
+                                  use_branch_geodata=use_line_geodata,
+                                  on_map=on_map,
+                                  projection=projection,
+                                  map_style=map_style,
+                                  figsize=figsize,
+                                  aspectratio=aspectratio,
+                                  branch_width=line_width,
+                                  node_size=bus_size,
+                                  ext_grid_size=ext_grid_size,
+                                  node_color=bus_color,
+                                  branch_color=line_color,
+                                  trafo_color=trafo_color,
+                                  trafo3w_color=trafo3w_color,
+                                  ext_grid_color=ext_grid_color,
+                                  node_element=node_element,
+                                  branch_element=branch_element,
+                                  trans_element=trans_element,
+                                  trans3w_element=trans3w_element,
+                                  separator_element=separator_element,
+                                  branch_trace_func=create_line_trace,
+                                  node_trace_func=create_bus_trace,
+                                  hoverinfo_func=get_hoverinfo,
+                                  auto_open=auto_open,
+                                  showlegend=showlegend)
 
 
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
