@@ -306,6 +306,47 @@ def test_user_pf_options(simple_test_net):
     run_timeseries(net, time_steps, verbose=False)
     assert net._options["distributed_slack"]
 
+    pp.runpp(net, distributed_slack=False)
+
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
+
+def test_user_pf_options_init_run(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    pp.runpp(net)
+
+    pp.set_user_pf_options(net, distributed_slack=True)
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
+
+def test_user_pf_options_recycle_manual(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    pp.runpp(net)
+
+    pp.set_user_pf_options(net, distributed_slack=True, recycle=True)
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
