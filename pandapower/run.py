@@ -14,7 +14,7 @@ from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -39,7 +39,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack']
+                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -158,6 +158,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
 
         **KWARGS**:
+
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
 
         **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 

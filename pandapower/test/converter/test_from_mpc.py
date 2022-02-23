@@ -13,7 +13,7 @@ import pandapower.networks as pn
 from pandapower.converter import from_mpc
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

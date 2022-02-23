@@ -30,7 +30,7 @@ from pandapower.pypower.fdpf import fdpf
 from pandapower.pypower.gausspf import gausspf
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

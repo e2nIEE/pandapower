@@ -30,7 +30,7 @@ from pandapower.pypower.idx_gen import GEN_BUS
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
@@ -407,7 +407,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,\
                     only_v_results=only_v_results,v_debug=v_debug, use_umfpack=use_umfpack,
-                    permc_spec=permc_spec)
+                    permc_spec=permc_spec, lightsim2grid=False)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)

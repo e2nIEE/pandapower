@@ -33,7 +33,7 @@ except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -733,6 +733,24 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
         **kwargs** - key word arguments for dataframes_equal()
     """
+    not_equal, not_checked_keys = _nets_equal_keys(
+        net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
+        **kwargs)
+    if len(not_checked_keys) > 0:
+        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
+            not_checked_keys)))
+
+    if len(not_equal) > 0:
+        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        return False
+    else:
+        return True
+
+
+def _nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
+                     name_selection, **kwargs):
+    """ Returns a lists of keys which are 1) not equal and 2) not checked.
+    Used within nets_equal(). """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
         return False
@@ -818,16 +836,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
                     not_equal.append(key)
             except:
                 not_checked_keys.append(key)
-
-    if len(not_checked_keys) > 0:
-        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
-            not_checked_keys)))
-
-    if len(not_equal) > 0:
-        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
-        return False
-    else:
-        return True
+    return not_equal, not_checked_keys
 
 
 def clear_result_tables(net):
@@ -1455,7 +1464,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     closed_switches = set()
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
-        len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
@@ -2032,7 +2041,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
-        replaced[elm] = net[elm].loc[affected_elements]
+        replaced[elm] = net[elm].loc[list(affected_elements)]
 
         if drop_affected:
             if elm == 'line':

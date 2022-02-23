@@ -13,7 +13,7 @@ from pandapower.networks import simple_four_bus_system
 from pandapower.test.toolbox import add_grid_connection
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

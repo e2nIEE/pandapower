@@ -13,7 +13,7 @@ from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trac
 from pandapower.run import runpp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
