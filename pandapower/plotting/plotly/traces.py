@@ -629,7 +629,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
 
 
 def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5, infofunc=None, cmap=None,
-                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None, matching_params=None,
+                       trace_name='2W transformers', cmin=None, cmax=None, cmap_vals=None, matching_params=None,
                        use_line_geodata=None):
 
     """

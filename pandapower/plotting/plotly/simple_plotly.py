@@ -222,16 +222,16 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     # ----- 3W Trafos ------
     if 'trafo3w' in net:
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace += create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5, trace_name='3w_trafos',
-                                         infofunc=hoverinfo,
-                                         use_line_geodata=use_branch_geodata)
+        trans_trace += create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5,
+                                          trace_name='3W transformers', infofunc=hoverinfo,
+                                          use_line_geodata=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
     hoverinfo = hoverinfo_func(net, element="ext_grid")
     ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
                                         patch_type=marker_type, color=ext_grid_color,
-                                        infofunc=hoverinfo, trace_name='external_grid',
+                                        infofunc=hoverinfo, trace_name='external grid',
                                         node_element=node_element, branch_element=branch_element)
     return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
                        showlegend=showlegend, aspectratio=aspectratio, figsize=figsize,
