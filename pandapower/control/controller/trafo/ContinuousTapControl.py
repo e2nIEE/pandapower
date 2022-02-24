@@ -1,9 +1,9 @@
-from __future__ import division
+# -*- coding: utf-8 -*-
 
-__author__ = 'lthurner'
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-
 from pandapower.control.controller.trafo_control import TrafoController
 
 
@@ -34,13 +34,15 @@ class ContinuousTapControl(TrafoController):
     """
 
     def __init__(self, net, tid, vm_set_pu, tol=1e-3, side="lv", trafotype="2W", in_service=True,
-                 check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False, **kwargs):
+                 check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False,
+                 matching_params=None, **kwargs):
+        if matching_params is None:
+            matching_params = {"tid": tid, 'trafotype': trafotype}
         super().__init__(net, tid=tid, side=side, tol=tol, in_service=in_service,
-                         trafotype=trafotype,
-                         level=level, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params={"tid": tid, 'trafotype': trafotype}, **kwargs)
+                         trafotype=trafotype, level=level, order=order,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params, **kwargs)
 
-        self.matching_params = {"tid": tid, 'trafotype': trafotype}
         t = net[self.trafotable]
         b = net.bus
         if trafotype == "2W":
@@ -59,10 +61,6 @@ class ContinuousTapControl(TrafoController):
         self.check_tap_bounds = check_tap_bounds
         self.vm_set_pu = vm_set_pu
         self.trafotype = trafotype
-        if trafotype == "2W":
-            net.trafo["tap_pos"] = net.trafo.tap_pos.astype(float)
-        elif trafotype == "3W":
-            net.trafo3w["tap_pos"] = net.trafo3w.tap_pos.astype(float)
         self.tol = tol
 
     def control_step(self, net):
@@ -76,6 +74,8 @@ class ContinuousTapControl(TrafoController):
             self.tap_pos = np.clip(self.tap_pos, self.tap_min, self.tap_max)
 
         # WRITE TO NET
+        if net[self.trafotable].tap_pos.dtype != "float":
+            net[self.trafotable].tap_pos = net[self.trafotable].tap_pos.astype(float)
         net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
 
     def is_converged(self, net):

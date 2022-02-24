@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -27,6 +27,8 @@ def _extract_results(net, ppc):
     _get_bus_results(net, ppc, bus_pq)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
+    else:
+        _remove_costs(net)
 
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
@@ -48,12 +50,17 @@ def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc, suffix="_est")
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 
 def _get_costs(net, ppc):
     net.res_cost = ppc['obj']
+
+
+def _remove_costs(net):
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _get_aranged_lookup(net):
@@ -101,7 +108,7 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame()
+        net[res_element] = pd.DataFrame(index=pd.Index([], dtype=np.int64))
 
 
 def init_element(net, element, suffix=None):
@@ -123,7 +130,7 @@ def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline"]
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
     elif mode == "se":
@@ -145,6 +152,8 @@ def reset_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _ppci_bus_to_ppc(result, ppc):
@@ -189,14 +198,28 @@ def _ppci_other_to_ppc(result, ppc, mode):
 
 def _ppci_internal_to_ppc(result, ppc):
     for key, value in result["internal"].items():
+        # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
-        if key in ["branch_ikss_f", "branch_ikss_t", "branch_ip_f", "branch_ip_t", "branch_ith_f", "branch_ith_t"]:
-            n_buses = np.shape(ppc['bus'])[0]
+        if key in ["branch_ikss_f", "branch_ikss_t",
+                   "branch_ip_f", "branch_ip_t",
+                   "branch_ith_f", "branch_ith_t"]:
+
+            # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
-            n_rows_result = np.shape(result['bus'])[0]
-            update_matrix = np.empty((n_branches, n_buses)) * np.nan
-            update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
-            ppc['internal'][key] = np.copy(update_matrix)
+            # n_rows_result = np.shape(result['bus'])[0]
+            # update_matrix = np.empty((n_branches, n_buses)) * np.nan
+            # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
+
+            # To select only required buses and pad one column of nan value for oos bus
+            update_matrix = np.empty((n_branches, value.shape[1]+1)) * 0.0
+            update_matrix[result["internal"]['branch_is'],
+                          :value.shape[1]] = result["internal"][key]
+            ppc['internal'][key] = update_matrix
+            if "br_res_ks_ppci_bus" in result["internal"]:
+                br_res_ks_ppci_bus = np.r_[result["internal"]["br_res_ks_ppci_bus"], [-1]]
+            else:
+                br_res_ks_ppci_bus = np.r_[np.arange(value.shape[1]), [-1]]
+            ppc['internal'][key] = pd.DataFrame(data=update_matrix, columns=br_res_ks_ppci_bus)
         else:
             ppc["internal"][key] = value
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,11 +12,23 @@ from warnings import warn
 import numpy
 import pandas as pd
 from packaging import version
+import sys
+try:
+    import xlsxwriter
+    xlsxwriter_INSTALLED = True
+except ImportError:
+    xlsxwriter_INSTALLED = False
+try:
+    import openpyxl
+    openpyxl_INSTALLED = True
+except ImportError:
+    openpyxl_INSTALLED = False
 
-import pandapower.io_utils as io_utils
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
+import pandapower.io_utils as io_utils
 
 
 def to_pickle(net, filename):
@@ -26,7 +38,8 @@ def to_pickle(net, filename):
     INPUT:
         **net** (dict) - The pandapower format network
 
-        **filename** (string) - The absolute or relative path to the output file or an writable file-like objectxs
+        **filename** (string) - The absolute or relative path to the output file or an writable
+        file-like objectxs
 
     EXAMPLE:
 
@@ -65,6 +78,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         >>> pp.to_excel(net, "example2.xlsx")  # relative path
 
     """
+    if not xlsxwriter_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     dict_net = io_utils.to_dict_of_dfs(net, include_results=include_results,
                                        include_empty_tables=include_empty_tables)
@@ -127,10 +142,11 @@ def from_pickle(filename, convert=True):
     Load a pandapower format Network from pickle file
 
     INPUT:
-        **filename** (string or file) - The absolute or relative path to the input file or file-like object
+        **filename** (string or file) - The absolute or relative path to the input file or
+        file-like object
 
-        **convert** (bool, True) - If True, converts the format of the net loaded from pickle from the older
-            version of pandapower to the newer version format
+        **convert** (bool, True) - If True, converts the format of the net loaded from pickle
+        from the older version of pandapower to the newer version format
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -165,7 +181,7 @@ def from_excel(filename, convert=True):
 
     EXAMPLE:
 
-        >>> net1 = pp.from_excel(os.path.join("C:", "example_folder", "example1.xlsx")) #absolute path
+        >>> net1 = pp.from_excel(os.path.join("C:", "example_folder", "example1.xlsx"))
         >>> net2 = pp.from_excel("example2.xlsx") #relative path
 
     """
@@ -178,7 +194,9 @@ def from_excel(filename, convert=True):
     elif pd_version < version.parse("0.24"):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
-        xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
+        if not openpyxl_INSTALLED:
+            soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
+        xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
         net = io_utils.from_dict_of_dfs(xls)
@@ -212,19 +230,27 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(filename, convert=True, encryption_key=None):
+def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
+              keep_serialized_elements=True):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
     Index columns of all pandas DataFrames are sorted in ascending order.
 
     INPUT:
-        **filename** (string or file) - The absolute or relative path to the input file or file-like object
+        **filename** (string or file) - The absolute or relative path to the input file or
+        file-like object
 
-        **convert** (bool, True) - If True, converts the format of the net loaded from json from the older
-            version of pandapower to the newer version format
+        **convert** (bool, True) - If True, converts the format of the net loaded from json
+        from the older version of pandapower to the newer version format
 
         **encrytion_key** (string, "") - If given, key to decrypt an encrypted pandapower network
+
+        **elements_to_deserialize** (list, None) - Deserialize only certain pandapower elements.
+        If None all elements are deserialized.
+
+        **keep_serialized_elements** (bool, True) - Keep serialized elements if given.
+        Default: Serialized elements are kept.
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -242,10 +268,13 @@ def from_json(filename, convert=True, encryption_key=None):
         with open(filename, "r") as fp:
             json_string = fp.read()
 
-    return from_json_string(json_string, convert=convert, encryption_key=encryption_key)
+    return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
+                            elements_to_deserialize=elements_to_deserialize,
+                            keep_serialized_elements=keep_serialized_elements)
 
 
-def from_json_string(json_string, convert=False, encryption_key=None):
+def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
+                     keep_serialized_elements=True):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -254,10 +283,16 @@ def from_json_string(json_string, convert=False, encryption_key=None):
     INPUT:
         **json_string** (string) - The json string representation of the network
 
-        **convert** (bool, False) - If True, converts the format of the net loaded from json_string from the
-            older version of pandapower to the newer version format
+        **convert** (bool, False) - If True, converts the format of the net loaded from json_string
+        from the older version of pandapower to the newer version format
 
         **encrytion_key** (string, "") - If given, key to decrypt an encrypted json_string
+
+        **elements_to_deserialize** (list, None) - Deserialize only certain pandapower elements.
+            If None all elements are deserialized.
+
+        **keep_serialized_elements** (bool, True) - Keep serialized elements if given.
+            Default: Serialized elements are kept.
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -270,7 +305,33 @@ def from_json_string(json_string, convert=False, encryption_key=None):
     if encryption_key is not None:
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
-    net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+    if elements_to_deserialize is None:
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+    else:
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
+        net_dummy = create_empty_network()
+        if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
+            raise UserWarning('table selection is only possible for nets above version 2.0.1. '
+                              'Convert and save your net first.')
+        if keep_serialized_elements:
+            for key in elements_to_deserialize:
+                net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+        else:
+            if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
+                    not convert:
+                raise UserWarning(
+                    'The version of your net %s you are trying to load differs from the actual '
+                    'pandapower version %s. Before you can load only distinct tables, convert '
+                    'and save your net first or set convert to True!'
+                    % (net['version'], net_dummy.version))
+            for key in net.keys():
+                if key in elements_to_deserialize:
+                    net[key] = json.loads(net[key], cls=io_utils.PPJSONDecoder)
+                elif not isinstance(net[key], str):
+                    continue
+                elif 'pandas' in net[key]:
+                    net[key] = net_dummy[key]
+
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
@@ -282,7 +343,7 @@ def from_json_string(json_string, convert=False, encryption_key=None):
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize)
     return net
 
 

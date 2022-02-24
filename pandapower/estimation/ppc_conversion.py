@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -34,7 +34,7 @@ from pandapower.estimation.idx_brch import (P_FROM, P_FROM_IDX, P_FROM_STD,
                                             branch_cols_se)
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
@@ -413,7 +413,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
 
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
-        # Initialize ppci with measurements
+        """Initialize ppci object with measurements."""
         self.data = ppci
 
         # Measurement relevant parameters

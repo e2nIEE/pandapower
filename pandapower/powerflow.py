@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array
+from numpy import nan_to_num, array, allclose
 
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -14,11 +14,19 @@ from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, verify_results, \
-    _ppci_bus_to_ppc, _ppci_other_to_ppc
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, \
+    verify_results, _ppci_bus_to_ppc, _ppci_other_to_ppc
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AlgorithmUnknown(ppException):
@@ -53,9 +61,11 @@ def _powerflow(net, **kwargs):
     else:
         init_results(net)
 
-    # TODO remove this when zip loads are integrated for all PF algorithms
-    if algorithm not in ['nr', 'bfsw']:
-        net["_options"]["voltage_depend_loads"] = False
+    if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
+            allclose(net.load.const_z_percent.values, 0) and
+            allclose(net.load.const_i_percent.values, 0)):
+        logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
+                      "'%s'!") % algorithm)
 
     # clear lookups
     net._pd2ppc_lookups = {"bus": array([], dtype=int), "ext_grid": array([], dtype=int),
@@ -67,7 +77,7 @@ def _powerflow(net, **kwargs):
     # store variables
     net["_ppc"] = ppc
 
-    if not "VERBOSE" in kwargs:
+    if "VERBOSE" not in kwargs:
         kwargs["VERBOSE"] = 0
 
     # ----- run the powerflow -----
@@ -94,8 +104,9 @@ def _recycled_powerflow(net, **kwargs):
         result = _run_dc_pf(ppci)
         _ppci_to_net(result, net)
         return
-    if not algorithm in ['nr', 'iwamoto_nr'] and ac:
-        raise ValueError("recycle is only available with Newton-Raphson power flow. Choose algorithm='nr'")
+    if algorithm not in ['nr', 'iwamoto_nr'] and ac:
+        raise ValueError("recycle is only available with Newton-Raphson power flow. Choose "
+                         "algorithm='nr'")
 
     recycle = options["recycle"]
     ppc = net["_ppc"]
@@ -142,9 +153,11 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     ac = options["ac"]
 
     if ac:
+        _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
-        if ppci["branch"].shape[0] == 0:
-            result = _pf_without_branches(ppci, options)
+        if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack']:
+            # ommission not correct if distributed slack is used
+            result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]
         elif algorithm in ['nr', 'iwamoto_nr']:
@@ -182,7 +195,7 @@ def _ppci_to_net(result, net):
     _clean_up(net)
 
 
-def _pf_without_branches(ppci, options):
+def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     baseMVA, bus, gen, branch, ref, _, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]

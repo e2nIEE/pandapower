@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,7 +10,7 @@ import scipy.io
 from pandapower.converter.pypower import from_ppc
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -19,19 +19,24 @@ logger = logging.getLogger(__name__)
 
 def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False):
     """
-    This function converts a matpower case file (.mat) version 2 to a pandapower net.
+    This function converts a matpower case file version 2 to a pandapower net.
+
+    Note: The input is a .mat file not an .m script. You need to save the mpc dict variable as .mat
+    file. If the saved variable of the matlab workspace is not named 'mpc', you can adapt the value
+    of 'casename_mpc_file' as needed.
 
     Note: python is 0-based while Matlab is 1-based.
 
     INPUT:
 
-        **mpc_file** - path to a matpower case file (.mat).
+        **mpc_file** - path to a matpower case file (.mat format not .m script).
 
     OPTIONAL:
 
         **f_hz** (int, 50) - The frequency of the network.
 
-        **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
+        **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain
+        the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
 
     OUTPUT:
 
@@ -46,6 +51,9 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz, validate_conversion)
+    if "mpc_additional_data" in ppc:
+        net._options.update(ppc["mpc_additional_data"])
+        logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
     return net
 
@@ -88,6 +96,10 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
             ppc['gencost'] = mpc[casename_mpc_file].gencost
         except:
             logger.info('gencost is not in mpc')
+
+        for k in mpc[casename_mpc_file]._fieldnames:
+           if k not in ppc:
+               ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')

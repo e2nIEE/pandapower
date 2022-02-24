@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -9,20 +9,31 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from packaging import version
-
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen
+    create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 
 try:
-    import pplog as logging
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
+
+try:
+    from networkx.utils.misc import graphs_equal
+    GRAPHS_EQUAL_POSSIBLE = True
+except ImportError:
+    GRAPHS_EQUAL_POSSIBLE = False
+
+try:
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -42,7 +53,8 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                      ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
-                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus")])
+                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
+                     ("motor", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                      ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
@@ -56,7 +68,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 
 def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
-                res_elements=False):
+                cost_tables=False, res_elements=False):
     """
     Returns a set of pandapower elements.
     """
@@ -65,6 +77,8 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
     if other_elements:
         pp_elms |= {"measurement"}
+    if cost_tables:
+        pp_elms |= {"poly_cost", "pwl_cost"}
     return pp_elms
 
 
@@ -82,47 +96,18 @@ def branch_element_bus_dict(include_switch=False):
     return bebd
 
 
-# def pq_from_cosphi(s, cosphi, qmode, pmode):
-#    """
-#    Calculates P/Q values from rated apparent power and cosine(phi) values.
-#       - s: rated apparent power
-#       - cosphi: cosine phi of the
-#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
-#       - pmode: "load" for load or "gen" for generation
-#    As all other pandapower functions this function is based on the consumer viewpoint. For active
-#    power, that means that loads are positive and generation is negative. For reactive power,
-#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
-#    """
-#    s = np.array(ensure_iterability(s))
-#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
-#    qmode = np.array(ensure_iterability(qmode, len(s)))
-#    pmode = np.array(ensure_iterability(pmode, len(s)))
-#
-#    # qmode consideration
-#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
-#    if len(unknown_qmode):
-#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
-#    qmode_is_ohm = qmode == "ohm"
-#    if any(cosphi[qmode_is_ohm] != 1):
-#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-#    qsign = np.ones(qmode.shape)
-#    qsign[qmode == "cap"] = -1
-#
-#    # pmode consideration
-#    unknown_pmode = set(pmode) - set(["load", "gen"])
-#    if len(unknown_pmode):
-#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
-#    psign = np.ones(pmode.shape)
-#    psign[pmode == "gen"] = -1
-#
-#    # calculate p and q
-#    p = psign * s * cosphi
-#    q = qsign * np.sqrt(s ** 2 - p ** 2)
-#
-#    if len(p) > 1:
-#        return p, q
-#    else:
-#        return p[0], q[0]
+def signing_system_value(elm):
+    """
+    Returns a 1 for all bus elements using the consumver viewpoint and a -1 for all bus elements
+    using the generator viewpoint.
+    """
+    generator_viewpoint_elms = ["ext_grid", "gen", "sgen"]
+    if elm in generator_viewpoint_elms:
+        return -1
+    elif elm in pp_elements(bus=False, branch_elements=False, other_elements=False):
+        return 1
+    else:
+        raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
 
 
 def pq_from_cosphi(s, cosphi, qmode, pmode):
@@ -131,85 +116,111 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
        - s: rated apparent power
        - cosphi: cosine phi of the
-       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
        - pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
     power, that means that loads are positive and generation is negative. For reactive power,
-    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    underexcited behavior (Q absorption, decreases voltage) is modeled with positive values,
+    overexcited behavior (Q injection, increases voltage) with negative values.
     """
     if hasattr(s, "__iter__"):
-        s = ensure_iterability(s)
-        cosphi = ensure_iterability(cosphi, len(s))
-        qmode = ensure_iterability(qmode, len(s))
-        pmode = ensure_iterability(pmode, len(s))
-        p, q = [], []
-        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
-            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
-            p.append(p_)
-            q.append(q_)
-        return np.array(p), np.array(q)
+        len_ = len(s)
+    elif hasattr(cosphi, "__iter__"):
+        len_ = len(cosphi)
+    elif not isinstance(qmode, str) and hasattr(qmode, "__iter__"):
+        len_ = len(qmode)
+    elif not isinstance(pmode, str) and hasattr(pmode, "__iter__"):
+        len_ = len(pmode)
     else:
         return _pq_from_cosphi(s, cosphi, qmode, pmode)
+    return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
-    if qmode == "ind":
-        qsign = 1 if pmode == "load" else -1
-    elif qmode == "cap":
-        qsign = -1 if pmode == "load" else 1
+    if qmode in ("ind", "cap"):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
+    if qmode == "ind" or qmode == "underexcited":
+        qsign = 1
+    elif qmode == "cap" or qmode == "overexcited":
+        qsign = -1
     else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
+                         ') or "overexcited" (Q injection, increases voltage)' % qmode)
+
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
 
     p = s * cosphi
-    q = qsign * np.sqrt(s ** 2 - p ** 2)
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
 
 
-# def cosphi_from_pq(p, q):
-#    """
-#    Analog to pq_from_cosphi, but other way around.
-#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-#    """
-#    p = np.array(ensure_iterability(p))
-#    q = np.array(ensure_iterability(q, len(p)))
-#    if len(p) != len(q):
-#        raise ValueError("p and q must have the same length.")
-#    p_is_zero = np.array(p == 0)
-#    cosphi = np.empty(p.shape)
-#    if sum(p_is_zero):
-#        cosphi[p_is_zero] = np.nan
-#        logger.warning("A cosphi from p=0 is undefined.")
-#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-#    s = (p ** 2 + q ** 2) ** 0.5
-#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
-#    if len(p) > 1:
-#        return cosphi, s, qmode, pmode
-#    else:
-#        return cosphi[0], s[0], qmode[0], pmode[0]
+def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
+    if len_ is None:
+        s = np.array(ensure_iterability(s))
+        len_ = len(s)
+    else:
+        s = np.array(ensure_iterability(s, len_))
+    cosphi = np.array(ensure_iterability(cosphi, len_))
+    qmode = np.array(ensure_iterability(qmode, len_))
+    pmode = np.array(ensure_iterability(pmode, len_))
+
+    # "ind" -> "underexcited", "cap" -> "overexcited"
+    is_ind = qmode == "ind"
+    is_cap = qmode == "cap"
+    if any(is_ind) or any(is_cap):
+        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
+                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
+                       '(Q injection, increases voltage). Please use "underexcited" ' +
+                       'in place of "ind" and "overexcited" in place of "cap".')
+    qmode[is_ind] = "underexcited"
+    qmode[is_cap] = "overexcited"
+
+    # qmode consideration
+    unknown_qmode = set(qmode) - set(["underexcited", "overexcited"])
+    if len(unknown_qmode):
+        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+    qsign = np.ones(qmode.shape)
+    qsign[qmode == "overexcited"] = -1
+
+    # pmode consideration
+    unknown_pmode = set(pmode) - set(["load", "gen"])
+    if len(unknown_pmode):
+        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+    psign = np.ones(pmode.shape)
+    psign[pmode == "gen"] = -1
+
+    # calculate p and q
+    p = s * cosphi
+    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
+
+    return p, q
 
 
 def cosphi_from_pq(p, q):
+    """
+    Analog to pq_from_cosphi, but the other way around.
+    In consumer viewpoint (pandapower): "underexcited" (Q absorption, decreases voltage) and
+    "overexcited" (Q injection, increases voltage)
+    """
     if hasattr(p, "__iter__"):
-        assert len(p) == len(q)
-        s, cosphi, qmode, pmode = [], [], [], []
-        for p_, q_ in zip(p, q):
-            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
-            s.append(s_)
-            cosphi.append(cosphi_)
-            qmode.append(qmode_)
-            pmode.append(pmode_)
-        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
+        len_ = len(p)
+    elif hasattr(q, "__iter__"):
+        len_ = len(q)
     else:
         return _cosphi_from_pq(p, q)
+    return _cosphi_from_pq_bulk(p, q, len_=len_)
 
 
 def _cosphi_from_pq(p, q):
-    """
-    Analog to pq_from_cosphi, but other way around.
-    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
-    """
     if p == 0:
         cosphi = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
@@ -217,35 +228,67 @@ def _cosphi_from_pq(p, q):
         cosphi = np.cos(np.arctan(q / p))
     s = (p ** 2 + q ** 2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    qmode = ["underexcited", "underexcited", "overexcited"][int(np.sign(q))]
     return cosphi, s, qmode, pmode
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
-    """
-    Returns a boolean whether the nets are equal or not.
-    """
-    if ignore_index_order:
-        x_df.sort_index(axis=1, inplace=True)
-        y_df.sort_index(axis=1, inplace=True)
-        x_df.sort_index(axis=0, inplace=True)
-        y_df.sort_index(axis=0, inplace=True)
-    # eval if two DataFrames are equal, with regard to a tolerance
-    if x_df.shape == y_df.shape:
-        if x_df.shape[0]:
-            # we use numpy.allclose to grant a tolerance on numerical values
-            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
-                                          y_df.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-        else:
-            numerical_equal = True
-        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
-        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
-            y_df.select_dtypes(exclude=[np.number]))
-
-        return numerical_equal & rest_equal
+def _cosphi_from_pq_bulk(p, q, len_=None):
+    if len_ is None:
+        p = np.array(ensure_iterability(p))
+        len_ = len(p)
     else:
+        p = np.array(ensure_iterability(p, len_))
+    q = np.array(ensure_iterability(q, len_))
+    p_is_zero = np.array(p == 0)
+    cosphi = np.empty(p.shape)
+    if sum(p_is_zero):
+        cosphi[p_is_zero] = np.nan
+        logger.warning("A cosphi from p=0 is undefined.")
+    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
+    s = (p ** 2 + q ** 2) ** 0.5
+    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+    qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(int)]
+    return cosphi, s, qmode, pmode
+
+
+def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
+    """
+    Returns a boolean whether the given two dataframes are equal or not.
+    """
+    if "tol" in kwargs:
+        if "atol" in kwargs:
+            raise ValueError("'atol' and 'tol' are given to dataframes_equal(). Don't use 'tol' "
+                             "anymore.")
+        logger.warning("in dataframes_equal() parameter 'tol' is deprecated. Use 'atol' instead.")
+        kwargs["atol"] = kwargs.pop("tol")
+
+    if ignore_index_order:
+        df1 = df1.sort_index().sort_index(axis=1)
+        df2 = df2.sort_index().sort_index(axis=1)
+
+    # --- pandas implementation
+    try:
+        pdt.assert_frame_equal(df1, df2, **kwargs)
+        return True
+    except AssertionError:
         return False
+
+    # --- alternative (old) implementation
+    # if df1.shape == df2.shape:
+    #     if df1.shape[0]:
+    #         # we use numpy.allclose to grant a tolerance on numerical values
+    #         numerical_equal = np.allclose(df1.select_dtypes(include=[np.number]),
+    #                                       df2.select_dtypes(include=[np.number]),
+    #                                       atol=tol, equal_nan=True)
+    #     else:
+    #         numerical_equal = True
+    #     # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+    #     rest_equal = df1.select_dtypes(exclude=[np.number]).equals(
+    #         df2.select_dtypes(exclude=[np.number]))
+
+    #     return numerical_equal & rest_equal
+    # else:
+    #     return False
 
 
 def compare_arrays(x, y):
@@ -664,54 +707,141 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
+def nets_equal(net1, net2, check_only_results=False, check_without_results=False, exclude_elms=None,
+               name_selection=None, **kwargs):
     """
-    Compares the DataFrames of two networks. The networks are considered equal
-    if they share the same keys and values, except of the
-    'et' (elapsed time) entry which differs depending on
-    runtime conditions and entries stating with '_'.
+    Returns a boolean whether the two given pandapower networks are equal.
+
+    pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
+
+    INPUT:
+        **net1** (pandapower net)
+
+        **net2** (pandapower net)
+
+    OPTIONAL:
+        **check_only_results** (bool, False) - if True, only result tables (starting with "res_")
+        are compared
+
+        **check_without_results** (bool, False) - if True, result tables (starting with "res_")
+        are ignored for comparison
+
+        **exclude_elms** (list, None) - list of element tables which should be ignored in the
+        comparison
+
+        **name_selection** (list, None) - list of element tables which should be compared
+
+        **kwargs** - key word arguments for dataframes_equal()
     """
-    eq = isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)
+    not_equal, not_checked_keys = _nets_equal_keys(
+        net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
+        **kwargs)
+    if len(not_checked_keys) > 0:
+        logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
+            not_checked_keys)))
+
+    if len(not_equal) > 0:
+        logger.warning("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        return False
+    else:
+        return True
+
+
+def _nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
+                     name_selection, **kwargs):
+    """ Returns a lists of keys which are 1) not equal and 2) not checked.
+    Used within nets_equal(). """
+    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
+        logger.warning("At least one net is not of type pandapowerNet.")
+        return False
+
+    if check_without_results and check_only_results:
+        raise UserWarning("Please provide only one of the options to check without results or to "
+                          "exclude results in comparison.")
+
     exclude_elms = [] if exclude_elms is None else list(exclude_elms)
     exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    if eq:
-        # for two networks make sure both have the same keys that do not start with "_"...
-        net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
-        net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
-        keys_to_check = set(net1_keys) & set(net2_keys)
-        key_difference = set(net1_keys) ^ set(net2_keys)
+    # for two networks make sure both have the same keys
+    if name_selection is not None:
+        net1_keys = net2_keys = name_selection
+    elif check_only_results:
+        net1_keys = [key for key in net1.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
+        net2_keys = [key for key in net2.keys() if key.startswith("res_")
+                     and key not in exclude_elms]
+    else:
+        net1_keys = [key for key in net1.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
+        net2_keys = [key for key in net2.keys() if not (
+            key.startswith("_") or key in exclude_elms or key == "et"
+            or key.startswith("res_") and check_without_results)]
+    keys_to_check = set(net1_keys) & set(net2_keys)
+    key_difference = set(net1_keys) ^ set(net2_keys)
+    not_checked_keys = list()
 
-        if len(key_difference) > 0:
-            logger.info("Networks entries mismatch at: %s" % key_difference)
-            if not check_only_results:
-                return False
+    if len(key_difference) > 0:
+        logger.warning("Networks entries mismatch at: %s" % key_difference)
+        return False
 
-        # ... and then iter through the keys, checking for equality for each table
-        for df_name in list(keys_to_check):
-            # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
-            if (df_name != 'et' and not df_name.startswith("_")):
-                if check_only_results and not df_name.startswith("res_"):
-                    continue  # skip anything that is not a result table
+    # ... and then iter through the keys, checking for equality for each table
+    for key in list(keys_to_check):
 
-                if isinstance(net1[df_name], pd.DataFrame) and isinstance(net2[df_name],
-                                                                          pd.DataFrame):
-                    frames_equal = dataframes_equal(net1[df_name], net2[df_name], **kwargs)
-                    eq &= frames_equal
+        if isinstance(net1[key], pd.DataFrame):
+            if not isinstance(net2[key], pd.DataFrame):
+                not_equal.append(key)
+            else:
+                if "object" in net1[key].columns and "object" in net2[key].columns and \
+                        isinstance(net1[key].object.dtype, object) and \
+                        isinstance(net1[key].object.dtype, object):
+                    logger.warning("net[%s]['object'] cannot be compared." % key)
+                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
+                                            net2[key][net2[key].columns.difference(["object"])],
+                                            **kwargs):
+                        not_equal.append(key)
+                elif not dataframes_equal(net1[key], net2[key], **kwargs):
+                    not_equal.append(key)
 
-                    if not frames_equal:
-                        not_equal.append(df_name)
+        elif isinstance(net1[key], np.ndarray):
+            if not isinstance(net2[key], np.ndarray):
+                not_equal.append(key)
+            else:
+                if version.parse(np.__version__) < version.parse("0.19"):
+                    if not compare_arrays(net1[key], net2[key]).all():
+                        not_equal.append(key)
+                else:
+                    if not np.array_equal(net1[key], net2[key], equal_nan=True):
+                        not_equal.append(key)
 
-    if len(not_equal) > 0:
-        logger.error("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
+        elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
+                isinstance(net1[key], complex):
+            if not np.isclose(net1[key], net2[key]):
+                not_equal.append(key)
 
-    return eq
+        elif isinstance(net1[key], nx.Graph):
+            if GRAPHS_EQUAL_POSSIBLE:
+                if not graphs_equal(net1[key], net2[key]):
+                    not_equal.append(key)
+            else:
+                # Maybe there is a better way, but at least this could be checked
+                if net1[key].nodes != net2[key].nodes or net1[key].edges != net2[key].edges:
+                    not_equal.append(key)
+
+        else:
+            try:
+                is_eq = net1[key] == net2[key]
+                if not is_eq:
+                    not_equal.append(key)
+            except:
+                not_checked_keys.append(key)
+    return not_equal, not_checked_keys
 
 
 def clear_result_tables(net):
     """
-    Clears all 'res_...' DataFrames in net.
+    Clears all ``res_`` DataFrames in net.
     """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
@@ -959,7 +1089,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         element_in_cost_df = net[cost_df].et == element
         if sum(element_in_cost_df):
             net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
-                                                                           element_in_cost_df], lookup)
+                element_in_cost_df], lookup)
 
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
@@ -1050,6 +1180,8 @@ def set_data_type_of_columns_to_default(net):
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
                 if key in new_net and col in new_net[key].columns:
+                    if new_net[key][col].dtype == net[key][col].dtype:
+                        continue
                     if set(item.columns) == set(new_net[key]):
                         if version.parse(pd.__version__) < version.parse("0.21"):
                             net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
@@ -1076,7 +1208,7 @@ def close_switch_at_line_with_two_open_switches(net):
     for _, switch in nl.groupby("element"):
         if len(switch.index) > 1:  # find all lines that have open switches at both ends
             # and close on of them
-            net.switch.at[switch.index[0], "closed"] = 1
+            net.switch.at[switch.index[0], "closed"] = True
             closed_switches.add(switch.index[0])
     if len(closed_switches) > 0:
         logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
@@ -1092,15 +1224,13 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
 
     # --- reroute element connections from b2 to b1
     for element, value in element_bus_tuples():
-        i = net[element][net[element][value].isin(b2)].index
-        net[element].loc[i, value] = b1
-
-    i = net["switch"][(net["switch"]["et"] == 'b') & (
-        net["switch"]["element"].isin(b2))].index
-    net["switch"].loc[i, "element"] = b1
+        if net[element].shape[0]:
+            net[element][value].loc[net[element][value].isin(b2)] = b1
+    net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
+                                 net["switch"]["element"].isin(b2))] = b1
 
     # --- reroute bus measurements from b2 to b1
-    if fuse_bus_measurements:
+    if fuse_bus_measurements and net.measurement.shape[0]:
         bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
         bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
         net.measurement.loc[bus_meas, "element"] = b1
@@ -1113,7 +1243,7 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
         # can now be dropped:
         drop_inner_branches(net, buses=[b1])
         # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        if fuse_bus_measurements:
+        if fuse_bus_measurements and net.measurement.shape[0]:
             drop_duplicated_measurements(net, buses=[b1])
 
 
@@ -1239,10 +1369,32 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
-def get_inner_branches(net, buses, branch_elements=None):
+def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     """
-    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
-    'from_bus' and 'to_bus').
+    Gets/Drops branches that connects any bus of buses1 with any bus of buses2.
+    """
+    branch_dict = branch_element_bus_dict(include_switch=True)
+    if branch_elements is not None:
+        branch_dict = {key: branch_dict[key] for key in branch_elements}
+    if "switch" in branch_dict:
+        branch_dict["switch"].append("element")
+
+    found = {elm: set() for elm in branch_dict.keys()}
+    for elm, bus_types in branch_dict.items():
+        for bus1 in bus_types:
+            for bus2 in bus_types:
+                if bus2 != bus1:
+                    idx = net[elm].index[net[elm][bus1].isin(buses1) & net[elm][bus2].isin(buses2)]
+                    if elm == "switch":
+                        idx = idx.intersection(net[elm].index[net[elm].et == "b"])
+                    found[elm] |= set(idx)
+    return {key: val for key, val in found.items() if len(val)}
+
+
+def _inner_branches(net, buses, task, branch_elements=None):
+    """
+    Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
+    and 'to_bus').
     """
     branch_dict = branch_element_bus_dict(include_switch=True)
     if branch_elements is not None:
@@ -1258,8 +1410,26 @@ def get_inner_branches(net, buses, branch_elements=None):
             inner &= net[elm]["et"] == "b"  # bus-bus-switches
 
         if any(inner):
-            inner_branches[elm] = net[elm].index[inner]
+            if task == "drop":
+                if elm == "line":
+                    drop_lines(net, net[elm].index[inner])
+                elif "trafo" in elm:
+                    drop_trafos(net, net[elm].index[inner])
+                else:
+                    net[elm].drop(net[elm].index[inner], inplace=True)
+            elif task == "get":
+                inner_branches[elm] = net[elm].index[inner]
+            else:
+                raise NotImplementedError("task '%s' is unknown." % str(task))
     return inner_branches
+
+
+def get_inner_branches(net, buses, branch_elements=None):
+    """
+    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
+    'from_bus' and 'to_bus').
+    """
+    return _inner_branches(net, buses, "get", branch_elements=branch_elements)
 
 
 def drop_inner_branches(net, buses, branch_elements=None):
@@ -1267,14 +1437,7 @@ def drop_inner_branches(net, buses, branch_elements=None):
     Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
     'to_bus').
     """
-    inner_branches = get_inner_branches(net, buses, branch_elements=branch_elements)
-    for elm, idx in inner_branches.items():
-        if elm == "line":
-            drop_lines(net, idx)
-        elif "trafo" in elm:
-            drop_trafos(net, idx)
-        else:
-            net[elm].drop(idx, inplace=True)
+    _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
 
 def set_element_status(net, buses, in_service):
@@ -1301,7 +1464,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     closed_switches = set()
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
-        len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
@@ -1309,18 +1472,21 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
         if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
             net.trafo3w.at[tr3w, 'in_service'] = False
-        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (net.switch.element == tr3w)]
+        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
+            net.switch.element == tr3w)]
         if len(open_tr3w_switches) == 3:
             net.trafo3w.at[tr3w, 'in_service'] = False
 
     for element, et in zip(["line", "trafo"], ["l", "t"]):
         oos_elements = net[element].query("not in_service").index
-        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(oos_elements)].index
+        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
+            oos_elements)].index
 
         closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
         net.switch.loc[oos_switches, "closed"] = True
 
-        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][["element", "bus"]].values:
+        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][[
+                "element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
@@ -1432,7 +1598,6 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
-        # include_results = True  # assumption: the user doesn't want to old results without selection
     else:
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
@@ -1468,21 +1633,24 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     if include_results:
         for table in net.keys():
-            if net[table] is None or (isinstance(net[table], pd.DataFrame) and not
-            net[table].shape[0]):
+            if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
+               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+               net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
-                p2[table] = net[table].loc[buses]
-            elif table.startswith("res_") and table != "res_cost":
-                p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
+                p2[table] = net[table].loc[buses.intersection(net[table].index)]
+            else:
+                p2[table] = net[table].loc[p2[table[4:]].index.intersection(net[table].index)]
     if "bus_geodata" in net:
-        p2["bus_geodata"] = net["bus_geodata"].loc[net["bus_geodata"].index.isin(buses)]
+        p2["bus_geodata"] = net.bus_geodata.loc[p2.bus.index.intersection(
+            net.bus_geodata.index)]
     if "line_geodata" in net:
-        lines = p2.line.index
-        p2["line_geodata"] = net["line_geodata"].loc[net["line_geodata"].index.isin(lines)]
+        p2["line_geodata"] = net.line_geodata.loc[p2.line.index.intersection(
+            net.line_geodata.index)]
 
     # switches
-    p2["switch"] = net.switch[
+    p2["switch"] = net.switch.loc[
         net.switch.bus.isin(p2.bus.index) & pd.concat([
             net.switch[net.switch.et == 'b'].element.isin(p2.bus.index),
             net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
@@ -1500,7 +1668,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
     continuous indizes in order to avoid duplicates.
     """
     net = copy.deepcopy(net1)
-    net1 = copy.deepcopy(net1)
+    # net1 = copy.deepcopy(net1)  # commented to save time. net1 will not be changed (only by runpp)
     net2 = copy.deepcopy(net2)
     if create_continuous_bus_indices:
         create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
@@ -1510,11 +1678,11 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     def adapt_element_idx_references(net, element, element_type, offset=0):
         """
-        used for switch and measurement
+        used for switch, measurement, poly_cost and pwl_cost
         """
         # element_type[0] == "l" for "line", etc.:
         et = element_type[0] if element == "switch" else element_type
-        et_col = "et" if element == "switch" else "element_type"
+        et_col = "et" if element in ["switch", "poly_cost", "pwl_cost"] else "element_type"
         elements = net[element][net[element][et_col] == et]
         new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
         if len(new_index):
@@ -1527,28 +1695,40 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
             if element in ["switch", "measurement"]:
                 adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
-                adapt_element_idx_references(net1, element, "line")
+                adapt_element_idx_references(net, element, "line")
                 adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
-                adapt_element_idx_references(net1, element, "trafo")
+                adapt_element_idx_references(net, element, "trafo")
+            if element in ["poly_cost", "pwl_cost"]:
+                net[element]["element"] = [np.nan if row.element not in net1[row.et].index.values \
+                                            else net1[row.et].index.get_loc(row.element) for row in
+                                            net1[element].itertuples()]
+                if net[element]["element"].isnull().any():
+                    # this case could also be checked using get_false_links()
+                    logger.warning(f"Some net1[{element}] does not link to an existing element."
+                                   "These are dropped.")
+                    net[element].drop(net[element].index[net[element].element.isnull()],
+                                       inplace=True)
+                    net[element]["element"] = net[element]["element"].astype(int)
+                for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
+                    adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
             if element == "line_geodata":
                 ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
-                net1.line_geodata.set_index(np.array(ni), inplace=True)
+                net.line_geodata.set_index(np.array(ni), inplace=True)
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
-            dtypes = net1[element].dtypes
+            dtypes = net[element].dtypes
             try:
-                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index,
+                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
                                          sort=False)
             except:
                 # pandas legacy < 0.21
-                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
     # update standard types of net by data of net2
     for type_ in net.std_types.keys():
-        # net2.std_types[type_].update(net1.std_types[type_])  # if net1.std_types have priority
-        net.std_types[type_].update(net2.std_types[type_])
+        net.std_types[type_].update(net2.std_types[type_])  # net2.std_types have priority
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
@@ -1557,6 +1737,222 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         if dev1 > tol or dev2 > tol:
             raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
     return net
+
+
+def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+    """
+    creates a power line in parallel to the existing power line based on the values of the new
+    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
+    impedance of the new line and the already existing line is equal to the impedance of the
+    replaced line. Or for electrical engineers:
+
+    Z0 = impedance of the existing line
+    Z1 = impedance of the replaced line
+    Z2 = impedance of the created line
+
+        --- Z2 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+
+    Parameters
+    ----------
+    net - pandapower net
+    idx (int) - idx of the existing line
+    std_type (str) - pandapower standard type
+    name (str, None) - name of the new power line
+    in_service (bool, False) - if the new power line is in service
+    **kwargs - additional line parameters you want to set for the new line
+
+    Returns
+    -------
+    new_idx (int) - index of the created power line
+
+    """
+
+    # impedance before changing the standard type
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+    bak = net.line.loc[idx, :].values
+
+    change_std_type(net, idx, std_type)
+
+    # impedance after changing the standard type
+    r1 = net.line.at[idx, "r_ohm_per_km"]
+    x1 = net.line.at[idx, "x_ohm_per_km"]
+    c1 = net.line.at[idx, "c_nf_per_km"]
+    g1 = net.line.at[idx, "g_us_per_km"]
+    i_ka1 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line parallel to the existing line
+    y1 = 1 / complex(r1, x1)
+    y0 = p0 / complex(r0, x0)
+    z2 = 1 / (y1 - y0)
+
+    # required parameters
+    c_nf_per_km = c1 * 1 - c0 * p0
+    r_ohm_per_km = z2.real
+    x_ohm_per_km = z2.imag
+    g_us_per_km = g1 * 1 - g0 * p0
+    max_i_ka = i_ka1 - i_ka0
+    name = "repl_" + str(idx) if name is None else name
+
+    # if this line is in service to the existing line, the power flow result should be the same as
+    # when replacing the existing line with the desired standard type
+    new_idx = create_line_from_parameters(
+        net, from_bus=net.line.at[idx, "from_bus"], to_bus=net.line.at[idx, "to_bus"],
+        length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
+        x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka,
+        g_us_per_km=g_us_per_km, in_service=in_service, name=name, **kwargs)
+    # restore the previous line parameters before changing the standard type
+    net.line.loc[idx, :] = bak
+
+    # check switching state and add line switch if necessary:
+    for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
+        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
+                             (net.switch.et == "l")].bus.values:
+            create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
+
+    return new_idx
+
+
+def merge_parallel_line(net, idx):
+    """
+    Changes the impedances of the parallel line so that it equals a single line.
+    Args:
+        net: pandapower net
+        idx: idx of the line to merge
+
+    Returns:
+        net
+
+    Z0 = impedance of the existing parallel lines
+    Z1 = impedance of the respective single line
+
+        --- Z0 ---
+    ---|         |---   =  --- Z1 ---
+       --- Z0 ---
+
+    """
+    # impedance before changing the standard type
+
+    r0 = net.line.at[idx, "r_ohm_per_km"]
+    p0 = net.line.at[idx, "parallel"]
+    x0 = net.line.at[idx, "x_ohm_per_km"]
+    c0 = net.line.at[idx, "c_nf_per_km"]
+    g0 = net.line.at[idx, "g_us_per_km"]
+    i_ka0 = net.line.at[idx, "max_i_ka"]
+
+    # complex resistance of the line to the existing line
+    y0 = 1 / complex(r0, x0)
+    y1 = p0*y0
+    z1 = 1 / y1
+    r1 = z1.real
+    x1 = z1.imag
+
+    g1 = p0*g0
+    c1 = p0*c0
+    i_ka1 = p0*i_ka0
+
+    net.line.at[idx, "r_ohm_per_km"] = r1
+    net.line.at[idx, "parallel"] = 1
+    net.line.at[idx, "x_ohm_per_km"] = x1
+    net.line.at[idx, "c_nf_per_km"] = c1
+    net.line.at[idx, "g_us_per_km"] = g1
+    net.line.at[idx, "max_i_ka"] = i_ka1
+
+    return net
+
+
+def merge_same_bus_generation_plants(net, add_info=True, error=True,
+                                     gen_elms=["ext_grid", "gen", "sgen"]):
+    """
+    Merge generation plants connected to the same buses so that a maximum of one generation plants
+    per node remains.
+
+    ATTENTION:
+        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
+
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
+        elements dataframes. This column informs about which lines are the result of a merge of
+        generation plants.
+
+        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
+
+        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
+        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
+    """
+    if add_info:
+        for elm in gen_elms:
+            # adding column 'includes_other_plants' if missing or overwriting if its no bool column
+            if "includes_other_plants" not in net[elm].columns or net[elm][
+                    "includes_other_plants"].dtype != bool:
+                net[elm]["includes_other_plants"] = False
+
+    # --- construct gen_df with all relevant plants data
+    limit_cols = ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    cols = pd.Index(["bus", "vm_pu", "p_mw", "q_mvar"]+limit_cols)
+    cols_dict = {elm: cols.intersection(net[elm].columns) for elm in gen_elms}
+    gen_df = pd.concat([net[elm][cols_dict[elm]] for elm in gen_elms])
+    gen_df["elm_type"] = np.repeat(gen_elms, [net[elm].shape[0] for elm in gen_elms])
+    gen_df.reset_index(inplace=True)
+
+    # --- merge data and drop duplicated rows - directly in the net tables
+    something_merged = False
+    for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
+        idxs = gen_df.index[gen_df.bus == bus]
+        if "vm_pu" in gen_df.columns and len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
+            message = "Generation plants connected to bus %i have different vm_pu." % bus
+            if error:
+                raise ValueError(message)
+            else:
+                logger.error(message + " Only the first value is considered.")
+        uniq_et = gen_df["elm_type"].at[idxs[0]]
+        uniq_idx = gen_df.at[idxs[0], "index"]
+
+        if add_info:  # add includes_other_plants information
+            net[uniq_et].at[uniq_idx, "includes_other_plants"] = True
+
+        # sum p_mw
+        col = "p_mw" if uniq_et != "ext_grid" else "p_disp_mw"
+        net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, "p_mw"].sum()
+
+        if "profiles" in net and col == "p_mw":
+            elm = "gen" if "gen" in gen_df["elm_type"].loc[idxs[1:]].unique() else "sgen"
+            net.profiles["%s.p_mw" % elm].loc[:, uniq_idx] = net.profiles["%s.p_mw" % elm].loc[
+                :, gen_df["index"].loc[idxs]].sum(axis=1)
+            net.profiles["%s.p_mw" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+            if elm == "gen":
+                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]],
+                                                    inplace=True)
+
+        # sum q_mvar (if available)
+        if "q_mvar" in net[uniq_et].columns:
+            net[uniq_et].at[uniq_idx, "q_mvar"] = gen_df.loc[idxs, "q_mvar"].sum()
+
+        # sum limits
+        for col in limit_cols:
+            if col in gen_df.columns and not gen_df.loc[idxs, col].isnull().all():
+                if col not in net[uniq_et].columns:
+                    net[uniq_et][col] = np.nan
+                net[uniq_et].at[uniq_idx, col] = gen_df.loc[idxs, col].sum()
+
+        # drop duplicated elements
+        for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
+            dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
+                                      (gen_df.elm_type == elm), "index"].values
+            net[elm].drop(dupl_idx_elm, inplace=True)
+
+        something_merged |= True
+    return something_merged
 
 
 def create_replacement_switch_for_branch(net, element, idx):
@@ -1645,7 +2041,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
-        replaced[elm] = net[elm].loc[affected_elements]
+        replaced[elm] = net[elm].loc[list(affected_elements)]
 
         if drop_affected:
             if elm == 'line':
@@ -1663,6 +2059,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
 def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
     Creates lines by given impedances data, while the impedances are dropped.
+
     INPUT:
         **net** - pandapower net
 
@@ -1701,6 +2098,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
+
     INPUT:
         **net** - pandapower net
 
@@ -1733,7 +2131,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         Zni = vn ** 2 / sn_mva[i]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
-                                               line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
             in_service=line_.in_service))
         i += 1
     drop_lines(net, index)
@@ -1758,7 +2156,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -1819,13 +2217,14 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
 
     # --- result data
     if net.res_ext_grid.shape[0]:
-        to_add = net.res_ext_grid.loc[ext_grids]
-        to_add.index = new_idx
+        in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
+        to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_ext_grid.drop(ext_grids, inplace=True)
+        net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
     return new_idx
 
 
@@ -1901,13 +2300,14 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
         else:
             net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -1926,7 +2326,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -1985,13 +2385,14 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_gen.shape[0]:
-        to_add = net.res_gen.loc[gens]
-        to_add.index = new_idx
+        in_res = pd.Series(gens).isin(net["res_gen"].index).values
+        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_sgen = pd.concat([net.res_sgen, to_add])
         else:
             net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
-        net.res_gen.drop(gens, inplace=True)
+        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
 
@@ -2010,7 +2411,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
         **cols_to_keep** (list, None) - list of column names which should be kept while replacing
         sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
+        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
         "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
 
         **add_cols_to_keep** (list, None) - list of column names which should be added to
@@ -2085,19 +2486,140 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
     # --- result data
     if net.res_sgen.shape[0]:
-        to_add = net.res_sgen.loc[sgens]
-        to_add.index = new_idx
+        in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
+        to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
         if version.parse(pd.__version__) < version.parse("0.23"):
             net.res_gen = pd.concat([net.res_gen, to_add])
         else:
             net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_sgen.drop(sgens, inplace=True)
+        net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
+    return new_idx
+
+
+def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None, cols_to_keep=None,
+                       add_cols_to_keep=None):
+    """
+    Replaces e.g. static generators by loads or loads by storages and so forth.
+
+    INPUT:
+        **net** - pandapower net
+
+        **old_elm** (str) - element type of which elements should be replaced. Should be in [
+            "sgen", "load", "storage"]
+
+        **new_elm** (str) - element type of which elements should be created. Should be in [
+            "sgen", "load", "storage"]
+
+    OPTIONAL:
+        **old_indices** (iterable) - indices of the elements which should be replaced
+
+        **new_indices** (iterable) - required indices of the new elements
+
+        **cols_to_keep** (list, None) - list of column names which should be kept while replacing.
+        If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
+        "max_q_mvar", "min_q_mvar". Independent whether cols_to_keep is given, these columns are
+        always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+
+        **add_cols_to_keep** (list, None) - list of column names which should be added to
+        'cols_to_keep' to be kept while replacing.
+
+    OUTPUT:
+        **new_idx** (list) - list of indices of the new elements
+    """
+    if old_elm == new_elm:
+        logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
+        return old_indices
+    if old_indices is None:
+        old_indices = net[old_elm].index
+    else:
+        old_indices = ensure_iterability(old_indices)
+    if not len(old_indices):
+        return []
+    if new_indices is None:
+        new_indices = [None] * len(old_indices)
+    elif len(new_indices) != len(old_indices):
+        raise ValueError("The length of 'new_indices' must be the same as of 'old_indices' but " +
+                         "is %i instead of %i" % (len(new_indices), len(old_indices)))
+
+    # --- determine which columns should be kept while replacing
+    cols_to_keep = cols_to_keep if cols_to_keep is not None else [
+        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
+    if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
+        cols_to_keep += add_cols_to_keep
+    elif add_cols_to_keep is not None:
+        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(
+            add_cols_to_keep)))
+    cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
+                                             "controllable"})
+
+    existing_cols_to_keep = net[old_elm].loc[old_indices].dropna(axis=1).columns.intersection(
+        cols_to_keep)
+    # add missing columns to net[new_elm] which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net[new_elm].columns)
+    for col in missing_cols_to_keep:
+        net[new_elm][col] = np.nan
+
+    # --- create new_elm
+    already_considered_cols = set()
+    new_idx = []
+    for oelm, index in zip(net[old_elm].loc[old_indices].itertuples(), new_indices):
+        controllable = False if "controllable" not in net[old_elm].columns else oelm.controllable
+        sign = -1 if old_elm in ["sgen"] else 1
+        args = dict()
+        if new_elm == "load":
+            fct = create_load
+        elif new_elm == "sgen":
+            fct = create_sgen
+            sign *= -1
+        elif new_elm == "storage":
+            fct = create_storage
+            already_considered_cols |= {"max_e_mwh"}
+            args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_elm].columns else net[
+                old_elm].max_e_kwh.loc[old_indices]}
+        idx = fct(net, oelm.bus, p_mw=sign*oelm.p_mw, q_mvar=sign*oelm.q_mvar, name=oelm.name,
+                  in_service=oelm.in_service, controllable=controllable, index=index, **args)
+        new_idx.append(idx)
+
+    if sign == -1:
+        for col1, col2 in zip(["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
+                              ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]):
+            if col1 in existing_cols_to_keep:
+                net[new_elm].loc[new_idx, col2] = sign * net[old_elm].loc[
+                    old_indices, col1].values
+                already_considered_cols |= {col1}
+    net[new_elm].loc[new_idx, existing_cols_to_keep.difference(already_considered_cols)] = net[
+        old_elm].loc[old_indices, existing_cols_to_keep.difference(already_considered_cols)].values
+
+    # --- drop replaced old_indices
+    net[old_elm].drop(old_indices, inplace=True)
+
+    # --- adapt cost data
+    for table in ["pwl_cost", "poly_cost"]:
+        if net[table].shape[0]:
+            to_change = net[table].index[(net[table].et == old_elm) &
+                                         (net[table].element.isin(old_indices))]
+            if len(to_change):
+                net[table].et.loc[to_change] = new_elm
+                net[table].element.loc[to_change] = new_idx
+
+    # --- result data
+    if net["res_" + old_elm].shape[0]:
+        in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
+        to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
+        to_add.index = pd.Index(new_idx)[in_res]
+        if version.parse(pd.__version__) < version.parse("0.23"):
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
+        else:
+            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
+        net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 
 
 def replace_ward_by_internal_elements(net, wards=None):
     """
-    Replaces wards by loads and shunts
+    Replaces wards by loads and shunts.
+
     INPUT:
         **net** - pandapower net
 
@@ -2127,21 +2649,22 @@ def replace_ward_by_internal_elements(net, wards=None):
 
     # --- result data
     if net.res_ward.shape[0]:
-        sign_in_service = np.multiply(net.ward.in_service.values[wards], 1)
-        sign_not_isolated = np.multiply(net.res_ward.vm_pu.values[wards] != 0, 1)
+        sign_in_service = np.multiply(net.ward.in_service.loc[wards].values, 1)
+        sign_not_isolated = np.multiply(net.res_ward.vm_pu.loc[wards].values != 0, 1)
         to_add_load = net.res_ward.loc[wards, ["p_mw", "q_mvar"]]
         to_add_load.index = new_load_idx
-        to_add_load.p_mw = net.ward.ps_mw[wards].values * sign_in_service * sign_not_isolated
-        to_add_load.q_mvar = net.ward.qs_mvar[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.p_mw = net.ward.ps_mw.loc[wards].values * sign_in_service * sign_not_isolated
+        to_add_load.q_mvar = net.ward.qs_mvar.loc[wards].values * sign_in_service * \
+            sign_not_isolated
         net.res_load = pd.concat([net.res_load, to_add_load])
 
         to_add_shunt = net.res_ward.loc[wards, ["p_mw", "q_mvar", "vm_pu"]]
         to_add_shunt.index = new_shunt_idx
-        to_add_shunt.p_mw = net.res_ward.vm_pu[wards].values ** 2 * net.ward.pz_mw[wards].values * \
-                            sign_in_service * sign_not_isolated
-        to_add_shunt.q_mvar = net.res_ward.vm_pu[wards].values ** 2 * net.ward.qz_mvar[wards].values * \
-                              sign_in_service * sign_not_isolated
-        to_add_shunt.vm_pu = net.res_ward.vm_pu[wards].values
+        to_add_shunt.p_mw = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.pz_mw.loc[
+            wards].values * sign_in_service * sign_not_isolated
+        to_add_shunt.q_mvar = net.res_ward.vm_pu.loc[wards].values ** 2 * net.ward.qz_mvar.loc[
+            wards].values * sign_in_service * sign_not_isolated
+        to_add_shunt.vm_pu = net.res_ward.vm_pu.loc[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
 
         net.res_ward.drop(wards, inplace=True)
@@ -2153,6 +2676,7 @@ def replace_ward_by_internal_elements(net, wards=None):
 def replace_xward_by_internal_elements(net, xwards=None):
     """
     Replaces xward by loads, shunts, impedance and generators
+
     INPUT:
         **net** - pandapower net
 
@@ -2181,8 +2705,9 @@ def replace_xward_by_internal_elements(net, xwards=None):
                      in_service=xward.in_service, name=xward.name)
         create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
                    name=xward.name)
-        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2), xward.x_ohm / (bus_v ** 2),
-                         net.sn_mva, in_service=xward.in_service, name=xward.name)
+        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2),
+                         xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service,
+                         name=xward.name)
 
     # --- result data
     if net.res_xward.shape[0]:
@@ -2208,9 +2733,9 @@ def get_element_index(net, element, name, exact_match=True):
       **name** - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True) -
+          True: Expects exactly one match, raises UserWarning otherwise.
+          False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -2234,26 +2759,27 @@ def get_element_indices(net, element, name, exact_match=True):
     INPUT:
       **net** - pandapower network
 
-      **element** (str or iterable of strings) - Element table to get indices from ("line", "bus",
-            "trafo" etc.)
+      **element** (str, string iterable) - Element table to get indices from
+      ("line", "bus", "trafo" etc.).
 
-      **name** (str or iterable of strings) - Name of the element to match.
+      **name** (str) - Name of the element to match.
 
     OPTIONAL:
-      **exact_match** (boolean, True) - True: Expects exactly one match, raises
-                                                UserWarning otherwise.
-                                        False: returns all indices containing the name
+      **exact_match** (boolean, True)
+
+          - True: Expects exactly one match, raises UserWarning otherwise.
+          - False: returns all indices containing the name
 
     OUTPUT:
       **index** (list) - List of the indices of matching element(s).
 
     EXAMPLE:
-        import pandapower.networks as pn
-        import pandapower as pp
-        net = pn.example_multivoltage()
-        idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
-        idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
-        idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+        >>> import pandapower.networks as pn
+        >>> import pandapower as pp
+        >>> net = pn.example_multivoltage()
+        >>> idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        >>> idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        >>> idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
     """
     if isinstance(element, str) and isinstance(name, str):
         element = [element]
@@ -2301,11 +2827,16 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)    - True: open switches will be respected
-                                                  False: open switches will be ignored
-        **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
-                                                        respected
-                                                  False: in_service status will be ignored
+        **respect_switches** (boolean, True)
+
+            - True: open switches will be respected
+            - False: open switches will be ignored
+
+        **respect_in_service** (boolean, False)
+
+            - True: in_service status of connected lines will be respected
+            - False: in_service status will be ignored
+
      OUTPUT:
         **connected_elements** (set) - Returns connected elements.
 
@@ -2340,13 +2871,12 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage",
-                     "asymmetric_load", "asymmetric_sgen"]:
-        element_table = net[element]
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element == "measurement":
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
                                                        (net.measurement.element_type == "bus")])
+    elif element in pp_elements(bus=False, branch_elements=False):
+        element_table = net[element]
+        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
         return {}
@@ -2377,19 +2907,29 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-        **respect_switches** (boolean, True)        - True: open switches will be respected
-                                                      False: open switches will be ignored
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                            False: in_service status will be
-                                                            ignored
-        **consider** (iterable, ("l", "s", "t", "t3", "i"))    - Determines, which types of connections will
-                                                      be considered.
-                                                      l: lines
-                                                      s: switches
-                                                      t: trafos
-                                                      t3: trafo3ws
-                                                      i: impedances
+        **respect_switches** (boolean, True)
+
+            - True: open switches will be respected
+            - False: open switches will be ignored
+
+        **respect_in_service** (boolean, False)
+
+            - True: in_service status of connected buses will be respected
+            - False: in_service status will be ignored
+
+        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of
+        connections will be considered.
+
+            l: lines
+
+            s: switches
+
+            t: trafos
+
+            t3: trafo3ws
+
+            i: impedances
+
      OUTPUT:
         **cl** (set) - Returns connected buses.
 
@@ -2400,12 +2940,13 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     cb = set()
     if "l" in consider or 'line' in consider:
         in_service_constr = net.line.in_service if respect_in_service else True
-        opened_lines = set(net.switch.loc[(~net.switch.closed) &
-                                          (net.switch.et == "l")].element.unique()) if respect_switches else set()
-        connected_fb_lines = set(net.line.index[(net.line.from_bus.isin(buses)) &
-                                                ~net.line.index.isin(opened_lines) & in_service_constr])
-        connected_tb_lines = set(net.line.index[(net.line.to_bus.isin(buses)) &
-                                                ~net.line.index.isin(opened_lines) & in_service_constr])
+        opened_lines = set(net.switch.loc[(~net.switch.closed) & (
+            net.switch.et == "l")].element.unique()) if respect_switches else set()
+        connected_fb_lines = set(net.line.index[(
+            net.line.from_bus.isin(buses)) & ~net.line.index.isin(opened_lines) &
+            in_service_constr])
+        connected_tb_lines = set(net.line.index[(
+            net.line.to_bus.isin(buses)) & ~net.line.index.isin(opened_lines) & in_service_constr])
         cb |= set(net.line[net.line.index.isin(connected_tb_lines)].from_bus)
         cb |= set(net.line[net.line.index.isin(connected_fb_lines)].to_bus)
 
@@ -2417,12 +2958,14 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
 
     if "t" in consider or 'trafo' in consider:
         in_service_constr = net.trafo.in_service if respect_in_service else True
-        opened_trafos = set(net.switch.loc[(~net.switch.closed) &
-                                           (net.switch.et == "t")].element.unique()) if respect_switches else set()
-        connected_hvb_trafos = set(net.trafo.index[(net.trafo.hv_bus.isin(buses)) &
-                                                   ~net.trafo.index.isin(opened_trafos) & in_service_constr])
-        connected_lvb_trafos = set(net.trafo.index[(net.trafo.lv_bus.isin(buses)) &
-                                                   ~net.trafo.index.isin(opened_trafos) & in_service_constr])
+        opened_trafos = set(net.switch.loc[(~net.switch.closed) & (
+            net.switch.et == "t")].element.unique()) if respect_switches else set()
+        connected_hvb_trafos = set(net.trafo.index[(
+            net.trafo.hv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
+            in_service_constr])
+        connected_lvb_trafos = set(net.trafo.index[(
+            net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
+            in_service_constr])
         cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
         cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
 
@@ -2430,28 +2973,34 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     if "t3" in consider or 'trafo3w' in consider:
         in_service_constr3w = net.trafo3w.in_service if respect_in_service else True
         if respect_switches:
-            opened_buses_hv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.hv_bus)].bus.unique())
-            opened_buses_mv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.mv_bus)].bus.unique())
-            opened_buses_lv = set(net.switch.loc[~net.switch.closed & (net.switch.et == "t3") &
-                                                 net.switch.bus.isin(net.trafo3w.lv_bus)].bus.unique())
+            opened_buses_hv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.hv_bus)].bus.unique())
+            opened_buses_mv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.mv_bus)].bus.unique())
+            opened_buses_lv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.lv_bus)].bus.unique())
         else:
             opened_buses_hv = opened_buses_mv = opened_buses_lv = set()
 
-        hvb_trafos3w = set(net.trafo3w.index[net.trafo3w.hv_bus.isin(buses) &
-                                             ~net.trafo3w.hv_bus.isin(opened_buses_hv) & in_service_constr3w])
-        mvb_trafos3w = set(net.trafo3w.index[net.trafo3w.mv_bus.isin(buses) &
-                                             ~net.trafo3w.mv_bus.isin(opened_buses_mv) & in_service_constr3w])
-        lvb_trafos3w = set(net.trafo3w.index[net.trafo3w.lv_bus.isin(buses) &
-                                             ~net.trafo3w.lv_bus.isin(opened_buses_lv) & in_service_constr3w])
+        hvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.hv_bus.isin(buses) & ~net.trafo3w.hv_bus.isin(opened_buses_hv) &
+            in_service_constr3w])
+        mvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.mv_bus.isin(buses) & ~net.trafo3w.mv_bus.isin(opened_buses_mv) &
+            in_service_constr3w])
+        lvb_trafos3w = set(net.trafo3w.index[
+            net.trafo3w.lv_bus.isin(buses) & ~net.trafo3w.lv_bus.isin(opened_buses_lv) &
+            in_service_constr3w])
 
-        cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(net.trafo3w.loc[hvb_trafos3w].lv_bus) -
-               opened_buses_mv - opened_buses_lv)
-        cb |= (set(net.trafo3w.loc[mvb_trafos3w].hv_bus) | set(net.trafo3w.loc[mvb_trafos3w].lv_bus) -
-               opened_buses_hv - opened_buses_lv)
-        cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(net.trafo3w.loc[lvb_trafos3w].mv_bus) -
-               opened_buses_hv - opened_buses_mv)
+        cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(
+            net.trafo3w.loc[hvb_trafos3w].lv_bus) - opened_buses_mv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[mvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[mvb_trafos3w].lv_bus) - opened_buses_hv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[lvb_trafos3w].mv_bus) - opened_buses_hv - opened_buses_mv)
 
     if "i" in consider or 'impedance' in consider:
         in_service_constr = net.impedance.in_service if respect_in_service else True
@@ -2478,17 +3027,25 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
 
         **element** (integer)
 
-        **et** (string)                             - Type of the source element:
-                                                      l, line: line
-                                                      s, switch: switch
-                                                      t, trafo: trafo
-                                                      t3, trafo3w: trafo3w
-                                                      i, impedance: impedance
+        **et** (string) - Type of the source element:
+
+            l, line: line
+
+            s, switch: switch
+
+            t, trafo: trafo
+
+            t3, trafo3w: trafo3w
+
+            i, impedance: impedance
 
      OPTIONAL:
-        **respect_in_service** (boolean, False)     - True: in_service status of connected buses
-                                                            will be respected
-                                                      False: in_service status will be ignored
+        **respect_in_service** (boolean, False)
+
+        True: in_service status of connected buses will be respected
+
+        False: in_service status will be ignored
+
      OUTPUT:
         **cl** (set) - Returns connected switches.
 
@@ -2559,7 +3116,8 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
     for et in consider:
         if et == 'b':
             cs |= set(net['switch'].index[
-                          (net['switch']['bus'].isin(buses) | net['switch']['element'].isin(buses)) &
+                          (net['switch']['bus'].isin(buses) |
+                           net['switch']['element'].isin(buses)) &
                           (net['switch']['et'] == 'b') & switch_selection])
         else:
             cs |= set(net['switch'].index[(net['switch']['bus'].isin(buses)) &
@@ -2598,7 +3156,8 @@ def get_gc_objects_dict():
     This function is based on the code in mem_top module
     Summarize object types that are tracket by the garbage collector in the moment.
     Useful to test if there are memoly leaks.
-    :return: dictionary with keys corresponding to types and values to the number of objects of the type
+    :return: dictionary with keys corresponding to types and values to the number of objects of the
+    type
     """
     objs = gc.get_objects()
     nums_by_types = dict()
@@ -2609,75 +3168,56 @@ def get_gc_objects_dict():
     return nums_by_types
 
 
-def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+def false_elm_links(net, elm, col, target_elm):
     """
-    creates a power line in parallel to the existing power line based on the values of the new std_type.
-    The new parallel line has an impedance value, which is chosen so that the resulting impedance of the new line
-    and the already existing line is equal to the impedance of the replaced line. Or for electrical engineers:
+    Returns which indices have links to elements of other element tables which does not exist in the
+    net.
 
-    Z0 = impedance of the existing line
-    Z1 = impedance of the replaced line
-    Z2 = impedance of the created line
+    EXAMPLE 1:
+        elm = "line"
+        col = "to_bus"
+        target_elm = "bus"
 
-        --- Z2 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
-
-
-    Parameters
-    ----------
-    net - pandapower net
-    idx (int) - idx of the existing line
-    std_type (str) - pandapower standard type
-    name (str, None) - name of the new power line
-    in_service (bool, False) - if the new power line is in service
-    **kwargs - additional line parameters you want to set for the new line
-
-    Returns
-    -------
-    new_idx (int) - index of the created power line
-
+    EXAMPLE 2:
+        elm = "poly_cost"
+        col = "element"
+        target_elm = net["poly_cost"]["et"]
     """
-    # impedance before changing the standard type
-    r0 = net.line.at[idx, "r_ohm_per_km"]
-    p0 = net.line.at[idx, "parallel"]
-    x0 = net.line.at[idx, "x_ohm_per_km"]
-    c0 = net.line.at[idx, "c_nf_per_km"]
-    g0 = net.line.at[idx, "g_us_per_km"]
-    i_ka0 = net.line.at[idx, "max_i_ka"]
-    bak = net.line.loc[idx, :].values
+    if isinstance(target_elm, str):
+        return net[elm][col].index[~net[elm][col].isin(net[target_elm].index)]
+    else:  # target_elm is an iterable, e.g. a Series such as net["poly_cost"]["et"]
+        df = pd.DataFrame({"element": net[elm][col].values, "et": target_elm,
+                           "indices": net[elm][col].index.values})
+        df = df.set_index("et")
+        false_links = pd.Index([])
+        for et in df.index:
+            false_links = false_links.union(pd.Index(df.loc[et].indices.loc[
+                ~df.loc[et].element.isin(net[et].index)]))
+        return false_links
 
-    change_std_type(net, idx, std_type)
 
-    # impedance after changing the standard type
-    r1 = net.line.at[idx, "r_ohm_per_km"]
-    p1 = net.line.at[idx, "parallel"]
-    x1 = net.line.at[idx, "x_ohm_per_km"]
-    c1 = net.line.at[idx, "c_nf_per_km"]
-    g1 = net.line.at[idx, "g_us_per_km"]
-    i_ka1 = net.line.at[idx, "max_i_ka"]
-
-    # complex resistance of the line parallel to the existing line
-    y1 = p1 / complex(r1, x1)
-    y0 = p0 / complex(r0, x0)
-    z2 = 1 / (y1 - y0)
-
-    # required parameters
-    c_nf_per_km = c1 * p1 - c0 * p0
-    r_ohm_per_km = z2.real
-    x_ohm_per_km = z2.imag
-    g_us_per_km = g1 * p1 - g0 * p0
-    max_i_ka = i_ka1 - i_ka0
-    name = "repl_" + str(idx) if name is None else name
-
-    # if this line is in service to the existing line, the power flow result should be the same as when replacing the
-    # existing line with the desired standard type
-    new_idx = create_line_from_parameters(net, from_bus=net.line.at[idx, "from_bus"],
-                                          to_bus=net.line.at[idx, "to_bus"],
-                                          length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
-                                          x_ohm_per_km=x_ohm_per_km,
-                                          c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka, g_us_per_km=g_us_per_km,
-                                          in_service=in_service, name=name, **kwargs)
-    # restore the previous line parameters before changing the standard type
-    net.line.loc[idx, :] = bak
-    return new_idx
+def false_elm_links_loop(net, elms=None):
+    """
+    Returns a dict of elements which indices have links to elements of other element tables which
+    does not exist in the net.
+    This function is an outer loop for get_false_links() applications.
+    """
+    false_links = dict()
+    elms = elms if elms is not None else pp_elements(bus=False, cost_tables=True)
+    bebd = branch_element_bus_dict(include_switch=True)
+    for elm in elms:
+        if net[elm].shape[0]:
+            fl = pd.Index([])
+            # --- define col and target_elm
+            if elm in bebd.keys():
+                for col in bebd[elm]:
+                    fl = fl.union(false_elm_links(net, elm, col, "bus"))
+            elif elm in {"poly_cost", "pwl_cost"}:
+                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["et"]))
+            elif elm == "measurement":
+                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["element_type"]))
+            else:
+                fl = fl.union(false_elm_links(net, elm, "bus", "bus"))
+            if len(fl):
+                false_links[elm] = fl
+    return false_links

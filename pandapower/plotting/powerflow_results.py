@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import sys
 from itertools import combinations
 
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import networkx as nx
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
 
+from pandapower.auxiliary import soft_dependency_error
 import pandapower.topology as top
 
 
@@ -16,6 +23,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                          ylabel="Voltage [pu]", x0=0, trafocolor="r", bus_colors=None,
                          line_loading_weight=False, voltage_column=None, bus_size=3, lines=None,
                          **kwargs):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
@@ -27,7 +36,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         lines = net.line.index
     for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
         d = top.calc_distance_to_bus(net, eg)
-        for lix, line in net.line[(net.line.in_service == True) & net.line.index.isin(lines)].iterrows():
+        for lix, line in net.line[(net.line.in_service == True) & net.line.index.isin(
+                lines)].iterrows():
             if line.from_bus not in d.index:
                 continue
             if not ((net.switch.element == line.name) & ~net.switch.closed & (
@@ -90,14 +100,18 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
     return ax
 
 
-def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolor="k", ax=None, index_subset=None):
+def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolor="k", ax=None,
+                 index_subset=None):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if ax is None:
         plt.figure(facecolor="white", dpi=80)
         ax = plt.gca()
     if index_subset is None:
         index_subset = net[element].index
-    loadings = net["res_%s" % element].loading_percent.values[net["res_%s" % element].index.isin(index_subset)]
-    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis="range")
+    loadings = net["res_%s" % element].loading_percent.values[net["res_%s" % element].index.isin(
+        index_subset)]
+    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis=[0, 100])
     for l in list(boxplot.keys()):
         plt.setp(boxplot[l], lw=3)
         if l == "medians":

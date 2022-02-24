@@ -1,24 +1,30 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import csv
-import random
-from functools import reduce
-from pandapower.auxiliary import ADict
+import sys
 
 import numpy as np
-import pandas
+from pandas import Index, Series
 
-import pandas as pd
-from pandas import Int64Index
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.toolbox import ensure_iterability
+from .characteristic import SplineCharacteristic
 
 try:
-    import pplog
-except:
+    import matplotlib.pyplot as plt
+
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
+try:
+    import pandaplan.core.pplog as pplog
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
+
 
 def asarray(val, dtype=np.float64):
     """
@@ -63,19 +69,32 @@ def _controller_attributes_query(controller, parameters):
     """
     Returns a boolean if the controller attributes matches given parameter dict data
     """
-    match = True
+    complete_match = True
+    element_index_match = True
     for key in parameters.keys():
         if key not in controller.__dict__:
             logger.debug(str(key) + " is no attribute of controller object " + str(controller))
             return False
         try:
-            match &= bool(controller.__getattribute__(key) == parameters[key])
+            match = bool(controller.__getattribute__(key) == parameters[key])
         except ValueError:
             try:
-                match &= all(controller.__getattribute__(key) == parameters[key])
+                match = all(controller.__getattribute__(key) == parameters[key])
             except ValueError:
-                match &= bool(len(set(controller.__getattribute__(key)) & set(parameters[key])))
-    return match
+                match = bool(len(set(controller.__getattribute__(key)) & set(parameters[key])))
+        if key == "element_index":
+            element_index_match = match
+        else:
+            complete_match &= match
+
+    if complete_match and not element_index_match:
+        intersect_elms = set(ensure_iterability(controller.__getattribute__("element_index"))) & \
+                         set(ensure_iterability(parameters["element_index"]))
+        if len(intersect_elms):
+            logger.info("'element_index' has an intersection of " + str(intersect_elms) +
+                        " with Controller %i" % controller.index)
+
+    return complete_match & element_index_match
 
 
 def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
@@ -109,9 +128,9 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         attributes_keys = list(set(parameters.keys()) - set(df_keys))
         attributes_dict = {k: parameters[k] for k in attributes_keys}
         # query of parameters in net.controller dataframe
-        idx = Int64Index(idx)
+        idx = Index(idx, dtype=np.int64)
         for df_key in df_keys:
-            idx &= net.controller.index[net.controller[df_key] == parameters[df_key]]
+            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
         # query of parameters in controller object attributes
         idx = [i for i in idx if _controller_attributes_query(
             net.controller.object.loc[i], attributes_dict)]
@@ -145,7 +164,7 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
     else:
         logger.info("Creating controller " + index + " of type %s " % this_ctrl_type)
         logger.debug("no matching parameters are given to check whether problematic, " +
-                    "same type controllers already exist.")
+                     "same type controllers already exist.")
 
 
 def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
@@ -178,3 +197,55 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
         logger.info("Creating controller " + index + " of type %s, " % this_ctrl_type +
                     "no matching parameters are given to check which " +
                     "same type controllers should be dropped.")
+
+
+def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel=None):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+    x = np.linspace(start, stop, num)
+    y = characteristic(x)
+    plt.plot(x, y, marker='x')
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+
+
+def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
+    # create characteristics for the specified variable and set their indices in the trafo table
+    col = f"{variable}_characteristic"
+    # check if the variable is a valid attribute of the trafo table
+    supported_columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
+                         "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in
+                                     ["", "r"]]}
+    if col not in supported_columns[trafotable]:
+        raise UserWarning("Variable %s is not supported for table %s" % (variable, trafotable))
+
+    # check inputs, check if 1 trafo or multiple, verify shape of x_points and y_points and trafo_index
+    if hasattr(trafo_index, '__iter__'):
+        single_mode = False
+        if not (len(trafo_index) == len(x_points) == len(y_points)):
+            raise UserWarning("The lengths of the trafo index and points do not match!")
+    else:
+        single_mode = True
+        if (len(x_points) != len(y_points)):
+            raise UserWarning("The lengths of the points do not match!")
+
+    if 'tap_dependent_impedance' not in net[trafotable]:
+        net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
+
+    if col not in net[trafotable]:
+        net[trafotable][col] = Series(index=net[trafotable].index, dtype="Int64")
+
+    # set the flag for the trafo table
+    net[trafotable].loc[trafo_index, 'tap_dependent_impedance'] = True
+
+    if single_mode:
+        zip_params = zip([trafo_index], [x_points], [y_points])
+    else:
+        zip_params = zip(trafo_index, x_points, y_points)
+
+    for tid, x_p, y_p in zip_params:
+        # create the characteristic and set its index in the trafotable
+        s = SplineCharacteristic(net, x_p, y_p)
+        net[trafotable].at[tid, col] = s.index

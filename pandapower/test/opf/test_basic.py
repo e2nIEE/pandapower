@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@ from pandapower.networks import simple_four_bus_system
 from pandapower.test.toolbox import add_grid_connection
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -46,8 +46,8 @@ def simple_opf_test_net():
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=10.)
     pp.create_bus(net, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05,
-                  min_q_mvar=-.005)
+    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                  max_q_mvar=0.05, min_q_mvar=-.005)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_mw=0.020, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
@@ -138,8 +138,8 @@ def test_simplest_voltage():
 #    net = pp.create_empty_network()
 #    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
 #    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-#    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150, max_q_mvar=0.05,
-#                  min_q_mvar=-0.05)
+#    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
+#                  max_q_mvar=0.05, min_q_mvar=-0.05)
 #    pp.create_ext_grid(net, 0, vm_pu=1.01)
 #    pp.create_load(net, 1, p_mw=0.02, controllable=False)
 #    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
@@ -170,8 +170,8 @@ def test_simplest_dispatch():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150, max_q_mvar=0.05,
-                  min_q_mvar=-0.05)
+    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
+                  max_q_mvar=0.05, min_q_mvar=-0.05)
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     pp.create_ext_grid(net, 0)
     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=101)
@@ -323,7 +323,8 @@ def test_opf_gen_loading():
     # run OPF
 
     pp.runopp(net, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-              PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10, calculate_voltage_angles=False)
+              PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10,
+              calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
     # assert and check result
@@ -401,8 +402,8 @@ def test_unconstrained_line():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05,
-                  min_q_mvar=-0.05)
+    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                  max_q_mvar=0.05, min_q_mvar=-0.05)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_mw=0.02, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
@@ -430,8 +431,8 @@ def test_trafo3w_loading():
     tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV',
                                    max_loading_percent=120)
     pp.create_load(net, b3, p_mw=5, controllable=False)
-    load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6,
-                             max_q_mvar=1e6)
+    load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0,
+                             min_q_mvar=-1e6, max_q_mvar=1e6)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
     # pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
@@ -530,10 +531,10 @@ def test_opf_varying_max_line_loading():
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
 
-    pp.create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.025,
-                   min_q_mvar=-0.025)
-    pp.create_sgen(net, 2, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.025,
-                   min_q_mvar=-0.025)
+    pp.create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                   max_q_mvar=0.025, min_q_mvar=-0.025)
+    pp.create_sgen(net, 2, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                   max_q_mvar=0.025, min_q_mvar=-0.025)
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=10)
     pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=10)
     pp.create_ext_grid(net, 0)
@@ -549,7 +550,8 @@ def test_opf_varying_max_line_loading():
     pp.runopp(net, init="flat", calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
-    assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281 + 0.j, 0.00692820 + 0.j, 0.12800000 + 0.j]))
+    assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281 + 0.j, 0.00692820 + 0.j,
+                                                              0.12800000 + 0.j]))
 
     # assert and check result
     logger.debug("test_opf_sgen_loading")
@@ -719,7 +721,8 @@ def test_no_controllables(simple_opf_test_net):
     try:
         pp.runopp(net)
     except pp.OPFNotConverged:
-        # opf will fail if not bus limits are set and vm_pu is the default value of 1.0 (it is enforced)
+        # opf will fail if not bus limits are set and vm_pu is the default value of 1.0 (
+        # it is enforced)
         assert True
     net.gen.loc[:, "vm_pu"] = 1.062  # vm_pu setpoint is mandatory if controllable=False
     net.gen.loc[:, "p_mw"] = 0.149
@@ -807,8 +810,8 @@ def four_bus_net():
 
 
 def test_three_slacks_vm_setpoint(four_bus_net):
-    # tests a net with three slacks in one area. Two of them will be converted to gens, since only one is allowed per
-    # area. The others should have vmin / vmax set as their vm_pu setpoint
+    # tests a net with three slacks in one area. Two of them will be converted to gens, since
+    # only one is allowed per area. The others should have vmin / vmax set as their vm_pu setpoint
     net = four_bus_net
     # create two additional slacks with different voltage setpoints
     pp.create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
@@ -828,11 +831,13 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
-    pp.create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True)
-    g1 = pp.create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
-                       controllable=False)  # controllable == False -> vm_pu enforced
-    g3 = pp.create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
-                       min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between bus voltages
+    pp.create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
+                  max_q_mvar=1., slack=True)
+    pp.create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
+                  max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
+    pp.create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
+                  min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
+    # bus voltages
     pp.runpp(net)
     # assert if voltage limits are correct in result in pf an opf
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
