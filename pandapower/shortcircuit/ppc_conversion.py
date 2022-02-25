@@ -41,6 +41,7 @@ def _init_ppc(net):
     _add_kt(net, ppc)
     _add_gen_sc_z_kg_ks(net, ppc)
     _add_sgen_sc_z(net, ppc)
+    _add_ward_sc_z(net, ppc)
     _add_xward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
@@ -62,6 +63,7 @@ def _check_sc_data_integrity(net):
             if col not in net.trafo.columns:
                 net.trafo[col] = False
 
+
 def _add_kt(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
@@ -72,6 +74,29 @@ def _add_kt(net, ppc):
         cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
         kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
         branch[f:t, K_T] = kt
+
+
+def _add_ward_sc_z(net, ppc):
+    ward = net["ward"][net._is_elements_final["ward"]]
+    if len(ward) == 0:
+        return
+    ward_buses = ward.bus.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    ward_buses_ppc = bus_lookup[ward_buses]
+
+    base_sn_mva = ppc["baseMVA"]
+
+    y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j) / base_sn_mva
+    # how to calculate r and x in Ohm:
+    # z_ward_pu = 1/y_ward_pu
+    # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+    # z_base_ohm = (vn_net ** 2 / base_sn_mva)
+    # z_ward_ohm = z_ward_pu * z_base_ohm
+
+    buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
+    ppc["bus"][buses, GS] += gs
+    ppc["bus"][buses, BS] += bs
+
 
 def _add_xward_sc_z(net, ppc):
     # TODO Roman: Check if this should be ward or xward
