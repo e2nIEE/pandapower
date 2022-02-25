@@ -42,7 +42,6 @@ def _init_ppc(net):
     _add_gen_sc_z_kg_ks(net, ppc)
     _add_sgen_sc_z(net, ppc)
     _add_ward_sc_z(net, ppc)
-    _add_xward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
 
@@ -77,46 +76,27 @@ def _add_kt(net, ppc):
 
 
 def _add_ward_sc_z(net, ppc):
-    ward = net["ward"][net._is_elements_final["ward"]]
-    if len(ward) == 0:
-        return
-    ward_buses = ward.bus.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    ward_buses_ppc = bus_lookup[ward_buses]
+    for element in ("ward", "xward"):
+        ward = net[element][net._is_elements_final[element]]
+        if len(ward) == 0:
+            continue
 
-    base_sn_mva = ppc["baseMVA"]
+        ward_buses = ward.bus.values
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        ward_buses_ppc = bus_lookup[ward_buses]
 
-    y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j) / base_sn_mva
-    # how to calculate r and x in Ohm:
-    # z_ward_pu = 1/y_ward_pu
-    # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
-    # z_base_ohm = (vn_net ** 2 / base_sn_mva)
-    # z_ward_ohm = z_ward_pu * z_base_ohm
+        base_sn_mva = ppc["baseMVA"]
 
-    buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
-    ppc["bus"][buses, GS] += gs
-    ppc["bus"][buses, BS] += bs
+        y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j) / base_sn_mva
+        # how to calculate r and x in Ohm:
+        # z_ward_pu = 1/y_ward_pu
+        # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+        # z_base_ohm = (vn_net ** 2 / base_sn_mva)
+        # z_ward_ohm = z_ward_pu * z_base_ohm
 
-
-def _add_xward_sc_z(net, ppc):
-    # TODO Roman: Check if this should be ward or xward
-    ward = net["xward"][net._is_elements_final["xward"]]
-    if len(ward) == 0:
-        return
-    ward_buses = ward.bus.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    ward_buses_ppc = bus_lookup[ward_buses]
-
-    vn_net = net.bus.loc[ward_buses, "vn_kv"].values
-    # todo fix zbase
-    r_ward, x_ward = ward["r_ohm"].values, ward["x_ohm"].values
-    z_ward = (r_ward + x_ward*1j)
-    z_ward_pu = z_ward / vn_net ** 2
-    y_ward_pu = 1 / z_ward_pu
-
-    buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
-    ppc["bus"][buses, GS] += gs
-    ppc["bus"][buses, BS] += bs
+        buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
+        ppc["bus"][buses, GS] += gs
+        ppc["bus"][buses, BS] += bs
 
 
 def _add_sgen_sc_z(net, ppc):

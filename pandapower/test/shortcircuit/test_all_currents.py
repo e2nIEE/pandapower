@@ -275,5 +275,20 @@ def test_ward():
     assert np.allclose(net.res_bus_sc.xk_ohm, xk_ohm, atol=1e-6, rtol=0)
 
 
+def test_xward():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)
+    pp.create_xward(net, 1, 10, 5, 200, 100, 3, 1, vm_pu=1.02)
+    sc.calc_sc(net)
+    ikss_ka = [1.209707, 1.209818]
+    rk_ohm = [57.719840, 57.678686]
+    xk_ohm = [-1.834709, -2.740132]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.rk_ohm, rk_ohm, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.xk_ohm, xk_ohm, atol=1e-6, rtol=0)
+
+
 if __name__ == '__main__':
     pytest.main([__file__])
