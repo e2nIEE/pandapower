@@ -345,8 +345,12 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
 
     ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
 
+    # cleanup ppc before first time step
+    cleanup(net, ts_variables)
+
     control_diagnostic(net)
     run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated
     cleanup(net, ts_variables)
+    # both cleanups, at the start AND at the end, are important!
