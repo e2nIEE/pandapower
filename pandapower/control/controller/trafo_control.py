@@ -46,6 +46,7 @@ class TrafoController(Controller):
         self.tid = tid
 
         self._set_side_trafotable(side)
+        self._set_read_write_flag(net)
         self._set_valid_tid_controlled_bus(net)
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
@@ -54,7 +55,7 @@ class TrafoController(Controller):
 
         self.set_recycle(net)
 
-    def _set_read_write_flag(self):
+    def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
         self._read_write_flag, _ = _detect_read_write_flag(net, self.trafotable, self.tid, "tap_pos")
         if self._read_write_flag == 'loc':
@@ -66,7 +67,7 @@ class TrafoController(Controller):
         # update valid trafo and bus
         # update trafo tap parameters
         # we assume side does not change after the controller is created
-        self._set_read_write_flag()
+        self._set_read_write_flag(net)
         self._set_valid_tid_controlled_bus(net)
         if self.nothing_to_do(net):
             return
