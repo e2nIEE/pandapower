@@ -46,7 +46,8 @@ setup(
                       "networkx>=2.5",
                       "scipy",
                       "numpy>=0.11",
-                      "packaging"],
+                      "packaging",
+                      "tqdm"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
         "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
