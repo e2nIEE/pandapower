@@ -455,9 +455,10 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
         internal_buses = set(internal_buses)
 
     boundary_buses = set(boundary_buses)
-    boundary_buses_ppc = list(net._pd2ppc_lookups["bus"][list(boundary_buses)])
-    p = [boundary_buses_ppc.index(i) for i in set(boundary_buses_ppc)]
-    boundary_buses = set(list(boundary_buses)[pi] for pi in p)
+    bb_buses = net.switch.element[(net.switch.et=="b") &
+                                (net.switch.element.isin(boundary_buses)) &
+                                (net.switch.bus.isin(boundary_buses))].tolist() 
+    boundary_buses -= set(bb_buses) 
     
     unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
