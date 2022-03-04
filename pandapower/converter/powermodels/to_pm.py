@@ -491,12 +491,15 @@ def add_params_to_pm(net, pm):
             for k in pm["user_defined_params"]["side"].keys():
                 side = pm["user_defined_params"]["side"][k]["value"]
                 side_bus_f = side + "_bus"
-                side_bus_t = "from_bus" if side == "to" else "to_bus"
+                if elm == "line":
+                    side_bus_t = "from_bus" if side == "to" else "to_bus" 
+                if elm == "trafo":
+                    side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
                 pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                 pm["user_defined_params"]["setpoint_q"][k]["f_bus"] = \
-                    net._pd2pm_lookups["bus"][net.line[side_bus_f][pd_idx]]
+                    net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
                 pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
-                    net._pd2pm_lookups["bus"][net.line[side_bus_t][pd_idx]]
+                    net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
     return pm
 
 
