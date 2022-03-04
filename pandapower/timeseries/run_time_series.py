@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 from collections.abc import Iterable
+import tqdm
 
 import pandapower as pp
 from pandapower import LoadflowNotConverged, OPFNotConverged
@@ -13,7 +14,7 @@ from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 
@@ -279,7 +280,7 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
 
     if logger.level != 10 and verbose:
         # simple progress bar
-        print_progress_bar(0, len(time_steps), prefix='Progress:', suffix='Complete', length=50)
+        ts_variables['progress_bar'] = tqdm.tqdm(total=len(time_steps))
 
     return ts_variables
 
@@ -293,8 +294,7 @@ def cleanup(net, ts_variables):
 def print_progress(i, time_step, time_steps, verbose, **kwargs):
     # simple status print in each time step.
     if logger.level != 10 and verbose:
-        len_timesteps = len(time_steps)
-        print_progress_bar(i + 1, len_timesteps, prefix='Progress:', suffix='Complete', length=50)
+        kwargs['ts_variables']["progress_bar"].update(1)
 
     # print debug info
     if logger.level == pplog.DEBUG and verbose:
@@ -317,7 +317,8 @@ def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_
 
     """
     for i, time_step in enumerate(ts_variables["time_steps"]):
-        print_progress(i, time_step, ts_variables["time_steps"], ts_variables["verbose"], **kwargs)
+        print_progress(i, time_step, ts_variables["time_steps"], ts_variables["verbose"], ts_variables=ts_variables,
+                       **kwargs)
         run_time_step(net, time_step, ts_variables, run_control_fct, output_writer_fct, **kwargs)
 
 
@@ -345,8 +346,12 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
 
     ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)
 
+    # cleanup ppc before first time step
+    cleanup(net, ts_variables)
+
     control_diagnostic(net)
     run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated
     cleanup(net, ts_variables)
+    # both cleanups, at the start AND at the end, are important!

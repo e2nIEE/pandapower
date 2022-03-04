@@ -1,6 +1,18 @@
 Change Log
+=============
 
-[2.8.0]- 2022-02-04
+[upcoming release] - 2022-..-..
+-------------------------------
+- [ADDED] added support for Python 3.10
+- [ADDED] added a function to pandapower.plotting to set line geodata from the geodata of the connected buses
+- [ADDED] plotly hover information will indicate parallel lines, if parallel > 1
+- [ADDED] 'showlegend' option for simple_plotly
+- [CHANGED] rename u by vm (voltage magnitude) in file and functions names
+- [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
+- [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
+- [FIX] fixed hover information for lines in plotly
+
+[2.8.0]- 2022-02-06
 ----------------------
 - [ADDED] toolbox functions false_elm_links() and false_elm_links_loop()
 - [FIXED] poly_cost and pwl_cost consideration in merge_nets()

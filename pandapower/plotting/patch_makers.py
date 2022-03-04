@@ -14,7 +14,7 @@ from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, g
     get_linewidth_list
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

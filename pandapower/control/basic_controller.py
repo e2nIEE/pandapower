@@ -11,7 +11,7 @@ from pandapower.control.util.auxiliary import \
 from pandapower.io_utils import JSONSerializableClass
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 

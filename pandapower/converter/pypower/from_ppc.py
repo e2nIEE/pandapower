@@ -14,7 +14,7 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV
 import pandapower as pp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)

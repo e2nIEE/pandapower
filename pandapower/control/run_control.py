@@ -7,7 +7,7 @@ import pandapower as pp
 import numpy as np
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 

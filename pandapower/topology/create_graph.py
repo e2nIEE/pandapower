@@ -16,7 +16,7 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

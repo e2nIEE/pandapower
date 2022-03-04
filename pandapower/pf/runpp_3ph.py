@@ -30,7 +30,7 @@ from pandapower.pypower.idx_gen import GEN_BUS
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)

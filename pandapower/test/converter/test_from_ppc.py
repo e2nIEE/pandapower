@@ -21,7 +21,7 @@ except ImportError:
     pypower_installed = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except:
     import logging
 

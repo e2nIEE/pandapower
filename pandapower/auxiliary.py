@@ -51,7 +51,7 @@ try:
 except ImportError:
     lightsim2grid_available = False
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -356,7 +356,7 @@ def _get_values(source, selection, lookup):
     """
     v = np.zeros(len(selection))
     for i, k in enumerate(selection):
-        v[i] = source[lookup[np.int(k)]]
+        v[i] = source[lookup[np.int64(k)]]
     return v
 
 

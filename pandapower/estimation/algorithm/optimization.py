@@ -16,7 +16,7 @@ DEFAULT_OPT_METHOD = "TNC"
 
 
 class OptAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci: ExtendedPPCI, estimator="wls", **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, estimator="wls", verbose=True, **kwargs):
         opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in kwargs else kwargs['opt_method']
 
         # matrix calculation object
@@ -25,7 +25,7 @@ class OptAlgorithm(BaseAlgorithm):
         jac = estm.create_cost_jacobian
         res = minimize(estm.cost_function, x0=eppci.E,
                        method=opt_method, jac=jac, tol=self.tolerance,
-                       options={"disp": True})
+                       options={"disp": verbose})
 
         self.successful = res.success
         if self.successful:

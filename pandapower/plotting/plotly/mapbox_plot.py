@@ -10,7 +10,7 @@ import numpy as np
 from pandapower.auxiliary import ppException
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
