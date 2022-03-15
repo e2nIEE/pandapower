@@ -107,6 +107,6 @@ class ContinuousTapControl(TrafoController):
                                      (vm_pu > self.vm_set_pu) & (self.tap_pos == self.tap_min))
             converged = np.logical_or(reached_limit, np.abs(difference) < self.tol)
         else:
-            converged = abs(difference) < self.tol
+            converged = np.abs(difference) < self.tol
 
         return np.all(converged)
