@@ -1607,7 +1607,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             if net_parameter in net.keys():
                 p2[net_parameter] = net[net_parameter]
 
-    p2.bus = net.bus.loc[buses]
+    p2.bus = net.bus.loc[list(buses)]
     for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
                            other_elements=False, res_elements=False):
         p2[elm] = net[elm][net[elm].bus.isin(buses)]
