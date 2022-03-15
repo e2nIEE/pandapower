@@ -72,7 +72,11 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     """
     Returns a set of pandapower elements.
     """
-    pp_elms = set(["bus"]) if bus else set()
+    pp_elms = set()
+    if bus:
+        pp_elms |= {"bus"}
+        if res_elements:
+            pp_elms |= {"res_bus"}
     pp_elms |= set([el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
     if other_elements:
@@ -1882,8 +1886,8 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
 
     OPTIONAL:
         **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
-        elements dataframes. This column informs about which lines are the result of a merge of
-        generation plants.
+        elements dataframes. This column informs about which element table rows are the result of a
+        merge of generation plants.
 
         **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
 
