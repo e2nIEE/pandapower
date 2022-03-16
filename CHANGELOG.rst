@@ -12,6 +12,9 @@ Change Log
 - [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
 - [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
 - [FIX] fixed hover information for lines in plotly
+- [CHANGED] use numpy to vectorize trafo_control
+- [ADDED] generic functions in pandapower.toolbox to rad and write data to/from elements
+- [CHANGED] remove code duplication in const_control, characteristic_control
 
 [2.8.0]- 2022-02-06
 ----------------------
