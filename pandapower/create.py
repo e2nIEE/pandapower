@@ -294,6 +294,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('initial_run', "bool"),
             ("recycle", dtype(object))
         ],
+        'group': [
+            ('name', dtype(object)),
+            ('object', dtype(object)),
+        ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],

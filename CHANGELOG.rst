@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
 - [ADDED] added support for Python 3.10
 - [ADDED] added a function to pandapower.plotting to set line geodata from the geodata of the connected buses
 - [ADDED] plotly hover information will indicate parallel lines, if parallel > 1
