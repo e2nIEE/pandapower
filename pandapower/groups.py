@@ -5,8 +5,12 @@ import copy
 # import numpy as np
 import pandas as pd
 import uuid
+import os
+import json
+from functools import partial
 
-from pandapower.io_utils import JSONSerializableClass
+from pandapower.io_utils import JSONSerializableClass, FromSerializableRegistry, \
+    PPJSONDecoder, PPJSONEncoder, with_signature, to_serializable, pp_hook
 from pandapower.auxiliary import get_free_id, _preserve_dtypes
 from pandapower.create import create_empty_network
 from pandapower.toolbox import ensure_iterability, pp_elements
@@ -421,6 +425,64 @@ class Group(JSONSerializableClass):
     def res_q_mvar(self, net):
         return self._sum_powers(net, "q", "mvar")
 
+# --- i/o functionality
+
+@to_serializable.register(Group)
+def Group_json_dict(obj):
+    return with_signature(obj, vars(obj))
+
+class FromSerializableRegistryGroup(FromSerializableRegistry):
+    from_serializable = copy.deepcopy(FromSerializableRegistry.from_serializable)
+    class_name = ''
+    module_name = ''
+
+    @from_serializable.register(class_name='Group',
+                                module_name="pandapower.group")
+    def Group(self):
+        obj = Group(create_empty_network(), {}, name=uuid.uuid4(),
+                    index=getattr(self, "index", None))
+        for key, val in vars(self).items():
+            if key != "index":
+                setattr(obj, key, val)
+        return obj
+
+
+def Group_from_json_string(json_string):
+    """ Creates a Group object from a json string. """
+    return json.loads(json_string, cls=PPJSONDecoder, object_hook=partial(
+        pp_hook, registry_class=FromSerializableRegistryGroup))
+
+
+def Group_from_json(filename):
+    """ Reads a json file and creates a Group object from that. """
+    if hasattr(filename, 'read'):
+        json_string = filename.read()
+    elif not os.path.isfile(filename):
+        raise UserWarning(f"File {filename} does not exist!!")
+    else:
+        with open(filename) as fp:
+            json_string = fp.read()
+    return Group_from_json_string(json_string)
+
+
+def Group_to_json_string(obj):
+    """ Creates a json string from Group object parameters """
+    json_string = json.dumps(obj.__dict__, cls=PPJSONEncoder, indent=2)
+    json_string = ('{"_module": "pandapower.group", '
+                   '"_class": "Group", "_object": %s}') % json_string
+    return json_string
+
+
+def Group_to_json(obj, filename):
+    """ Writes a json file from Group object parameters """
+    json_string = Group_to_json_string(obj)
+    if hasattr(filename, 'write'):
+        filename.write(json_string)
+    else:
+        with open(filename, "w") as fp:
+            fp.write(json_string)
+
+# --- further group functionality outside the class
 
 def update_group_indices(net):
     """ Updates the index value of all group objects in net.group. """
@@ -431,7 +493,13 @@ def update_group_indices(net):
 
 if __name__ == '__main__':
     from pandapower.networks import case24_ieee_rts
+    from pathlib import Path
+    desktop = os.path.join(str(Path.home()), "Desktop")
 
     net = case24_ieee_rts()
     gr1 = Group(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]}, name='1st Group', index=2)
     gr2 = Group(net, {"trafo": net.trafo.index}, name='Group of transformers')
+    file = os.path.join(desktop, "test_group.json")
+    Group_to_json(gr2, file)
+    gr3 = Group_from_json(file)
+    assert gr2 == gr3
