@@ -98,9 +98,8 @@ It is recommended to set "use_nominal_power" to False because then the values of
 will be considered at export.
 
 .. Note:: When using the converter, a Power Factory Application object is initialized, meaning that Power Factory is
-started in the background.
-There is no way to terminate the application once it has been started from Python other than by terminating the Python
-thread it was started from.
+started in the background. There is no way to terminate the application once it has been started from Python other than
+by terminating the Python thread it was started from.
 Therefore, execute the converter in a separate thread that can be terminated after the converter has been executed.
 
 
