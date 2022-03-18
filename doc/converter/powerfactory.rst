@@ -105,9 +105,7 @@ User Defined Tool
 
 Networks can be exported to pandapower from within PowerFactory by defining it as a PowerFactory **User-defined Tool**.
 
-.. Note:: In case you are using the Anaconda distribution, you might encounter ImportErrors with numpy's
-MKL-libraries (or other binaries). Try adding
-\\path\\to\\Anaconda3\\Library\\bin to the path under Tools > Configuration > Advanced.
+.. Note:: In case you are using the Anaconda distribution, you might encounter ImportErrors with numpy's MKL-libraries (or other binaries). Try adding \\path\\to\\Anaconda3\\Library\\bin to the path under Tools > Configuration > Advanced.
 
 The **script files** can be found in the pandapower\\converter directory:
 
@@ -132,10 +130,7 @@ copied to the database folder ~\\Configuration \\Icons.
         :alt: Import icon.pfd to PowerFactory and copy the object 'IntIcon' to the folder \\Configuration \\Icons
         :align: center
 
-.. Note:: The files should be imported using the *Administration* mode, otherwise the user has no access to the
-aforementioned folders.
-Alternatively, they can be imported into the user folders that can be accessed without the *Administrator* privileges,
-it should not impact the functionality of the script.
+.. Note:: The files should be imported using the *Administration* mode, otherwise the user has no access to the aforementioned folders. Alternatively, they can be imported into the user folders that can be accessed without the *Administrator* privileges, it should not impact the functionality of the script.
 
 To use PowerFactory in Administration mode, either start PowerFactory in this mode using the 
 respective shortcut in the Start menu, or navigate to TOOLS \\Switch User... and select
