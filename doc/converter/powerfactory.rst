@@ -165,6 +165,7 @@ The following image illustrates the path configuration in the 'ComPython' object
 
 Finally, the tool should be configured to be included in the Toolbox in PowerFactory. For that, navigate to the
 PowerFactory Menu \\TOOLS \\Tool Configuration...
+In newer versions of PowerFactory, the Tool Configuration can be found in the Administration menu.
 The Tool Configuration window appears, where the icon and the script should be input into a free row.
 Click on the cells to provide path to the icon and the 'ComPython' object. The result is shown in the following figure.
 
