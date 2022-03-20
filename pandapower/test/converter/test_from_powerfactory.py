@@ -1,15 +1,13 @@
-import os
 import numpy as np
 import pandas as pd
 
 import pandapower as pp
 
+import os
 import pytest
 
-from tests import ppp_dir
-
-from pandaplan.core.converter.powerfactory.pf2pp.validate import validate_pf_conversion
-from pandaplan.core.converter.powerfactory.pf2pp.export_pfd_to_pp import import_project, from_pfd
+from pandapower.converter.powerfactory.validate import validate_pf_conversion
+from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
 
 try:
     import pandaplan.core.pplog as logging
@@ -57,7 +55,7 @@ def test_pf_export():
     app = pf.GetApplication()
 
     # first, import the test grid to powerfactory
-    path = os.path.join(ppp_dir, 'converter', 'powerfactory', 'Test', 'test_export.pfd')
+    path = os.path.join('converter', 'powerfactory', 'Test', 'test_export.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
@@ -73,7 +71,7 @@ def test_pf_export():
 
     # import the 3W-Trafo test grid to powerfactory
     # todo: at the moment the 3W-Trafo model is not accurate enough, here testing with lower tol
-    path = os.path.join(ppp_dir, 'converter', 'powerfactory', 'Test', 'test_trafo3w.pfd')
+    path = os.path.join('converter', 'powerfactory', 'Test', 'test_trafo3w.pfd')
 
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()

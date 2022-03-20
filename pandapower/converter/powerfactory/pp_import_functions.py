@@ -1668,9 +1668,9 @@ def ask_unbalanced_sgen_params(item, pf_variable_p_sgen, *vars):
     if 'sn_mva' in vars:
         params.sn_mva = ga(item, map_power_var(pf_variable_p_sgen, 's'))
 
-
     params.scaling = item.scale0 if pf_variable_p_sgen == 'pgini' else 1
     return params
+
 
 def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_unbalanced):
     params = ADict()
@@ -1686,7 +1686,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
         logger.info('Genstat <%s> to be imported as external grid' % params.name)
         logger.debug('genstat parameters: %s' % params)
-        sg = create_ext_net(net, item=item, pv_as_slack=pv_as_slack)
+        sg = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced)
         element = 'ext_grid'
     else:
         try:
@@ -1895,7 +1895,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.info('synchronous machine <%s> to be imported as external grid' % name)
         logger.debug('ref. machine: %d, av_mode: %s, pv as slack: %s' %
                      (is_reference_machine, av_mode, pv_as_slack))
-        sid = create_ext_net(net, item=item, pv_as_slack=pv_as_slack)
+        sid = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=False)
         net.ext_grid.loc[sid, 'p_disp_mw'] = -item.pgini * multiplier
         net.ext_grid.loc[sid, 'q_disp_mvar'] = -item.qgini * multiplier
         logger.debug('created ext net with sid <%d>', sid)
@@ -1959,6 +1959,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
 
 
 def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
+    is_motor = bool(item.i_mot)
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
         dict_net['global_parameters']['global_generation_scaling']
 
@@ -2137,7 +2138,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     # adding tap changer
     if export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') \
             and item.ntrcn == 1:
-        import pandaplan.core.control as control
+        import pandapower.control as control
         if item.t2ldc == 0:
             logger.debug('tap controller of trafo <%s> at hv' % name)
             side = 'hv'

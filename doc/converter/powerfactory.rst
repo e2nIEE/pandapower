@@ -33,8 +33,8 @@ Setup PowerFactory and Python
 =====================================
 
 In order to use Python in combination with PowerFactory, do the following configurations.
-Make sure that the system python path contains the directory to 'powerfactory.pyd' file in the
-PowerFactory installation folder. This should be e.g. ::
+Make sure that the system python path (environment variable PYTHONPATH) contains the directory to
+'powerfactory.pyd' file in the PowerFactory installation folder. This should be e.g. ::
 
     C:\\Program Files\\DIgSILENT\\PowerFactory 2022 SP1\\Python\\3.10
 
@@ -45,6 +45,16 @@ You can use the python commands ::
 
 If an error message "DLL load failed: the specified module could not be found" appears, make sure
 you have *Microsoft Visual C++ Redistributable for Visual Studio 2013* (or later) installed on your computer.
+At the moment (PowerFactory 2022 SP 1), the latest supported VisualStudio version is 2019 (version 16.x).
+
+If an ImportError occurs in relation to numpy, uninstall numpy and install it again, for example with: ::
+
+    pip install numpy -U
+
+
+In the PowerFactory configuration menu (Tools/Configuration), set up the path to the Python executable from the
+used environment or select Python by version.
+
 For more details on how to use Python with PowerFactory, refer to PowerFactory User Manual, Chapter 21.2.4.
  
 Try to do: ::
@@ -112,6 +122,7 @@ The **script files** can be found in the pandapower\\converter directory:
 .. Note:: Directory: ~\\pandapower\\pandapower\\converter\\powerfactory
 
 
+The user defined tool is implemented with the library tkinter, which is included in the standard Python installation.
 In order to setup the tool in PowerFactory, execute the following steps.
 
 Setup User Defined Tool

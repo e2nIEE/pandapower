@@ -13,14 +13,15 @@ except ImportError:
     import logging
 
 logger = logging.getLogger("PowerFactory Converter")
+logger.setLevel("INFO")
 
 
-from pandaplan.core.converter.powerfactory.pf2pp.echo_off import echo_off, echo_on
-from pandaplan.core.converter.powerfactory.pf2pp.pp_import_functions import from_pf
-from pandaplan.core.converter.powerfactory.pf2pp import pf_export_functions as pef
-from pandaplan.core.converter.powerfactory.pf2pp import logger_setup as pflog
-from pandaplan.core.converter.powerfactory.pf2pp import gui
-from pandaplan.core.converter.powerfactory.pf2pp.validate import validate_pf_conversion
+from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
+from pandapower.converter.powerfactory.pp_import_functions import from_pf
+from pandapower.converter.powerfactory import pf_export_functions as pef
+from pandapower.converter.powerfactory import logger_setup as pflog
+from pandapower.converter.powerfactory import gui
+from pandapower.converter.powerfactory.validate import validate_pf_conversion
 
 pandas.set_option('display.width', 1000)
 pandas.set_option('display.max_columns', 100)

@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pandapower as pp
 from pandapower import toolbox
-from pandaplan.core.misc import diagnostic
+from pandapower import diagnostic
 
 try:
     import pandaplan.core.pplog as logging
@@ -261,7 +261,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
             diagnostic(net)
             raise err
     else:
-        import pandaplan.core.control as control
+        import pandapower.control as control
         try:
             control.run_control(net, max_iter=50, trafo_model="t", check_connectivity=True, **kwargs)
         except Exception as err:
