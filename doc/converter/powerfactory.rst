@@ -38,10 +38,11 @@ Make sure that the system python path (environment variable PYTHONPATH) contains
 
     C:\\Program Files\\DIgSILENT\\PowerFactory 2022 SP1\\Python\\3.10
 
-You can use the python commands ::
+After setting PYTHONPATH, one should restart the computer.
+You can also use the following python commands (but it is better to set up PYTHONPATH instead) ::
 
     import sys
-    sys.path.append("C:\\C:\\Program Files\\DIgSILENT\\PowerFactory 2022 SP1\\Python\\3.10")
+    sys.path.append("C:\\Program Files\\DIgSILENT\\PowerFactory 2022 SP1\\Python\\3.10")
 
 If an error message "DLL load failed: the specified module could not be found" appears, make sure
 you have *Microsoft Visual C++ Redistributable for Visual Studio 2013* (or later) installed on your computer.

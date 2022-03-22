@@ -48,14 +48,13 @@ def get_tol():
     return tol
 
 
-@pytest.mark.xfail
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_export():
     # init PowerFactory
     app = pf.GetApplication()
 
     # first, import the test grid to powerfactory
-    path = os.path.join('converter', 'powerfactory', 'Test', 'test_export.pfd')
+    path = os.path.join('testfiles', 'test_export.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
@@ -69,22 +68,27 @@ def test_pf_export():
         delta = diff.abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
+
+@pytest.mark.xfail(reason="implementation of the trafo3w data model is not completely consistent with PowerFactory")
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_trafo3w():
+    app = pf.GetApplication()
     # import the 3W-Trafo test grid to powerfactory
     # todo: at the moment the 3W-Trafo model is not accurate enough, here testing with lower tol
-    path = os.path.join('converter', 'powerfactory', 'Test', 'test_trafo3w.pfd')
-
+    path = os.path.join('testfiles', 'test_trafo3w.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
 
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    tol = get_tol()
 
     # doesn't pass yet due to trafo3w implementation
     # trafo3w implementation is not very accurate
-    # for key, diff in all_diffs.items():
-    #     delta = diff.abs().max()
-    #     assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+    for key, diff in all_diffs.items():
+        delta = diff.abs().max()
+        assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
 
 if __name__ == '__main__':
