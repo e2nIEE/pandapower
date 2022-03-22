@@ -393,11 +393,15 @@ class Group(JSONSerializableClass):
         power = 0.
         missing_res_idx = list()
         no_power_column_found = list()
+        no_res_table_found = list()
         for elm in self.elms_dict.keys():
-            if elm in ["switch", "measurement", "bus"]:
+            if elm in ["switch", "measurement", "bus", "bus_geodata", "line_geodata"]:
                 continue
             idx = self.get_idx(net, elm)
             res_elm = "res_" + elm
+            if res_elm not in net.keys():
+                no_res_table_found.append(elm)
+                continue
             res_idx = net[res_elm].index.intersection(idx)
             sign = 1 if elm not in ["ext_grid", "gen", "sgen"] else -1
             if len(res_idx) != len(idx):
@@ -411,12 +415,14 @@ class Group(JSONSerializableClass):
             else:
                 no_power_column_found.append(elm)
 
+        if len(no_res_table_found):
+            logger.warning(f"Result tables of this elements does not exist: {no_res_table_found}.")
         if len(missing_res_idx):
-            logger.warning("The resulting power may be wrong since in the results tables of these "
-                           "elements lack of indices: " + str(missing_res_idx))
+            logger.warning("The resulting power may be wrong since the result tables of these "
+                           f"elements lack of indices: {missing_res_idx}.")
         if len(no_power_column_found):
-            logger.warning("The resulting power may be wrong since in the results tables of these "
-                           "elements no power column was found: " + str(no_power_column_found))
+            logger.warning("The resulting power may be wrong since the result tables of these "
+                           f"elements have no requested power column: {no_power_column_found}.")
         return power
 
     def res_p_mw(self, net):
