@@ -14,6 +14,7 @@ Change Log
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to rad and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
+- [ADDED] added the funtionality to import grid data from PowerFactory
 
 [2.8.0]- 2022-02-06
 ----------------------
