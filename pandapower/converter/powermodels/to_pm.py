@@ -143,7 +143,6 @@ def convert_to_pm_structure(net, opf_flow_lim="S"):
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
-    pm["ac"] = True
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -419,6 +418,7 @@ def add_pm_options(pm, net):
             np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     pm["silence"] = net._options["silence"]
+    pm["ac"] = net._options["ac"]
     return pm
 
 
