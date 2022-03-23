@@ -11,7 +11,7 @@ import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

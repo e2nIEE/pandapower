@@ -22,7 +22,7 @@ from pandapower.results import init_results
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -418,6 +418,7 @@ def add_pm_options(pm, net):
             np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     pm["silence"] = net._options["silence"]
+    pm["ac"] = net._options["ac"]
     return pm
 
 

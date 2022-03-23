@@ -10,7 +10,7 @@ from pandapower.control.util.auxiliary import get_controller_index
 from pandapower.control.controller.trafo_control import TrafoController
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 

@@ -8,7 +8,7 @@ from pandas import read_json
 from numpy import nan
 import pandapower as pp
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)

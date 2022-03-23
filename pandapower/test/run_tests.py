@@ -13,7 +13,7 @@ import pytest
 import pandapower as pp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 test_dir = os.path.abspath(os.path.join(pp.pp_dir, "test"))

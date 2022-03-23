@@ -16,7 +16,7 @@ from pandapower.estimation.results import eppci2pp
 from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)

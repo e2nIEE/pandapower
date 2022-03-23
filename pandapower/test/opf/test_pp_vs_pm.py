@@ -25,7 +25,7 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     print(e)
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
