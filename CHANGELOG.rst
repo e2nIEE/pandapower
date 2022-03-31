@@ -1,8 +1,8 @@
 Change Log
 =============
 
-[upcoming release] - 2022-..-..
--------------------------------
+[2.9.0]- 2022-03-23
+----------------------
 - [ADDED] added support for Python 3.10
 - [ADDED] added a function to pandapower.plotting to set line geodata from the geodata of the connected buses
 - [ADDED] plotly hover information will indicate parallel lines, if parallel > 1
@@ -11,6 +11,11 @@ Change Log
 - [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
 - [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
 - [FIX] fixed hover information for lines in plotly
+- [CHANGED] use numpy to vectorize trafo_control
+- [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
+- [CHANGED] remove code duplication in const_control, characteristic_control
+- [ADDED] added the funtionality to import grid data from PowerFactory
+- [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06
 ----------------------
