@@ -738,6 +738,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
         **kwargs** - key word arguments for dataframes_equal()
     """
+    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
+        logger.warning("At least one net is not of type pandapowerNet.")
+        return False
     not_equal, not_checked_keys = _nets_equal_keys(
         net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
         **kwargs)
@@ -756,10 +759,6 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
                      name_selection, **kwargs):
     """ Returns a lists of keys which are 1) not equal and 2) not checked.
     Used within nets_equal(). """
-    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
-        logger.warning("At least one net is not of type pandapowerNet.")
-        return False
-
     if check_without_results and check_only_results:
         raise UserWarning("Please provide only one of the options to check without results or to "
                           "exclude results in comparison.")
@@ -788,8 +787,8 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
     not_checked_keys = list()
 
     if len(key_difference) > 0:
-        logger.warning("Networks entries mismatch at: %s" % key_difference)
-        return False
+        logger.warning(f"Networks entries mismatch at: {key_difference}")
+        return key_difference, set()
 
     # ... and then iter through the keys, checking for equality for each table
     for key in list(keys_to_check):
@@ -801,7 +800,7 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
                 if "object" in net1[key].columns and "object" in net2[key].columns and \
                         isinstance(net1[key].object.dtype, object) and \
                         isinstance(net1[key].object.dtype, object):
-                    logger.warning("net[%s]['object'] cannot be compared." % key)
+                    logger.warning(f"net[{key}]['object'] cannot be compared.")
                     if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
                                             net2[key][net2[key].columns.difference(["object"])],
                                             **kwargs):
