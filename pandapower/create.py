@@ -1450,9 +1450,15 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     # OPF limits
     if not isnan(controllable):
-        if "controllable" not in net.gen.columns:
+        controllable_col_exist = "controllable" in net.gen.columns
+        if not controllable_col_exist:
             net.gen.loc[:, "controllable"] = pd.Series(dtype=bool, data=True)
         net.gen.at[index, "controllable"] = bool(controllable)
+        if controllable_col_exist:
+            try:
+                net.gen["controllable"] = net.gen["controllable"].astype(bool)
+            except:
+                pass
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
     # P limits for OPF if controllable == True
@@ -3898,6 +3904,10 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
+    try:
+        net[element][column] = net[element][column].astype(dtyp)
+    except:
+        pass
     return net
 
 
