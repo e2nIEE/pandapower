@@ -87,7 +87,7 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     return pp_elms
 
 
-def branch_element_bus_dict(include_switch=False, sorted=False):
+def branch_element_bus_dict(include_switch=False, sort=False):
     """
     Returns a dict with keys of branch elements and values of bus column names as list.
     """
@@ -100,7 +100,7 @@ def branch_element_bus_dict(include_switch=False, sorted=False):
             bebd[elm] = [bus]
     if not include_switch:
         del bebd["switch"]
-    if sorted:
+    if sort:
         bebd = {elm: sorted(buses) for elm, buses in bebd.items()}
     return bebd
 
