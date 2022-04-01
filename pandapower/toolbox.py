@@ -87,17 +87,21 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     return pp_elms
 
 
-def branch_element_bus_dict(include_switch=False):
+def branch_element_bus_dict(include_switch=False, sorted=False):
     """
     Returns a dict with keys of branch elements and values of bus column names as list.
     """
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
-    branch_elements = {ebt[0] for ebt in ebts}
-    bebd = {elm: [] for elm in branch_elements}
+    bebd = dict()
     for elm, bus in ebts:
-        bebd[elm].append(bus)
+        if elm in bebd.keys():
+            bebd[elm].append(bus)
+        else:
+            bebd[elm] = [bus]
     if not include_switch:
         del bebd["switch"]
+    if sorted:
+        bebd = {elm: sorted(buses) for elm, buses in bebd.items()}
     return bebd
 
 
