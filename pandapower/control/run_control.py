@@ -162,7 +162,7 @@ def net_initialization(net, ctrl_variables, **kwargs):
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
     else:
         net["converged"] = True  # assume that the initial state is valid
-    ctrl_variables['converged'] = net['converged'] or net.get('OPF_converged', False)
+    ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
     return ctrl_variables
 
 
