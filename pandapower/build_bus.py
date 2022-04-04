@@ -385,45 +385,38 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
     mode = net["_options"]["mode"]
     pq_elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     for element in pq_elements:
         tab = net[element]
-        if len(tab):
-            if element == "load" and voltage_depend_loads:
-                cz = tab["const_z_percent"].values / 100.
-                ci = tab["const_i_percent"].values / 100.
-                if ((cz + ci) > 1).any():
-                    raise ValueError("const_z_percent + const_i_percent need to be less or equal " +
-                                     "to 100%!")
-
-                # cumulative sum of constant-current loads
-                b_zip = tab["bus"].values
-                load_counter = Counter(b_zip)
-
-                bus_lookup = net["_pd2ppc_lookups"]["bus"]
-                b_zip = bus_lookup[b_zip]
-                load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
-                b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
-
-                for bus, no_loads in load_counter.items():
-                    ci_sum[b_zip == bus] /= no_loads
-                    cz_sum[b_zip == bus] /= no_loads
-
-                ppc["bus"][b_zip, CID] = ci_sum
-                ppc["bus"][b_zip, CZD] = cz_sum
-            active = _is_elements[element]
-            sign = -1 if element == "sgen" else 1
-            if element == "motor":
-                p_mw, q_mvar = _get_motor_pq(net)
-                p = np.hstack([p, p_mw])
-                q = np.hstack([q, q_mvar])
-            elif element.endswith("ward"):
-                p = np.hstack([p, tab["ps_mw"].values * active * sign])
-                q = np.hstack([q, tab["qs_mvar"].values * active * sign])
-            else:
-                scaling = tab["scaling"].values
-                p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
-                q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
-            b = np.hstack([b, tab["bus"].values])
+        if not len(tab):
+            continue
+        active = _is_elements[element]
+        if element == "load" and voltage_depend_loads:
+            if ((tab["const_z_percent"] + tab["const_i_percent"]) > 100).any():
+                raise ValueError("const_z_percent + const_i_percent need to "
+                                 "be less or equal to 100%!")
+            for bus in set(tab["bus"]):
+                mask = (tab["bus"] == bus) & active
+                no_loads = sum(mask)
+                if not no_loads:
+                    continue
+                ci_sum = sum(tab["const_i_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CID] = ci_sum / no_loads
+                cz_sum = sum(tab["const_z_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CZD] = cz_sum / no_loads
+        sign = -1 if element == "sgen" else 1
+        if element == "motor":
+            p_mw, q_mvar = _get_motor_pq(net)
+            p = np.hstack([p, p_mw])
+            q = np.hstack([q, q_mvar])
+        elif element.endswith("ward"):
+            p = np.hstack([p, tab["ps_mw"].values * active * sign])
+            q = np.hstack([q, tab["qs_mvar"].values * active * sign])
+        else:
+            scaling = tab["scaling"].values
+            p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
+            q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
+        b = np.hstack([b, tab["bus"].values])
 
     for element in ["asymmetric_load", "asymmetric_sgen"]:
         if len(net[element]) > 0 and mode == "pf":
@@ -435,7 +428,6 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
 
     # sum up p & q of bus elements
     if b.size:
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
