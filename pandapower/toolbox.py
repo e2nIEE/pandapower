@@ -1590,17 +1590,18 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     buses = set(buses)
     if include_switch_buses:
         # we add both buses of a connected line, the one selected is not switch.bus
-
+        buses_to_add = set()
         # for all line switches
-        for _, s in net["switch"].query("et=='l'").iterrows():
+        for s in net["switch"].query("et=='l'").itertuples():
             # get from/to-bus of the connected line
-            fb = net["line"]["from_bus"].at[s["element"]]
-            tb = net["line"]["to_bus"].at[s["element"]]
+            fb = net["line"]["from_bus"].at[s.element]
+            tb = net["line"]["to_bus"].at[s.element]
             # if one bus of the line is selected and its not the switch-bus, add the other bus
-            if fb in buses and s["bus"] != fb:
-                buses.add(tb)
-            if tb in buses and s["bus"] != tb:
-                buses.add(fb)
+            if fb in buses and s.bus != fb:
+                buses_to_add.add(tb)
+            if tb in buses and s.bus != tb:
+                buses_to_add.add(fb)
+        buses |= buses_to_add
 
     if keep_everything_else:
         p2 = copy.deepcopy(net)
@@ -1610,12 +1611,12 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         p2 = create_empty_network(add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
-    net_parameters = ["name", "f_hz"]
-    for net_parameter in net_parameters:
-        if net_parameter in net.keys():
-            p2[net_parameter] = net[net_parameter]
+        net_parameters = ["name", "f_hz"]
+        for net_parameter in net_parameters:
+            if net_parameter in net.keys():
+                p2[net_parameter] = net[net_parameter]
 
-    p2.bus = net.bus.loc[buses]
+    p2.bus = net.bus.loc[list(buses)]
     for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
                            other_elements=False, res_elements=False):
         p2[elm] = net[elm][net[elm].bus.isin(buses)]

@@ -657,7 +657,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
 def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
-                min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
+                min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
     Adds one load in table net["load"].
 
@@ -729,7 +729,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
                        [name, bus, p_mw, const_z_percent, const_i_percent, scaling, q_mvar, sn_mva,
                         bool(in_service), type]))
 
-    _set_entries(net, "load", index, True, **entries)
+    _set_entries(net, "load", index, True, **entries, **kwargs)
 
     _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "load")
     _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "load")
@@ -830,7 +830,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
 def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0,
                            q_c_mvar=0, sn_mva=nan, name=None, scaling=1., index=None,
-                           in_service=True, type="wye"):
+                           in_service=True, type="wye", **kwargs):
     """
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -886,7 +886,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
                        [name, bus, p_a_mw, p_b_mw, p_c_mw, scaling, q_a_mvar, q_b_mvar, q_c_mvar,
                         sn_mva, bool(in_service), type]))
 
-    _set_entries(net, "asymmetric_load", index, True, **entries)
+    _set_entries(net, "asymmetric_load", index, True, **entries, **kwargs)
 
     return index
 
@@ -979,7 +979,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                current_source=True):
+                current_source=True, **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1055,7 +1055,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                         "current_source"], [name, bus, p_mw, scaling, q_mvar, sn_mva,
                                             bool(in_service), type, current_source]))
 
-    _set_entries(net, "sgen", index, True, **entries)
+    _set_entries(net, "sgen", index, True, **entries, **kwargs)
 
     _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "sgen")
     _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "sgen")
@@ -1168,8 +1168,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 # =============================================================================
 
 def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0,
-                           q_c_mvar=0, sn_mva=nan,
-                           name=None, index=None, scaling=1., type='wye', in_service=True):
+                           q_c_mvar=0, sn_mva=nan, name=None, index=None, scaling=1., type='wye',
+                           in_service=True, **kwargs):
     """
 
     Adds one static generator in table net["asymmetric_sgen"].
@@ -1227,7 +1227,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
                        [name, bus, p_a_mw, p_b_mw, p_c_mw, scaling, q_a_mvar, q_b_mvar, q_c_mvar,
                         sn_mva, bool(in_service), type]))
 
-    _set_entries(net, "asymmetric_sgen", index, True, **entries)
+    _set_entries(net, "asymmetric_sgen", index, True, **entries, **kwargs)
 
     return index
 
@@ -1262,7 +1262,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
-                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
+                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
     Adds a storage to the network.
 
@@ -1342,7 +1342,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
                        [name, bus, p_mw, q_mvar, sn_mva, scaling, soc_percent, min_e_mwh, max_e_mwh,
                         bool(in_service), type]))
 
-    _set_entries(net, "storage", index, True, **entries)
+    _set_entries(net, "storage", index, True, **entries, **kwargs)
 
     # check for OPF parameters and add columns to network table
     _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "storage")
@@ -1359,7 +1359,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=None,
-               in_service=True, slack_weight=0.0):
+               in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
 
@@ -1446,7 +1446,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     variables = [name, bus, p_mw, vm_pu, sn_mva, type, slack, bool(in_service), scaling,
                  slack_weight]
 
-    _set_entries(net, "gen", index, True, **dict(zip(columns, variables)))
+    _set_entries(net, "gen", index, True, **dict(zip(columns, variables)), **kwargs)
 
     # OPF limits
     if not isnan(controllable):
@@ -1602,7 +1602,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
 def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading_percent=100.,
                  name=None, lrc_pu=nan, scaling=1.0, vn_kv=nan, rx=nan, index=None, in_service=True,
-                 cos_phi_n=nan, efficiency_n_percent=nan):
+                 cos_phi_n=nan, efficiency_n_percent=nan, **kwargs):
     """
     Adds a motor to the network.
 
@@ -1661,7 +1661,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading
                "lrc_pu", "scaling", "in_service"]
     variables = [name, bus, pn_mech_mw, cos_phi, cos_phi_n, vn_kv, rx, efficiency_n_percent,
                  efficiency_percent, loading_percent, lrc_pu, scaling, bool(in_service)]
-    _set_entries(net, "motor", index, **dict(zip(columns, variables)))
+    _set_entries(net, "motor", index, **dict(zip(columns, variables)), **kwargs)
 
     return index
 
@@ -1765,7 +1765,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=nan,
-                temperature_degree_celsius=nan):
+                temperature_degree_celsius=nan, **kwargs):
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -1844,7 +1844,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "alpha" in net.line.columns and "alpha" in lineparam:
         v["alpha"] = lineparam["alpha"]
 
-    _set_entries(net, "line", index, **v)
+    _set_entries(net, "line", index, **v, **kwargs)
 
     if geodata is not None:
         net["line_geodata"].loc[index, "coords"] = None
@@ -1859,7 +1859,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
-                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=None):
+                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=None, **kwargs):
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -1938,7 +1938,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
-    _set_multiple_entries(net, "line", index, **entries)
+    _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, "line", geodata, index)
@@ -2155,7 +2155,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.,
                        tap_dependent_impedance=None, vk_percent_characteristic=None,
-                       vkr_percent_characteristic=None):
+                       vkr_percent_characteristic=None, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2269,7 +2269,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         if isinstance(tap_pos, float):
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
-    _set_entries(net, "trafo", index, **v)
+    _set_entries(net, "trafo", index, **v, **kwargs)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
 
@@ -2623,7 +2623,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
                          tap_at_star_point=False, tap_dependent_impedance=None,
                          vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
                          vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
-                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None):
+                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -2783,7 +2783,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vector_group=None, tap_dependent_impedance=None,
                                          vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
                                          vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
-                                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None):
+                                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
     The model currently only supports one tap-changer per 3W Transformer.
@@ -2934,7 +2934,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
               vk0_hv_percent, vk0_mv_percent, vk0_lv_percent,
               vkr0_hv_percent, vkr0_mv_percent, vkr0_lv_percent, vector_group]
 
-    _set_entries(net, "trafo3w", index, **dict(zip(columns, values)))
+    _set_entries(net, "trafo3w", index, **dict(zip(columns, values)), **kwargs)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
@@ -3154,7 +3154,7 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3232,7 +3232,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
     entries = dict(zip(["bus", "element", "et", "closed", "type", "name", "z_ohm"],
                        [bus, element, et, closed, type, name, z_ohm]))
-    _set_entries(net, "switch", index, **entries)
+    _set_entries(net, "switch", index, **entries, **kwargs)
 
     return index
 
@@ -3324,7 +3324,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
 
 
 def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                 in_service=True, index=None):
+                 in_service=True, index=None, **kwargs):
     """
     Creates a shunt element
 
@@ -3367,7 +3367,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
     entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
                        [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
-    _set_entries(net, "shunt", index, **entries)
+    _set_entries(net, "shunt", index, **entries, **kwargs)
 
     return index
 
@@ -3399,7 +3399,7 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     name=None, in_service=True, index=None):
+                     name=None, in_service=True, index=None, **kwargs):
     """
     Creates an per unit impedance element
 
@@ -3432,13 +3432,13 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "name", "sn_mva",
                "in_service"]
     values = [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_mva, in_service]
-    _set_entries(net, "impedance", index, **dict(zip(columns, values)))
+    _set_entries(net, "impedance", index, **dict(zip(columns, values)), **kwargs)
 
     return index
 
 
 def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_mva,
-                                       name=None, in_service=True, index=None):
+                                       name=None, in_service=True, index=None, **kwargs):
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -3468,11 +3468,11 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     xft_pu = x_ohm / base_z_ohm
 
     index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
-                             sn_mva=sn_mva, name=name, in_service=in_service, index=index)
+                             sn_mva=sn_mva, name=name, in_service=in_service, index=index, **kwargs)
     return index
 
 
-def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None):
+def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None, **kwargs):
     """
     Creates a ward equivalent.
 
@@ -3500,13 +3500,13 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
 
     entries = dict(zip(["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "name", "in_service"],
                        [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name, in_service]))
-    _set_entries(net, "ward", index, **entries)
+    _set_entries(net, "ward", index, **entries, **kwargs)
 
     return index
 
 
 def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, in_service=True,
-                 name=None, index=None, slack_weight=0.0):
+                 name=None, index=None, slack_weight=0.0, **kwargs):
     """
     Creates an extended ward equivalent.
 
@@ -3544,14 +3544,14 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     columns = ["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "r_ohm", "x_ohm", "vm_pu", "name",
                "slack_weight", "in_service"]
     values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, slack_weight, in_service]
-    _set_entries(net, "xward", index, **dict(zip(columns, values)))
+    _set_entries(net, "xward", index, **dict(zip(columns, values)), **kwargs)
 
     return index
 
 
 def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu, vm_to_pu,
                   index=None, name=None, max_p_mw=nan, min_q_from_mvar=nan, min_q_to_mvar=nan,
-                  max_q_from_mvar=nan, max_q_to_mvar=nan, in_service=True):
+                  max_q_from_mvar=nan, max_q_to_mvar=nan, in_service=True, **kwargs):
     """
     Creates a dc line.
 
@@ -3605,13 +3605,13 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
                "max_q_to_mvar", "in_service"]
     values = [name, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu, vm_to_pu, max_p_mw,
               min_q_from_mvar, min_q_to_mvar, max_q_from_mvar, max_q_to_mvar, in_service]
-    _set_entries(net, "dcline", index, **dict(zip(columns, values)))
+    _set_entries(net, "dcline", index, **dict(zip(columns, values)), **kwargs)
 
     return index
 
 
 def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
-                       check_existing=True, index=None, name=None):
+                       check_existing=True, index=None, name=None, **kwargs):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i, va, ia
@@ -3700,11 +3700,11 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     columns = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
     values = [name, meas_type.lower(), element_type, element, value, std_dev, side]
-    _set_entries(net, "measurement", index, **dict(zip(columns, values)))
+    _set_entries(net, "measurement", index, **dict(zip(columns, values)), **kwargs)
     return index
 
 
-def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True):
+def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True, **kwargs):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -3752,12 +3752,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
 
     entries = dict(zip(["power_type", "element", "et", "points"],
                        [power_type, element, et, points]))
-    _set_entries(net, "pwl_cost", index, **entries)
+    _set_entries(net, "pwl_cost", index, **entries, **kwargs)
     return index
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True, **kwargs):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -3809,7 +3809,7 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
                "cp2_eur_per_mw2", "cq2_eur_per_mvar2"]
     variables = [element, et, cp0_eur, cp1_eur_per_mw, cq0_eur, cq1_eur_per_mvar,
                  cp2_eur_per_mw2, cq2_eur_per_mvar2]
-    _set_entries(net, "poly_cost", index, **dict(zip(columns, variables)))
+    _set_entries(net, "poly_cost", index, **dict(zip(columns, variables)), **kwargs)
     return index
 
 
