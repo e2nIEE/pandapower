@@ -388,7 +388,7 @@ def from_sql(con):
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     dodfs = dict()
     for t, in cursor.fetchall():
-        table = pd.read_sql_query("SELECT * FROM %s" % t, con, index_col="index")
+        table = pd.read_sql_query("SELECT * FROM '%s'" % t, con, index_col="index")
         table.index.name = None
         dodfs[t] = table
     net = io_utils.from_dict_of_dfs(dodfs)
