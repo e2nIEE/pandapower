@@ -27,14 +27,14 @@ classifiers = [
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
     versions = set(re.findall('3.[7-9]', lines)) | set(re.findall('3.1[0-9]', lines))
-    for version in versions:
-        classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
+    for version in sorted(versions):
+        classifiers.append('Programming Language :: Python :: %s' % version)
 
 long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.8.0',
+    version='2.9.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
