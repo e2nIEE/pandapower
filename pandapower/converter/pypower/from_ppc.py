@@ -168,9 +168,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'ext_grid'
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                    logger.info('min_q_mvar of gen %d must be less than max_q_mvar but is not.' % i)
+                    logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
                 if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                    logger.info('max_p_mw of gen %d must be less than min_p_mw but is not.' % i)
+                    logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
             else:
                 current_bus_type = 1
         # create gen
@@ -184,11 +184,11 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'gen'
                 if ppc['gen'][i, 1] < 0:
-                    logger.info('p_mw of gen %d must be less than zero but is not.' % i)
+                    logger.info(f'p_mw of gen {i} must be less than zero but is not.')
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                    logger.info('min_q_mvar of gen %d must be less than max_q_mvar but is not.' % i)
+                    logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
                 if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                    logger.info('max_p_mw of gen %d must be less than min_p_mw but is not.' % i)
+                    logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
             else:
                 current_bus_type = 1
         # create sgen
@@ -201,11 +201,11 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
             if ppc['gen'][i, 1] < 0:
-                logger.info('p_mw of sgen %d must be less than zero but is not.' % i)
+                logger.info(f'p_mw of sgen {i} must be less than zero but is not.')
             if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                logger.info('min_q_mvar of gen %d must be less than max_q_mvar but is not.' % i)
+                logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
             if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                logger.info('max_p_mw of gen %d must be less than min_p_mw but is not.' % i)
+                logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
     # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
@@ -245,10 +245,10 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 vn_lv_kv = from_vn_kv
                 tap_side = 'lv'
                 if from_vn_kv == to_vn_kv:
-                    logger.warning('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered'
-                                   ' as a transformer because of a ratio != 0 | 1 but it connects '
-                                   'the same voltage level', i, ppc['branch'][i, 0],
-                                   ppc['branch'][i, 1])
+                    logger.warning(
+                        f'The pypower branch {i} (from_bus, to_bus)=({ppc["branch"][i, 0]}, '
+                        f'{ppc["branch"][i, 1]}) is considered as a transformer because of a ratio '
+                        '!= 0 | 1 but it connects the same voltage level')
             rk = ppc['branch'][i, 2]
             xk = ppc['branch'][i, 3]
             zk = (rk ** 2 + xk ** 2) ** 0.5
@@ -261,8 +261,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             i0_percent = -ppc['branch'][i, 4] * 100 * baseMVA / sn
             if i0_percent < 0:
                 logger.info('A transformer always behaves inductive consumpting but the '
-                            'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                            'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                            f'susceptance of pypower branch {i} (from_bus, to_bus)='
+                            f'({ppc["branch"][i, 0]}, {ppc["branch"][i, 1]}) is positive.')
 
             pp.create_transformer_from_parameters(
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_mva=sn, vn_hv_kv=vn_hv_kv,

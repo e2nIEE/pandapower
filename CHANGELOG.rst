@@ -19,7 +19,7 @@ Change Log
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
-- [ADDED] added the funtionality to import grid data from PowerFactory
+- [ADDED] added the functionality to import grid data from PowerFactory
 - [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06
