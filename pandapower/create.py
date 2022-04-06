@@ -7,6 +7,7 @@
 from operator import itemgetter
 
 import pandas as pd
+from pandas.api.types import is_bool_dtype
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
 from packaging import version
@@ -3983,6 +3984,11 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
 
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)
+
+    # pandas bug: concat adds new bool columns as object dtype -> fix it with dtypes
+    cols_to_add = [col for col in dd.columns.difference(dtypes.index) if is_bool_dtype(
+        dd.dtypes.at[col])]
+    dtypes = pd.concat([dtypes, pd.Series(dtype(bool), index=cols_to_add)])
 
     # extend the table by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
