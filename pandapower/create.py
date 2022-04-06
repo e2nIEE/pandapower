@@ -3985,7 +3985,8 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)
 
-    # pandas bug: concat adds new bool columns as object dtype -> fix it with dtypes
+    # pandas bug https://github.com/pandas-dev/pandas/issues/46662:
+    # concat adds new bool columns as object dtype -> fix it with dtypes
     cols_to_add = [col for col in dd.columns.difference(dtypes.index) if is_bool_dtype(
         dd.dtypes.at[col])]
     dtypes = pd.concat([dtypes, pd.Series(dtype(bool), index=cols_to_add)])
