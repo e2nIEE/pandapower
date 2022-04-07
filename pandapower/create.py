@@ -649,9 +649,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
     if geodata is not None:
         # works with a 2-tuple or a matching array
-        net.bus_geodata = pd.concat([net.bus_geodata,
-                                     pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
-                                                  index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat([
+            net.bus_geodata,
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+                         index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
@@ -827,8 +828,10 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
+    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, **entries, **kwargs)
+    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1162,8 +1165,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _add_series_to_entries(entries, index, "rx", rx)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
+    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "sgen", index, **entries, **kwargs)
+    _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1598,9 +1603,11 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_series_to_entries(entries, index, "pg_percent", pg_percent)
     _add_series_to_entries(entries, index, "power_station_trafo", power_station_trafo)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=False)
+                           default_val=True)
+    defaults_to_fill = [("controllable", True)]
 
-    _set_multiple_entries(net, "gen", index, **entries, **kwargs)
+    _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1931,13 +1938,15 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
-        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
+            ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
-        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
-                                          [0.] * len(lineparam)))
+        entries["g_us_per_km"] = list(map(
+            check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
+            [0.] * len(lineparam)))
         entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
                                    [None] * len(lineparam)))
 
@@ -2603,11 +2612,14 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "pt_percent": pt_percent, "oltc": oltc}
 
     if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
+                               dtype=bool_, default_val=False)
     if vk_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_percent_characteristic",  vk_percent_characteristic, "Int64")
+        _add_series_to_entries(entries, index, "vk_percent_characteristic",
+                               vk_percent_characteristic, "Int64")
     if vkr_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_percent_characteristic", vkr_percent_characteristic, "Int64")
+        _add_series_to_entries(entries, index, "vkr_percent_characteristic",
+                               vkr_percent_characteristic, "Int64")
 
     _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
     _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
@@ -2617,8 +2629,10 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
     _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
     _add_series_to_entries(entries, index, "pt_percent", pt_percent)
+    defaults_to_fill = [("tap_dependent_impedance", False)]
 
-    _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
+    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -3140,7 +3154,8 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
     if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
+                               dtype=bool_, default_val=False)
     if vk_hv_percent_characteristic is not None:
         _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic, "Int64")
     if vkr_hv_percent_characteristic is not None:
@@ -3153,8 +3168,10 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
         _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic, "Int64")
     if vkr_lv_percent_characteristic is not None:
         _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic, "Int64")
+    defaults_to_fill = [("tap_dependent_impedance", False)]
 
-    _set_multiple_entries(net, "trafo3w", index, **entries, **kwargs)
+    _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -3967,7 +3984,8 @@ def _set_entries(net, table, index, preserve_dtypes=True, **entries):
         _preserve_dtypes(net[table], dtypes)
 
 
-def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
+def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_fill=None,
+                          **entries):
     dtypes = None
     if preserve_dtypes:
         # store dtypes
@@ -3985,15 +4003,16 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)
 
-    # pandas bug https://github.com/pandas-dev/pandas/issues/46662:
-    # concat adds new bool columns as object dtype -> fix it with dtypes
-    cols_to_add = [col for col in dd.columns.difference(dtypes.index) if is_bool_dtype(
-        dd.dtypes.at[col])]
-    dtypes = pd.concat([dtypes, pd.Series(dtype(bool), index=cols_to_add)])
+    # defaults_to_fill needed due to pandas bug https://github.com/pandas-dev/pandas/issues/46662:
+    # concat adds new bool columns as object dtype -> fix it by setting default value to net[table]
+    if defaults_to_fill is not None:
+        for col, val in defaults_to_fill:
+            if col in dd.columns and col not in net[table].columns:
+                net[table][col] = val
 
     # extend the table by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[table] = pd.concat([net[table],dd], sort=False)
+        net[table] = pd.concat([net[table], dd], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
         net[table] = net[table].append(dd)
