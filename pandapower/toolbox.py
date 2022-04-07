@@ -1583,7 +1583,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     buses = set(buses)
     if include_switch_buses:
         # we add both buses of a connected line, the one selected is not switch.bus
-
+        buses_to_add = set()
         # for all line switches
         for s in net["switch"].query("et=='l'").itertuples():
             # get from/to-bus of the connected line
@@ -1591,9 +1591,10 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             tb = net["line"]["to_bus"].at[s.element]
             # if one bus of the line is selected and its not the switch-bus, add the other bus
             if fb in buses and s.bus != fb:
-                buses.add(tb)
+                buses_to_add.add(tb)
             if tb in buses and s.bus != tb:
-                buses.add(fb)
+                buses_to_add.add(fb)
+        buses |= buses_to_add
 
     if keep_everything_else:
         p2 = copy.deepcopy(net)
