@@ -85,7 +85,7 @@ In order to start converter in engine mode, use the function "from_pfd": ::
     Inputs:
      * app: PowerFactory Application object
      * prj_name: Name (”Project”), full qualified name (”Project.IntPrj”) or full qualified path (”nUsernProject.IntPrj”) of a project.
-     * path_dst: Destination for the export of .p file (full file path)
+     * path_dst: Destination for the export of .json file (full file path)
      * pv_as_slack: whether "PV" nodes are imported as "Slack" nodes
      * pf_variable_p_loads: variable to use as input for p_kw, can be 'plini', 'plini_a' or 'm:P:bus1'
      * pf_variable_p_gen: variable to use as input for p_kw, can be 'pgini', 'pgini_a' or 'm:P:bus1'
@@ -96,11 +96,11 @@ In order to start converter in engine mode, use the function "from_pfd": ::
     Output:
      * net: pandapower net
      * controller: pandapower controller objects
-     * Saves pandapower network as .p file at path_dst
+     * Saves pandapower network as .json file at path_dst
 
 The function can be used as following: ::
 
-    from pandaplan.core.converter.powerfactory.pf2pp import from_pfd
+    from pandapower.converter.powerfactory import from_pfd
     net = from_pfd(app, prj_name="Your Project Name", path_dst="Save Path")
 
 .. Note:: PowerFactory has to be closed to start the conversion
@@ -203,7 +203,7 @@ symbol that is marked by a red circle in the following figure. The icon of the t
         :align: center
 
 When a project is activated, click on the icon. A window will appear, where the user is required to provide the path
-for saving the .p file. The button 'Export' activates the export, and the button 'Cancel' terminates it.
+for saving the .json file. The button 'Export' activates the export, and the button 'Cancel' terminates it.
 The interface window is shown below:
 
 
@@ -220,7 +220,7 @@ The User interface has additional options that can be defined using CheckBoxes:
  * Export 'PV' bus as Slack: defines whether 'PV' power injections are to be defined as Slack in pandapower
  * Verify conversion: defines whether the network should be verified after the conversion. If the option is set, the
 pandapower network will be verified by executing a load flow calculation and comparing the results to values in
-PowerFactory. This happens after the .p file has been saved to the hard drive.
+PowerFactory. This happens after the .json file has been saved to the hard drive.
  * Logger in debug mode: can be used in case exporter stops at error. In this case more logging messages are shown.
  * Export Controller: feature is not yet implemented with the user-defined tool
 
@@ -257,7 +257,7 @@ DIgSI/info - Python Script 'pp_export' started
 | [2016/11/14 18:34:54] DIgSI/info - imported 1 impedances
 | [2016/11/14 18:34:54] DIgSI/info - imported 2 lines
 | [2016/11/14 18:34:54] DIgSI/info - created net and controller
-| [2016/11/14 18:34:54] DIgSI/info - saving file to: <C:/pp_projects/test/test.p>
+| [2016/11/14 18:34:54] DIgSI/info - saving file to: <C:/pp_projects/test/test.json>
 | [2016/11/14 18:34:54] DIgSI/info - exported net:
 
 This pandapower network includes the following parameter tables:
