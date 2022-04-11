@@ -30,6 +30,7 @@ Getting Started:
 - `Installation Notes <https://www.pandapower.org/start/>`_
 - `Minimal Example <https://www.pandapower.org/start/#a-short-introduction->`_
 - `Interactive Tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_
+- `Contributing to pandapower <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`_
 
 If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
