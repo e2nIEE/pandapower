@@ -523,6 +523,9 @@ def test_select_subnet():
     assert pp.dataframes_equal(net.line, same_net.line)
     assert pp.dataframes_equal(net.load, same_net.load)
     assert pp.dataframes_equal(net.ext_grid, same_net.ext_grid)
+    same_net2 = pp.select_subnet(net, net.bus.index, include_results=True,
+                                 keep_everything_else=True)
+    assert pp.nets_equal(net, same_net2)
 
     # Remove everything
     empty = pp.select_subnet(net, set())
@@ -546,6 +549,10 @@ def test_select_subnet():
     line_switch_buses = set(net.switch[net.switch.et == 'l'].bus)
     subnet = pp.select_subnet(net, from_bus | to_bus | line_switch_buses)
     assert net.switch[net.switch.et == 'l'].index.isin(subnet.switch.index).all()
+    ls = net.switch.loc[net.switch.et == "l"]
+    subnet = pp.select_subnet(net, list(ls.bus.values)[::2], include_switch_buses=True)
+    assert net.switch[net.switch.et == 'l'].index.isin(subnet.switch.index).all()
+    assert net.switch[net.switch.et == 'l'].bus.isin(subnet.bus.index).all()
 
     # This network has switches of type 'b'
     net2 = nw.create_cigre_network_lv()
