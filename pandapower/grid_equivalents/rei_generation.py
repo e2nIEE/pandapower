@@ -187,10 +187,6 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     #     and creat new buses and impedance
     t_buses, g_buses = [], []
     sn_mva = net_zpbn.sn_mva
-    sgen_org = net.sgen
-    load_org = net.load
-    gen_org = net.gen
-    ext_grid_org = net.ext_grid
     for elm, separate in [("load", load_separate), ("sgen", sgen_separate), ("gen", gen_separate), ("ext_grid", False)]:
         # in Z columns only gen, load and sgens are considered, so we can leave out ext_grid
         net_zpbn[elm].drop(net_zpbn[elm].index[net_zpbn[elm].bus.isin(all_external_buses)], inplace=True)
