@@ -27,7 +27,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                              - set(net.gen.bus[net.gen.in_service & net.gen.slack])
     res_buses = set(
         net.res_bus.index[~net.res_bus[["vm_pu", "va_degree"]].isnull().any(axis=1)])
-    btaegwr = buses_to_add_ext_grids & res_buses
+    btaegwr = list(buses_to_add_ext_grids & res_buses)
     add_eg = []
     vms = pd.Series(np.ones(len(buses_to_add_ext_grids)),
                     index=buses_to_add_ext_grids)
@@ -575,6 +575,3 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
     # pp.runpp(net, calculate_voltage_angles=True)
     return net
 
-
-if __name__ == "__main__":
-    pass
