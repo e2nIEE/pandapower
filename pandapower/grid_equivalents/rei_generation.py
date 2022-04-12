@@ -238,7 +238,6 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
                 new_g_bus = pp.create_bus(net_zpbn, vn_kv, name=elm+"_integrated-ground ")
                 i_all_integrated = []
-                # todo: create impedances
                 for i in Z.index[~np.isnan(Z[elm+"_ground"].values)]:
                     rft_pu, xft_pu = adapt_impedance_params(Z[elm+"_ground"][i])
                     pp.create_impedance(net_zpbn, Z.ext_bus[i], new_g_bus, rft_pu, xft_pu,
@@ -259,7 +258,6 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     # --- create load, sgen and gen
     elm_old = None
-    # todo: create sgens, loads, gens
     for i in t_buses:
         bus = int(net_zpbn.bus.name[i].split(" ")[1])
         key = net_zpbn.bus.name[i].split("-")[0]
