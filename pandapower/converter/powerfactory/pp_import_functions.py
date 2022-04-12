@@ -1177,6 +1177,8 @@ def map_sgen_type_var(pf_sgen_type):
 
 
 def get_power_multiplier(item, var):
+    if var == "m:P:bus1" and not item.HasResults():
+        raise UserWarning(f"{item} does not have results - cannot get power multiplier")
     exponent = item.GetAttributeUnit(var)
     if exponent.startswith('k'):
         multiplier = 1e-3
@@ -1189,7 +1191,7 @@ def get_power_multiplier(item, var):
 
 
 def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
-    multiplier = get_power_multiplier(item, 'plini')
+    multiplier = get_power_multiplier(item, pf_variable_p_loads)
     params = ADict()
     if pf_variable_p_loads == 'm:P:bus1' and not item.HasResults(0):
         raise RuntimeError('load %s does not have results and is ignored' % item.loc_name)
@@ -1623,7 +1625,7 @@ def get_pf_load_results(net, item, ld, is_unbalanced):
 
 
 def ask_gen_params(item, pf_variable_p_gen, *vars):
-    multiplier = get_power_multiplier(item, 'pgini')
+    multiplier = get_power_multiplier(item, pf_variable_p_gen)
     params = ADict()
     if pf_variable_p_gen == 'm:P:bus1' and not item.HasResults(0):
         raise RuntimeError('generator %s does not have results and is ignored' % item.loc_name)
@@ -1889,7 +1891,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     is_motor = bool(item.i_mot)
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
         dict_net['global_parameters']['global_generation_scaling']
-    multiplier = get_power_multiplier(item, 'pgini')
+    multiplier = get_power_multiplier(item, pf_variable_p_gen)
 
     if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
         logger.info('synchronous machine <%s> to be imported as external grid' % name)
@@ -1963,7 +1965,7 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
         dict_net['global_parameters']['global_generation_scaling']
 
-    multiplier = get_power_multiplier(item, 'pgini')
+    multiplier = get_power_multiplier(item, pf_variable_p_gen)
     p_res = ga(item, 'pgini') * multiplier
     q_res = ga(item, 'qgini') * multiplier
     if item.HasResults(0):
