@@ -2,6 +2,7 @@ import pandapower as pp
 import pandapower.topology as top
 import time
 from copy import deepcopy
+from pandapower.auxiliary import _add_dcline_gens
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
@@ -160,6 +161,12 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         raise ValueError("No boundary buses are given.")
 
     net = deepcopy(net)
+
+    if "dcline" in net and len(net.dcline.query("in_service")) > 0:
+        _add_dcline_gens(net)
+        dcline_index = net.dcline.index.values
+        net.dcline.loc[dcline_index, 'in_service'] = False
+        logger.info(f"replaced dcline {dcline_index} by gen elements")
 
     logger.info(eq_type + " equivalent calculation started")
 
