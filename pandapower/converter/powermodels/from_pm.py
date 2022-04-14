@@ -1,7 +1,5 @@
 import math
-
 import numpy as np
-
 from pandapower.auxiliary import _clean_up
 from pandapower.converter import logger
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS

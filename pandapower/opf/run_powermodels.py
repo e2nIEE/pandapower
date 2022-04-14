@@ -9,7 +9,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False): 
+def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, **kwargs): 
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PandaModels.jl, and reads
     the results back to the pandapower net:
@@ -23,7 +23,7 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False):
     **pdm_dev_mode** (bool, False) - If True, the develop mode of PdM is called.
     """
     # convert pandapower to power models file -> this is done in python
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    net, pm, ppc, ppci = convert_to_pm_structure(net, **kwargs)
     # call optional callback function
     if net._options["pp_to_pm_callback"] is not None:
         net._options["pp_to_pm_callback"](net, ppci, pm)

@@ -20,6 +20,7 @@ from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
 from pandapower.results import init_results
 
+
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
 try:
@@ -53,7 +54,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -119,7 +120,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    net, pm, ppc, ppci = convert_to_pm_structure(net, from_time_step=from_time_step, 
+                                                 to_time_step=to_time_step)
     buffer_file = dump_pm_json(pm, pm_file_path)
     if pm_file_path is None and isfile(buffer_file):
         remove(buffer_file)
@@ -129,7 +131,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, opf_flow_lim="S"):
+def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
+                            **kwargs):
     if net["_options"]["voltage_depend_loads"] and not (
             np.allclose(net.load.const_z_percent.values, 0) and
             np.allclose(net.load.const_i_percent.values, 0)):
@@ -144,7 +147,8 @@ def convert_to_pm_structure(net, opf_flow_lim="S"):
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
-    pm = add_time_series_to_pm(net, pm)
+    # pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
+    # pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -503,8 +507,10 @@ def add_params_to_pm(net, pm):
     return pm
 
 
-def add_time_series_to_pm(net, pm, from_time_step=0, to_time_step=10):
+def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     from pandapower.control import ConstControl
+    if from_time_step is None or to_time_step is None:
+        raise ValueError("please define 'from_time_step' and 'to_time_step' to call time-series optimizaiton ")
     if len(net.controller):
         load_dict, gen_dict = {}, {}
         pm["time_series"] = {"load": load_dict, "gen": gen_dict,
@@ -530,5 +536,14 @@ def add_time_series_to_pm(net, pm, from_time_step=0, to_time_step=10):
                     pm["time_series"][pm_elm][str(pm_ei)][variable] = \
                         {str(m):n for m, n in enumerate(list(values[from_time_step:to_time_step, pd_ei]))}
     return pm
+
+
+def allow_multi_ext_grids(net, pm, ext_grids=None):
+    ext_grids = net.ext_grid.index.tolist() if ext_grids is None else ext_grids
+    target_pp_buses = net.ext_grid.bus[ext_grids]
+    target_pm_buses = net._pd2pm_lookups["bus"][target_pp_buses]
+    for b in target_pm_buses:
+        pm["bus"][str(b)]["bus_type"] = 3
+    return pm
     
-    
+   
