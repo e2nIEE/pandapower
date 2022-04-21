@@ -74,8 +74,10 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, R_EQUIV]
     ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, X_EQUIV]
 
-    ppci_0["bus"][bus_idx, IKSS1] = abs((np.sqrt(3) * c * ppci_0["bus"][bus_idx, BASE_KV]) / (z_equiv * baseZ  *  ppci_0["baseMVA"]))
-    ppci["bus"][bus_idx, IKSS1] = abs((np.sqrt(3) * c * ppci["bus"][bus_idx, BASE_KV]) / (z_equiv * baseZ  *  ppci["baseMVA"]))
+    # ppci["bus"][bus_idx, IKSS1] = abs(c * ppci["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
+    # ppci_0["bus"][bus_idx, IKSS1] = abs(c * ppci_0["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
+    ppci["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
+    ppci_0["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
 
     _current_source_current(net, ppci)
 

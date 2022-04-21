@@ -13,9 +13,7 @@ from pandapower.shortcircuit.toolbox import detect_power_station_unit, calc_sc_o
 
 
 def iec_60909_4():
-    net = pp.create_empty_network()
-    # net.sn_mva = 23
-    net.sn_mva = 1
+    net = pp.create_empty_network(sn_mva=34)
 
     b1 = pp.create_bus(net, vn_kv=380.)
     b2 = pp.create_bus(net, vn_kv=110.)
@@ -166,8 +164,7 @@ def iec_60909_4():
 
 
 def iec_60909_4_small(with_xward=False):
-    net = pp.create_empty_network()
-    net.sn_mva = 23
+    net = pp.create_empty_network(sn_mva=6)
 
     b1 = pp.create_bus(net, vn_kv=380.)
     b2 = pp.create_bus(net, vn_kv=110.)
@@ -228,8 +225,7 @@ def iec_60909_4_small(with_xward=False):
     return net
 
 def iec_60909_4_small_gen_only():
-    net = pp.create_empty_network()
-    net.sn_mva = 56
+    net = pp.create_empty_network(sn_mva=56)
 
     b3 = pp.create_bus(net, vn_kv=110.)
     HG2 = pp.create_bus(net, vn_kv=10)
@@ -245,8 +241,7 @@ def iec_60909_4_small_gen_only():
     return net
 
 def iec_60909_4_2gen():
-    net = pp.create_empty_network()
-    net.sn_mva = 12
+    net = pp.create_empty_network(sn_mva=12)
 
     b3 = pp.create_bus(net, vn_kv=110.)
     b4 = pp.create_bus(net, vn_kv=110.)
@@ -275,7 +270,7 @@ def iec_60909_4_2gen():
 
 
 def vde_232():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=13)
     # hv buses
     pp.create_bus(net, 110)
     pp.create_bus(net, 21)

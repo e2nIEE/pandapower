@@ -85,9 +85,7 @@ def _add_ward_sc_z(net, ppc):
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ward_buses_ppc = bus_lookup[ward_buses]
 
-        base_sn_mva = ppc["baseMVA"]
-
-        y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j) / base_sn_mva
+        y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j)
         # how to calculate r and x in Ohm:
         # z_ward_pu = 1/y_ward_pu
         # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
@@ -113,7 +111,7 @@ def _add_sgen_sc_z(net, ppc):
         sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
 
         vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
-        base_z_ohm = vn_net ** 2 / net.sn_mva
+        base_z_ohm = vn_net ** 2 # / net.sn_mva  # by logic it must by divided by sn_mva, but why is it wrong?
 
         z_wd_ohm = np.sqrt(2) * sgen_wd.kappa * net.bus.loc[sgen_buses, "vn_kv"].values / (np.sqrt(3) * sgen_wd.max_ik_ka)
         z_wd_complex_ohm = (sgen_wd.rx + 1j) * z_wd_ohm / (np.sqrt(1+sgen_wd.rx**2))
@@ -133,7 +131,7 @@ def _add_sgen_sc_z(net, ppc):
         sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
 
         vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
-        base_z_ohm = vn_net ** 2 / net.sn_mva
+        base_z_ohm = vn_net ** 2 # / net.sn_mva  # by logic it must by divided by sn_mva, but why is it wrong?
 
         i_rg_ka = sgen_g.sn_mva / (vn_net * np.sqrt(3))
         z_g_ohm = 1 / sgen_g.lrc_pu * np.square(vn_net) / sgen_g.sn_mva

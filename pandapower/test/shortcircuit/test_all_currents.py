@@ -12,7 +12,7 @@ import pandapower.shortcircuit as sc
 
 
 def three_bus_example():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=56)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
@@ -37,7 +37,7 @@ def three_bus_example():
 
 
 def three_bus_permuted_index():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=67)
     b1 = pp.create_bus(net, 110, index=4)
     b2 = pp.create_bus(net, 110, index=3)
     b3 = pp.create_bus(net, 110, index=0)
@@ -261,7 +261,7 @@ def test_against_single_sc_results_trafo():
 
 
 def test_ward():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=9)
     pp.create_buses(net, 2, 110)
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     pp.create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)
@@ -276,7 +276,7 @@ def test_ward():
 
 
 def test_xward():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=4)
     pp.create_buses(net, 2, 110)
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     pp.create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)

@@ -13,7 +13,7 @@ from pandapower.pypower.idx_brch import BR_R, BR_X
 
 
 def simplest_test_grid(generator_type, step_up_trafo=False):
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=6)
     if step_up_trafo:
         b0 = pp.create_bus(net, 20)
         b1 = pp.create_bus(net, 0.4)
@@ -36,7 +36,7 @@ def simplest_test_grid(generator_type, step_up_trafo=False):
 
 
 def wind_park_grid(case):
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=7)
     pp.create_bus(net, 110, index=1)
     pp.create_buses(net, 13, 20)
 
@@ -71,7 +71,7 @@ def wind_park_grid(case):
 
 
 def wind_park_example():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=8)
     b1 = pp.create_bus(net, vn_kv=110., index=1)
     b2 = pp.create_bus(net, vn_kv=110., index=2)
     b3 = pp.create_bus(net, vn_kv=110., index=3)
@@ -91,7 +91,7 @@ def wind_park_example():
 
 
 def three_bus_example():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=9)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
@@ -115,7 +115,7 @@ def big_sgen_three_bus_example():
     # ext_grid-bus1--line0--bus2--line1--bus3
     #                        |
     #                       sgen0
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=2)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
