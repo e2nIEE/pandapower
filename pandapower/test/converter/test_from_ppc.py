@@ -15,7 +15,6 @@ from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 
 try:
     import pypower.case24_ieee_rts as c24
-
     pypower_installed = True
 except ImportError:
     pypower_installed = False
@@ -56,12 +55,14 @@ def test_from_ppc():
     assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
 
+@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
 def test_validate_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
+@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
 def test_ppc_testgrids():
     # check ppc_testgrids
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
@@ -74,6 +75,7 @@ def test_ppc_testgrids():
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
