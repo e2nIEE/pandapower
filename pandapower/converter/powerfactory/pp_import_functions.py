@@ -999,7 +999,7 @@ def monopolar_in_service(item):
     in_service = not bool(item.outserv)
 
     # False if open, True if closed, None if no switch
-    switch_is_closed, switch_usage, switch_name = import_switch(item, 0)
+    switch_is_closed, _ , _ = import_switch(item, 0)
     if switch_is_closed is not None:
         logger.debug('element in service: <%s>, switch is closed: <%s>' %
                      (in_service, switch_is_closed))
