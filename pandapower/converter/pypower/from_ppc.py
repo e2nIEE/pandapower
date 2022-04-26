@@ -257,7 +257,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 sn = MAX_VAL
                 logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                              "apparent power")
-            ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
+            ratio_1 = 0 if ppc['branch'][i, 8] == 0 else 1 / ppc['branch'][i, 8] - 1
             i0_percent = -ppc['branch'][i, 4] * 100 * baseMVA / sn
             if i0_percent < 0:
                 logger.info('A transformer always behaves inductive consumpting but the '
@@ -266,10 +266,12 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
             pp.create_transformer_from_parameters(
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_mva=sn, vn_hv_kv=vn_hv_kv,
-                vn_lv_kv=vn_lv_kv, vk_percent=sign(xk) * zk * sn * 100 / baseMVA,
-                vkr_percent=rk * sn * 100 / baseMVA, max_loading_percent=100,
+                vn_lv_kv=vn_lv_kv,
+                vk_percent=sign(xk) * zk * sn * 100 / baseMVA / (1+ratio_1)**2,
+                vkr_percent=rk * sn * 100 / baseMVA  / (1+ratio_1)**2,
+                max_loading_percent=100,
                 pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
-                tap_step_percent=abs(ratio_1), tap_pos=sign(ratio_1),
+                tap_step_percent=abs(ratio_1)*100, tap_pos=sign(ratio_1),
                 tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
@@ -366,6 +368,10 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         The user has to take care that the loadflow results already are included in the provided \
         ppc_net or pypower is importable.
     """
+    if not pypower_import:
+        raise ImportError("validate_from_ppc() uses pypower power flows to compare to. However, "
+                          "pypower is not installed.")
+
     # check in case of optimal powerflow comparison whether cost information exist
     if "opp" in pf_type:
         if not (len(net.polynomial_cost) | len(net.piecewise_linear_cost)):
@@ -384,7 +390,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     run = [run, run] if isinstance(run, bool) else run
 
     # --- check pypower powerflow success, if possible
-    if pypower_import and run[0]:
+    if run[0]:
         try:
             if pf_type == "runpp":
                 ppc_net = runpf.runpf(ppc_net, ppopt)[0]
