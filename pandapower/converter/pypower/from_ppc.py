@@ -261,9 +261,15 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             sn[sn_is_zero] = MAX_VAL
             logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                             "apparent power")
+        tap_side = kwargs.get("tap_side", "hv")
+        if isinstance(tap_side, str):
+            tap_side_is_hv = np.array([tap_side == "hv"]*sum(~is_line))
+        else:
+            tap_side_is_hv = tap_side == "hv"
         ratio_1 = ppc['branch'][~is_line, 8]
         ratio_is_zero = np.isclose(ratio_1, 0)
-        ratio_1[~ratio_is_zero] = (1 / ratio_1[~ratio_is_zero]) - 1
+        ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
+        ratio_1[~ratio_is_zero] -= 1
         i0_percent = -ppc['branch'][~is_line, 4] * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
@@ -271,8 +277,10 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 'Transformers always behave inductive consumpting but the susceptance of pypower '
                 f'branches {np.arange(len(is_neg_i0_percent)).astype(int)[is_neg_i0_percent]} '
                 f'(from_bus, to_bus)=({ppc["branch"][i, 0]}, {ppc["branch"][i, 1]}) is positive.')
-        vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA / (1+ratio_1)**2
-        vkr_percent = rk * sn * 100 / baseMVA  / (1+ratio_1)**2
+        vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
+        vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
+        vkr_percent = rk * sn * 100 / baseMVA
+        vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
         pp.create_transformers_from_parameters(
             net, hv_buses=hv_bus, lv_buses=lv_bus, sn_mva=sn,
@@ -281,7 +289,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
             shift_degree=ppc['branch'][~is_line, 9],
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
-            tap_side="lv", tap_neutral=0)
+            tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
     # --- gencost -> create polynomial_cost, piecewise_cost

@@ -95,11 +95,12 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = pn.case9()
     net24 = pn.case24_ieee_rts()
+    net24.trafo.tap_side.iat[1] = "hv"
 
     for i, net in enumerate([net24, net9]):
-        if (net.trafo.tap_side != "lv").any():
-            raise ValueError("Data with trafo tap not at lv side is not appropriate for this test. "
-                             "from_ppc() assumes lv side, since no other information is available.")
+        # if (net.trafo.tap_side != "lv").any():
+        #     raise ValueError("Data with trafo tap not at lv side is not appropriate for this test. "
+        #                      "from_ppc() assumes lv side, since no other information is available.")
 
         # set max_loading_percent to enable line limit conversion
         net.line["max_loading_percent"] = 100
@@ -113,7 +114,7 @@ def test_to_and_from_ppc():
                                   pd.Series(net.gen.vm_pu.values, index=net.gen.bus)])
             ppc["gen"][-net.sgen.shape[0]:, 5] = vm_setps.loc[net.sgen.bus].values
 
-        net2 = from_ppc(ppc, f_hz=net.f_hz)
+        net2 = from_ppc(ppc, f_hz=net.f_hz, tap_side=net.trafo.tap_side.values)
         # again add max_loading_percent to enable valid comparison
         net2.line["max_loading_percent"] = 100
 
