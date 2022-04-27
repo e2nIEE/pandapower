@@ -129,7 +129,7 @@ def test_to_and_from_ppc():
             assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
-@pytest.mark.skipif(pypower_installed == False,
+@pytest.mark.skipif(not pypower_installed,
                     reason="c24 test net is taken from mandatory pypower installation")
 def test_case24_from_pypower():
     net = from_ppc(c24.case24_ieee_rts())
