@@ -5,8 +5,7 @@
 
 
 from math import pi
-from numpy import sign, nan, append, zeros, array, sqrt, where
-from numpy import max as max_
+import numpy as np
 from pandas import Series, DataFrame, concat
 from pandapower.pypower.idx_gen import GEN_BUS, PMIN, PMAX, QMIN, QMAX, GEN_STATUS
 from pandapower.pypower.idx_cost import COST, NCOST
@@ -32,8 +31,7 @@ ppc_elms = ["bus", "branch", "gen"]
 def _create_costs(net, ppc, gen_lookup, type, idx):
     if ppc['gencost'][idx, 0] == 1:
         if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
-            logger.error("In gencost line %s, the number n does not fit to the number of values" %
-                         idx)
+            logger.error(f"In gencost line {idx}, the number n does not fit to the number of values")
             raise NotImplementedError
         pp.create_pwl_cost(net, gen_lookup.element.at[idx],
                            gen_lookup.element_type.at[idx],
@@ -63,17 +61,17 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
                                   cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2, cp0_eur=cp0)
     else:
-        logger.info("Cost mode of gencost line %s is unknown." % idx)
+        logger.info(f"Cost mode of gencost line {idx} is unknown.")
 
 
 def _gen_bus_info(ppc, idx_gen):
     bus_name = int(ppc["gen"][idx_gen, GEN_BUS])
     # assumption: there is only one bus with this bus_name:
-    idx_bus = int(where(ppc["bus"][:, BUS_I] == bus_name)[0][0])
+    idx_bus = int(np.where(ppc["bus"][:, BUS_I] == bus_name)[0][0])
     current_bus_type = int(ppc["bus"][idx_bus, 1])
 
-    same_bus_gen_idx = where(ppc["gen"][:, GEN_BUS] == ppc["gen"][idx_gen, GEN_BUS])[0].astype(int)
-    same_bus_in_service_gen_idx = same_bus_gen_idx[where(ppc["gen"][same_bus_gen_idx, GEN_STATUS] > 0)]
+    same_bus_gen_idx = np.where(ppc["gen"][:, GEN_BUS] == ppc["gen"][idx_gen, GEN_BUS])[0].astype(int)
+    same_bus_in_service_gen_idx = same_bus_gen_idx[np.where(ppc["gen"][same_bus_gen_idx, GEN_STATUS] > 0)]
     first_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[0] if len(
         same_bus_in_service_gen_idx) else None
     last_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[-1] if len(
@@ -97,7 +95,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
         **validate_conversion** (bool, False) - If True, validate_from_ppc is run after conversion.
             For running the validation, the ppc must already contain the pypower
-            powerflow results or pypower must be importable.
+            powerflow results or pypower must be installed.
 
         ****kwargs** keyword arguments for validate_from_ppc if validate_conversion is True
 
@@ -128,33 +126,32 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     net = pp.create_empty_network(f_hz=f_hz, sn_mva=baseMVA)
 
     # --- bus data -> create buses, sgen, load, shunt
-    for i in range(len(ppc['bus'])):
-        # create buses
-        pp.create_bus(net, name=int(ppc['bus'][i, 0]), vn_kv=ppc['bus'][i, 9], type="b",
-                      zone=ppc['bus'][i, 10], in_service=bool(ppc['bus'][i, 1] != 4),
-                      max_vm_pu=ppc['bus'][i, 11], min_vm_pu=ppc['bus'][i, 12])
-        # create sgen, load
-        if ppc['bus'][i, 2] > 0:
-            pp.create_load(net, i, p_mw=ppc['bus'][i, 2], q_mvar=ppc['bus'][i, 3],
-                           controllable=False)
-        elif ppc['bus'][i, 2] < 0:
-            pp.create_sgen(net, i, p_mw=-ppc['bus'][i, 2], q_mvar=-ppc['bus'][i, 3],
-                           type="", controllable=False)
-        elif ppc['bus'][i, 3] != 0:
-            pp.create_load(net, i, p_mw=ppc['bus'][i, 2], q_mvar=ppc['bus'][i, 3],
-                           controllable=False)
-        # create shunt
-        if ppc['bus'][i, 4] != 0 or ppc['bus'][i, 5] != 0:
-            pp.create_shunt(net, i, p_mw=ppc['bus'][i, 4],
-                            q_mvar=-ppc['bus'][i, 5])
+    # create buses
+    idx_buses = pp.create_buses(
+        net, ppc['bus'].shape[0], name=ppc['bus'][:, 0].astype(int), vn_kv=ppc['bus'][:, 9],
+        type="b", zone=ppc['bus'][:, 10], in_service=(ppc['bus'][:, 1] != 4).astype(bool),
+        max_vm_pu=ppc['bus'][:, 11], min_vm_pu=ppc['bus'][:, 12])
+    # create loads
+    is_load = (ppc['bus'][:, 2] > 0) | (ppc['bus'][:, 3] != 0)
+    pp.create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, 2], q_mvar=ppc['bus'][
+        is_load, 3], controllable=False)
+    # create sgens
+    is_sgen = ppc['bus'][:, 2] < 0
+    pp.create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, 2], q_mvar=-ppc['bus'][
+        is_sgen, 3], type="", controllable=False)
+    # create shunt
+    is_shunt = (ppc['bus'][:, 4] != 0) | (ppc['bus'][:, 5] != 0)
+    assert np.allclose(idx_buses, np.arange(len(idx_buses)))  # is assumed in create_shunt for loop
+    for i in idx_buses[is_shunt]:
+            pp.create_shunt(net, i, p_mw=ppc['bus'][i, 4], q_mvar=-ppc['bus'][i, 5])
     # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
 
     # --- gen data -> create ext_grid, gen, sgen
-    gen_lookup = DataFrame(nan, columns=['element', 'element_type'],
+    gen_lookup = DataFrame(np.nan, columns=['element', 'element_type'],
                            index=range(len(ppc['gen'][:, 0])))
     # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
     if len(ppc["gen"].shape) == 1:
-        ppc["gen"] = array(ppc["gen"], ndmin=2)
+        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
     for i in range(len(ppc['gen'][:, 0])):
         current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
             last_same_bus_in_service_gen_idx = _gen_bus_info(ppc, i)
@@ -210,69 +207,83 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
     # --- branch data -> create line, trafo
-    for i in range(len(ppc['branch'])):
-        from_bus = pp.get_element_index(net, 'bus', name=int(ppc['branch'][i, 0]))
-        to_bus = pp.get_element_index(net, 'bus', name=int(ppc['branch'][i, 1]))
+    from_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 0].astype(int)),
+                      dtype=int)
+    to_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 1].astype(int)),
+                      dtype=int)
+    from_vn_kv = ppc['bus'][from_bus, 9]
+    to_vn_kv = ppc['bus'][to_bus, 9]
 
-        from_vn_kv = ppc['bus'][from_bus, 9]
-        to_vn_kv = ppc['bus'][to_bus, 9]
-        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
-           (ppc['branch'][i, 9] == 0):  # create line
-            Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-            max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]/sqrt(3)
-            if max_i_ka == 0.0:
-                max_i_ka = MAX_VAL
-                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
-                             "maximum branch flow")
-            pp.create_line_from_parameters(
-                net, from_bus=from_bus, to_bus=to_bus, length_km=1,
-                r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
-                c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                max_i_ka=max_i_ka, type='ol', max_loading_percent=100,
-                in_service=bool(ppc['branch'][i, 10]))
 
-        else:  # create transformer
-            if from_vn_kv >= to_vn_kv:
-                hv_bus = from_bus
-                vn_hv_kv = from_vn_kv
-                lv_bus = to_bus
-                vn_lv_kv = to_vn_kv
-                tap_side = 'hv'
-            else:
-                hv_bus = to_bus
-                vn_hv_kv = to_vn_kv
-                lv_bus = from_bus
-                vn_lv_kv = from_vn_kv
-                tap_side = 'lv'
-                if from_vn_kv == to_vn_kv:
-                    logger.warning(
-                        f'The pypower branch {i} (from_bus, to_bus)=({ppc["branch"][i, 0]}, '
-                        f'{ppc["branch"][i, 1]}) is considered as a transformer because of a ratio '
-                        '!= 0 | 1 but it connects the same voltage level')
-            rk = ppc['branch'][i, 2]
-            xk = ppc['branch'][i, 3]
-            zk = (rk ** 2 + xk ** 2) ** 0.5
-            sn = ppc['branch'][i, 5]
-            if sn == 0.0:
-                sn = MAX_VAL
-                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
-                             "apparent power")
-            ratio_1 = 0 if ppc['branch'][i, 8] == 0 else 1 / ppc['branch'][i, 8] - 1
-            i0_percent = -ppc['branch'][i, 4] * 100 * baseMVA / sn
-            if i0_percent < 0:
-                logger.info('A transformer always behaves inductive consumpting but the '
-                            f'susceptance of pypower branch {i} (from_bus, to_bus)='
-                            f'({ppc["branch"][i, 0]}, {ppc["branch"][i, 1]}) is positive.')
+    is_line = (from_vn_kv == to_vn_kv) & \
+              ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
+              (ppc['branch'][i, 9] == 0)
 
-            pp.create_transformer_from_parameters(
-                net, hv_bus=hv_bus, lv_bus=lv_bus, sn_mva=sn, vn_hv_kv=vn_hv_kv,
-                vn_lv_kv=vn_lv_kv,
-                vk_percent=sign(xk) * zk * sn * 100 / baseMVA / (1+ratio_1)**2,
-                vkr_percent=rk * sn * 100 / baseMVA  / (1+ratio_1)**2,
-                max_loading_percent=100,
-                pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
-                tap_step_percent=abs(ratio_1)*100, tap_pos=sign(ratio_1),
-                tap_side=tap_side, tap_neutral=0)
+    # --- create line
+    Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
+    max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]/np.sqrt(3)
+    i_is_zero = np.isclose(max_i_ka, 0)
+    if np.any(i_is_zero):
+        max_i_ka[i_is_zero] = MAX_VAL
+        logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                     "maximum branch flow")
+    pp.create_lines_from_parameters(
+        net, from_buses=from_bus[is_line], to_buses=to_bus[is_line], length_km=1,
+        r_ohm_per_km=ppc['branch'][is_line, 2]*Zni[is_line],
+        x_ohm_per_km=ppc['branch'][is_line, 3]*Zni[is_line],
+        c_nf_per_km=ppc['branch'][is_line, 4]/Zni[is_line]/omega*1e9/2,
+        max_i_ka=max_i_ka[is_line], type='ol', max_loading_percent=100,
+        in_service=ppc['branch'][is_line, 10].astype(bool))
+
+    # --- create transformer
+    if not np.all(is_line):
+        hv_bus = from_bus[~is_line]
+        vn_hv_kv = from_vn_kv[~is_line]
+        lv_bus = to_bus[~is_line]
+        vn_lv_kv = to_vn_kv[~is_line]
+        tap_side = np.array(['hv']*sum(~is_line))
+        to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
+        if not np.all(to_vn_is_leq):
+            hv_bus[~to_vn_is_leq] = to_bus[~is_line & ~to_vn_is_leq]
+            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line & ~to_vn_is_leq]
+            lv_bus[~to_vn_is_leq] = from_bus[~is_line & ~to_vn_is_leq]
+            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[~is_line & ~to_vn_is_leq]
+            tap_side[~to_vn_is_leq] = 'lv'
+        same_vn = to_vn_kv[~is_line] == from_vn_kv[~is_line]
+        if np.any(same_vn):
+            logger.warning(
+                f'There are {sum(same_vn)} branches which are considered as trafos - due to ratio'
+                f'unequal 0 or 1 - but connect same voltage levels.')
+        rk = ppc['branch'][~is_line, 2]
+        xk = ppc['branch'][~is_line, 3]
+        zk = (rk ** 2 + xk ** 2) ** 0.5
+        sn = ppc['branch'][~is_line, 5]
+        sn_is_zero = np.isclose(sn, 0)
+        if np.any(sn_is_zero):
+            sn[sn_is_zero] = MAX_VAL
+            logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                            "apparent power")
+        ratio_1 = ppc['branch'][~is_line, 8]
+        ratio_is_zero = np.isclose(ratio_1, 0)
+        ratio_1[~ratio_is_zero] = (1 / ratio_1[~ratio_is_zero]) - 1
+        i0_percent = -ppc['branch'][~is_line, 4] * 100 * baseMVA / sn
+        is_neg_i0_percent = i0_percent < 0
+        if np.any(is_neg_i0_percent):
+            logger.info(
+                'Transformers always behave inductive consumpting but the susceptance of pypower '
+                f'branches {np.arange(len(is_neg_i0_percent)).astype(int)[is_neg_i0_percent]} '
+                f'(from_bus, to_bus)=({ppc["branch"][i, 0]}, {ppc["branch"][i, 1]}) is positive.')
+        vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA / (1+ratio_1)**2
+        vkr_percent = rk * sn * 100 / baseMVA  / (1+ratio_1)**2
+
+        pp.create_transformers_from_parameters(
+            net, hv_buses=hv_bus, lv_buses=lv_bus, sn_mva=sn,
+            vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv,
+            vk_percent=vk_percent, vkr_percent=vkr_percent,
+            max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
+            shift_degree=ppc['branch'][~is_line, 9],
+            tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
+            tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
     # --- gencost -> create polynomial_cost, piecewise_cost
@@ -316,9 +327,9 @@ def _validate_diff_res(diff_res, max_diff_values):
     for i in to_iterate:
         elm = i.split("_")[0]
         sought = ["p", "q"] if elm != "bus" else ["vm", "va"]
-        col = int(array([0, 1])[[j in i for j in sought]][0]) if elm != "branch" else \
-            list(array([[0, 2], [1, 3]])[[j in i for j in sought]][0])
-        val &= bool(max_(abs(diff_res[elm][:, col])) < max_diff_values[i])
+        col = int(np.array([0, 1])[[j in i for j in sought]][0]) if elm != "branch" else \
+            list(np.array([[0, 2], [1, 3]])[[j in i for j in sought]][0])
+        val &= bool(np.max(abs(diff_res[elm][:, col])) < max_diff_values[i])
     return val
 
 
@@ -368,9 +379,6 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         The user has to take care that the loadflow results already are included in the provided \
         ppc_net or pypower is importable.
     """
-    if not pypower_import:
-        raise ImportError("validate_from_ppc() uses pypower power flows to compare to. However, "
-                          "pypower is not installed.")
 
     # check in case of optimal powerflow comparison whether cost information exist
     if "opp" in pf_type:
@@ -390,7 +398,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     run = [run, run] if isinstance(run, bool) else run
 
     # --- check pypower powerflow success, if possible
-    if run[0]:
+    if pypower_import and run[0]:
         try:
             if pf_type == "runpp":
                 ppc_net = runpf.runpf(ppc_net, ppopt)[0]
@@ -401,7 +409,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
             elif pf_type == "rundcopp":
                 ppc_net = rundcopf.rundcopf(ppc_net, ppopt)
             else:
-                raise ValueError("The pf_type %s is unknown" % pf_type)
+                raise ValueError(f"The pf_type {pf_type} is unknown")
         except:
             logger.debug("The pypower run did not work.")
     ppc_success = True
@@ -483,31 +491,31 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
 
     # --- pandapower bus result table
     pp_res = dict.fromkeys(ppc_elms)
-    pp_res["bus"] = array(net.res_bus.sort_index()[['vm_pu', 'va_degree']])
+    pp_res["bus"] = np.array(net.res_bus.sort_index()[['vm_pu', 'va_degree']])
 
     # --- pandapower gen result table
-    pp_res["gen"] = zeros([1, 2])
+    pp_res["gen"] = np.zeros([1, 2])
     # consideration of parallel generators via storing how much generators have been considered
     # each node
     # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
     if len(ppc_net["gen"].shape) == 1:
-        ppc_net["gen"] = array(ppc_net["gen"], ndmin=2)
+        ppc_net["gen"] = np.array(ppc_net["gen"], ndmin=2)
     GENS = DataFrame(ppc_net['gen'][:, [0]].astype(int))
     GEN_uniq = GENS.drop_duplicates()
-    already_used_gen = Series(zeros(GEN_uniq.shape[0]).astype(int),
+    already_used_gen = Series(np.zeros(GEN_uniq.shape[0]).astype(int),
                               index=[int(v) for v in GEN_uniq.values])
     change_q_compare = []
     for i, j in GENS.iterrows():
         current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
             last_same_bus_in_service_gen_idx = _gen_bus_info(ppc_net, i)
         if current_bus_type == 3 and i == first_same_bus_in_service_gen_idx:
-            pp_res["gen"] = append(pp_res["gen"], array(net.res_ext_grid[
+            pp_res["gen"] = np.append(pp_res["gen"], np.array(net.res_ext_grid[
                     net.ext_grid.bus == current_bus_idx][['p_mw', 'q_mvar']]).reshape((1, 2)), 0)
         elif current_bus_type == 2 and i == first_same_bus_in_service_gen_idx:
-            pp_res["gen"] = append(pp_res["gen"], array(net.res_gen[
+            pp_res["gen"] = np.append(pp_res["gen"], np.array(net.res_gen[
                     net.gen.bus == current_bus_idx][['p_mw', 'q_mvar']]).reshape((1, 2)), 0)
         else:
-            pp_res["gen"] = append(pp_res["gen"], array(net.res_sgen[
+            pp_res["gen"] = np.append(pp_res["gen"], np.array(net.res_sgen[
                 net.sgen.bus == current_bus_idx][['p_mw', 'q_mvar']])[
                 already_used_gen.at[int(j)]].reshape((1, 2)), 0)
             already_used_gen.at[int(j)] += 1
@@ -515,7 +523,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     pp_res["gen"] = pp_res["gen"][1:, :]  # delete initial zero row
 
     # --- pandapower branch result table
-    pp_res["branch"] = zeros([1, 4])
+    pp_res["branch"] = np.zeros([1, 4])
     # consideration of parallel branches via storing how often branches were considered
     # each node-to-node-connection
     try:
@@ -527,16 +535,16 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         # legacy pandas < 0.21
         init1 = concat([net.line.from_bus, net.line.to_bus], axis=1).drop_duplicates()
         init2 = concat([net.trafo.hv_bus, net.trafo.lv_bus], axis=1).drop_duplicates()
-    init1['hv_bus'] = nan
-    init1['lv_bus'] = nan
-    init2['from_bus'] = nan
-    init2['to_bus'] = nan
+    init1['hv_bus'] = np.nan
+    init1['lv_bus'] = np.nan
+    init2['from_bus'] = np.nan
+    init2['to_bus'] = np.nan
     try:
         already_used_branches = concat([init1, init2], axis=0, sort=True)
     except TypeError:
         # pandas < 0.21 legacy
         already_used_branches = concat([init1, init2], axis=0)
-    already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
+    already_used_branches['number'] = np.zeros([already_used_branches.shape[0], 1]).astype(int)
     BRANCHES = DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
     for i in BRANCHES.index:
         from_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 0]))
@@ -547,7 +555,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         angle = BRANCHES[3].at[i]
         # from line results
         if (from_vn_kv == to_vn_kv) & ((ratio == 0) | (ratio == 1)) & (angle == 0):
-            pp_res["branch"] = append(pp_res["branch"], array(net.res_line[
+            pp_res["branch"] = np.append(pp_res["branch"], np.array(net.res_line[
                 (net.line.from_bus == from_bus) &
                 (net.line.to_bus == to_bus)]
                 [['p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar']])[
@@ -559,7 +567,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         # from trafo results
         else:
             if from_vn_kv >= to_vn_kv:
-                pp_res["branch"] = append(pp_res["branch"], array(net.res_trafo[
+                pp_res["branch"] = np.append(pp_res["branch"], np.array(net.res_trafo[
                     (net.trafo.hv_bus == from_bus) &
                     (net.trafo.lv_bus == to_bus)]
                     [['p_hv_mw', 'q_hv_mvar', 'p_lv_mw', 'q_lv_mvar']])[
@@ -569,7 +577,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
                 already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
                                                  (already_used_branches.lv_bus == to_bus)] += 1
             else:  # switch hv-lv-connection of pypower connection buses
-                pp_res["branch"] = append(pp_res["branch"], array(net.res_trafo[
+                pp_res["branch"] = np.append(pp_res["branch"], np.array(net.res_trafo[
                     (net.trafo.hv_bus == to_bus) &
                     (net.trafo.lv_bus == from_bus)]
                     [['p_lv_mw', 'q_lv_mvar', 'p_hv_mw', 'q_hv_mvar']])[
@@ -598,20 +606,20 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
             diff_res["gen"][i:next_i, 1] = sum(diff_res["gen"][i:next_i, 1])
     # logger info
     logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
-                 "%.2e pu" % max_(abs(diff_res["bus"][:, 0])))
+                 "%.2e pu" % np.max(abs(diff_res["bus"][:, 0])))
     logger.debug("Maximum voltage angle difference between pypower and pandapower: "
-                 "%.2e degree" % max_(abs(diff_res["bus"][:, 1])))
+                 "%.2e degree" % np.max(abs(diff_res["bus"][:, 1])))
     logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
-                 "%.2e MW" % max_(abs(diff_res["branch"][:, [0, 2]])))
+                 "%.2e MW" % np.max(abs(diff_res["branch"][:, [0, 2]])))
     logger.debug("Maximum branch flow reactive power difference between pypower and "
-                 "pandapower: %.2e MVAr" % max_(abs(diff_res["branch"][:, [1, 3]])))
+                 "pandapower: %.2e MVAr" % np.max(abs(diff_res["branch"][:, [1, 3]])))
     logger.debug("Maximum active power generation difference between pypower and pandapower: "
-                 "%.2e MW" % max_(abs(diff_res["gen"][:, 0])))
+                 "%.2e MW" % np.max(abs(diff_res["gen"][:, 0])))
     logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
-                 "%.2e MVAr" % max_(abs(diff_res["gen"][:, 1])))
+                 "%.2e MVAr" % np.max(abs(diff_res["gen"][:, 1])))
     if _validate_diff_res(diff_res, {"bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_mw": 1e-6,
                                      "branch_q_mvar": 1e-6}) and \
-            (max_(abs(diff_res["gen"])) > 1e-1).any():
+            (np.max(abs(diff_res["gen"])) > 1e-1).any():
         logger.debug("The active/reactive power generation difference possibly results "
                      "because of a pypower error. Please validate "
                      "the results via pypower loadflow.")  # this occurs e.g. at ppc case9

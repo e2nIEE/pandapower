@@ -39,7 +39,7 @@ def get_testgrids(name, filename):
     return ppcs[name]
 
 
-def test_from_ppc():
+def test_from_ppc_simple_against_target():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
     net_by_code = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
@@ -55,14 +55,12 @@ def test_from_ppc():
     assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
 
-@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
-def test_validate_from_ppc():
+def test_validate_from_ppc_simple_against_target():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
-@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
 def test_ppc_testgrids():
     # check ppc_testgrids
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
@@ -75,7 +73,6 @@ def test_ppc_testgrids():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(pypower_installed, reason="validate_from_ppc() needs pypower installation.")
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
@@ -95,37 +92,39 @@ def test_pypower_cases():
     logger.debug('case9 has been checked successfully.')
 
 
-def test_case9_conversion():
-    net = pn.case9()
-    # set max_loading_percent to enable line limit conversion
-    net.line["max_loading_percent"] = 100
-    pp.runpp(net)
-    ppc = to_ppc(net, mode="opf")
-    # correction because voltage limits are set to 1.0 at slack buses
-    ppc["bus"][0, 12] = 0.9
-    ppc["bus"][0, 11] = 1.1
+def test_to_and_from_ppc():
+    net9 = pn.case9()
+    net24 = pn.case24_ieee_rts()
 
-    net2 = from_ppc(ppc, f_hz=net.f_hz)
-    # again add max_loading_percent to enable valid comparison
-    net2.line["max_loading_percent"] = 100
+    for net in [net24, net9]:
+        # set max_loading_percent to enable line limit conversion
+        net.line["max_loading_percent"] = 100
+        pp.runpp(net)
+        ppc = to_ppc(net, mode="opf", take_slack_vm_limits=False)
 
-    # compare loadflow results
-    pp.runpp(net)
-    pp.runpp(net2)
-    assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+        net2 = from_ppc(ppc, f_hz=net.f_hz)
+        # again add max_loading_percent to enable valid comparison
+        net2.line["max_loading_percent"] = 100
 
-    # compare optimal powerflow results
-    pp.runopp(net, delta=1e-16)
-    pp.runopp(net2, delta=1e-16)
-    assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+        # compare loadflow results
+        pp.runpp(net)
+        pp.runpp(net2)
+        assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+
+        # compare optimal powerflow results
+        pp.runopp(net, delta=1e-16)
+        pp.runopp(net2, delta=1e-16)
+        assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
-@pytest.mark.skipif(pypower_installed == False, reason="needs pypower installation")
-def test_case24():
+@pytest.mark.skipif(pypower_installed == False,
+                    reason="c24 test net is taken from mandatory pypower installation")
+def test_case24_from_pypower():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)
     assert net.OPF_converged
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+    # pytest.main([__file__, "-xs"])
+    test_to_and_from_ppc()

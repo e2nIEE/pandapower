@@ -2756,9 +2756,9 @@ def get_element_index(net, element, name, exact_match=True):
     if exact_match:
         idx = net[element][net[element]["name"] == name].index
         if len(idx) == 0:
-            raise UserWarning("There is no %s with name %s" % (element, name))
+            raise UserWarning(f"There is no {element} with name {name}")
         if len(idx) > 1:
-            raise UserWarning("Duplicate %s names for %s" % (element, name))
+            raise UserWarning(f"Duplicate {element} names for {name}")
         return idx[0]
     else:
         return net[element][net[element]["name"].str.contains(name)].index
