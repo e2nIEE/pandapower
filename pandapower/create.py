@@ -3338,7 +3338,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         **q_mvar** - shunt susceptance in MVAr at v= 1.0 p.u.
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of \
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of
             connected bus
 
         **step** (int, 1) - step of shunt with which power values are multiplied
@@ -3349,7 +3349,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one
             higher than the highest already existing index is selected.
 
     OUTPUT:
@@ -3368,6 +3368,55 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
                        [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
     _set_entries(net, "shunt", index, **entries, **kwargs)
+
+    return index
+
+
+def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
+                 in_service=True, index=None, **kwargs):
+    """
+    Creates a number of shunt elements
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **buses** - bus numbers of buses to which the shunts should be connected to
+
+        **p_mw** - shunts active power in MW at v= 1.0 p.u.
+
+        **q_mvar** - shunts susceptance in MVAr at v= 1.0 p.u.
+
+    OPTIONAL:
+        **vn_kv** (list of floats, None) - rated voltage of the shunts. Defaults to rated voltage of
+            connected bus
+
+        **step** (list of ints, 1) - step of shunts with which power values are multiplied
+
+        **max_step** (list of booleans, True) - True for in_service or False for out of service
+
+        **name** (list of strs, None) - element name
+
+        **in_service** (list of booleans, True) - True for in_service or False for out of service
+
+        **index** (list of ints, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created shunt
+
+    EXAMPLE:
+        create_shunt(net, 0, 20)
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "shunt", index, len(buses))
+
+    if vn_kv is None:
+        vn_kv = net.bus.vn_kv.loc[buses]
+
+    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
+                       [buses, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
+    _set_multiple_entries(net, "shunt", index, **entries, **kwargs)
 
     return index
 

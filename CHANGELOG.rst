@@ -4,7 +4,7 @@ Change Log
 [upcoming release] - 2022-..-..
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
-- [FIX] trafo tap consideration in from_ppc()
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
 
 [2.9.0]- 2022-03-23
 ----------------------

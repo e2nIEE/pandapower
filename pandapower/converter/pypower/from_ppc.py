@@ -13,6 +13,7 @@ from pandapower.pypower.idx_cost import COST, NCOST
 from pandapower.pypower.idx_bus import \
     BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
 import pandapower as pp
+import timeit
 
 try:
     import pandaplan.core.pplog as logging
@@ -73,6 +74,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     net = pp.create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
 
+
     _from_ppc_bus(net, ppc)
     gen_lookup = _from_ppc_gen(net, ppc)
     _from_ppc_branch(net, ppc, f_hz, **kwargs)
@@ -111,11 +113,10 @@ def _from_ppc_bus(net, ppc):
     pp.create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, PD], q_mvar=-ppc['bus'][
         is_sgen, QD], type="", controllable=False)
 
-    # create shunt
+    # create shunts
     is_shunt = (ppc['bus'][:, GS] != 0) | (ppc['bus'][:, BS] != 0)
-    assert np.allclose(idx_buses, np.arange(len(idx_buses)))  # is assumed in create_shunt for loop
-    for i in idx_buses[is_shunt]:
-            pp.create_shunt(net, i, p_mw=ppc['bus'][i, GS], q_mvar=-ppc['bus'][i, BS])
+    pp.create_shunts(net, idx_buses[is_shunt], p_mw=ppc['bus'][is_shunt, GS],
+                     q_mvar=-ppc['bus'][is_shunt, BS])
 
     # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
 
@@ -127,8 +128,7 @@ def _from_ppc_gen(net, ppc):
     if len(ppc["gen"].shape) == 1:
         ppc["gen"] = np.array(ppc["gen"], ndmin=2)
 
-    bus_pos = pd.Series(ppc["bus"][:, BUS_I].astype(int), index=np.arange(ppc["bus"].shape[
-        0], dtype=int)).loc[ppc["gen"][:, GEN_BUS]].values
+    bus_pos = _get_bus_pos(ppc, ppc["gen"][:, GEN_BUS])
 
     # determine which gen should considered as ext_grid, gen or sgen
     bus_type_df = pd.DataFrame({"bus_type": ppc["bus"][bus_pos, BUS_TYPE],
@@ -209,10 +209,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    from_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 0].astype(int)),
-                      dtype=int)
-    to_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 1].astype(int)),
-                      dtype=int)
+    from_bus = _get_bus_pos(ppc, ppc['branch'][:, 0].real.astype(int))
+    to_bus = _get_bus_pos(ppc, ppc['branch'][:, 1].real.astype(int))
     from_vn_kv = ppc['bus'][from_bus, 9]
     to_vn_kv = ppc['bus'][to_bus, 9]
 
@@ -230,11 +228,11 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                      "maximum branch flow")
     pp.create_lines_from_parameters(
         net, from_buses=from_bus[is_line], to_buses=to_bus[is_line], length_km=1,
-        r_ohm_per_km=ppc['branch'][is_line, 2]*Zni[is_line],
-        x_ohm_per_km=ppc['branch'][is_line, 3]*Zni[is_line],
-        c_nf_per_km=ppc['branch'][is_line, 4]/Zni[is_line]/omega*1e9/2,
-        max_i_ka=max_i_ka[is_line], type='ol', max_loading_percent=100,
-        in_service=ppc['branch'][is_line, 10].astype(bool))
+        r_ohm_per_km=(ppc['branch'][is_line, 2]*Zni[is_line]).real,
+        x_ohm_per_km=(ppc['branch'][is_line, 3]*Zni[is_line]).real,
+        c_nf_per_km=(ppc['branch'][is_line, 4]/Zni[is_line]/omega*1e9/2).real,
+        max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
+        in_service=ppc['branch'][is_line, 10].real.astype(bool))
 
     # --- create transformer
     if not np.all(is_line):
@@ -251,12 +249,12 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         same_vn = to_vn_kv[~is_line] == from_vn_kv[~is_line]
         if np.any(same_vn):
             logger.warning(
-                f'There are {sum(same_vn)} branches which are considered as trafos - due to ratio'
+                f'There are {sum(same_vn)} branches which are considered as trafos - due to ratio '
                 f'unequal 0 or 1 - but connect same voltage levels.')
-        rk = ppc['branch'][~is_line, 2]
-        xk = ppc['branch'][~is_line, 3]
+        rk = ppc['branch'][~is_line, 2].real
+        xk = ppc['branch'][~is_line, 3].real
         zk = (rk ** 2 + xk ** 2) ** 0.5
-        sn = ppc['branch'][~is_line, 5]
+        sn = ppc['branch'][~is_line, 5].real
         sn_is_zero = np.isclose(sn, 0)
         if np.any(sn_is_zero):
             sn[sn_is_zero] = MAX_VAL
@@ -267,18 +265,18 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side_is_hv = np.array([tap_side == "hv"]*sum(~is_line))
         else:
             tap_side_is_hv = tap_side == "hv"
-        ratio_1 = ppc['branch'][~is_line, 8]
+        ratio_1 = ppc['branch'][~is_line, 8].real
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
-        i0_percent = -ppc['branch'][~is_line, 4] * 100 * baseMVA / sn
+        i0_percent = -ppc['branch'][~is_line, 4].real * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
             logger.info(
                 'Transformers always behave inductive consumpting but the susceptance of pypower '
                 f'branches {np.arange(len(is_neg_i0_percent), dtype=int)[is_neg_i0_percent]} '
-                f'(from_bus, to_bus)=({ppc["branch"][is_neg_i0_percent, 0]}, '
-                f'{ppc["branch"][is_neg_i0_percent, 1]}) is positive.')
+                f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
+                'is positive.')
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
         vkr_percent = rk * sn * 100 / baseMVA
@@ -289,10 +287,15 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv,
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
-            shift_degree=ppc['branch'][~is_line, 9],
+            shift_degree=ppc['branch'][~is_line, 9].real,
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
+
+
+def _get_bus_pos(ppc, bus_names):
+    return pd.Series(ppc["bus"][:, BUS_I].astype(int), index=np.arange(ppc["bus"].shape[
+        0], dtype=int)).loc[bus_names].values
 
 
 def _from_ppc_gencost(net, ppc, gen_lookup):
@@ -662,3 +665,7 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         return _validate_diff_res(diff_res, max_diff_values)
     else:
         logger.debug("'max_diff_values' must be a dict.")
+
+
+if __name__ == "__main__":
+    pass
