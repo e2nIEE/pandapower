@@ -221,7 +221,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     # --- create line
     Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-    max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]/np.sqrt(3)
+    max_i_ka = ppc['branch'][:, 5]/ppc['bus'][to_bus, 9]/np.sqrt(3)
     i_is_zero = np.isclose(max_i_ka, 0)
     if np.any(i_is_zero):
         max_i_ka[i_is_zero] = MAX_VAL
