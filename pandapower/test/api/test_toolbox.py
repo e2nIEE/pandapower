@@ -1147,6 +1147,7 @@ def test_replace_pq_elmtype():
     pp.create_poly_cost(net, 0, "load", 7)
     pp.create_poly_cost(net, 1, "load", 3)
     pp.runpp(net)
+    net.load["controllable"] = net.load["controllable"].astype(bool)
     net_orig = copy.deepcopy(net)
 
     # --- test unset old_indices, cols_to_keep and add_cols_to_keep
@@ -1472,4 +1473,5 @@ def test_get_false_links():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_replace_pq_elmtype()
