@@ -241,14 +241,12 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         vn_hv_kv = from_vn_kv[~is_line]
         lv_bus = to_bus[~is_line]
         vn_lv_kv = to_vn_kv[~is_line]
-        tap_side = np.array(['hv']*sum(~is_line))
         to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
         if not np.all(to_vn_is_leq):
             hv_bus[~to_vn_is_leq] = to_bus[~is_line & ~to_vn_is_leq]
             vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line & ~to_vn_is_leq]
             lv_bus[~to_vn_is_leq] = from_bus[~is_line & ~to_vn_is_leq]
             vn_lv_kv[~to_vn_is_leq] = from_vn_kv[~is_line & ~to_vn_is_leq]
-            tap_side[~to_vn_is_leq] = 'lv'
         same_vn = to_vn_kv[~is_line] == from_vn_kv[~is_line]
         if np.any(same_vn):
             logger.warning(
@@ -283,7 +281,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
             shift_degree=ppc['branch'][~is_line, 9],
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
-            tap_side=tap_side, tap_neutral=0)
+            tap_side="lv", tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
     # --- gencost -> create polynomial_cost, piecewise_cost

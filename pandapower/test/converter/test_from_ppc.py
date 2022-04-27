@@ -95,9 +95,12 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = pn.case9()
     net24 = pn.case24_ieee_rts()
-    # net24.trafo.tap_pos = 0
 
     for i, net in enumerate([net24, net9]):
+        if (net.trafo.tap_side != "lv").any():
+            raise ValueError("Data with trafo tap not at lv side is not appropriate for this test. "
+                             "from_ppc() assumes lv side, since no other information is available.")
+
         # set max_loading_percent to enable line limit conversion
         net.line["max_loading_percent"] = 100
         pp.runpp(net)
@@ -135,5 +138,4 @@ def test_case24_from_pypower():
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-xs"])
-    test_to_and_from_ppc()
+    pytest.main([__file__, "-xs"])
