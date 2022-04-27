@@ -6,8 +6,8 @@
 
 import os
 import pickle
-
 import pytest
+import pandas as pd
 
 import pandapower as pp
 import pandapower.networks as pn
@@ -109,7 +109,6 @@ def test_to_and_from_ppc():
 
         # correct ppc data (to_ppc() does not convert completely)
         if i == 0:
-            import pandas as pd
             vm_setps = pd.concat([pd.Series(net.ext_grid.vm_pu.values, index=net.ext_grid.bus),
                                   pd.Series(net.gen.vm_pu.values, index=net.gen.bus)])
             ppc["gen"][-net.sgen.shape[0]:, 5] = vm_setps.loc[net.sgen.bus].values

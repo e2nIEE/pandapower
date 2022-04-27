@@ -6,10 +6,12 @@
 
 from math import pi
 import numpy as np
-from pandas import Series, DataFrame, concat
-from pandapower.pypower.idx_gen import GEN_BUS, PMIN, PMAX, QMIN, QMAX, GEN_STATUS
+import pandas as pd
+from pandapower.pypower.idx_gen import \
+    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
 from pandapower.pypower.idx_cost import COST, NCOST
-from pandapower.pypower.idx_bus import BUS_I, BASE_KV
+from pandapower.pypower.idx_bus import \
+    BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
 import pandapower as pp
 
 try:
@@ -28,59 +30,6 @@ except ImportError:
 ppc_elms = ["bus", "branch", "gen"]
 
 
-def _create_costs(net, ppc, gen_lookup, type, idx):
-    if ppc['gencost'][idx, 0] == 1:
-        if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
-            logger.error(f"In gencost line {idx}, the number n does not fit to the number of values")
-            raise NotImplementedError
-        pp.create_pwl_cost(net, gen_lookup.element.at[idx],
-                           gen_lookup.element_type.at[idx],
-                           ppc['gencost'][idx, 4:], type)
-    elif ppc['gencost'][idx, 0] == 2:
-        ncost = ppc['gencost'][idx, NCOST]
-        if ncost == 1:
-            cp2 = 0
-            cp1 = 0
-            cp0 = ppc['gencost'][idx, COST]
-        elif ncost == 2:
-            cp2 = 0
-            cp1 = ppc['gencost'][idx, COST]
-            cp0 = ppc['gencost'][idx, COST + 1]
-        elif ncost == 3:
-            cp2 = ppc['gencost'][idx, COST]
-            cp1 = ppc['gencost'][idx, COST + 1]
-            cp0 = ppc['gencost'][idx, COST + 2]
-        elif ncost > 3:
-            logger.warning("The pandapower poly_cost table only supports up to 2nd order " +
-                           "polynomials. The ppc higher order polynomials cannot be converted.")
-            cp2 = ppc['gencost'][idx, COST + ncost - 3]
-            cp1 = ppc['gencost'][idx, COST + ncost - 2]
-            cp0 = ppc['gencost'][idx, COST + ncost - 1]
-        else:
-            raise ValueError("'ncost' must be an positve integer but is " + str(ncost))
-        pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
-                                  cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2, cp0_eur=cp0)
-    else:
-        logger.info(f"Cost mode of gencost line {idx} is unknown.")
-
-
-def _gen_bus_info(ppc, idx_gen):
-    bus_name = int(ppc["gen"][idx_gen, GEN_BUS])
-    # assumption: there is only one bus with this bus_name:
-    idx_bus = int(np.where(ppc["bus"][:, BUS_I] == bus_name)[0][0])
-    current_bus_type = int(ppc["bus"][idx_bus, 1])
-
-    same_bus_gen_idx = np.where(ppc["gen"][:, GEN_BUS] == ppc["gen"][idx_gen, GEN_BUS])[0].astype(int)
-    same_bus_in_service_gen_idx = same_bus_gen_idx[np.where(ppc["gen"][same_bus_gen_idx, GEN_STATUS] > 0)]
-    first_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[0] if len(
-        same_bus_in_service_gen_idx) else None
-    last_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[-1] if len(
-        same_bus_in_service_gen_idx) else None
-
-    return current_bus_type, idx_bus, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
-        last_same_bus_in_service_gen_idx
-
-
 def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     """
     This function converts pypower case files to pandapower net structure.
@@ -97,7 +46,11 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             For running the validation, the ppc must already contain the pypower
             powerflow results or pypower must be installed.
 
-        ****kwargs** keyword arguments for validate_from_ppc if validate_conversion is True
+        ****kwargs** keyword arguments for
+
+            - validate_from_ppc if validate_conversion is True
+
+            - tap_side
 
     OUTPUT:
 
@@ -115,98 +68,147 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     """
     # --- catch common failures
-    if Series(ppc['bus'][:, BASE_KV] <= 0).any():
+    if pd.Series(ppc['bus'][:, BASE_KV] <= 0).any():
         logger.info('There are false baseKV given in the pypower case file.')
+
+    net = pp.create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
+
+    _from_ppc_bus(net, ppc)
+    gen_lookup = _from_ppc_gen(net, ppc)
+    _from_ppc_branch(net, ppc, f_hz, **kwargs)
+    _from_ppc_gencost(net, ppc, gen_lookup)
+
+    # areas are unconverted
+
+    if validate_conversion:
+        logger.setLevel(logging.DEBUG)
+        if not validate_from_ppc(ppc, net, **kwargs):
+            logger.error("Validation failed.")
+
+    net._options = {}
+    net._options["gen_lookup"] = gen_lookup
+
+    return net
+
+
+def _from_ppc_bus(net, ppc):
+    """ bus data -> create buses, sgen, load, shunt """
+
+    # create buses
+    idx_buses = pp.create_buses(
+        net, ppc['bus'].shape[0], name=ppc['bus'][:, BUS_I].astype(int),
+        vn_kv=ppc['bus'][:, BASE_KV], type="b", zone=ppc['bus'][:, ZONE],
+        in_service=(ppc['bus'][:, BUS_TYPE] != 4).astype(bool),
+        max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN])
+
+    # create loads
+    is_load = (ppc['bus'][:, PD] > 0) | (ppc['bus'][:, QD] != 0)
+    pp.create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, PD], q_mvar=ppc['bus'][
+        is_load, QD], controllable=False)
+
+    # create sgens
+    is_sgen = ppc['bus'][:, PD] < 0
+    pp.create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, PD], q_mvar=-ppc['bus'][
+        is_sgen, QD], type="", controllable=False)
+
+    # create shunt
+    is_shunt = (ppc['bus'][:, GS] != 0) | (ppc['bus'][:, BS] != 0)
+    assert np.allclose(idx_buses, np.arange(len(idx_buses)))  # is assumed in create_shunt for loop
+    for i in idx_buses[is_shunt]:
+            pp.create_shunt(net, i, p_mw=ppc['bus'][i, GS], q_mvar=-ppc['bus'][i, BS])
+
+    # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
+
+
+def _from_ppc_gen(net, ppc):
+    """ gen data -> create ext_grid, gen, sgen """
+
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc["gen"].shape) == 1:
+        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
+
+    bus_pos = pd.Series(ppc["bus"][:, BUS_I].astype(int), index=np.arange(ppc["bus"].shape[
+        0], dtype=int)).loc[ppc["gen"][:, GEN_BUS]].values
+
+    # determine which gen should considered as ext_grid, gen or sgen
+    bus_type_df = pd.DataFrame({"bus_type": ppc["bus"][bus_pos, BUS_TYPE],
+                                "bus": ppc["gen"][:, GEN_BUS]}).astype(int)
+    bus_type_df = pd.concat([bus_type_df.loc[bus_type_df.bus_type == 3],
+                             bus_type_df.loc[bus_type_df.bus_type == 2],
+                             bus_type_df.loc[bus_type_df.bus_type == 1],
+                             bus_type_df.loc[bus_type_df.bus_type == 4]
+                            ])
+    is_ext_grid = ((bus_type_df["bus_type"] == 3) & ~bus_type_df.duplicated(subset=[
+        "bus"])).sort_index().values
+    is_gen = ((bus_type_df["bus_type"] == 2) & ~bus_type_df.duplicated(subset=[
+        "bus"])).sort_index().values
+    is_sgen = ~(is_ext_grid | is_gen) & bus_type_df["bus_type"].sort_index().isin([3, 2, 1]).values
+
+    # gen_lookup
+    n_gen = ppc["gen"].shape[0]
+    n_new_gen_elms = sum(is_ext_grid | is_gen | is_sgen)
+    gen_lookup = pd.DataFrame({'element': [-1]*n_new_gen_elms,
+                               'element_type': ["sgen"]*n_new_gen_elms})
+    gen_lookup.loc[is_ext_grid, "element"] = np.arange(sum(is_ext_grid), dtype=int)
+    gen_lookup.loc[is_ext_grid, "element_type"] = "ext_grid"
+    gen_lookup.loc[is_gen, "element"] = np.arange(sum(is_gen), dtype=int)
+    gen_lookup.loc[is_gen, "element_type"] = "gen"
+
+    # take VG of the last gen of each bus
+    vg_bus_lookup = pd.DataFrame({"vg": ppc["gen"][:, VG], "bus": bus_pos})
+    # vg_bus_lookup = vg_bus_lookup.drop_duplicates(subset=["bus"], keep="last").set_index("bus")["vg"]
+    vg_bus_lookup = vg_bus_lookup.drop_duplicates(subset=["bus"]).set_index("bus")["vg"]
+
+    # create ext_grid
+    for i in np.arange(n_gen, dtype=int)[is_ext_grid]:
+        pp.create_ext_grid(
+            net, bus=bus_pos[i], vm_pu=vg_bus_lookup.at[bus_pos[i]],
+            va_degree=ppc['bus'][bus_pos[i], VA],
+            in_service=(ppc['gen'][i, GEN_STATUS] > 0).astype(bool),
+            max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
+            max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
+
+    # create gen
+    pp.create_gens(
+        net, buses=bus_pos[is_gen], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
+        p_mw=ppc['gen'][is_gen, PG],
+        in_service=(ppc['gen'][is_gen, GEN_STATUS] > 0), controllable=True,
+        max_p_mw=ppc['gen'][is_gen, PMAX], min_p_mw=ppc['gen'][is_gen, PMIN],
+        max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN])
+
+    # create sgen
+    pp.create_sgens(
+        net, buses=bus_pos[is_sgen], p_mw=ppc['gen'][is_sgen, PG],
+        q_mvar=ppc['gen'][is_sgen, QG], type="",
+        in_service=(ppc['gen'][is_sgen, GEN_STATUS] > 0),
+        max_p_mw=ppc['gen'][is_sgen, PMAX], min_p_mw=ppc['gen'][is_sgen, PMIN],
+        max_q_mvar=ppc['gen'][is_sgen, QMAX], min_q_mvar=ppc['gen'][is_sgen, QMIN],
+        controllable=True)
+
+    neg_p_gens = np.arange(n_gen, dtype=int)[(ppc['gen'][:, PG] < 0) & (is_gen | is_sgen)]
+    neg_p_lim_false = np.arange(n_gen, dtype=int)[ppc['gen'][:, PMIN] > ppc['gen'][:, PMAX]]
+    neg_q_lim_false = np.arange(n_gen, dtype=int)[ppc['gen'][:, QMIN] > ppc['gen'][:, QMAX]]
+    if len(neg_p_gens):
+        logger.info(f'These gen have PG < 0 and are not converted to ext_grid: {neg_p_gens}.')
+    if len(neg_p_lim_false):
+        logger.info(f'These gen have PMIN > PMAX: {neg_p_lim_false}.')
+    if len(neg_q_lim_false):
+        logger.info(f'These gen have QMIN > QMAX: {neg_q_lim_false}.')
+
+    # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
+    # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
+
+    return gen_lookup
+
+
+def _from_ppc_branch(net, ppc, f_hz, **kwargs):
+    """ branch data -> create line, trafo """
 
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    net = pp.create_empty_network(f_hz=f_hz, sn_mva=baseMVA)
-
-    # --- bus data -> create buses, sgen, load, shunt
-    # create buses
-    idx_buses = pp.create_buses(
-        net, ppc['bus'].shape[0], name=ppc['bus'][:, 0].astype(int), vn_kv=ppc['bus'][:, 9],
-        type="b", zone=ppc['bus'][:, 10], in_service=(ppc['bus'][:, 1] != 4).astype(bool),
-        max_vm_pu=ppc['bus'][:, 11], min_vm_pu=ppc['bus'][:, 12])
-    # create loads
-    is_load = (ppc['bus'][:, 2] > 0) | (ppc['bus'][:, 3] != 0)
-    pp.create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, 2], q_mvar=ppc['bus'][
-        is_load, 3], controllable=False)
-    # create sgens
-    is_sgen = ppc['bus'][:, 2] < 0
-    pp.create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, 2], q_mvar=-ppc['bus'][
-        is_sgen, 3], type="", controllable=False)
-    # create shunt
-    is_shunt = (ppc['bus'][:, 4] != 0) | (ppc['bus'][:, 5] != 0)
-    assert np.allclose(idx_buses, np.arange(len(idx_buses)))  # is assumed in create_shunt for loop
-    for i in idx_buses[is_shunt]:
-            pp.create_shunt(net, i, p_mw=ppc['bus'][i, 4], q_mvar=-ppc['bus'][i, 5])
-    # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
-
-    # --- gen data -> create ext_grid, gen, sgen
-    gen_lookup = DataFrame(np.nan, columns=['element', 'element_type'],
-                           index=range(len(ppc['gen'][:, 0])))
-    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
-    if len(ppc["gen"].shape) == 1:
-        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
-    for i in range(len(ppc['gen'][:, 0])):
-        current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
-            last_same_bus_in_service_gen_idx = _gen_bus_info(ppc, i)
-        # create ext_grid
-        if current_bus_type == 3:
-            if i == first_same_bus_in_service_gen_idx:
-                gen_lookup.element.loc[i] = pp.create_ext_grid(
-                    net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
-                    va_degree=ppc['bus'][current_bus_idx, 8], in_service=bool(ppc['gen'][i, 7] > 0),
-                    max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
-                    max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
-                gen_lookup.element_type.loc[i] = 'ext_grid'
-                if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                    logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
-                if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                    logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
-            else:
-                current_bus_type = 1
-        # create gen
-        elif current_bus_type == 2:
-            if i == first_same_bus_in_service_gen_idx:
-                gen_lookup.element.loc[i] = pp.create_gen(
-                    net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
-                    p_mw=ppc['gen'][i, 1],
-                    in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
-                    max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
-                    max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
-                gen_lookup.element_type.loc[i] = 'gen'
-                if ppc['gen'][i, 1] < 0:
-                    logger.info(f'p_mw of gen {i} must be less than zero but is not.')
-                if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                    logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
-                if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                    logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
-            else:
-                current_bus_type = 1
-        # create sgen
-        if current_bus_type == 1:
-            gen_lookup.element.loc[i] = pp.create_sgen(
-                net, bus=current_bus_idx, p_mw=ppc['gen'][i, 1],
-                q_mvar=ppc['gen'][i, 2], type="", in_service=bool(ppc['gen'][i, 7] > 0),
-                max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
-                max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN],
-                controllable=True)
-            gen_lookup.element_type.loc[i] = 'sgen'
-            if ppc['gen'][i, 1] < 0:
-                logger.info(f'p_mw of sgen {i} must be less than zero but is not.')
-            if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                logger.info(f'min_q_mvar of gen {i} must be less than max_q_mvar but is not.')
-            if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                logger.info(f'max_p_mw of gen {i} must be less than min_p_mw but is not.')
-    # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
-    # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
-
-    # --- branch data -> create line, trafo
     from_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 0].astype(int)),
                       dtype=int)
     to_bus = np.array(pp.get_element_indices(net, 'bus', name=ppc['branch'][:, 1].astype(int)),
@@ -214,10 +216,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     from_vn_kv = ppc['bus'][from_bus, 9]
     to_vn_kv = ppc['bus'][to_bus, 9]
 
-
     is_line = (from_vn_kv == to_vn_kv) & \
-              ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
-              (ppc['branch'][i, 9] == 0)
+              ((ppc['branch'][:, 8] == 0) | (ppc['branch'][:, 8] == 1)) & \
+              (ppc['branch'][:, 9] == 0)
 
     # --- create line
     Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
@@ -275,8 +276,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         if np.any(is_neg_i0_percent):
             logger.info(
                 'Transformers always behave inductive consumpting but the susceptance of pypower '
-                f'branches {np.arange(len(is_neg_i0_percent)).astype(int)[is_neg_i0_percent]} '
-                f'(from_bus, to_bus)=({ppc["branch"][i, 0]}, {ppc["branch"][i, 1]}) is positive.')
+                f'branches {np.arange(len(is_neg_i0_percent), dtype=int)[is_neg_i0_percent]} '
+                f'(from_bus, to_bus)=({ppc["branch"][is_neg_i0_percent, 0]}, '
+                f'{ppc["branch"][is_neg_i0_percent, 1]}) is positive.')
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
         vkr_percent = rk * sn * 100 / baseMVA
@@ -292,6 +294,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
 
+
+def _from_ppc_gencost(net, ppc, gen_lookup):
     # --- gencost -> create polynomial_cost, piecewise_cost
     if 'gencost' in ppc:
         if len(ppc['gencost'].shape) == 1:
@@ -311,17 +315,41 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         for idx in idx_q:
             _create_costs(net, ppc, gen_lookup, 'q', idx)
 
-    # areas are unconverted
 
-    if validate_conversion:
-        logger.setLevel(logging.DEBUG)
-        if not validate_from_ppc(ppc, net, **kwargs):
-            logger.error("Validation failed.")
-
-    net._options = {}
-    net._options["gen_lookup"] = gen_lookup
-
-    return net
+def _create_costs(net, ppc, gen_lookup, type, idx):
+    if ppc['gencost'][idx, 0] == 1:
+        if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
+            logger.error(f"In gencost line {idx}, the number n does not fit to the number of values")
+            raise NotImplementedError
+        pp.create_pwl_cost(net, gen_lookup.element.at[idx],
+                           gen_lookup.element_type.at[idx],
+                           ppc['gencost'][idx, 4:], type)
+    elif ppc['gencost'][idx, 0] == 2:
+        ncost = ppc['gencost'][idx, NCOST]
+        if ncost == 1:
+            cp2 = 0
+            cp1 = 0
+            cp0 = ppc['gencost'][idx, COST]
+        elif ncost == 2:
+            cp2 = 0
+            cp1 = ppc['gencost'][idx, COST]
+            cp0 = ppc['gencost'][idx, COST + 1]
+        elif ncost == 3:
+            cp2 = ppc['gencost'][idx, COST]
+            cp1 = ppc['gencost'][idx, COST + 1]
+            cp0 = ppc['gencost'][idx, COST + 2]
+        elif ncost > 3:
+            logger.warning("The pandapower poly_cost table only supports up to 2nd order " +
+                           "polynomials. The ppc higher order polynomials cannot be converted.")
+            cp2 = ppc['gencost'][idx, COST + ncost - 3]
+            cp1 = ppc['gencost'][idx, COST + ncost - 2]
+            cp0 = ppc['gencost'][idx, COST + ncost - 1]
+        else:
+            raise ValueError("'ncost' must be an positve integer but is " + str(ncost))
+        pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
+                                  cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2, cp0_eur=cp0)
+    else:
+        logger.info(f"Cost mode of gencost line {idx} is unknown.")
 
 
 def _validate_diff_res(diff_res, max_diff_values):
@@ -506,10 +534,10 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
     if len(ppc_net["gen"].shape) == 1:
         ppc_net["gen"] = np.array(ppc_net["gen"], ndmin=2)
-    GENS = DataFrame(ppc_net['gen'][:, [0]].astype(int))
+    GENS = pd.DataFrame(ppc_net['gen'][:, [0]].astype(int))
     GEN_uniq = GENS.drop_duplicates()
-    already_used_gen = Series(np.zeros(GEN_uniq.shape[0]).astype(int),
-                              index=[int(v) for v in GEN_uniq.values])
+    already_used_gen = pd.Series(np.zeros(GEN_uniq.shape[0]).astype(int),
+                                 index=[int(v) for v in GEN_uniq.values])
     change_q_compare = []
     for i, j in GENS.iterrows():
         current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
@@ -533,25 +561,25 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     # consideration of parallel branches via storing how often branches were considered
     # each node-to-node-connection
     try:
-        init1 = concat([net.line.from_bus, net.line.to_bus], axis=1,
-                       sort=True).drop_duplicates()
-        init2 = concat([net.trafo.hv_bus, net.trafo.lv_bus], axis=1,
-                       sort=True).drop_duplicates()
+        init1 = pd.concat([net.line.from_bus, net.line.to_bus], axis=1,
+                          sort=True).drop_duplicates()
+        init2 = pd.concat([net.trafo.hv_bus, net.trafo.lv_bus], axis=1,
+                          sort=True).drop_duplicates()
     except TypeError:
         # legacy pandas < 0.21
-        init1 = concat([net.line.from_bus, net.line.to_bus], axis=1).drop_duplicates()
-        init2 = concat([net.trafo.hv_bus, net.trafo.lv_bus], axis=1).drop_duplicates()
+        init1 = pd.concat([net.line.from_bus, net.line.to_bus], axis=1).drop_duplicates()
+        init2 = pd.concat([net.trafo.hv_bus, net.trafo.lv_bus], axis=1).drop_duplicates()
     init1['hv_bus'] = np.nan
     init1['lv_bus'] = np.nan
     init2['from_bus'] = np.nan
     init2['to_bus'] = np.nan
     try:
-        already_used_branches = concat([init1, init2], axis=0, sort=True)
+        already_used_branches = pd.concat([init1, init2], axis=0, sort=True)
     except TypeError:
         # pandas < 0.21 legacy
-        already_used_branches = concat([init1, init2], axis=0)
+        already_used_branches = pd.concat([init1, init2], axis=0)
     already_used_branches['number'] = np.zeros([already_used_branches.shape[0], 1]).astype(int)
-    BRANCHES = DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
+    BRANCHES = pd.DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
     for i in BRANCHES.index:
         from_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 0]))
         to_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 1]))
