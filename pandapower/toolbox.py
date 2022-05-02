@@ -2087,12 +2087,13 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
         given, the sn_mva values of the impedances are considered.
     """
-    index = ensure_iterability(index) if index is not None else net.line.index
+    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
-    for (_, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
+    for (idx, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
         if not np.isclose(imp.rft_pu, imp.rtf_pu) or not np.isclose(imp.xft_pu, imp.xtf_pu):
             if only_valid_replace:
+                index.remove(idx)
                 continue
             logger.error("impedance differs in from or to bus direction. lines always " +
                          "parameters always pertain in both direction. only from_bus to " +
@@ -2126,7 +2127,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         leads to equal power flow results. If False, capacitance and dielectric conductance will
         be neglected.
     """
-    index = ensure_iterability(index) if index is not None else net.line.index
+    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
     sn_mva = sn_mva or net.sn_mva
     sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
     sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
@@ -2137,8 +2138,9 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     for idx, line_ in net.line.loc[index].iterrows():
         if line_.c_nf_per_km or line_.g_us_per_km:
             if only_valid_replace:
+                index.remove(idx)
                 continue
-            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
+            logger.error(f"Capacitance and dielectric conductance of line {idx} cannot be "
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
