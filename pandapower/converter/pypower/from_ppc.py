@@ -104,7 +104,7 @@ def _from_ppc_bus(net, ppc):
         max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN])
 
     # create loads
-    is_load = (ppc['bus'][:, PD] > 0) | (ppc['bus'][:, QD] != 0)
+    is_load = (ppc['bus'][:, PD] > 0) | ((ppc['bus'][:, PD] == 0) & (ppc['bus'][:, QD] != 0))
     pp.create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, PD], q_mvar=ppc['bus'][
         is_load, QD], controllable=False)
 
@@ -146,12 +146,6 @@ def _from_ppc_gen(net, ppc):
 
     # gen_lookup
     n_gen = ppc["gen"].shape[0]
-    gen_lookup = pd.DataFrame({
-        'element': np.r_[np.arange(sum(is_ext_grid), dtype=int),
-                         np.arange(sum(is_gen), dtype=int),
-                         np.arange(sum(is_sgen), dtype=int)],
-        'element_type': ["ext_grid"]*sum(is_ext_grid) + ["gen"]*sum(is_gen) + ["sgen"]*sum(is_sgen)
-        })
 
     # take VG of the last gen of each bus
     vg_bus_lookup = pd.DataFrame({"vg": ppc["gen"][:, VG], "bus": bus_pos})
@@ -159,16 +153,17 @@ def _from_ppc_gen(net, ppc):
     vg_bus_lookup = vg_bus_lookup.drop_duplicates(subset=["bus"]).set_index("bus")["vg"]
 
     # create ext_grid
+    idx_eg = list()
     for i in np.arange(n_gen, dtype=int)[is_ext_grid]:
-        pp.create_ext_grid(
+        idx_eg.append(pp.create_ext_grid(
             net, bus=bus_pos[i], vm_pu=vg_bus_lookup.at[bus_pos[i]],
             va_degree=ppc['bus'][bus_pos[i], VA],
             in_service=(ppc['gen'][i, GEN_STATUS] > 0).astype(bool),
             max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
-            max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
+            max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN]))
 
     # create gen
-    pp.create_gens(
+    idx_gen = pp.create_gens(
         net, buses=bus_pos[is_gen], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
         p_mw=ppc['gen'][is_gen, PG],
         in_service=(ppc['gen'][is_gen, GEN_STATUS] > 0), controllable=True,
@@ -176,7 +171,7 @@ def _from_ppc_gen(net, ppc):
         max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN])
 
     # create sgen
-    pp.create_sgens(
+    idx_sgen = pp.create_sgens(
         net, buses=bus_pos[is_sgen], p_mw=ppc['gen'][is_sgen, PG],
         q_mvar=ppc['gen'][is_sgen, QG], type="",
         in_service=(ppc['gen'][is_sgen, GEN_STATUS] > 0),
@@ -197,6 +192,10 @@ def _from_ppc_gen(net, ppc):
     # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
+    gen_lookup = pd.DataFrame({
+        'element': np.r_[idx_eg, idx_gen, idx_sgen],
+        'element_type': ["ext_grid"]*sum(is_ext_grid) + ["gen"]*sum(is_gen) + ["sgen"]*sum(is_sgen)
+        })
     return gen_lookup
 
 
@@ -241,10 +240,10 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vn_lv_kv = to_vn_kv[~is_line]
         to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
         if not np.all(to_vn_is_leq):
-            hv_bus[~to_vn_is_leq] = to_bus[~is_line & ~to_vn_is_leq]
-            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line & ~to_vn_is_leq]
-            lv_bus[~to_vn_is_leq] = from_bus[~is_line & ~to_vn_is_leq]
-            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[~is_line & ~to_vn_is_leq]
+            hv_bus[~to_vn_is_leq] = to_bus[~is_line][~to_vn_is_leq]
+            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line][~to_vn_is_leq]
+            lv_bus[~to_vn_is_leq] = from_bus[~is_line][~to_vn_is_leq]
+            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[~is_line][~to_vn_is_leq]
         same_vn = to_vn_kv[~is_line] == from_vn_kv[~is_line]
         if np.any(same_vn):
             logger.warning(
@@ -371,6 +370,19 @@ def _validate_diff_res(diff_res, max_diff_values):
             list(np.array([[0, 2], [1, 3]])[[j in i for j in sought]][0])
         val &= bool(np.max(abs(diff_res[elm][:, col])) < max_diff_values[i])
     return val
+
+
+def _gen_bus_info(ppc, idx_gen):
+    bus_name = int(ppc["gen"][idx_gen, GEN_BUS])
+    # assumption: there is only one bus with this bus_name:
+    idx_bus = int(np.where(ppc["bus"][:, BUS_I] == bus_name)[0][0])
+    current_bus_type = int(ppc["bus"][idx_bus, 1])
+
+    same_bus_gen = np.where(ppc["gen"][:, GEN_BUS] == ppc["gen"][idx_gen, GEN_BUS])[0].astype(int)
+    same_bus_gen = same_bus_gen[np.where(ppc["gen"][same_bus_gen, GEN_STATUS] > 0)]
+    first_same_bus = same_bus_gen[0] if len(same_bus_gen) else None
+
+    return current_bus_type, idx_bus, first_same_bus
 
 
 def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
@@ -546,8 +558,8 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
                                  index=[int(v) for v in GEN_uniq.values])
     change_q_compare = []
     for i, j in GENS.iterrows():
-        current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
-            last_same_bus_in_service_gen_idx = _gen_bus_info(ppc_net, i)
+        current_bus_type, current_bus_idx, first_same_bus_in_service_gen_idx, = _gen_bus_info(
+            ppc_net, i)
         if current_bus_type == 3 and i == first_same_bus_in_service_gen_idx:
             pp_res["gen"] = np.append(pp_res["gen"], np.array(net.res_ext_grid[
                     net.ext_grid.bus == current_bus_idx][['p_mw', 'q_mvar']]).reshape((1, 2)), 0)
