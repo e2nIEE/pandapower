@@ -69,15 +69,13 @@ def test_1ph_shortcircuit():
                 ,"Dd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
                }
 
-    net = pp.create_empty_network(sn_mva=17)
-    for vc in results.keys():
-         add_network(net, vc)
-         try:
-             sc.calc_sc(net, fault="1ph", case="max")
-         except Exception as e:
-             raise UserWarning(str(e) + " Did not converge after adding transformer with vector group %s"%vc)
-
     for vc, result in results.items():
+        net = pp.create_empty_network(sn_mva=17)
+        add_network(net, vc)
+        try:
+            sc.calc_sc(net, fault="1ph", case="max")
+        except Exception as e:
+            raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
         check_results(net, vc, result)
 
 
@@ -129,15 +127,13 @@ def test_1ph_shortcircuit_min():
                }
 
     for inv_y in (False, True):
-        net = pp.create_empty_network(sn_mva=16)
-        for vc in results.keys():
-             add_network(net, vc)
-             try:
-                 sc.calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
-             except:
-                 raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
-
         for vc, result in results.items():
+            net = pp.create_empty_network(sn_mva=16)
+            add_network(net, vc)
+            try:
+                sc.calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
+            except Exception as e:
+                raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
             check_results(net, vc, result)
 
 
@@ -493,26 +489,27 @@ def test_line():
 
 
 def test_trafo():
-    net = pp.create_empty_network(sn_mva=1)
-    pp.create_bus(net, vn_kv=110.)
-    pp.create_bus(net, vn_kv=20.)
+    for vc in ('Yy', 'Yyn', 'Yd', 'YNy', 'YNyn', 'YNd', 'Dy', 'Dyn', 'Dd'):
+        net = pp.create_empty_network(sn_mva=1)
+        pp.create_bus(net, vn_kv=110.)
+        pp.create_bus(net, vn_kv=20.)
 
-    pp.create_ext_grid(net, 0, s_sc_max_mva=1000, s_sc_min_mva=800,
-                       rx_max=0.1, x0x_max=1, r0x0_max=0.1,
-                       rx_min=0.1, x0x_min=1, r0x0_min=0.1)
+        pp.create_ext_grid(net, 0, s_sc_max_mva=1000, s_sc_min_mva=800,
+                           rx_max=0.1, x0x_max=1, r0x0_max=0.1,
+                           rx_min=0.1, x0x_min=1, r0x0_min=0.1)
 
-    t1 = pp.create_transformer_from_parameters(net, 0, 1, sn_mva=150,
-                                               pfe_kw=0, i0_percent=0,
-                                               vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
-                                               pt_percent=12, vk0_percent=15.2,
-                                               vkr0_percent=0.5, vector_group="YNd",
-                                               mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5)
-    sc.calc_sc(net, fault="1ph", case="max")
-    res = net.res_bus_sc.copy()
+        t1 = pp.create_transformer_from_parameters(net, 0, 1, sn_mva=150,
+                                                   pfe_kw=0, i0_percent=0,
+                                                   vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
+                                                   pt_percent=12, vk0_percent=15.2,
+                                                   vkr0_percent=0.5, vector_group=vc,
+                                                   mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5)
+        sc.calc_sc(net, fault="1ph", case="max")
+        res = net.res_bus_sc.copy()
 
-    net.sn_mva = 123
-    sc.calc_sc(net, fault="1ph", case="max")
-    assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6)
+        net.sn_mva = 123
+        sc.calc_sc(net, fault="1ph", case="max")
+        assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6), f"failed for vector group {vc}"
 
 
 if __name__ == "__main__":
