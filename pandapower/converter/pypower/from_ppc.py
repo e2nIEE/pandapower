@@ -294,8 +294,12 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
 
 def _get_bus_pos(ppc, bus_names):
-    return pd.Series(ppc["bus"][:, BUS_I].astype(int), index=np.arange(ppc["bus"].shape[
-        0], dtype=int)).loc[bus_names].values
+    try:
+        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=int), index=ppc["bus"][
+            :, BUS_I]).loc[bus_names].values
+    except:
+        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=int), index=ppc["bus"][
+            :, BUS_I].astype(int)).loc[bus_names].values
 
 
 def _from_ppc_gencost(net, ppc, gen_lookup):
