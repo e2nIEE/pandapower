@@ -1039,7 +1039,7 @@ def test_impedance_line_replacement():
 
     pp.runpp(net2)
 
-    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})  # Todo: exclude_elms
+    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})
     cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar", "pl_mw", "ql_mvar", "i_from_ka",
             "i_to_ka"]
     assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
@@ -1181,10 +1181,8 @@ def test_replace_pq_elmtype():
     pp.replace_pq_elmtype(net, "storage", "load", add_cols_to_keep=add_cols_to_keep)
     pp.runpp(net)
     check_elm_shape(net, {"storage": 0, "sgen": 0})
-    net.sgen = net_orig.sgen
-    net.storage = net_orig.storage
     net.poly_cost.element = net.poly_cost.element.astype(net_orig.poly_cost.dtypes["element"])
-    assert pp.nets_equal(net_orig, net)
+    assert pp.nets_equal(net_orig, net, exclude_elms={"sgen", "storage"})
 
 
 def test_get_connected_elements_dict():

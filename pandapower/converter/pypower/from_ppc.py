@@ -146,13 +146,12 @@ def _from_ppc_gen(net, ppc):
 
     # gen_lookup
     n_gen = ppc["gen"].shape[0]
-    n_new_gen_elms = sum(is_ext_grid | is_gen | is_sgen)
-    gen_lookup = pd.DataFrame({'element': [-1]*n_new_gen_elms,
-                               'element_type': ["sgen"]*n_new_gen_elms})
-    gen_lookup.loc[is_ext_grid, "element"] = np.arange(sum(is_ext_grid), dtype=int)
-    gen_lookup.loc[is_ext_grid, "element_type"] = "ext_grid"
-    gen_lookup.loc[is_gen, "element"] = np.arange(sum(is_gen), dtype=int)
-    gen_lookup.loc[is_gen, "element_type"] = "gen"
+    gen_lookup = pd.DataFrame({
+        'element': np.r_[np.arange(sum(is_ext_grid), dtype=int),
+                         np.arange(sum(is_gen), dtype=int),
+                         np.arange(sum(is_sgen), dtype=int)],
+        'element_type': ["ext_grid"]*sum(is_ext_grid) + ["gen"]*sum(is_gen) + ["sgen"]*sum(is_sgen)
+        })
 
     # take VG of the last gen of each bus
     vg_bus_lookup = pd.DataFrame({"vg": ppc["gen"][:, VG], "bus": bus_pos})
