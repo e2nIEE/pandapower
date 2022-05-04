@@ -7,13 +7,14 @@
 from math import pi
 import numpy as np
 import pandas as pd
-from pandapower.pypower.idx_gen import \
-    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
-from pandapower.pypower.idx_cost import COST, NCOST
 from pandapower.pypower.idx_bus import \
     BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
+from pandapower.pypower.idx_gen import \
+    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
+from pandapower.pypower.idx_brch import \
+    F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
+from pandapower.pypower.idx_cost import COST, NCOST
 import pandapower as pp
-import timeit
 
 try:
     import pandaplan.core.pplog as logging
@@ -123,6 +124,7 @@ def _from_ppc_bus(net, ppc):
 
 def _from_ppc_gen(net, ppc):
     """ gen data -> create ext_grid, gen, sgen """
+    n_gen = ppc["gen"].shape[0]
 
     # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
     if len(ppc["gen"].shape) == 1:
@@ -131,21 +133,7 @@ def _from_ppc_gen(net, ppc):
     bus_pos = _get_bus_pos(ppc, ppc["gen"][:, GEN_BUS])
 
     # determine which gen should considered as ext_grid, gen or sgen
-    bus_type_df = pd.DataFrame({"bus_type": ppc["bus"][bus_pos, BUS_TYPE],
-                                "bus": ppc["gen"][:, GEN_BUS]}).astype(int)
-    bus_type_df = pd.concat([bus_type_df.loc[bus_type_df.bus_type == 3],
-                             bus_type_df.loc[bus_type_df.bus_type == 2],
-                             bus_type_df.loc[bus_type_df.bus_type == 1],
-                             bus_type_df.loc[bus_type_df.bus_type == 4]
-                            ])
-    is_ext_grid = ((bus_type_df["bus_type"] == 3) & ~bus_type_df.duplicated(subset=[
-        "bus"])).sort_index().values
-    is_gen = ((bus_type_df["bus_type"] == 2) & ~bus_type_df.duplicated(subset=[
-        "bus"])).sort_index().values
-    is_sgen = ~(is_ext_grid | is_gen) & bus_type_df["bus_type"].sort_index().isin([3, 2, 1]).values
-
-    # gen_lookup
-    n_gen = ppc["gen"].shape[0]
+    is_ext_grid, is_gen, is_sgen = _gen_to_which(ppc, bus_pos=bus_pos)
 
     # take VG of the last gen of each bus
     vg_bus_lookup = pd.DataFrame({"vg": ppc["gen"][:, VG], "bus": bus_pos})
@@ -192,6 +180,7 @@ def _from_ppc_gen(net, ppc):
     # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
+    # gen_lookup
     gen_lookup = pd.DataFrame({
         'element': np.r_[idx_eg, idx_gen, idx_sgen],
         'element_type': ["ext_grid"]*sum(is_ext_grid) + ["gen"]*sum(is_gen) + ["sgen"]*sum(is_sgen)
@@ -207,18 +196,16 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    from_bus = _get_bus_pos(ppc, ppc['branch'][:, 0].real.astype(int))
-    to_bus = _get_bus_pos(ppc, ppc['branch'][:, 1].real.astype(int))
-    from_vn_kv = ppc['bus'][from_bus, 9]
-    to_vn_kv = ppc['bus'][to_bus, 9]
+    from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(int))
+    to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(int))
+    from_vn_kv = ppc['bus'][from_bus, BASE_KV]
+    to_vn_kv = ppc['bus'][to_bus, BASE_KV]
 
-    is_line = (from_vn_kv == to_vn_kv) & \
-              ((ppc['branch'][:, 8] == 0) | (ppc['branch'][:, 8] == 1)) & \
-              (ppc['branch'][:, 9] == 0)
+    is_line, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
 
     # --- create line
-    Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-    max_i_ka = ppc['branch'][:, 5]/ppc['bus'][to_bus, 9]/np.sqrt(3)
+    Zni = ppc['bus'][to_bus, BASE_KV]**2/baseMVA  # ohm
+    max_i_ka = ppc['branch'][:, 5]/ppc['bus'][to_bus, BASE_KV]/np.sqrt(3)
     i_is_zero = np.isclose(max_i_ka, 0)
     if np.any(i_is_zero):
         max_i_ka[i_is_zero] = MAX_VAL
@@ -226,11 +213,11 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                      "maximum branch flow")
     pp.create_lines_from_parameters(
         net, from_buses=from_bus[is_line], to_buses=to_bus[is_line], length_km=1,
-        r_ohm_per_km=(ppc['branch'][is_line, 2]*Zni[is_line]).real,
-        x_ohm_per_km=(ppc['branch'][is_line, 3]*Zni[is_line]).real,
-        c_nf_per_km=(ppc['branch'][is_line, 4]/Zni[is_line]/omega*1e9/2).real,
+        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]).real,
+        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]).real,
+        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2).real,
         max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
-        in_service=ppc['branch'][is_line, 10].real.astype(bool))
+        in_service=ppc['branch'][is_line, BR_STATUS].real.astype(bool))
 
     # --- create transformer
     if not np.all(is_line):
@@ -238,7 +225,6 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vn_hv_kv = from_vn_kv[~is_line]
         lv_bus = to_bus[~is_line]
         vn_lv_kv = to_vn_kv[~is_line]
-        to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
         if not np.all(to_vn_is_leq):
             hv_bus[~to_vn_is_leq] = to_bus[~is_line][~to_vn_is_leq]
             vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line][~to_vn_is_leq]
@@ -249,10 +235,10 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             logger.warning(
                 f'There are {sum(same_vn)} branches which are considered as trafos - due to ratio '
                 f'unequal 0 or 1 - but connect same voltage levels.')
-        rk = ppc['branch'][~is_line, 2].real
-        xk = ppc['branch'][~is_line, 3].real
+        rk = ppc['branch'][~is_line, BR_R].real
+        xk = ppc['branch'][~is_line, BR_X].real
         zk = (rk ** 2 + xk ** 2) ** 0.5
-        sn = ppc['branch'][~is_line, 5].real
+        sn = ppc['branch'][~is_line, RATE_A].real
         sn_is_zero = np.isclose(sn, 0)
         if np.any(sn_is_zero):
             sn[sn_is_zero] = MAX_VAL
@@ -263,7 +249,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side_is_hv = np.array([tap_side == "hv"]*sum(~is_line))
         else:
             tap_side_is_hv = tap_side == "hv"
-        ratio_1 = ppc['branch'][~is_line, 8].real
+        ratio_1 = ppc['branch'][~is_line, TAP].real
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
@@ -285,7 +271,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv,
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
-            shift_degree=ppc['branch'][~is_line, 9].real,
+            shift_degree=ppc['branch'][~is_line, SHIFT].real,
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
@@ -298,6 +284,38 @@ def _get_bus_pos(ppc, bus_names):
     except:
         return pd.Series(np.arange(ppc["bus"].shape[0], dtype=int), index=ppc["bus"][
             :, BUS_I].astype(int)).loc[bus_names].values
+
+
+def _gen_to_which(ppc, bus_pos=None, flattened=True):
+    if bus_pos is None:
+        bus_pos = _get_bus_pos(ppc, ppc["gen"][:, GEN_BUS])
+    bus_type_df = pd.DataFrame({"bus_type": ppc["bus"][bus_pos, BUS_TYPE],
+                                "bus": ppc["gen"][:, GEN_BUS]}).astype(int)
+    bus_type_df = pd.concat([bus_type_df.loc[bus_type_df.bus_type == 3],
+                            bus_type_df.loc[bus_type_df.bus_type == 2],
+                            bus_type_df.loc[bus_type_df.bus_type == 1],
+                            bus_type_df.loc[bus_type_df.bus_type == 4]
+                            ])
+    is_ext_grid = ((bus_type_df["bus_type"] == 3) & ~bus_type_df.duplicated(subset=[
+        "bus"])).sort_index().values
+    is_gen = ((bus_type_df["bus_type"] == 2) & ~bus_type_df.duplicated(subset=[
+        "bus"])).sort_index().values
+    is_sgen = ~(is_ext_grid | is_gen) & bus_type_df["bus_type"].sort_index().isin([3, 2, 1]).values
+    return is_ext_grid, is_gen, is_sgen
+
+
+def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
+    if from_vn_kv is None:
+        from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(int))
+        from_vn_kv = ppc['bus'][from_bus, BASE_KV]
+    if to_vn_kv is None:
+        to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(int))
+        to_vn_kv = ppc['bus'][to_bus, BASE_KV]
+    is_line = (from_vn_kv == to_vn_kv) & \
+              ((ppc['branch'][:, TAP] == 0) | (ppc['branch'][:, TAP] == 1)) & \
+              (ppc['branch'][:, SHIFT] == 0)
+    to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
+    return is_line, to_vn_is_leq
 
 
 def _from_ppc_gencost(net, ppc, gen_lookup):
@@ -597,12 +615,12 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
         # pandas < 0.21 legacy
         already_used_branches = pd.concat([init1, init2], axis=0)
     already_used_branches['number'] = np.zeros([already_used_branches.shape[0], 1]).astype(int)
-    BRANCHES = pd.DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
+    BRANCHES = pd.DataFrame(ppc_net['branch'][:, [0, 1, TAP, SHIFT]])
     for i in BRANCHES.index:
         from_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 0]))
         to_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 1]))
-        from_vn_kv = ppc_net['bus'][from_bus, 9]
-        to_vn_kv = ppc_net['bus'][to_bus, 9]
+        from_vn_kv = ppc_net['bus'][from_bus, BASE_KV]
+        to_vn_kv = ppc_net['bus'][to_bus, BASE_KV]
         ratio = BRANCHES[2].at[i]
         angle = BRANCHES[3].at[i]
         # from line results
