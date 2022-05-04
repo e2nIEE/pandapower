@@ -7,11 +7,19 @@
 import os
 import pickle
 import pytest
+import numpy as np
 import pandas as pd
 
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
+from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
+from pandapower.pypower.idx_bus import \
+    BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
+from pandapower.pypower.idx_gen import \
+    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
+from pandapower.pypower.idx_brch import \
+    F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, PF, QF, PT, QT
 
 try:
     import pypower.case24_ieee_rts as c24
@@ -69,19 +77,19 @@ def test_ppc_testgrids():
         ppc = get_testgrids(i, 'ppc_testgrids.p')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.debug('%s has been checked successfully.' % i)
+        logger.debug(f'{i} has been checked successfully.')
 
 
 @pytest.mark.slow
 def test_pypower_cases():
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
-            'case118', 'case300']
+            'case118'] # 'case300'
     for i in name:
         ppc = get_testgrids(i, 'pypower_cases.p')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.debug('%s has been checked successfully.' % i)
+        logger.debug(f'{i} has been checked successfully.')
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_mw": 1e-3,
@@ -98,9 +106,6 @@ def test_to_and_from_ppc():
     net24.trafo.tap_side.iat[1] = "hv"
 
     for i, net in enumerate([net24, net9]):
-        # if (net.trafo.tap_side != "lv").any():
-        #     raise ValueError("Data with trafo tap not at lv side is not appropriate for this test. "
-        #                      "from_ppc() assumes lv side, since no other information is available.")
 
         # set max_loading_percent to enable line limit conversion
         net.line["max_loading_percent"] = 100
@@ -135,6 +140,54 @@ def test_case24_from_pypower():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)
     assert net.OPF_converged
+
+
+def _bool_arr_to_positional_column_vector(arr):
+    return np.arange(len(arr), dtype=int)[arr].reshape((-1, 1))
+
+
+def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
+    folder = os.path.join(pp.pp_dir, 'test', 'converter')
+    file = os.path.join(folder, file_name)
+    ppcs = pickle.load(open(file, "rb"))
+
+    for i in grid_names:
+        ppc = ppcs[i]
+        net = from_ppc(ppc, f_hz=60)
+        pp.runpp(net)
+
+        # --- determine is_line - same as in from_ppc()
+        is_line, to_vn_is_leq = _branch_to_which(ppc)
+        line_pos = _bool_arr_to_positional_column_vector(is_line)
+        tr_pos = _bool_arr_to_positional_column_vector(~is_line)
+        tr_swap_pos = _bool_arr_to_positional_column_vector(~to_vn_is_leq)
+
+        # --- determine which gen should considered as ext_grid, gen or sgen - same as in from_ppc()
+        is_ext_grid, is_gen, is_sgen = _gen_to_which(ppc)
+        eg_pos = _bool_arr_to_positional_column_vector(is_ext_grid)
+        gen_pos = _bool_arr_to_positional_column_vector(is_gen)
+        sgen_pos = _bool_arr_to_positional_column_vector(is_sgen)
+
+        # --- overwrite res data
+        ppc["bus"][:, [VM, VA]] = net.res_bus[["vm_pu", "va_degree"]].values
+
+        ppc["gen"][eg_pos, [PG, QG]] = net.res_ext_grid[["p_mw", "q_mvar"]].values
+        ppc["gen"][gen_pos, [PG, QG]] = net.res_gen[["p_mw", "q_mvar"]].values
+        ppc["gen"][sgen_pos, [PG, QG]] = net.res_sgen[["p_mw", "q_mvar"]].iloc[
+            sum(ppc["bus"][:, PD] < 0):].values
+
+        cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+        ppc["branch"][line_pos, [PF, QF, PT, QT]] = net.res_line[cols].values
+        cols = pd.Series(cols).str.replace("from", "hv").str.replace("to", "lv")
+        new_bra_res = net.res_trafo[cols].values
+        if len(tr_swap_pos):
+            new_bra_res[tr_swap_pos.flatten(), :] = np.concatenate(
+                (new_bra_res[tr_swap_pos, [2, 3]], new_bra_res[tr_swap_pos, [0, 1]]), axis=1)
+        ppc["branch"][tr_pos, [PF, QF, PT, QT]] = new_bra_res
+
+    # --- overwrite pickle
+    with open(file, "wb") as handle:
+        pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
