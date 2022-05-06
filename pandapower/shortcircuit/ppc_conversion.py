@@ -89,7 +89,7 @@ def _add_ward_sc_z(net, ppc):
         # how to calculate r and x in Ohm:
         # z_ward_pu = 1/y_ward_pu
         # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
-        # z_base_ohm = (vn_net ** 2 / base_sn_mva)
+        # z_base_ohm = (vn_net ** 2)# / base_sn_mva)
         # z_ward_ohm = z_ward_pu * z_base_ohm
 
         buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)

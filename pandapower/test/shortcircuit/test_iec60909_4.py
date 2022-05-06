@@ -220,7 +220,16 @@ def iec_60909_4_small(with_xward=False):
         r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0, g0_us_per_km=0)
 
     if with_xward:
-        pp.create_xward(net, b5, 1, 0, 0, 0, 10, 20, 1)
+        # impedance 10 Ohm and 20 Ohm is different than the 10 Ohm and 20 Ohm
+        # in PowerFactory in "Short-Circuit VDE/IEC". In order to get to the 10 Ohm and 20 Ohm,
+        # one must calculate the pz_mw and qz_mva so that the resulting
+        # shunt impedance ends up being 10 Ohm and 20 Ohm.
+        # how to calculate r and x in Ohm:
+        # z_ward_pu = 1/y_ward_pu
+        # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+        # z_base_ohm = (vn_net ** 2)# / base_sn_mva)
+        # z_ward_ohm = z_ward_pu * z_base_ohm
+        pp.create_xward(net, b5, 1, 0, 242, -484, 10, 20, 1)
 
     return net
 
