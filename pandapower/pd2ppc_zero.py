@@ -181,16 +181,16 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
 
         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
-        vn_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
-        vn_hv = ppc["bus"][hv_buses_ppc, BASE_KV]
+        vn_bus_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
+        vn_bus_hv = ppc["bus"][hv_buses_ppc, BASE_KV]
         ratio = _calc_nominal_ratio_from_dataframe(ppc, trafos, vn_trafo_hv, \
                                                    vn_trafo_lv, bus_lookup)
         ppc["branch"][ppc_idx, TAP] = ratio
         ppc["branch"][ppc_idx, SHIFT] = shift
 
         # zero seq. transformer impedance
-        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_mva
-        tap_hv = np.square(vn_trafo_hv / vn_hv) * net.sn_mva
+        tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
+        tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
         if mode == 'pf_3ph':
             if vector_group not in ["YNyn", "Dyn", "Yzn"]:
                 raise NotImplementedError("Calculation of 3-phase power flow is only implemented for the transformer "
@@ -201,10 +201,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             #     Zpu(Net)={Zpu(trafo) * Zb(trafo)} / {Zb(Net)}
             #        Note:
             #             Network base voltage is Line-Neutral voltage in each phase
-            #             Line-Neutral voltage= Line-Line Voltage(vn_lv) divided by sq.root(3)
+            #             Line-Neutral voltage= Line-Line Voltage(vn_bus_lv) divided by sq.root(3)
             # =============================================================================
-            tap_lv = np.square(vn_trafo_lv / vn_lv) * (3 * net.sn_mva)
-            tap_hv = np.square(vn_trafo_hv / vn_hv) * (3 * net.sn_mva)
+            tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
+            tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
 
         # todo: tap_lv or tap_hv? the iec standard defines t_r_square as np.square(vn_trafo_hv/vn_trafo_lv)
         z_sc = vk0_percent / 100. / sn_trafo_mva * tap_lv
@@ -214,7 +214,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
         # TODO: This equation needs to be checked!
         # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
-        # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_hv
+        # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
         # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
         z0_k = (r_sc + x_sc * 1j) / parallel
         z_n_ohm = trafos["xn_ohm"].fillna(0).values
@@ -230,7 +230,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # todo: check if sn_mva must be included here?
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
             z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva) / parallel
-            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_hv ** 2) / net.sn_mva)
+            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
