@@ -114,10 +114,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     ppc["branch"][f:t, T_BUS] = bus_lookup[lv_bus]
     buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), \
                                 np.array([])
+    BIG_NUMBER = 1e20 * float(ppc["baseMVA"])
     if mode == "sc":
         # Should be considered as connected for all in_service branches
-        ppc["branch"][f:t, BR_X] = 1e20
-        ppc["branch"][f:t, BR_R] = 1e20
+        ppc["branch"][f:t, BR_X] = BIG_NUMBER
+        ppc["branch"][f:t, BR_R] = BIG_NUMBER
         ppc["branch"][f:t, BR_B] = 0
         ppc["branch"][f:t, BR_STATUS] = in_service
     else:
@@ -466,12 +467,6 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
 
     r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
-    # todo: is this helpful?
-    r *= ppc["baseMVA"]
-    x *= ppc["baseMVA"]
-    #
-    # print(r, x)
-
     # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
     # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0
 
@@ -488,92 +483,94 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     #   Yyd
     #   Ddd
 
+    BIG_NUMBER = 1e20 * float(ppc["baseMVA"])
+
     n_t3 = net.trafo3w.shape[0]
     for t3_ix in np.arange(n_t3):
         t3 = net.trafo3w.iloc[t3_ix, :]
 
         if t3.vector_group.lower() in set(map(lambda vg: "".join(vg), product("dy", repeat=3))):
-            x[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
-            r[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
+            x[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
+            r[[t3_ix, t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynyd":
             # Correction for YNyd
             # z3->y3
-            ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y2/y3 to almost 0 to avoid isolated bus
-            x[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
-            r[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
+            x[[t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
+            r[[t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "yndy":
             # Correction for YNyd
             # z3->y3
-            ys = 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y2/y3 to almost 0 to avoid isolated bus
-            x[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
-            r[[t3_ix+n_t3, t3_ix+n_t3*2]] = 1e10
+            x[[t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
+            r[[t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "yynd":
             # z3->y3
-            ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y1/y3 to almost 0 to avoid isolated bus
-            x[[t3_ix, t3_ix+n_t3*2]] = 1e10
-            r[[t3_ix, t3_ix+n_t3*2]] = 1e10
+            x[[t3_ix, t3_ix+n_t3*2]] = BIG_NUMBER
+            r[[t3_ix, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ydyn":
             # z3->y3
-            ys = 1 / ((x[t3_ix+n_t3] * 1j + r[t3_ix+n_t3]) * ratio[t3_ix+n_t3] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3] * 1j + r[t3_ix+n_t3]) * ratio[t3_ix+n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y1/y3 to almost 0 to avoid isolated bus
-            x[[t3_ix, t3_ix+n_t3]] = 1e10
-            r[[t3_ix, t3_ix+n_t3]] = 1e10
+            x[[t3_ix, t3_ix+n_t3]] = BIG_NUMBER
+            r[[t3_ix, t3_ix+n_t3]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynynd":
             # z3->y3
-            ys = 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y3 to almost 0 to avoid isolated bus
-            x[t3_ix+n_t3*2] = 1e10
-            r[t3_ix+n_t3*2] = 1e10
+            x[t3_ix+n_t3*2] = BIG_NUMBER
+            r[t3_ix+n_t3*2] = BIG_NUMBER
         elif t3.vector_group.lower() == "yndyn":
             # z3->y3
-            ys = 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
 
             # Set y3 to almost 0 to avoid isolated bus
-            x[t3_ix + n_t3] = 1e10
-            r[t3_ix + n_t3] = 1e10
+            x[t3_ix + n_t3] = BIG_NUMBER
+            r[t3_ix + n_t3] = BIG_NUMBER
         elif t3.vector_group.lower() == "yndd":
             # Correction for YNdd
             # z3->y3
             # we need a shunt impedance for both "delta" windings -> ys1, ys2
-            ys1 = 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
-            ys2 = 1 / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
+            ys1 = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys2 = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys1.imag + ys2.imag
             ppc["bus"][aux_bus, GS] += ys1.real + ys2.real
 
             # Set y2/y3 to almost 0 to avoid isolated bus
-            x[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = 1e10
-            r[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = 1e10
+            x[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
+            r[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynyy":
             # Correction for YNyy
-            x[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = 1e10
-            r[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = 1e10
+            x[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
+            r[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
         else:
             raise UserWarning(f"{t3.vector_group} not supported yet for trafo3w!")
 
