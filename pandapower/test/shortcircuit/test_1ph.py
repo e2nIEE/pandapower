@@ -13,7 +13,7 @@ import pytest
 
 def check_results(net, vc, result):
     res_ika = net.res_bus_sc[(net.bus.zone==vc) & (net.bus.in_service)].ikss_ka.values
-    if not np.allclose(result, res_ika):
+    if not np.allclose(result, res_ika, rtol=0, atol=1e-6):
         raise ValueError("Incorrect results for vector group %s"%vc, res_ika, result)
 
 
@@ -192,8 +192,8 @@ def test_1ph_with_switches():
         check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
 
 
-def single_3w_trafo_grid(vector_group):
-    net = pp.create_empty_network(sn_mva=7)
+def single_3w_trafo_grid(vector_group, sn_mva=123):
+    net = pp.create_empty_network(sn_mva=sn_mva)
     b1 = pp.create_bus(net, vn_kv=380.)
     b2 = pp.create_bus(net, vn_kv=110.)
     b3 = pp.create_bus(net, vn_kv=30.)
@@ -489,7 +489,18 @@ def test_line():
 
 
 def test_trafo():
-    for vc in ('Yy', 'Yyn', 'Yd', 'YNy', 'YNyn', 'YNd', 'Dy', 'Dyn', 'Dd'):
+    results = {
+        "Yy": [5.248639, 0],
+        "Yyn": [5.248639, 0.812581],
+        "Yd": [5.248639, 0],
+        "Dy": [5.248639, 0],
+        "Dd": [5.248639, 0],
+        "Dyn": [5.248639, 17.245191],
+        "YNd": [6.324033, 0],
+        "YNy": [5.265657, 0],
+        "YNyn": [5.265737, 14.413729]}
+
+    for vc in results.keys():
         net = pp.create_empty_network(sn_mva=1)
         pp.create_bus(net, vn_kv=110.)
         pp.create_bus(net, vn_kv=20.)
@@ -499,7 +510,7 @@ def test_trafo():
                            rx_min=0.1, x0x_min=1, r0x0_min=0.1)
 
         t1 = pp.create_transformer_from_parameters(net, 0, 1, sn_mva=150,
-                                                   pfe_kw=0, i0_percent=0,
+                                                   pfe_kw=10, i0_percent=0.1,
                                                    vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
                                                    pt_percent=12, vk0_percent=15.2,
                                                    vkr0_percent=0.5, vector_group=vc,
@@ -510,6 +521,7 @@ def test_trafo():
         net.sn_mva = 123
         sc.calc_sc(net, fault="1ph", case="max")
         assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6), f"failed for vector group {vc}"
+        assert np.allclose(net.res_bus_sc.ikss_ka, results[vc], rtol=0, atol=1e-6), f"{vc}: inconsistent results"
 
 
 if __name__ == "__main__":
