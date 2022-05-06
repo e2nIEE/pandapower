@@ -207,9 +207,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
             tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
 
-        # todo: tap_lv or tap_hv? the iec standard defines t_r_square as np.square(vn_trafo_hv/vn_trafo_lv)
-        z_sc = vk0_percent / 100. / sn_trafo_mva * tap_lv
-        r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_lv
+        tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny") else tap_lv
+        z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
+        r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_corr
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
@@ -316,8 +316,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             ppc["branch"][ppc_idx, BR_X] = zc.imag
 
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, YAN.real * in_service * float(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, YAN.imag * in_service * float(ppc["baseMVA"])])
+            gs_all = np.hstack([gs_all, YAN.real * in_service * float(ppc["baseMVA"]) * tap_lv / tap_hv])
+            bs_all = np.hstack([bs_all, YAN.imag * in_service * float(ppc["baseMVA"]) * tap_lv / tap_hv])
 
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             gs_all = np.hstack([gs_all, YBN.real * in_service * float(ppc["baseMVA"])])
