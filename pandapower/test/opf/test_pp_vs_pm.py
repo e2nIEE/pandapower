@@ -160,11 +160,10 @@ def test_opf_ext_grid_controllable_pm():
     pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
                     opf_flow_lim="I")
 
-    assert np.isclose(net_new.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0586551789267864)
-    assert np.isclose(net_old.res_bus.vm_pu[net.ext_grid.bus[0]], 1.06414000007302)
-
-    assert np.isclose(net_old.res_cost, 17082.8)
-    assert np.isclose(net_new.res_cost, 17015.5635)
+    eg_bus = net.ext_grid.bus.at[0]
+    assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
+    assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_new.res_bus.vm_pu[eg_bus]) < 0.0058
+    assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-3
 
 
 if __name__ == "__main__":

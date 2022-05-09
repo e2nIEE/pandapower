@@ -187,7 +187,8 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
 
     # --- overwrite pickle
     with open(file, "wb") as handle:
-        pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
 
 
 if __name__ == '__main__':
