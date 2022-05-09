@@ -3946,17 +3946,19 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
             # this part is for compatibility with pandas < 1.0, can be removed if pandas >= 1.0 is required in setup.py
             if isinstance(default_val, str) \
                     and version.parse(pd.__version__) < version.parse("1.0"):
-                net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
-                                                        dtype=dtyp)
+                net[element].loc[:, column] = pd.Series(
+                    [default_val] * len(net[element]), dtype=dtyp)
             else:
-                net[element].loc[:, column] = pd.Series(data=default_val, index=net[element].index, dtype=dtyp)
+                net[element].loc[:, column] = pd.Series(
+                    data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
-    try:
-        net[element][column] = net[element][column].astype(dtyp)
-    except:
-        pass
+    if dtype is not None:
+        try:
+            net[element][column] = net[element][column].astype(dtyp)
+        except:
+            pass
     return net
 
 
