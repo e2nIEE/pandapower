@@ -70,7 +70,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
-                 ("current_source", "bool")],
+                 ("current_source", "bool"),
+                 ("generator_type", dtype(object))],
         "motor": [("name", dtype(object)),
                   ("bus", "i8"),
                   ("pn_mech_mw", "f8"),
@@ -2268,6 +2269,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         **vkr_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
             the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
 
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
+
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
 
@@ -2323,7 +2326,6 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_entries(net, "trafo", index, **v, **kwargs)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
@@ -2331,6 +2333,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")  # Int64Dtype
     if vkr_percent_characteristic is not None:
         _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
+    if xn_ohm is not None:
+        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2449,6 +2453,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **oltc** (bool, False) - (short circuit only)
 
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2510,7 +2516,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                      default_val=None)
     _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
+    if xn_ohm is not None:
+        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
 
@@ -2624,6 +2631,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **oltc** (bool, False) - (short circuit only)
 
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2665,7 +2674,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
     _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
     _add_series_to_entries(entries, index, "pt_percent", pt_percent)
-    _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
+    if xn_ohm is not None:
+        _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
 
     _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
 

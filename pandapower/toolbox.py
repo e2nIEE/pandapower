@@ -1456,7 +1456,7 @@ def set_element_status(net, buses, in_service):
                 and "in_service" in net[element].columns:
             try:
                 idx = get_connected_elements(net, element, buses)
-                net[element].loc[idx, 'in_service'] = in_service
+                net[element].loc[list(idx), 'in_service'] = in_service
             except:
                 pass
 
@@ -1470,7 +1470,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
-    set_element_status(net, unsupplied, False)
+    set_element_status(net, list(unsupplied), False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
@@ -2972,8 +2972,8 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         connected_lvb_trafos = set(net.trafo.index[(
             net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
             in_service_constr])
-        cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
-        cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_lvb_trafos)].hv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_hvb_trafos)].lv_bus.values)
 
     # Gives the lv mv and hv buses of a 3 winding transformer
     if "t3" in consider or 'trafo3w' in consider:
