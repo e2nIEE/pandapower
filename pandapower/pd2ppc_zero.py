@@ -114,7 +114,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     ppc["branch"][f:t, T_BUS] = bus_lookup[lv_bus]
     buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), \
                                 np.array([])
-    BIG_NUMBER = 1e20 * float(ppc["baseMVA"])
+    BIG_NUMBER = 1e20 * ppc["baseMVA"]
     if mode == "sc":
         # Should be considered as connected for all in_service branches
         ppc["branch"][f:t, BR_X] = BIG_NUMBER
@@ -277,16 +277,16 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
-                y = y0_k # pi model
+                y = y0_k * ppc["baseMVA"] # pi model
             else:
-                y = (YAB + YBN).astype(complex)  # T model
-            gs_all = np.hstack([gs_all, y.real * in_service]) * float(ppc["baseMVA"])
-            bs_all = np.hstack([bs_all, y.imag * in_service]) * float(ppc["baseMVA"])
+                y = (YAB + YBN).astype(complex) * ppc["baseMVA"]  # T model
+            gs_all = np.hstack([gs_all, y.real * in_service])
+            bs_all = np.hstack([bs_all, y.imag * in_service])
 
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
-                y = y0_k # * ppc["baseMVA"] # pi model
+                y = y0_k * ppc["baseMVA"] # pi model
                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi model
                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi model
 
@@ -294,20 +294,20 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 # print(z0_k_k)
                 # y = 1 / z0_k_k # pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) #T model
-            gs_all = np.hstack([gs_all, y.real * in_service]) * float(ppc["baseMVA"])
-            bs_all = np.hstack([bs_all, y.imag * in_service]) * float(ppc["baseMVA"])
+                y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"] #T model
+            gs_all = np.hstack([gs_all, y.real * in_service])
+            bs_all = np.hstack([bs_all, y.imag * in_service])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
-                y = 1/(z0_mag+z0_k).astype(complex) #pi model
+                y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"] #pi model
             else:
 #                y = (YAB_AN + YBN).astype(complex) #T model
-                y = (YAB + YAB_BN + YBN).astype(complex) # T model
+                y = (YAB + YAB_BN + YBN).astype(complex) * ppc["baseMVA"] # T model
 
-            gs_all = np.hstack([gs_all, y.real * in_service]) * float(ppc["baseMVA"])
-            bs_all = np.hstack([bs_all, y.imag * in_service]) * float(ppc["baseMVA"])
+            gs_all = np.hstack([gs_all, y.real * in_service])
+            bs_all = np.hstack([bs_all, y.imag * in_service])
 
         elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
@@ -316,19 +316,19 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             ppc["branch"][ppc_idx, BR_X] = zc.imag
 
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, YAN.real * in_service * float(ppc["baseMVA"]) * tap_lv / tap_hv])
-            bs_all = np.hstack([bs_all, YAN.imag * in_service * float(ppc["baseMVA"]) * tap_lv / tap_hv])
+            gs_all = np.hstack([gs_all, YAN.real * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
+            bs_all = np.hstack([bs_all, YAN.imag * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
 
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, YBN.real * in_service * float(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, YBN.imag * in_service * float(ppc["baseMVA"])])
+            gs_all = np.hstack([gs_all, YBN.real * in_service * ppc["baseMVA"]])
+            bs_all = np.hstack([bs_all, YBN.imag * in_service * ppc["baseMVA"]])
 
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
-                y = 1/(z0_mag+z0_k).astype(complex) * float(ppc["baseMVA"])#pi model
+                y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"]#pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) * float(ppc["baseMVA"])  #T model
+                y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  #T model
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
@@ -336,9 +336,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
             #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
-            y = (YAB_AN + YBN).astype(complex) # * int(ppc["baseMVA"])  #T model
-            gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service * float(ppc["baseMVA"])])
-            bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service * float(ppc["baseMVA"])])
+            y = (YAB_AN + YBN).astype(complex) * ppc["baseMVA"] ** 2  #T model # why sn_mva squared here?
+            gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service])  # what's the 1.1547 value?
+            bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service])
 
         elif vector_group[-1].isdigit():
             raise ValueError("Unknown transformer vector group %s -\
@@ -483,7 +483,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     #   Yyd
     #   Ddd
 
-    BIG_NUMBER = 1e20 * float(ppc["baseMVA"])
+    BIG_NUMBER = 1e20 * ppc["baseMVA"]
 
     n_t3 = net.trafo3w.shape[0]
     for t3_ix in np.arange(n_t3):
@@ -495,7 +495,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
         elif t3.vector_group.lower() == "ynyd":
             # Correction for YNyd
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -506,7 +506,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
         elif t3.vector_group.lower() == "yndy":
             # Correction for YNyd
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -516,7 +516,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix+n_t3, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "yynd":
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -526,7 +526,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix, t3_ix+n_t3*2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ydyn":
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3] * 1j + r[t3_ix+n_t3]) * ratio[t3_ix+n_t3] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix+n_t3] * 1j + r[t3_ix+n_t3]) * ratio[t3_ix+n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -536,7 +536,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix, t3_ix+n_t3]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynynd":
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix+n_t3*2] * 1j + r[t3_ix+n_t3*2]) * ratio[t3_ix+n_t3*2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -546,7 +546,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[t3_ix+n_t3*2] = BIG_NUMBER
         elif t3.vector_group.lower() == "yndyn":
             # z3->y3
-            ys = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -558,8 +558,8 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             # Correction for YNdd
             # z3->y3
             # we need a shunt impedance for both "delta" windings -> ys1, ys2
-            ys1 = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
-            ys2 = float(ppc["baseMVA"]) * 1 / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
+            ys1 = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys2 = ppc["baseMVA"] / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys1.imag + ys2.imag
             ppc["bus"][aux_bus, GS] += ys1.real + ys2.real
