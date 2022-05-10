@@ -53,6 +53,14 @@ def get_testgrids(name, filename):
     return ppcs[name]
 
 
+def validate_other_than_py37(ppc, net, max_diff_values):
+    if sys.version_info.minor < 8 and sys.version_info.major == 3:
+        if not validate_from_ppc(ppc, net, max_diff_values=max_diff_values):
+            logger.error("test_pypower_cases() fails for py3.7")
+    else:
+        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values)
+
+
 def test_from_ppc_simple_against_target():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.json')
     net_by_ppc = from_ppc(ppc)
@@ -82,11 +90,7 @@ def test_ppc_testgrids():
     for i in name:
         ppc = get_testgrids(i, 'ppc_testgrids.json')
         net = from_ppc(ppc, f_hz=60)
-        if sys.version_info.minor < 8 and sys.version_info.major == 3:
-            if not validate_from_ppc(ppc, net, max_diff_values=max_diff_values1):
-                logger.error("test_ppc_testgrids() fails for py3.7")
-        else:
-            assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+        validate_other_than_py37(ppc, net, max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
 
 
@@ -98,7 +102,7 @@ def test_pypower_cases():
     for i in name:
         ppc = get_testgrids(i, 'pypower_cases.json')
         net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+        validate_other_than_py37(ppc, net, max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
@@ -106,12 +110,7 @@ def test_pypower_cases():
                         "q_branch_mvar": 1e-3, "p_gen_mw": 1e3, "q_gen_mvar": 1e3}
     ppc = get_testgrids('case9', 'pypower_cases.json')
     net = from_ppc(ppc, f_hz=60)
-    if sys.version_info.minor < 8 and sys.version_info.major == 3:
-        if not validate_from_ppc(ppc, net, max_diff_values=max_diff_values2):
-            logger.error("test_pypower_cases() fails for py3.7")
-    else:
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
-    logger.debug('case9 has been checked successfully.')
+    validate_other_than_py37(ppc, net, max_diff_values2)
 
 
 def test_to_and_from_ppc():
