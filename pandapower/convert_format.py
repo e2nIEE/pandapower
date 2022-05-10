@@ -275,11 +275,6 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
 
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "generator_type" not in net.sgen:
-        net.sgen["generator_type"] = net.sgen["current_source"].apply(
-            func=lambda x: "current_source" if x else "async")  # assuming "async" here
-
     if _check_elements_to_deserialize('line', elements_to_deserialize) and \
             "g_us_per_km" not in net.line:
         net.line["g_us_per_km"] = 0.

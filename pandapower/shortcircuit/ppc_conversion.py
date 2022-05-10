@@ -102,7 +102,7 @@ def _add_sgen_sc_z(net, ppc):
     # implement doubly fed asynchronous generator
     # todo: what is this "_is_elements_final" thing?
     # sgen_wd = net.sgen.loc[net._is_elements_final["sgen"] & (net.sgen.generator_type=="async_doubly_fed")]
-    if len(net.sgen) == 0:
+    if len(net.sgen) == 0 or "generator_type" not in net.sgen.columns:
         return
 
     sgen_wd = net.sgen.loc[net.sgen.in_service & (net.sgen.generator_type=="async_doubly_fed")]
