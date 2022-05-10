@@ -277,21 +277,19 @@ def write_pf_results_to_file(app, net, filename, combinations):
 
 
 def read_pf_results_from_file_to_net(filename, net, combination=None):
-    res = None
     with open(filename, "r") as f:
-        res = json.load(f)
+        results = json.load(f)
 
-    results = None
-    if combination is None:
-        results = res
-    else:
-        results = res[combination]
+    if combination is not None:
+        results = results[combination]
 
-    for key, result in results.items():
-        result = pd.Series(result)
-        result.index = result.index.astype(int)
-        results[key] = result
-    _set_pf_results_unbalanced(net, results)
+    results_to_set = {}
+    # need to avoid modifying the dist in the loop over itself
+    for key, result_dict in results.items():
+        result = pd.Series(result_dict, dtype=np.float64)
+        result.index = result.index.astype(np.int64)
+        results_to_set[key] = result
+    _set_pf_results_unbalanced(net, results_to_set)
 
 
 if __name__ == "__main__":
