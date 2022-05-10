@@ -1633,6 +1633,14 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
+    p2.characteristic = net.characteristic[net.characteristic.index.isin(net.trafo.vk_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo.vkr_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vk_hv_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vkr_hv_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vk_mv_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vkr_mv_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vk_lv_percent_characteristic.values) |
+                                           net.characteristic.index.isin(net.trafo3w.vkr_lv_percent_characteristic.values)]
 
     _select_cost_df(net, p2, "poly_cost")
     _select_cost_df(net, p2, "pwl_cost")
