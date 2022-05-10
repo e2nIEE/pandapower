@@ -52,7 +52,7 @@ def get_testgrids(name, filename):
 
 
 def test_from_ppc_simple_against_target():
-    ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
+    ppc = get_testgrids('case2_2', 'ppc_testgrids.json')
     net_by_ppc = from_ppc(ppc)
     net_by_code = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
@@ -68,7 +68,7 @@ def test_from_ppc_simple_against_target():
 
 
 def test_validate_from_ppc_simple_against_target():
-    ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
+    ppc = get_testgrids('case2_2', 'ppc_testgrids.json')
     net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
@@ -78,7 +78,7 @@ def test_ppc_testgrids():
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
             'case57']
     for i in name:
-        ppc = get_testgrids(i, 'ppc_testgrids.p')
+        ppc = get_testgrids(i, 'ppc_testgrids.json')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
@@ -90,7 +90,7 @@ def test_pypower_cases():
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
             'case118'] # 'case300'
     for i in name:
-        ppc = get_testgrids(i, 'pypower_cases.p')
+        ppc = get_testgrids(i, 'pypower_cases.json')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
@@ -98,7 +98,7 @@ def test_pypower_cases():
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_mw": 1e-3,
                         "q_branch_mvar": 1e-3, "p_gen_mw": 1e3, "q_gen_mvar": 1e3}
-    ppc = get_testgrids('case9', 'pypower_cases.p')
+    ppc = get_testgrids('case9', 'pypower_cases.json')
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
