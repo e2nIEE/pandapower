@@ -1633,14 +1633,16 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
-    p2.characteristic = net.characteristic[net.characteristic.index.isin(net.trafo.vk_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo.vkr_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vk_hv_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vkr_hv_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vk_mv_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vkr_mv_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vk_lv_percent_characteristic.values) |
-                                           net.characteristic.index.isin(net.trafo3w.vkr_lv_percent_characteristic.values)]
+    relevant_characteristics = set()
+    for col in ("vk_percent_characteristic", "vkr_percent_characteristic"):
+        if col in net.trafo.columns:
+            relevant_characteristics |= set(net.trafo[~net.trafo[col].isnull(), col].values)
+    for col in (f"vk_hv_percent_characteristic", f"vkr_hv_percent_characteristic",
+                f"vk_mv_percent_characteristic", f"vkr_mv_percent_characteristic",
+                f"vk_lv_percent_characteristic", f"vkr_lv_percent_characteristic"):
+        if col in net.trafo3w.columns:
+            relevant_characteristics |= set(net.trafo3w[~net.trafo3w[col].isnull(), col].values)
+    p2.characteristic = net.characteristic.loc[list(relevant_characteristics)]
 
     _select_cost_df(net, p2, "poly_cost")
     _select_cost_df(net, p2, "pwl_cost")
