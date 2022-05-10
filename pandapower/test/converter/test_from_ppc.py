@@ -43,7 +43,11 @@ def get_testgrids(name, filename):
     from_ppc function via validate_from_ppc.
     """
     folder = os.path.join(pp.pp_dir, 'test', 'converter')
-    ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
+    file = os.path.join(folder, filename)
+    if filename.endswith(".json"):
+        ppcs = pp.from_json(file)
+    elif filename.endswith(".p"):
+        ppcs = pickle.load(open(file, "rb"))
     return ppcs[name]
 
 
