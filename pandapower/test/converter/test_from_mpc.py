@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@ import pandapower.networks as pn
 from pandapower.converter import from_mpc
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

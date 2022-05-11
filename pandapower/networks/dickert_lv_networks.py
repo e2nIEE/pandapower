@@ -226,9 +226,10 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
     distributed peak system demand, described in Dickert, Schegner - \
     'Residential Load Models for Network Planning Purposes', Modern Electric Power Systems 2010, \
     Wroclaw, Poland, with the given example assumptions:
-        - c_inf = 0.1
-        - P_max1 = 10 kW
-        - powerfactor = 0.95 ind. (in range of 0.9 to 1)
+
+    - c_inf = 0.1
+    - P_max1 = 10 kW
+    - powerfactor = 0.95 ind. (in range of 0.9 to 1)
 
     OPTIONAL:
 

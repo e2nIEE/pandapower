@@ -27,7 +27,7 @@ from pandapower.results_gen import _get_gen_results
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -110,7 +110,7 @@ class TimeSeriesRunpp:
         @return:
         """
         # read bus_pq array which contains p and q values for each bus in net
-        bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+        bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
         bus_pq[net_bus_idx, 0] = ppc["bus"][ppc_bus_idx, PD] * 1e3
         bus_pq[net_bus_idx, 1] = ppc["bus"][ppc_bus_idx, QD] * 1e3
 

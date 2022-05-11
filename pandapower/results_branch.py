@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
-from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
-
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
@@ -62,7 +60,7 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
     # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
     # _get_switch_results(net, i_ft)
 
-																			 
+
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
@@ -76,17 +74,17 @@ def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
     br_from_idx = ppc1["branch"][:, F_BUS].real.astype(int)
     br_to_idx = ppc1["branch"][:, T_BUS].real.astype(int)
     V012_f = np.array([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
-                         np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+                        np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
     V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
-                         np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+                        np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
     S012_f = np.array([((ppc["branch"][:, PF].real +
-                    1j * ppc["branch"][:, QF].real) )
-                    for ppc in [ppc0, ppc1, ppc2]])
+                         1j * ppc["branch"][:, QF].real))
+                       for ppc in [ppc0, ppc1, ppc2]])
     S012_t = np.array([((ppc["branch"][:, PT].real +
-                    1j * ppc["branch"][:, QT].real) )
-                    for ppc in [ppc0, ppc1, ppc2]])
-    I012_f = I_from_SV_elementwise(S012_f , V012_f / np.sqrt(3))
-    I012_t = I_from_SV_elementwise(S012_t , V012_t / np.sqrt(3))
+                         1j * ppc["branch"][:, QT].real))
+                       for ppc in [ppc0, ppc1, ppc2]])
+    I012_f = I_from_SV_elementwise(S012_f, V012_f / np.sqrt(3))
+    I012_t = I_from_SV_elementwise(S012_t, V012_t / np.sqrt(3))
 
     return I012_f, S012_f, V012_f, I012_t, S012_t, V012_t
 
@@ -123,7 +121,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     to_bus = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write to line
-    res_line_df = net["res_line"] if suffix is None else net["res_line%s"%suffix]
+    res_line_df = net["res_line"] if suffix is None else net["res_line%s" % suffix]
 
     res_line_df["p_from_mw"].values[:] = p_from_mw
     res_line_df["q_from_mvar"].values[:] = q_from_mvar
@@ -180,15 +178,15 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     else:
         Pabcl_mw = np.zeros_like(Pabcf_mw)
         Qabcl_mvar = np.zeros_like(Qabct_mvar)
-    
-    #getting complex values of the sequence current line   
+
+    # getting complex values of the sequence current line
     Iabc_f_ka_complex = sequence_to_phase(I012_from_ka)
     Iabc_t_ka_complex = sequence_to_phase(I012_to_ka)
-    
+
     Iabc_f_ka = np.abs(Iabc_f_ka_complex)
     Iabc_t_ka = np.abs(Iabc_t_ka_complex)
     Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
-    
+
     In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
     In_f_ka = np.abs(In_f_ka_complex)
 #    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
@@ -309,9 +307,9 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     trafo_df = net["trafo"]
 
     Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [sequence_to_phase(X012) for X012 in
-                                      [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
+                                          [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
     Sabc_hv, Sabc_lv = [S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3) for Xabc_tup in
-                      [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]]
+                        [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
     Pabc_hv_mw = Sabc_hv.real
     Qabc_hv_mvar = Sabc_hv.imag
@@ -323,24 +321,70 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     else:
         Pabcl_mw = np.zeros_like(Pabc_hv_mw)
         Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
-        
+
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
-    
-    #geting complex values of the sequence current    
+
+    # current calculation for trafo lv side for vector groups with zero seq. gap (Dyn, Yzn)
+    # in this case, the currents of elemnts that go out from the trafo are summed and the sum applied to the trafo lv side
+    gap_trafo_index = np.where(I012_lv_ka[0] == 0)[0]
+    if len(gap_trafo_index > 0):
+        for i_trafo in gap_trafo_index:
+            Iabc_sum = [0, 0, 0]
+            lv_bus = net.trafo.lv_bus[i_trafo]
+            V_bus_abc = np.array([[net.res_bus_3ph['vm_a_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
+                                  [net.res_bus_3ph['vm_b_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
+                                  [net.res_bus_3ph['vm_c_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]]])
+
+            # Branch Elements
+            i_branch = np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0]
+            if len(i_branch > 0):
+                I_branch_012 = I012_f[:, i_branch]
+                I_branch_abc = sequence_to_phase(I_branch_012)
+                for x in range(len(I_branch_abc[0])):
+                    Iabc_sum += abs(I_branch_abc[:, x])
+
+            # Loads
+            load_index = np.where(net.asymmetric_load['bus'] == lv_bus)[0]
+            if len(load_index > 0):
+                S_load_abc = abs(np.array([net.res_asymmetric_load_3ph['p_a_mw'][load_index]
+                                           + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index]),
+                                           net.res_asymmetric_load_3ph['p_b_mw'][load_index]
+                                           + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index]),
+                                           net.res_asymmetric_load_3ph['p_c_mw'][load_index]
+                                           + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index])]))
+                I_load_abc = S_load_abc / (V_bus_abc / np.sqrt(3))
+                for x in range(len(I_load_abc[0])):
+                    Iabc_sum += I_load_abc[:, x]
+
+            # Sgens
+            sgen_bus_index = np.where(net.asymmetric_sgen['bus'] == lv_bus)[0]
+            if len(sgen_bus_index > 0):
+                S_sgen_abc = abs(np.array([net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
+                                           + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index]),
+                                           net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
+                                           + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index]),
+                                           net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
+                                           + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index])]))
+                I_sgen_abc = S_sgen_abc / (V_bus_abc / np.sqrt(3))
+                for x in range(len(I_sgen_abc[0])):
+                    Iabc_sum -= I_sgen_abc[:, x]
+
+            Iabc_lv_ka[:, i_trafo] = Iabc_sum
+
+    # geting complex values of the sequence current
 #    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
 #    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
-#    
+#
 #    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
 #    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
-#   
+#
 #    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
 #    In_hv_ka = np.abs(In_hv_ka_complex)
 #    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
 #    In_lv_ka_complex = Iabc_lv_ka_complex.sum(axis=0)
 #    In_lv_ka = np.abs(In_lv_ka_complex)
 #    In_lv_ia_n_degree = np.angle(In_lv_ka_complex).flatten()*180/np.pi
-
 
     if trafo_loading == "current":
         trafo_df = net["trafo"]
@@ -391,7 +435,6 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     res_trafo_df["loading_c_percent"] = loading_percent[2, :]
     res_trafo_df["loading_percent"] = loading_percent.max(axis=0)
     res_trafo_df.index = net["trafo"].index.values
-
 
 
 def _get_trafo3w_lookups(net):
@@ -459,7 +502,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(int)
 
     # write results to trafo3w dataframe
-    res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s"%suffix]
+    res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s" % suffix]
 
     res_trafo3w_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo3w_df["q_hv_mvar"].values[:] = q_hv_mvar
@@ -481,7 +524,6 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo3w_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
     res_trafo3w_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
     res_trafo3w_df["loading_percent"].values[:] = loading_percent
-
 
 
 def _get_impedance_results(net, ppc, i_ft, suffix=None):
@@ -513,7 +555,7 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s" % suffix]
 
     res_impedance_df["p_from_mw"].values[:] = p_from_mw
     res_impedance_df["q_from_mvar"].values[:] = q_from_mvar
@@ -523,7 +565,6 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     res_impedance_df["ql_mvar"].values[:] = ql_mvar
     res_impedance_df["i_from_ka"].values[:] = i_from_ka
     res_impedance_df["i_to_ka"].values[:] = i_to_ka
-
 
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
@@ -551,7 +592,6 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     res_xward_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
     res_xward_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
     res_xward_df.index = net["xward"].index
-
 
 
 def _get_switch_results(net, i_ft, suffix=None):

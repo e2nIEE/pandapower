@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -149,6 +149,69 @@ def test_continuous_tap_control_hv():
         % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
     assert np.isclose(net.trafo.tap_pos.values, -1.07765621)
+
+
+def test_continuous_tap_control_vectorized_lv():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 6, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_lines(net, np.zeros(5), np.arange(1, 6), 10, "243-AL1/39-ST1A 110.0")
+    for hv, lv in zip(np.arange(1, 6), np.arange(6,11)):
+        pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
+        pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    # --- run loadflow
+    pp.runpp(net)
+
+    net_ref = net.deepcopy()
+
+    # create with individual controllers for comparison
+    tol=1e-4
+    for tid in net.trafo.index.values:
+        ContinuousTapControl(net_ref, tid=tid, side='lv', vm_set_pu=1.02, tol=tol)
+
+    # run control reference
+    pp.runpp(net_ref, run_control=True)
+
+    # now create the vectorized version
+    ContinuousTapControl(net, tid=net.trafo.index.values, side='lv', vm_set_pu=1.02, tol=tol)
+    pp.runpp(net, run_control=True)
+
+    assert np.allclose(net_ref.trafo.tap_pos, net.trafo.tap_pos, atol=1e-2, rtol=0)
+
+
+
+def test_continuous_tap_control_vectorized_hv():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 6, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_lines(net, np.zeros(5), np.arange(1, 6), 10, "243-AL1/39-ST1A 110.0")
+    for hv, lv in zip(np.arange(1, 6), np.arange(6,11)):
+        pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
+        pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    # --- run loadflow
+    pp.runpp(net)
+
+    net_ref = net.deepcopy()
+
+    # create with individual controllers for comparison
+    tol=1e-4
+    for tid in net.trafo.index.values:
+        ContinuousTapControl(net_ref, tid=tid, side='hv', vm_set_pu=1.02, tol=tol)
+
+    # run control reference
+    pp.runpp(net_ref, run_control=True)
+
+    # now create the vectorized version
+    ContinuousTapControl(net, tid=net.trafo.index.values, side='hv', vm_set_pu=1.02, tol=tol)
+    pp.runpp(net, run_control=True)
+
+    assert np.allclose(net_ref.trafo.tap_pos, net.trafo.tap_pos, atol=1e-2, rtol=0)
 
 
 if __name__ == '__main__':

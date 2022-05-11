@@ -1,10 +1,63 @@
 Change Log
+=============
 
-- [ADDED] toolbox function merge_same_bus_generation_plants()
+[upcoming release] - 2022-..-..
+-------------------------------
+- [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
 
-[2.7.1]- 2021-07-22
+[2.9.0]- 2022-03-23
 ----------------------
-- [ADDED] distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
+- [ADDED] added support for Python 3.10
+- [ADDED] added a function to pandapower.plotting to set line geodata from the geodata of the connected buses
+- [ADDED] plotly hover information will indicate parallel lines, if parallel > 1
+- [ADDED] 'showlegend' option for simple_plotly
+- [CHANGED] rename u by vm (voltage magnitude) in file and functions names
+- [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
+- [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
+- [FIX] fixed hover information for lines in plotly
+- [ADDED] functions to obtain grid equivalents (power system reduction with REI, Ward, X-Ward methods)
+- [CHANGED] use numpy to vectorize trafo_control
+- [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
+- [CHANGED] remove code duplication in const_control, characteristic_control
+- [ADDED] added the funtionality to import grid data from PowerFactory
+- [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
+
+[2.8.0]- 2022-02-06
+----------------------
+- [ADDED] toolbox functions false_elm_links() and false_elm_links_loop()
+- [FIXED] poly_cost and pwl_cost consideration in merge_nets()
+- [ADDED] "results" initialization for runopp()
+- [CHANGED] toolbox function nets_equal()
+- [ADDED] toolbox function merge_same_bus_generation_plants()
+- [ADDED] new object table "characteristic", new class "Characteristic" and "SplineCharacteristic" that are callable and return a value based on input according to a specified curve
+- [FIXED] toolbox replace_ward_by_internal_elements() index usage
+- [ADDED] TapDependentImpedance controller that adjusts the transformer parameters (e.g. vk_percent, vkr_percent) according to the tap position, based on a specified characteristic
+- [ADDED] tap dependent impedance internally in build_branch: transformer (2W, 3W) parameters (e.g. vk_percent, vkr_percent) are adjusted according to the tap position based on a specified characteristic in the optional columns
+- [ADDED] multiple costs check in create functions and runopp
+- [ADDED] correct_dtypes() function for fileIO convert
+- [FIXED] revise to_ppc() and to_mpc() init behaviour
+- [CHANGED] import requirements / dependencies
+- [ADDED] with the option "distributed_slack" for pp.runpp: distributed slack calculation to newton-raphson load flow; new column "slack_weights" for ext_grid, gen and xward; only 1 reference bus is allowed, any further reference buses are converted to PV buses internally
+- [CHANGED] improved the integration with the package lightim2grid (fast power flow backend written in C++), add the test coverage for using lightsim2grid (for both versions, single slack and distributed slack, see https://lightsim2grid.readthedocs.io/en/latest/ on how to install and use lightsim2grid) #1455
+- [FIXED] checks for when to activate and deactivate lightsim2grid in pp.runpp, added tests
+- [ADDED] from_mpc: import additional variables from MATPOWER file as keys in net._options
+- [FIXED] output_writer: bugfix for "res_{element}_3ph" to also run timeseries with runpp_3ph
+- [FIXED] DeprecationWarning in pandas: use pandas.Index instead of pandas.Int64Index
+- [FIXED] scipy version requirement: cancel the version limit
+- [CHANGED] drop support for Python 3.6
+- [FIXED] bugfix in timeseries calculations with recycle=True #1433
+- [CHANGED] run tests in GuitHub Actions for pull requests to all branches
+- [FIXED] net.unser_pf_options: bugfix for overruling the parameters that are in user_pf_options
+- [ADDED] add_zero_impedance_parameters(): convenience function to add all required zero-sequence data for runpp_3ph from std_types and apply realistic assumptions
+- [CHANGED] adjusted create.py functions to also include zero-sequence parameters
+- [CHANGED] new tutorials for the voltage deviation model and the power flow calculation with PowerModels.jl
+- [CHANGED] create_lines: enable batch creating of multiple lines now with multiole std_type entries instead of using the same std_type
+- [CHANGED] OPF parameter "OPF_FLOW_LIM" now accessible through kwargs
+- [CHANGED] Included DC line elements and results in to_html
+- [FIXED] bugfix for currents of transformers in 3ph power flow #1343
+- [CHANGED] check the dtype of the tap_pos column in the control_step of the transformer controller #1335
+- [FIXED] net.sn_mva corrected for power_system_test_cases #1317
+- [FIXED] fixed bugs in automatically identifying power station units (short-circuit calculation enhancements are still in progress)
 
 [2.7.0]- 2021-07-15
 ----------------------

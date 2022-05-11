@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -403,7 +403,7 @@ def test_case9():
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw - xward_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference
-    assert_results_correct(net)
+    assert_results_correct(net, tol=1e-6)
 
 
 def test_case2848rte():
