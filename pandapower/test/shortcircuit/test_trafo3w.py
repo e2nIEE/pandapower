@@ -13,7 +13,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def trafo3w_net():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=5)
     b1 = pp.create_bus(net, 220)
     b2 = pp.create_bus(net, 30)
     b3 = pp.create_bus(net, 10)
