@@ -21,16 +21,17 @@ def test_simple_plotly_coordinates():
     net = nw.mv_oberrhein(include_substations=True)
     fig = simple_plotly(net, filename=join(gettempdir(), "temp-plot.html"), auto_open=False)
     assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + 2
-    # +1 for the infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
+                            # +1 for the infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
 def test_simple_plotly_3w():
     # net with 3W-transformer
     net = nw.example_multivoltage()
     fig = simple_plotly(net, filename=join(gettempdir(), "temp-plot.html"), auto_open=False)
     assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + (len(net.trafo3w)*3 + 1)\
-                            + 2  # 1 bus trace, 1 ext_grid trace
+                            + 2  # +1 is for infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
 
 
 if __name__ == '__main__':
