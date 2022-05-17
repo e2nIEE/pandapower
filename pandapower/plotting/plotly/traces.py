@@ -48,8 +48,11 @@ def _in_ipynb():
     """
     An auxiliary function which checks if plot is called from a jupyter-notebook or not
     """
-    from IPython import get_ipython
-    return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    try:
+        from IPython import get_ipython
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except ImportError:
+        return False
 
 
 def sum_line_length(pts):
