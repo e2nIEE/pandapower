@@ -25,7 +25,7 @@ def test_from_mpc():
     pp.set_user_pf_options(case24)
     this_folder = os.path.join(pp.pp_dir, "test", "converter")
     mat_case_path = os.path.join(this_folder, 'case24_ieee_rts.mat')
-    case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc')
+    case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
 
     pp.runpp(case24)
     pp.runpp(case24_from_mpc)

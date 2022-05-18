@@ -425,6 +425,7 @@ def add_pm_options(pm, net):
             np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     pm["silence"] = net._options["silence"]
+    pm["ac"] = net._options["ac"]
     return pm
 
 
