@@ -1477,7 +1477,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
-    set_element_status(net, unsupplied, False)
+    set_element_status(net, list(unsupplied), False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
@@ -1640,6 +1640,16 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
+    relevant_characteristics = set()
+    for col in ("vk_percent_characteristic", "vkr_percent_characteristic"):
+        if col in net.trafo.columns:
+            relevant_characteristics |= set(net.trafo[~net.trafo[col].isnull(), col].values)
+    for col in (f"vk_hv_percent_characteristic", f"vkr_hv_percent_characteristic",
+                f"vk_mv_percent_characteristic", f"vkr_mv_percent_characteristic",
+                f"vk_lv_percent_characteristic", f"vkr_lv_percent_characteristic"):
+        if col in net.trafo3w.columns:
+            relevant_characteristics |= set(net.trafo3w[~net.trafo3w[col].isnull(), col].values)
+    p2.characteristic = net.characteristic.loc[list(relevant_characteristics)]
 
     _select_cost_df(net, p2, "poly_cost")
     _select_cost_df(net, p2, "pwl_cost")
@@ -2981,8 +2991,8 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         connected_lvb_trafos = set(net.trafo.index[(
             net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
             in_service_constr])
-        cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
-        cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_lvb_trafos)].hv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_hvb_trafos)].lv_bus.values)
 
     # Gives the lv mv and hv buses of a 3 winding transformer
     if "t3" in consider or 'trafo3w' in consider:
