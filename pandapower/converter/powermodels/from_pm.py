@@ -18,7 +18,10 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     # read power models results from result_pm to result (== ppc with results)
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net["_pm_result"] = result.copy()
+    if "ne_branch" in result_pm["solution"].keys():
+        net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
+    
     # net["_pm_result"] = result_pm
     success = ppc["success"]
     if success:
@@ -141,7 +144,7 @@ def read_ots_results(net):
 
 
 def read_tnep_results(net):
-    ne_branch = net._pm_result["solution"]["ne_branch"]
+    ne_branch = net._pm_result["ne_branch"]
     line_idx = net["res_ne_line"].index
     for pm_branch_idx, branch_data in ne_branch.items():
         # get pandapower index from power models index
