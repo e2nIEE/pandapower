@@ -147,8 +147,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
-    # pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
-    # pm = allow_multi_ext_grids(net, pm)
+    if from_time_step is not None and to_time_step is not None:
+        pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
+    pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -510,7 +511,8 @@ def add_params_to_pm(net, pm):
 def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     from pandapower.control import ConstControl
     if from_time_step is None or to_time_step is None:
-        raise ValueError("please define 'from_time_step' and 'to_time_step' to call time-series optimizaiton ")
+        raise ValueError("please define 'from_time_step' " +
+                         "and 'to_time_step' to call time-series optimizaiton ")
     if len(net.controller):
         load_dict, gen_dict = {}, {}
         pm["time_series"] = {"load": load_dict, "gen": gen_dict,
@@ -523,7 +525,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                 element = content["object"].__dict__["matching_params"]["element"]
                 variable = content["object"].__dict__["matching_params"]["variable"]
                 elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
-                values = content["object"].data_source.df.values
+                df = content["object"].data_source.df
                 for pd_ei in elm_idxs:
                     if element == "sgen" and net[element].controllable[pd_ei]:
                         pm_ei = net._pd2pm_lookups[element+"_controllable"][pd_ei]
@@ -533,8 +535,10 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                         pm_elm = "load"
                     if str(pm_ei) not in list(pm["time_series"][pm_elm].keys()):
                         pm["time_series"][pm_elm][str(pm_ei)] = {}
+                    target_ts = df[pd_ei][from_time_step:to_time_step].values
                     pm["time_series"][pm_elm][str(pm_ei)][variable] = \
-                        {str(m):n for m, n in enumerate(list(values[from_time_step:to_time_step, pd_ei]))}
+                       {str(m):n for m, n in enumerate(list(-target_ts))} if (element!="load" and pm_elm not in element) \
+                            else {str(m):n for m, n in enumerate(list(target_ts))} 
     return pm
 
 

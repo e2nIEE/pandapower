@@ -2,6 +2,7 @@ import os
 from pandapower.converter.powermodels.to_pm import convert_to_pm_structure, dump_pm_json
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -32,6 +33,9 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, 
     logger.debug("the json file for converted net is stored in: %s" % buffer_file)
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
+    
+    logger.info("Optimization ('"+net._options["julia_file"]+"') " +
+                "is finished in %s seconds:" % round(result_pm["solve_time"], 2))
     # read results and write back to net
     try:
         read_pm_results_to_net(net, ppc, ppci, result_pm)
@@ -46,7 +50,6 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, 
         raise e
     except Exception as e:
         raise e
-
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
@@ -81,11 +84,11 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         logger.info("Successfully added PandaModels")
 
-    # if dev_mode:
-        # Pkg.develop("PandaModels")
-        # Pkg.build()
-        # Pkg.resolve()
-        # Pkg.activate("PandaModels")
+    if dev_mode:
+        Pkg.develop("PandaModels")
+        Pkg.build()
+        Pkg.resolve()
+        Pkg.activate("PandaModels")
 
     try:
         Main.using("PandaModels")
