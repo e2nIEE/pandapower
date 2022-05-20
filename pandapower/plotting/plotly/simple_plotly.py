@@ -216,19 +216,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                       respect_separators,
                                       color=branch_color, width=branch_width,
                                       infofunc=hoverinfo)
-    trans_trace1 = []
-    trans_trace2 = []
+    trans_trace = []
+    trans_trace3w = []
     ext_grid_trace = []
     # ----- Trafos ------
     if 'trafo' in net:
         hoverinfo = hoverinfo_func(net, element=trans_element)
-        trans_trace1 = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
+        trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net:
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace2 = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
+        trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
                                           use_line_geodata=use_branch_geodata)
@@ -242,7 +242,7 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                             infofunc=hoverinfo, trace_name='external grid',
                                             node_element=node_element, branch_element=branch_element)
 
-    return branch_traces + trans_trace1 + trans_trace2 + ext_grid_trace + node_trace, settings
+    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace, settings
 
 
 if __name__ == '__main__':
