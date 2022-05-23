@@ -6,8 +6,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
-
+logger = logging.getLogger(__name__)
 
 def cancel(input_panel):
     logger.debug('received a cancel request from the user')

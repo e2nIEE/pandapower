@@ -11,8 +11,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
-
+logger = logging.getLogger(__name__)
 
 def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:

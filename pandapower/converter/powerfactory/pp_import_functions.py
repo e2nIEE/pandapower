@@ -12,7 +12,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
+logger = logging.getLogger(__name__)
 
 
 # make wrapper for GetAttribute
@@ -2268,7 +2268,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
         side = np.nonzero(steps)[0]
         if len(side) > 1:
-            logger.warning("panadpower currently doesn't support 3w transformer with"
+            logger.warning("pandapower currently doesn't support 3w transformer with"
                            "multiple tap changers")
         elif len(side) == 1:
             ts = ["h", "m", "l"][side[0]]
