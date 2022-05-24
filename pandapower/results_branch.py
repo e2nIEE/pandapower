@@ -147,8 +147,11 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
 
         if net["_options"].get("tdpf", False):
-            T = ppc["internal"]["T"]
-            res_line_df.loc[line_df.in_service, "temperature_degree_celsius"] = T
+            tpdf_lines = line_df.in_service & line_df.tdpf
+            no_tdpf_t = line_df.loc[~tpdf_lines].get("temperature_degree_celsius", default=20.)
+            res_line_df.loc[tpdf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            res_line_df.loc[~tpdf_lines, "temperature_degree_celsius"] = no_tdpf_t
+
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     # create res_line_vals which are written to the pandas dataframe

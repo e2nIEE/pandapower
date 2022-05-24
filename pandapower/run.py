@@ -157,6 +157,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             according to contribution factor weights for external grids
             and generators.
 
+        **tdpf** (bool, False) - Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on the TDPF parameters in net.line table.
+
+        **tdpf_delay_s** (float, None) - TDPF parameter, specifies the time delay in s to consider thermal inertia of conductors.
+
 
         **KWARGS**:
 
@@ -202,6 +206,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             gen: If True Sbus and the gen table in the ppc are recalculated
 
         **neglect_open_switch_branches** (bool, False) - If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
+
+        **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
 
     """
 

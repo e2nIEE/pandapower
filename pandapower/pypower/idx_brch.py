@@ -89,12 +89,23 @@ MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 
 BR_R_ASYM = 21
 BR_X_ASYM = 22
-BR_R_OHM_PER_KM = 23
-BR_LENGTH_KM = 24
-RATE_I = 25
-T_START = 26
-R_THETA = 27
-V_MPS = 28
 
+# columns for TDPF
+TDPF = 23  # bool flag (True or False) of whether the branch must be considered in the TDPF power flow
+BR_R_REF_OHM_PER_KM = 24  # reference R is needed because BR_R in ppc can already be adjusted by temperature
+BR_LENGTH_KM = 25  # to calculate R_ref in p.u.
+RATE_I_KA = 26  # rated I limit in kA (max_i_ka)
+T_START_C = 27  # starting temperature of the conductor in °C
+T_REF_C = 28  # reference temperature for calculating updated R (optional)
+T_AMBIENT_C = 29  # temperature of the surrounding air
+ALPHA = 30  # thermal coefficient of resistance (4.03e-3 for Al)
+WIND_SPEED_MPS = 31  # Wind speed in meters per second
+WIND_ANGLE_DEGREE = 32  # Angle of attack, angle between wind direction and conductor
+SOLAR_RADIATION_W_PER_SQ_M = 33  # Solar radiation in W/m²
+GAMMA = 34  # absorption albedo
+EPSILON = 35  # radiative albedo
+R_THETA = 36  # Thermal resistance R_Theta (Optional)
+OUTER_DIAMETER_M = 37  # outer diameter of the conductor
+MC_JOULE_PER_M_K = 38  # thermal inertia parameter of the conductor
 
-branch_cols = 29
+branch_cols = 39

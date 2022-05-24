@@ -545,7 +545,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
                      init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
                      neglect_open_switch_branches=False, consider_line_temperature=False,
-                     distributed_slack=False, tdpf=False, tdpf_delay_s=None):
+                     distributed_slack=False, tdpf=False, tdpf_update_r_theta=True, tdpf_delay_s=None):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -566,6 +566,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "voltage_depend_loads": voltage_depend_loads,
         "consider_line_temperature": consider_line_temperature,
         "tdpf": tdpf,
+        "tdpf_update_r_theta": tdpf_update_r_theta,
         "tdpf_delay_s": tdpf_delay_s,
         "distributed_slack": distributed_slack,
         "delta": delta,
@@ -738,7 +739,7 @@ def _check_if_numba_is_installed(numba):
     return numba
 
 
-def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack):
+def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
     """
     Implement some checks to decide whether the package lightsim2grid can be used. The package implements a backend for
      power flow calculation in C++ and provides a speed-up. If lightsim2grid is "auto" (default), we don't bombard the
@@ -767,6 +768,11 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and multiple ext_grids are found, "
                                   "but distributed_slack=False.")
+    if tdpf:
+        # tdpf not yet implemented in lightsim2grid
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
 
     return True
 
@@ -949,7 +955,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         trafo_loading, enforce_q_lims, check_connectivity,
                         voltage_depend_loads, passed_parameters=None,
                         consider_line_temperature=False,
-                        distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
+                        distributed_slack=False,
+                        tdpf=False, tdpf_update_r_theta=True, tdpf_delay_s=None, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -989,7 +996,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
-                                                       distributed_slack)
+                                                       distributed_slack, tdpf)
 
     ac = True
     mode = "pf"
@@ -1054,7 +1061,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
                      consider_line_temperature=consider_line_temperature,
-                     distributed_slack=distributed_slack, tdpf=tdpf, tdpf_delay_s=tdpf_delay_s)
+                     distributed_slack=distributed_slack,
+                     tdpf=tdpf, tdpf_update_r_theta=tdpf_update_r_theta, tdpf_delay_s=tdpf_delay_s)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
