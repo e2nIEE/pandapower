@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+# author : Ankur Arohi
 """
 changeset 19/5/2022
 function :  get_connected_elements
@@ -14,6 +14,7 @@ elements
 """
 import copy
 import gc
+import numbers
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
@@ -4160,7 +4161,9 @@ def false_elm_links_loop(net, elms=None):
             if len(fl):
                 false_links[elm] = fl
     return false_links
-def read_from_net(net, element, index, variable, flag='auto'):
+
+
+def read_from_net(net, element, index, variable, flag="auto"):
     """
     Reads values from the specified element table at the specified index in the column according to the specified variable
     Chooses the method to read based on flag
@@ -4191,13 +4194,17 @@ def read_from_net(net, element, index, variable, flag='auto'):
     elif flag == "object":
         return _read_from_object_attribute(net, element, variable, index)
     elif flag == "auto":
-        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        auto_flag, auto_variable = _detect_read_write_flag(
+            net, element, index, variable
+        )
         return read_from_net(net, element, index, auto_variable, auto_flag)
     else:
-        raise NotImplementedError("read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+        raise NotImplementedError(
+            "read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']"
+        )
 
 
-def write_to_net(net, element, index, variable, values, flag='auto'):
+def write_to_net(net, element, index, variable, values, flag="auto"):
     """
     Writes values to the specified element table at the specified index in the column according to the specified variable
     Chooses the method to write based on flag
@@ -4228,14 +4235,18 @@ def write_to_net(net, element, index, variable, values, flag='auto'):
     elif flag == "object":
         _write_to_object_attribute(net, element, index, variable, values)
     elif flag == "auto":
-        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        auto_flag, auto_variable = _detect_read_write_flag(
+            net, element, index, variable
+        )
         write_to_net(net, element, index, auto_variable, values, auto_flag)
     else:
-        raise NotImplementedError("write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+        raise NotImplementedError(
+            "write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']"
+        )
 
 
 def _detect_read_write_flag(net, element, index, variable):
-    if variable.startswith('object'):
+    if variable.startswith("object"):
         # write to object attribute
         return "object", variable.split(".")[1]
     elif isinstance(index, numbers.Number):
@@ -4264,7 +4275,7 @@ def _read_with_loc(net, element, variable, index):
 
 
 def _read_from_object_attribute(net, element, variable, index):
-    if hasattr(index, '__iter__') and len(index) > 1:
+    if hasattr(index, "__iter__") and len(index) > 1:
         values = np.array(shape=index.shape)
         for i, idx in enumerate(index):
             values[i] = getattr(net[element]["object"].at[idx], variable)
@@ -4287,9 +4298,8 @@ def _write_with_loc(net, element, index, variable, values):
 
 
 def _write_to_object_attribute(net, element, index, variable, values):
-    if hasattr(index, '__iter__') and len(index) > 1:
+    if hasattr(index, "__iter__") and len(index) > 1:
         for idx, val in zip(index, values):
             setattr(net[element]["object"].at[idx], variable, val)
     else:
         setattr(net[element]["object"].at[index], variable, values)
-
