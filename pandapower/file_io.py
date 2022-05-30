@@ -352,7 +352,10 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
     if convert:
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
     if add_basic_std_types:
-        net.std_types = dict(add_basic_std_types_fct(), **net.std_types)
+        # get std-types and add only new keys ones
+        net_dummy = create_empty_network()
+        for key in net_dummy.std_types:
+            net.std_types[key] = dict(net_dummy.std_types[key], **net.std_types[key])
 
     return net
 
