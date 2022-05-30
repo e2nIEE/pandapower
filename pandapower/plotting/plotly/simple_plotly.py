@@ -140,33 +140,34 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     trans_element = "trafo"
     trans3w_element = "trafo3w"
     separator_element = "switch"
-    return _simple_plotly_generic(net=net,
-                                  respect_separators=respect_switches,
-                                  use_branch_geodata=use_line_geodata,
-                                  on_map=on_map,
-                                  projection=projection,
-                                  map_style=map_style,
-                                  figsize=figsize,
-                                  aspectratio=aspectratio,
-                                  branch_width=line_width,
-                                  node_size=bus_size,
-                                  ext_grid_size=ext_grid_size,
-                                  node_color=bus_color,
-                                  branch_color=line_color,
-                                  trafo_color=trafo_color,
-                                  trafo3w_color=trafo3w_color,
-                                  ext_grid_color=ext_grid_color,
-                                  node_element=node_element,
-                                  branch_element=branch_element,
-                                  trans_element=trans_element,
-                                  trans3w_element=trans3w_element,
-                                  separator_element=separator_element,
-                                  branch_trace_func=create_line_trace,
-                                  node_trace_func=create_bus_trace,
-                                  hoverinfo_func=get_hoverinfo,
-                                  auto_open=auto_open,
-                                  showlegend=showlegend)
+    traces, settings = _simple_plotly_generic(net=net,
+                                              respect_separators=respect_switches,
+                                              use_branch_geodata=use_line_geodata,
+                                              on_map=on_map,
+                                              projection=projection,
+                                              map_style=map_style,
+                                              figsize=figsize,
+                                              aspectratio=aspectratio,
+                                              branch_width=line_width,
+                                              node_size=bus_size,
+                                              ext_grid_size=ext_grid_size,
+                                              node_color=bus_color,
+                                              branch_color=line_color,
+                                              trafo_color=trafo_color,
+                                              trafo3w_color=trafo3w_color,
+                                              ext_grid_color=ext_grid_color,
+                                              node_element=node_element,
+                                              branch_element=branch_element,
+                                              trans_element=trans_element,
+                                              trans3w_element=trans3w_element,
+                                              separator_element=separator_element,
+                                              branch_trace_func=create_line_trace,
+                                              node_trace_func=create_bus_trace,
+                                              hoverinfo_func=get_hoverinfo,
+                                              auto_open=auto_open,
+                                              showlegend=showlegend)
 
+    return draw_traces(traces, **settings)
 
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
                            figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
@@ -175,6 +176,9 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                            hoverinfo_func, filename='temp-plot.html', auto_open=True,
                            showlegend=True):
     version_check()
+    settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
+                    aspectratio=aspectratio, filename=filename, auto_open=auto_open,
+                    showlegend=showlegend)
     # create geocoord if none are available
     branch_geodata = branch_element + "_geodata"
     node_geodata = node_element + "_geodata"
@@ -213,26 +217,37 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                       color=branch_color, width=branch_width,
                                       infofunc=hoverinfo)
     trans_trace = []
+    trans_trace3w = []
+    ext_grid_trace = []
     # ----- Trafos ------
     if 'trafo' in net:
         hoverinfo = hoverinfo_func(net, element=trans_element)
-        trans_trace += create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
+        trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net:
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace += create_trafo_trace(net, color=trafo3w_color, trafotype='3W', width=branch_width * 5,
+        trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
+                                           width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
                                           use_line_geodata=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
-    marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
-    hoverinfo = hoverinfo_func(net, element="ext_grid")
-    ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
-                                        patch_type=marker_type, color=ext_grid_color,
-                                        infofunc=hoverinfo, trace_name='external grid',
-                                        node_element=node_element, branch_element=branch_element)
-    return draw_traces(branch_traces + trans_trace + ext_grid_trace + node_trace,
-                       showlegend=showlegend, aspectratio=aspectratio, figsize=figsize,
-                       on_map=on_map, map_style=map_style, filename=filename, auto_open=auto_open)
+    if 'ext_grid' in net:
+        marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
+        hoverinfo = hoverinfo_func(net, element="ext_grid")
+        ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
+                                            patch_type=marker_type, color=ext_grid_color,
+                                            infofunc=hoverinfo, trace_name='external grid',
+                                            node_element=node_element, branch_element=branch_element)
+
+    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace, settings
+
+
+if __name__ == '__main__':
+    from pandapower import networks as nw
+    # net = nw.mv_oberrhein()
+    # simple_plotly(net)
+    net = nw.example_multivoltage()
+    fig = simple_plotly(net, trafo3w_color='k')
