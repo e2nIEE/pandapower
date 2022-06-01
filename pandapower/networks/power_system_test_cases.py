@@ -286,7 +286,7 @@ def case39(**kwargs):
 
 
 def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230,
-           vn_kv_area6=161):
+           vn_kv_area6=161, **kwargs):
     """
     This function provides the ieee case57 network with the data origin `PYPOWER case 57 \
     <https:/pypi.python.org/pypi/PYPOWER>`_.
@@ -450,7 +450,7 @@ def case1354pegase(**kwargs):
     return case1354pegase
 
 
-def case1888rte(ref_bus_idx=1246):
+def case1888rte(ref_bus_idx=1246, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by `MATPOWER \
@@ -484,7 +484,7 @@ def case1888rte(ref_bus_idx=1246):
     return case1888rte
 
 
-def case2848rte(ref_bus_idx=271):
+def case2848rte(ref_bus_idx=271, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
@@ -557,7 +557,7 @@ def case3120sp(**kwargs):
     return case3120sp
 
 
-def case6470rte(ref_bus_idx=5988):
+def case6470rte(ref_bus_idx=5988, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
@@ -590,7 +590,7 @@ def case6470rte(ref_bus_idx=5988):
     return case6470rte
 
 
-def case6495rte(ref_bus_idx=None):
+def case6495rte(ref_bus_idx=None, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
@@ -625,7 +625,7 @@ def case6495rte(ref_bus_idx=None):
     return case6495rte
 
 
-def case6515rte(ref_bus_idx=6171):
+def case6515rte(ref_bus_idx=6171, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by `MATPOWER \
