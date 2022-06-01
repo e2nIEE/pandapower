@@ -51,6 +51,12 @@ def _calc_ikss(net, ppci, bus_idx):
 
     _current_source_current(net, ppci)
 
+    # add SKSS to current source fault buses
+    bus_idx = np.intersect1d(np.flatnonzero(ppci["bus"][:, IKCV]), np.flatnonzero(~np.isnan(ppci["bus"][:, IKCV])))
+    if fault == "3ph":
+        ppci["bus"][bus_idx, SKSS] += np.sqrt(3) * ppci["bus"][bus_idx, IKCV] * ppci["bus"][bus_idx, BASE_KV]
+
+
 
 def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     case = net._options["case"]
@@ -58,7 +64,7 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
     ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
 
-    z_equiv = abs((ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
+    z_equiv = ((ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
                 (ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j))
 
     # Only for test, should correspondant to PF result
@@ -68,8 +74,10 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, R_EQUIV]
     ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, X_EQUIV]
 
-    ppci_0["bus"][bus_idx, IKSS1] = c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppci_0["baseMVA"]
-    ppci["bus"][bus_idx, IKSS1] = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * np.sqrt(3) * ppci["baseMVA"]
+    # ppci["bus"][bus_idx, IKSS1] = abs(c * ppci["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
+    # ppci_0["bus"][bus_idx, IKSS1] = abs(c * ppci_0["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
+    ppci["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
+    ppci_0["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
 
     _current_source_current(net, ppci)
 

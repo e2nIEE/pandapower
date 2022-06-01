@@ -5,6 +5,8 @@ Change Log
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
 - [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
+- [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
 
 [2.9.0]- 2022-03-23
 ----------------------
@@ -16,6 +18,7 @@ Change Log
 - [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
 - [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
 - [FIX] fixed hover information for lines in plotly
+- [ADDED] functions to obtain grid equivalents (power system reduction with REI, Ward, X-Ward methods)
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
