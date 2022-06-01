@@ -61,7 +61,8 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
     """
     if include_substations:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"),
+                           **kwargs)
     else:
         net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw

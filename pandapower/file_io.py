@@ -29,7 +29,6 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
 import pandapower.io_utils as io_utils
-from pandapower.std_types import add_basic_std_types as add_basic_std_types_fct
 
 def to_pickle(net, filename):
     """
