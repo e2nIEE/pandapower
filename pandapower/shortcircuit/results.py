@@ -66,10 +66,12 @@ def _extract_results(net, ppc, ppc_0, bus):
             _get_line_all_results(net, ppc, bus)
             _get_trafo_all_results(net, ppc, bus)
             _get_trafo3w_all_results(net, ppc, bus)
+            _get_switch_all_results(net, ppc, bus)
         else:
             _get_line_results(net, ppc)
             _get_trafo_results(net, ppc)
             _get_trafo3w_results(net, ppc)
+            _get_switch_results(net, ppc)
 
 
 def _get_bus_results(net, ppc, ppc_0, bus):
@@ -107,6 +109,22 @@ def _get_line_results(net, ppc):
         if net._options["ith"]:
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
+def _get_switch_results(net, ppc):
+    branch_lookup = net._pd2ppc_lookups["branch"]
+    case = net._options["case"]
+    if "switch" in branch_lookup:
+        f, t = branch_lookup["switch"]
+        minmax = np.max if case == "max" else np.min
+        bb_switches = net._impedance_bb_switches
+        net.res_switch_sc.loc[bb_switches, "ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+        if net._options["ip"]:
+            net.res_switch_sc.loc[bb_switches, "ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
+        if net._options["ith"]:
+            net.res_switch_sc.loc[bb_switches, "ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
+    switch_lines = net.switch.element[net.switch.et=="l"]
+    if len(switch_lines) > 0:
+        net.res_switch_sc.loc[switch_lines.index, "ikss_ka"] = net.res_line_sc.loc[switch_lines.values, "ikss_ka"].values
+
 
 def _get_line_all_results(net, ppc, bus):
     case = net._options["case"]
@@ -130,6 +148,29 @@ def _get_line_all_results(net, ppc, bus):
             net.res_line_sc["ith_ka"] = minmax(ppc["internal"]["branch_ith_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
                                                ppc["internal"]["branch_ith_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
 
+def _get_switch_all_results(net, ppc, bus):
+    case = net._options["case"]
+
+    bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
+    branch_lookup = net._pd2ppc_lookups["branch"]
+
+    multindex = pd.MultiIndex.from_product([net.res_switch_sc.index, bus], names=['switch','bus'])
+    net.res_switch_sc = net.res_switch_sc.reindex(multindex)
+
+    if "switch" in branch_lookup:
+        f, t = branch_lookup["switch"]
+        minmax = np.maximum if case == "max" else np.minimum
+
+        net.res_switch_sc["ikss_ka"] = minmax(ppc["internal"]["branch_ikss_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
+                                            ppc["internal"]["branch_ikss_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
+        if net._options["ip"]:
+            net.res_switch_sc["ip_ka"] = minmax(ppc["internal"]["branch_ip_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
+                                              ppc["internal"]["branch_ip_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
+        if net._options["ith"]:
+            net.res_switch_sc["ith_ka"] = minmax(ppc["internal"]["branch_ith_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
+                                               ppc["internal"]["branch_ith_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
+    
+    
 def _get_trafo_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:

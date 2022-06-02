@@ -215,8 +215,7 @@ def _calc_sc_1ph(net, bus):
     ppc, ppci = _init_ppc(net)
     # Create k updated ppci
     ppci_bus = _get_is_ppci_bus(net, bus)
-    _, ppci, _ =\
-        _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
+    _, ppci, _ = _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
     _calc_ybus(ppci)
 
     # zero seq bus impedance

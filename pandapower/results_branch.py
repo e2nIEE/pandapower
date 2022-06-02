@@ -592,12 +592,17 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
 
 
 def _get_switch_results(net, i_ft, suffix=None):
-    if not "switch" in net._pd2ppc_lookups["branch"]:
-        return
-    f, t = net._pd2ppc_lookups["branch"]["switch"]
-    with np.errstate(invalid='ignore'):
-        i_ka = np.max(i_ft[f:t], axis=1)
-
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
-    net[res_switch_df] = pd.DataFrame(data=i_ka, columns=["i_ka"],
-                                      index=net.switch[net._impedance_bb_switches].index)
+    net[res_switch_df] = pd.DataFrame(columns=["i_ka"], index=net.switch.index)
+
+    if "switch" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["switch"]
+        with np.errstate(invalid='ignore'):
+            i_ka = np.max(i_ft[f:t], axis=1)
+        net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
+    
+    switch_lines = net.switch.element[net.switch.et=="l"]
+    if len(switch_lines) > 0:
+        res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
+        net[res_switch_df].loc[switch_lines.index, "i_ka"] = net[res_line_df].loc[switch_lines.values, "i_ka"].values
+
