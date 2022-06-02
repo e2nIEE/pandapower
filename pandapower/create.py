@@ -504,6 +504,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             "branch": None},
         "version": __version__,
         "converged": False,
+        "OPF_converged": False,
         "name": name,
         "f_hz": f_hz,
         "sn_mva": sn_mva
