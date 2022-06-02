@@ -17,7 +17,7 @@ import pandapower.networks as networks
 import pandapower.topology as topology
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, create_test_network
+from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 
 try:
@@ -137,6 +137,21 @@ def test_type_casting_json(net_in, tmp_path):
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
     assert_net_equal(net_in, net)
+
+
+def test_from_json_add_basic_std_types(tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + r"\testfile_std_types.json"
+    # load older load network and change std-type
+    net = create_test_network2()
+    net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] = 111
+    num_std_types = sum(len(std) for std in net.std_types.values())
+
+    pp.to_json(net, filename)
+    net_updated = pp.from_json(filename, add_basic_std_types=True)
+
+    # check if old std-types didn't change but new ones are added
+    assert net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] == 111
+    assert sum(len(std) for std in net_updated.std_types.values()) > num_std_types
 
 
 @pytest.mark.xfail(reason="For std_types, some dtypes are not returned correctly by sql. Therefore,"
