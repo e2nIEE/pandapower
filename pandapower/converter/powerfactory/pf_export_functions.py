@@ -3,8 +3,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
-
+logger = logging.getLogger(__name__)
 
 def create_network_dict(app, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
