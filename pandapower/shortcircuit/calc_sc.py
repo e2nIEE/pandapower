@@ -26,6 +26,9 @@ from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 from pandapower.results import init_results
+from pandapower.pypower.idx_bus import  GS, BS
+from pandapower.shortcircuit.idx_bus import  K_G, K_SG, KAPPA
+from pandapower.shortcircuit.idx_brch import  K_ST
 
 
 def calc_sc(net, bus=None,
@@ -55,9 +58,9 @@ def calc_sc(net, bus=None,
 
             - "3ph" for three-phase
 
-            - "2ph" for two-phase short-circuits
+            - "2ph" for two-phase (phase-to-phase) short-circuits
 
-            - "1ph" for single-phase ground faults
+            - "1ph" for single-phase-to-ground faults
 
         **case** (str, "max")
 
@@ -219,7 +222,7 @@ def _calc_sc_1ph(net, bus):
     _calc_ybus(ppci)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net)
+    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:

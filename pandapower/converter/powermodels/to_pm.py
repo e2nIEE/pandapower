@@ -2,9 +2,10 @@ import json
 import math
 import os
 import tempfile
+
 from os import remove
 from os.path import isfile
-
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
@@ -18,6 +19,7 @@ from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYP
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
 from pandapower.results import init_results
+
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
@@ -52,7 +54,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -118,7 +120,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    net, pm, ppc, ppci = convert_to_pm_structure(net)
+    net, pm, ppc, ppci = convert_to_pm_structure(net, from_time_step=from_time_step, 
+                                                 to_time_step=to_time_step)
     buffer_file = dump_pm_json(pm, pm_file_path)
     if pm_file_path is None and isfile(buffer_file):
         remove(buffer_file)
@@ -128,7 +131,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, opf_flow_lim="S"):
+def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
+                            **kwargs):
     if net["_options"]["voltage_depend_loads"] and not (
             np.allclose(net.load.const_z_percent.values, 0) and
             np.allclose(net.load.const_i_percent.values, 0)):
@@ -143,6 +147,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S"):
     pm = ppc_to_pm(net, ppci)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
+    if from_time_step is not None and to_time_step is not None:
+        pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
+    pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
 
@@ -418,6 +425,7 @@ def add_pm_options(pm, net):
             np.inf, np.inf, np.inf
     pm["correct_pm_network_data"] = net._options["correct_pm_network_data"]
     pm["silence"] = net._options["silence"]
+    pm["ac"] = net._options["ac"]
     return pm
 
 
@@ -463,7 +471,7 @@ def add_params_to_pm(net, pm):
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
-            return pm
+            continue
         elif "user_defined_params" not in pm.keys():
             pm["user_defined_params"] = dict()
         params = [param_col.split("/")[-1] for param_col in param_cols]
@@ -480,8 +488,67 @@ def add_params_to_pm(net, pm):
             else:
                 pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
             df = pd.DataFrame(index=pm_idxs)
-            df["element"] = elm
+            df["element"] = elm if elm not in ["line", "trafo"] else "branch"
             df["element_index"] = pm_idxs
+            df["element_pp_index"] = pd_idxs
             df["value"] = target_values
-            pm["user_defined_params"][param] = df.to_dict("index")
-        return pm
+            pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
+        if elm in ["line", "trafo"]:
+            for k in pm["user_defined_params"]["side"].keys():
+                side = pm["user_defined_params"]["side"][k]["value"]
+                side_bus_f = side + "_bus"
+                if elm == "line":
+                    side_bus_t = "from_bus" if side == "to" else "to_bus" 
+                if elm == "trafo":
+                    side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
+                pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
+                pm["user_defined_params"]["setpoint_q"][k]["f_bus"] = \
+                    net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
+                    net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+    return pm
+
+
+def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
+    from pandapower.control import ConstControl
+    if from_time_step is None or to_time_step is None:
+        raise ValueError("please define 'from_time_step' " +
+                         "and 'to_time_step' to call time-series optimizaiton ")
+    if len(net.controller):
+        load_dict, gen_dict = {}, {}
+        pm["time_series"] = {"load": load_dict, "gen": gen_dict,
+                             "from_time_step": from_time_step+1, 
+                             "to_time_step": to_time_step+1} 
+        for idx, content in net.controller.iterrows():
+            if not type(content["object"]) == ConstControl:
+                continue
+            else:
+                element = content["object"].__dict__["matching_params"]["element"]
+                variable = content["object"].__dict__["matching_params"]["variable"]
+                elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
+                df = content["object"].data_source.df
+                for pd_ei in elm_idxs:
+                    if element == "sgen" and net[element].controllable[pd_ei]:
+                        pm_ei = net._pd2pm_lookups[element+"_controllable"][pd_ei]
+                        pm_elm = "gen"
+                    else:
+                        pm_ei = net._pd2pm_lookups[element][pd_ei]
+                        pm_elm = "load"
+                    if str(pm_ei) not in list(pm["time_series"][pm_elm].keys()):
+                        pm["time_series"][pm_elm][str(pm_ei)] = {}
+                    target_ts = df[pd_ei][from_time_step:to_time_step].values
+                    pm["time_series"][pm_elm][str(pm_ei)][variable] = \
+                       {str(m):n for m, n in enumerate(list(-target_ts))} if (element!="load" and pm_elm not in element) \
+                            else {str(m):n for m, n in enumerate(list(target_ts))} 
+    return pm
+
+
+def allow_multi_ext_grids(net, pm, ext_grids=None):
+    ext_grids = net.ext_grid.index.tolist() if ext_grids is None else ext_grids
+    target_pp_buses = net.ext_grid.bus[ext_grids]
+    target_pm_buses = net._pd2pm_lookups["bus"][target_pp_buses]
+    for b in target_pm_buses:
+        pm["bus"][str(b)]["bus_type"] = 3
+    return pm
+    
+   

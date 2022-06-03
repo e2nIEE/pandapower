@@ -17,7 +17,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False):
+def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False, **kwargs):
     """
     This function converts a matpower case file version 2 to a pandapower net.
 
@@ -38,6 +38,8 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain
         the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
 
+        ****kwargs** - key word arguments for from_ppc()
+
     OUTPUT:
 
         **net** - The pandapower network
@@ -50,7 +52,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
 
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
-    net = from_ppc(ppc, f_hz, validate_conversion)
+    net = from_ppc(ppc, f_hz, validate_conversion, **kwargs)
     if "mpc_additional_data" in ppc:
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))

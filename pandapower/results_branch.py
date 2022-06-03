@@ -334,7 +334,9 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
                                   [net.res_bus_3ph['vm_c_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]]])
 
             # Branch Elements
-            i_branch = np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0]
+            i_branch = np.concatenate((np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0],
+                                       np.where(ppc0['branch'][:, T_BUS] == lv_bus)[0]))
+            i_branch = np.delete(i_branch, np.where(i_branch == i_trafo + f))  # delete the trafo itself from the list
             if len(i_branch > 0):
                 I_branch_012 = I012_f[:, i_branch]
                 I_branch_abc = sequence_to_phase(I_branch_012)
@@ -344,12 +346,13 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
             # Loads
             load_index = np.where(net.asymmetric_load['bus'] == lv_bus)[0]
             if len(load_index > 0):
-                S_load_abc = abs(np.array([net.res_asymmetric_load_3ph['p_a_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index]),
-                                           net.res_asymmetric_load_3ph['p_b_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index]),
-                                           net.res_asymmetric_load_3ph['p_c_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index])]))
+                S_load_abc = abs(np.array([
+                    np.array(net.res_asymmetric_load_3ph['p_a_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index])),
+                    np.array(net.res_asymmetric_load_3ph['p_b_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index])),
+                    np.array(net.res_asymmetric_load_3ph['p_c_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index]))]))
                 I_load_abc = S_load_abc / (V_bus_abc / np.sqrt(3))
                 for x in range(len(I_load_abc[0])):
                     Iabc_sum += I_load_abc[:, x]
@@ -357,12 +360,13 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
             # Sgens
             sgen_bus_index = np.where(net.asymmetric_sgen['bus'] == lv_bus)[0]
             if len(sgen_bus_index > 0):
-                S_sgen_abc = abs(np.array([net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index]),
-                                           net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index]),
-                                           net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index])]))
+                S_sgen_abc = abs(np.array([
+                    np.array(net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index])),
+                    np.array(net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index])),
+                    np.array(net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index]))]))
                 I_sgen_abc = S_sgen_abc / (V_bus_abc / np.sqrt(3))
                 for x in range(len(I_sgen_abc[0])):
                     Iabc_sum -= I_sgen_abc[:, x]
