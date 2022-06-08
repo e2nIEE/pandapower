@@ -133,7 +133,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(int)
 
-        if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
+        if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
             continue
 
         vk_percent = trafos["vk_percent"].values.astype(float)
@@ -194,7 +194,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
         tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
         if mode == 'pf_3ph':
-            if vector_group not in ["YNyn", "Dyn", "Yzn"]:
+            if vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
                 raise NotImplementedError("Calculation of 3-phase power flow is only implemented for the transformer "
                                           "vector groups 'YNyn', 'Dyn', 'Yzn'")
             # =============================================================================
@@ -275,7 +275,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
 
         # y0_k = 1 / z0_k #adding admittance for "pi" model
-        if vector_group == "Dyn":
+        if vector_group.lower() == "dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
                 y = y0_k * ppc["baseMVA"]  # pi model
@@ -284,7 +284,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
-        elif vector_group == "YNd":
+        elif vector_group.lower() == "ynd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
                 y = y0_k * ppc["baseMVA"]  # pi model
@@ -299,7 +299,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
-        elif vector_group == "Yyn":
+        elif vector_group.lower() == "yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"]  # pi model
@@ -310,7 +310,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
-        elif vector_group == "YNyn":
+        elif vector_group.lower() == "ynyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
             # zc = ZAB
             ppc["branch"][ppc_idx, BR_R] = zc.real
@@ -324,7 +324,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             gs_all = np.hstack([gs_all, YBN.real * in_service * ppc["baseMVA"]])
             bs_all = np.hstack([bs_all, YBN.imag * in_service * ppc["baseMVA"]])
 
-        elif vector_group == "YNy":
+        elif vector_group.lower() == "yny":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
                 y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"]  # pi model
@@ -333,7 +333,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
-        elif vector_group == "Yzn":
+        elif vector_group.lower() == "yzn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
             #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
