@@ -1973,8 +1973,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
 
     """
-    from_buses = [from_buses] if (type(from_buses) == int or type(from_buses) == uint32) else from_buses
-    to_buses = [to_buses] if (type(to_buses) == int or type(to_buses) == uint32) else to_buses
+    from_buses = [from_buses] if type(from_buses) == int else from_buses
+    to_buses = [to_buses] if type(to_buses) == int else to_buses
 
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
@@ -1998,7 +1998,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         params = set()
         [params.add(list(lineparam[i].keys())[x]) for i in range(len(lineparam)) for x in range(len(lineparam[i].keys()))]
         params.add('g_us_per_km')
-        
+
         for p in params:
             else_val = [None] if p != 'g_us_per_km' else [0]
             entries[p] = list(map(check_entry_in_std_type, lineparam, [p] * len(lineparam), else_val * len(lineparam)))
