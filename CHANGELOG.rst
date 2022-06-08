@@ -4,6 +4,9 @@ Change Log
 [upcoming release] - 2022-..-..
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
+- [ADDED] from_mpc() converter: added functionality to import .m files via external package
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
 
 [2.9.0]- 2022-03-23
 ----------------------
@@ -19,7 +22,7 @@ Change Log
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
-- [ADDED] added the funtionality to import grid data from PowerFactory
+- [ADDED] added the functionality to import grid data from PowerFactory
 - [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06
