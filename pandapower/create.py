@@ -1925,22 +1925,25 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                  geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=None, **kwargs):
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values. In any case the line parameters are defined through a single standard
+        single values. If std_type is an array with the same length, each new line will be assigned
+        the corresponding std_type.
+
+        Not valid anymore: In any case the line parameters are defined through a single standard
         type, so all lines have the same standard type.
 
 
         INPUT:
-            **net** - The net within this line should be created
+            **net** - The net within which this line should be created
 
-            **from_buses** (list of int) - ID of the bus on one side which the line will be \
+            **from_buses** (int or list of int) - ID of the bus on one side which the line will be \
                 connected with
 
-            **to_buses** (list of int) - ID of the bus on the other side which the line will be \
+            **to_buses** (int or list of int) - ID of the bus on the other side which the line will be \
                 connected with
 
             **length_km** (list of float) - The line length in km
 
-            **std_type** (string) - The linetype of the lines.
+            **std_type** (string or list) - The linetype(s) of the lines.
 
         OPTIONAL:
             **name** (list of string, None) - A custom name for this line
@@ -1970,6 +1973,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
 
     """
+    from_buses = [from_buses] if type(from_buses) == int else from_buses
+    to_buses = [to_buses] if type(to_buses) == int else to_buses
+
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
@@ -1981,23 +1987,21 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     # add std type data
     if isinstance(std_type, str):
         lineparam = load_std_type(net, std_type, "line")
-        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
-        entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
-        entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
-        entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
-        if "type" in lineparam:
-            entries["type"] = lineparam["type"]
+        lineparam["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0
+        entries.update(lineparam)
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
-        entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
-        entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
-        entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
-        entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
-        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
-                                          [0.] * len(lineparam)))
-        entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
-                                   [None] * len(lineparam)))
+
+        # create comprehensive set of std_type params
+        # since 'g_us_per_km' needs to be specified for powerflow calc, but is often not part of std_type,
+        # it needs to be treated special here
+        params = set()
+        [params.add(list(lineparam[i].keys())[x]) for i in range(len(lineparam)) for x in range(len(lineparam[i].keys()))]
+        params.add('g_us_per_km')
+
+        for p in params:
+            else_val = [None] if p != 'g_us_per_km' else [0]
+            entries[p] = list(map(check_entry_in_std_type, lineparam, [p] * len(lineparam), else_val * len(lineparam)))
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 

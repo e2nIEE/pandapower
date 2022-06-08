@@ -7,6 +7,7 @@ Change Log
 - [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
 - [ADDED] from_mpc() converter: added functionality to import .m files via external package
 - [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
+- [CHANGED] create_lines() now takes all parameters of the std_type into account, not just predefined ones
 
 [2.9.0]- 2022-03-23
 ----------------------
