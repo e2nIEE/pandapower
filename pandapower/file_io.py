@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -29,7 +29,6 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
 import pandapower.io_utils as io_utils
-
 
 def to_pickle(net, filename):
     """
@@ -231,7 +230,7 @@ def _from_excel_old(xls):
 
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True):
+              keep_serialized_elements=True, add_basic_std_types=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -252,6 +251,9 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         **keep_serialized_elements** (bool, True) - Keep serialized elements if given.
         Default: Serialized elements are kept.
 
+        **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
+        type library.
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -270,11 +272,12 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
 
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
                             elements_to_deserialize=elements_to_deserialize,
-                            keep_serialized_elements=keep_serialized_elements)
+                            keep_serialized_elements=keep_serialized_elements,
+                            add_basic_std_types=add_basic_std_types)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
-                     keep_serialized_elements=True):
+                     keep_serialized_elements=True, add_basic_std_types=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -293,6 +296,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
         **keep_serialized_elements** (bool, True) - Keep serialized elements if given.
             Default: Serialized elements are kept.
+
+        **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
+        type library.
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -344,6 +350,12 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
     if convert:
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
+    if add_basic_std_types:
+        # get std-types and add only new keys ones
+        net_dummy = create_empty_network()
+        for key in net_dummy.std_types:
+            net.std_types[key] = dict(net_dummy.std_types[key], **net.std_types[key])
+
     return net
 
 

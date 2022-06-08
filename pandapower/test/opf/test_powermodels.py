@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -547,7 +547,7 @@ def test_timeseries_powermodels():
     pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_runpm_vd():
+def test_runpm_vstab():
     net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.sgen.p_mw = net.sgen.p_mw * 8
     net.sgen.sn_mva = net.sgen.sn_mva * 8
@@ -583,7 +583,7 @@ def test_runpm_vd():
     net.bus["pm_param/setpoint_v"] = None
     net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
 
-    pp.runpm_vd(net)
+    pp.runpm_vstab(net)
 
     assert np.allclose(net.res_bus.vm_pu[net.sgen.bus], 0.99, atol=1e-2, rtol=1e-2)
     assert np.not_equal(net_org.res_sgen.q_mvar.values.all(), net.res_sgen.q_mvar.values.all())

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -20,7 +20,7 @@ def test_to_ppc_and_mpc():
     functions = ['case4gs', 'case6ww', 'case30', 'case39']
     for fn in functions:
         # get pypower grids with results
-        ppc_net = get_testgrids(fn, 'pypower_cases.p')
+        ppc_net = get_testgrids(fn, 'pypower_cases.json')
 
         # get pandapower grids
         pandapower_module = __import__('pandapower', fromlist=['networks'])

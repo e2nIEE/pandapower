@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -15,6 +15,7 @@ import weakref
 from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
+import numpy as np
 
 import networkx
 import numpy
@@ -22,25 +23,35 @@ import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 from packaging import version
-from pandas.testing import assert_series_equal, assert_frame_equal
+
+try:
+    from pandas.testing import assert_series_equal, assert_frame_equal
+except ImportError:
+    from pandas.util.testing import assert_series_equal, assert_frame_equal
+
+from pandapower.auxiliary import get_free_id
 
 try:
     from cryptography.fernet import Fernet
+
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import hashlib
+
     hashlib_INSTALLED = True
 except ImportError:
     hashlib_INSTALLED = False
 try:
     import base64
+
     base64_INSTALLED = True
 except ImportError:
     base64_INSTALLED = False
 try:
     import zlib
+
     zlib_INSTALLED = True
 except:
     zlib_INSTALLED = False
@@ -58,6 +69,7 @@ try:
     import fiona
     import fiona.crs
     import geopandas
+
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -70,7 +82,7 @@ except (ImportError, OSError):
     SHAPELY_INSTALLED = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -278,7 +290,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int64Index
                 try:
-                    df_index = pd.Int64Index(df_dict['index'])
+                    df_index = pd.Index(df_dict['index'], dtype=np.int64)
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
@@ -318,7 +330,9 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
 
 
 def isinstance_partial(obj, cls):
-    if isinstance(obj, (pandapowerNet, tuple)):
+    # this function shall make sure that for the given classes, no default string functions are
+    # used, but the registered ones (to_serializable registry)
+    if isinstance(obj, (pandapowerNet, tuple, numpy.floating)):
         return False
     return isinstance(obj, cls)
 
@@ -575,7 +589,7 @@ def encrypt_string(s, key, compress=True):
     missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
         cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
@@ -593,7 +607,7 @@ def decrypt_string(s, key):
     missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
         cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
     key = base64.urlsafe_b64encode(key_base.digest())
     cipher_suite = Fernet(key)
@@ -632,10 +646,12 @@ class JSONSerializableClass(object):
              if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index, column="object", overwrite=False,
+    def add_to_net(self, net, element, index=None, column="object", overwrite=False,
                    preserve_dtypes=False, fill_dict=None):
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
+        if index is None:
+            index = get_free_id(net[element])
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
@@ -654,6 +670,8 @@ class JSONSerializableClass(object):
 
         if preserve_dtypes:
             _preserve_dtypes(net[element], dtypes)
+
+        return index
 
     def equals(self, other):
 
@@ -764,7 +782,7 @@ def json_pandapowernet(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    orient = "split"
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
@@ -802,13 +820,28 @@ def json_array(obj):
 @to_serializable.register(numpy.integer)
 def json_npint(obj):
     logger.debug("integer")
-    return int(obj)
+    d = with_signature(obj, int(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numpy.floating)
 def json_npfloat(obj):
     logger.debug("floating")
-    return float(obj)
+    if numpy.isnan(obj):
+        d = with_signature(obj, str(obj), obj_module="numpy")
+    else:
+        d = with_signature(obj, float(obj), obj_module="numpy")
+    d.pop('dtype')
+    return d
+
+
+@to_serializable.register(numpy.bool_)
+def json_npbool(obj):
+    logger.debug("boolean")
+    d = with_signature(obj, "true" if obj else "false", obj_module="numpy")
+    d.pop('dtype')
+    return d
 
 
 @to_serializable.register(numbers.Number)
@@ -902,7 +935,3 @@ if SHAPELY_INSTALLED:
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
-
-if __name__ == '__main__':
-    import pandapower as pp
-    net = pp.from_json(r'edis_zone_3_6.json')

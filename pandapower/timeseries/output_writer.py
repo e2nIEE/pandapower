@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
@@ -20,7 +20,7 @@ from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_re
     get_batch_trafo_results, get_batch_bus_results
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 logger = pplog.getLogger(__name__)
@@ -404,7 +404,7 @@ class OutputWriter(JSONSerializableClass):
 
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
-            index = net[table.split("res_")[-1]].index
+            index = net[table.split("res_")[-1].replace("_3ph", "")].index
         if not hasattr(index, '__iter__'):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):

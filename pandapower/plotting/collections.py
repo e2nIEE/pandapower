@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import copy
@@ -26,14 +26,14 @@ from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_
     position_on_busbar, get_index_array
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
 
 
-class CustomTextPath():
+class CustomTextPath(TextPath):
     """
     Create a path from the text. This class provides functionality for deepcopy, which is not
     implemented for TextPath.

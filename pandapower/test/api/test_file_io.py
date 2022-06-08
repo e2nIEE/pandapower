@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import json
 import os
-import sys
 
 import numpy as np
+import pandas as pd
+import pytest
+
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
 import pandapower.topology as topology
-import pandas as pd
-import pytest
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, create_test_network
+from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 
 try:
@@ -137,6 +137,21 @@ def test_type_casting_json(net_in, tmp_path):
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
     assert_net_equal(net_in, net)
+
+
+def test_from_json_add_basic_std_types(tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + r"\testfile_std_types.json"
+    # load older load network and change std-type
+    net = create_test_network2()
+    net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] = 111
+    num_std_types = sum(len(std) for std in net.std_types.values())
+
+    pp.to_json(net, filename)
+    net_updated = pp.from_json(filename, add_basic_std_types=True)
+
+    # check if old std-types didn't change but new ones are added
+    assert net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] == 111
+    assert sum(len(std) for std in net_updated.std_types.values()) > num_std_types
 
 
 @pytest.mark.xfail(reason="For std_types, some dtypes are not returned correctly by sql. Therefore,"
@@ -396,6 +411,20 @@ def test_empty_geo_dataframe():
     s = pp.to_json(net)
     net1 = pp.from_json_string(s)
     assert_net_equal(net, net1)
+
+
+
+def test_json_io_with_characteristics(net_in):
+    c1 = pp.control.Characteristic.from_points(net_in, [(0, 0), (1, 1)])
+    c2 = pp.control.SplineCharacteristic.from_points(net_in, [(2, 2), (3, 4), (4, 5)])
+
+    net_out = pp.from_json_string(pp.to_json(net_in))
+    assert_net_equal(net_in, net_out)
+    assert "characteristic" in net_out.keys()
+    assert isinstance(net_out.characteristic.object.at[c1.index], pp.control.Characteristic)
+    assert isinstance(net_out.characteristic.object.at[c2.index], pp.control.SplineCharacteristic)
+    assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)
+    assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
 
 
 if __name__ == "__main__":

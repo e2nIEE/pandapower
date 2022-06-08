@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from time import perf_counter
 
-from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32
+from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32, sum as np_sum, abs as np_abs
 
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -22,15 +22,14 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
+    numba_installed = True
 except ImportError:
-    pass
+    numba_installed = False
 
 try:
-    from lightsim2grid.newtonpf import newtonpf as newton_ls
-
-    lightsim2grid_available = True
+    from lightsim2grid.newtonpf import newtonpf_new as newton_ls
 except ImportError:
-    lightsim2grid_available = False
+    newton_ls = None
 
 
 def _run_newton_raphson_pf(ppci, options):
@@ -108,7 +107,7 @@ def _get_numba_functions(ppci, options):
     """
     pfsoln from pypower maybe slow in some cases. This function chooses the fastest for the given pf calculation
     """
-    if options["numba"]:
+    if options["numba"] and numba_installed:
         makeYbus = makeYbus_numba
         shunt_in_net = any(ppci["bus"][:, BS]) or any(ppci["bus"][:, GS])
         # faster pfsoln function if only one slack is in the grid and no gens
@@ -151,8 +150,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    if lightsim2grid_available:
-        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus, Sbus, V0, pv, pq, ppci, options)
+    if options["lightsim2grid"]:
+        V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus.tocsc(), Sbus, V0, ref, pv, pq, ppci, options)
     else:
         V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
 

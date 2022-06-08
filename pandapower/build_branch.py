@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -133,7 +133,8 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]
-    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else np.square(base_kv) / net.sn_mva 
+    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else np.square(
+        base_kv) / net.sn_mva
 
     branch[f:t, F_BUS] = from_bus
     branch[f:t, T_BUS] = to_bus
@@ -260,16 +261,18 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
+    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
+                                    sequence=sequence, characteristic=net.get("characteristic"))
 
     if mode == "sc":
-        y = 0
+        y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-            kt = _transformer_correction_factor(trafo_df.vk_percent, trafo_df.vkr_percent,
-                                                trafo_df.sn_mva, cmax)
+            # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
+            # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
+            kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
             r *= kt
             x *= kt
     else:
@@ -393,7 +396,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
             degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
             percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
             if (degree_is_set & percent_is_set).any():
-                raise UserWarning("Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+                raise UserWarning(
+                    "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
             trafo_shift[phase_shifters] += np.where(
                 (degree_is_set),
                 (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
@@ -408,23 +412,99 @@ def _replace_nan(array, value=0):
     array[mask] = value
     return array
 
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1):
+
+def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
+    if trafotype == "2W":
+        vk_variables = ("vk_percent", "vkr_percent")
+    elif trafotype == "3W":
+        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent",
+        "vk_lv_percent", "vkr_lv_percent")
+    else:
+        raise UserWarning("Unknown trafotype")
+
+    if "tap_dependent_impedance" in trafo_df:
+        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        if np.any(np.isnan(tap_dependent_impedance)):
+            raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
+                              "bool and set to True or False")
+        tap_pos = get_trafo_values(trafo_df, "tap_pos")
+    else:
+        tap_dependent_impedance = False
+        tap_pos = None
+
+    use_tap_dependent_impedance = np.any(tap_dependent_impedance)
+
+    if use_tap_dependent_impedance:
+        # is net.characteristic table in net?
+        if characteristic is None:
+            raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
+
+        # if any but 1 characteristic is missing per trafo, we assume it's by design; but if all are misiing, we raise error
+        # first, we read all characteristic indices
+        # we also allow that some columns are not included in the net.trafo table
+        all_columns = trafo_df.keys() if isinstance(trafo_df, dict) else trafo_df.columns.values
+        char_columns = [v for v in vk_variables if f"{v}_characteristic" in all_columns]
+        if len(char_columns) == 0:
+            raise UserWarning(f"At least one of the columns for characteristics "
+                              f"({[v+'_characteristic' for v in vk_variables]}) "
+                              f"must be defined for {trafotype} trafo")
+        # must cast to float64 unfortunately, because numpy.vstack casts arrays to object because it doesn't know pandas.NA, np.isnan fails
+        all_characteristic_idx = np.vstack([get_trafo_values(
+            trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]).T
+        # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
+        all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
+        if np.any(all_missing):
+            trafo_index = trafo_df['index'] if isinstance(trafo_df, dict) else trafo_df.index.values
+            raise UserWarning(f"At least one characteristic must be defined for {trafotype} "
+                              f"trafo: {trafo_index[all_missing]}")
+
+    vals = ()
+
+    for c, vk_var in enumerate(vk_variables):
+        vk_value = get_trafo_values(trafo_df, vk_var)
+        if use_tap_dependent_impedance and vk_var in char_columns:
+            vals += (_calc_tap_dependent_value(
+                trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
+                characteristic, all_characteristic_idx[:, c]),)
+        else:
+            vals += (vk_value,)
+
+    return vals
+
+
+def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance,
+                              characteristic, characteristic_idx):
+    # we skip the trafos with NaN characteristics even if tap_dependent_impedance is True (we already checked for missing characteristics)
+    relevant_idx = tap_dependent_impedance & ~np.isnan(characteristic_idx)
+    vk_characteristic = np.zeros_like(tap_dependent_impedance, dtype="object")
+    vk_characteristic[relevant_idx] = characteristic.loc[characteristic_idx[relevant_idx], 'object'].values
+    # here dtype must be float otherwise the load flow calculation will fail
+    return np.where(relevant_idx,
+                    [c(t).item() if f else np.nan for f, t, c in zip(relevant_idx, tap_pos, vk_characteristic)],
+                    value)#.astype(np.float64)  # astype not necessary, but if it fails then uncommenting this may help
+
+
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1,
+                             characteristic=None):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
-
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        vk_percent = get_trafo_values(trafo_df, "vk_percent")
-        vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
+        vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr0_percent")
     else:
         raise UserWarning("Unsupported sequence")
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * (3* sn_mva)  if mode == 'pf_3ph' else\
-    np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
+
+    # adjust for low voltage side voltage converter:
+    if mode == 'pf_3ph':
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * (3 * sn_mva)
+    else:
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_mva
 
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
@@ -581,7 +661,8 @@ def _switch_branches(net, ppc):
                         init_values = ppc["bus"][opposite_buses, col]
                     else:
                         opposite_side = T_BUS if side == F_BUS else F_BUS
-                        opposite_buses = ppc["branch"][sw_branch_index[mask], opposite_side].real.astype(int)
+                        opposite_buses = ppc["branch"][sw_branch_index[mask],
+                                                       opposite_side].real.astype(int)
                         if col == VM:
                             taps = ppc["branch"][sw_branch_index[mask], TAP].real
                             init_values = ppc["bus"][opposite_buses, col] * taps
@@ -775,7 +856,7 @@ def _end_temperature_correction_factor(net, short_circuit=False):
     return r_correction_for_temperature
 
 
-def _transformer_correction_factor(vk, vkr, sn, cmax):
+def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
     """
         2W-Transformer impedance correction factor in short circuit calculations,
         based on the IEC 60909-0:2016 standard.
@@ -787,12 +868,23 @@ def _transformer_correction_factor(vk, vkr, sn, cmax):
 
         Returns:
             kt: transformer impedance correction factor for short-circuit calculations
+
+    Parameters
+    ----------
+    trafo_df
+
         """
+
+    if "power_station_unit" in trafo_df.columns:
+        power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
+    else:
+        power_station_unit = np.zeros(len(trafo_df)).astype(bool)
+
     zt = vk / 100 / sn
     rt = vkr / 100 / sn
     xt = np.sqrt(zt ** 2 - rt ** 2)
     kt = 0.95 * cmax / (1 + .6 * xt * sn)
-    return kt
+    return np.where(~power_station_unit, kt, 1)
 
 
 def get_is_lines(net):
@@ -812,10 +904,12 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
     if sequence==1:
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode)
+        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode, characteristic=net.get(
+            'characteristic'))
     elif sequence==0:
         if mode != "sc":
-            raise NotImplementedError("0 seq impedance calculation only implemented for short-circuit calculation!")
+            raise NotImplementedError(
+                "0 seq impedance calculation only implemented for short-circuit calculation!")
         _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
@@ -839,15 +933,17 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
-    vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
-    vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
+def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic):
+    vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+
+    vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
+    vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
     sn = np.stack([t3.sn_hv_mva.values, t3.sn_mv_mva.values, t3.sn_lv_mva.values])
 
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
     if mode == "sc":
-        kt = _transformer_correction_factor(vk_3w, vkr_3w, sn, 1.1)
+        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
@@ -872,7 +968,7 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
     vkr0_2w_delta = z_br_to_bus_vector(vkr0_3w, sn)
 
     # Only for "sc", calculated with positive sequence value
-    kt = _transformer_correction_factor(vk_3w, vkr_3w, sn, 1.1)
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 
