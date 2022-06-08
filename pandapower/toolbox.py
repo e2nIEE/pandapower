@@ -13,7 +13,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import numbers
-from packaging import version
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -816,12 +815,8 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
             if not isinstance(net2[key], np.ndarray):
                 not_equal.append(key)
             else:
-                if version.parse(np.__version__) < version.parse("0.19"):
-                    if not compare_arrays(net1[key], net2[key]).all():
-                        not_equal.append(key)
-                else:
-                    if not np.array_equal(net1[key], net2[key], equal_nan=True):
-                        not_equal.append(key)
+                if not np.array_equal(net1[key], net2[key], equal_nan=True):
+                    not_equal.append(key)
 
         elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
                 isinstance(net1[key], complex):
@@ -1191,16 +1186,9 @@ def set_data_type_of_columns_to_default(net):
                     if new_net[key][col].dtype == net[key][col].dtype:
                         continue
                     if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
+                        net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                         errors="ignore")
 
 
 # --- Modify topology
@@ -2245,10 +2233,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
         to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_gen = pd.concat([net.res_gen, to_add])
-        else:
-            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
+        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
     return new_idx
 
@@ -2328,10 +2313,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         in_res = pd.Series(gens).isin(net["res_gen"].index).values
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
-        else:
-            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
+        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
         net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
@@ -2413,10 +2395,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         in_res = pd.Series(gens).isin(net["res_gen"].index).values
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_sgen = pd.concat([net.res_sgen, to_add])
-        else:
-            net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
+        net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
         net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
@@ -2514,10 +2493,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
         to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_gen = pd.concat([net.res_gen, to_add])
-        else:
-            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
+        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
     return new_idx
 
@@ -2633,10 +2609,7 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
         in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
         to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
-        else:
-            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
+        net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
         net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 

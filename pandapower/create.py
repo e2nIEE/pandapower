@@ -9,7 +9,6 @@ from operator import itemgetter
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
-from packaging import version
 
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
@@ -2820,16 +2819,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    # todo: drop __version__ checks
-    if version.parse(pd.__version__) < version.parse("0.21"):
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
-    elif version.parse(pd.__version__) < version.parse("0.23"):
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    else:
-        net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns,
-                                                                      axis=1)
-        # todo: append -> concat:
-        # net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)
+    net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(
+        net["trafo3w"].columns, axis=1)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
@@ -4025,14 +4016,8 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         set_value = True
     if set_value:
         if column not in net[element].columns:
-            # this part is for compatibility with pandas < 1.0, can be removed if pandas >= 1.0 is required in setup.py
-            if isinstance(default_val, str) \
-                    and version.parse(pd.__version__) < version.parse("1.0"):
-                net[element].loc[:, column] = pd.Series(
-                    [default_val] * len(net[element]), dtype=dtyp)
-            else:
-                net[element].loc[:, column] = pd.Series(
-                    data=default_val, index=net[element].index, dtype=dtyp)
+            net[element].loc[:, column] = pd.Series(
+                data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
@@ -4050,10 +4035,7 @@ def _add_series_to_entries(entries, index, column, values, dtyp=float64, default
             fill_default = not isnan(default_val)
         except TypeError:
             fill_default = True
-        if isinstance(values, str) and version.parse(pd.__version__) < version.parse("1.0"):
-            s = pd.Series([values] * len(index), index=index, dtype=dtyp)
-        else:
-            s = pd.Series(values, index=index, dtype=dtyp)
+        s = pd.Series(values, index=index, dtype=dtyp)
         if fill_default:
             s = s.fillna(default_val)
         entries[column] = s
@@ -4071,12 +4053,7 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
         # geodata is multiple lists of coordinates
         df["coords"] = geodata
 
-    # todo: drop version checks
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[geo_table] = pd.concat([net[geo_table],df], sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net[geo_table] = net[geo_table].append(df)
+    net[geo_table] = pd.concat([net[geo_table],df], sort=False)
 
     _preserve_dtypes(net[geo_table], dtypes)
 
@@ -4114,11 +4091,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     dd = dd.assign(**entries)
 
     # extend the table by the frame we just created
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[table] = pd.concat([net[table],dd], sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net[table] = net[table].append(dd)
+    net[table] = pd.concat([net[table],dd], sort=False)
 
     # and preserve dtypes
     if preserve_dtypes:
