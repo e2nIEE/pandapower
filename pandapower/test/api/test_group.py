@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pandapower as pp
 import pandapower.networks as nw
-
+from pandapower.groups import Group_to_json_string, Group_from_json_string
 
 def typed_list(iterable, dtype):
     if pd.api.types.is_integer_dtype(dtype):
@@ -113,6 +113,14 @@ def test_groups():
             net.res_sgen.p_mw.loc[[2, 3]].sum()
         assert np.isclose(gr2.res_p_mw(net), p_val)
 
+        # 9) compare groups
+        gr2_copy = deepcopy(gr2)
+        assert gr2 == gr2_copy
+
+        # 10) group to and from json
+        json_str = Group_to_json_string(gr2)
+        gr3 = Group_from_json_string(json_str)
+        assert gr2 == gr3
 
 if __name__ == "__main__":
     if 0:
