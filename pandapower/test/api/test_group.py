@@ -25,43 +25,44 @@ def typed_set(iterable, dtype):
 
 
 def test_groups():
-    for elm_col, elm_type in zip([None, "name"], [int, str]):
+    for element_column, elm_type in zip([None, "name"], [int, str]):
         net = nw.case24_ieee_rts()
         for elm in pp.pp_elements():
             net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
         pp.Group(net, {"gen": typed_list([0, 1], elm_type), "sgen": typed_list([2, 3], elm_type),
-                    "xward": typed_list([0], elm_type)}, name='1st Group', elm_col=elm_col)
+                    "xward": typed_list([0], elm_type)}, name='1st Group',
+                    element_column=element_column)
         name_gr2 = 'Group of transformers'
         gr2 = pp.Group(net, {"trafo": typed_list(net.trafo.index[:3], elm_type)}, name=name_gr2,
-                       index=3, elm_col=elm_col)
+                       index=3, element_column=element_column)
 
         # --- test definition of groups
         assert "group" in net.keys()
-        assert len(net.group.object.at[0].elms_dict["gen"]) == \
-            len(net.group.object.at[0].elms_dict["sgen"]) == 2
-        assert len(net.group.object.at[3].elms_dict["trafo"]) == 3
+        assert len(net.group.object.at[0].elements_dict["gen"]) == \
+            len(net.group.object.at[0].elements_dict["sgen"]) == 2
+        assert len(net.group.object.at[3].elements_dict["trafo"]) == 3
         assert net.group.name.at[3] == name_gr2
 
         # --- test functions
-        # 1) update_elms_dict()
-        assert set(net.group.object.at[0].elms_dict.keys()) == {"gen", "sgen"}
-        gr2.elms_dict["trafo"] = gr2.elms_dict["trafo"].union([8])
-        gr2.elms_dict["impedance"] = typed_list([8], elm_type)
-        gr2.elms_dict["line"] = []
-        gr2.elms_dict["gen"] = typed_list([998, 999], elm_type)
-        assert len(gr2.elms_dict["trafo"]) == 4
-        assert "gen" in gr2.elms_dict.keys()
-        gr2.update_elms_dict(net, verbose=False)
-        assert len(gr2.elms_dict["trafo"]) == 3
-        assert "impedance" not in gr2.elms_dict.keys()
-        assert "line" not in gr2.elms_dict.keys()
-        assert "gen" not in gr2.elms_dict.keys()
+        # 1) update_elements_dict()
+        assert set(net.group.object.at[0].elements_dict.keys()) == {"gen", "sgen"}
+        gr2.elements_dict["trafo"] = gr2.elements_dict["trafo"].union([8])
+        gr2.elements_dict["impedance"] = typed_list([8], elm_type)
+        gr2.elements_dict["line"] = []
+        gr2.elements_dict["gen"] = typed_list([998, 999], elm_type)
+        assert len(gr2.elements_dict["trafo"]) == 4
+        assert "gen" in gr2.elements_dict.keys()
+        gr2.update_elements_dict(net, verbose=False)
+        assert len(gr2.elements_dict["trafo"]) == 3
+        assert "impedance" not in gr2.elements_dict.keys()
+        assert "line" not in gr2.elements_dict.keys()
+        assert "gen" not in gr2.elements_dict.keys()
 
-        # 2) drop_elms_and_group & 3) return_group_as_net
+        # 2) drop_elements_and_group & 3) return_group_as_net
         for keep_everything_else in [False, True]:
 
             net2 = deepcopy(net)
-            net2.group.object.at[0].drop_elms_and_group(net2)
+            net2.group.object.at[0].drop_elements_and_group(net2)
 
             net3 = net.group.object.at[0].return_group_as_net(
                 net, keep_everything_else=keep_everything_else)
@@ -86,25 +87,25 @@ def test_groups():
         assert net.trafo.in_service.all()
 
         # 5) append_to_group()
-        gr2.append_to_group(net.group.object.at[0].elms_dict)
-        assert set(gr2.elms_dict.keys()) == {"gen", "sgen", "trafo"}
-        elms_b4_append2 = deepcopy(gr2.elms_dict)
+        gr2.append_to_group(net.group.object.at[0].elements_dict)
+        assert set(gr2.elements_dict.keys()) == {"gen", "sgen", "trafo"}
+        elms_b4_append2 = deepcopy(gr2.elements_dict)
         gr2.append_to_group({"xward": typed_list([1, 2], elm_type),
                              "line": typed_list([2], elm_type)}, net)
-        assert set(gr2.elms_dict.keys()) == {"gen", "sgen", "trafo", "line"}
+        assert set(gr2.elements_dict.keys()) == {"gen", "sgen", "trafo", "line"}
 
-        # 6) drop_from_group() & 7) compare_elms_dict()
+        # 6) drop_from_group() & 7) compare_elements_dict()
         gr2.drop_from_group({"xward": typed_set({1, 17}, elm_type), "bus": None, "line": 2 if
                              elm_type is int else "2"})
-        assert gr2.compare_elms_dict(elms_b4_append2)
-        assert not gr2.compare_elms_dict({
+        assert gr2.compare_elements_dict(elms_b4_append2)
+        assert not gr2.compare_elements_dict({
             'trafo': typed_list([0, 1, 2], elm_type), 'gen': typed_list([1], elm_type),
             'sgen': typed_list([2, 3], elm_type)})
 
-        # 7) get_idx()
-        assert (gr2.get_idx(net, "gen") == pd.Index([0, 1], dtype=int)).all()
-        assert (gr2.get_idx(net, "sgen") == pd.Index([2, 3], dtype=int)).all()
-        assert (gr2.get_idx(net, "dcline") == pd.Index([], dtype=int)).all()
+        # 7) get_index()
+        assert (gr2.get_index(net, "gen") == pd.Index([0, 1], dtype=int)).all()
+        assert (gr2.get_index(net, "sgen") == pd.Index([2, 3], dtype=int)).all()
+        assert (gr2.get_index(net, "dcline") == pd.Index([], dtype=int)).all()
 
         # 8) res_p_mw() and res_q_mvar()
         pp.runpp(net)
