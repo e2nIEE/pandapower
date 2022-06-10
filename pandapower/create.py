@@ -513,9 +513,6 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     net._empty_res_sgen_3ph = net._empty_res_sgen
     net._empty_res_storage_3ph = net._empty_res_storage
 
-    for s in net:
-        if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Index([], dtype=np.int64))
     if add_stdtypes:
         add_basic_std_types(net)
     else:
