@@ -3010,15 +3010,15 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         else:
             opened_buses_hv = opened_buses_mv = opened_buses_lv = set()
 
-        hvb_trafos3w = set(net.trafo3w.index[
+        hvb_trafos3w = net.trafo3w.index[
             net.trafo3w.hv_bus.isin(buses) & ~net.trafo3w.hv_bus.isin(opened_buses_hv) &
-            in_service_constr3w])
-        mvb_trafos3w = set(net.trafo3w.index[
+            in_service_constr3w]
+        mvb_trafos3w = net.trafo3w.index[
             net.trafo3w.mv_bus.isin(buses) & ~net.trafo3w.mv_bus.isin(opened_buses_mv) &
-            in_service_constr3w])
-        lvb_trafos3w = set(net.trafo3w.index[
+            in_service_constr3w]
+        lvb_trafos3w = net.trafo3w.index[
             net.trafo3w.lv_bus.isin(buses) & ~net.trafo3w.lv_bus.isin(opened_buses_lv) &
-            in_service_constr3w])
+            in_service_constr3w]
 
         cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(
             net.trafo3w.loc[hvb_trafos3w].lv_bus) - opened_buses_mv - opened_buses_lv)
