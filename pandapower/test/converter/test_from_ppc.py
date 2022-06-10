@@ -8,7 +8,6 @@ import os
 import pickle
 import pytest
 import sys
-from packaging import version
 import numpy as np
 import pandas as pd
 

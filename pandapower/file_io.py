@@ -187,15 +187,9 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    pd_version = version.parse(pd.__version__)
-    if pd_version < version.parse("0.21"):
-        xls = pd.ExcelFile(filename).parse(sheetname=None)
-    elif pd_version < version.parse("0.24"):
-        xls = pd.ExcelFile(filename).parse(sheet_name=None)
-    else:
-        if not openpyxl_INSTALLED:
-            soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
-        xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
+    if not openpyxl_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
+    xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
         net = io_utils.from_dict_of_dfs(xls)
