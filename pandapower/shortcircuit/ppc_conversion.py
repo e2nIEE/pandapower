@@ -256,7 +256,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             # (1+-p_t) in the standard
             # (1-p_t) is used if the highest partial short-circuit current of the power station unit at the high-voltage side of the unit transformer is searched for
             # if the unit transformer has no off-load taps or if no such taps are permanently used -> 1-p_t = 1
-            kso = (v_q / (v_g * (1 + p_g))) * (v_trafo_lv / v_trafo_hv) * (1 - p_t[~ps_trafo_oltc_mask]) * \
+            kso = (v_q / (v_g * (1 + p_g))) * (v_trafo_lv / v_trafo_hv) * (1 - p_t) * \
                   ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
 
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_SG] = kso[~ps_trafo_oltc_mask]
