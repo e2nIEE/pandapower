@@ -86,10 +86,12 @@ def _current_source_current(net, ppci):
     ppci["bus"][:, IKCV] = 0
     ppci["bus"][:, IKSS2] = 0
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
+    # it is not documented anywhere why it exists and I don't have any time to find out, but this here fixes the problem.
     if not False in net.sgen.current_source.values:
-        sgen = net.sgen[net._is_elements["sgen"]]
+        sgen = net.sgen[net._is_elements_final["sgen"]]
     else:
-        sgen = net.sgen[net._is_elements["sgen"] & net.sgen.current_source]
+        sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
     if len(sgen) == 0:
         return
     if any(pd.isnull(sgen.sn_mva)):
