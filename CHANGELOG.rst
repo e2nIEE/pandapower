@@ -8,6 +8,9 @@ Change Log
 - [ADDED] from_mpc() converter: added functionality to import .m files via external package
 - [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
 - [CHANGED] drop support of pandas versions < 1.0
+- [ADDED] parameter in_ka for rated switch current
+- [ADDED] current and loading result for switches
+- [FIXED] bug for disabled continous tap controllers
 
 [2.9.0]- 2022-03-23
 ----------------------
