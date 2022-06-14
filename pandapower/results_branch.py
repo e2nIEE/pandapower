@@ -596,6 +596,8 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
 
 
 def _get_switch_results(net, i_ft, suffix=None):
+    if len(net.switch) == 0:
+        return
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
 
     if "switch" in net._pd2ppc_lookups["branch"]:
@@ -626,4 +628,6 @@ def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka
             current, unit = current_parameter.split("_")
             side_current = "{}_{}_{}".format(current, side, unit)
             net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
-    net[res_switch_df].loc[net.switch.closed.values==False, current_parameter] = 0
+    open_switches = net.switch.closed.values==False
+    if any(open_switches):
+        net[res_switch_df].loc[open_switches, current_parameter] = 0

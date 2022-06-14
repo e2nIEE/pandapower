@@ -120,6 +120,8 @@ def _get_line_results(net, ppc):
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 def _get_switch_results(net, ppc):
+    if len(net.switch) == 0:
+        return
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
     if "switch" in branch_lookup:
