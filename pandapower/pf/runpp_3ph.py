@@ -3,8 +3,6 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-@author: Shankho Ghosh (sghosh) (started Feb 2018)
-@author: Alexander Prostejovsky (alepros), Technical University of Denmark
 """
 
 from time import perf_counter
