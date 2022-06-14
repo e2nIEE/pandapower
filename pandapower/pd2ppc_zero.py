@@ -81,7 +81,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     _add_line_sc_impedance_zero(net, ppc)
-    _add_trafo_sc_impedance_zero(net, ppc)
+    _add_trafo_sc_impedance_zero(net, ppc, k_st=k_st)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
     if mode == "sc":
