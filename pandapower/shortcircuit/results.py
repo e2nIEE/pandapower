@@ -9,6 +9,7 @@ import pandas as pd
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
+from pandapower.results_branch import _copy_switch_results_from_branches
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ip_f", "branch_ip_t",
@@ -130,10 +131,10 @@ def _get_switch_results(net, ppc):
             net.res_switch_sc.loc[bb_switches, "ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
         if net._options["ith"]:
             net.res_switch_sc.loc[bb_switches, "ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
-    switch_lines = net.switch.element[net.switch.et=="l"]
-    if len(switch_lines) > 0:
-        net.res_switch_sc.loc[switch_lines.index, "ikss_ka"] = net.res_line_sc.loc[switch_lines.values, "ikss_ka"].values
-
+    _copy_switch_results_from_branches(net, suffix="_sc", current_parameter="ikss_ka")
+    if "in_ka" in net.switch.columns:
+        net.res_switch_sc["loading_percent"] = net.res_switch_sc["ikss_ka"].values / net.switch["in_ka"].values * 100
+        
 
 def _get_line_all_results(net, ppc, bus):
     case = net._options["case"]

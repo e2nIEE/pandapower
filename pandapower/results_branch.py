@@ -603,10 +603,27 @@ def _get_switch_results(net, i_ft, suffix=None):
         with np.errstate(invalid='ignore'):
             i_ka = np.max(i_ft[f:t], axis=1)
         net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
-    
+    _copy_switch_results_from_branches(net, suffix)
+    if "in_ka" in net.switch.columns:
+        net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
+        
+def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
+    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
+
     switch_lines = net.switch.element[net.switch.et=="l"]
     if len(switch_lines) > 0:
         res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
-        net[res_switch_df].loc[switch_lines.index, "i_ka"] = net[res_line_df].loc[switch_lines.values, "i_ka"].values
-    if "in_ka" in net.switch.columns:
-        net.res_switch["loading_percent"] = net.res_switch["i_ka"].values / net.switch["in_ka"].values * 100
+        net[res_switch_df].loc[switch_lines.index, current_parameter] = net[res_line_df].loc[switch_lines.values, current_parameter].values
+        
+    switch_trafo = net.switch[net.switch.et.values=="t"]
+    if len(switch_trafo) > 0:
+        res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
+        for side in ["hv", "lv"]:
+            buses = net.trafo["{}_bus".format(side)].loc[switch_trafo.element.values].values
+            side_switch_trafo = switch_trafo[switch_trafo.bus.values==buses]
+            switches = side_switch_trafo.index
+            trafos = side_switch_trafo.element.values
+            current, unit = current_parameter.split("_")
+            side_current = "{}_{}_{}".format(current, side, unit)
+            net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
+    net[res_switch_df].loc[net.switch.closed.values==False, current_parameter] = 0
