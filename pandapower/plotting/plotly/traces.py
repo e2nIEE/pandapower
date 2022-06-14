@@ -39,9 +39,9 @@ def version_check():
                           "Please upgrade your python-plotly installation, "
                           "e.g., via pip install --upgrade plotly")
     if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning("Your plotly version {} is no longer supported.\r\n"
+        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
                           "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly".format(__version__))
+                          "e.g., via pip install --upgrade plotly")
 
 
 def _in_ipynb():
