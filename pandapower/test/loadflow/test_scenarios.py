@@ -553,14 +553,14 @@ def test_switch_results():
     closed_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b")
 
     new_bus = pp.create_bus(net, vn_kv=20.0)
+    in_ka = 0.1
     pp.create_load(net, new_bus, p_mw=1.5)
-    closed_bb_switch_impedance = pp.create_switch(net, bus=new_bus, element=4, et="b", z_ohm=0.1)
+    closed_bb_switch_impedance = pp.create_switch(net, bus=new_bus, element=4, et="b", z_ohm=0.1, in_ka=in_ka)
     
     new_bus = pp.create_bus(net, vn_kv=20.0)
     pp.create_load(net, new_bus, p_mw=1.5)
     open_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b", closed=False)
 
-    net.switch["in_ka"] = 0.2
     
     pp.runpp(net)
     
@@ -569,6 +569,8 @@ def test_switch_results():
     
     assert np.isnan(net.res_switch.i_ka.at[closed_bb_switch])
     assert np.isclose(net.res_switch.i_ka.at[closed_bb_switch_impedance], 0.04378035814760788)
+    loading = net.res_switch.i_ka.at[closed_bb_switch_impedance] / in_ka * 100
+    assert np.isclose(net.res_switch.loading_percent.at[closed_bb_switch_impedance], loading)
 
     line = net.switch.element.at[closed_line_switch]
     assert np.isclose(net.res_switch.i_ka.at[closed_line_switch], net.res_line.i_ka.at[line])

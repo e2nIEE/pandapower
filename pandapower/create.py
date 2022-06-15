@@ -3227,7 +3227,8 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0, **kwargs):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0,
+                  in_ka=None, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3263,6 +3264,9 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             0 a branch will be created for the switch which has also effects on the bus mapping
 
         **name** (string, default None) - The name for this switch
+        
+        **in_ka** (float, default None) - maximum current that the switch can carry 
+            normal operating conditions without tripping
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
@@ -3303,15 +3307,15 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
     index = _get_index_with_check(net, "switch", index)
 
-    entries = dict(zip(["bus", "element", "et", "closed", "type", "name", "z_ohm"],
-                       [bus, element, et, closed, type, name, z_ohm]))
+    entries = dict(zip(["bus", "element", "et", "closed", "type", "name", "z_ohm", "in_ka"],
+                       [bus, element, et, closed, type, name, z_ohm, in_ka]))
     _set_entries(net, "switch", index, **entries, **kwargs)
 
     return index
 
 
 def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None,
-                    z_ohm=0, **kwargs):
+                    z_ohm=0, in_ka=None, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3347,7 +3351,10 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
             0 a branch will be created for the switch which has also effects on the bus mapping
 
         **name** (string, default None) - The name for this switch
-
+        
+        **in_ka** (float, default None) - maximum current that the switch can carry 
+            normal operating conditions without tripping
+            
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
@@ -3389,7 +3396,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
             raise UserWarning("Unknown element type")
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
-               "name": name, "z_ohm": z_ohm}
+               "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
 
     _set_multiple_entries(net, "switch", index, **entries, **kwargs)
 
