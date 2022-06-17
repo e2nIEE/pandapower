@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pandapower as pp
 import pandapower.networks as nw
-from pandapower.groups import Group_to_json_string, Group_from_json_string
+
 
 def typed_list(iterable, dtype):
     if pd.api.types.is_integer_dtype(dtype):
@@ -118,9 +118,22 @@ def test_groups():
         assert gr2 == gr2_copy
 
         # 10) group to and from json
-        json_str = Group_to_json_string(gr2)
-        gr3 = Group_from_json_string(json_str)
+        json_str = pp.to_json(gr2)
+        gr3 = pp.from_json_string(json_str)
         assert gr2 == gr3
+
+
+def test_group_io():
+    net = nw.case24_ieee_rts()
+    gr1 = pp.Group(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]}, name='1st Group', index=2)
+    gr2 = pp.Group(net, {"trafo": net.trafo.index}, name='Group of transformers')
+    s1 = pp.to_json(gr1)
+    s2 = pp.to_json(gr2)
+    gr11 = pp.from_json_string(s1)
+    gr22 = pp.from_json_string(s2)
+    assert gr1 == gr11
+    assert gr2 == gr22
+
 
 if __name__ == "__main__":
     if 0:
