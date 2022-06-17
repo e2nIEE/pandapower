@@ -24,8 +24,12 @@ def typed_set(iterable, dtype):
         return {str(it) for it in iterable}
 
 
-def test_groups():
-    for element_column, elm_type in zip([None, "name"], [int, str]):
+def test_group_definition():
+    nets = list()
+    gr2s = list()
+    element_columns = [None, "name"]
+    elm_types = [int, str]
+    for element_column, elm_type in zip(element_columns, elm_types):
         net = nw.case24_ieee_rts()
         for elm in pp.pp_elements():
             net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
@@ -43,7 +47,14 @@ def test_groups():
         assert len(net.group.object.at[3].elements_dict["trafo"]) == 3
         assert net.group.name.at[3] == name_gr2
 
-        # --- test functions
+        nets.append(net)
+        gr2s.append(gr2)
+    return nets, gr2s, elm_types
+
+
+def test_update_elements_dict():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 1) update_elements_dict()
         assert set(net.group.object.at[0].elements_dict.keys()) == {"gen", "sgen"}
         gr2.elements_dict["trafo"] = gr2.elements_dict["trafo"].union([8])
@@ -57,6 +68,10 @@ def test_groups():
         assert "impedance" not in gr2.elements_dict.keys()
         assert "line" not in gr2.elements_dict.keys()
         assert "gen" not in gr2.elements_dict.keys()
+
+
+def test_drop_and_return():
+    for net, gr2, elm_type in zip(*test_group_definition()):
 
         # 2) drop_elements_and_group & 3) return_group_as_net
         for keep_everything_else in [False, True]:
@@ -79,6 +94,10 @@ def test_groups():
                 assert set(net2[elm].index) | set(net3[elm].index) == set(net[elm].index)
                 assert net3[elm].shape[0] >= 0
 
+
+def test_set_out_of_service():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 4) set_out_of_service
         assert net.trafo.in_service.all()
         gr2.set_out_of_service(net)
@@ -86,15 +105,23 @@ def test_groups():
         gr2.set_in_service(net)
         assert net.trafo.in_service.all()
 
+
+def test_append_to_group():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 5) append_to_group()
         gr2.append_to_group(net.group.object.at[0].elements_dict)
         assert set(gr2.elements_dict.keys()) == {"gen", "sgen", "trafo"}
-        elms_b4_append2 = deepcopy(gr2.elements_dict)
         gr2.append_to_group({"xward": typed_list([1, 2], elm_type),
                              "line": typed_list([2], elm_type)}, net)
         assert set(gr2.elements_dict.keys()) == {"gen", "sgen", "trafo", "line"}
 
+
+def test_drop_and_compare():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 6) drop_from_group() & 7) compare_elements_dict()
+        elms_b4_append2 = deepcopy(gr2.elements_dict)
         gr2.drop_from_group({"xward": typed_set({1, 17}, elm_type), "bus": None, "line": 2 if
                              elm_type is int else "2"})
         assert gr2.compare_elements_dict(elms_b4_append2)
@@ -102,10 +129,19 @@ def test_groups():
             'trafo': typed_list([0, 1, 2], elm_type), 'gen': typed_list([1], elm_type),
             'sgen': typed_list([2, 3], elm_type)})
 
+
+def test_get_index():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 7) get_index()
-        assert (gr2.get_index(net, "gen") == pd.Index([0, 1], dtype=int)).all()
-        assert (gr2.get_index(net, "sgen") == pd.Index([2, 3], dtype=int)).all()
-        assert (gr2.get_index(net, "dcline") == pd.Index([], dtype=int)).all()
+        assert (net.group.object.at[0].get_index(net, "gen") == pd.Index([0, 1], dtype=int)).all()
+        assert (net.group.object.at[0].get_index(net, "sgen") == pd.Index([2, 3], dtype=int)).all()
+        assert (net.group.object.at[0].get_index(net, "dcline") == pd.Index([], dtype=int)).all()
+
+
+def test_res_power():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+        gr2.append_to_group(net.group.object.at[0].elements_dict)
 
         # 8) res_p_mw() and res_q_mvar()
         pp.runpp(net)
@@ -113,14 +149,13 @@ def test_groups():
             net.res_sgen.p_mw.loc[[2, 3]].sum()
         assert np.isclose(gr2.res_p_mw(net), p_val)
 
+
+def test_compare_groups():
+    for net, gr2, elm_type in zip(*test_group_definition()):
+
         # 9) compare groups
         gr2_copy = deepcopy(gr2)
         assert gr2 == gr2_copy
-
-        # 10) group to and from json
-        json_str = pp.to_json(gr2)
-        gr3 = pp.from_json_string(json_str)
-        assert gr2 == gr3
 
 
 def test_group_io():
@@ -137,7 +172,16 @@ def test_group_io():
 
 if __name__ == "__main__":
     if 0:
-        pytest.main(['-x', "test_ampl_excel.py"])
+        pytest.main(['-x', "test_group.py"])
     else:
-        test_groups()
+        test_group_definition()
+        test_update_elements_dict()
+        test_drop_and_return()
+        test_set_out_of_service()
+        test_append_to_group()
+        test_drop_and_compare()
+        test_get_index()
+        test_res_power()
+        test_compare_groups()
+        test_group_io()
         pass
