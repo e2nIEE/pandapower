@@ -38,18 +38,16 @@ max_diff_values1 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-
                     "branch_q_mvar": 1e-3, "gen_p_mw": 1e-3, "gen_q_mvar": 1e-3}
 
 
-def get_testgrids(name, filename):
+def get_testgrids(foldername, filename):
     """
     This function return the ppc (or pp net) which is saved in ppc_testgrids.p to validate the
     from_ppc function via validate_from_ppc.
     """
-    folder = os.path.join(pp.pp_dir, 'test', 'converter')
+    folder = os.path.join(pp.pp_dir, 'test', 'converter', foldername)
     file = os.path.join(folder, filename)
-    if filename.endswith(".json"):
-        ppcs = pp.from_json(file)
-    elif filename.endswith(".p"):
-        ppcs = pickle.load(open(file, "rb"))
-    return ppcs[name]
+    convert = "ppc" in filename
+    ppcs = pp.from_json(file, convert=convert)
+    return ppcs
 
 
 def validate_other_than_py37(ppc, net, max_diff_values):
@@ -61,7 +59,7 @@ def validate_other_than_py37(ppc, net, max_diff_values):
 
 
 def test_from_ppc_simple_against_target():
-    ppc = get_testgrids('case2_2', 'ppc_testgrids.json')
+    ppc = get_testgrids('ppc_testgrids', 'case2_2.json')
     net_by_ppc = from_ppc(ppc)
     net_by_code = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
@@ -77,7 +75,7 @@ def test_from_ppc_simple_against_target():
 
 
 def test_validate_from_ppc_simple_against_target():
-    ppc = get_testgrids('case2_2', 'ppc_testgrids.json')
+    ppc = get_testgrids('ppc_testgrids', 'case2_2.json')
     net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
@@ -87,7 +85,7 @@ def test_ppc_testgrids():
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
             'case57']
     for i in name:
-        ppc = get_testgrids(i, 'ppc_testgrids.json')
+        ppc = get_testgrids('ppc_testgrids', i+'.json')
         net = from_ppc(ppc, f_hz=60)
         validate_other_than_py37(ppc, net, max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
@@ -99,7 +97,7 @@ def test_pypower_cases():
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
             'case118'] # 'case300'
     for i in name:
-        ppc = get_testgrids(i, 'pypower_cases.json')
+        ppc = get_testgrids('pypower_cases', i+'.json')
         net = from_ppc(ppc, f_hz=60)
         validate_other_than_py37(ppc, net, max_diff_values1)
         logger.debug(f'{i} has been checked successfully.')
@@ -107,7 +105,7 @@ def test_pypower_cases():
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_mw": 1e-3,
                         "q_branch_mvar": 1e-3, "p_gen_mw": 1e3, "q_gen_mvar": 1e3}
-    ppc = get_testgrids('case9', 'pypower_cases.json')
+    ppc = get_testgrids('pypower_cases', 'case9.json')
     net = from_ppc(ppc, f_hz=60)
     validate_other_than_py37(ppc, net, max_diff_values2)
 
@@ -204,4 +202,11 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+    if 0:
+        pytest.main([__file__, "-xs"])
+    else:
+        test_from_ppc_simple_against_target()
+        test_validate_from_ppc_simple_against_target()
+        test_ppc_testgrids()
+        test_pypower_cases()
+        test_to_and_from_ppc()
