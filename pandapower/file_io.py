@@ -336,7 +336,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
     # After some time, this part can be removed.
-    if net["_class"] == 'pandapowerNet' and not isinstance(net, pandapowerNet):
+    if net.get('_class') == 'pandapowerNet' and not isinstance(net, pandapowerNet):
         warn("This net is saved in older format, which will not be supported in future.\r\n"
              "Please resave your grid using the current pandapower version.",
              DeprecationWarning)
