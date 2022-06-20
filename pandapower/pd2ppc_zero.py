@@ -17,7 +17,7 @@ from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE
 from pandapower.shortcircuit.idx_brch import branch_cols_sc
 from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe,\
-     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df
+     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
@@ -82,6 +82,8 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
 
     _add_line_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc, k_st=k_st)
+    if "switch" in lookup:
+        _calc_switch_parameter(net, ppc)
     if mode == "sc":
         _add_trafo3w_sc_impedance_zero(net, ppc)
     else:
