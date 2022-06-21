@@ -3,7 +3,6 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 from math import pi
 import numpy as np
 import pandas as pd
@@ -14,7 +13,13 @@ from pandapower.pypower.idx_gen import \
 from pandapower.pypower.idx_brch import \
     F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
 from pandapower.pypower.idx_cost import COST, NCOST
-import pandapower as pp
+from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_loads, \
+    create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
+    create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs
+from pandapower.run import rundcpp, runpp, runopp
+from pandapower.powerflow import LoadflowNotConverged
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.toolbox import get_element_index
 
 try:
     import pandaplan.core.pplog as logging
@@ -73,7 +78,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     if pd.Series(ppc['bus'][:, BASE_KV] <= 0).any():
         logger.info('There are false baseKV given in the pypower case file.')
 
-    net = pp.create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
+    net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
 
 
     _from_ppc_bus(net, ppc)
@@ -98,7 +103,7 @@ def _from_ppc_bus(net, ppc):
     """ bus data -> create buses, sgen, load, shunt """
 
     # create buses
-    idx_buses = pp.create_buses(
+    idx_buses = create_buses(
         net, ppc['bus'].shape[0], name=ppc['bus'][:, BUS_I].astype(int),
         vn_kv=ppc['bus'][:, BASE_KV], type="b", zone=ppc['bus'][:, ZONE],
         in_service=(ppc['bus'][:, BUS_TYPE] != 4).astype(bool),
@@ -106,17 +111,17 @@ def _from_ppc_bus(net, ppc):
 
     # create loads
     is_load = (ppc['bus'][:, PD] > 0) | ((ppc['bus'][:, PD] == 0) & (ppc['bus'][:, QD] != 0))
-    pp.create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, PD], q_mvar=ppc['bus'][
+    create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, PD], q_mvar=ppc['bus'][
         is_load, QD], controllable=False)
 
     # create sgens
     is_sgen = ppc['bus'][:, PD] < 0
-    pp.create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, PD], q_mvar=-ppc['bus'][
+    create_sgens(net, idx_buses[is_sgen], p_mw=-ppc['bus'][is_sgen, PD], q_mvar=-ppc['bus'][
         is_sgen, QD], type="", controllable=False)
 
     # create shunts
     is_shunt = (ppc['bus'][:, GS] != 0) | (ppc['bus'][:, BS] != 0)
-    pp.create_shunts(net, idx_buses[is_shunt], p_mw=ppc['bus'][is_shunt, GS],
+    create_shunts(net, idx_buses[is_shunt], p_mw=ppc['bus'][is_shunt, GS],
                      q_mvar=-ppc['bus'][is_shunt, BS])
 
     # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
@@ -143,7 +148,7 @@ def _from_ppc_gen(net, ppc):
     # create ext_grid
     idx_eg = list()
     for i in np.arange(n_gen, dtype=int)[is_ext_grid]:
-        idx_eg.append(pp.create_ext_grid(
+        idx_eg.append(create_ext_grid(
             net, bus=bus_pos[i], vm_pu=vg_bus_lookup.at[bus_pos[i]],
             va_degree=ppc['bus'][bus_pos[i], VA],
             in_service=(ppc['gen'][i, GEN_STATUS] > 0).astype(bool),
@@ -151,7 +156,7 @@ def _from_ppc_gen(net, ppc):
             max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN]))
 
     # create gen
-    idx_gen = pp.create_gens(
+    idx_gen = create_gens(
         net, buses=bus_pos[is_gen], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
         p_mw=ppc['gen'][is_gen, PG],
         in_service=(ppc['gen'][is_gen, GEN_STATUS] > 0), controllable=True,
@@ -159,7 +164,7 @@ def _from_ppc_gen(net, ppc):
         max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN])
 
     # create sgen
-    idx_sgen = pp.create_sgens(
+    idx_sgen = create_sgens(
         net, buses=bus_pos[is_sgen], p_mw=ppc['gen'][is_sgen, PG],
         q_mvar=ppc['gen'][is_sgen, QG], type="",
         in_service=(ppc['gen'][is_sgen, GEN_STATUS] > 0),
@@ -211,7 +216,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         max_i_ka[i_is_zero] = MAX_VAL
         logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                      "maximum branch flow")
-    pp.create_lines_from_parameters(
+    create_lines_from_parameters(
         net, from_buses=from_bus[is_line], to_buses=to_bus[is_line], length_km=1,
         r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]).real,
         x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]).real,
@@ -266,7 +271,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vkr_percent = rk * sn * 100 / baseMVA
         vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
-        pp.create_transformers_from_parameters(
+        create_transformers_from_parameters(
             net, hv_buses=hv_bus, lv_buses=lv_bus, sn_mva=sn,
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv,
             vk_percent=vk_percent, vkr_percent=vkr_percent,
@@ -320,59 +325,79 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
 
 def _from_ppc_gencost(net, ppc, gen_lookup):
     # --- gencost -> create polynomial_cost, piecewise_cost
-    if 'gencost' in ppc:
-        if len(ppc['gencost'].shape) == 1:
-            # reshape gencost if only one gencost is given -> no indexError
-            ppc['gencost'] = ppc['gencost'].reshape((1, -1))
-        if ppc['gencost'].shape[0] <= gen_lookup.shape[0]:
-            idx_p = range(ppc['gencost'].shape[0])
-            idx_q = []
-        elif ppc['gencost'].shape[0] > gen_lookup.shape[0]:
-            idx_p = range(gen_lookup.shape[0])
-            idx_q = range(gen_lookup.shape[0], ppc['gencost'].shape[0])
-        if ppc['gencost'].shape[0] >= 2*gen_lookup.shape[0]:
-            idx_p = range(gen_lookup.shape[0])
-            idx_q = range(gen_lookup.shape[0], 2*gen_lookup.shape[0])
-        for idx in idx_p:
-            _create_costs(net, ppc, gen_lookup, 'p', idx)
-        for idx in idx_q:
-            _create_costs(net, ppc, gen_lookup, 'q', idx)
 
+    if not 'gencost' in ppc:
+        return
 
-def _create_costs(net, ppc, gen_lookup, type, idx):
-    if ppc['gencost'][idx, 0] == 1:
-        if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
-            logger.error(f"In gencost line {idx}, the number n does not fit to the number of values")
-            raise NotImplementedError
-        pp.create_pwl_cost(net, gen_lookup.element.at[idx],
-                           gen_lookup.element_type.at[idx],
-                           ppc['gencost'][idx, 4:], type)
-    elif ppc['gencost'][idx, 0] == 2:
-        ncost = ppc['gencost'][idx, NCOST]
-        if ncost == 1:
-            cp2 = 0
-            cp1 = 0
-            cp0 = ppc['gencost'][idx, COST]
-        elif ncost == 2:
-            cp2 = 0
-            cp1 = ppc['gencost'][idx, COST]
-            cp0 = ppc['gencost'][idx, COST + 1]
-        elif ncost == 3:
-            cp2 = ppc['gencost'][idx, COST]
-            cp1 = ppc['gencost'][idx, COST + 1]
-            cp0 = ppc['gencost'][idx, COST + 2]
-        elif ncost > 3:
+    if len(ppc['gencost'].shape) == 1:
+        # reshape gencost if only one gencost is given -> no indexError
+        ppc['gencost'] = ppc['gencost'].reshape((1, -1))
+
+    # --- determine is_p, is_pwl
+    len_gc_p = min(ppc['gencost'].shape[0], gen_lookup.shape[0])
+    max_gc = min(ppc['gencost'].shape[0], 2*gen_lookup.shape[0])
+    if ppc['gencost'].shape[0] <= gen_lookup.shape[0]:  # no q consts
+        is_p = np.ones(len_gc_p, dtype=bool)
+        g_lu = gen_lookup.iloc[:len_gc_p]
+    else:  # with q costs
+        is_p = np.array([True]*len_gc_p + [False]*(max_gc-len_gc_p))
+        g_lu = gen_lookup.iloc[:max_gc]
+
+    if not all(np.isclose(ppc['gencost'][:max_gc, 0], 1) | np.isclose(ppc['gencost'][:max_gc, 0], 2)):
+        raise ValueError("ppc['gencost'][:, 0] must be in [1, 2].")
+
+    is_pwl = ppc['gencost'][:max_gc, 0] == 1
+
+    # --- create pwl costs
+    for is_, power_type in zip([is_p, ~is_p], ["p", "q"]):
+        is_i = is_ & is_pwl
+        if not sum(is_i):
+            continue
+        if not ppc['gencost'][is_i, COST:].shape[1] == 2*ppc['gencost'][is_i, NCOST]:
+            raise ValueError("In pwl gencost, the number n does not fit to the number of values")
+        create_pwl_costs(net, g_lu.element.values[is_i], g_lu.element_type.values[is_i],
+                            ppc['gencost'][is_i, 4:], power_type=power_type)
+
+    # --- create poly costs
+    is_poly = np.c_[(~is_pwl)[:len_gc_p], np.zeros((len_gc_p, ), dtype=bool)]
+    is_poly[:(max_gc-len_gc_p), 1] = (~is_pwl)[len_gc_p:]
+    is_poly = np.any(is_poly, axis=1)
+    if sum(is_poly):
+        poly_c = {key: np.zeros((sum(is_poly)*2, )) for key in ["c0", "c1", "c2"]}
+        ncost = ppc['gencost'][:max_gc, NCOST]
+        is_cost1 = np.isclose(ncost, 1)
+        is_cost2 = np.isclose(ncost, 2)
+        is_cost3 = np.isclose(ncost, 3)
+        if max_gc != 2*len_gc_p:
+            assert max_gc < 2*len_gc_p
+            diff = 2*len_gc_p - max_gc
+            is_pwl_l = np.append(is_pwl, np.ones((diff, ), dtype=bool))
+            is_cost1_l = np.append(is_cost1, np.zeros((diff, ), dtype=bool))
+            is_cost2_l = np.append(is_cost2, np.zeros((diff, ), dtype=bool))
+            is_cost3_l = np.append(is_cost3, np.zeros((diff, ), dtype=bool))
+        else:
+            is_pwl_l = is_pwl
+            is_cost1_l = is_cost1
+            is_cost2_l = is_cost2
+            is_cost3_l = is_cost3
+        poly_c["c0"][~is_pwl_l & is_cost1_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost1]
+        poly_c["c0"][~is_pwl_l & is_cost2_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost2]
+        poly_c["c0"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST+2][~is_pwl & is_cost3]
+        poly_c["c1"][~is_pwl_l & is_cost2_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost2]
+        poly_c["c1"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost3]
+        poly_c["c2"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost3]
+
+        if any(ncost > 3):
             logger.warning("The pandapower poly_cost table only supports up to 2nd order " +
                            "polynomials. The ppc higher order polynomials cannot be converted.")
-            cp2 = ppc['gencost'][idx, COST + ncost - 3]
-            cp1 = ppc['gencost'][idx, COST + ncost - 2]
-            cp0 = ppc['gencost'][idx, COST + ncost - 1]
-        else:
-            raise ValueError("'ncost' must be an positve integer but is " + str(ncost))
-        pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
-                                  cp1_eur_per_mw=cp1, cp2_eur_per_mw2=cp2, cp0_eur=cp0)
-    else:
-        logger.info(f"Cost mode of gencost line {idx} is unknown.")
+        if not all(is_cost1 | is_cost2 | is_cost3 | (ncost > 3)):
+            raise ValueError("'ncost' must be an positve integers.")
+        create_poly_costs(
+            net, gen_lookup.element.values[is_poly], gen_lookup.element_type.values[is_poly],
+            cp1_eur_per_mw=poly_c["c1"][:len_gc_p], cp2_eur_per_mw2=poly_c["c2"][:len_gc_p],
+            cp0_eur=poly_c["c0"][:len_gc_p],
+            cq1_eur_per_mvar=poly_c["c1"][len_gc_p:], cq2_eur_per_mvar2=poly_c["c2"][len_gc_p:],
+            cq0_eur=poly_c["c0"][len_gc_p:])
 
 
 def _validate_diff_res(diff_res, max_diff_values):
@@ -496,50 +521,50 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     if run[1]:
         if pf_type == "runpp":
             try:
-                pp.runpp(net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
-            except pp.LoadflowNotConverged:
+                runpp(net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
+            except LoadflowNotConverged:
                 try:
-                    pp.runpp(net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
-                except pp.LoadflowNotConverged:
+                    runpp(net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
+                except LoadflowNotConverged:
                     try:
-                        pp.runpp(net, trafo_model="pi", calculate_voltage_angles=False)
+                        runpp(net, trafo_model="pi", calculate_voltage_angles=False)
                         if "bus_va_degree" in max_diff_values.keys():
                             max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
                                 "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
                         logger.info("voltage_angles could be calculated.")
-                    except pp.LoadflowNotConverged:
+                    except LoadflowNotConverged:
                         logger.error('The pandapower powerflow does not converge.')
         elif pf_type == "rundcpp":
             try:
-                pp.rundcpp(net, trafo_model="pi")
-            except pp.LoadflowNotConverged:
+                rundcpp(net, trafo_model="pi")
+            except LoadflowNotConverged:
                 logger.error('The pandapower dc powerflow does not converge.')
         elif pf_type == "runopp":
                 try:
-                    pp.runopp(net, init="flat", calculate_voltage_angles=True)
-                except pp.OPFNotConverged:
+                    runopp(net, init="flat", calculate_voltage_angles=True)
+                except OPFNotConverged:
                     try:
-                        pp.runopp(net, init="pf", calculate_voltage_angles=True)
-                    except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
+                        runopp(net, init="pf", calculate_voltage_angles=True)
+                    except (OPFNotConverged, LoadflowNotConverged, KeyError):
                         try:
-                            pp.runopp(net, init="flat", calculate_voltage_angles=False)
+                            runopp(net, init="flat", calculate_voltage_angles=False)
                             logger.info("voltage_angles could be calculated.")
                             if "bus_va_degree" in max_diff_values.keys():
                                 max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
                                     "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
-                        except pp.OPFNotConverged:
+                        except OPFNotConverged:
                             try:
-                                pp.runopp(net, init="pf", calculate_voltage_angles=False)
+                                runopp(net, init="pf", calculate_voltage_angles=False)
                                 if "bus_va_degree" in max_diff_values.keys():
                                     max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
                                         "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
                                 logger.info("voltage_angles could be calculated.")
-                            except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
+                            except (OPFNotConverged, LoadflowNotConverged, KeyError):
                                 logger.error('The pandapower optimal powerflow does not converge.')
         elif pf_type == "rundcopp":
             try:
-                pp.rundcopp(net)
-            except pp.LoadflowNotConverged:
+                rundcopp(net)
+            except LoadflowNotConverged:
                 logger.error('The pandapower dc optimal powerflow does not converge.')
         else:
             raise ValueError("The pf_type %s is unknown" % pf_type)
@@ -617,8 +642,8 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     already_used_branches['number'] = np.zeros([already_used_branches.shape[0], 1]).astype(int)
     BRANCHES = pd.DataFrame(ppc_net['branch'][:, [0, 1, TAP, SHIFT]])
     for i in BRANCHES.index:
-        from_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 0]))
-        to_bus = pp.get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 1]))
+        from_bus = get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 0]))
+        to_bus = get_element_index(net, 'bus', name=int(ppc_net['branch'][i, 1]))
         from_vn_kv = ppc_net['bus'][from_bus, BASE_KV]
         to_vn_kv = ppc_net['bus'][to_bus, BASE_KV]
         ratio = BRANCHES[2].at[i]

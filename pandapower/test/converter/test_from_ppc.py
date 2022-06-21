@@ -205,4 +205,12 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+    if 0:
+        pytest.main([__file__, "-xs"])
+    else:
+        test_from_ppc_simple_against_target()
+        test_validate_from_ppc_simple_against_target()
+        test_ppc_testgrids()
+        test_pypower_cases()
+        test_to_and_from_ppc()
+        pass

@@ -3855,7 +3855,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
                             defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
+        **power_type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -3887,6 +3887,68 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
     return index
 
 
+def create_pwl_costs(net, elements, et, points, power_type="p", index=None, check=True, **kwargs):
+    """
+    Creates an entry for piecewise linear costs for an element. The currently supported elements are
+     - Generator
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **elements** (iterable of integers) - IDs of the elements in the respective element table
+
+        **et** (string or iterable) - element type, one of "gen", "sgen", "ext_grid", "load",
+                                "dcline", "storage"]
+
+        **points** - (list of list of list) with [[p1, p2, c1], [p2, p3, c2], ...] for each element
+        where c(n) defines the costs between p(n) and p(n+1)
+
+    OPTIONAL:
+        **power_type** - (string or iterable) - Type of cost ["p", "q"] are allowed for active or
+        reactive power
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The cost function is given by the x-values p1 and p2 with the slope m between those points.\
+        The constant part b of a linear function y = m*x + b can be neglected for OPF purposes. \
+        The intervals have to be continuous (the starting point of an interval has to be equal to \
+        the end point of the previous interval).
+
+        To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
+
+        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+    """
+    if not hasattr(elements, "__iter__") and not isinstance(elements, str):
+        raise ValueError(f"An iterable is expected for elements, not {elements}.")
+    if not hasattr(points):
+        if not len(points) == len(elements):
+            raise ValueError(f"It should be the same, but len(elements) is {len(elements)} "
+                             f"whereas len(points) is{len(points)}.")
+        if not hasattr(points[0]) or len(points[0]) == 0 or not hasattr(points[0][0]):
+            raise ValueError("A list of lists of lists is expected for points.")
+    if check:
+        bool_ = _costs_existance_check(net, elements, et, power_type=power_type)
+        if np.sum(bool_) >= 1:
+            raise UserWarning("There already exist costs for {np.sum(bool_)} elements.")
+
+    index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
+
+    entries = dict(zip(["power_type", "element", "et", "points"],
+                       [power_type, elements, et, points]))
+    _set_multiple_entries(net, "pwl_cost", index, **entries, **kwargs)
+    return index
+
+
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
                      cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True, **kwargs):
     """
@@ -3901,8 +3963,8 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
+        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"]
+        are possible
 
         **cp1_eur_per_mw** (float) - Linear costs per MW
 
@@ -3918,8 +3980,8 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
 
     OPTIONAL:
 
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one
+        higher than the highest already existing index is selected.
 
         **check** (bool, True) - raises UserWarning if costs already exist to this element.
 
@@ -3941,6 +4003,67 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     variables = [element, et, cp0_eur, cp1_eur_per_mw, cq0_eur, cq1_eur_per_mvar,
                  cp2_eur_per_mw2, cq2_eur_per_mvar2]
     _set_entries(net, "poly_cost", index, **dict(zip(columns, variables)), **kwargs)
+    return index
+
+
+def create_poly_costs(net, elements, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
+                      cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True,
+                      **kwargs):
+    """
+    Creates an entry for polynimoal costs for an element. The currently supported elements are:
+     - Generator ("gen")
+     - External Grid ("ext_grid")
+     - Static Generator ("sgen")
+     - Load ("load")
+     - Dcline ("dcline")
+     - Storage ("storage")
+
+    INPUT:
+        **elements** (iterable of integers) - IDs of the elements in the respective element table
+
+        **et** (string or iterable) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline",
+            "storage"] are possible
+
+        **cp1_eur_per_mw** (float or iterable) - Linear costs per MW
+
+        **cp0_eur=0** (float or iterable) - Offset active power costs in euro
+
+        **cq1_eur_per_mvar=0** (float or iterable) - Linear costs per Mvar
+
+        **cq0_eur=0** (float or iterable) - Offset reactive power costs in euro
+
+        **cp2_eur_per_mw2=0** (float or iterable) - Quadratic costs per MW
+
+        **cq2_eur_per_mvar2=0** (float or iterable) - Quadratic costs per Mvar
+
+    OPTIONAL:
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **check** (bool, True) - raises UserWarning if costs already exist to this element.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The polynomial cost function is given by the linear and quadratic cost coefficients.
+
+        create_poly_costs(net, [0, 1], "load", cp1_eur_per_mw = 0.1)
+    """
+    if not hasattr(elements, "__iter__") and not isinstance(elements, str):
+        raise ValueError(f"An iterable is expected for elements, not {elements}.")
+    if check:
+        bool_ = _costs_existance_check(net, elements, et)
+        if np.sum(bool_) >= 1:
+            raise UserWarning(f"There already exist costs for {np.sum(bool_)} elements.")
+
+    index = _get_multiple_index_with_check(net, "poly_cost", index, len(elements))
+    columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
+               "cp2_eur_per_mw2", "cq2_eur_per_mvar2"]
+    variables = [elements, et, cp0_eur, cp1_eur_per_mw, cq0_eur, cq1_eur_per_mvar,
+                 cp2_eur_per_mw2, cq2_eur_per_mvar2]
+    _set_multiple_entries(net, "poly_cost", index, **dict(zip(columns, variables)), **kwargs)
     return index
 
 
@@ -3970,6 +4093,28 @@ def _cost_existance_check(net, element, et, power_type=None):
                 np_any((net.pwl_cost.element == element).values &
                        (net.pwl_cost.et == et).values &
                        (net.pwl_cost.power_type == power_type).values))
+
+
+def _costs_existance_check(net, elements, et, power_type=None):
+    if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
+        poly_exist = (net.poly_cost.element.isin(elements)).values & \
+                    (net.poly_cost.et == et).values
+        pwl_exist = (net.pwl_cost.element.isin(elements)).values & \
+                    (net.pwl_cost.et == et).values
+        if isinstance(power_type, str):
+            pwl_exist &= (net.pwl_cost.power_type == power_type).values
+        return sum(poly_exist) & sum(pwl_exist)
+
+    else:
+        cols = ["element", "et"]
+        poly_df = pd.concat([net.poly_cost[cols], pd.DataFrame(np.c_[elements, et], columns=cols)])
+        if power_type is None:
+            pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et], columns=cols)])
+        else:
+            cols.append("power_type")
+            pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et, power_type],
+                                                                 columns=cols)])
+        return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):
