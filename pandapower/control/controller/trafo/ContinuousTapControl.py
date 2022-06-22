@@ -66,7 +66,8 @@ class ContinuousTapControl(TrafoController):
 
     def initialize_control(self, net):
         super().initialize_control(net)
-        self._set_t_nom(net)  # in case some of the trafo elements change their in_service in between runs
+        if not self.nothing_to_do(net):
+            self._set_t_nom(net)  # in case some of the trafo elements change their in_service in between runs
 
     def control_step(self, net):
         """
