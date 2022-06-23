@@ -101,6 +101,7 @@ def ctrl_variables_default(net, **kwargs):
         ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
+    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
     return ctrl_variables
 
 
@@ -127,8 +128,6 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     if ('check_each_level') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         check = kwargs.pop('check_each_level')
         ctrl_variables['check_each_level'] = check
-
-    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     return ctrl_variables
 
@@ -194,7 +193,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 pass
         else:
             raise err
-    ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
+    ctrl_variables['converged'] = net['converged'] or net.get('OPF_converged', True)
     return ctrl_variables
 
 
