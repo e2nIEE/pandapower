@@ -9,7 +9,6 @@ from operator import itemgetter
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
-from packaging import version
 
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
@@ -140,7 +139,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                    ("type", dtype(object)),
                    ("closed", "bool"),
                    ("name", dtype(object)),
-                   ("z_ohm", "f8")],
+                   ("z_ohm", "f8"),
+                   ("in_ka", "f8")],
         "shunt": [("bus", "u4"),
                   ("name", dtype(object)),
                   ("q_mvar", "f8"),
@@ -345,6 +345,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
+        "_empty_res_switch": [("i_ka", "f8"),
+                              ("loading_percent", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
                                  ("q_from_mvar", "f8"),
                                  ("p_to_mw", "f8"),
@@ -504,6 +506,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             "branch": None},
         "version": __version__,
         "converged": False,
+        "OPF_converged": False,
         "name": name,
         "f_hz": f_hz,
         "sn_mva": sn_mva
@@ -513,9 +516,6 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     net._empty_res_sgen_3ph = net._empty_res_sgen
     net._empty_res_storage_3ph = net._empty_res_storage
 
-    for s in net:
-        if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Index([], dtype=np.int64))
     if add_stdtypes:
         add_basic_std_types(net)
     else:
@@ -978,8 +978,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                current_source=True, **kwargs):
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=None,
+                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1034,7 +1034,25 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
-            specified as motor so that sgen is treated as asynchronous motor
+            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
+            short-circuit calculation for all generator types
+
+        **generator_type** (str, "None") - can be one of "current_source" \
+            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
+            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
+            generator in the context of the short-circuit calculations of wind power station units. \
+            If None, other short-circuit-related parameters are not set
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+            current. Relevant if the generator_type is "async".
+
+        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
+            generator_type is "async_doubly_fed".
+
+        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+            current, referred to the high-voltage side (provided by the manufacturer). \
+            Relevant if the generator_type is "async_doubly_fed".
 
         **current_source** (bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1061,10 +1079,23 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "sgen")
     _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, k, "k", "sgen")
-    _create_column_and_set_value(net, index, rx, "rx", "sgen")
     _create_column_and_set_value(net, index, controllable, "controllable", "sgen", dtyp=bool_,
                                  default_val=False, default_for_nan=True)
+    if rx is not None:
+        _create_column_and_set_value(net, index, rx, "rx", "sgen") # rx is always required
+    if generator_type is not None:
+        _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
+                                     default_val="current_source", default_for_nan=True)
+    if generator_type == "current_source" or generator_type is None:
+        _create_column_and_set_value(net, index, k, "k", "sgen")
+    elif generator_type == "async":
+        _create_column_and_set_value(net, index, lrc_pu, "lrc_pu", "sgen")
+    elif generator_type == "async_doubly_fed":
+        _create_column_and_set_value(net, index, max_ik_ka, "max_ik_ka", "sgen")
+        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
+    else:
+        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+                          f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
     return index
 
@@ -1072,7 +1103,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=None, min_p_mw=None,
                  max_q_mvar=None, min_q_mvar=None, controllable=None, k=None, rx=None,
-                 current_source=True, **kwargs):
+                 current_source=True, generator_type="current_source", max_ik_ka=nan,
+                 kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1127,8 +1159,25 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
-        **rx** (list of floats, NaN) - R/X ratio for short circuit impedance. Only relevant if type\
-            is specified as motor so that sgen is treated as asynchronous motor
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
+            short-circuit calculation for all generator types
+
+        **generator_type** (str, "current_source") - can be one of "current_source" \
+            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
+            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
+            generator in the context of the short-circuit calculations of wind power station units
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+            current. Relevant if the generator_type is "async".
+
+        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
+            generator_type is "async_doubly_fed".
+
+        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+            current, referred to the high-voltage side (provided by the manufacturer). \
+            Relevant if the generator_type is "async_doubly_fed".
 
         **current_source** (list of bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1153,10 +1202,23 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
     _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
     _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "k", k)
-    _add_series_to_entries(entries, index, "rx", rx)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
+    if rx is not None:
+        _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
+    if generator_type is not None:
+        _add_series_to_entries(entries, index, "generator_type", generator_type, dtyp="str",
+                                     default_val="current_source")
+    if generator_type == "current_source" or generator_type is None:
+        _add_series_to_entries(entries, index, "k", k)
+    elif generator_type == "async":
+        _add_series_to_entries(entries, index, "lrc_pu", lrc_pu)
+    elif generator_type == "async_doubly_fed":
+        _add_series_to_entries(entries, index, "max_ik_ka", max_ik_ka)
+        _add_series_to_entries(entries, index, "kappa", kappa)
+    else:
+        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+                          f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
     _set_multiple_entries(net, "sgen", index, **entries, **kwargs)
 
@@ -1450,9 +1512,15 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     # OPF limits
     if not isnan(controllable):
-        if "controllable" not in net.gen.columns:
+        controllable_col_exist = "controllable" in net.gen.columns
+        if not controllable_col_exist:
             net.gen.loc[:, "controllable"] = pd.Series(dtype=bool, data=True)
         net.gen.at[index, "controllable"] = bool(controllable)
+        if controllable_col_exist:
+            try:
+                net.gen["controllable"] = net.gen["controllable"].astype(bool)
+            except:
+                pass
     elif "controllable" in net.gen.columns:
         net.gen.at[index, "controllable"] = True
     # P limits for OPF if controllable == True
@@ -2149,7 +2217,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.,
                        tap_dependent_impedance=None, vk_percent_characteristic=None,
-                       vkr_percent_characteristic=None, **kwargs):
+                       vkr_percent_characteristic=None, pt_percent=None, oltc=None, xn_ohm=None, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2210,6 +2278,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
         **vkr_percent_characteristic** (int) - index of the characteristic from net.characteristic for \
             the adjustment of the parameter "vk_percent" for the calculation of tap dependent impedance.
+
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2273,6 +2343,12 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")  # Int64Dtype
     if vkr_percent_characteristic is not None:
         _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
+    if pt_percent is not None:
+        _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
+    if oltc is not None:
+        _create_column_and_set_value(net, index, oltc, "oltc", "trafo", bool_, False, True)
+    if xn_ohm is not None:
+        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2291,9 +2367,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan,
-                                       pt_percent=nan, oltc=False, tap_dependent_impedance=None,
+                                       pt_percent=None, oltc=None, tap_dependent_impedance=None,
                                        vk_percent_characteristic=None,
-                                       vkr_percent_characteristic=None, **kwargs):
+                                       vkr_percent_characteristic=None, xn_ohm=None, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2391,6 +2467,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **oltc** (bool, False) - (short circuit only)
 
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2421,9 +2499,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
         "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
-        "pt_percent": pt_percent, "oltc": oltc
-    }
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
     if ("tap_neutral" in v) and (tap_pos is nan):
         v["tap_pos"] = v["tap_neutral"]
@@ -2450,8 +2526,13 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
         _create_column_and_set_value(net, index, vector_group, "vector_group", "trafo", dtyp=str,
                                      default_val=None)
-    _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    if pt_percent is not None:
+        _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
+    if oltc is not None:
+        _create_column_and_set_value(net, index, oltc, "oltc", "trafo", bool_, False, True)
+    if xn_ohm is not None:
+        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
 
@@ -2464,9 +2545,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         vector_group=None, index=None, max_loading_percent=None,
                                         parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
                                         mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        pt_percent=nan, oltc=False, tap_dependent_impedance=None,
+                                        pt_percent=None, oltc=None, tap_dependent_impedance=None,
                                         vk_percent_characteristic=None,
-                                        vkr_percent_characteristic=None, **kwargs):
+                                        vkr_percent_characteristic=None, xn_ohm=None, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2565,6 +2646,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **oltc** (bool, False) - (short circuit only)
 
+        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2588,8 +2671,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_neutral": tp_neutral, "tap_max": tap_max, "tap_min": tap_min,
                "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-               "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
-               "pt_percent": pt_percent, "oltc": oltc}
+               "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
     if tap_dependent_impedance is not None:
         _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
@@ -2605,7 +2687,12 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_series_to_entries(entries, index, "si0_hv_partial", si0_hv_partial)
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
     _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
-    _add_series_to_entries(entries, index, "pt_percent", pt_percent)
+    if oltc is not None:
+        _add_series_to_entries(entries, index, "oltc", oltc, bool_, False)
+    if pt_percent is not None:
+        _add_series_to_entries(entries, index, "pt_percent", pt_percent)
+    if xn_ohm is not None:
+        _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
 
     _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
 
@@ -2732,16 +2819,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    # todo: drop __version__ checks
-    if version.parse(pd.__version__) < version.parse("0.21"):
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
-    elif version.parse(pd.__version__) < version.parse("0.23"):
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    else:
-        net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns,
-                                                                      axis=1)
-        # todo: append -> concat:
-        # net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)
+    net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(
+        net["trafo3w"].columns, axis=1)
 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
@@ -3148,7 +3227,8 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0, **kwargs):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0,
+                  in_ka=None, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3184,6 +3264,9 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             0 a branch will be created for the switch which has also effects on the bus mapping
 
         **name** (string, default None) - The name for this switch
+        
+        **in_ka** (float, default None) - maximum current that the switch can carry 
+            normal operating conditions without tripping
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
@@ -3224,15 +3307,15 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
     index = _get_index_with_check(net, "switch", index)
 
-    entries = dict(zip(["bus", "element", "et", "closed", "type", "name", "z_ohm"],
-                       [bus, element, et, closed, type, name, z_ohm]))
+    entries = dict(zip(["bus", "element", "et", "closed", "type", "name", "z_ohm", "in_ka"],
+                       [bus, element, et, closed, type, name, z_ohm, in_ka]))
     _set_entries(net, "switch", index, **entries, **kwargs)
 
     return index
 
 
 def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None,
-                    z_ohm=0, **kwargs):
+                    z_ohm=0, in_ka=None, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3268,7 +3351,10 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
             0 a branch will be created for the switch which has also effects on the bus mapping
 
         **name** (string, default None) - The name for this switch
-
+        
+        **in_ka** (float, default None) - maximum current that the switch can carry 
+            normal operating conditions without tripping
+            
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
@@ -3310,7 +3396,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
             raise UserWarning("Unknown element type")
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
-               "name": name, "z_ohm": z_ohm}
+               "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
 
     _set_multiple_entries(net, "switch", index, **entries, **kwargs)
 
@@ -3332,7 +3418,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         **q_mvar** - shunt susceptance in MVAr at v= 1.0 p.u.
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of \
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of
             connected bus
 
         **step** (int, 1) - step of shunt with which power values are multiplied
@@ -3343,7 +3429,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one
             higher than the highest already existing index is selected.
 
     OUTPUT:
@@ -3362,6 +3448,55 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
                        [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
     _set_entries(net, "shunt", index, **entries, **kwargs)
+
+    return index
+
+
+def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
+                 in_service=True, index=None, **kwargs):
+    """
+    Creates a number of shunt elements
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **buses** - bus numbers of buses to which the shunts should be connected to
+
+        **p_mw** - shunts active power in MW at v= 1.0 p.u.
+
+        **q_mvar** - shunts susceptance in MVAr at v= 1.0 p.u.
+
+    OPTIONAL:
+        **vn_kv** (list of floats, None) - rated voltage of the shunts. Defaults to rated voltage of
+            connected bus
+
+        **step** (list of ints, 1) - step of shunts with which power values are multiplied
+
+        **max_step** (list of booleans, True) - True for in_service or False for out of service
+
+        **name** (list of strs, None) - element name
+
+        **in_service** (list of booleans, True) - True for in_service or False for out of service
+
+        **index** (list of ints, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created shunt
+
+    EXAMPLE:
+        create_shunt(net, 0, 20)
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "shunt", index, len(buses))
+
+    if vn_kv is None:
+        vn_kv = net.bus.vn_kv.loc[buses]
+
+    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
+                       [buses, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
+    _set_multiple_entries(net, "shunt", index, **entries, **kwargs)
 
     return index
 
@@ -3888,16 +4023,16 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
         set_value = True
     if set_value:
         if column not in net[element].columns:
-            # this part is for compatibility with pandas < 1.0, can be removed if pandas >= 1.0 is required in setup.py
-            if isinstance(default_val, str) \
-                    and version.parse(pd.__version__) < version.parse("1.0"):
-                net[element].loc[:, column] = pd.Series([default_val] * len(net[element]),
-                                                        dtype=dtyp)
-            else:
-                net[element].loc[:, column] = pd.Series(data=default_val, index=net[element].index, dtype=dtyp)
+            net[element].loc[:, column] = pd.Series(
+                data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
     elif default_for_nan and column in net[element].columns:
         net[element].at[index, column] = default_val
+    if dtype is not None:
+        try:
+            net[element][column] = net[element][column].astype(dtyp)
+        except:
+            pass
     return net
 
 
@@ -3907,10 +4042,7 @@ def _add_series_to_entries(entries, index, column, values, dtyp=float64, default
             fill_default = not isnan(default_val)
         except TypeError:
             fill_default = True
-        if isinstance(values, str) and version.parse(pd.__version__) < version.parse("1.0"):
-            s = pd.Series([values] * len(index), index=index, dtype=dtyp)
-        else:
-            s = pd.Series(values, index=index, dtype=dtyp)
+        s = pd.Series(values, index=index, dtype=dtyp)
         if fill_default:
             s = s.fillna(default_val)
         entries[column] = s
@@ -3928,12 +4060,7 @@ def _add_multiple_branch_geodata(net, table, geodata, index):
         # geodata is multiple lists of coordinates
         df["coords"] = geodata
 
-    # todo: drop version checks
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[geo_table] = pd.concat([net[geo_table],df], sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net[geo_table] = net[geo_table].append(df)
+    net[geo_table] = pd.concat([net[geo_table],df], sort=False)
 
     _preserve_dtypes(net[geo_table], dtypes)
 
@@ -3971,11 +4098,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     dd = dd.assign(**entries)
 
     # extend the table by the frame we just created
-    if version.parse(pd.__version__) >= version.parse("0.23"):
-        net[table] = pd.concat([net[table],dd], sort=False)
-    else:
-        # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net[table] = net[table].append(dd)
+    net[table] = pd.concat([net[table],dd], sort=False)
 
     # and preserve dtypes
     if preserve_dtypes:

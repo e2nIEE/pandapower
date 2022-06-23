@@ -42,7 +42,7 @@ setup(
     long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17",
+    install_requires=["pandas>=1.0",
                       "networkx>=2.5",
                       "scipy",
                       "numpy>=0.11",
@@ -57,11 +57,13 @@ setup(
         "performance": ["ortools"],  # , "lightsim2grid"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
         # "fiona" is a depedency of geopandas and so already available
+        "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly", "matplotlib", "python-igraph", "geopandas",
                 "pytest", "pytest-xdist",
                 "ortools",  # lightsim2grid,
-                "xlsxwriter", "openpyxl", "cryptography"
+                "xlsxwriter", "openpyxl", "cryptography",
+                "matpowercaseframes"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
     packages=find_packages(),

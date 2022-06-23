@@ -22,7 +22,6 @@ import numpy
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
-from packaging import version
 
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
@@ -311,10 +310,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             else:
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    if version.parse(pd.__version__) < version.parse("0.21"):
-                        net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                    else:
-                        net[key] = net[key].reindex(item["columns"], axis=1)
+                    net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -782,7 +778,7 @@ def json_pandapowernet(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    orient = "split"
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
