@@ -2090,8 +2090,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
     }
-
-    _set_entries(net, "line", index, **v, **kwargs)
+    v.update(kwargs)
+    _set_entries(net, "line", index, **v)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2508,7 +2508,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         if type(tap_pos) == float:
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
-    _set_entries(net, "trafo", index, **v, **kwargs)
+    v.update(kwargs)
+    _set_entries(net, "trafo", index, **v)
 
     if tap_dependent_impedance is not None:
         _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
