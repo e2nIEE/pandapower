@@ -1200,10 +1200,11 @@ def test_get_connected_elements_emty_in_service():
     #  - element_table was unbound for the element table measurement
     #  see #1592
     net = nw.example_simple()
+    net.bus.in_service.at[6] = False
     conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
     assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
     conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
-    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
+    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5]}
 
 
 def test_replace_ward_by_internal_elements():
