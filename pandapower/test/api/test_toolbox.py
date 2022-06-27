@@ -1193,7 +1193,7 @@ def test_get_connected_elements_dict():
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
 
 
-def test_get_connected_elements_emty_in_service():
+def test_get_connected_elements_empty_in_service():
     # would cause an error with respect_in_service=True for the case of:
     #  - empty element tables
     #  - element tables without in_service column (e.g. measurement)
