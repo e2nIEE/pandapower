@@ -2870,6 +2870,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
     elif element == "measurement":
+        element_table = net[element]
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
                                                        (net.measurement.element_type == "bus")])
     elif element in pp_elements(bus=False, branch_elements=False):
@@ -2888,7 +2889,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
                                                 net.switch.element.isin(connected_elements)].index
             connected_elements -= set(net.switch.element[open_and_connected])
 
-    if respect_in_service:
+    if respect_in_service and "in_service" in element_table and not element_table.empty:
         connected_elements -= set(element_table[~element_table.in_service].index)
 
     return connected_elements

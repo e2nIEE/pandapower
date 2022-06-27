@@ -1193,6 +1193,20 @@ def test_get_connected_elements_dict():
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
 
 
+def test_get_connected_elements_empty_in_service():
+    # would cause an error with respect_in_service=True for the case of:
+    #  - empty element tables
+    #  - element tables without in_service column (e.g. measurement)
+    #  - element_table was unbound for the element table measurement
+    #  see #1592
+    net = nw.example_simple()
+    net.bus.in_service.at[6] = False
+    conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
+    assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
+    conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
+    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5]}
+
+
 def test_replace_ward_by_internal_elements():
     net = nw.example_simple()
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
