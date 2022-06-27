@@ -1,10 +1,11 @@
+from logging import StreamHandler
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
 
-class AppHandler(logging.StreamHandler):
+class AppHandler(StreamHandler):
     def __init__(self, app, freeze_app_between_messages=False):
         super().__init__()
         self.app = app
