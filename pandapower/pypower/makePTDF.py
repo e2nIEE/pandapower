@@ -17,8 +17,8 @@ import numpy as np
 from numpy.linalg import solve
 from scipy.sparse.linalg import spsolve, factorized
 
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, BUS_I
-from pandapower.pypower.makeBdc import makeBdc
+from .idx_bus import BUS_TYPE, REF, BUS_I
+from .makeBdc import makeBdc
 
 
 def makePTDF(baseMVA, bus, branch, slack=None,
