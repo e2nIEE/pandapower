@@ -18,11 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 def select_group(net, group_name):
-    return net.group.query("name==@group_name").groupby("element").agg({"element_index": lambda x: x.values,
-                                                                        "element_index_column": "first"})
+    return net.group.query("name==@group_name").groupby("element").agg(
+        {"element_index": lambda x: x.values,
+         "element_index_column": "first"})
 
 
-def set_value(net, group_name, variable, value, replace=True, append_column=True, missing_column_error=True):
+def set_value(net, group_name, variable, value, replace=True, append_column=True,
+              missing_column_error=True):
     group_tab = select_group(net, group_name)
     for element, element_index, element_index_column in group_tab.itertuples():
         if pd.isnull(element_index_column):
@@ -36,9 +38,14 @@ def set_value(net, group_name, variable, value, replace=True, append_column=True
             net[element].loc[element_index, variable] = value
 
 
-def set_in_service(net, group_name, in_service):
-    set_value(net, group_name=group_name, variable="in_service", value=in_service, replace=True, append_column=False,
-              missing_column_error=False)
+def set_in_service(net, group_name):
+    set_value(net, group_name=group_name, variable="in_service", value=True, replace=True,
+              append_column=False, missing_column_error=False)
+
+
+def set_out_of_service(net, group_name):
+    set_value(net, group_name=group_name, variable="in_service", value=False, replace=True,
+              append_column=False, missing_column_error=False)
 
 
 def add_elements(net, group_name, element, element_index=None, element_index_column=np.nan):
