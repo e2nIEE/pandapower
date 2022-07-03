@@ -4,7 +4,7 @@ import bisect
 from itertools import combinations
 
 import pandapower as pp
-from pandas import DataFrame
+import pandas as pd
 from pandapower.auxiliary import ADict
 
 try:
@@ -20,10 +20,73 @@ def ga(element, attr):
     return element.GetAttribute(attr)
 
 
+def create_buses(net, dict_net, flag_graphics):
+    import numpy as np
+    def descr(item):
+        substat_descr = ''
+        if item.HasAttribute('cpSubstat'):
+            substat = item.cpSubstat
+            if substat is not None:
+                logger.debug('adding substat %s to descr of bus %s' % (substat, item.loc_name))
+                substat_descr = substat.loc_name
+            else:
+                logger.debug("bus has no substat description")
+        else:
+            logger.debug('bus %s is not part of any substation' % item.loc_name)
+
+        if len(item.desc) > 0:
+            descr = ' \n '.join(item.desc)
+        elif item.fold_id:
+            descr = item.fold_id.loc_name
+        else:
+            descr = ''
+        return descr, substat_descr
+
+    grf_map = dict_net.get('graphics', {})
+
+    bus_param_list = []
+    for bid, item in enumerate(dict_net['ElmTerm']):
+        bus_dict[item] = bid
+
+        d = {}
+        d["name"] = item.loc_name
+        d["in_service"] = bool(item.outserv)
+        d["type"] = ["b", "m", "n"][item.iUsage]
+        d["vn_kv"] = item.uknom
+        d["zone"] = (item.Grid.loc_name.split('.ElmNet')[0] if item.HasAttribute("Grid") else
+                     item.cpGrid.loc_name.split('.ElmNet')[0])
+        d["description"], d["substat"] = descr(item)
+        d["folder_id"] = item.fold_id.loc_name
+        for s in ["sernum", "for_name", "chr_name"]:
+            try:
+                d[s] = item.GetAttribute(s)
+            except:
+                pass
+        try:
+            d["cpSite.loc_name"] = item.cpSite.loc_name
+        except:
+            pass
+        bus_param_list.append(d)
+
+        x, y = 0, 0
+        if flag_graphics == 'GPS':
+            x = item.GetAttribute('e:GPSlon')
+            y = item.GetAttribute('e:GPSlat')
+        elif flag_graphics == 'graphic objects':
+            graphic_object = grf_map.get(item, None)
+            if graphic_object:
+                x = graphic_object.GetAttribute('rCenterX')
+                y = graphic_object.GetAttribute('rCenterY')
+        d["geodata"] = np.array([x, y])
+    bus = pd.DataFrame(bus_param_list)
+
+    pp.create_buses(net, nr_buses=len(bus), **bus.to_dict(orient="list")) # , index=range(1, len(bus) + 1)
+
+
 # import network to pandapower:
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
-            max_iter=None, is_unbalanced=False):
+            max_iter=None, is_unbalanced=False, implementation="new"):
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
 
@@ -38,7 +101,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         pp.set_user_pf_options(net, max_iteration=max_iter)
     logger.info('creating grid %s' % grid_name)
     if 'res_switch' not in net.keys():
-        net['res_switch'] = DataFrame(columns=['pf_closed', 'pf_in_service'], dtype='bool')
+        net['res_switch'] = pd.DataFrame(columns=['pf_closed', 'pf_in_service'], dtype='bool')
 
     logger.debug('creating buses')
     # create buses:
@@ -48,11 +111,13 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grf_map = dict_net.get('graphics', {})
     logger.debug('the graphic mapping is: %s' % grf_map)
 
-    # ist leider notwendig
-    n = 0
-    for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
-    if n > 0: logger.info('imported %d buses' % n)
+    if implementation == "old":
+        n = 0
+        for n, bus in enumerate(dict_net['ElmTerm'], 1):
+            create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        if n > 0: logger.info('imported %d buses' % n)
+    else:
+        create_buses(net, dict_net, flag_graphics)
 
     logger.debug('creating external grids')
     # create external networks:
@@ -1067,7 +1132,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
         except AttributeError:
             pass
         elm = 'ext_grid'
-        
+
     get_pf_ext_grid_results(net, item, xid, is_unbalanced)
 
     # if item.HasResults(0):  # 'm' results...
@@ -1218,7 +1283,7 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
                             if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
-        
+
     # p_mw = p_mw, q_mvar = q_mvar, scaling = scaling
 
     return params
