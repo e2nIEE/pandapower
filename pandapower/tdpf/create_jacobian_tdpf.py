@@ -42,7 +42,7 @@ def calc_T_frank(p_loss_pu, t_amb_pu, r_theta_pu, tdpf_delay_s, T0, tau):
     if tdpf_delay_s is None:
         return t_ss
 
-    t_transient = t_ss - (t_ss - T0) * exp(-tdpf_delay_s / tau)
+    t_transient = t_ss - (t_ss - T0) * np.exp(-tdpf_delay_s / tau)
     return t_transient
 
 
@@ -52,7 +52,7 @@ def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
     if tdpf_delay_s is None:
         return t_ss
 
-    t_transient = t_ss - (t_ss - T0) * exp(-tdpf_delay_s / tau)
+    t_transient = t_ss - (t_ss - T0) * np.exp(-tdpf_delay_s / tau)
     return t_transient
 
 

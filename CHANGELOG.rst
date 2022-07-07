@@ -11,6 +11,7 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
 
 [2.9.0]- 2022-03-23
 ----------------------
