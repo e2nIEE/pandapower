@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from copy import deepcopy
 import os
 import pickle
 import pytest
@@ -146,6 +147,136 @@ def test_to_and_from_ppc():
             assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
+def test_gencost():
+    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+
+    # with partly poly cost
+    with_q_poly = deepcopy(case6)
+    with_q_poly["gencost"] = np.array(
+        [
+            [2, 0, 0, 2, 14, 0],
+            [2, 0, 0, 2, 15, 1],
+        ])
+    net = from_ppc(with_q_poly, f_hz=60)
+    # assert net.poly_cost.shape[0] == 2
+    # assert np.allclose(net.poly_cost.cp1_eur_per_mw.values, range(14, 16))
+    # assert np.allclose(net.poly_cost.cp0_eur.values, [0, 1])
+    # assert np.allclose(net.poly_cost[[
+    #     "cp2_eur_per_mw2", "cq0_eur", "cq2_eur_per_mvar2"]].values, 0)
+
+    # with q poly cost
+    with_q_poly = deepcopy(case6)
+    with_q_poly["gencost"] = np.array(
+        [
+            [2, 0, 0, 2, 14, 0],
+            [2, 0, 0, 2, 15, 1],
+            [2, 0, 0, 2, 16, 0],
+            [2, 0, 0, 2, 17, 0],
+            [2, 0, 0, 2, 18, 0],
+            [2, 0, 0, 2, 19, 0],
+        ])
+    net = from_ppc(with_q_poly, f_hz=60)
+    # assert net.poly_cost.shape[0] == 3
+    # assert np.allclose(net.poly_cost.cp1_eur_per_mw.values, range(14, 17))
+    # assert np.allclose(net.poly_cost.cp0_eur.values, [0, 1, 0])
+    # assert np.allclose(net.poly_cost.cq1_eur_per_mvar.values, range(17, 20))
+    # assert np.allclose(net.poly_cost[[
+    #     "cp2_eur_per_mw2", "cq0_eur", "cq2_eur_per_mvar2"]].values, 0)
+
+    # with partly q poly cost
+    with_q_poly = deepcopy(case6)
+    with_q_poly["gencost"] = np.array(
+        [
+            [2, 0, 0, 2, 14, 0],
+            [2, 0, 0, 2, 15, 1],
+            [2, 0, 0, 2, 16, 0],
+            [2, 0, 0, 2, 17, 0],
+            [2, 0, 0, 2, 18, 0],
+        ])
+    net = from_ppc(with_q_poly, f_hz=60)
+    # assert net.poly_cost.shape[0] == 3
+    # assert np.allclose(net.poly_cost.cp1_eur_per_mw.values, range(14, 17))
+    # assert np.allclose(net.poly_cost.cp0_eur.values, [0, 1, 0])
+    # assert np.allclose(net.poly_cost.cq1_eur_per_mvar.values, [17, 18, 0])
+    # assert np.allclose(net.poly_cost[[
+    #     "cp2_eur_per_mw2", "cq0_eur", "cq2_eur_per_mvar2"]].values, 0)
+
+    # with pwl cost
+    with_pwl = deepcopy(case6)
+    with_pwl["gencost"] = np.array(
+        [
+            [1, 0, 0, 2, 1,    0,  5, 7],
+            [1, 0, 0, 2, 10, -10, 15, 7],
+            [1, 0, 0, 2, 1,    2,  0, 8],
+        ])
+    net = from_ppc(with_pwl, f_hz=60)
+    assert net.pwl_cost.shape[0] == 3
+    # assert
+
+    # with q pwl cost
+    with_q_pwl = deepcopy(case6)
+    with_q_pwl["gencost"] = np.array(
+        [
+            [1, 0, 0, 2, 1,    0,  5, 7],
+            [1, 0, 0, 2, 10, -10, 15, 7],
+            [1, 0, 0, 2, 1,    2,  0, 8],
+            [1, 0, 0, 2, 1,    0,  5, 7],
+            [1, 0, 0, 2, 10, -10, 15, 7],
+            [1, 0, 0, 2, 1,    2,  0, 8],
+        ])
+    net = from_ppc(with_q_pwl, f_hz=60)
+    # assert net.pwl_cost.shape[0] == 6
+    # assert list(net.pwl_cost.power_type) == ["p"]*3 + ["q"]*3
+    # assert isinstance(net.pwl_cost.points.at[0], list)
+    # assert len(net.pwl_cost.points.at[0]) == 1
+    # assert isinstance(net.pwl_cost.points.at[0][0], list)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][0], 1)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][1], 5)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][2], 7/(5-1))
+    # assert np.isclose(net.pwl_cost.points.at[1][0][0], 10)
+    # assert np.isclose(net.pwl_cost.points.at[1][0][1], 15)
+    # assert np.isclose(net.pwl_cost.points.at[1][0][2], 17/(15-10))
+
+    # with poly and pwl cost
+    mixed_cost = deepcopy(case6)
+    mixed_cost["gencost"] = np.array(
+        [
+            [1, 0, 0, 3,  1,   0,  5, 7, 10, 10],
+            [2, 0, 0, 3,  3,  15,  0, np.nan, np.nan, np.nan],
+            [2, 0, 0, 2, 16,   2,  np.nan, np.nan, np.nan, np.nan],
+        ])
+    net = from_ppc(mixed_cost, f_hz=60)
+    # assert net.pwl_cost.shape[0] == 1
+    # assert isinstance(net.pwl_cost.points.at[0], list)
+    # assert len(net.pwl_cost.points.at[0]) == 2
+    # assert isinstance(net.pwl_cost.points.at[0][0], list)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][0], 1)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][1], 5)
+    # assert np.isclose(net.pwl_cost.points.at[0][0][2], 7/(5-1))
+    # assert np.isclose(net.pwl_cost.points.at[0][1][0], 5)
+    # assert np.isclose(net.pwl_cost.points.at[0][1][1], 10)
+    # assert np.isclose(net.pwl_cost.points.at[0][1][2], (10-7)/(10-5))
+    # assert net.poly_cost.shape[0] == 2
+    # assert np.allclose(net.poly_cost.cp1_eur_per_mw.values, [15, 16])
+    # assert np.allclose(net.poly_cost.cp2_eur_per_mw2.values, [3, 0])
+    # assert np.allclose(net.poly_cost.cp0_eur.values, [0, 2])
+
+    # with poly and pwl cost
+    mixed_cost_pq = deepcopy(case6)
+    mixed_cost_pq["gencost"] = np.array(
+        [
+            [1, 0, 0, 3,  1,   0,  5, 7, 10, 10],
+            [2, 0, 0, 3,  3,  15,  0, np.nan, np.nan, np.nan],
+            [2, 0, 0, 2, 16,   2,  np.nan, np.nan, np.nan, np.nan],
+            [2, 0, 0, 2, 16,   2,  np.nan, np.nan, np.nan, np.nan],
+            [1, 0, 0, 3,  1,   0,  5, 7, 10, 10],
+        ])
+    net = from_ppc(mixed_cost_pq, f_hz=60)
+    # assert net.pwl_cost.shape[0] == 2
+    # assert list(net.pwl_cost.power_type) == ["p", "q"]
+    # assert net.poly_cost.shape[0] == 3
+
+
 @pytest.mark.skipif(not pypower_installed,
                     reason="c24 test net is taken from mandatory pypower installation")
 def test_case24_from_pypower():
@@ -207,9 +338,10 @@ if __name__ == '__main__':
     if 0:
         pytest.main([__file__, "-xs"])
     else:
-        test_from_ppc_simple_against_target()
-        test_validate_from_ppc_simple_against_target()
-        test_ppc_testgrids()
-        test_pypower_cases()
-        test_to_and_from_ppc()
+        # test_from_ppc_simple_against_target()
+        # test_validate_from_ppc_simple_against_target()
+        # test_ppc_testgrids()
+        # test_pypower_cases()
+        # test_to_and_from_ppc()
+        test_gencost()
         pass

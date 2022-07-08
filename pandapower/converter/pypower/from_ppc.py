@@ -323,6 +323,27 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
     return is_line, to_vn_is_leq
 
 
+def _calc_pp_pwl_points(ppc_pwl_points):
+    """
+    Converts ppc pwl points which is (x1, y1, ..., xn, yn)
+    into pandapower pwl points which is ((x1, x2, c12), ..., (x(n-1), xn, c(n-1)n))
+    with c12 is the slope between the points x1 and x2.
+    """
+
+    def construct_list_of_list(row):
+        arr = pts[row, ::2]
+        arr = np.concatenate((arr[:1], np.repeat(arr[1:-1], 2), arr[-1:])).reshape((-1, 2))
+        arr = np.c_[arr, c[row, :]]
+        return arr.tolist()
+
+    pts = ppc_pwl_points
+    if not (pts.shape[1] % 2) == 0:
+        raise ValueError("_calc_pp_pwl_points() expects ppc_pwl_points with shape[1] is "
+                         f"multiple of 2. However, ppc_pwl_points.shape[1]={ppc_pwl_points}.")
+    c = (pts[:, 3::2] - pts[:, 1:-2:2]) / (pts[:, 2::2] - pts[:, :-2:2])
+    return [construct_list_of_list(row) for row in range(pts.shape[0])]
+
+
 def _from_ppc_gencost(net, ppc, gen_lookup):
     # --- gencost -> create polynomial_cost, piecewise_cost
 
@@ -333,7 +354,7 @@ def _from_ppc_gencost(net, ppc, gen_lookup):
         # reshape gencost if only one gencost is given -> no indexError
         ppc['gencost'] = ppc['gencost'].reshape((1, -1))
 
-    # --- determine is_p, is_pwl
+    # --- determine is_p, is_pwl, g_lu
     len_gc_p = min(ppc['gencost'].shape[0], gen_lookup.shape[0])
     max_gc = min(ppc['gencost'].shape[0], 2*gen_lookup.shape[0])
     if ppc['gencost'].shape[0] <= gen_lookup.shape[0]:  # no q consts
@@ -343,61 +364,72 @@ def _from_ppc_gencost(net, ppc, gen_lookup):
         is_p = np.array([True]*len_gc_p + [False]*(max_gc-len_gc_p))
         g_lu = gen_lookup.iloc[:max_gc]
 
-    if not all(np.isclose(ppc['gencost'][:max_gc, 0], 1) | np.isclose(ppc['gencost'][:max_gc, 0], 2)):
+    # check gencost type
+    if not all(np.isclose(ppc['gencost'][:max_gc, 0], 1) |
+               np.isclose(ppc['gencost'][:max_gc, 0], 2)):
         raise ValueError("ppc['gencost'][:, 0] must be in [1, 2].")
 
     is_pwl = ppc['gencost'][:max_gc, 0] == 1
 
     # --- create pwl costs
     for is_, power_type in zip([is_p, ~is_p], ["p", "q"]):
-        is_i = is_ & is_pwl
+        is_i = is_pwl[is_]
         if not sum(is_i):
             continue
-        if not ppc['gencost'][is_i, COST:].shape[1] == 2*ppc['gencost'][is_i, NCOST]:
+        if not np.allclose(2*ppc['gencost'][is_ & is_pwl, NCOST],
+                           ppc['gencost'][is_ & is_pwl, COST:].shape[1]):
             raise ValueError("In pwl gencost, the number n does not fit to the number of values")
+        pp_pwl_points = _calc_pp_pwl_points(ppc['gencost'][is_ & is_pwl, 4:])
         create_pwl_costs(net, g_lu.element.values[is_i], g_lu.element_type.values[is_i],
-                            ppc['gencost'][is_i, 4:], power_type=power_type)
+                         pp_pwl_points, power_type=power_type)
 
     # --- create poly costs
     is_poly = np.c_[(~is_pwl)[:len_gc_p], np.zeros((len_gc_p, ), dtype=bool)]
     is_poly[:(max_gc-len_gc_p), 1] = (~is_pwl)[len_gc_p:]
     is_poly = np.any(is_poly, axis=1)
+
     if sum(is_poly):
-        poly_c = {key: np.zeros((sum(is_poly)*2, )) for key in ["c0", "c1", "c2"]}
+        poly_c = {key: np.zeros((2*len_gc_p, )) for key in ["c0", "c1", "c2"]}
         ncost = ppc['gencost'][:max_gc, NCOST]
         is_cost1 = np.isclose(ncost, 1)
         is_cost2 = np.isclose(ncost, 2)
         is_cost3 = np.isclose(ncost, 3)
-        if max_gc != 2*len_gc_p:
-            assert max_gc < 2*len_gc_p
-            diff = 2*len_gc_p - max_gc
-            is_pwl_l = np.append(is_pwl, np.ones((diff, ), dtype=bool))
-            is_cost1_l = np.append(is_cost1, np.zeros((diff, ), dtype=bool))
-            is_cost2_l = np.append(is_cost2, np.zeros((diff, ), dtype=bool))
-            is_cost3_l = np.append(is_cost3, np.zeros((diff, ), dtype=bool))
-        else:
-            is_pwl_l = is_pwl
-            is_cost1_l = is_cost1
-            is_cost2_l = is_cost2
-            is_cost3_l = is_cost3
-        poly_c["c0"][~is_pwl_l & is_cost1_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost1]
-        poly_c["c0"][~is_pwl_l & is_cost2_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost2]
-        poly_c["c0"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST+2][~is_pwl & is_cost3]
-        poly_c["c1"][~is_pwl_l & is_cost2_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost2]
-        poly_c["c1"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost3]
-        poly_c["c2"][~is_pwl_l & is_cost3_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost3]
-
         if any(ncost > 3):
             logger.warning("The pandapower poly_cost table only supports up to 2nd order " +
                            "polynomials. The ppc higher order polynomials cannot be converted.")
         if not all(is_cost1 | is_cost2 | is_cost3 | (ncost > 3)):
             raise ValueError("'ncost' must be an positve integers.")
+        if max_gc != 2*len_gc_p:
+            assert max_gc < 2*len_gc_p
+            diff = 2*len_gc_p - max_gc
+            is_pwl_l1 = np.append(is_pwl, np.ones((diff, ), dtype=bool))
+            is_pwl_l2 = np.append(is_pwl, np.zeros((diff, ), dtype=bool))
+            is_cost1_l = np.append(is_cost1, np.zeros((diff, ), dtype=bool))
+            is_cost2_l = np.append(is_cost2, np.zeros((diff, ), dtype=bool))
+            is_cost3_l = np.append(is_cost3, np.zeros((diff, ), dtype=bool))
+        else:
+            is_pwl_l1 = is_pwl
+            is_cost1_l = is_cost1
+            is_cost2_l = is_cost2
+            is_cost3_l = is_cost3
+        poly_c["c0"][~is_pwl_l1 & is_cost1_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost1]
+        if any(~is_pwl & is_cost2):
+            poly_c["c0"][~is_pwl_l1 & is_cost2_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost2]
+            poly_c["c1"][~is_pwl_l1 & is_cost2_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost2]
+        if any(~is_pwl & is_cost3):
+            poly_c["c0"][~is_pwl_l1 & is_cost3_l] = ppc['gencost'][:max_gc, COST+2][~is_pwl & is_cost3]
+            poly_c["c1"][~is_pwl_l1 & is_cost3_l] = ppc['gencost'][:max_gc, COST+1][~is_pwl & is_cost3]
+            poly_c["c2"][~is_pwl_l1 & is_cost3_l] = ppc['gencost'][:max_gc, COST  ][~is_pwl & is_cost3]
+        for key in ["c0", "c1", "c2"]:
+            double_is_p = np.concatenate((np.ones(len_gc_p, dtype=bool),
+                                          np.zeros(len_gc_p, dtype=bool)))
+            poly_c[key+"p"] = poly_c[key][~is_pwl_l1 & double_is_p]
+            poly_c[key+"q"] = poly_c[key][~is_pwl_l2 & ~double_is_p]
+
         create_poly_costs(
             net, gen_lookup.element.values[is_poly], gen_lookup.element_type.values[is_poly],
-            cp1_eur_per_mw=poly_c["c1"][:len_gc_p], cp2_eur_per_mw2=poly_c["c2"][:len_gc_p],
-            cp0_eur=poly_c["c0"][:len_gc_p],
-            cq1_eur_per_mvar=poly_c["c1"][len_gc_p:], cq2_eur_per_mvar2=poly_c["c2"][len_gc_p:],
-            cq0_eur=poly_c["c0"][len_gc_p:])
+            cp1_eur_per_mw=poly_c["c1p"], cp2_eur_per_mw2=poly_c["c2p"], cp0_eur=poly_c["c0p"],
+            cq1_eur_per_mvar=poly_c["c1q"], cq2_eur_per_mvar2=poly_c["c2q"], cq0_eur=poly_c["c0q"])
 
 
 def _validate_diff_res(diff_res, max_diff_values):
