@@ -59,4 +59,8 @@ def test_to_ppc_and_mpc():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_ppc_and_mpc.py", "-s"])
+    if 0:
+        pytest.main(["test_to_ppc_and_mpc.py", "-s"])
+    else:
+        test_to_ppc_and_mpc()
+        pass
