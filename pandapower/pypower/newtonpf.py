@@ -11,9 +11,8 @@
 """Solves the power flow using a full Newton's method.
 """
 
-import numpy as np
-from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, real, r_, Inf, arange, zeros, ones, max, \
-    zeros_like, column_stack, flatnonzero, nan_to_num, isnan, any as np_any
+from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, max, \
+    zeros_like, column_stack, flatnonzero, nan_to_num
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
@@ -21,13 +20,13 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
 
-from pandapower.tdpf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
-    calc_T_ngoko, calc_T_frank, calc_i_square_p_loss, create_J_tdpf
+from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
+    calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
