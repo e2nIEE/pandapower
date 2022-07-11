@@ -13,7 +13,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger("PowerFactory Converter")
-
+logger.setLevel(logging.INFO)
 
 # make wrapper for GetAttribute
 def ga(element, attr):
@@ -50,7 +50,7 @@ def create_buses(net, dict_net, flag_graphics):
 
         d = {}
         d["name"] = item.loc_name
-        d["in_service"] = bool(item.outserv)
+        d["in_service"] = item.outserv == 0
         d["type"] = ["b", "m", "n"][item.iUsage]
         d["vn_kv"] = item.uknom
         d["zone"] = (item.Grid.loc_name.split('.ElmNet')[0] if item.HasAttribute("Grid") else
@@ -81,6 +81,114 @@ def create_buses(net, dict_net, flag_graphics):
     bus = pd.DataFrame(bus_param_list)
 
     pp.create_buses(net, nr_buses=len(bus), **bus.to_dict(orient="list")) # , index=range(1, len(bus) + 1)
+
+
+def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
+    print("JO PASSIERT")
+    n = 0
+    #%%
+    load_param_list = []
+    asym_load_param_list = []
+    for load_type in ["ElmLod", "ElmLodlv", "ElmLodmv"]:
+        for item in dict_net[load_type]:
+#            try:
+            params = ADict()
+            bus_is_known = False
+            params.name = item.loc_name
+            params.in_service = not bool(item.outserv)
+            params.type = "wye"
+            params['description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+            load_class = item.GetClassName()
+            logger.debug('>> creating load <%s.%s>' % (params.name, load_class))
+            is_unbalanced = item.i_sym
+
+            ask = ask_unbalanced_load_params if is_unbalanced else ask_load_params
+
+            if load_class == 'ElmLodlv':
+                try:
+                    params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
+                                      variables=('p_mw', 'sn_mva')))
+                except Exception as err:
+                    logger.error("m:P:bus1 and m:Q:bus1 should be used with ElmLodlv")
+                    logger.error('While creating load %s, error occurred for '
+                                 'calculation of q_mvar: %s, %s' % (item, params, err))
+                    raise err
+            elif load_class == 'ElmLodmv':
+                params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
+                                  dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+            elif load_class == 'ElmLod':
+                params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
+                                  dict_net=dict_net, variables=('p_mw', 'q_mvar')))
+            elif load_class == 'ElmLodlvp':
+                parent = item.fold_id
+                parent_class = parent.GetClassName()
+                logger.debug('parent class name of ElmLodlvp: %s' % parent_class)
+                if parent_class == 'ElmLodlv':
+                    raise NotImplementedError('ElmLodlvp as not part of ElmLne not implemented')
+                elif parent_class == 'ElmLne':
+                    logger.debug('creating load that is part of line %s' % parent)
+                    params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
+                                      dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+                    params.name += '(%s)' % parent.loc_name
+                    split_dict = make_split_dict(parent)
+                    # todo remake this
+                    params.buses = split_line_add_bus(net, split_dict)
+                    bus_is_known = True
+                    logger.debug('created bus <%d> in net and changed lines' % params.buses)
+                else:
+                    raise NotImplementedError('ElmLodlvp as part of %s not implemented' % parent)
+            else:
+                logger.warning(
+                    'item <%s> not imported - <%s> not implemented yet!' % (item.loc_name, load_class))
+                raise RuntimeError('Load <%s> of type <%s> not implemented!' % (item.loc_name, load_class))
+
+            if not bus_is_known:
+                try:
+                    params.buses = get_connection_nodes(net, item, 1)
+                    logger.debug('found bus <%d> in net' % params.buses)
+                except IndexError:
+                    logger.warn("Cannot add Load '%s': not connected" % params.name)
+                    continue
+            if load_class != 'ElmLodlvp':
+                params.in_service = monopolar_in_service(item)
+
+            attr_list = ["sernum", "for_name", "chr_name", 'cpSite.loc_name']
+            if load_class == 'ElmLodlv':
+                attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax',
+                                  'cSav', 'ccosphi'])
+            add_additional_attributes_to_params(item, params, attr_list=attr_list)
+
+#                get_pf_load_results(net, item, ld, is_unbalanced)
+
+            if is_unbalanced:
+                params.type = map_type_var(item.phtech)
+                asym_load_param_list.append(params)
+            else:
+                load_param_list.append(params)
+            logger.debug('parameters: %s' % params)
+            # except RuntimeError as err:
+            #     logger.debug('load failed at import and was not imported: %s' % err)
+    loads = pd.DataFrame(load_param_list)
+    pp.create_loads(net, **loads.to_dict(orient="list"))
+
+    if len(loads) > 0: logger.info('imported %d loads' % len(loads))
+    #%%
+
+def create_sgens(net, dict_net, pv_as_slack, pf_variable_p_gen, is_unbalanced):
+#    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
+    logger.debug('creating static generators')
+    # create static generators:
+    for gen_type in ["ElmGenstat", "ElmPvsys"]:
+        for item in dict_net[gen_type]:
+            try:
+                create_sgen_genstat(net=net, item=item, pv_as_slack=pv_as_slack,
+                                    pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net,
+                                    is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.debug('sgen failed at import and was not imported: %s' % err)
+
+    if len(net.sgen) > 0: logger.info('imported %d sgens' % len(net.sgen))
+
 
 
 # import network to pandapower:
@@ -127,58 +235,64 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     if n > 0: logger.info('imported %d external grids' % n)
 
     logger.debug('creating loads')
-    # create loads:
-    n = 0
-    for n, load in enumerate(dict_net['ElmLod'], 1):
-        try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
-        except RuntimeError as err:
-            logger.debug('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d loads' % n)
 
-    logger.debug('creating lv loads')
-    # create loads:
-    n = 0
-    for n, load in enumerate(dict_net['ElmLodlv'], 1):
-        try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
-        except RuntimeError as err:
-            logger.warning('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d lv loads' % n),
+    if implementation == "old":
+        n = 0
+        for n, load in enumerate(dict_net['ElmLod'], 1):
+            try:
+                create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                            dict_net=dict_net, is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.debug('load failed at import and was not imported: %s' % err)
+        if n > 0: logger.info('imported %d loads' % n)
 
-    logger.debug('creating mv loads')
-    # create loads:
-    n = 0
-    for n, load in enumerate(dict_net['ElmLodmv'], 1):
-        try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
-        except RuntimeError as err:
-            logger.error('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d mv loads' % n)
+        logger.debug('creating lv loads')
+        # create loads:
+        n = 0
+        for n, load in enumerate(dict_net['ElmLodlv'], 1):
+            try:
+                create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                            dict_net=dict_net, is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.warning('load failed at import and was not imported: %s' % err)
+        if n > 0: logger.info('imported %d lv loads' % n),
 
-#    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
+        logger.debug('creating mv loads')
+        # create loads:
+        n = 0
+        for n, load in enumerate(dict_net['ElmLodmv'], 1):
+            try:
+                create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                            dict_net=dict_net, is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.error('load failed at import and was not imported: %s' % err)
+        if n > 0: logger.info('imported %d mv loads' % n)
 
-    logger.debug('creating static generators')
-    # create static generators:
-    n = 0
-    for n, gen in enumerate(dict_net['ElmGenstat'], 1):
-        try:
-            create_sgen_genstat(net=net, item=gen, pv_as_slack=pv_as_slack,
+    #    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
+        logger.debug('creating static generators')
+        # create static generators:
+        n = 0
+        for n, gen in enumerate(dict_net['ElmGenstat'], 1):
+            try:
+                create_sgen_genstat(net=net, item=gen, pv_as_slack=pv_as_slack,
+                                    pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.debug('sgen failed at import and was not imported: %s' % err)
+        if n > 0: logger.info('imported %d static generators' % n)
+
+        logger.debug('creating pv generators as static generators')
+        # create pv generators:
+        n = 0
+        for n, pv in enumerate(dict_net['ElmPvsys'], 1):
+            create_sgen_genstat(net=net, item=pv, pv_as_slack=pv_as_slack,
                                 pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, is_unbalanced=is_unbalanced)
-        except RuntimeError as err:
-            logger.debug('sgen failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d static generators' % n)
+        if n > 0: logger.info('imported %d pv generators' % n)
 
-    logger.debug('creating pv generators as static generators')
-    # create pv generators:
-    n = 0
-    for n, pv in enumerate(dict_net['ElmPvsys'], 1):
-        create_sgen_genstat(net=net, item=pv, pv_as_slack=pv_as_slack,
-                            pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, is_unbalanced=is_unbalanced)
-    if n > 0: logger.info('imported %d pv generators' % n)
+    else:
+        create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced)
+        create_sgens(net, dict_net, pv_as_slack, pf_variable_p_gen, is_unbalanced)
+
+    return net
 
     logger.debug('creating asynchronous machines')
     # create asynchronous machines:
@@ -369,6 +483,37 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                 net[element].loc[element_id, attr_dict[attr]] = chr_name
 
 
+def add_additional_attributes_to_params(item, params, attr_list=None, attr_dict=None):
+    """
+    Adds additonal atributes from powerfactory such as sernum or for_name
+
+    @param item: powerfactory item
+    @param net: pp net
+    @param element: pp element namme (str). e.g. bus, load, sgen
+    @param element_id: element index in pp net
+    @param attr_list: list of attribtues to add. e.g. ["sernum", "for_name"]
+    @param attr_dict: names of an attribute in powerfactory and in pandapower
+    @return:
+    """
+    if attr_dict is None:
+        attr_dict = {k: k for k in attr_list}
+
+    for attr in attr_dict.keys():
+        if '.' in attr:
+            # go in the object chain of a.b.c.d until finally get the chr_name
+            obj = item
+            for a in attr.split('.'):
+                if hasattr(obj, 'HasAttribute') and obj.HasAttribute(a):
+                    obj = ga(obj, a)
+            if obj is not None and isinstance(obj, str):
+                params[attr_dict[attr]] = obj
+
+        elif item.HasAttribute(attr):
+            chr_name = ga(item, attr)
+            if chr_name is not None:
+                params[attr_dict[attr]] = chr_name
+
+
 def create_bus(net, item, flag_graphics, is_unbalanced):
     usage = ["b", "m", "n"]
     params = {
@@ -428,7 +573,6 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
 
     add_additional_attributes(item, net, "bus", bid,
                               attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
-
     # add geo data
     if flag_graphics == 'GPS':
         x = ga(item, 'e:GPSlon')
