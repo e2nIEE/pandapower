@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, BR_STATUS, TDPF
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, BR_STATUS
+from pandapower.pypower.idx_brch_tdpf import TDPF
 
 SIGMA = 5.670374419e-8
 # ALPHA = 4.03e-3
@@ -496,102 +497,3 @@ def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
        J33[ij, ij] = 1 - r_theta[ij_lookup] * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT[ij_lookup]
 
     return sparse(J33)
-
-
-if __name__ == "__main__":
-    # from pandapower.tdpf.create_jacobian_tdpf import *
-    import pandapower as pp
-    import pandapower.networks
-    from pandapower.pypower.newtonpf import *
-    from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-    from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
-    from pandapower.tdpf.test_system import test_grid
-
-    # net = pp.networks.case9()
-    # net.line.loc[net.line.r_ohm_per_km == 0, 'r_ohm_per_km'] = 10.
-    net = test_grid()
-    pp.runpp(net)
-    ppc = net._ppc
-    ppci = net._ppc
-    pp.set_user_pf_options(net, tdpf=True)
-    options = net._options
-
-    # options
-    tol = options['tolerance_mva']
-    max_it = options["max_iteration"]
-    numba = options["numba"]
-    iwamoto = options["algorithm"] == "iwamoto_nr"
-    voltage_depend_loads = options["voltage_depend_loads"]
-    dist_slack = options["distributed_slack"]
-    v_debug = options["v_debug"]
-    use_umfpack = options["use_umfpack"]
-    permc_spec = options["permc_spec"]
-
-    baseMVA = ppci['baseMVA']
-    bus = ppci['bus']
-    gen = ppci['gen']
-    slack_weights = bus[:, SL_FAC].astype(np.float64)  ## contribution factors for distributed slack
-
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
-
-    # initialize
-    i = 0
-    V = V0
-    Va = angle(V)
-    Vm = abs(V)
-    dVa, dVm = None, None
-
-    # set up indexing for updating V
-    if dist_slack and len(ref) > 1:
-        pv = np.r_[ref[1:], pv]
-        ref = ref[[0]]
-
-    Ybus, Yf, Yt = makeYbus_pypower(baseMVA, bus, branch)
-
-    pvpq = np.r_[pv, pq]
-    refpvpq = np.r_[ref, pvpq]
-    pvpq_lookup = np.zeros(max(Ybus.indices) + 1, dtype=int)
-
-    if dist_slack:
-        # slack bus is relevant for the function createJ_ds
-        pvpq_lookup[refpvpq] = arange(len(refpvpq))
-    else:
-        pvpq_lookup[pvpq] = arange(len(pvpq))
-
-    pq_lookup = np.zeros(len(pvpq) + 1, dtype=int)
-    pq_lookup[pq] = np.arange(len(pq))
-
-    # get jacobian function
-    createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
-
-    nref = len(ref)
-    npv = len(pv)
-    npq = len(pq)
-    j1 = 0
-    j2 = npv  # j1:j2 - V angle of pv buses
-    j3 = j2
-    j4 = j2 + npq  # j3:j4 - V angle of pq buses
-    j5 = j4
-    j6 = j4 + npq  # j5:j6 - V mag of pq buses
-    j7 = j6
-    j8 = j6 + nref  # j7:j8 - slacks
-
-    # make initial guess for the slack
-    slack = gen[:, PG].sum() - bus[:, PD].sum()
-
-    t_amb_degree_celsius = 40
-    r_ref = net.line.r_ohm_per_km.values * 1e-3
-    T_base=1
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb_degree_celsius, 90, T_ref, r_ref, 18.2e-3, 525, 0.5, 45, 1000, alpha_pu,
-                                        gamma, epsilon, T_base=T_base, i_base_a=i_base_a)
-
-    tdpf_delay_s = np.inf
-    alpha = np.ones(len(branch)) * 0.004
-    r_ref = branch[:, BR_R].real.copy()
-    Sf, St, f_bus, _ = get_S_flows(branch, Yf, Yt, baseMVA, V)
-    I = calc_I(Sf, bus, f_bus, V)
-
-    J_base = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
-
-    J = create_J_tdpf(branch, tdpf_lines, alpha, r_ref, pvpq, pq, pvpq_lookup, pq_lookup, tau, t, V, Va, i_square_pu,
-                      p_rated_loss_pu, J_base, r, x, g, b)

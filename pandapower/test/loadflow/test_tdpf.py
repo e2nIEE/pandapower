@@ -3,29 +3,17 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
-import pandas as pd
 import pytest
-from numpy import in1d, isnan, isclose
 
-import pandapower as pp
-import pandapower.control
-from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
-    add_test_gen
 from pandapower.test.toolbox import assert_res_equal
 
-import numpy as np
 import pandas as pd
 import pandapower as pp
 import pandapower.networks
+
 from pandapower.tdpf.create_jacobian_tdpf import *
 
-import matplotlib.pyplot as plt
-import pandapower.plotting
-from pandapower.tdpf.test_system import *
-from pandapower.tdpf.create_jacobian_tdpf import *
-
-from pandapower.pypower.idx_brch import BR_R, F_BUS, BR_R_REF_OHM_PER_KM
+from pandapower.pypower.idx_brch import BR_R
 
 
 def prepare_case_30():
@@ -241,6 +229,16 @@ def test_tdpf_delay():
             # check tau: time to "charge" to approx. 63.2 %; we cannot match it very accurately though
             pp.runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=tau)
             assert np.allclose(net.res_line.temperature_degree_celsius, 20 + (temp - 20) * 0.632, rtol=0, atol=0.6)
+
+
+def test_only_pv():
+    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=True)
+    pq = net.bus.loc[~net.bus.index.isin(np.union1d(net.gen.bus, net.ext_grid.bus))].index
+    pp.create_gens(net, pq, 0)
+
+    pp.runpp(net, init="flat")
+
+    pp.runpp(net, tdpf=True, max_iteration=30)
 
 
 if __name__ == '__main__':

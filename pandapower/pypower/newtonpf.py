@@ -21,9 +21,10 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS, BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, \
-    T_START_C, R_THETA, WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, \
-    SOLAR_RADIATION_W_PER_SQ_M, GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
+    WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
+    GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
 
 from pandapower.tdpf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_ngoko, calc_T_frank, calc_i_square_p_loss, create_J_tdpf
@@ -101,9 +102,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
-    pq_lookup = zeros(len(pvpq) + 1, dtype=int)
-    pq_lookup[pq] = arange(len(pq))
-
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
 
@@ -127,6 +125,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
     if tdpf:
+        if len(pq) > 0:
+            pq_lookup = zeros(max(pq) + 1, dtype=int)  # for TDPF
+            pq_lookup[pq] = arange(len(pq))
+        else:
+            pq_lookup = array([])
         tdpf_update_r_theta = options.get('tdpf_update_r_theta', True)
         tdpf_delay_s = options.get('tdpf_delay_s')
         tdpf_lines = flatnonzero(nan_to_num(branch[:, TDPF]))

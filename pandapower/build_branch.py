@@ -13,10 +13,13 @@ import pandas as pd
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, WIND_SPEED_MPS, ALPHA, \
-    TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
-    GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols
+    BR_R_ASYM, BR_X_ASYM, branch_cols
+from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
+    WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
+    GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
+from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 
 
 def _build_branch_ppc(net, ppc):
@@ -40,11 +43,16 @@ def _build_branch_ppc(net, ppc):
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
     mode = net._options["mode"]
-    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+    tdpf = net._options["tdpf"]
+    if mode == "sc" and tdpf:
+        raise NotImplementedError("indexing for ppc branch columns not implemented for tdpf and sc together")
+    # initialize "normal" ppc branch
+    all_branch_columns = branch_cols_tdpf + branch_cols if tdpf else branch_cols
+    ppc["branch"] = np.zeros(shape=(length, all_branch_columns), dtype=np.complex128)
+    # add optional columns for short-circuit calculation
     # Check if this should be moved to somewhere else
     if mode == "sc":
-        from pandapower.shortcircuit.idx_brch import branch_cols_sc
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
+        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=np.complex128)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
@@ -287,7 +295,6 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     if mode == "sc":
         y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
-            from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
@@ -631,7 +638,6 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
 
 
 def _switch_branches(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     calculate_voltage_angles = net._options["calculate_voltage_angles"]
     neglect_open_switch_branches = net._options["neglect_open_switch_branches"]
