@@ -224,7 +224,7 @@ def _from_excel_old(xls):
 
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True, add_basic_std_types=False):
+              keep_serialized_elements=True, add_basic_std_types=False, omit_tables=[]):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -267,11 +267,11 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
                             elements_to_deserialize=elements_to_deserialize,
                             keep_serialized_elements=keep_serialized_elements,
-                            add_basic_std_types=add_basic_std_types)
+                            add_basic_std_types=add_basic_std_types, omit_tables=omit_tables)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
-                     keep_serialized_elements=True, add_basic_std_types=False):
+                     keep_serialized_elements=True, add_basic_std_types=False, omit_tables=[]):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -306,9 +306,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
     if elements_to_deserialize is None:
-        net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, omit_tables=omit_tables)
     else:
-        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False, omit_tables=omit_tables)
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '

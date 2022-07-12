@@ -548,15 +548,20 @@ class PPJSONDecoder(json.JSONDecoder):
         # net = pandapowerNet.__new__(pandapowerNet)
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
+        omit_tables = kwargs.pop('omit_tables', [])
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
+                                               omit_tables=omit_tables,
                                                registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry):
+def pp_hook(d, deserialize_pandas=True, omit_tables=[], registry_class=FromSerializableRegistry):
     try:
+        for ot in omit_tables:
+            if ot in d:
+                del d[ot]
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
                 return json.dumps(d)
