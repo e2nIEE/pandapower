@@ -224,7 +224,7 @@ def _from_excel_old(xls):
 
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True, add_basic_std_types=False, omit_tables=[]):
+              keep_serialized_elements=True, add_basic_std_types=False, omit_tables=None):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -271,7 +271,7 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
-                     keep_serialized_elements=True, add_basic_std_types=False, omit_tables=[]):
+                     keep_serialized_elements=True, add_basic_std_types=False, omit_tables=None):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
