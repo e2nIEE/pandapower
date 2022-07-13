@@ -431,11 +431,13 @@ class FromSerializableRegistry():
     from_serializable = FromSerializable()
     class_name = ''
     module_name = ''
+    omit_modules = ''
 
-    def __init__(self, obj, d, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct, omit_modules):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
+        self.omit_modules = omit_modules
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
@@ -451,7 +453,8 @@ class FromSerializableRegistry():
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook)
+                pp_hook = partial(self.pp_hook, omit_modules=self.omit_modules)
+                df[col] = df[col].apply(pp_hook)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
@@ -500,7 +503,7 @@ class FromSerializableRegistry():
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=pp_hook)
+                                      object_hook=partial(pp_hook, omit_modules=self.omit_modules))
                 # backwards compatibility
             if "net" in self.obj:
                 del self.obj["net"]
@@ -549,21 +552,27 @@ class PPJSONDecoder(json.JSONDecoder):
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         omit_tables = kwargs.pop('omit_tables', None)
+        omit_modules =kwargs.pop('omit_modules', None)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
                                                omit_tables=omit_tables,
+                                               omit_modules=omit_modules,
                                                registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, deserialize_pandas=True, omit_tables=None, registry_class=FromSerializableRegistry):
+def pp_hook(d, deserialize_pandas=True, omit_tables=None, omit_modules=None, registry_class=FromSerializableRegistry):
     try:
         if not omit_tables is None:
             for ot in omit_tables:
                 if ot in d:
                     d[ot].drop(d[ot].index, inplace=True)
         if '_module' in d and '_class' in d:
+            if not omit_modules is None:
+                for om in omit_modules:
+                    if om in d['_module']:
+                        return
             if 'pandas' in d['_module'] and not deserialize_pandas:
                 return json.dumps(d)
             elif "_object" in d:
@@ -576,7 +585,7 @@ def pp_hook(d, deserialize_pandas=True, omit_tables=None, registry_class=FromSer
             else:
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook)
+            fs = registry_class(obj, d, pp_hook, omit_modules=omit_modules)
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             return fs.from_serializable()

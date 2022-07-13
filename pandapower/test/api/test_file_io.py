@@ -434,11 +434,16 @@ def test_omitting_tables_from_json(net_in):
     json_string = pp.to_json(net)
     net1 = pp.from_json_string(json_string, omit_tables=['controller'])
     net2 = pp.from_json_string(json_string)
+    net3 = pp.from_json_string(json_string, omit_modules=['control.controller'])
+
 
     assert(nets_equal(net, net2))
     assert(not nets_equal(net, net1))
     net.controller.drop(0, inplace=True)
     assert(nets_equal(net, net1))
+    assert(not nets_equal(net, net3))
+    net3.controller.drop(net3.controller.index, inplace=True)
+    assert(nets_equal(net, net3))
 
 
 if __name__ == "__main__":
