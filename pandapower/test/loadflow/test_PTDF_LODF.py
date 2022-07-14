@@ -44,7 +44,7 @@ def test_PTDF():
     if not ptdf_reduced.shape == (15, ppci["bus"].shape[0]):
         raise AssertionError("Reduced PTDF has wrong dimension")
     if not ptdf_reduced_sparse.shape == (15,ppci["bus"].shape[0]):
-        raise AssertionError("Sparse reduced PTDF has wrong dimension"
+        raise AssertionError("Sparse reduced PTDF has wrong dimension")
 
 def test_PTDF_large():
     net = nw.case9241pegase()
