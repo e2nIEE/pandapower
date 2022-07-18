@@ -432,7 +432,7 @@ def test_json_io_with_characteristics(net_in):
 def test_postgresql(net_in):
     # Lanuch new PostgreSQL server
     with testing.postgresql.Postgresql() as postgresql:
-        connect_data = postgresql.dsn()
+        connect_data = postgresql.dsn(password="test")
         # net_in = pp.networks.mv_oberrhein()
         # net_in.switch["in_ka"] = np.nan
         # connect_data = {"host": "localhost",
