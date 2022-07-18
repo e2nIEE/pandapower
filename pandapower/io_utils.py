@@ -17,6 +17,10 @@ from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
 
+import psycopg2
+import psycopg2.errors
+import psycopg2.extras
+
 import networkx
 import numpy
 import pandas as pd
@@ -86,6 +90,115 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+def match_sql_type(dtype):
+    if dtype in ("float", "float32", "float64"):
+        return "double precision"
+    elif dtype in ("int", "int32", "int64", "uint32", "uint64"):
+        return "integer"
+    elif dtype in ("object", "str"):
+        return "varchar"
+    elif dtype == "bool":
+        return "boolean"
+    else:
+        raise UserWarning(f"unsupported type {dtype}")
+
+
+def check_if_sql_table_exists(cursor, table_name):
+    query = f"SELECT EXISTS (SELECT FROM information_schema.tables " \
+            f"WHERE table_schema = '{table_name.split('.')[0]}' " \
+            f"AND table_name = '{table_name.split('.')[-1]}');"
+    cursor.execute(query)
+    (exists,) = cursor.fetchone()
+    return exists
+
+
+def get_sql_table_columns(cursor, table_name):
+    query = f"SELECT * FROM information_schema.columns " \
+            f"WHERE table_schema = '{table_name.split('.')[0]}' " \
+            f"AND table_name   = '{table_name.split('.')[-1]}';"
+    cursor.execute(query)
+    colnames = [desc[0] for desc in cursor.description]
+    list_idx = colnames.index("column_name")
+    columns_data = cursor.fetchall()
+    columns = [c[list_idx] for c in columns_data]
+    return columns
+
+
+def download_sql_table(cursor, table_name, **id_columns):
+    # first we check if table exists:
+    exists = check_if_sql_table_exists(cursor, table_name)
+    if not exists:
+        raise UserWarning(f"table {table_name} does not exist or the user has no access to it")
+
+    if len(id_columns.keys()) == 0:
+        query = f"SELECT * FROM {table_name}"
+    else:
+        columns_string = ' and '.join([f"{str(k)} = '{str(v)}'" for k, v in id_columns.items()])
+        query = f"SELECT * FROM {table_name} WHERE {columns_string}"
+
+    cursor.execute(query)
+    colnames = [desc[0] for desc in cursor.description]
+    table = cursor.fetchall()
+    df = pd.DataFrame(table, columns=colnames)
+    index_name = f"{table_name.split('.')[-1]}_id"
+    if index_name in df.columns:
+        df.set_index(index_name, inplace=True)
+    if len(id_columns) > 0:
+        df.drop(id_columns.keys(), axis=1, inplace=True)
+    return df
+
+
+def upload_sql_table(conn, cursor, table_name, table, create_new=True, **id_columns):
+    # Create a list of tupples from the dataframe values
+    if len(id_columns.keys()) > 0:
+        tuples = [(*tuple(x), *id_columns.values()) for x in table.itertuples(index=True)]
+    else:
+        tuples = [tuple(x) for x in table.itertuples(index=True)]
+
+    # Comma-separated dataframe columns
+    index_name = f"{table_name.split('.')[-1]}_id"
+    sql_columns = [index_name, *table.columns, *id_columns.keys()]
+    sql_column_types = [match_sql_type(str(table.index.dtype)),
+                        *[match_sql_type(t) for t in table.dtypes.astype(str).values],
+                        *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
+    placeholders = '%s,' * (len(table.columns) + len(id_columns.keys())) + '%s'  # index is a +1
+
+    if create_new and not check_if_sql_table_exists(cursor, table_name):
+        # create_table_if_not_exists(conn, cursor, table_name, tab.dtypes, ["not null" for _ in sql_columns], schema)
+        # create_table_if_not_exists(conn, cursor, table_name, tab.dtypes, "not null", schema)
+        create_sql_table_if_not_exists(conn, cursor, table_name, sql_columns, sql_column_types, None)
+        logger.info(f"created new table {table_name}")
+
+    # check if all columns already exist and if not, add more columns
+    existing_columns = get_sql_table_columns(cursor, table_name)
+    new_columns = [(c, t) for c, t in zip(sql_columns, sql_column_types) if c not in existing_columns]
+    if len(new_columns) > 0:
+        logger.info(f"adding columns {new_columns} to table {table_name}")
+        column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
+        query = f"ALTER TABLE {table_name} {column_statement};"
+        cursor.execute(query)
+
+    # SQL query to execute
+    query = f"INSERT INTO {table_name}({','.join(sql_columns)}) VALUES({placeholders})"
+    # batch_size = 1000
+    # for chunk in tqdm(chunked(tuples, batch_size)):
+    #     cursor.executemany(query, chunk)
+    #     conn.commit()
+    psycopg2.extras.execute_batch(cursor, query, tuples, page_size=100)
+    conn.commit()
+
+
+def create_sql_table_if_not_exists(conn, cursor, table_name, sql_columns, sql_colum_types, constraints):
+    if constraints is not None:
+        cols_statement = ", ".join([" ".join(t) for t in list(zip(sql_columns, sql_colum_types, constraints))])
+    else:
+        cols_statement = ", ".join([" ".join(t) for t in list(zip(sql_columns, sql_colum_types))])
+
+    query = f"CREATE TABLE IF NOT EXISTS {table_name}({cols_statement});"
+    cursor.execute(query)
+    conn.commit()
 
 
 def coords_to_df(value, geotype="line"):

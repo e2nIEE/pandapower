@@ -8,6 +8,8 @@ import json
 import os
 import pickle
 from warnings import warn
+import psycopg2
+import psycopg2.errors
 
 import numpy
 import pandas as pd
@@ -29,6 +31,14 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
 import pandapower.io_utils as io_utils
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def to_pickle(net, filename):
     """
@@ -407,3 +417,54 @@ def from_sqlite(filename, netname=""):
     net = from_sql(con)
     con.close()
     return net
+
+
+def from_postgresql(schema, host, user, password, database, include_results=False, **id_columns):
+    # id_columns: {id_column_1: id_value_1, id_column_2: id_value_2}
+    net = create_empty_network()
+
+    conn = psycopg2.connect(host=host, user=user, password=password, database=database)
+    cursor = conn.cursor()
+    try:
+        for element, element_table in net.items():
+            if not isinstance(element_table, pd.DataFrame) or (element.startswith("res_") and not include_results):
+                continue
+            table_name = element if schema is None else f"{schema}.{element}"
+
+            try:
+                tab = io_utils.download_sql_table(cursor, table_name, **id_columns)
+            except UserWarning as err:
+                logger.debug(err)
+                continue
+            except psycopg2.errors.UndefinedTable as err:
+                logger.info(f"skipped {element} due to error: {err}")
+                continue
+            except psycopg2.errors.UndefinedColumn as err:
+                conn = psycopg2.connect(host=host, user=user, password=password, database=database)
+                cursor = conn.cursor()
+                logger.info(f"retrying {element} without id_columns")
+                tab = io_utils.download_sql_table(cursor, table_name)
+
+            if not tab.empty:
+                # preserve dtypes
+                columns = [c for c in element_table.columns if c in tab.columns]
+                tab[columns] = tab[columns].astype(element_table[columns].dtypes)
+                net[element] = pd.concat([element_table, tab])
+                logger.debug(f"downloaded table {element}")
+    finally:
+        conn.close()
+    return net
+
+
+def to_postgresql(net, host, user, password, database, schema, include_results=False, **id_columns):
+    logger.info(f"Uploading the grid data to the DB schema {schema}")
+    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+        cursor = conn.cursor()
+        for element, element_table in net.items():
+            if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
+                    (element.startswith("res_") and not include_results):
+                continue
+            table_name = element if schema is None else f"{schema}.{element}"
+            io_utils.upload_sql_table(conn, cursor, table_name, element_table, **id_columns)
+            logger.debug(f"uploaded table {element}")
+

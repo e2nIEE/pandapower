@@ -53,7 +53,7 @@ setup(
         "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
         # "shapely", "pyproj" are depedencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
-        "test": ["pytest", "pytest-xdist"],
+        "test": ["pytest", "pytest-xdist", "testing.postgresql"],
         "performance": ["ortools"],  # , "lightsim2grid"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
         # "fiona" is a depedency of geopandas and so already available

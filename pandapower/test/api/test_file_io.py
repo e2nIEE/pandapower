@@ -20,6 +20,8 @@ from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 
+import testing.postgresql
+
 try:
     import geopandas as gpd
     GEOPANDAS_INSTALLED = True
@@ -425,6 +427,29 @@ def test_json_io_with_characteristics(net_in):
     assert isinstance(net_out.characteristic.object.at[c2.index], pp.control.SplineCharacteristic)
     assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)
     assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
+
+
+def test_postgresql(net_in):
+    # Lanuch new PostgreSQL server
+    with testing.postgresql.Postgresql() as postgresql:
+        connect_data = postgresql.dsn()
+        # net_in = pp.networks.mv_oberrhein()
+        # net_in.switch["in_ka"] = np.nan
+        # connect_data = {"host": "localhost",
+        #                 "user": "test",
+        #                 "database": "sandbox",
+        #                 "password": "secret"}
+        id_columns = {"grid_id": 123, "another_id": "another_id_val"}
+        pp.to_postgresql(net_in, schema="robustplan", include_results=True, **connect_data, **id_columns)
+
+        net_out = pp.from_postgresql(schema="robustplan", include_results=True, **connect_data, **id_columns)
+
+        for element, table in net_in.items():
+            # dictionaries (e.g. std_type) not included
+            # json serialization/deserialization of objects not implemented
+            if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
+                continue
+            assert pp.dataframes_equal(table, net_out[element]), element
 
 
 if __name__ == "__main__":
