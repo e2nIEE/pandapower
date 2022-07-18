@@ -451,7 +451,7 @@ def test_postgresql(net_in):
                     "user": "test_user",
                     "database": "sandbox",
                     "password": "secret"}
-    id_columns = {"grid_id": 123, "another_id": 345}
+    id_columns = {"grid_id": 123, "another_id": "test_id_val"}
     pp.to_postgresql(net_in, schema="test_schema", include_results=True, **connect_data, **id_columns)
 
     net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
