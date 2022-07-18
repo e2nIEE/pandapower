@@ -466,8 +466,8 @@ def test_postgresql(net_in):
 
 @pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
-def test_postgresql_case39():
-    net_in = pp.networks.case39()
+def test_postgresql_case9():
+    net_in = pp.networks.case9()
     net_in.switch["in_ka"] = np.nan
     connect_data = {"host": "localhost",
                     "user": "test_user",
