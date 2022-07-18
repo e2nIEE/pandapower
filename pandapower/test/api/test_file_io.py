@@ -478,12 +478,13 @@ def test_postgresql_oberrhein():
 
     net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
 
+    pp.dataframes_equal(net_in.line, net_out.line)
     for element, table in net_in.items():
         # dictionaries (e.g. std_type) not included
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
             continue
-        assert pp.dataframes_equal(table, net_out[element]), pp.dataframes_equal(table, net_out[element])
+        assert pp.dataframes_equal(table, net_out[element]), element
 
 
 if __name__ == "__main__":
