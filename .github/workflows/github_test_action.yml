@@ -157,7 +157,7 @@ jobs:
         pg_isready
         sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'" --command="\du"
         sudo -u postgres createdb --owner=test_user sandbox
-        sudo -u postgres psql --command="\c sandbox; CREATE SCHEMA test_schema AUTHORIZATION test_user"
+        sudo -u postgres psql --command="\c sandbox" --command="CREATE SCHEMA test_schema AUTHORIZATION test_user"
         PGPASSWORD=secret psql --username=test_user --host=localhost --list sandbox
     - name: Test pandapower File I/O
       run: |
