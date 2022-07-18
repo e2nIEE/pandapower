@@ -464,7 +464,8 @@ def test_postgresql_oberrhein():
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
             continue
-        assert pp.dataframes_equal(table, net_out[element]), element
+        columns = table[element].columns
+        assert pp.dataframes_equal(table, net_out[element][columns]), element
 
 
 @pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
@@ -484,7 +485,8 @@ def test_postgresql(net_in):
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
             continue
-        assert pp.dataframes_equal(table, net_out[element]), element
+        columns = table[element].columns
+        assert pp.dataframes_equal(table, net_out[element][columns]), element
 
 
 if __name__ == "__main__":
