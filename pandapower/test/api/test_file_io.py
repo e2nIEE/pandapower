@@ -20,8 +20,6 @@ from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 
-import testing.postgresql
-
 try:
     import geopandas as gpd
     GEOPANDAS_INSTALLED = True
