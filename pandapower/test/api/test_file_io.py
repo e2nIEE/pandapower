@@ -485,7 +485,7 @@ def test_postgresql(net_in):
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
             continue
-        columns = table[element].columns
+        columns = table.columns
         assert pp.dataframes_equal(table, net_out[element][columns]), element
 
 
