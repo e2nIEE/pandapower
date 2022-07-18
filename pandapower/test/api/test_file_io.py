@@ -440,9 +440,9 @@ def test_postgresql(net_in):
         #                 "database": "sandbox",
         #                 "password": "secret"}
         id_columns = {"grid_id": 123, "another_id": "another_id_val"}
-        pp.to_postgresql(net_in, schema="test", include_results=True, **connect_data, **id_columns)
+        pp.to_postgresql(net_in, include_results=True, **connect_data, **id_columns)
 
-        net_out = pp.from_postgresql(schema="test", include_results=True, **connect_data, **id_columns)
+        net_out = pp.from_postgresql(include_results=True, **connect_data, **id_columns)
 
         for element, table in net_in.items():
             # dictionaries (e.g. std_type) not included
