@@ -10,6 +10,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+import psycopg2
 
 import pandapower as pp
 import pandapower.control as control
@@ -30,6 +31,15 @@ try:
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
+
+
+def postgres_listening(**connect_data):
+    try:
+        conn = psycopg2.connect(**connect_data)
+        conn.close()
+        return True
+    except psycopg2.OperationalError as ex:
+        return False
 
 
 @pytest.fixture(params=[1])
@@ -426,6 +436,8 @@ def test_json_io_with_characteristics(net_in):
     assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
 
 
+@pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
+                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql(net_in):
     connect_data = {"host": "localhost",
                     "user": "test_user",
@@ -444,6 +456,8 @@ def test_postgresql(net_in):
         assert pp.dataframes_equal(table, net_out[element]), element
 
 
+@pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
+                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql_oberrhein():
     net_in = pp.networks.mv_oberrhein()
     net_in.switch["in_ka"] = np.nan
