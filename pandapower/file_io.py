@@ -8,8 +8,6 @@ import json
 import os
 import pickle
 from warnings import warn
-import psycopg2
-import psycopg2.errors
 
 import numpy
 import pandas as pd
@@ -25,6 +23,13 @@ try:
     openpyxl_INSTALLED = True
 except ImportError:
     openpyxl_INSTALLED = False
+try:
+    import psycopg2
+    import psycopg2.errors
+    PSYCOPG2_INSTALLED = True
+except ImportError:
+    psycopg2 = None
+    PSYCOPG2_INSTALLED = False
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.auxiliary import pandapowerNet
@@ -420,6 +425,8 @@ def from_sqlite(filename, netname=""):
 
 
 def from_postgresql(schema, host, user, password, database, include_results=False, **id_columns):
+    if not PSYCOPG2_INSTALLED:
+        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     # id_columns: {id_column_1: id_value_1, id_column_2: id_value_2}
     net = create_empty_network()
 
@@ -457,6 +464,8 @@ def from_postgresql(schema, host, user, password, database, include_results=Fals
 
 
 def to_postgresql(net, host, user, password, database, schema, include_results=False, **id_columns):
+    if not PSYCOPG2_INSTALLED:
+        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     logger.info(f"Uploading the grid data to the DB schema {schema}")
     with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
         cursor = conn.cursor()
