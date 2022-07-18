@@ -17,10 +17,6 @@ from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
 
-import psycopg2
-import psycopg2.errors
-import psycopg2.extras
-
 import networkx
 import numpy
 import pandas as pd
@@ -28,38 +24,39 @@ from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 
 try:
+    import psycopg2
+    import psycopg2.errors
+    import psycopg2.extras
+    PSYCOPG2_INSTALLED = True
+except ImportError:
+    psycopg2 = None
+    PSYCOPG2_INSTALLED = False
+try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal
-
-from pandapower.auxiliary import get_free_id
-
 try:
     from cryptography.fernet import Fernet
-
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import hashlib
-
     hashlib_INSTALLED = True
 except ImportError:
     hashlib_INSTALLED = False
 try:
     import base64
-
     base64_INSTALLED = True
 except ImportError:
     base64_INSTALLED = False
 try:
     import zlib
-
     zlib_INSTALLED = True
 except:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import pandapowerNet, soft_dependency_error, _preserve_dtypes
+from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
 try:
