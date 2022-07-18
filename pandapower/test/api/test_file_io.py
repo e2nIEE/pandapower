@@ -415,7 +415,6 @@ def test_empty_geo_dataframe():
     assert_net_equal(net, net1)
 
 
-
 def test_json_io_with_characteristics(net_in):
     c1 = pp.control.Characteristic.from_points(net_in, [(0, 0), (1, 1)])
     c2 = pp.control.SplineCharacteristic.from_points(net_in, [(2, 2), (3, 4), (4, 5)])
@@ -430,26 +429,23 @@ def test_json_io_with_characteristics(net_in):
 
 
 def test_postgresql(net_in):
-    # Lanuch new PostgreSQL server
-    with testing.postgresql.Postgresql() as postgresql:
-        connect_data = postgresql.dsn(password="secret", schema="test")
-        # net_in = pp.networks.mv_oberrhein()
-        # net_in.switch["in_ka"] = np.nan
-        # connect_data = {"host": "localhost",
-        #                 "user": "test",
-        #                 "database": "sandbox",
-        #                 "password": "secret"}
-        id_columns = {"grid_id": 123, "another_id": "another_id_val"}
-        pp.to_postgresql(net_in, include_results=True, **connect_data, **id_columns)
+    net_in = pp.networks.mv_oberrhein()
+    net_in.switch["in_ka"] = np.nan
+    connect_data = {"host": "localhost",
+                    "user": "test_user",
+                    "database": "sandbox",
+                    "password": "secret"}
+    id_columns = {"grid_id": 123, "another_id": "another_id_val"}
+    pp.to_postgresql(net_in, schema="test_schema", include_results=True, **connect_data, **id_columns)
 
-        net_out = pp.from_postgresql(include_results=True, **connect_data, **id_columns)
+    net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
 
-        for element, table in net_in.items():
-            # dictionaries (e.g. std_type) not included
-            # json serialization/deserialization of objects not implemented
-            if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
-                continue
-            assert pp.dataframes_equal(table, net_out[element]), element
+    for element, table in net_in.items():
+        # dictionaries (e.g. std_type) not included
+        # json serialization/deserialization of objects not implemented
+        if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
+            continue
+        assert pp.dataframes_equal(table, net_out[element]), element
 
 
 if __name__ == "__main__":
