@@ -446,6 +446,29 @@ def test_json_io_with_characteristics(net_in):
 
 @pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
+def test_postgresql_oberrhein():
+    net_in = pp.networks.mv_oberrhein()
+    net_in.switch["in_ka"] = np.nan
+    connect_data = {"host": "localhost",
+                    "user": "test_user",
+                    "database": "sandbox",
+                    "password": "secret"}
+    grid_id = np.random.randint(0, 1000)
+    id_columns = {"grid_id": grid_id, "another_id": "another_id_val"}
+    pp.to_postgresql(net_in, schema="test_schema", include_results=True, **connect_data, **id_columns)
+
+    net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
+
+    for element, table in net_in.items():
+        # dictionaries (e.g. std_type) not included
+        # json serialization/deserialization of objects not implemented
+        if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
+            continue
+        assert pp.dataframes_equal(table, net_out[element]), element
+
+
+@pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
+                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql(net_in):
     connect_data = {"host": "localhost",
                     "user": "test_user",
@@ -460,29 +483,6 @@ def test_postgresql(net_in):
         # dictionaries (e.g. std_type) not included
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
-            continue
-        assert pp.dataframes_equal(table, net_out[element]), element
-
-
-@pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
-def test_postgresql_case9():
-    net_in = pp.networks.case9()
-    net_in.switch["in_ka"] = np.nan
-    connect_data = {"host": "localhost",
-                    "user": "test_user",
-                    "database": "sandbox",
-                    "password": "secret"}
-    grid_id = np.random.randint()
-    id_columns = {"grid_id": grid_id, "another_id": "another_id_val"}
-    pp.to_postgresql(net_in, schema="test_schema", include_results=True, **connect_data, **id_columns)
-
-    net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
-
-    for element, table in net_in.items():
-        # dictionaries (e.g. std_type) not included
-        # json serialization/deserialization of objects not implemented
-        if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
             continue
         assert pp.dataframes_equal(table, net_out[element]), element
 
