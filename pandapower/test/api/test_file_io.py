@@ -432,7 +432,7 @@ def test_json_io_with_characteristics(net_in):
 def test_postgresql(net_in):
     # Lanuch new PostgreSQL server
     with testing.postgresql.Postgresql() as postgresql:
-        connect_data = postgresql.dsn(password="test")
+        connect_data = postgresql.dsn(password="secret", schema="test")
         # net_in = pp.networks.mv_oberrhein()
         # net_in.switch["in_ka"] = np.nan
         # connect_data = {"host": "localhost",
@@ -440,9 +440,9 @@ def test_postgresql(net_in):
         #                 "database": "sandbox",
         #                 "password": "secret"}
         id_columns = {"grid_id": 123, "another_id": "another_id_val"}
-        pp.to_postgresql(net_in, schema="robustplan", include_results=True, **connect_data, **id_columns)
+        pp.to_postgresql(net_in, schema="test", include_results=True, **connect_data, **id_columns)
 
-        net_out = pp.from_postgresql(schema="robustplan", include_results=True, **connect_data, **id_columns)
+        net_out = pp.from_postgresql(schema="test", include_results=True, **connect_data, **id_columns)
 
         for element, table in net_in.items():
             # dictionaries (e.g. std_type) not included
