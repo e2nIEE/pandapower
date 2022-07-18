@@ -55,7 +55,7 @@ setup(
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist", "testing.postgresql"],
         "performance": ["ortools"],  # , "lightsim2grid"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
@@ -63,6 +63,7 @@ setup(
                 "pytest", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
+                "psycopg2", "testing.postgresql",  # for PostgreSQL I/O
                 "matpowercaseframes"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
