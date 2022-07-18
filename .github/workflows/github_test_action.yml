@@ -155,10 +155,10 @@ jobs:
       run: |
         sudo systemctl start postgresql.service
         pg_isready
-        sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'" --command="\du"
+        sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'"
         sudo -u postgres createdb --owner=test_user sandbox
         PGPASSWORD=secret psql --username=test_user --host=localhost --list sandbox
-        sudo -u postgres psql --command="CREATE SCHEMA 'test_schema' AUTHORIZATION test_user;"
+        sudo -u postgres psql --command="CREATE SCHEMA test_schema AUTHORIZATION test_user;" --command="\du"
     - name: Test pandapower File I/O
       run: |
         python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_file_io.py")]); sys.exit(ec)'

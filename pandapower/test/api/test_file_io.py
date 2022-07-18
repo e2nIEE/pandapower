@@ -10,7 +10,13 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-import psycopg2
+
+try:
+    import psycopg2
+    PSYCOPG2_INSTALLED = True
+except ImportError:
+    psycopg2 = None
+    PSYCOPG2_INSTALLED = False
 
 import pandapower as pp
 import pandapower.control as control
@@ -34,6 +40,8 @@ except ImportError:
 
 
 def postgres_listening(**connect_data):
+    if not PSYCOPG2_INSTALLED:
+        return False
     try:
         conn = psycopg2.connect(**connect_data)
         conn.close()
