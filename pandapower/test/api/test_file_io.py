@@ -467,7 +467,7 @@ def test_postgresql(net_in):
 @pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql_oberrhein():
-    net_in = pp.networks.mv_oberrhein()
+    net_in = pp.networks.case39()
     net_in.switch["in_ka"] = np.nan
     connect_data = {"host": "localhost",
                     "user": "test_user",
@@ -478,7 +478,6 @@ def test_postgresql_oberrhein():
 
     net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)
 
-    pp.dataframes_equal(net_in.line, net_out.line)
     for element, table in net_in.items():
         # dictionaries (e.g. std_type) not included
         # json serialization/deserialization of objects not implemented
