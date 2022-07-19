@@ -19,6 +19,7 @@ from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
+from pandapower.toolbox import nets_equal
 
 try:
     import geopandas as gpd
@@ -425,6 +426,20 @@ def test_json_io_with_characteristics(net_in):
     assert isinstance(net_out.characteristic.object.at[c2.index], pp.control.SplineCharacteristic)
     assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)
     assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
+
+
+def test_replace_elements_json_string(net_in):
+    net_orig = copy.deepcopy(net_in)
+    control.ConstControl(net_orig, 'load', 'p_mw', 0)
+    json_string = pp.to_json(net_orig)
+    net_load = pp.from_json_string(json_string,
+                               replace_elements={r'pandapower.control.controller.const_control':
+                                                 r'pandapower.test.api.input_files.test_control'})
+    assert nets_equal(net_orig, net_load)
+    pp.runpp(net_load, run_control=True)
+    pp.runpp(net_orig, run_control=True)
+    assert(net_load.controller.loc[0, 'object'].check_word == 'banana')
+    assert not nets_equal(net_orig, net_load)
 
 
 if __name__ == "__main__":

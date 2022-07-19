@@ -224,7 +224,7 @@ def _from_excel_old(xls):
 
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True, add_basic_std_types=False):
+              keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -248,6 +248,9 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
         type library.
 
+        **replace_elements** (dict, None) - Keys are replaced by values found in json string. Both key and
+        value are supposed to be strings.
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -267,11 +270,11 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
     return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
                             elements_to_deserialize=elements_to_deserialize,
                             keep_serialized_elements=keep_serialized_elements,
-                            add_basic_std_types=add_basic_std_types)
+                            add_basic_std_types=add_basic_std_types, replace_elements=replace_elements)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
-                     keep_serialized_elements=True, add_basic_std_types=False):
+                     keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -294,6 +297,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
         type library.
 
+        **replace_elements** (dict, None) - Keys are replaced by values found in json string. Both key and
+        value are supposed to be strings.
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -302,6 +308,10 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         >>> net = pp.from_json_string(json_str)
 
     """
+    if not replace_elements is None:
+        for k, v in replace_elements.items():
+            json_string = json_string.replace(k, v)
+
     if encryption_key is not None:
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
