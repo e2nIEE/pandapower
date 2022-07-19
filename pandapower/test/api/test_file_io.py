@@ -157,7 +157,7 @@ def test_json(net_in, tmp_path):
 
         for tab in ('bus_geodata', 'line_geodata'):
             if tab == 'bus_geodata':
-                geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
+                geometry = list(map(Point, net_geo[tab][["x", "y"]].values))
             else:
                 geometry = net_geo[tab].coords.apply(LineString)
             net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
