@@ -12,6 +12,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from pandapower.auxiliary import _preserve_dtypes
+
 try:
     import psycopg2
     PSYCOPG2_INSTALLED = True
@@ -483,6 +485,8 @@ def test_json_io_with_characteristics(net_in):
 def test_postgresql_oberrhein():
     net_in = pp.networks.mv_oberrhein()
     net_in.switch["in_ka"] = np.nan  # todo: remove after release
+    net_empty = pp.create_empty_network()
+    _preserve_dtypes(net_in.trafo, net_empty.trafo.dtypes)  # dtypes in mv_oberrhein are wrong?
     assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "another_id_val"}, include_results=False)
     assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "another_id_val"}, include_results=True)
 
