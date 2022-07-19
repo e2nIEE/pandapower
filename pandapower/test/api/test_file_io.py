@@ -449,13 +449,11 @@ def test_json_io_with_characteristics(net_in):
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql_oberrhein():
     net_in = pp.networks.mv_oberrhein()
-    net_in.switch["in_ka"] = np.nan
     connect_data = {"host": "localhost",
                     "user": "test_user",
                     "database": "sandbox",
                     "password": "secret"}
-    grid_id = np.random.randint(0, 1000)
-    id_columns = {"grid_id": grid_id, "another_id": "another_id_val"}
+    id_columns = {"grid_id": 123, "another_id": "another_id_val"}
     pp.to_postgresql(net_in, schema="test_schema", include_results=True, **connect_data, **id_columns)
 
     net_out = pp.from_postgresql(schema="test_schema", include_results=True, **connect_data, **id_columns)

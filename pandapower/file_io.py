@@ -455,7 +455,10 @@ def from_postgresql(schema, host, user, password, database, include_results=Fals
             if not tab.empty:
                 # preserve dtypes
                 columns = [c for c in element_table.columns if c in tab.columns]
-                tab[columns] = tab[columns].astype(element_table[columns].dtypes)
+                dt = element_table[columns].dtypes
+                dt_new = tab.dtypes
+                dt_new.update(dt)
+                tab = tab.astype(dt_new)
                 net[element] = pd.concat([element_table, tab])
                 logger.debug(f"downloaded table {element}")
     finally:
