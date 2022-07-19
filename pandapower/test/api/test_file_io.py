@@ -482,17 +482,15 @@ def test_json_io_with_characteristics(net_in):
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql_oberrhein():
     net_in = pp.networks.mv_oberrhein()
-    id_columns = {"grid_id": 123, "another_id": "another_id_val"}
-    assert_postgresql_roundtrip(net_in, id_columns, include_results=False)
-    assert_postgresql_roundtrip(net_in, id_columns, include_results=True)
+    assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "another_id_val"}, include_results=False)
+    assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "another_id_val"}, include_results=True)
 
 
 @pytest.mark.skipif(not POSTGRES_AVAILABLE,
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql(net_in):
-    id_columns = {"grid_id": 123, "another_id": "test_id_val"}
-    assert_postgresql_roundtrip(net_in, id_columns, include_results=False)
-    assert_postgresql_roundtrip(net_in, id_columns, include_results=True)
+    assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "test_id_val"}, include_results=False)
+    assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "test_id_val"}, include_results=True)
 
 
 if __name__ == "__main__":
