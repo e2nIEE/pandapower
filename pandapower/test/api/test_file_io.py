@@ -66,7 +66,7 @@ def postgres_listening(**connect_data):
 
 def assert_postgresql_roundtrip(net_in, id_columns, **kwargs):
     net = net_in.deepcopy()
-    if not kwargs.pop("include_results", False):
+    if not kwargs.get("include_results", False):
         pp.reset_results(net)
     else:
         pp.runpp(net)
