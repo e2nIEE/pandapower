@@ -461,17 +461,19 @@ def from_postgresql(schema, host, user, password, database, include_results=Fals
     return net
 
 
-def to_postgresql(net, host, user, password, database, schema, include_results=False, **id_columns):
+def to_postgresql(net, host, user, password, database, schema, include_results=False, index_name=None, **id_columns):
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     logger.info(f"Uploading the grid data to the DB schema {schema}")
     with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
         cursor = conn.cursor()
+        io_utils.create_postgresql_catalogue_entry(conn, cursor, schema, **id_columns)
         for element, element_table in net.items():
             if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
                     (element.startswith("res_") and not include_results):
                 continue
             table_name = element if schema is None else f"{schema}.{element}"
-            io_utils.upload_sql_table(conn, cursor, table_name, element_table, **id_columns)
+            io_utils.upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table,
+                                      index_name=index_name, **id_columns)
             logger.debug(f"uploaded table {element}")
 

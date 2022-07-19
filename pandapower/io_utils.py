@@ -98,6 +98,8 @@ def match_sql_type(dtype):
         return "varchar"
     elif dtype == "bool":
         return "boolean"
+    elif "datetime" in dtype:
+        return "timestamp"
     else:
         raise UserWarning(f"unsupported type {dtype}")
 
@@ -147,20 +149,29 @@ def download_sql_table(cursor, table_name, **id_columns):
     return df
 
 
-def upload_sql_table(conn, cursor, table_name, table, create_new=True, **id_columns):
+def upload_sql_table(conn, cursor, table_name, table, create_new=True, index_name=None, timestamp=False, **id_columns):
     # Create a list of tupples from the dataframe values
     if len(id_columns.keys()) > 0:
-        tuples = [(*tuple(x), *id_columns.values()) for x in table.itertuples(index=True)]
+        tuples = [(*tuple(x), *id_columns.values()) for x in table.itertuples(index=index_name is None)]
     else:
-        tuples = [tuple(x) for x in table.itertuples(index=True)]
+        tuples = [tuple(x) for x in table.itertuples(index=index_name is None)]
+
+    # index_name allows using a custom column for the table index and disregard the DataFrame index,
+    # otherwise a <table_name>_id is used as index_name and DataFrame index is also uploaded to the database
+    if index_name is None:
+        index_name = f"{table_name.split('.')[-1]}_id"
+        index_type = match_sql_type(str(table.index.dtype))
+        table_columns = table.columns
+    else:
+        index_type = match_sql_type(str(table[index_name].dtype))
+        table_columns = [c for c in table.columns if c != index_name]
 
     # Comma-separated dataframe columns
-    index_name = f"{table_name.split('.')[-1]}_id"
-    sql_columns = [index_name, *table.columns, *id_columns.keys()]
-    sql_column_types = [match_sql_type(str(table.index.dtype)),
-                        *[match_sql_type(t) for t in table.dtypes.astype(str).values],
+    sql_columns = [index_name, *table_columns, *id_columns.keys()]
+    sql_column_types = [index_type,
+                        *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
                         *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
-    placeholders = '%s,' * (len(table.columns) + len(id_columns.keys())) + '%s'  # index is a +1
+    placeholders = ",".join(['%s'] * len(sql_columns))
 
     if create_new and not check_if_sql_table_exists(cursor, table_name):
         # create_table_if_not_exists(conn, cursor, table_name, tab.dtypes, ["not null" for _ in sql_columns], schema)
@@ -176,6 +187,10 @@ def upload_sql_table(conn, cursor, table_name, table, create_new=True, **id_colu
         column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
         query = f"ALTER TABLE {table_name} {column_statement};"
         cursor.execute(query)
+        conn.commit()
+
+    if timestamp:
+        add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
     query = f"INSERT INTO {table_name}({','.join(sql_columns)}) VALUES({placeholders})"
@@ -184,6 +199,49 @@ def upload_sql_table(conn, cursor, table_name, table, create_new=True, **id_colu
     #     cursor.executemany(query, chunk)
     #     conn.commit()
     psycopg2.extras.execute_batch(cursor, query, tuples, page_size=100)
+    conn.commit()
+
+
+def check_if_grid_in_postgresql_catalogue(cursor, table_name, **id_columns):
+    # check if there are grids that are matching the id_columns in the DB already
+    if check_if_sql_table_exists(cursor, table_name):
+        if len(id_columns) == 0:
+            query = f"SELECT COUNT(*) FROM {table_name}"
+            cursor.execute(query)
+            (found,) = cursor.fetchone()
+            if found > 0:
+                logger.warning(f"found {found} entries in grid_catalogue. "
+                               f"There will be no way to identify the grid that is being uploaded in the future "
+                               f"because no id_columns are provided.")  # todo: is it better to raise an error instead?
+        else:
+            existing_columns = get_sql_table_columns(cursor, table_name)
+            if set(id_columns.keys()).issubset(set(existing_columns)):
+                # the '{v}' here is okay because PostgreSQL converts the type in the query, so '123' will match 123
+                condition = " and ".join([f"{k}='{v}'" for k, v in id_columns.items()])
+                query = f"SELECT COUNT(*) FROM {table_name} where {condition}"
+                cursor.execute(query)
+                (found,) = cursor.fetchone()
+                if found > 0:
+                    # todo: is it better to raise an error instead?
+                    logger.warning(f"found {found} entries in grid_catalogue where {condition}")
+
+
+def create_postgresql_catalogue_entry(conn, cursor, schema, **id_columns):
+    # check if a grid with the provided ids was already added
+    table_name = "grid_catalogue" if schema is None else f"{schema}.grid_catalogue"
+    check_if_grid_in_postgresql_catalogue(cursor, table_name, **id_columns)
+    # create a "catalogue" table to keep track of all grids available in the DB
+    catalogue_entry = pd.DataFrame(data={**id_columns}, index=[None])
+    # for all supported Python versions the order of entries in dict is maintained,
+    # so we can safely use the first argument from id_columns as the main id for the catalogue table
+    index_name = next(iter(id_columns)) if len(id_columns) > 0 else None
+    upload_sql_table(conn, cursor, table_name, catalogue_entry, index_name=index_name, timestamp=True)
+
+
+def add_timestamp_column(conn, cursor, table_name):
+    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;")
+    conn.commit()
+    cursor.execute(f"ALTER TABLE {table_name} ALTER COLUMN timestamp SET DEFAULT now();")
     conn.commit()
 
 
