@@ -482,6 +482,7 @@ def test_json_io_with_characteristics(net_in):
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_postgresql_oberrhein():
     net_in = pp.networks.mv_oberrhein()
+    net_in.switch["in_ka"] = np.nan  # todo: remove after release
     assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "another_id_val"}, include_results=False)
     assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "another_id_val"}, include_results=True)
 
