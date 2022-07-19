@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 
 try:
@@ -465,7 +466,7 @@ def test_postgresql_oberrhein():
         if not isinstance(table, pd.DataFrame) or table.empty or element == "line_geodata":
             continue
         columns = table.columns
-        assert pp.dataframes_equal(table, net_out[element][columns]), element
+        pdt.assert_frame_equal(table, net_out[element][columns])
 
 
 @pytest.mark.skipif(not postgres_listening(host="localhost", user="test_user", database="sandbox", password="secret"),
@@ -486,7 +487,7 @@ def test_postgresql(net_in):
         if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
             continue
         columns = table.columns
-        assert pp.dataframes_equal(table, net_out[element][columns]), element
+        pdt.assert_frame_equal(table, net_out[element][columns])
 
 
 if __name__ == "__main__":
