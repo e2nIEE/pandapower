@@ -31,7 +31,7 @@ except ImportError:
     psycopg2 = None
     PSYCOPG2_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
@@ -453,12 +453,7 @@ def from_postgresql(schema, host, user, password, database, include_results=Fals
                 tab = io_utils.download_sql_table(cursor, table_name)
 
             if not tab.empty:
-                # preserve dtypes
-                columns = [c for c in element_table.columns if c in tab.columns]
-                dt = element_table[columns].dtypes
-                dt_new = tab.dtypes
-                dt_new.update(dt)
-                tab = tab.astype(dt_new)
+                _preserve_dtypes(tab, element_table.dtypes)
                 net[element] = pd.concat([element_table, tab])
                 logger.debug(f"downloaded table {element}")
     finally:
