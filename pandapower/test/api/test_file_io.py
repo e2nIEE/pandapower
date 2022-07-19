@@ -41,7 +41,10 @@ except ImportError:
 
 
 def get_postgresql_connection_data():
-    with open(os.path.join(pp_dir, "test", "test_files", "postgresql_connect_data.json")) as fp:
+    filename = os.path.join(pp_dir, "test", "test_files", "postgresql_connect_data.json")
+    if not os.path.isfile(filename):
+        return {}, None
+    with open(filename) as fp:
         connect_data = json.load(fp)
         schema = connect_data.pop("schema")
 
@@ -49,7 +52,7 @@ def get_postgresql_connection_data():
 
 
 def postgres_listening(**connect_data):
-    if not PSYCOPG2_INSTALLED:
+    if not PSYCOPG2_INSTALLED or len(connect_data) == 0:
         return False
     try:
         conn = psycopg2.connect(**connect_data)
