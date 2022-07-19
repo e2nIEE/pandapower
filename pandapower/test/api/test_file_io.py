@@ -434,7 +434,8 @@ def test_replace_elements_json_string(net_in):
     json_string = pp.to_json(net_orig)
     net_load = pp.from_json_string(json_string,
                                replace_elements={r'pandapower.control.controller.const_control':
-                                                 r'pandapower.test.api.input_files.test_control'})
+                                                 r'pandapower.test.api.input_files.test_control',
+                                                 r'ConstControl': r'TestControl'})
     assert nets_equal(net_orig, net_load)
     pp.runpp(net_load, run_control=True)
     pp.runpp(net_orig, run_control=True)
