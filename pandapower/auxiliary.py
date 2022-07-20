@@ -839,7 +839,7 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
         if col not in net.line.columns:
             net.line[col] = np.nan
         if np.any(np.isnan(net.line.loc[tdpf_lines, col])):
-            logger.info(f"filling nan values in {col} with a default assumption of {val}")
+            logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
             net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
 
 

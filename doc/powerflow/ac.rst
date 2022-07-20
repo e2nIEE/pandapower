@@ -8,6 +8,8 @@ pandapower uses PYPOWER to solve the power flow problem:
 		:alt: alternate Text
 		:align: center
 
+pandapower supports Temperature Dependent Power Flow (TDPF) with consideration of thermal inertia.
+
 .. autofunction:: pandapower.runpp
 
 .. note::
@@ -21,3 +23,12 @@ can either be installed with pip install lightsim2grid, or built from source. Mo
 installation guide can be found in the `documentation <https://lightsim2grid.readthedocs.io/en/latest/>`_ or
 its GitHub `repository <https://github.com/BDonnot/lightsim2grid>`_.
 
+TDPF is implemented based on the following publications:
+
+* S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-dependent power flow", IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4007-4018, Nov 2013.
+* B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe), 2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+
+Additional parameters in net.line are required. If missing, common assumptions are used to add the parameters to net.line.
+The column "tdpf" (bool) must be provided in net.line to designate which lines are relevant for TDPF.
+The parameter "outer_diameter_m" (float) must be provided if the weather model is used (pp.runpp parameter tdpf_update_r_theta=True).
+Otherwise, the parameter "r_theta" (float) must be specified. It can be calculated using the function "pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise"

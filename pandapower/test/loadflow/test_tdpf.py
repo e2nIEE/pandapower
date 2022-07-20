@@ -262,7 +262,7 @@ def test_default_parameters():
         pp.runpp(net, tdpf=True)
 
     net.line["tdpf"] = np.nan
-    with pytest.raises(UserWarning, match="required columns .* are missing"):
+    with pytest.raises(UserWarning, match="required columns .*'outer_diameter_m'.* are missing"):
         pp.runpp(net, tdpf=True)
 
     # with TDPF algorithm but no relevant tdpf lines the results must match with normal runpp:
@@ -270,6 +270,9 @@ def test_default_parameters():
     pp.runpp(net, tdpf=True)
     net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
     assert_res_equal(net, net_backup)
+
+    with pytest.raises(UserWarning, match="required columns .*'mc_joule_per_m_k'.* are missing"):
+        pp.runpp(net, tdpf=True, tdpf_delay_s=120)
 
     # check for simplified method
     net = net_backup.deepcopy()
@@ -308,6 +311,9 @@ def test_default_parameters():
     assert np.array_equal(net.line.loc[[2, 4], 'temperature_degree_celsius'].values, np.array([40, 40]))
     assert np.array_equal(net.line.loc[[2, 4], 'alpha'].values, np.array([3e-3, 3e-3]))
     assert np.array_equal(net.line.loc[[2, 4], 'wind_speed_m_per_s'].values, np.array([0, 0]))
+
+    net.line["mc_joule_per_m_k"] = 500
+    pp.runpp(net, tdpf=True, tdpf_delay_s=10*60)
 
 
 if __name__ == '__main__':
