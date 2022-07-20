@@ -10,7 +10,8 @@ ALPHA = 4e-3
 
 
 def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
-    r_for_t_rated_rise = net.line.r_ohm_per_km * (1 + net.line.alpha * 25) * net.line.length_km / net.line.parallel
+    r_for_t_rated_rise = net.line.r_ohm_per_km * (1 + net.line.alpha * t_rise_degree_celsius) * \
+                         net.line.length_km / net.line.parallel
     p_rated_loss_mw = np.square(net.line.max_i_ka * np.sqrt(3)) * r_for_t_rated_rise
     r_theta = t_rise_degree_celsius / p_rated_loss_mw
     return r_theta

@@ -781,6 +781,68 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
     return True
 
 
+def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
+    required_columns = ["tdpf"]  # required, cannot be filled with assumptions
+    if "tdpf" not in net.line.columns:
+        tdpf_lines = np.array([])
+        # we raise the exception later
+    else:
+        tdpf_lines = net.line.loc[net.line.tdpf.fillna(False).astype(bool) & net.line.in_service].index.values
+
+    if len(tdpf_lines) == 0:
+        logger.info("TDPF: no relevant lines found")
+
+    # required for simplified approach if r_theta is provided, can be filled with simplified values:
+    default_values = {"temperature_degree_celsius": 20,
+                      "ambient_temperature_degree_celsius": 35,
+                      "alpha": 4.03e-3}
+
+    if tdpf_update_r_theta:
+        # required for the detailed calculation of the weather effects, can be filled with default values:
+        default_values.update({"wind_speed_m_per_s": 0.6,
+                               "wind_angle_degree": 45,
+                               "solar_radiation_w_per_sq_m": 900,
+                               "gamma": 0.5,
+                               "epsilon": 0.5})
+        required_columns.append("outer_diameter_m")
+    else:
+        # make sure r_theta is provided
+        required_columns.append("r_theta")
+
+    if tdpf_delay_s:
+        required_columns.append("mc_joule_per_m_k")
+
+    # can stay None:
+    optional_columns = ["reference_temperature_degree_celsius",  # if reference temperature for r_ohm_per_km != 20 °C
+                        "r_theta"  # if a simplified method for calculating the line temperature is used
+                        ]
+    # first, check required columns
+
+    # if np.any(np.setdiff1d(net.line.columns, required_columns)):
+    #     raise UserWarning(f"TDPF: required columns missing in net.line: {required_columns}")
+
+    missing_columns = []
+    for col in required_columns:
+        if col not in net.line.columns or np.any(net.line.loc[tdpf_lines, col].isnull()):
+            missing_columns.append(col)
+
+    if len(missing_columns) > 0:
+        raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
+
+    # check if unsupported elements are included
+    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.type == "cs")]) > 0 or \
+            "tdpf" in net.trafo or "tdpf" in net.trafo3w:
+        logger.warning("TDPF: temperature dependent power flow is only implemented for overhead lines")
+
+    # now fill in the default values
+    for col, val in default_values.items():
+        if col not in net.line.columns:
+            net.line[col] = np.nan
+        if np.any(np.isnan(net.line.loc[tdpf_lines, col])):
+            logger.info(f"filling nan values in {col} with a default assumption of {val}")
+            net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
+
+
 # =============================================================================
 # Functions for 3 Phase Unbalanced Load Flow
 # =============================================================================
@@ -1054,6 +1116,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if algorithm != 'nr':
             raise NotImplementedError(
                 'Distributed slack is only implemented for Newton Raphson algorithm.')
+
+    if tdpf:
+        _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s)
 
     # init options
     net._options = {}

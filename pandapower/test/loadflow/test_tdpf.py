@@ -3,17 +3,23 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
+
+import numpy as np
 import pytest
 
+from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
+    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
 from pandapower.test.toolbox import assert_res_equal
 
 import pandas as pd
 import pandapower as pp
 import pandapower.networks
 
-from pandapower.pf.create_jacobian_tdpf import *
+from pandapower.pypower.idx_brch import BR_R, BR_X
 
-from pandapower.pypower.idx_brch import BR_R
+
+# pd.set_option("display.max_columns", 1000)
+# pd.set_option("display.width", 1000)
 
 
 def prepare_case_30():
@@ -239,6 +245,69 @@ def test_only_pv():
     pp.runpp(net, init="flat")
 
     pp.runpp(net, tdpf=True, max_iteration=30)
+
+
+def test_default_parameters():
+    # length_km is important in the formulas
+    net = pp.networks.case9()
+    net.line.length_km = net.line.x_ohm_per_km / 4
+    net.line.x_ohm_per_km /= net.line.length_km
+    net.line.r_ohm_per_km /= net.line.length_km
+    net.line.c_nf_per_km /= net.line.length_km
+    net_backup = net.deepcopy()
+    pp.runpp(net_backup)
+
+    # test error is raised when 'tdpf' column is missng
+    with pytest.raises(UserWarning, match="required columns .* are missing"):
+        pp.runpp(net, tdpf=True)
+
+    net.line["tdpf"] = np.nan
+    with pytest.raises(UserWarning, match="required columns .* are missing"):
+        pp.runpp(net, tdpf=True)
+
+    # with TDPF algorithm but no relevant tdpf lines the results must match with normal runpp:
+    net.line["outer_diameter_m"] = np.nan
+    pp.runpp(net, tdpf=True)
+    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
+    assert_res_equal(net, net_backup)
+
+    # check for simplified method
+    net = net_backup.deepcopy()
+    net.line["tdpf"] = np.nan
+    with pytest.raises(UserWarning, match="required columns .* are missing"):
+        pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
+    net.line["r_theta"] = np.nan
+    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
+    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
+    assert_res_equal(net, net_backup)
+
+    # now define some tdpf lines with simplified method
+    net.line.loc[[1, 2, 4], 'tdpf'] = True, 1, -8
+    net.line.loc[1, 'alpha'] = 4.03e-3
+    net.line["r_theta"] = calc_r_theta_from_t_rise(net, 25)
+    with pytest.raises(UserWarning, match="required columns .* are missing"):
+        pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
+    net.line['alpha'] = 4.03e-3
+    net.line["r_theta"] = calc_r_theta_from_t_rise(net, 25)
+    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
+
+    # now test with "normal" TDPF
+    net = net_backup.deepcopy()
+    net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
+    net.line["outer_diameter_m"] = 2.5e-2  # 2.5 cm?
+    pp.runpp(net, tdpf=True, max_iteration=30)
+    # here all the standard assumptions are filled
+    # now we check that user-defined assumptions are preserved
+    net = net_backup.deepcopy()
+    net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
+    net.line["outer_diameter_m"] = 2.5e-2  # 2.5 cm?
+    net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40
+    net.line.loc[[2, 4], 'alpha'] = 3e-3
+    net.line.loc[[2, 4], 'wind_speed_m_per_s'] = 0
+    pp.runpp(net, tdpf=True, max_iteration=30)
+    assert np.array_equal(net.line.loc[[2, 4], 'temperature_degree_celsius'].values, np.array([40, 40]))
+    assert np.array_equal(net.line.loc[[2, 4], 'alpha'].values, np.array([3e-3, 3e-3]))
+    assert np.array_equal(net.line.loc[[2, 4], 'wind_speed_m_per_s'].values, np.array([0, 0]))
 
 
 if __name__ == '__main__':

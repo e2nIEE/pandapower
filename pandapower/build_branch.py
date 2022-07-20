@@ -152,22 +152,22 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
 
     if net._options["tdpf"]:
-        branch[f:t, TDPF] = line["in_service"] & line["tdpf"]
+        branch[f:t, TDPF] = line["in_service"].values & line["tdpf"].fillna(False).values.astype(bool)
         branch[f:t, BR_R_REF_OHM_PER_KM] = line["r_ohm_per_km"].values / parallel
         branch[f:t, BR_LENGTH_KM] = length_km
-        branch[f:t, RATE_I_KA] = line["max_i_ka"] * line["df"] * parallel
-        branch[f:t, T_START_C] = line.get("temperature_degree_celsius", default=20.)
+        branch[f:t, RATE_I_KA] = line["max_i_ka"].values * line["df"].values * parallel
+        branch[f:t, T_START_C] = line["temperature_degree_celsius"].values
         branch[f:t, T_REF_C] = line.get("reference_temperature_degree_celsius", default=20.)
-        branch[f:t, T_AMBIENT_C] = line.get("ambient_temperature_degree_celsius", default=35.)
-        branch[f:t, ALPHA] = line.get("alpha", default=4.03e-3)
-        branch[f:t, WIND_SPEED_MPS] = line.get("wind_speed_m_per_s", default=0.6)
-        branch[f:t, WIND_ANGLE_DEGREE] = line.get("wind_angle_degree", default=45.)
-        branch[f:t, SOLAR_RADIATION_W_PER_SQ_M] = line.get("solar_radiation_w_per_sq_m", default=900)
-        branch[f:t, GAMMA] = line.get("gamma", default=0.5)
-        branch[f:t, EPSILON] = line.get("epsilon", default=0.5)
+        branch[f:t, T_AMBIENT_C] = line["ambient_temperature_degree_celsius"].values
+        branch[f:t, ALPHA] = line["alpha"].values
+        branch[f:t, WIND_SPEED_MPS] = line.get("wind_speed_m_per_s", default=np.nan)
+        branch[f:t, WIND_ANGLE_DEGREE] = line.get("wind_angle_degree", default=np.nan)
+        branch[f:t, SOLAR_RADIATION_W_PER_SQ_M] = line.get("solar_radiation_w_per_sq_m", default=np.nan)
+        branch[f:t, GAMMA] = line.get("gamma", default=np.nan)
+        branch[f:t, EPSILON] = line.get("epsilon", default=np.nan)
         branch[f:t, R_THETA] = line.get("r_theta", default=np.nan)
-        branch[f:t, OUTER_DIAMETER_M] = line["outer_diameter_m"]
-        branch[f:t, MC_JOULE_PER_M_K] = line["mc_joule_per_m_k"]
+        branch[f:t, OUTER_DIAMETER_M] = line.get("outer_diameter_m", default=np.nan)
+        branch[f:t, MC_JOULE_PER_M_K] = line.get("mc_joule_per_m_k", default=np.nan)
 
     if mode == "sc":
         # temperature correction
