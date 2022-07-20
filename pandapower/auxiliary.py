@@ -793,30 +793,26 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
         logger.info("TDPF: no relevant lines found")
 
     # required for simplified approach if r_theta is provided, can be filled with simplified values:
-    default_values = {"temperature_degree_celsius": 20,
-                      "ambient_temperature_degree_celsius": 35,
-                      "alpha": 4.03e-3}
+    default_values = {"temperature_degree_celsius": 20,  # starting temperature of lines
+                      "reference_temperature_degree_celsius": 20,  # reference temperature for line.r_ohm_per_km
+                      "ambient_temperature_degree_celsius": 35,  # temperature of air surrounding the conductors
+                      "alpha": 4.03e-3}  # thermal coefficient of resistance
 
     if tdpf_update_r_theta:
         # required for the detailed calculation of the weather effects, can be filled with default values:
-        default_values.update({"wind_speed_m_per_s": 0.6,
-                               "wind_angle_degree": 45,
-                               "solar_radiation_w_per_sq_m": 900,
-                               "gamma": 0.5,
-                               "epsilon": 0.5})
-        required_columns.append("outer_diameter_m")
+        default_values.update({"wind_speed_m_per_s": 0.6,  # wind speed
+                               "wind_angle_degree": 45,  # wind angle of attack
+                               "solar_radiation_w_per_sq_m": 900,  # solar radiation
+                               "gamma": 0.5,  # coefficient of solar absorptivity
+                               "epsilon": 0.5})  # coefficient of solar emissivity
+        required_columns.append("outer_diameter_m")  # outer diameter of the conductor
     else:
-        # make sure r_theta is provided
-        required_columns.append("r_theta")
+        # make sure r_theta is provided (use the function pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise)
+        required_columns.append("r_theta")  # if a simplified method for calculating the line temperature is used
 
     if tdpf_delay_s:
+        # for thermal inertia, mass * thermal capacity of the conductor per unit length:
         required_columns.append("mc_joule_per_m_k")
-
-    # can stay None:
-    optional_columns = ["reference_temperature_degree_celsius",  # if reference temperature for r_ohm_per_km != 20 °C
-                        "r_theta"  # if a simplified method for calculating the line temperature is used
-                        ]
-    # first, check required columns
 
     # if np.any(np.setdiff1d(net.line.columns, required_columns)):
     #     raise UserWarning(f"TDPF: required columns missing in net.line: {required_columns}")

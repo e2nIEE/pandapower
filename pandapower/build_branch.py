@@ -157,7 +157,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, BR_LENGTH_KM] = length_km
         branch[f:t, RATE_I_KA] = line["max_i_ka"].values * line["df"].values * parallel
         branch[f:t, T_START_C] = line["temperature_degree_celsius"].values
-        branch[f:t, T_REF_C] = line.get("reference_temperature_degree_celsius", default=20.)
+        branch[f:t, T_REF_C] = line["reference_temperature_degree_celsius"].values
         branch[f:t, T_AMBIENT_C] = line["ambient_temperature_degree_celsius"].values
         branch[f:t, ALPHA] = line["alpha"].values
         branch[f:t, WIND_SPEED_MPS] = line.get("wind_speed_m_per_s", default=np.nan)

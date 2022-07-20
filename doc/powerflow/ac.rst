@@ -32,3 +32,5 @@ Additional parameters in net.line are required. If missing, common assumptions a
 The column "tdpf" (bool) must be provided in net.line to designate which lines are relevant for TDPF.
 The parameter "outer_diameter_m" (float) must be provided if the weather model is used (pp.runpp parameter tdpf_update_r_theta=True).
 Otherwise, the parameter "r_theta" (float) must be specified. It can be calculated using the function "pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise"
+For consideration of thermal inertia, pp.runpp parameter "tdpf_delay_s" specifies the time after a step change of current.
+The parameter "mc_joule_per_m_k" describes the mass * thermal capacity of the conductor per unit length and it must be provided in net.line.
