@@ -838,6 +838,10 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
             logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
             net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
 
+    #todo
+    # check r=0
+    # if np.any()
+
 
 # =============================================================================
 # Functions for 3 Phase Unbalanced Load Flow
