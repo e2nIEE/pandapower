@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -1004,7 +1004,8 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
             report_check = False
         assert report_check
 
-@pytest.mark.skipif(numba_installed==False, reason="requires numba")
+
+@pytest.mark.skipif(not numba_installed, reason="requires numba")
 def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
@@ -1013,7 +1014,7 @@ def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     if check_result:
         diag_results = {check_function: check_result}
     else:
-        diag_results = {}
+        diag_results = {check_function: {}}
     for element_type in diag_results[check_function]:
         check_results = diag_results[check_function]
         for result_type in check_results[element_type]:

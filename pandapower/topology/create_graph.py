@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
 
@@ -16,7 +16,7 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -92,7 +92,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             calc_branch_impedances=True. If it is set to "ohm", the parameters 'r_ohm',
             'x_ohm' and 'z_ohm' are added to each branch. If it is set to "pu", the
             parameters are 'r_pu', 'x_pu' and 'z_pu'.
-            
+
         **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
 
      OUTPUT:
@@ -109,6 +109,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     if multi:
         if graph_tool_available and library == "graph_tool":
             mg = GraphToolInterface(net.bus.index)
+        elif not graph_tool_available and library == "graph_tool":
+            raise UserWarning("graph_tool selected as the library for topological analysis but it is not installed")
         else:
             mg = nx.MultiGraph()
     else:
@@ -331,12 +333,12 @@ def get_baseR(net, ppc, buses):
 
 def init_par(tab, calc_branch_impedances=False):
     n = tab.shape[0]
-    indices = np.zeros((n, 3), dtype=np.int)
+    indices = np.zeros((n, 3), dtype=int)
     indices[:, INDEX] = tab.index
     if calc_branch_impedances:
-        parameters = np.zeros((n, 4), dtype=np.float)
+        parameters = np.zeros((n, 4), dtype=float)
     else:
-        parameters = np.zeros((n, 1), dtype=np.float)
+        parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
         return indices, parameters, tab.in_service.values.copy()

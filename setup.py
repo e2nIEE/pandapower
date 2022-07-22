@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
@@ -26,38 +26,44 @@ classifiers = [
 
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
-    versions = set(re.findall('3.[0-9]', lines))
-    for version in versions:
-        classifiers.append('Programming Language :: Python :: 3.%s' % version[-1])
+    versions = set(re.findall('3.[7-9]', lines)) | set(re.findall('3.1[0-9]', lines))
+    for version in sorted(versions):
+        classifiers.append('Programming Language :: Python :: %s' % version)
 
 long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.7.0',
+    version='2.9.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
     long_description=long_description,
-	long_description_content_type='text/x-rst',
+    long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17",
+    install_requires=["pandas>=1.0",
                       "networkx>=2.5",
-                      "scipy<=1.6.0",
+                      "scipy",
                       "numpy>=0.11",
-                      "packaging"],
+                      "packaging",
+                      "tqdm"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],  # "shapely", "pyproj" are depedencies of geopandas and so already available; "base64", "hashlib", "zlib" produce installing problems, so it is not include
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
+        # "shapely", "pyproj" are depedencies of geopandas and so already available;
+        # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],  # "fiona" is a depedency of geopandas and so already available
+        "performance": ["ortools"],  # , "lightsim2grid"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
+        # "fiona" is a depedency of geopandas and so already available
+        "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly", "matplotlib", "python-igraph", "geopandas",
                 "pytest", "pytest-xdist",
-                "ortools",
-                "xlsxwriter", "openpyxl", "cryptography"
+                "ortools",  # lightsim2grid,
+                "xlsxwriter", "openpyxl", "cryptography",
+                "matpowercaseframes"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
     packages=find_packages(),

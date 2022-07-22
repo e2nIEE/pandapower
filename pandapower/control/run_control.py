@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
 import numpy as np
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 
@@ -90,17 +90,18 @@ def check_for_initial_run(controller_order):
     return False
 
 
-def ctrl_variables_default(net):
+def ctrl_variables_default(net, **kwargs):
     ctrl_variables = dict()
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
-    ctrl_variables["run"] = pp.runpp
+    ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
     ctrl_variables["initial_run"] = check_for_initial_run(
         ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
+    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
     return ctrl_variables
 
 
@@ -119,7 +120,7 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     ctrl_var = ctrl_variables
 
     if ctrl_variables is None:
-        ctrl_variables = ctrl_variables_default(net)
+        ctrl_variables = ctrl_variables_default(net, **kwargs)
 
     if ('continue_on_divergence') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         div = kwargs.pop('continue_on_divergence')
@@ -127,8 +128,6 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     if ('check_each_level') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         check = kwargs.pop('check_each_level')
         ctrl_variables['check_each_level'] = check
-
-    ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
 
     return ctrl_variables
 
@@ -178,8 +177,8 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
     errors = ctrl_variables['errors']
     try:
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
-    except errors:
-
+    except errors as err:
+        net._ppc = None
         if ctrl_variables['continue_on_divergence']:
             # give a chance to controllers to "repair" the control step if load flow
             # didn't converge
@@ -192,7 +191,9 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 run_funct(net, **kwargs)
             except errors:
                 pass
-    ctrl_variables['converged'] = net['converged'] or net['OPF_converged']
+        else:
+            raise err
+    ctrl_variables['converged'] = net['converged'] or net.get('OPF_converged', True)
     return ctrl_variables
 
 
