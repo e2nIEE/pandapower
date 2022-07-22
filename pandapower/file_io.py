@@ -308,7 +308,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         >>> net = pp.from_json_string(json_str)
 
     """
-    if not replace_elements is None:
+    if replace_elements is not None:
         for k, v in replace_elements.items():
             json_string = json_string.replace(k, v)
 
