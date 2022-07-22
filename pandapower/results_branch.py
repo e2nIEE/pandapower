@@ -138,7 +138,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     res_line_df["va_from_degree"].values[:] = ppc["bus"][from_bus, VA]
     res_line_df["vm_to_pu"].values[:] = ppc["bus"][to_bus, VM]
     res_line_df["va_to_degree"].values[:] = ppc["bus"][to_bus, VA]
-    res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
+    res_line_df["loading_percent"].values[:] = i_ka / i_max / 3 * 100
 
     # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
     if net["_options"]["consider_line_temperature"]:
