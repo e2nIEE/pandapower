@@ -759,7 +759,7 @@ class JSONSerializableClass(object):
 
     def __eq__(self, other):
         """
-        isinstance: so that we know we can use to_json()
+        isinstance: for an early return without calling DeepDiff
         comparing class name instead of class directly allows more flexibility,
         e.g. when the class definition is moved to a different module.
         There is still a risk that the implementation details of the methods can differ
@@ -770,8 +770,8 @@ class JSONSerializableClass(object):
         if not isinstance(other, self.__class__) or self.__class__.__name__ != other.__class__.__name__:
             return False
         else:
-            d = DeepDiff(self, other, ignore_order=True, ignore_nan_inequality=True, significant_digits=6,
-                         ignore_private_variables=False)
+            d = DeepDiff(self.__dict__, other.__dict__, ignore_order=True, ignore_nan_inequality=True,
+                         significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
             return len(d) == 0
 
 

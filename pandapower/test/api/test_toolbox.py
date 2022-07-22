@@ -172,9 +172,10 @@ def test_nets_equal():
     net2 = original.deepcopy()
     pp.control.ContinuousTapControl(net1, 0, 1.0)
     pp.control.ContinuousTapControl(net2, 0, 1.0)
-    c1 = net1.controller.object.at[0]
-    c2 = net2.controller.object[0]
+    c1 = net1.controller.at[0, "object"]
+    c2 = net2.controller.at[0, "object"]
     assert c1 == c2
+    assert c1 is not c2
     assert tb.nets_equal(net1, net2)
     c1.vm_set_pu = 1.01
     assert c1 != c2

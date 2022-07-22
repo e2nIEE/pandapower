@@ -722,6 +722,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
     pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
 
+    If the element tables contain JSONSerializableClass objects, they will also be compared:
+    attributes are compared but not the addresses of the objects.
+
     INPUT:
         **net1** (pandapower net)
 
