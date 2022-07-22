@@ -11,6 +11,7 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
 
 [2.9.0]- 2022-03-23
 ----------------------

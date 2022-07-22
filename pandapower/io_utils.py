@@ -16,6 +16,7 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+from deepdiff.diff import DeepDiff
 
 import networkx
 import numpy
@@ -670,6 +671,7 @@ class JSONSerializableClass(object):
         return index
 
     def equals(self, other):
+        # todo: can this be removed?
 
         class UnequalityFound(Exception):
             pass
@@ -745,6 +747,23 @@ class JSONSerializableClass(object):
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
+
+    def __eq__(self, other):
+        """
+        isinstance: so that we know we can use to_json()
+        comparing class name instead of class directly allows more flexibility,
+        e.g. when the class definition is moved to a different module.
+        There is still a risk that the implementation details of the methods can differ
+        if the classes are from different modules.
+        Comparison is based on comparing dictionaries of the classes.
+        To this end, the dictionary comparison library deepdiff is used for recursive comparison.
+        """
+        if not isinstance(other, self.__class__) or self.__class__.__name__ != other.__class__.__name__:
+            return False
+        else:
+            d = DeepDiff(self, other, ignore_order=True, ignore_nan_inequality=True, significant_digits=6,
+                         ignore_private_variables=False)
+            return len(d) == 0
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
