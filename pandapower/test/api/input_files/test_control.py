@@ -17,4 +17,7 @@ class TestControl(Controller):
 
     def is_converged(self, net):
         self.check_word = 'banana'
-        return True
+        return self.applied
+
+    def control_step(self, net):
+        self.applied = True
