@@ -523,6 +523,9 @@ def test_select_subnet():
     assert pp.dataframes_equal(net.line, same_net.line)
     assert pp.dataframes_equal(net.load, same_net.load)
     assert pp.dataframes_equal(net.ext_grid, same_net.ext_grid)
+    same_net2 = pp.select_subnet(net, net.bus.index, include_results=True,
+                                 keep_everything_else=True)
+    assert pp.nets_equal(net, same_net2)
 
     # Remove everything
     empty = pp.select_subnet(net, set())
@@ -546,6 +549,10 @@ def test_select_subnet():
     line_switch_buses = set(net.switch[net.switch.et == 'l'].bus)
     subnet = pp.select_subnet(net, from_bus | to_bus | line_switch_buses)
     assert net.switch[net.switch.et == 'l'].index.isin(subnet.switch.index).all()
+    ls = net.switch.loc[net.switch.et == "l"]
+    subnet = pp.select_subnet(net, list(ls.bus.values)[::2], include_switch_buses=True)
+    assert net.switch[net.switch.et == 'l'].index.isin(subnet.switch.index).all()
+    assert net.switch[net.switch.et == 'l'].bus.isin(subnet.bus.index).all()
 
     # This network has switches of type 'b'
     net2 = nw.create_cigre_network_lv()
@@ -1032,7 +1039,7 @@ def test_impedance_line_replacement():
 
     pp.runpp(net2)
 
-    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})  # Todo: exclude_elms
+    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})
     cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar", "pl_mw", "ql_mvar", "i_from_ka",
             "i_to_ka"]
     assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
@@ -1140,6 +1147,7 @@ def test_replace_pq_elmtype():
     pp.create_poly_cost(net, 0, "load", 7)
     pp.create_poly_cost(net, 1, "load", 3)
     pp.runpp(net)
+    net.load["controllable"] = net.load["controllable"].astype(bool)
     net_orig = copy.deepcopy(net)
 
     # --- test unset old_indices, cols_to_keep and add_cols_to_keep
@@ -1173,10 +1181,8 @@ def test_replace_pq_elmtype():
     pp.replace_pq_elmtype(net, "storage", "load", add_cols_to_keep=add_cols_to_keep)
     pp.runpp(net)
     check_elm_shape(net, {"storage": 0, "sgen": 0})
-    net.sgen = net_orig.sgen
-    net.storage = net_orig.storage
     net.poly_cost.element = net.poly_cost.element.astype(net_orig.poly_cost.dtypes["element"])
-    assert pp.nets_equal(net_orig, net)
+    assert pp.nets_equal(net_orig, net, exclude_elms={"sgen", "storage"})
 
 
 def test_get_connected_elements_dict():
@@ -1185,6 +1191,20 @@ def test_get_connected_elements_dict():
     assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
     conn = pp.get_connected_elements_dict(net, [3, 4])
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
+
+
+def test_get_connected_elements_empty_in_service():
+    # would cause an error with respect_in_service=True for the case of:
+    #  - empty element tables
+    #  - element tables without in_service column (e.g. measurement)
+    #  - element_table was unbound for the element table measurement
+    #  see #1592
+    net = nw.example_simple()
+    net.bus.in_service.at[6] = False
+    conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
+    assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
+    conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
+    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5]}
 
 
 def test_replace_ward_by_internal_elements():

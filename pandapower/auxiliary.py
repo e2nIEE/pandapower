@@ -237,6 +237,10 @@ class pandapowerNet(ADict):
             self.clear()
             self.update(**net.deepcopy())
 
+        for key in self:
+            if isinstance(self[key], list):
+                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([], dtype=np.int64))
+
     def deepcopy(self):
         return copy.deepcopy(self)
 
