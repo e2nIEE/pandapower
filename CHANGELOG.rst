@@ -11,6 +11,7 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [CHANGED] enable calculating PTDF for a subset of branches
 
 [2.9.0]- 2022-03-23
 ----------------------

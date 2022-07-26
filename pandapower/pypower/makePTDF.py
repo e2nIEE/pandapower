@@ -22,8 +22,7 @@ from .makeBdc import makeBdc
 
 
 def makePTDF(baseMVA, bus, branch, slack=None,
-             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False
-             ):
+             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
     """Builds the DC PTDF matrix for a given choice of slack.
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the
@@ -39,7 +38,7 @@ def makePTDF(baseMVA, bus, branch, slack=None,
     @see: L{makeLODF}
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    if reduced and not branch_id:
+    if reduced and branch_id is None:
         raise ValueError("'reduced=True' is only valid if branch_id is not None")
 
     ## use reference bus for slack by default
