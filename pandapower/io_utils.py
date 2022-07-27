@@ -16,6 +16,7 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+from deepdiff.diff import DeepDiff
 
 import networkx
 import numpy
@@ -670,6 +671,16 @@ class JSONSerializableClass(object):
         return index
 
     def equals(self, other):
+        # todo: can this method be removed?
+        warn("JSONSerializableClass: the attribute 'equals' is deprecated "
+             "and will be removed in the future. Use the '__eq__' method instead, "
+             "by directly comparing the objects 'a == b'. "
+             "To check if two variables point to the same object, use 'a is b'", DeprecationWarning)
+
+        logger.warning("JSONSerializableClass: the attribute 'equals' is deprecated "
+                       "and will be removed in the future. Use the '__eq__' method instead, "
+                       "by directly comparing the objects 'a == b'. "
+                       "To check if two variables point to the same object, use 'a is b'")
 
         class UnequalityFound(Exception):
             pass
@@ -745,6 +756,24 @@ class JSONSerializableClass(object):
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
+
+    def __eq__(self, other):
+        """
+        comparing class name and attributes instead of class object address directly.
+        This allows more flexibility,
+        e.g. when the class definition is moved to a different module.
+        Checking isinstance(other, self.__class__) for an early return without calling DeepDiff.
+        There is still a risk that the implementation details of the methods can differ
+        if the classes are from different modules.
+        The comparison is based on comparing dictionaries of the classes.
+        To this end, the dictionary comparison library deepdiff is used for recursive comparison.
+        """
+        if not isinstance(other, self.__class__) or self.__class__.__name__ != other.__class__.__name__:
+            return False
+        else:
+            d = DeepDiff(self.__dict__, other.__dict__, ignore_order=True, ignore_nan_inequality=True,
+                         significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
+            return len(d) == 0
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
