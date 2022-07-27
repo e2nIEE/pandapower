@@ -759,12 +759,13 @@ class JSONSerializableClass(object):
 
     def __eq__(self, other):
         """
-        isinstance: for an early return without calling DeepDiff
-        comparing class name instead of class directly allows more flexibility,
+        comparing class name and attributes instead of class object address directly.
+        This allows more flexibility,
         e.g. when the class definition is moved to a different module.
+        Checking isinstance(other, self.__class__) for an early return without calling DeepDiff.
         There is still a risk that the implementation details of the methods can differ
         if the classes are from different modules.
-        Comparison is based on comparing dictionaries of the classes.
+        The comparison is based on comparing dictionaries of the classes.
         To this end, the dictionary comparison library deepdiff is used for recursive comparison.
         """
         if not isinstance(other, self.__class__) or self.__class__.__name__ != other.__class__.__name__:
