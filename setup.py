@@ -47,7 +47,8 @@ setup(
                       "scipy",
                       "numpy>=0.11",
                       "packaging",
-                      "tqdm"],
+                      "tqdm",
+                      "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
         "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],

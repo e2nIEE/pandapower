@@ -12,6 +12,8 @@ Change Log
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
 - [ADDED] File I/O download and upload pandapowerNet to PostgreSQL
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
 
 [2.9.0]- 2022-03-23
 ----------------------

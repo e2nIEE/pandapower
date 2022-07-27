@@ -28,6 +28,12 @@ def test_PTDF():
                  result_side=1, using_sparse_solver=False)
     ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
                            using_sparse_solver=True)
+    ptdf_reduced = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], 
+                            using_sparse_solver=False, 
+                            branch_id=list(range(15)), reduced=True)
+    ptdf_reduced_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], 
+                                   using_sparse_solver=True, 
+                                   branch_id=list(range(15)), reduced=True)
 
     if not np.allclose(ptdf, ptdf_sparse):
         raise AssertionError("Sparse PTDF has differenct result against dense PTDF")
@@ -35,6 +41,10 @@ def test_PTDF():
         raise AssertionError("PTDF has wrong dimension")
     if not np.all(~np.isnan(ptdf)):
         raise AssertionError("PTDF has NaN value")
+    if not ptdf_reduced.shape == (15, ppci["bus"].shape[0]):
+        raise AssertionError("Reduced PTDF has wrong dimension")
+    if not ptdf_reduced_sparse.shape == (15,ppci["bus"].shape[0]):
+        raise AssertionError("Sparse reduced PTDF has wrong dimension")
 
 def test_PTDF_large():
     net = nw.case9241pegase()
