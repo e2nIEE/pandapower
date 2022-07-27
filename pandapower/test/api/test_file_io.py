@@ -437,7 +437,7 @@ def test_replace_elements_json_string(net_in):
                                    replace_elements={r'pandapower.control.controller.const_control':
                                                          r'pandapower.test.api.input_files.test_control',
                                                      r'ConstControl': r'TestControl'})
-    assert not net_orig.controller.at[0, 'object'] == net_load.controller.at[0, 'object']
+    assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
     net_load = pp.from_json_string(json_string,
@@ -447,8 +447,8 @@ def test_replace_elements_json_string(net_in):
     assert nets_equal(net_orig, net_load)
     pp.runpp(net_load, run_control=True)
     pp.runpp(net_orig, run_control=True)
-    assert (net_load.controller.loc[0, 'object'].check_word == 'banana')
-    assert not net_orig.controller.at[0, 'object'] == net_load.controller.at[0, 'object']
+    assert net_load.controller.loc[0, 'object'].check_word == 'banana'
+    assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
 
