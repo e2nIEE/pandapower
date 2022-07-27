@@ -768,7 +768,7 @@ class JSONSerializableClass(object):
         The comparison is based on comparing dictionaries of the classes.
         To this end, the dictionary comparison library deepdiff is used for recursive comparison.
         """
-        if not isinstance(other, self.__class__) or self.__class__.__name__ != other.__class__.__name__:
+        if self.__class__.__name__ != other.__class__.__name__:
             return False
         else:
             d = DeepDiff(self.__dict__, other.__dict__, ignore_order=True, ignore_nan_inequality=True,
