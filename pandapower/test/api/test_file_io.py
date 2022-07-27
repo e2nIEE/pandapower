@@ -336,10 +336,10 @@ def test_deepcopy_controller():
     net2 = copy.deepcopy(net)
     ct1 = net.controller.object.iloc[0]
     ct2 = net2.controller.object.iloc[0]
-    assert ct1 != ct2
-    assert ct1.equals(ct2)
+    assert ct1 is not ct2
+    assert ct1 == ct2
     ct2.vm_set_pu = 1.02
-    assert not ct1.equals(ct2)
+    assert ct1 != ct2
 
 
 def test_elements_to_deserialize(tmp_path):
