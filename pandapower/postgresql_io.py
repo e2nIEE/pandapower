@@ -313,7 +313,7 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
         specify whether the power flow results are included when the grid is uploaded, default=False
     grid_id : int
         unique grid_id that will be used to identify the data for the grid model, default None.
-        If None, it will be set authomatically by PostgreSQL
+        If None, it will be set automatically by PostgreSQL
     grid_id_column : str
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
