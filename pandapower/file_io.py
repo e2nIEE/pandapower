@@ -23,13 +23,6 @@ try:
     openpyxl_INSTALLED = True
 except ImportError:
     openpyxl_INSTALLED = False
-try:
-    import psycopg2
-    import psycopg2.errors
-    PSYCOPG2_INSTALLED = True
-except ImportError:
-    psycopg2 = None
-    PSYCOPG2_INSTALLED = False
 
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
@@ -422,58 +415,3 @@ def from_sqlite(filename, netname=""):
     net = from_sql(con)
     con.close()
     return net
-
-
-def from_postgresql(schema, host, user, password, database, include_results=False, **id_columns):
-    if not PSYCOPG2_INSTALLED:
-        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
-    # id_columns: {id_column_1: id_value_1, id_column_2: id_value_2}
-    net = create_empty_network()
-
-    conn = psycopg2.connect(host=host, user=user, password=password, database=database)
-    cursor = conn.cursor()
-    try:
-        for element, element_table in net.items():
-            if not isinstance(element_table, pd.DataFrame) or (element.startswith("res_") and not include_results):
-                continue
-            table_name = element if schema is None else f"{schema}.{element}"
-
-            try:
-                tab = io_utils.download_sql_table(cursor, table_name, **id_columns)
-            except UserWarning as err:
-                logger.debug(err)
-                continue
-            except psycopg2.errors.UndefinedTable as err:
-                logger.info(f"skipped {element} due to error: {err}")
-                continue
-            except psycopg2.errors.UndefinedColumn as err:
-                conn = psycopg2.connect(host=host, user=user, password=password, database=database)
-                cursor = conn.cursor()
-                logger.info(f"retrying {element} without id_columns")
-                tab = io_utils.download_sql_table(cursor, table_name)
-
-            if not tab.empty:
-                _preserve_dtypes(tab, element_table.dtypes)
-                net[element] = pd.concat([element_table, tab])
-                logger.debug(f"downloaded table {element}")
-    finally:
-        conn.close()
-    return net
-
-
-def to_postgresql(net, host, user, password, database, schema, include_results=False, index_name=None, **id_columns):
-    if not PSYCOPG2_INSTALLED:
-        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
-    logger.info(f"Uploading the grid data to the DB schema {schema}")
-    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
-        cursor = conn.cursor()
-        io_utils.create_postgresql_catalogue_entry(conn, cursor, schema, **id_columns)
-        for element, element_table in net.items():
-            if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
-                    (element.startswith("res_") and not include_results):
-                continue
-            table_name = element if schema is None else f"{schema}.{element}"
-            io_utils.upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table,
-                                      index_name=index_name, **id_columns)
-            logger.debug(f"uploaded table {element}")
-

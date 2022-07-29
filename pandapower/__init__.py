@@ -8,6 +8,7 @@ from pandapower.convert_format import *
 from pandapower.create import *
 from pandapower.diagnostic import *
 from pandapower.file_io import *
+from pandapower.postgresql_io import to_postgresql, from_postgresql, delete_postgresql_net
 from pandapower.run import *
 from pandapower.runpm import *
 from pandapower.std_types import *

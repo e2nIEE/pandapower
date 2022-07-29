@@ -9,17 +9,7 @@ import os
 
 import numpy as np
 import pandas as pd
-import pandas.testing as pdt
 import pytest
-
-from pandapower.auxiliary import _preserve_dtypes
-
-try:
-    import psycopg2
-    PSYCOPG2_INSTALLED = True
-except ImportError:
-    psycopg2 = None
-    PSYCOPG2_INSTALLED = False
 
 import pandapower as pp
 import pandapower.control as control
@@ -40,55 +30,6 @@ try:
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
-
-
-def get_postgresql_connection_data():
-    filename = os.path.join(pp_dir, "test", "test_files", "postgresql_connect_data.json")
-    if not os.path.isfile(filename):
-        return {}, None
-    with open(filename) as fp:
-        connect_data = json.load(fp)
-        schema = connect_data.pop("schema")
-
-    return connect_data, schema
-
-
-def postgres_listening(**connect_data):
-    if not PSYCOPG2_INSTALLED or len(connect_data) == 0:
-        return False
-    try:
-        conn = psycopg2.connect(**connect_data)
-        conn.close()
-        return True
-    except psycopg2.OperationalError as ex:
-        return False
-
-
-def assert_postgresql_roundtrip(net_in, id_columns, **kwargs):
-    net = net_in.deepcopy()
-    if not kwargs.get("include_results", False):
-        pp.reset_results(net)
-    else:
-        pp.runpp(net)
-    connect_data, schema = get_postgresql_connection_data()
-    pp.to_postgresql(net, schema=schema, **connect_data, **id_columns, **kwargs)
-
-    net_out = pp.from_postgresql(schema=schema, **connect_data, **id_columns, **kwargs)
-
-    for element, table in net.items():
-        # dictionaries (e.g. std_type) not included
-        # json serialization/deserialization of objects not implemented
-        if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
-            continue
-        columns = table.columns
-        pdt.assert_frame_equal(table, net_out[element][columns])
-
-    pp.runpp(net)
-    pp.runpp(net_out)
-    assert_res_equal(net, net_out)
-
-
-POSTGRES_AVAILABLE = postgres_listening(**get_postgresql_connection_data()[0])
 
 
 @pytest.fixture(params=[1])
@@ -483,24 +424,6 @@ def test_json_io_with_characteristics(net_in):
     assert isinstance(net_out.characteristic.object.at[c2.index], pp.control.SplineCharacteristic)
     assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)
     assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
-
-
-@pytest.mark.skipif(not POSTGRES_AVAILABLE,
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
-def test_postgresql_oberrhein():
-    net_in = pp.networks.mv_oberrhein()
-    net_in.switch["in_ka"] = np.nan  # todo: remove after release
-    net_empty = pp.create_empty_network()
-    _preserve_dtypes(net_in.trafo, net_empty.trafo.dtypes)  # dtypes in mv_oberrhein are wrong?
-    assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "another_id_val"}, include_results=False)
-    assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "another_id_val"}, include_results=True)
-
-
-@pytest.mark.skipif(not POSTGRES_AVAILABLE,
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
-def test_postgresql(net_in):
-    assert_postgresql_roundtrip(net_in, {"grid_id": 123, "another_id": "test_id_val"}, include_results=False)
-    assert_postgresql_roundtrip(net_in, {"grid_id": 456, "another_id": "test_id_val"}, include_results=True)
 
 
 if __name__ == "__main__":
