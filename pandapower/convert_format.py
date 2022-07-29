@@ -300,6 +300,11 @@ def _add_missing_columns(net, elements_to_deserialize):
             'z_ohm' not in net.switch:
         net.switch['z_ohm'] = 0
 
+    # Update the switch table with 'in_ka'
+    if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
+            'in_ka' not in net.switch:
+        net.switch['in_ka'] = np.nan
+
     if _check_elements_to_deserialize('measurement', elements_to_deserialize) and \
             "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
