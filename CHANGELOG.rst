@@ -1,6 +1,20 @@
 Change Log
 =============
 
+[2.10.0] - 2022-07-29
+-------------------------------
+- [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
+- [ADDED] from_mpc() converter: added functionality to import .m files via external package
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
+- [CHANGED] drop support of pandas versions < 1.0
+- [ADDED] parameter in_ka for rated switch current
+- [ADDED] current and loading result for switches
+- [FIXED] bug for disabled continous tap controllers
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
+
 [2.9.0]- 2022-03-23
 ----------------------
 - [ADDED] added support for Python 3.10
@@ -11,10 +25,11 @@ Change Log
 - [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
 - [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
 - [FIX] fixed hover information for lines in plotly
+- [ADDED] functions to obtain grid equivalents (power system reduction with REI, Ward, X-Ward methods)
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
-- [ADDED] added the funtionality to import grid data from PowerFactory
+- [ADDED] added the functionality to import grid data from PowerFactory
 - [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06

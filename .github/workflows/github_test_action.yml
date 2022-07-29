@@ -84,7 +84,7 @@ jobs:
         pip install matplotlib
     - name: Install pandapipes and simbench
       run: |
-        python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
+        python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes numba
         python -m pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
     - name: List of installed packages
       run: |

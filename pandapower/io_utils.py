@@ -16,13 +16,13 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+from deepdiff.diff import DeepDiff
 
 import networkx
 import numpy
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
-from packaging import version
 
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
@@ -311,10 +311,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             else:
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    if version.parse(pd.__version__) < version.parse("0.21"):
-                        net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                    else:
-                        net[key] = net[key].reindex(item["columns"], axis=1)
+                    net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -674,6 +671,16 @@ class JSONSerializableClass(object):
         return index
 
     def equals(self, other):
+        # todo: can this method be removed?
+        warn("JSONSerializableClass: the attribute 'equals' is deprecated "
+             "and will be removed in the future. Use the '__eq__' method instead, "
+             "by directly comparing the objects 'a == b'. "
+             "To check if two variables point to the same object, use 'a is b'", DeprecationWarning)
+
+        logger.warning("JSONSerializableClass: the attribute 'equals' is deprecated "
+                       "and will be removed in the future. Use the '__eq__' method instead, "
+                       "by directly comparing the objects 'a == b'. "
+                       "To check if two variables point to the same object, use 'a is b'")
 
         class UnequalityFound(Exception):
             pass
@@ -750,6 +757,24 @@ class JSONSerializableClass(object):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
 
+    def __eq__(self, other):
+        """
+        comparing class name and attributes instead of class object address directly.
+        This allows more flexibility,
+        e.g. when the class definition is moved to a different module.
+        Checking isinstance(other, self.__class__) for an early return without calling DeepDiff.
+        There is still a risk that the implementation details of the methods can differ
+        if the classes are from different modules.
+        The comparison is based on comparing dictionaries of the classes.
+        To this end, the dictionary comparison library deepdiff is used for recursive comparison.
+        """
+        if self.__class__.__name__ != other.__class__.__name__:
+            return False
+        else:
+            d = DeepDiff(self.__dict__, other.__dict__, ignore_order=True, ignore_nan_inequality=True,
+                         significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
+            return len(d) == 0
+
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
     if obj_module is None:
@@ -782,7 +807,7 @@ def json_pandapowernet(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    orient = "split"
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient

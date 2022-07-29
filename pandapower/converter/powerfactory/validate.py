@@ -11,8 +11,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
-
+logger = logging.getLogger(__name__)
 
 def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:
@@ -274,9 +273,9 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     _set_pf_results(net, pf_results, is_unbalanced=is_unbalanced)
 
     net.bus.name.fillna("", inplace=True)
-    only_in_pandapower = set(net.bus[net.bus.name.str.endswith("_aux")].index) | \
-                           set(net.bus[net.bus.type == "ls"].index)
-    in_both = set(net.bus.index) - only_in_pandapower
+    only_in_pandapower = np.union1d(net.bus[net.bus.name.str.endswith("_aux")].index,
+                                    net.bus[net.bus.type == "ls"].index)
+    in_both = np.setdiff1d(net.bus.index, only_in_pandapower)
 
     pf_closed = pf_results['pf_switch_status']
     wrong_switches = net.res_switch.loc[

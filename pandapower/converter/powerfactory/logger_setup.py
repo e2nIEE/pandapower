@@ -1,7 +1,11 @@
-import logging
+from logging import StreamHandler
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
 
 
-class AppHandler(logging.StreamHandler):
+class AppHandler(StreamHandler):
     def __init__(self, app, freeze_app_between_messages=False):
         super().__init__()
         self.app = app
@@ -9,7 +13,7 @@ class AppHandler(logging.StreamHandler):
         self.PrintInfo = app.PrintInfo
         self.PrintWarn = app.PrintWarn
         self.PrintError = app.PrintError
-        self.name = 'PowerFactory Logging'
+        self.name = 'PowerFactory Converter'
         formatter = logging.Formatter('%(message)s')
         self.setFormatter(formatter)
         self.freeze_app_between_messages = freeze_app_between_messages
