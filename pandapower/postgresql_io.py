@@ -280,11 +280,6 @@ def from_postgresql(host, user, password, database, schema, grid_id, include_res
             except psycopg2.errors.UndefinedTable as err:
                 logger.info(f"skipped {element} due to error: {err}")
                 continue
-            except psycopg2.errors.UndefinedColumn as err:
-                conn = psycopg2.connect(host=host, user=user, password=password, database=database)
-                cursor = conn.cursor()
-                logger.info(f"retrying {element} without id_columns")
-                tab = download_sql_table(cursor, table_name)
 
             if not tab.empty:
                 _preserve_dtypes(tab, element_table.dtypes)
