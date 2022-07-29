@@ -295,6 +295,7 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
+    JSON serialization (e.g. for controller objects) is not implemented yet.
 
     Parameters
     ----------
