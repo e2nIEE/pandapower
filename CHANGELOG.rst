@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[upcoming release] - 2022-..-..
+[2.10.0] - 2022-07-29
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
 - [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
