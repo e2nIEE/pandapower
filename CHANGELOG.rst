@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+
 [2.10.0] - 2022-07-29
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
