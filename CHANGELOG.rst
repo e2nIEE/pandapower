@@ -1,7 +1,11 @@
 Change Log
 =============
 
-[upcoming release] - 2022-..-..
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+
+[2.10.0] - 2022-07-29
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
 - [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
@@ -12,6 +16,9 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
 
 [2.9.0]- 2022-03-23
 ----------------------

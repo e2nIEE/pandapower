@@ -722,6 +722,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
     pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
 
+    If the element tables contain JSONSerializableClass objects, they will also be compared:
+    attributes are compared but not the addresses of the objects.
+
     INPUT:
         **net1** (pandapower net)
 
@@ -797,19 +800,8 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
     for key in list(keys_to_check):
 
         if isinstance(net1[key], pd.DataFrame):
-            if not isinstance(net2[key], pd.DataFrame):
+            if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(net1[key], net2[key], **kwargs):
                 not_equal.append(key)
-            else:
-                if "object" in net1[key].columns and "object" in net2[key].columns and \
-                        isinstance(net1[key].object.dtype, object) and \
-                        isinstance(net1[key].object.dtype, object):
-                    logger.warning(f"net[{key}]['object'] cannot be compared.")
-                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
-                                            net2[key][net2[key].columns.difference(["object"])],
-                                            **kwargs):
-                        not_equal.append(key)
-                elif not dataframes_equal(net1[key], net2[key], **kwargs):
-                    not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):
             if not isinstance(net2[key], np.ndarray):
