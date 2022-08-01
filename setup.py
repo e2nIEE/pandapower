@@ -45,7 +45,7 @@ setup(
     install_requires=["pandas>=1.0",
                       "networkx>=2.5",
                       "scipy",
-                      "numpy>=0.11",
+                      "numpy",
                       "packaging",
                       "tqdm",
                       "deepdiff"],
