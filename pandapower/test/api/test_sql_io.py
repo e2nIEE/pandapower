@@ -5,6 +5,7 @@
 
 import json
 import os
+import tempfile
 
 import pandas as pd
 import pandas.testing as pdt
@@ -16,7 +17,7 @@ import pandapower as pp
 import pandapower.networks
 from pandapower import pp_dir
 from pandapower.auxiliary import _preserve_dtypes
-from pandapower.postgresql_io import download_sql_table
+from pandapower.sql_io import download_sql_table
 from pandapower.test import assert_res_equal
 
 try:
@@ -27,6 +28,14 @@ try:
 except ImportError:
     psycopg2 = None
     PSYCOPG2_INSTALLED = False
+
+try:
+    import sqlite3
+
+    SQLITE_INSTALLED = True
+except ImportError:
+    sqlite3 = None
+    SQLITE_INSTALLED = False
 
 
 @pytest.fixture(params=["case9", "case14", "case39", "simple_mv_open_ring_net",
@@ -63,18 +72,19 @@ def postgresql_listening(**connect_data):
 
 def assert_postgresql_roundtrip(net_in, **kwargs):
     net = net_in.deepcopy()
-    if not kwargs.get("include_results", False):
+    include_results = kwargs.pop("include_results", False)
+    if not include_results:
         pp.reset_results(net)
     else:
         pp.runpp(net)
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = pp.to_postgresql(net, schema=schema, **connection_data, **kwargs)
+    grid_id = pp.to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
 
     net_out = pp.from_postgresql(schema=schema, grid_id=grid_id, **connection_data, **kwargs)
     # todo: save such parameters somewhere also
     net_out.f_hz = net.f_hz
 
-    if not kwargs.get("include_results", False):
+    if not include_results:
         pp.runpp(net)
         pp.runpp(net_out)
 
@@ -131,7 +141,7 @@ def test_delete():
     grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
     pp.delete_postgresql_net(**connection_data, schema=schema, grid_id=grid_id)
     with pytest.raises(UserWarning):
-        _ = pp.from_postgresql(**connection_data, schema=schema, grid_id=grid_id)
+        _ = pp.from_postgresql(schema=schema, grid_id=grid_id, **connection_data)
 
     # check that it is not only deleted from the grid catalogue
     conn = psycopg2.connect(**connection_data)

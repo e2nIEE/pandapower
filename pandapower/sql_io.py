@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 
 import pandapower as pp
+from pandapower import io_utils
 from pandapower.auxiliary import _preserve_dtypes
 
 try:
@@ -19,6 +20,14 @@ try:
 except ImportError:
     psycopg2 = None
     PSYCOPG2_INSTALLED = False
+
+try:
+    import sqlite3
+
+    SQLITE_INSTALLED = True
+except ImportError:
+    sqlite3 = None
+    SQLITE_INSTALLED = False
 
 try:
     import pandaplan.core.pplog as logging
@@ -228,25 +237,18 @@ def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_
     conn.commit()
 
 
-def from_postgresql(host, user, password, database, schema, grid_id, include_results=False, grid_id_column="grid_id",
-                    grid_catalogue_name="grid_catalogue"):
+def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
+             grid_catalogue_name="grid_catalogue"):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
     Parameters
     ----------
-    host : str
-        hostname for the DB, e.g. "localhost"
-    user : str
-    password : str
-    database : str
-        name of the database
+    conn : connection to SQL database (e.g. SQLite, PostgreSQL)
     schema : str
         name of the database schema (e.g. 'postgres')
     grid_id : int
         unique grid_id that will be used to identify the data for the grid model
-    include_results : bool
-        specify whether the power flow results are included when the grid is downloaded, default=False
     grid_id_column : str
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
@@ -256,42 +258,36 @@ def from_postgresql(host, user, password, database, schema, grid_id, include_res
     -------
     net : pandapowerNet
     """
-    if not PSYCOPG2_INSTALLED:
-        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
-    # id_columns: {id_column_1: id_value_1, id_column_2: id_value_2}
+    cursor = conn.cursor()
     net = pp.create_empty_network()
     id_columns = {grid_id_column: grid_id}
-
-    conn = psycopg2.connect(host=host, user=user, password=password, database=database)
-    cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-    try:
-        for element, element_table in net.items():
-            if not isinstance(element_table, pd.DataFrame) or (element.startswith("res_") and not include_results):
-                continue
-            table_name = element if schema is None else f"{schema}.{element}"
 
-            try:
-                tab = download_sql_table(cursor, table_name, **id_columns)
-            except UserWarning as err:
-                logger.debug(err)
-                continue
-            except psycopg2.errors.UndefinedTable as err:
-                logger.info(f"skipped {element} due to error: {err}")
-                continue
+    for element, element_table in net.items():
+        if not isinstance(element_table, pd.DataFrame):
+            continue
+        table_name = element if schema is None else f"{schema}.{element}"
 
-            if not tab.empty:
-                _preserve_dtypes(tab, element_table.dtypes)
-                net[element] = pd.concat([element_table, tab])
-                logger.debug(f"downloaded table {element}")
-    finally:
-        conn.close()
+        try:
+            tab = download_sql_table(cursor, table_name, **id_columns)
+        except UserWarning as err:
+            logger.debug(err)
+            continue
+        except psycopg2.errors.UndefinedTable as err:
+            logger.info(f"skipped {element} due to error: {err}")
+            continue
+
+        if not tab.empty:
+            _preserve_dtypes(tab, element_table.dtypes)
+            net[element] = pd.concat([element_table, tab])
+            logger.debug(f"downloaded table {element}")
+
     return net
 
 
-def to_postgresql(net, host, user, password, database, schema, include_results=False,
-                  grid_id=None, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue", index_name=None):
+def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_column="grid_id",
+           grid_catalogue_name="grid_catalogue", index_name=None):
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
@@ -299,14 +295,9 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
 
     Parameters
     ----------
+    conn
     net : pandapowerNet
         the grid model to be uploaded to the database
-    host : str
-        hostname for the DB, e.g. "localhost"
-    user : str
-    password : str
-    database : str
-        name of the database
     schema : str
         name of the database schema (e.g. 'postgres')
     include_results : bool
@@ -326,23 +317,90 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
     grid_id: int
         returns either the user-specified grid_id or the automatically generated grid_id of the grid model
     """
+    cursor = conn.cursor()
+    catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
+    written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
+    id_columns = {grid_id_column: written_grid_id}
+    for element, element_table in net.items():
+        if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
+                (element.startswith("res_") and not include_results):
+            continue
+        table_name = element if schema is None else f"{schema}.{element}"
+        # None causes postgresql error, np.nan is better
+        create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
+        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name,
+                         table=element_table.replace(np.nan, None),
+                         index_name=index_name, **id_columns)
+        logger.debug(f"uploaded table {element}")
+    return written_grid_id
+
+
+def to_sqlite(net, filename, include_results=False):
+    """
+    Saves pandapowerNet an SQLite format
+
+    Parameters
+    ----------
+    net : grid model
+        pandapowerNet
+    filename : path to a text file where the data will be stored
+        str
+    include_results : whether result tables should be included
+        bool
+    """
+    if not SQLITE_INSTALLED:
+        raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
+    with sqlite3.connect(filename) as conn:
+        dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
+        for name, data in dodfs.items():
+            data.to_sql(name, conn)
+
+
+def from_sqlite(filename):
+    """
+    Loads a grid model from SQLite format
+
+    Parameters
+    ----------
+    filename : path to the text file where the data are stored
+
+    Returns
+    -------
+    net : the grid model
+        pandapowerNet
+    """
+    if not SQLITE_INSTALLED:
+        raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
+    with sqlite3.connect(filename) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        dodfs = dict()
+        for t, in cursor.fetchall():
+            table = pd.read_sql_query("SELECT * FROM %s" % t, conn, index_col="index")
+            table.index.name = None
+            dodfs[t] = table
+        net = io_utils.from_dict_of_dfs(dodfs)
+    return net
+
+
+def to_postgresql(net, host, user, password, database, schema, include_results=False,
+                  grid_id=None, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue", index_name=None):
+    #todo docstring
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
-    logger.info(f"Uploading the grid data to the DB schema {schema}")
+    logger.debug(f"Uploading the grid data to the DB schema {schema}")
     with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
-        cursor = conn.cursor()
-        catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
-        written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
-        id_columns = {grid_id_column: written_grid_id}
-        for element, element_table in net.items():
-            if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
-                    (element.startswith("res_") and not include_results):
-                continue
-            table_name = element if schema is None else f"{schema}.{element}"
-            # None causes postgresql error, np.nan is better
-            create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
-            upload_sql_table(conn=conn, cursor=cursor, table_name=table_name,
-                             table=element_table.replace(np.nan, None),
-                             index_name=index_name, **id_columns)
-            logger.debug(f"uploaded table {element}")
-    return written_grid_id
+        grid_id = to_sql(net, conn, schema, include_results, grid_id, grid_id_column, grid_catalogue_name, index_name)
+    return grid_id
+
+
+def from_postgresql(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
+                    grid_catalogue_name="grid_catalogue"):
+    #todo docstring
+    if not PSYCOPG2_INSTALLED:
+        raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
+
+    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+        net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name)
+
+    return net
