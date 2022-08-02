@@ -294,9 +294,9 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
 
     Parameters
     ----------
-    conn : connection to SQL database (e.g. SQLite, PostgreSQL)
     net : pandapowerNet
         the grid model to be uploaded to the database
+    conn : connection to SQL database (e.g. SQLite, PostgreSQL)
     schema : str
         name of the database schema (e.g. 'postgres')
     include_results : bool
@@ -384,7 +384,41 @@ def from_sqlite(filename):
 
 def to_postgresql(net, host, user, password, database, schema, include_results=False,
                   grid_id=None, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue", index_name=None):
-    # todo docstring
+    """
+    Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
+    are created if they do not exist.
+    JSON serialization (e.g. for controller objects) is not implemented yet.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        the grid model to be uploaded to the database
+    host : str
+        hostname for connecting to the database
+    user : str
+        username for logging in
+    password
+    database : str
+        name of the database
+    schema : str
+        name of the database schema (e.g. 'postgres')
+    include_results : bool
+        specify whether the power flow results are included when the grid is uploaded, default=False
+    grid_id : int
+        unique grid_id that will be used to identify the data for the grid model, default None.
+        If None, it will be set automatically by PostgreSQL
+    grid_id_column : str
+        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    grid_catalogue_name : str
+        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
+    index_name : str
+        name of the custom column to be used inplace of index in the element tables if it is not the standard DataFrame index
+
+    Returns
+    -------
+    grid_id: int
+        returns either the user-specified grid_id or the automatically generated grid_id of the grid model
+    """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     logger.debug(f"Uploading the grid data to the DB schema {schema}")
@@ -395,7 +429,31 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
 
 def from_postgresql(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
                     grid_catalogue_name="grid_catalogue"):
-    # todo docstring
+    """
+
+    Parameters
+    ----------
+    host : str
+        hostname for connecting to the database
+    user : str
+        username for logging in
+    password
+    database : str
+        name of the database
+    schema : str
+        name of the database schema (e.g. 'postgres')
+    grid_id : int
+        unique grid_id that will be used to identify the data for the grid model, default None.
+        If None, it will be set automatically by PostgreSQL
+    grid_id_column : str
+        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    grid_catalogue_name : str
+        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
+
+    Returns
+    -------
+    net : pandapowerNet
+    """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
