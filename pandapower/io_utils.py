@@ -772,9 +772,14 @@ class JSONSerializableClass(object):
         if self.__class__.__name__ != other.__class__.__name__:
             return False
         else:
-            d = DeepDiff(self.__dict__, other.__dict__, ignore_order=True, ignore_nan_inequality=True,
+            d = DeepDiff(self.__dict__, other.__dict__, ignore_nan_inequality=True,
                          significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
             return len(d) == 0
+
+    def __hash__(self):
+        # for now we use the address of the object for hash, but we can change it in the future
+        # to be based on the attributes e.g. with DeepHash or similar
+        return hash(id(self))
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):
