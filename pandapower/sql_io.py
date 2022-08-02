@@ -93,6 +93,7 @@ def download_sql_table(cursor, table_name, **id_columns):
     index_name = f"{table_name.split('.')[-1]}_id"
     if index_name in df.columns:
         df.set_index(index_name, inplace=True)
+        df.rename_axis(None, inplace=True)
     if len(id_columns) > 0:
         df.drop(id_columns.keys(), axis=1, inplace=True)
     return df
@@ -124,7 +125,7 @@ def upload_sql_table(conn, cursor, table_name, table, create_new=True, index_nam
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
-    new_columns = [(c, t) for c, t in zip(sql_columns, sql_column_types) if c not in existing_columns]
+    new_columns = [('"%s"' % c, t) for c, t in zip(sql_columns, sql_column_types) if c not in existing_columns]
     if len(new_columns) > 0:
         logger.info(f"adding columns {new_columns} to table {table_name}")
         column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
@@ -136,7 +137,8 @@ def upload_sql_table(conn, cursor, table_name, table, create_new=True, index_nam
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    query = f"INSERT INTO {table_name}({','.join(sql_columns)}) VALUES({placeholders})"
+    columns = ['"%s"' % c for c in sql_columns]
+    query = f"INSERT INTO {table_name}({','.join(columns)}) VALUES({placeholders})"
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
@@ -259,16 +261,14 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
     net : pandapowerNet
     """
     cursor = conn.cursor()
-    net = pp.create_empty_network()
     id_columns = {grid_id_column: grid_id}
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
+    grid_tables = download_sql_table(cursor, "grid_tables" if schema is None else f"{schema}.grid_tables", **id_columns)
 
-    for element, element_table in net.items():
-        if not isinstance(element_table, pd.DataFrame):
-            continue
+    d = {}
+    for element in grid_tables.table.values:
         table_name = element if schema is None else f"{schema}.{element}"
-
         try:
             tab = download_sql_table(cursor, table_name, **id_columns)
         except UserWarning as err:
@@ -278,10 +278,9 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
             logger.info(f"skipped {element} due to error: {err}")
             continue
 
-        if not tab.empty:
-            _preserve_dtypes(tab, element_table.dtypes)
-            net[element] = pd.concat([element_table, tab])
-            logger.debug(f"downloaded table {element}")
+        d[element] = tab
+
+    net = io_utils.from_dict_of_dfs(d)
 
     return net
 
@@ -295,7 +294,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
 
     Parameters
     ----------
-    conn
+    conn : connection to SQL database (e.g. SQLite, PostgreSQL)
     net : pandapowerNet
         the grid model to be uploaded to the database
     schema : str
@@ -319,12 +318,12 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
+    d = io_utils.to_dict_of_dfs(net, include_results=include_results, fallback_to_pickle=False,
+                                include_empty_tables=False)
     written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
     id_columns = {grid_id_column: written_grid_id}
-    for element, element_table in net.items():
-        if not isinstance(element_table, pd.DataFrame) or net[element].empty or \
-                (element.startswith("res_") and not include_results):
-            continue
+    d["grid_tables"] = pd.DataFrame(d.keys(), columns=["table"])
+    for element, element_table in d.items():
         table_name = element if schema is None else f"{schema}.{element}"
         # None causes postgresql error, np.nan is better
         create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
@@ -385,7 +384,7 @@ def from_sqlite(filename):
 
 def to_postgresql(net, host, user, password, database, schema, include_results=False,
                   grid_id=None, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue", index_name=None):
-    #todo docstring
+    # todo docstring
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     logger.debug(f"Uploading the grid data to the DB schema {schema}")
@@ -396,7 +395,7 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
 
 def from_postgresql(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
                     grid_catalogue_name="grid_catalogue"):
-    #todo docstring
+    # todo docstring
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 

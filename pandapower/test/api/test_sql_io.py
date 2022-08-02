@@ -81,8 +81,6 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
     grid_id = pp.to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
 
     net_out = pp.from_postgresql(schema=schema, grid_id=grid_id, **connection_data, **kwargs)
-    # todo: save such parameters somewhere also
-    net_out.f_hz = net.f_hz
 
     if not include_results:
         pp.runpp(net)
@@ -95,10 +93,12 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
         # json serialization/deserialization of objects not implemented
         if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
             continue
-        # code below: very difficult to compare columns with NaN values due to None vs np.nan and dtypes
+        # code below: very difficult to compare columns with NaN values due to None vs np.nan and dtypes,
+        # "1" vs 1 and dtype object
+        # also sometimes order of rows is not same
         columns = table.columns
         table_in = table.fillna(np.nan)
-        table_out = net_out[element][columns].fillna(np.nan)
+        table_out = net_out[element][columns].loc[table_in.index].fillna(np.nan)
         _preserve_dtypes(table_out, table_in.dtypes)
         pdt.assert_frame_equal(table_in, table_out, check_dtype=False)
 
