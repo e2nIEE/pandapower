@@ -14,6 +14,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
+import pandapower.control
 from pandapower.test.toolbox import assert_net_equal
 
 
@@ -164,6 +165,22 @@ def test_nets_equal():
     net["load"]["p_mw"][net["load"].index[0]] += 0.0001
     assert tb.nets_equal(original, net, atol=0.1)
     assert tb.nets_equal(net, original, atol=0.1)
+
+    # check controllers
+    original.trafo.tap_side.fillna("hv", inplace=True)
+    net1 = original.deepcopy()
+    net2 = original.deepcopy()
+    pp.control.ContinuousTapControl(net1, 0, 1.0)
+    pp.control.ContinuousTapControl(net2, 0, 1.0)
+    c1 = net1.controller.at[0, "object"]
+    c2 = net2.controller.at[0, "object"]
+    assert c1 == c2
+    assert c1 is not c2
+    assert tb.nets_equal(net1, net2)
+    c1.vm_set_pu = 1.01
+    assert c1 != c2
+    assert tb.nets_equal(net1, net2, exclude_elms=["controller"])
+    assert not tb.nets_equal(net1, net2)
 
 
 def test_clear_result_tables():

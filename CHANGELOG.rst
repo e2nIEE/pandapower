@@ -3,6 +3,14 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+
+[2.10.0] - 2022-07-29
+-------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
 - [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
 - [ADDED] from_mpc() converter: added functionality to import .m files via external package
@@ -11,7 +19,9 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
-- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
 
 [2.9.0]- 2022-03-23
 ----------------------
