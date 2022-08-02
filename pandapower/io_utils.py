@@ -552,7 +552,7 @@ class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet.__new__(pandapowerNet)
         #        net = create_empty_network()
-        deserialize_pandas = kwargs.pop('deserialize_pandas', True),
+        deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
