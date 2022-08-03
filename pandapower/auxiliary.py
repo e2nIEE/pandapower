@@ -1078,7 +1078,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
-        max_iteration = default_max_iteration[algorithm]
+        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "

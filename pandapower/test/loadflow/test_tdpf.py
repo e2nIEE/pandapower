@@ -104,7 +104,7 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
 def test_tdpf_frank_current():
     net = prepare_case_30()
     net.line["c_nf_per_km"] = 0  # otherwise i_square_pu will not match net.res_line.i_ka
-    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False, max_iteration=30)
+    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
     branch = net._ppc["branch"]
     V = net._ppc["internal"]["V"]
@@ -121,7 +121,7 @@ def test_tdpf_frank_current():
 
 def test_tdpf_frank():
     net = prepare_case_30()
-    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False, max_iteration=30)
+    pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
     v_base_kv = net.bus.loc[net.line.from_bus].vn_kv.values
     z_base_ohm = np.square(v_base_kv) / net.sn_mva
@@ -244,7 +244,7 @@ def test_only_pv():
 
     pp.runpp(net, init="flat")
 
-    pp.runpp(net, tdpf=True, max_iteration=30)
+    pp.runpp(net, tdpf=True)
 
 
 def test_default_parameters():
@@ -298,7 +298,7 @@ def test_default_parameters():
     net = net_backup.deepcopy()
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["outer_diameter_m"] = 2.5e-2  # 2.5 cm?
-    pp.runpp(net, tdpf=True, max_iteration=30)
+    pp.runpp(net, tdpf=True)
     # here all the standard assumptions are filled
     # now we check that user-defined assumptions are preserved
     net = net_backup.deepcopy()
@@ -307,13 +307,251 @@ def test_default_parameters():
     net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40
     net.line.loc[[2, 4], 'alpha'] = 3e-3
     net.line.loc[[2, 4], 'wind_speed_m_per_s'] = 0
-    pp.runpp(net, tdpf=True, max_iteration=30)
+    pp.runpp(net, tdpf=True)
     assert np.array_equal(net.line.loc[[2, 4], 'temperature_degree_celsius'].values, np.array([40, 40]))
     assert np.array_equal(net.line.loc[[2, 4], 'alpha'].values, np.array([3e-3, 3e-3]))
     assert np.array_equal(net.line.loc[[2, 4], 'wind_speed_m_per_s'].values, np.array([0, 0]))
 
     net.line["mc_joule_per_m_k"] = 500
     pp.runpp(net, tdpf=True, tdpf_delay_s=10*60)
+
+
+# Testing with a given Example from "IEEE Standard for Calculating the Current-Temperature
+# Relationship of Bare Overhead Conductors" Basic Example with Calculation, Page 23 and following
+def test_IEEE_example_1():
+    # 60Hz according to USA
+    net = pp.create_empty_network(f_hz=60.0)
+
+    b1 = pp.create_bus(net, vn_kv=380, name='b1_hv', type='n')
+    b2 = pp.create_bus(net, vn_kv=380, name='b10', type='n')
+
+    # 795 kcmil 26/7 Drake ACSR
+    pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07283, x_ohm_per_km=0.341,
+                                   c_nf_per_km=7.7827795, max_i_ka=1.024, type='ol')
+
+    # Chose the load to match nominal current
+    p_ac = 380 * 1.024 * np.sqrt(3)
+    pp.create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+
+    pp.create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
+
+    # Defining Overhead-Lines
+    ol_index = net.line.loc[net.line.type=="ol"].index.values
+
+    # Initial standard Value
+    net.line['max_loading_percent'] = 100
+
+    # Conditions according to IEEE-Example
+    net.line.loc[ol_index, "tdpf"] = True
+    net.line.loc[ol_index, "alpha"] = 0.003508
+    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02814
+    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
+    net.line.loc[ol_index, 'wind_angle_degree'] = 90
+    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1027
+    net.line.loc[ol_index, 'gamma'] = 0.8
+    net.line.loc[ol_index, 'epsilon'] = 0.8
+
+    # Starting Control Loop
+    pp.runpp(net, tdpf=True, init="dc")
+
+    # calculating current
+    max_cond_temp = 100
+
+    # Values
+    assert np.isclose(net.res_line.i_ka.values, 1.025, atol=1e-5, rtol=1e-3)
+    assert np.isclose(net.res_line.temperature_degree_celsius, max_cond_temp, atol=4)
+
+
+# Testing with a given Example from "IEEE Standard for Calculating the Current-Temperature
+# Relationship of Bare Overhead Conductors", Annex B, Numerical example 1, Page 44
+def test_IEEE_example_2():
+    # 60Hz according to USA
+    net = pp.create_empty_network(f_hz=60.0)
+
+    b1 = pp.create_bus(net, vn_kv=380, name='b1_hv', type='n')
+    b2 = pp.create_bus(net, vn_kv=380, name='b10', type='n')
+
+    # 400 MM2 26/7 Drake ACSR
+    pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07284, x_ohm_per_km=0.341,
+                                   c_nf_per_km=7.7827795, max_i_ka=1.0, type='ol')
+
+    # Initial standard Value
+    net.line['max_loading_percent'] = 100
+
+    # Chose the load to match nominal current
+    p_ac = 380 * 1.0 * np.sqrt(3)  # Q=0
+    pp.create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+
+    pp.create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
+
+    # Defining Overhead-Lines
+    ol_index = net.line.loc[net.line.type=="ol"].index.values
+
+    # Conditions according to IEEE-Example
+    net.line.loc[ol_index, 'tdpf'] = True
+    net.line.loc[ol_index, "alpha"] = 0.003505
+    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02812
+    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
+    net.line.loc[ol_index, 'wind_angle_degree'] = 90
+    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
+    net.line.loc[ol_index, 'gamma'] = 0.5
+    net.line.loc[ol_index, 'epsilon'] = 0.5
+
+    # Starting Control Loop
+    pp.runpp(net, tdpf=True, init="dc")
+
+    # calculating current
+    max_cond_temp = 100.7
+
+    assert np.isclose(net.res_line.i_ka.values, 1.0, atol=1e-5, rtol=1e-3)
+    assert np.isclose(net.res_line.temperature_degree_celsius, max_cond_temp, atol=5)
+
+
+# Testing with a given Example from "IEEE Standard for Calculating the Current-Temperature
+# Relationship of Bare Overhead Conductors", Annex B, Numerical example 2, Page 45
+def test_IEEE_example_3():
+    # 60Hz according to USA
+    net = pp.create_empty_network(f_hz=60.0)
+
+    b1 = pp.create_bus(net, vn_kv=380, name='b1_hv', type='n')
+    b2 = pp.create_bus(net, vn_kv=380, name='b10', type='n')
+
+    # 400 MM2 26/7 Drake ACSR
+    pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07284, x_ohm_per_km=0.341,
+                                   c_nf_per_km=7.7827795, max_i_ka=1.003, type='ol')
+
+    # Initial standard Value
+    net.line['max_loading_percent'] = 100
+
+    # Chose the load to match nominal current
+    p_ac = 380 * 1.003 * np.sqrt(3)  # Q=0
+    pp.create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+
+    pp.create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
+
+    # Defining Overhead-Lines
+    ol_index = net.line.loc[net.line.type=="ol"].index.values
+
+    # Conditions according to IEEE-Example
+    net.line.loc[ol_index, 'tdpf'] = True
+    net.line.loc[ol_index, 'alpha'] = 0.003505
+    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02812
+    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
+    net.line.loc[ol_index, 'wind_angle_degree'] = 90
+    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
+    net.line.loc[ol_index, 'gamma'] = 0.5
+    net.line.loc[ol_index, 'epsilon'] = 0.5
+
+    # Starting Control Loop
+    pp.runpp(net, tdpf=True, init="dc")
+
+    # calculating current
+    max_cond_temp = 101.1
+
+    assert np.isclose(net.res_line.i_ka.values, 1.003, atol=1e-5, rtol=1e-3)
+    assert np.isclose(net.res_line.temperature_degree_celsius, max_cond_temp, atol=5)
+
+
+# Testing Standard-Values for middle Germany Midsummer
+def test_EN_standard_example_1():
+    net = pp.create_empty_network(f_hz=50.0)
+
+    b1 = pp.create_bus(net, vn_kv=110, name='b1_hv', type='n')
+    b2 = pp.create_bus(net, vn_kv=110, name='b10', type='n')
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=1, std_type='149-AL1/24-ST1A 110.0', name='l3')
+
+    # Initial standard Value
+    net.line['max_loading_percent'] = 100
+
+    # Chose the load to match nominal current
+    p_ac = 110 * 0.47 * np.sqrt(3)  # Q=0
+    pp.create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_percent=100)
+
+    pp.create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
+
+    # Declaration of overhead and cable systems
+    ol_index = net.line.loc[net.line.type=="ol"].index.values
+
+    """
+    When combined with an assumed conductor absorptivity of no less than 0.8 and emissivity of no
+    more than 0.1 below absorptivity, this combination can be considered safe for thermal rating
+    calculations without field measurements.
+    """
+
+    # Standard Conditions Germany for Midsummer Weather, Worst-Case Approach
+    net.line.loc[ol_index, 'tdpf'] = True
+    net.line.loc[ol_index, 'wind_angle_degree'] = 90
+    net.line.loc[ol_index, 'outer_diameter_m'] = 0.0171
+    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 35
+    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.6
+    net.line.loc[ol_index, 'alpha'] = 0.004
+    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 900
+    net.line.loc[ol_index, 'gamma'] = 0.9
+    net.line.loc[ol_index, 'epsilon'] = 0.72419
+
+    # Starting Control Loop
+    pp.runpp(net, tdpf=True, init="dc")
+
+    # Maximum Temperature Al/St
+    max_cond_temp = 80
+
+    assert np.isclose(net.res_line.i_ka, net.line.max_i_ka, rtol=1e-5)
+    assert np.isclose(net.res_line.temperature_degree_celsius, max_cond_temp, atol=1)
+
+
+# Testing Standard-Values for middle Germany Midsummer
+def test_EN_standard_example_2():
+    # Create a Simple Example Network with 50 Hz
+    net = pp.create_empty_network(f_hz=50.0)
+
+    b1 = pp.create_bus(net, vn_kv=110, name='b1_hv', type='n')
+    b2 = pp.create_bus(net, vn_kv=110, name='b10', type='n')
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=1, std_type='243-AL1/39-ST1A 110.0', name='l3')
+
+    # Initial standard Value
+    net.line['max_loading_percent'] = 100
+
+    # Chose the load to match nominal current
+    p_ac = 110 * 0.645 * np.sqrt(3)  # Q=0
+    pp.create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_percent=100)
+
+    pp.create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
+
+    # Declaration of overhead and cable systems
+    ol_index = net.line.loc[net.line.type=="ol"].index.values
+
+    # Standard Conditions Germany for Midsummer Weather
+    net.line.loc[ol_index, "tdpf"] = True
+    net.line.loc[ol_index, 'alpha'] = 0.004
+    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.6
+    net.line.loc[ol_index, 'wind_angle_degree'] = 90
+    net.line.loc[ol_index, 'outer_diameter_m'] = 0.0218
+    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 35
+    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
+    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 900
+    net.line.loc[ol_index, 'gamma'] = 0.9
+    net.line.loc[ol_index, 'epsilon'] = 0.72419
+
+    pp.runpp(net, tdpf=True, init="dc")
+
+    max_cond_temp = 80
+
+    assert np.isclose(net.res_line.i_ka, net.line.max_i_ka, rtol=1e-5)
+    assert np.isclose(net.res_line.temperature_degree_celsius, max_cond_temp, atol=0.5)
 
 
 if __name__ == '__main__':

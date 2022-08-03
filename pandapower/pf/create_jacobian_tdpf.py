@@ -180,8 +180,8 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
     J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta, g)
     J33 = create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT)
 
-    Jright = vstack([J13, J23], format="csr")
-    Jbtm = hstack([J31, J32, J33], format="csr")
+    Jright = vstack([sparse(J13), sparse(J23)], format="csr")
+    Jbtm = hstack([sparse(J31), sparse(J32), sparse(J33)], format="csr")
     JJ = vstack([hstack([J, Jright]), Jbtm], format="csr")
     return JJ
 

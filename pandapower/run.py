@@ -115,6 +115,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - 1000 for "gs"
                 - 30 for "fdbx"
                 - 30 for "fdxb"
+                - 30 for "nr" with "tdpf"
 
         **tolerance_mva** (float, 1e-8) - loadflow termination condition referring to P / Q mismatch of node power in MVA
 
