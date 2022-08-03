@@ -24,11 +24,19 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
 import pandapower.io_utils as io_utils
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def to_pickle(net, filename):
     """
@@ -121,19 +129,6 @@ def to_json(net, filename=None, encryption_key=None):
     else:
         with open(filename, "w") as fp:
             fp.write(json_string)
-
-
-def to_sql(net, con, include_results=True):
-    dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
-    for name, data in dodfs.items():
-        data.to_sql(name, con, if_exists="replace")
-
-
-def to_sqlite(net, filename, include_results=True):
-    import sqlite3
-    conn = sqlite3.connect(filename)
-    to_sql(net, conn, include_results)
-    conn.close()
 
 
 def from_pickle(filename, convert=True):
@@ -396,24 +391,4 @@ def from_json_dict(json_dict):
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:
             net[key] = json_dict[key]
-    return net
-
-
-def from_sql(con):
-    cursor = con.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    dodfs = dict()
-    for t, in cursor.fetchall():
-        table = pd.read_sql_query("SELECT * FROM '%s'" % t, con, index_col="index")
-        table.index.name = None
-        dodfs[t] = table
-    net = io_utils.from_dict_of_dfs(dodfs)
-    return net
-
-
-def from_sqlite(filename, netname=""):
-    import sqlite3
-    con = sqlite3.connect(filename)
-    net = from_sql(con)
-    con.close()
     return net
