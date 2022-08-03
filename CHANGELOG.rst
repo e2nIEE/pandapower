@@ -15,6 +15,7 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [ADDED] File I/O download and upload pandapowerNet to PostgreSQL
 - [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
 - [CHANGED] enable calculating PTDF for a subset of branches
 - [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
