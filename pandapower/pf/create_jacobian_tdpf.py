@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import csr_matrix as sparse, vstack, hstack
+from scipy.sparse import csr_matrix as sparse, eye, vstack, hstack
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, BR_STATUS
 from pandapower.pypower.idx_brch_tdpf import TDPF
@@ -159,7 +159,7 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_deg
 #     return tau
 
 
-def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va, i_square_pu, r_theta, J, r, x, g, b):
+def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta, J, r, x, g):
 
     C = np.ones_like(tdpf_lines, dtype=np.float64)
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
@@ -168,11 +168,16 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
     dg_dT = (np.square(x) - np.square(r)) * alpha_pu * r_ref_pu / np.square(np.square(r) + np.square(x))
     db_dT = 2 * x * g * alpha_pu * r_ref_pu / (np.square(r) + np.square(x))
 
+    in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pq)
+    in_pq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pq)
+    in_pvpq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pvpq)
+    in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pvpq)
+
     # todo: optimize and speed-up the code for the matrices (write numba versions)
-    J13 = create_J13(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pvpq_lookup, Vm, Va, g, b, dg_dT, db_dT)
-    J23 = create_J23(branch, tdpf_lines, pq, pq_lookup, Vm, Va, dg_dT, db_dT)
-    J31 = create_J31(branch, tdpf_lines, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g)
-    J32 = create_J32(branch, tdpf_lines, pq, pq_lookup, Vm, Va, C, r_theta, g)
+    J13 = create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT)
+    J23 = create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT)
+    J31 = create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g)
+    J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta, g)
     J33 = create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT)
 
     Jright = vstack([J13, J23], format="csr")
@@ -237,7 +242,7 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
 #     return A, B
 
 
-def create_J13(branch, tdpf_lines, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b, dg_dT, db_dT):
+def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -264,7 +269,7 @@ def create_J13(branch, tdpf_lines, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b
     """
     nrow = len(pvpq)
     ncol = len(branch)
-    J13 = np.zeros(shape=(nrow, ncol))
+    J13 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
 
     # for m in pvpq:
     #     mm = pvpq_lookup[m]
@@ -287,9 +292,6 @@ def create_J13(branch, tdpf_lines, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b
     #         # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (A_mn / r[ij] - 2 * p_mn)
     #         J13[mm, ij] = A_mn * dg_dT[ij_lookup] - B_mn * db_dT[ij_lookup]
 
-    in_pvpq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pvpq)
-    in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pvpq)
-
     mf = np.r_[branch[tdpf_lines[in_pvpq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pvpq_t], T_BUS].real.astype(int)]
     nf = np.r_[branch[tdpf_lines[in_pvpq_f], T_BUS].real.astype(int)]
@@ -301,10 +303,10 @@ def create_J13(branch, tdpf_lines, alpha, r_ref, pvpq, pvpq_lookup, Vm, Va, g, b
         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
         J13[pq_j, tdpf_lines[in_pq]] = A_mn * dg_dT[in_pq] - B_mn * db_dT[in_pq]
 
-    return sparse(J13)
+    return J13
 
 
-def create_J23(branch, tdpf_lines, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
+def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -332,10 +334,10 @@ def create_J23(branch, tdpf_lines, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
 
     ncol = len(branch)
     nrow = len(pq)
-    J23 = np.zeros(shape=(nrow, ncol))
+    J23 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
 
     if nrow == 0:
-        return sparse(J23)
+        return J23
 
     # for m in pq:
     #     mm = pq_lookup[m]
@@ -358,9 +360,6 @@ def create_J23(branch, tdpf_lines, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
     #         # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (B_mn / r[ij] - 2 * q_mn)
     #         J23[mm, ij] = - A_mn * db_dT[ij_lookup] - B_mn * dg_dT[ij_lookup]
 
-    in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pq)
-    in_pq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pq)
-
     mf = np.r_[branch[tdpf_lines[in_pq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pq_t], T_BUS].real.astype(int)]
     nf = np.r_[branch[tdpf_lines[in_pq_f], T_BUS].real.astype(int)]
@@ -372,10 +371,10 @@ def create_J23(branch, tdpf_lines, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
         J23[pq_j, tdpf_lines[in_pq]] = - A_mn * db_dT[in_pq] - B_mn * dg_dT[in_pq]
 
-    return sparse(J23)
+    return J23
 
 
-def create_J31(branch, tdpf_lines, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
+def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -404,7 +403,7 @@ def create_J31(branch, tdpf_lines, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
     nrow = len(branch)
     ncol = len(pvpq)
 
-    J31 = np.zeros(shape=(nrow, ncol))
+    J31 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
 
     # #for ij in range(nrow):
     # for ij_lookup, ij in enumerate(tdpf_lines):
@@ -425,9 +424,6 @@ def create_J31(branch, tdpf_lines, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
     #         # J31[ij, mm] = sign * (g[ij] ** 2 + b[ij] ** 2) * C[ij] * B_mn
     #         J31_old[ij, mm] = - 2 * r_theta[ij_lookup] * g[ij_lookup] * B_mn * C[ij_lookup]
 
-    in_pvpq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pvpq)
-    in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pvpq)
-
     mf = np.r_[branch[tdpf_lines[in_pvpq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pvpq_t], T_BUS].real.astype(int)]
     nf = np.r_[branch[tdpf_lines[in_pvpq_f], T_BUS].real.astype(int)]
@@ -437,10 +433,10 @@ def create_J31(branch, tdpf_lines, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
         pq_j = pvpq_lookup[m]
         J31[tdpf_lines[in_pvpq], pq_j] = - 2 * r_theta[in_pvpq] * g[in_pvpq] * Vm[m] * Vm[n] * np.sin(Va[m] - Va[n]) * C[in_pvpq]
 
-    return sparse(J31)
+    return J31
 
 
-def create_J32(branch, tdpf_lines, pq, pq_lookup, Vm, Va, C, r_theta, g):
+def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta, g):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -467,10 +463,10 @@ def create_J32(branch, tdpf_lines, pq, pq_lookup, Vm, Va, C, r_theta, g):
     nrow = len(branch)
     ncol = len(pq)
 
-    J32 = np.zeros(shape=(nrow, ncol))
+    J32 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
 
     if ncol == 0:
-        return sparse(J32)
+        return J32
 
     # # #for ij in range(nrow):
     # for ij_lookup, ij in enumerate(tdpf_lines):
@@ -489,9 +485,6 @@ def create_J32(branch, tdpf_lines, pq, pq_lookup, Vm, Va, C, r_theta, g):
     #         # J32[ij, mm] = 2 * (g[ij]**2 + b[ij]**2) * C[ij] * A_mn / Vm[m]
     #         J32_old[ij, mm] = - 2 * r_theta[ij_lookup] * g[ij_lookup] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[ij_lookup]
 
-    in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(int), pq)
-    in_pq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(int), pq)
-
     mf = np.r_[branch[tdpf_lines[in_pq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pq_t], T_BUS].real.astype(int)]
     nf = np.r_[branch[tdpf_lines[in_pq_f], T_BUS].real.astype(int)]
@@ -501,7 +494,7 @@ def create_J32(branch, tdpf_lines, pq, pq_lookup, Vm, Va, C, r_theta, g):
         pq_j = pq_lookup[m]
         J32[tdpf_lines[in_pq], pq_j] = - 2 * r_theta[in_pq] * g[in_pq] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[in_pq]
 
-    return sparse(J32)
+    return J32
 
 
 def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
@@ -531,7 +524,7 @@ def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
     """
 
     nrow = len(branch)
-    J33 = np.eye(nrow)
+    J33 = eye(nrow, format="csr", dtype=np.float64)
 
     # J33 = np.zeros(shape=(nrow, nrow))
     # J33[np.arange(nrow), np.arange(nrow)] = 1
@@ -559,4 +552,4 @@ def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
     j = branch[tdpf_lines, T_BUS].real.astype(int)
     J33[tdpf_lines, tdpf_lines] = 1 - r_theta * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
 
-    return sparse(J33)
+    return J33

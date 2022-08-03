@@ -196,7 +196,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             # p.u. values for T, a1, a2, I, S
             # todo: distributed_slack works fine if sn_mva is rather high (e.g. 1000), otherwise no convergence. Why?
             J = create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
-                              pq_lookup, tau, tdpf_delay_s, Vm, Va, i_square_pu, r_theta_pu, J, r, x, g, b)
+                              pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta_pu, J, r, x, g)
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
