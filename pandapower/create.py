@@ -12,7 +12,7 @@ from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, 
     all as np_all, float64, intersect1d
 
 from pandapower import __version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
 import numpy as np
@@ -297,7 +297,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         ],
         'group': [
             ('name', dtype(object)),
-            ('object', dtype(object)),
+            ('element_type', dtype(object)),
+            ('element', dtype(object)),
+            ('reference_column', dtype(object)),
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -4091,6 +4093,78 @@ def create_poly_costs(net, elements, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_
     return index
 
 
+def _group_parameter_list(element_types, elements, reference_columns):
+    """ Ensures that element_types, elements, reference_columns are iterables with same lengths. """
+    if isinstance(elements, str) or not hasattr(elements, "__iter__"):
+        raise ValueError(f"'elements' should be a list of list of indices.")
+    if any([isinstance(el, str) or not hasattr(el, "__iter__") for el in elements]):
+        raise ValueError(f"In 'elements' each item should be a list of element indices.")
+    element_types = ensure_iterability(element_types, len_=len(elements))
+    reference_columns = ensure_iterability(reference_columns, len_=len(elements))
+    return element_types, elements, reference_columns
+
+
+def create_group(net, element_types, elements, name="", reference_columns=None, index=None,
+                 **kwargs):
+    """
+    Add a new group to net['group'] dataframe.
+
+    Attention:
+        If you declare a group but forget to declare all connected elements although
+        you wants to (e.g. declaring lines but forgetting to mention the connected switches),
+        you may get problems after using drop_elements_and_group() or other functions.
+        There are different pandapower toolbox functions which may help you to define
+        'elements_dict', such as get_connecting_branches(),
+        get_inner_branches(), get_connecting_elements_dict().
+
+    INPUT:
+        **net** - pandapower net
+
+        **element_types** (string or list of strings) - defines, together with 'elements', which
+        net elements belong to the group
+
+        **elements** (list of list of indices) - defines, together with 'element_types', which net
+        elements belong to the group
+
+    OPTIONAL:
+        **name** (str, "") - name of the group
+
+        **reference_columns** (string or list of strings, None) - If given, the elements_dict should
+        not refer to DataFrames index but to another column. It is highly relevant that the
+        reference_column exists in all DataFrames of the grouped elements and have the same dtype.
+
+        **index** (int, None) - index for the dataframe net.group
+
+        **overwrite** (bool, False) - whether the entry in net.group with the same index should
+        be overwritten
+
+        ****kwargs** - key word arguments
+
+    EXAMPLE:
+        create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        or
+        create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+    """
+    element_types, elements, reference_columns = _group_parameter_list(
+        element_types, elements, reference_columns)
+
+    index = np.array([_get_index_with_check(net, "bus", index)]*len(element_types), dtype=int)
+
+    entries = dict(zip(["name", "element_type", "element", "reference_column"],
+                       [ name ,  element_types,  elements,  reference_columns]))
+
+    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+
+    return index[0]
+
+
+def create_group_from_dict(net, elements_dict, name="", reference_column=None, index=None,
+                           **kwargs):
+    """ Wrapper function of create_group(). """
+    create_group(net, elements_dict.keys(), elements_dict.values(),
+                 name=name, reference_column=reference_column, index=index, **kwargs)
+
+
 def _get_index_with_check(net, table, index, name=None):
     if name is None:
         name = table
@@ -4286,6 +4360,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
     # and preserve dtypes
     if preserve_dtypes:
         _preserve_dtypes(net[table], dtypes)
+
 
 if __name__ == "__main__":
     net = create_empty_network()

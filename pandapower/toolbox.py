@@ -12,8 +12,9 @@ from itertools import chain
 import networkx as nx
 import numpy as np
 import pandas as pd
+import pandas.testing as pdt
 import numbers
-from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
@@ -21,10 +22,6 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 
-try:
-    import pandas.testing as pdt
-except ImportError:
-    import pandas.util.testing as pdt
 
 try:
     from networkx.utils.misc import graphs_equal
@@ -309,19 +306,6 @@ def compare_arrays(x, y):
         return np.equal(x, y) | ((x != x) & (y != y))
     else:
         raise ValueError("x and y needs to have the same shape.")
-
-
-def ensure_iterability(var, len_=None):
-    """
-    Ensures iterability of a variable (and optional length).
-    """
-    if hasattr(var, "__iter__") and not isinstance(var, str):
-        if isinstance(len_, int) and len(var) != len_:
-            raise ValueError("Length of variable differs from %i." % len_)
-    else:
-        len_ = len_ or 1
-        var = [var] * len_
-    return var
 
 
 # --- Information
@@ -1554,6 +1538,77 @@ def drop_inactive_elements(net, respect_switches=True):
     """
     set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
     drop_out_of_service_elements(net)
+
+
+def drop_from_groups(net, element_type, element_index):
+    """ Wrapper function of drop_from_group() """
+    drop_from_group(net, element_type, element_index)
+
+
+def drop_from_group(net, element_type, element_index, index=None):
+    """Drops elements from one or multple groups, defined by 'index'.
+    A reverse function of pp.group.append_to_group() is available.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    index : int or list of integers, optional
+        Indices of the group(s) from which the element should be dropped. If None, the elements are
+        dropped from all groups, by default None
+    """
+    if index is None:
+        index = net.group.index
+    element_index = ensure_iterability(element_index)
+    to_check = np.ones(net.group.shape[0], dtype=bool)
+    to_check &= np.isin(net.group.index.values, index)
+    to_check &= net.group.element_type.values == element_type
+    to_drop = np.zeros(net.group.shape[0], dtype=bool)
+
+    for i in np.arange(len(to_check), dtype=int)[to_check]:
+        rc = net.group.reference_column.iat[i]
+        if rc is None:
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(
+                element_index).tolist()
+        else:
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(pd.Index(
+                net[element_type][rc].loc[element_index])).tolist()
+
+        if not len(net.group.element.iat[i]):
+            to_drop[i] = True
+    net.group.drop(to_drop, inplace=True)
+
+
+def drop_group(net, index):
+    """Drops the group of given index.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group which should be dropped
+    """
+    net.group.drop(index, inplace=True)
+
+
+def drop_group_and_elements(net, index):
+    """
+    Drops all elements of the group and in net.group the group itself.
+    """
+    # functions like drop_trafos, drop_lines, drop_buses are not considered since all elements
+    # should be included in elements_dict
+    for et in net.group.loc[index, "element_type"].tolist():
+        idx = group_element_index(net, index, et)
+        net[et].drop(idx, inplace=True)
+        res_et = "res_" + et
+        if res_et in net.keys() and net[res_et].shape[0]:
+            net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
+    net.group.drop(index, inplace=True)
 
 
 def _select_cost_df(net, p2, cost_type):
@@ -3346,3 +3401,36 @@ def _write_to_object_attribute(net, element, index, variable, values):
             setattr(net[element]["object"].at[idx], variable, val)
     else:
         setattr(net[element]["object"].at[index], variable, values)
+
+# group function
+
+def group_element_index(net, index, element_type):
+    """Returns the indices of the elements of the group in the element table net[element_type]. This
+    function considers net.group.reference_column.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group
+    element_type : str
+        name of the element table to which the returned indices of the elements of the group belong
+        to
+
+    Returns
+    -------
+    pd.Index
+        indices of the elements of the group in the element table net[element_type]
+    """
+    if element_type not in net.group.loc[index, "element_type"]:
+        return pd.Index([], dtype=int)
+
+    data = net.group.loc[index].set_index("element_type").at[element_type]
+    element = data.at["element"]
+    reference_column = data.at["reference_column"]
+
+    if reference_column is None:
+        return pd.Index(element, dtype=int)
+
+    return net[element_type].index[net[element_type][reference_column].isin(element)]
