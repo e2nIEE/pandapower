@@ -125,7 +125,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     T = 20 / T_base
     if tdpf:
         if len(pq) > 0:
-            pq_lookup = zeros(max(pq) + 1, dtype=int)  # for TDPF
+            pq_lookup = zeros(max(refpvpq) + 1, dtype=int)  # for TDPF
             pq_lookup[pq] = arange(len(pq))
         else:
             pq_lookup = array([])
