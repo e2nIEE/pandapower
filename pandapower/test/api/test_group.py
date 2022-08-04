@@ -8,6 +8,7 @@ import pytest
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+import pandas.testing as pdt
 import pandapower as pp
 import pandapower.networks as nw
 
@@ -21,75 +22,156 @@ def typed_list(iterable, dtype):
         return [str(it) for it in iterable]
 
 
-def typed_set(iterable, dtype):
-    if pd.api.types.is_integer_dtype(dtype):
-        return {int(it) for it in iterable}
-    elif pd.api.types.is_numeric_dtype(dtype):
-        return {float(it) for it in iterable}
-    else:
-        return {str(it) for it in iterable}
-
-
-def test_group_create():
+def nets_to_test_group():
     nets = list()
     reference_columns = [None, "name"]
     types = [int, str]
-    for reference_column, type in zip(reference_columns, types):
+    idxs = list()
+    for reference_column, type_ in zip(reference_columns, types):
         net = nw.case24_ieee_rts()
         for elm in pp.pp_elements():
             net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
         idx0 = pp.create_group_from_dict(net, {
-            "gen": typed_list([0, 1], type),
-            "sgen": typed_list([2, 3], type),
-            "xward": typed_list([0], type)}, name='1st Group',
+            "gen": typed_list([0, 1], type_),
+            "sgen": typed_list([2, 3], type_)}, name='1st Group',
             reference_column=reference_column)
-        name_gr2 = 'Group of transformers'
-        idx1 = pp.create_group(net, "trafo", typed_list(net.trafo.index[:3], type),
-                              name=name_gr2, index=3, reference_column=reference_column)
+        idx1 = pp.create_group(
+            net, "trafo", [typed_list(net.trafo.index[:3], type_)],
+            name='Group of transformers', index=3, reference_columns=reference_column)
+        nets.append(net)
+        idxs.append([idx0, idx1])
+    return nets, types, reference_columns, idxs
+
+
+def test_group_create():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
         # --- test definition of groups
-        assert idx0 == 0
-        assert idx1 == 3
-        assert len(net.group.loc[idx0].set_index("element_type").at["gen"]) == \
-            len(net.group.loc[idx0].set_index("element_type").at["sgen"]) == 2
-        assert len(net.group.loc[idx0].set_index("element_type").at["trafo"]) == 3
-        assert net.group.name.loc[idx1].values[0] == name_gr2
+        assert idxs[0] == 0
+        assert idxs[1] == 3
+        assert len(net.group.loc[[idxs[0]]].set_index("element_type").at["gen", "element"]) == \
+            len(net.group.loc[[idxs[0]]].set_index("element_type").at["sgen", "element"]) == 2
+        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 3
+        assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
 
-        nets.append(net)
-    return nets, types
+        try:
+            # no xward in net
+            pp.create_group_from_dict(net, {
+                "xward": typed_list([0], type_)}, reference_column=rc)
+            assert False
+        except UserWarning:
+            pass
+
+        try:
+            # no sgen 100 in net
+            pp.create_group_from_dict(net, {
+                "sgen": typed_list([3, 100], type_)}, reference_column=rc)
+            assert False
+        except UserWarning:
+            pass
 
 
-def test_update_elements_dict():
-    for net, type in zip(*test_group_create()):
+def test_group_element_index():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # 1) update_elements_dict()
+        # ! group_element_index()
+        assert (pp.group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=int)).all()
+        assert (pp.group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=int)).all()
+        assert (pp.group_element_index(net, 0, "dcline") == pd.Index([], dtype=int)).all()
+
+
+def test_groups_equal():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        idx_new = pp.create_group(net, "trafo", [typed_list(net.trafo.index[:3], type_)],
+                              name='Group of transformers', reference_columns=rc)
+
+        # ! compare groups
+        assert pp.groups_equal(net, 3, idx_new)
+
+
+def test_compare_group_elements():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        ok = pp.create_group(net, "trafo", [net.trafo.index[:3]], name='xxx')
+        fail1 = pp.create_group(net, ["trafo", "bus"], [net.trafo.index[:3], [0]], name='xxx')
+        fail2 = pp.create_group(net, ["trafo"], [net.trafo.index[1:3]], name='xxx')
+
+        # ! compare_group_elements
+        assert pp.compare_group_elements(net, 3, ok)
+        assert not pp.compare_group_elements(net, 3, fail1)
+        assert not pp.compare_group_elements(net, 3, fail2)
+
+        pp.set_group_reference_column(net, ok, "name")
+        assert pp.compare_group_elements(net, 3, ok)
+
+
+def test_ensure_lists_in_group_element_column():
+    net = nets_to_test_group()[0][0]
+
+    no_nans = [1, 1]
+    vals = [[np.nan, pd.Index([2, 3]), {0, 1, 2}],
+            [(2, 3, 4), None, 3]]
+    for no_nan, val in zip(no_nans, vals):
+        for drop in [True, False]:
+            if drop and no_nan == 0:
+                continue  # don't need to check dropping if there is nothing to drop
+
+            netc = deepcopy(net)
+
+            # manipulate element entries
+            netc.group["element"] = val
+
+            pp.ensure_lists_in_group_element_column(netc, drop_empty_lines=drop)
+
+            expected_rows = net.group.shape[0] - no_nan if drop else net.group.shape[0]
+            assert expected_rows == netc.group.shape[0]
+            for i in range(netc.group.shape[0]):
+                assert isinstance(netc.group.element.iat[i], list)
+
+
+
+def test_remove_not_existing_group_members():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        # ! remove_not_existing_group_members()
         assert set(net.group.loc[0].element_type.tolist()) == {"gen", "sgen"}
-        net.group = pd.concat([net.group, pd.DataFrame()])
 
-        gr2.elements_dict["trafo"] = gr2.elements_dict["trafo"].union([8])
-        gr2.elements_dict["impedance"] = typed_list([8], type)
-        gr2.elements_dict["line"] = []
-        gr2.elements_dict["gen"] = typed_list([998, 999], type)
-        assert len(gr2.elements_dict["trafo"]) == 4
-        assert "gen" in gr2.elements_dict.keys()
-        gr2.update_elements_dict(net, verbose=False)
-        assert len(gr2.elements_dict["trafo"]) == 3
-        assert "impedance" not in gr2.elements_dict.keys()
-        assert "line" not in gr2.elements_dict.keys()
-        assert "gen" not in gr2.elements_dict.keys()
+        # manipulate group table with false data
+        net.group.element.iat[-1] = net.group.element.iat[-1] + [8]  # tafo 8 doesn't exist
+        net.group = pd.concat([net.group, pd.DataFrame({
+            "name": [net.group.name.iat[-1]]*3,
+            "element_type": ["impedance", "line", "gen"],
+            "element": [typed_list([8], type_),  # impedances don't exist
+                        [],  # empty list
+                        typed_list([998, 999], type_)],  # gen 998, 999 don't exist
+            "reference_column": [rc]*3,
+        }, index=[idxs[1]]*3)])
+
+        # ensure that maipulations are done as expected
+        assert len(net.group.at[idxs[1], "element"]) == 4
+        assert "gen" in net.group.element_type.loc[[idxs[1]]].values
+
+        # run remove_not_existing_group_members()
+        pp.remove_not_existing_group_members(net, verbose=False)
+
+        assert len(net.group.at[idxs[1], "element"]) == 3
+        assert "impedance" not in net.group.element_type.loc[[idxs[1]]].values
+        assert "line" not in net.group.element_type.loc[[idxs[1]]].values
+        assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
 
 
 def test_drop_and_return():
-    for net, type in zip(*test_group_create()):
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # 2) drop_elements_and_group & 3) return_group_as_net
+        # ! drop_elements_and_group & ! return_group_as_net
         for keep_everything_else in [False, True]:
 
             net2 = deepcopy(net)
             pp.drop_group_and_elements(net2, 0)
 
             net3 = pp.return_group_as_net(
-                net, 0, keep_everything_else=keep_everything_else)
+                net, 0, keep_everything_else=keep_everything_else, verbose=False)
             if keep_everything_else:
                 assert len(set(net3.group.index)) == 2
             else:
@@ -105,9 +187,9 @@ def test_drop_and_return():
 
 
 def test_set_out_of_service():
-    for net, type in zip(*test_group_create()):
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # 4) set_out_of_service
+        # ! set_out_of_service
         assert net.trafo.in_service.all()
         pp.set_group_out_of_service(net, 3)
         assert (net.trafo.in_service == [False]*3 + [True]*2).all()
@@ -116,70 +198,75 @@ def test_set_out_of_service():
 
 
 def test_append_to_group():
-    for net, type in zip(*test_group_create()):
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # 5) group_element_lists() and 6) append_to_group()
+        # ! group_element_lists() and ! append_to_group()
         et0, elm0, rc0 = pp.group_element_lists(net, 0)
         assert len(et0) == len(elm0) == len(rc0)
-        pp.append_to_group(net, 3, et0, elm0, rc0)
-        assert set(net.group.loc[3].element_type.tolist()) == {"gen", "sgen", "trafo"}
-        pp.append_to_group(net, 3,
-            ["xward", "line"], [typed_list([1, 2], type), typed_list([2], type)])  # TODO: hier wird wahrscheinlich nicht getestet, ob xward existiert
-        assert set(net.group.loc[3].element_type.tolist()) == {"gen", "sgen", "trafo", "line"}
+        pp.append_to_group(net, idxs[1], et0, elm0, rc0)
+        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
+
+        try:
+            # no xward in net
+            pp.append_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
+                               reference_columns=rc)
+            assert False
+        except UserWarning:
+            pass
+
+        pp.append_to_group(net, idxs[1], ["trafo", "line"],
+                           [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
+        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo", "line"}
 
 
 def test_drop_and_compare():
-    for net, type in zip(*test_group_create()):
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # 7) drop_from_group() & 8) compare_elements_dict()
+        # ! drop_from_group() & ! compare_elements_dict()
+
+        # copy group 3
         et3, elm3, rc3 = pp.group_element_lists(net, 3)
-        pp.drop_from_group(net, "xward", typed_set({1, 17}, type), index=3)
-        pp.drop_from_group(net, "line", 2 if type is int else "2", index=3)
-        idx_new = pp.create_group(net, et3, elm3, rc3, name="for testing")
-        assert pp.compare_group_elements(net, 3, idx_new)
-        assert not gr2.compare_elements_dict({
-            'trafo': typed_list([0, 1, 2], type), 'gen': typed_list([1], type),
-            'sgen': typed_list([2, 3], type)})
+        copy_idx = pp.create_group(net, et3, elm3, reference_columns=rc3, name="copy of group 3")
 
+        # drop elements which are not in group 3
+        pp.drop_from_group(net, "xward", [1, 17], index=3)
+        pp.drop_from_group(net, "line", 2, index=3)
 
-def test_get_index():
-    for net, type in zip(*test_group_create()):
+        # check that group3 is still the same as the copy
+        assert pp.compare_group_elements(net, 3, copy_idx)
 
-        # 9) get_index()
-        assert (net.group.object.at[0].get_index(net, "gen") == pd.Index([0, 1], dtype=int)).all()
-        assert (net.group.object.at[0].get_index(net, "sgen") == pd.Index([2, 3], dtype=int)).all()
-        assert (net.group.object.at[0].get_index(net, "dcline") == pd.Index([], dtype=int)).all()
+        # drop some members
+        pp.drop_from_group(net, "trafo", 1, index=3)
+        assert pp.group_element_lists(net, 3)[0] == ["trafo"]
+        assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
+        assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
 def test_res_power():
-    for net, type in zip(*test_group_create()):
-        gr2.append_to_group(net.group.object.at[0].elements_dict)
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+        et0, elm0, rc0 = pp.group_element_lists(net, 0)
+        pp.append_to_group(net, 3, et0, elm0, reference_columns=rc0)
 
-        # 10) res_p_mw() and res_q_mvar()
+        # ! res_p_mw() and res_q_mvar()
         pp.runpp(net)
         p_val = net.res_trafo.pl_mw.loc[[0, 1, 2]].sum() - net.res_gen.p_mw.loc[[0, 1]].sum() - \
             net.res_sgen.p_mw.loc[[2, 3]].sum()
-        assert np.isclose(gr2.res_p_mw(net), p_val)
-
-
-def test_compare_groups():
-    for net, type in zip(*test_group_create()):
-
-        # 11) compare groups
-        gr2_copy = deepcopy(gr2)
-        assert gr2 == gr2_copy
+        assert np.isclose(pp.group_res_p_mw(net, 3), p_val)
 
 
 def test_group_io():
     net = nw.case24_ieee_rts()
-    gr1 = pp.Group(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]}, name='1st Group', index=2)
-    gr2 = pp.Group(net, {"trafo": net.trafo.index}, name='Group of transformers')
-    s1 = pp.to_json(gr1)
-    s2 = pp.to_json(gr2)
-    gr11 = pp.from_json_string(s1)
-    gr22 = pp.from_json_string(s2)
-    assert gr1 == gr11
-    assert gr2 == gr22
+    gr1 = pp.create_group_from_dict(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]},
+                                    name='1st Group', index=2)
+    gr2 = pp.create_group_from_dict(net, {"trafo": net.trafo.index}, name='Group of transformers')
+    json_str = pp.to_json(net)
+    net2 = pp.from_json_string(json_str)
+    pp.runpp(net)
+    pp.runpp(net2)
+    assert pp.group_res_p_mw(net, gr1) == pp.group_res_p_mw(net2, gr1)
+    assert pp.group_res_p_mw(net, gr2) == pp.group_res_p_mw(net2, gr2)
+    pdt.assert_frame_equal(net.group.loc[[gr1]], net2.group.loc[[gr1]])
+    pdt.assert_frame_equal(net.group.loc[[gr2]], net2.group.loc[[gr2]])
 
 
 if __name__ == "__main__":
@@ -187,13 +274,15 @@ if __name__ == "__main__":
         pytest.main(['-x', "test_group.py"])
     else:
         test_group_create()
-        test_update_elements_dict()
+        test_group_element_index()
+        test_groups_equal()
+        test_compare_group_elements()
+        test_ensure_lists_in_group_element_column()
+        test_remove_not_existing_group_members()
         test_drop_and_return()
         test_set_out_of_service()
         test_append_to_group()
         test_drop_and_compare()
-        test_get_index()
         test_res_power()
-        test_compare_groups()
         test_group_io()
         pass

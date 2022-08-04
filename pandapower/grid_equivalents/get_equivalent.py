@@ -19,11 +19,6 @@ from pandapower.grid_equivalents.ward_generation import \
     _replace_external_area_by_wards, _replace_external_area_by_xwards
 
 try:
-    from misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
@@ -301,7 +296,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
         time_end-time_start), 2))
 
-    if group_imported and kwargs.get("add_group", True):
+    if kwargs.get("add_group", True):
         # declare a group for the new equivalent
         ib_buses_after_merge, be_buses_after_merge = \
             _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal)
@@ -344,10 +339,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             if len(new_idx):
                 eq_elms[elm] = new_idx
 
-        gr = Group(net_eq, eq_elms, name=kwargs.get("group_name", eq_type))
-        elm_col = kwargs.get("elm_col", None)
-        if elm_col is not None:
-            gr.set_elm_col(net_eq, elm_col)
+        gr_idx = pp.create_group_from_dict(net_eq, eq_elms, name=kwargs.get("group_name", eq_type))
+        reference_column = kwargs.get("reference_column", None)
+        if reference_column is not None:
+            pp.set_group_reference_column(net_eq, gr_idx, reference_column)
 
     return net_eq
 
@@ -464,9 +459,9 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
     boundary_buses = set(boundary_buses)
     bb_buses = net.switch.element[(net.switch.et=="b") &
                                 (net.switch.element.isin(boundary_buses)) &
-                                (net.switch.bus.isin(boundary_buses))].tolist() 
-    boundary_buses -= set(bb_buses) 
-    
+                                (net.switch.bus.isin(boundary_buses))].tolist()
+    boundary_buses -= set(bb_buses)
+
     unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
@@ -477,7 +472,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
             "or out of service): " + str(sorted(unsupplied_boundary_buses)))
 
     if internal_buses & boundary_buses:
-        logger.info("Some internal buses are also contained in the boundary buses, " + 
+        logger.info("Some internal buses are also contained in the boundary buses, " +
                        "this could cause small inaccuracy.")
 
     # --- determine buses connected to boundary buses via bus-bus-switch
@@ -495,8 +490,8 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
                     "as the boundary. You can use the function " +
-                    "'get_connected_switch_buses' to find all these buses.")        
-    
+                    "'get_connected_switch_buses' to find all these buses.")
+
     # --- determine all internal buses
     all_internal_buses = set()
     if internal_buses is None:
@@ -602,11 +597,11 @@ if __name__ == "__main__":
     print(net.res_bus.loc[[0,3]])
     print(net_eq.res_bus.loc[[0,3]])
     print(net_eq.ward.loc[0])
-    
+
     net_eq.sn_mva = 10
     pp.runpp(net_eq, calculate_voltage_angles=True)
     print(net_eq.res_bus.loc[[0,3]])
-    
-    
- 
+
+
+
 

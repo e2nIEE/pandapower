@@ -1547,7 +1547,9 @@ def drop_from_groups(net, element_type, element_index):
 
 def drop_from_group(net, element_type, element_index, index=None):
     """Drops elements from one or multple groups, defined by 'index'.
-    A reverse function of pp.group.append_to_group() is available.
+    No errors are raised if elements are passed to be drop from groups which alread don't have these
+    elements as members.
+    A reverse function is available -> pp.group.append_to_group().
 
     Parameters
     ----------
@@ -1564,14 +1566,15 @@ def drop_from_group(net, element_type, element_index, index=None):
     if index is None:
         index = net.group.index
     element_index = ensure_iterability(element_index)
+
     to_check = np.ones(net.group.shape[0], dtype=bool)
     to_check &= np.isin(net.group.index.values, index)
     to_check &= net.group.element_type.values == element_type
-    to_drop = np.zeros(net.group.shape[0], dtype=bool)
+    keep = np.ones(net.group.shape[0], dtype=bool)
 
     for i in np.arange(len(to_check), dtype=int)[to_check]:
         rc = net.group.reference_column.iat[i]
-        if rc is None:
+        if rc is None or pd.isnull(rc):
             net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(
                 element_index).tolist()
         else:
@@ -1579,8 +1582,8 @@ def drop_from_group(net, element_type, element_index, index=None):
                 net[element_type][rc].loc[element_index])).tolist()
 
         if not len(net.group.element.iat[i]):
-            to_drop[i] = True
-    net.group.drop(to_drop, inplace=True)
+            keep[i] = False
+    net.group = net.group.loc[keep]
 
 
 def drop_group(net, index):
@@ -1604,7 +1607,7 @@ def drop_group_and_elements(net, index):
     # should be included in elements_dict
     for et in net.group.loc[index, "element_type"].tolist():
         idx = group_element_index(net, index, et)
-        net[et].drop(idx, inplace=True)
+        net[et].drop(idx.intersection(net[et].index), inplace=True)
         res_et = "res_" + et
         if res_et in net.keys() and net[res_et].shape[0]:
             net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
@@ -3423,14 +3426,14 @@ def group_element_index(net, index, element_type):
     pd.Index
         indices of the elements of the group in the element table net[element_type]
     """
-    if element_type not in net.group.loc[index, "element_type"]:
+    if element_type not in net.group.loc[[index], "element_type"].values:
         return pd.Index([], dtype=int)
 
-    data = net.group.loc[index].set_index("element_type").at[element_type]
+    data = net.group.loc[[index]].set_index("element_type").loc[element_type]
     element = data.at["element"]
     reference_column = data.at["reference_column"]
 
-    if reference_column is None:
+    if reference_column is None or pd.isnull(reference_column):
         return pd.Index(element, dtype=int)
 
     return net[element_type].index[net[element_type][reference_column].isin(element)]

@@ -4094,7 +4094,9 @@ def create_poly_costs(net, elements, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_
 
 
 def _group_parameter_list(element_types, elements, reference_columns):
-    """ Ensures that element_types, elements, reference_columns are iterables with same lengths. """
+    """
+    Ensures that element_types, elements and reference_columns are iterables with same lengths.
+    """
     if isinstance(elements, str) or not hasattr(elements, "__iter__"):
         raise ValueError(f"'elements' should be a list of list of indices.")
     if any([isinstance(el, str) or not hasattr(el, "__iter__") for el in elements]):
@@ -4102,6 +4104,25 @@ def _group_parameter_list(element_types, elements, reference_columns):
     element_types = ensure_iterability(element_types, len_=len(elements))
     reference_columns = ensure_iterability(reference_columns, len_=len(elements))
     return element_types, elements, reference_columns
+
+
+def _check_elements_existence(net, element_types, elements, reference_columns):
+    """
+    Raises UserWarnings if elements does not exist in net.
+    """
+    for et, elm, rc in zip(element_types, elements, reference_columns):
+        if et not in net.keys():
+            raise UserWarning(f"Cannot create a group with elements of type '{et}', because "
+                              f"net[{et}] does not exist.")
+        if rc is None or pd.isnull(rc):
+            diff = pd.Index(elm).difference(net[et].index)
+        else:
+            if rc not in net[et].columns:
+                raise UserWarning(f"Cannot create a group with reference column '{rc}' for elements"
+                                  f" of type '{et}', because net[{et}][{rc}] does not exist.")
+            diff = pd.Index(elm).difference(pd.Index(net[et][rc]))
+        if len(diff):
+            raise UserWarning(f"Cannot create group with {et} members {diff}.")
 
 
 def create_group(net, element_types, elements, name="", reference_columns=None, index=None,
@@ -4148,7 +4169,9 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "bus", index)]*len(element_types), dtype=int)
+    _check_elements_existence(net, element_types, elements, reference_columns)
+
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
                        [ name ,  element_types,  elements,  reference_columns]))
@@ -4161,8 +4184,8 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 def create_group_from_dict(net, elements_dict, name="", reference_column=None, index=None,
                            **kwargs):
     """ Wrapper function of create_group(). """
-    create_group(net, elements_dict.keys(), elements_dict.values(),
-                 name=name, reference_column=reference_column, index=index, **kwargs)
+    return create_group(net, elements_dict.keys(), elements_dict.values(),
+                        name=name, reference_columns=reference_column, index=index, **kwargs)
 
 
 def _get_index_with_check(net, table, index, name=None):
