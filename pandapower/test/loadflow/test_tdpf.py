@@ -63,13 +63,13 @@ def en_net(request):
     net.line.loc[ol_index, 'alpha'] = 0.00403
     net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.6
     net.line.loc[ol_index, 'wind_angle_degree'] = 90
-    net.line.loc[ol_index, 'outer_diameter_m'] = d_m
-    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 35
+    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = d_m
+    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 35
     net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 900
-    net.line.loc[ol_index, 'gamma'] = 0.9
-    net.line.loc[ol_index, 'epsilon'] = 0.72419
+    net.line.loc[ol_index, 'solar_absorptivity'] = 0.9
+    net.line.loc[ol_index, 'emissivity'] = 0.72419
 
     return net
 
@@ -87,14 +87,14 @@ def prepare_case_30():
 
     net.line["temperature_degree_celsius"] = 25
     net.line["reference_temperature_degree_celsius"] = 25
-    net.line["ambient_temperature_degree_celsius"] = 25
-    net.line["outer_diameter_m"] = 30.6e-3
+    net.line["air_temperature_degree_celsius"] = 25
+    net.line["conductor_outer_diameter_m"] = 30.6e-3
     net.line["mc_joule_per_m_k"] = 1490
     net.line["wind_speed_m_per_s"] = 0.6
     net.line["wind_angle_degree"] = 45
     net.line["solar_radiation_w_per_sq_m"] = 900
-    net.line["gamma"] = 0.5
-    net.line["epsilon"] = 0.5
+    net.line["solar_absorptivity"] = 0.5
+    net.line["emissivity"] = 0.5
     return net
 
 
@@ -120,15 +120,16 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     net.line.c_nf_per_km = 0
 
     net.line["temperature_degree_celsius"] = 20
-    net.line["ambient_temperature_degree_celsius"] = 35
+    net.line["reference_temperature_degree_celsius"] = 20
+    net.line["air_temperature_degree_celsius"] = 35
     net.line["alpha"] = 0.004
-    net.line["outer_diameter_m"] = 30.6e-3
+    net.line["conductor_outer_diameter_m"] = 30.6e-3
     net.line["mc_joule_per_m_k"] = 1490
     net.line["wind_speed_m_per_s"] = 0.6
     net.line["wind_angle_degree"] = 45
     net.line["solar_radiation_w_per_sq_m"] = 900
-    net.line["gamma"] = 0.5
-    net.line["epsilon"] = 0.5
+    net.line["solar_absorptivity"] = 0.5
+    net.line["emissivity"] = 0.5
     net.line["tdpf"] = True
 
     pp.create_ext_grid(net, 3, 1.05, name="G1")
@@ -238,11 +239,10 @@ def test_ngoko_vs_frank():
     net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5)
     pp.runpp(net)
 
-    t_amb_pu = 35
+    t_air_pu = 35
     alpha_pu = 4e-3
     r_ref = net.line.r_ohm_per_km.values / 1e3
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb_pu, 80, 20, r_ref, 30.6e-3,
-                                        1490, 0.6, 45, 900, alpha_pu, 0.5, 0.5)
+    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_air_pu, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, alpha_pu, 0.5, 0.5)
     T_ngoko = calc_T_ngoko(np.square(net.res_line.i_ka.values * 1e3), a0, a1, a2, None, None, None)
 
     branch = net._ppc["branch"]
@@ -255,8 +255,8 @@ def test_ngoko_vs_frank():
     Va = np.angle(net._ppc["internal"]["V"])
     i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
     # i_square_pu = np.square(net.res_line.i_ka.values*1e3)
-    r_theta = calc_r_theta(t_amb_pu, a0, a1, a2, np.square(net.res_line.i_ka.values * 1e3), p_loss_pu)
-    T_frank = calc_T_frank(p_loss_pu, t_amb_pu, r_theta, None, None, None)
+    r_theta = calc_r_theta(t_air_pu, a0, a1, a2, np.square(net.res_line.i_ka.values * 1e3), p_loss_pu)
+    T_frank = calc_T_frank(p_loss_pu, t_air_pu, r_theta, None, None, None)
 
     assert np.array_equal(T_ngoko, T_frank)
 
@@ -314,11 +314,11 @@ def test_default_parameters():
         pp.runpp(net, tdpf=True)
 
     net.line["tdpf"] = np.nan
-    with pytest.raises(UserWarning, match="required columns .*'outer_diameter_m'.* are missing"):
+    with pytest.raises(UserWarning, match="required columns .*'conductor_outer_diameter_m'.* are missing"):
         pp.runpp(net, tdpf=True)
 
     # with TDPF algorithm but no relevant tdpf lines the results must match with normal runpp:
-    net.line["outer_diameter_m"] = np.nan
+    net.line["conductor_outer_diameter_m"] = np.nan
     pp.runpp(net, tdpf=True)
     net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
     assert_res_equal(net, net_backup)
@@ -349,13 +349,13 @@ def test_default_parameters():
     # now test with "normal" TDPF
     net = net_backup.deepcopy()
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
-    net.line["outer_diameter_m"] = 2.5e-2  # 2.5 cm?
+    net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     pp.runpp(net, tdpf=True)
     # here all the standard assumptions are filled
     # now we check that user-defined assumptions are preserved
     net = net_backup.deepcopy()
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
-    net.line["outer_diameter_m"] = 2.5e-2  # 2.5 cm?
+    net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40
     net.line.loc[[2, 4], 'alpha'] = 3e-3
     net.line.loc[[2, 4], 'wind_speed_m_per_s'] = 0
@@ -396,15 +396,15 @@ def test_IEEE_example_1():
     # Conditions according to IEEE-Example
     net.line.loc[ol_index, "tdpf"] = True
     net.line.loc[ol_index, "alpha"] = 0.003508
-    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02814
-    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02814
+    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
     net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
     net.line.loc[ol_index, 'wind_angle_degree'] = 90
     net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1027
-    net.line.loc[ol_index, 'gamma'] = 0.8
-    net.line.loc[ol_index, 'epsilon'] = 0.8
+    net.line.loc[ol_index, 'solar_absorptivity'] = 0.8
+    net.line.loc[ol_index, 'emissivity'] = 0.8
 
     # Starting Control Loop
     pp.runpp(net, tdpf=True, init="dc")
@@ -445,15 +445,15 @@ def test_IEEE_example_2():
     # Conditions according to IEEE-Example
     net.line.loc[ol_index, 'tdpf'] = True
     net.line.loc[ol_index, "alpha"] = 0.003505
-    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02812
-    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02812
+    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
     net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
     net.line.loc[ol_index, 'wind_angle_degree'] = 90
     net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
-    net.line.loc[ol_index, 'gamma'] = 0.5
-    net.line.loc[ol_index, 'epsilon'] = 0.5
+    net.line.loc[ol_index, 'solar_absorptivity'] = 0.5
+    net.line.loc[ol_index, 'emissivity'] = 0.5
 
     # Starting Control Loop
     pp.runpp(net, tdpf=True, init="dc")
@@ -493,15 +493,15 @@ def test_IEEE_example_3():
     # Conditions according to IEEE-Example
     net.line.loc[ol_index, 'tdpf'] = True
     net.line.loc[ol_index, 'alpha'] = 0.003505
-    net.line.loc[ol_index, 'outer_diameter_m'] = 0.02812
-    net.line.loc[ol_index, 'ambient_temperature_degree_celsius'] = 40
+    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02812
+    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
     net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
     net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
     net.line.loc[ol_index, 'wind_angle_degree'] = 90
     net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
-    net.line.loc[ol_index, 'gamma'] = 0.5
-    net.line.loc[ol_index, 'epsilon'] = 0.5
+    net.line.loc[ol_index, 'solar_absorptivity'] = 0.5
+    net.line.loc[ol_index, 'emissivity'] = 0.5
 
     # Starting Control Loop
     pp.runpp(net, tdpf=True, init="dc")

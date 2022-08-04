@@ -10,6 +10,26 @@ ALPHA = 4e-3
 
 
 def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
+    """
+    Calculate thermal resistance of the conductors from an assumed or calculated temperature rise.
+    The calculation is implemented according to Frank et al.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+    t_rise_degree_celsius : array
+        temperature rise of the conductor
+
+    Returns
+    -------
+    r_theta : array
+        Thermal resistance of the conductors R_{\Theta}
+
+    References
+    ----------
+    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
+    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    """
     r_for_t_rated_rise = net.line.r_ohm_per_km * (1 + net.line.alpha * t_rise_degree_celsius) * \
                          net.line.length_km / net.line.parallel
     p_rated_loss_mw = np.square(net.line.max_i_ka * np.sqrt(3)) * r_for_t_rated_rise
@@ -18,6 +38,29 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
 
 
 def calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va):
+    """
+    Calculate squared current and the active power losses.
+
+    Parameters
+    ----------
+    branch: np.array(complex)
+        ppc["branch"]
+    tdpf_lines : np.array(bool)
+        array that defines which lines are relevant for TDPF
+    g : array
+    b : array
+    Vm : array
+        Bus voltage magnitude (p.u.)
+    Va : array
+        Bus voltage angle (rad)
+
+    Returns
+    -------
+    i_square_pu : array
+        squared current
+    p_loss_pu : array
+        active power losses
+    """
     i = branch[tdpf_lines, F_BUS].real.astype(np.int64)
     j = branch[tdpf_lines, T_BUS].real.astype(np.int64)
 
@@ -32,14 +75,80 @@ def calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va):
     return i_square_pu, p_loss_pu
 
 
-def calc_r_theta(t_amb_pu, a0, a1, a2, i_square_pu, p_loss_pu):
-    t_rise_pu = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu) - t_amb_pu
+def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
+    """
+    Calculate thermal resistance using the thermal model from Ngoko et al.
+
+    Parameters
+    ----------
+    t_air_pu : array
+        Air temperature in p.u.
+    a0 : array
+        constant term of the thermal model
+    a1 : array
+        linear term of the thermal model
+    a2 : array
+        quadratic term of the thermal model
+    i_square_pu : array
+        squared current in p.u.
+    p_loss_pu : array
+        active power losses in p.u.
+
+    Returns
+    -------
+    r_theta : array
+        Thermal resistance of the conductors R_{\Theta}
+
+    References
+    ----------
+    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
+    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+
+    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    """
+    t_rise_pu = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu) - t_air_pu
     r_theta_pu = t_rise_pu / p_loss_pu
     return r_theta_pu
 
 
-def calc_T_frank(p_loss_pu, t_amb_pu, r_theta_pu, tdpf_delay_s, T0, tau):
-    t_ss = t_amb_pu + r_theta_pu * p_loss_pu
+def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
+    """
+    Calculate overhead line temperature according to the method from Frank et al.
+    The calculation of the overhead line temperature is based on their thermal resistance.
+
+    Parameters
+    ----------
+    p_loss_pu : array
+        active power losses in p.u.
+    t_air_pu : array
+        Air temperature in p.u.
+    r_theta : array
+        Thermal resistance of the conductors R_{\Theta}
+    tdpf_delay_s : float, None
+        Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
+        of current in overhead lines that causes a change of temperature.
+        Example: tdpf_delay_s = 0 means there is no change in temperature;
+        tdpf_delay_s = np.inf leads to obtaining steady-state temperature (also default behavior if tdpf_delay_s = None)
+    T0 : array, None
+        initial temperature of overhead lines
+    tau : array, None
+        time constant of the overhead lines; describes the time after a current change after which the temperature
+        reaches approx. 63.2 % of the steady-state value
+
+    Returns
+    -------
+    t_transient : array
+        Temperature of the overhead lines, either steady-state or corresponding to the time delay tdpf_delay_s
+
+    References
+    ----------
+    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
+    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    """
+    t_ss = t_air_pu + r_theta_pu * p_loss_pu
 
     if tdpf_delay_s is None:
         return t_ss
@@ -49,6 +158,44 @@ def calc_T_frank(p_loss_pu, t_amb_pu, r_theta_pu, tdpf_delay_s, T0, tau):
 
 
 def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
+    """
+    Calculate the overhead line temperature with the approach from Ngoko et al.
+    The calculation of the overhead line temperature is based on the simplified model that
+    includes a constant term, a linear coefficient and a quadratic coefficient.
+
+    Parameters
+    ----------
+    i_square_pu : array
+        squared current in p.u.
+    a0 : array
+        constant term of the thermal model
+    a1 : array
+        linear term of the thermal model
+    a2 : array
+        quadratic term of the thermal model
+    tdpf_delay_s : float, None
+        Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
+        of current in overhead lines that causes a change of temperature.
+        Example: tdpf_delay_s = 0 means there is no change in temperature;
+        tdpf_delay_s = np.inf leads to obtaining steady-state temperature (also default behavior if tdpf_delay_s = None)
+    T0 : array, None
+        initial temperature of overhead lines
+    tau : array, None
+        time constant of the overhead lines; describes the time after a current change after which the temperature
+        reaches approx. 63.2 % of the steady-state value
+
+    Returns
+    -------
+    t_transient : array
+        Temperature of the overhead lines, either steady-state or corresponding to the time delay tdpf_delay_s
+
+    References
+    ----------
+    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    """
     t_ss = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu)
 
     if tdpf_delay_s is None:
@@ -58,21 +205,73 @@ def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
     return t_transient
 
 
-def calc_a0_a1_a2_tau(t_amb_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_outer_diameter_m,
+def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_outer_diameter_m,
                       mc_joule_per_m_k, wind_speed_m_per_s, wind_angle_degree, s_w_per_square_meter,
-                      alpha_pu=ALPHA, gamma=0.5, epsilon=0.5, T_base=1, i_base_a=1):
+                      alpha_pu=ALPHA, solar_absorptivity=0.5, emissivity=0.5, T_base=1, i_base_a=1):
+    """
+    Calculate the coefficients for the simplified thermal model according to Ngoko et al.
+
+    Parameters
+    ----------
+    t_air_pu : array
+        Air temperature in p.u.
+    t_max_pu : array
+        max. rated temperature of the overhead lines
+    t_ref_pu : array
+        rated temperature at which the reference (datasheet) resistance is provided
+    r_ref_ohm_per_m : array
+        reference (datasheet) specific resistance of the overhead lines
+    conductor_outer_diameter_m : array
+        outer diameter of the overhead line conductors (diameter of 1 individual conductor of the overhead line)
+    mc_joule_per_m_k : array
+        specific thermal capacitance of the overhead line:
+        mass per unit length m [kg/m] multiplied by the specific thermal capacity c [J/kg • K]
+    wind_speed_m_per_s : array
+        wind speed in m/s
+    wind_angle_degree : array
+        wind angle of attack
+    s_w_per_square_meter : array
+        solar radiation in W/m²
+    alpha_pu : array
+        temperature coefficient of resistance in p.u. - alpha multiplied by T_base
+    solar_absorptivity : array
+    emissivity : array
+    T_base : array
+        base value for T for calculating T in p.u.
+    i_base_a : array
+        base value for current for calculating I in p.u.
+
+    Returns
+    -------
+    a0 : array
+        constant term of the thermal model
+    a1 : array
+        linear term of the thermal model
+    a2 : array
+        quadratic term of the thermal model
+    tau : array
+        time constant of the overhead lines; describes the time after a current change after which the temperature
+        reaches approx. 63.2 % of the steady-state value
+
+    References
+    ----------
+    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    """
     # alpha here is expected to be for T in pu (alpha multiplied by T_base)
-    r_amb_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_amb_pu - t_ref_pu))
+    r_amb_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_air_pu - t_ref_pu))
     r_max_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_max_pu - t_ref_pu))
 
-    h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb_pu * T_base + 273) ** 3
-    kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb_pu * T_base + 273) ** 2
+    h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_pu * T_base + 273) ** 3
+    kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_pu * T_base + 273) ** 2
 
-    h_c = calc_h_c(conductor_outer_diameter_m, wind_speed_m_per_s, wind_angle_degree, t_amb_pu * T_base)
+    h_c = calc_h_c(conductor_outer_diameter_m, wind_speed_m_per_s, wind_angle_degree, t_air_pu * T_base)
 
     k2 = r_max_ohm_per_m / (h_r + h_c + kappa)
 
-    a0 = t_amb_pu + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c) / T_base
+    a0 = t_air_pu + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c) / T_base
     a1 = r_amb_ohm_per_m / (h_r + h_c) / T_base * np.square(i_base_a)
     a2 = k2 / (h_r + h_c) * (alpha_pu / T_base * r_ref_ohm_per_m - kappa * k2) / T_base * np.power(i_base_a, 4)
     # a2 = a1 / (h_r + h_c) * (alpha/T_base * r_ref_ohm_per_m - kappa * a1) / T_base * np.power(i_base_a, 4)
@@ -107,19 +306,19 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_deg
     return h_c
 
 #
-# def calc_a0_a1_a2_old(t_amb_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, gamma=0.5, epsilon=0.5):
+# def calc_a0_a1_a2_old(t_amb_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, solar_absorptivity=0.5, emissivity=0.5):
 #     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_amb_degree_celsius)
 #     r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
-#     h_r = 4 * SIGMA * epsilon * (t_amb_degree_celsius + 273) ** 3
-#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb_degree_celsius + 273) ** 3
+#     h_r = 4 * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 3
+#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 3
 #     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_degree_celsius)
 #     # R0 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c))
 #     R0 = 1 / (h_r + h_c)
-#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * epsilon * (t_amb_degree_celsius + 273) ** 2
+#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 2
 #     R1 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c + kappa * (t_max - t_amb_degree_celsius)))
-#     Ps = gamma * conductor_outer_diameter_m * s_w_per_square_meter
+#     Ps = solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter
 #     #a0 = t_amb_degree_celsius + R0 * Ps
-#     a0 = t_amb_degree_celsius + (gamma * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
+#     a0 = t_amb_degree_celsius + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
 #     a1 = R0 * r_amb_ohm_per_m
 #     # a2 = R0 * R1 * r_max_ohm_per_m * (alpha * r_ref_ohm_per_m - kappa)
 #     a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
@@ -159,8 +358,32 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_deg
 #     return tau
 
 
-def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta, J, r, x, g):
+def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va,
+                  r_theta, J, r, x, g):
+    """
+             / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+             | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
+             |                                              |
+             | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
+             | (M)x(N-1)       (M)x(M)         (M)x(R)      |
+             |                                              |
+             | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
+             \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
 
+            N = Number of buses
+            M = Number of PQ buses
+            R = Number temperature-dependent branches
+
+    References
+    ----------
+    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
+    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+
+    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    """
     C = np.ones_like(tdpf_lines, dtype=np.float64)
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
         C *= (1 - np.exp(-tdpf_delay_s / tau))

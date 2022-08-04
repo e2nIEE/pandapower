@@ -795,7 +795,7 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
     # required for simplified approach if r_theta is provided, can be filled with simplified values:
     default_values = {"temperature_degree_celsius": 20,  # starting temperature of lines
                       "reference_temperature_degree_celsius": 20,  # reference temperature for line.r_ohm_per_km
-                      "ambient_temperature_degree_celsius": 35,  # temperature of air surrounding the conductors
+                      "air_temperature_degree_celsius": 35,  # temperature of air surrounding the conductors
                       "alpha": 4.03e-3}  # thermal coefficient of resistance
 
     if tdpf_update_r_theta:
@@ -803,9 +803,9 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
         default_values.update({"wind_speed_m_per_s": 0.6,  # wind speed
                                "wind_angle_degree": 45,  # wind angle of attack
                                "solar_radiation_w_per_sq_m": 900,  # solar radiation
-                               "gamma": 0.5,  # coefficient of solar absorptivity
-                               "epsilon": 0.5})  # coefficient of solar emissivity
-        required_columns.append("outer_diameter_m")  # outer diameter of the conductor
+                               "solar_absorptivity": 0.5,  # coefficient of solar absorptivity
+                               "emissivity": 0.5})  # coefficient of solar emissivity
+        required_columns.append("conductor_outer_diameter_m")  # outer diameter of the conductor
     else:
         # make sure r_theta is provided (use the function pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise)
         required_columns.append("r_theta")  # if a simplified method for calculating the line temperature is used
@@ -838,9 +838,8 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
             logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
             net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
 
-    #todo
-    # check r=0
-    # if np.any()
+    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
+        raise UserWarning("TDPF: temperature dependent power flow cannot be applied to lines that have r_ohm_per_km=0")
 
 
 # =============================================================================

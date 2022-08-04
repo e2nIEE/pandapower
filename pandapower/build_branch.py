@@ -158,15 +158,15 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, RATE_I_KA] = line["max_i_ka"].values * line["df"].values * parallel
         branch[f:t, T_START_C] = line["temperature_degree_celsius"].values
         branch[f:t, T_REF_C] = line["reference_temperature_degree_celsius"].values
-        branch[f:t, T_AMBIENT_C] = line["ambient_temperature_degree_celsius"].values
+        branch[f:t, T_AMBIENT_C] = line["air_temperature_degree_celsius"].values
         branch[f:t, ALPHA] = line["alpha"].values
         branch[f:t, WIND_SPEED_MPS] = line.get("wind_speed_m_per_s", default=np.nan)
         branch[f:t, WIND_ANGLE_DEGREE] = line.get("wind_angle_degree", default=np.nan)
         branch[f:t, SOLAR_RADIATION_W_PER_SQ_M] = line.get("solar_radiation_w_per_sq_m", default=np.nan)
-        branch[f:t, GAMMA] = line.get("gamma", default=np.nan)
-        branch[f:t, EPSILON] = line.get("epsilon", default=np.nan)
+        branch[f:t, GAMMA] = line.get("solar_absorptivity", default=np.nan)
+        branch[f:t, EPSILON] = line.get("emissivity", default=np.nan)
         branch[f:t, R_THETA] = line.get("r_theta", default=np.nan)
-        branch[f:t, OUTER_DIAMETER_M] = line.get("outer_diameter_m", default=np.nan)
+        branch[f:t, OUTER_DIAMETER_M] = line.get("conductor_outer_diameter_m", default=np.nan)
         branch[f:t, MC_JOULE_PER_M_K] = line.get("mc_joule_per_m_k", default=np.nan)
 
     if mode == "sc":

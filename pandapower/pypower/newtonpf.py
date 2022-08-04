@@ -135,7 +135,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         # set up the necessary parameters for TDPF:
         T0 = branch[tdpf_lines, T_START_C].real / T_base
         t_ref_pu = branch[tdpf_lines, T_REF_C].real / T_base
-        t_amb_pu = branch[tdpf_lines, T_AMBIENT_C].real / T_base
+        t_air_pu = branch[tdpf_lines, T_AMBIENT_C].real / T_base
         alpha_pu = branch[tdpf_lines, ALPHA].real * T_base
 
         i_max_a = branch[tdpf_lines, RATE_I_KA].real * 1e3
@@ -144,8 +144,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         r_ref_pu = branch[tdpf_lines, BR_R_REF_OHM_PER_KM].real * branch[tdpf_lines, BR_LENGTH_KM].real / z_base_ohm
         i_base_a = baseMVA / (v_base_kv * sqrt(3)) * 1e3
         i_max_pu = i_max_a / i_base_a
-        # p_rated_loss_pu = square(i_max_pu) * r_ref_pu * (1 + alpha_pu * (25/T_base+t_amb_pu - t_ref_pu))
-        # p_rated_loss_mw = square(branch[tdpf_lines, RATE_I_KA].real * sqrt(3)) * branch[tdpf_lines, BR_R_REF_OHM_PER_KM].real * branch[tdpf_lines, BR_LENGTH_KM].real * (1 + alpha_pu * (25/T_base+t_amb_pu - t_ref_pu))
+        # p_rated_loss_pu = square(i_max_pu) * r_ref_pu * (1 + alpha_pu * (25/T_base+t_air_pu - t_ref_pu))
+        # p_rated_loss_mw = square(branch[tdpf_lines, RATE_I_KA].real * sqrt(3)) * branch[tdpf_lines, BR_R_REF_OHM_PER_KM].real * branch[tdpf_lines, BR_LENGTH_KM].real * (1 + alpha_pu * (25/T_base+t_air_pu - t_ref_pu))
         # assert np.allclose(p_rated_loss_mw / baseMVA, p_rated_loss_pu)
         # defined in Frank et.al. as T_Rated_Rise / p_rated_loss. Given in net.line based on °C, kA, kV:
         r_theta_pu = branch[tdpf_lines, R_THETA].real * baseMVA / T_base
@@ -154,21 +154,22 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         # calculate parameters for J:
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         # todo: add parameters to the create function
-        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_amb_pu=t_amb_pu, t_max_pu=80 / T_base, t_ref_pu=t_ref_pu,
+        a0, a1, a2, tau = calc_a0_a1_a2_tau(t_air_pu=t_air_pu, t_max_pu=80 / T_base, t_ref_pu=t_ref_pu,
                                             r_ref_ohm_per_m=1e-3 * branch[tdpf_lines, BR_R_REF_OHM_PER_KM].real,
                                             conductor_outer_diameter_m=branch[tdpf_lines, OUTER_DIAMETER_M].real,
                                             mc_joule_per_m_k=branch[tdpf_lines, MC_JOULE_PER_M_K].real,
                                             wind_speed_m_per_s=branch[tdpf_lines, WIND_SPEED_MPS].real,
                                             wind_angle_degree=branch[tdpf_lines, WIND_ANGLE_DEGREE].real,
                                             s_w_per_square_meter=branch[tdpf_lines, SOLAR_RADIATION_W_PER_SQ_M].real,
-                                            alpha_pu=alpha_pu, gamma=branch[tdpf_lines, GAMMA].real,
-                                            epsilon=branch[tdpf_lines, EPSILON].real, T_base=T_base, i_base_a=i_base_a)
+                                            alpha_pu=alpha_pu, solar_absorptivity=branch[tdpf_lines, GAMMA].real,
+                                            emissivity=branch[tdpf_lines, EPSILON].real, T_base=T_base,
+                                            i_base_a=i_base_a)
         g, b = calc_g_b(r_ref_pu, x)
         i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
         if tdpf_update_r_theta:
-            r_theta_pu = calc_r_theta(t_amb_pu, a0, a1, a2, i_square_pu, p_loss_pu)
+            r_theta_pu = calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu)
         # initial guess for T:
-        T = calc_T_frank(p_loss_pu, t_amb_pu, r_theta_pu, tdpf_delay_s, T0, tau)
+        T = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau)
         F_t = zeros(len(branch))
         # F_t[tdpf_lines] = T - T0
         F = r_[F, F_t]
@@ -230,8 +231,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if tdpf:
             i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
             if tdpf_update_r_theta:
-                r_theta_pu = calc_r_theta(t_amb_pu, a0, a1, a2, i_square_pu, p_loss_pu)
-            T_calc = calc_T_frank(p_loss_pu, t_amb_pu, r_theta_pu, tdpf_delay_s, T0, tau)
+                r_theta_pu = calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu)
+            T_calc = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau)
             F_t[tdpf_lines] = T - T_calc
             F = r_[F, F_t]
 
