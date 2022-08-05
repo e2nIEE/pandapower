@@ -6,8 +6,8 @@
 import numpy as np
 import pandas as pd
 
-from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
+from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 

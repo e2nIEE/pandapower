@@ -139,12 +139,18 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
 
     # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
-    if net["_options"]["consider_line_temperature"]:
+    if net["_options"]["consider_line_temperature"] or net["_options"].get("tdpf", False):
         base_kv = ppc["bus"][from_bus, BASE_KV]
         baseR = np.square(base_kv) / net.sn_mva
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
+
+        if net["_options"].get("tdpf", False):
+            tpdf_lines = line_df.in_service & line_df.tdpf
+            no_tdpf_t = line_df.loc[~tpdf_lines].get("temperature_degree_celsius", default=20.)
+            res_line_df.loc[tpdf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            res_line_df.loc[~tpdf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):

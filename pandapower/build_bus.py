@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from collections import defaultdict, Counter
+from collections import defaultdict
 from itertools import chain
 
 import numpy as np
@@ -13,6 +13,7 @@ import pandas as pd
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF
+from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 
 try:
     from numba import jit
@@ -294,7 +295,6 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.
 
     if mode == "sc":
-        from pandapower.shortcircuit.idx_bus import bus_cols_sc
         bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
@@ -515,7 +515,6 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
 # Short circuit relevant routines
 def _add_ext_grid_sc_impedance(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     mode = net._options["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if mode == "sc":
@@ -595,7 +594,6 @@ def _add_motor_impedances_ppc(net, ppc):
 
 
 def _add_c_to_ppc(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     ppc["bus"][:, C_MAX] = 1.1
     ppc["bus"][:, C_MIN] = 1.
     lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)

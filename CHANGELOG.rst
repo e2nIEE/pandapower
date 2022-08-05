@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2022-..-..
+-------------------------------
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+
 [2.10.1] - 2022-07-31
 -------------------------------
 - [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
