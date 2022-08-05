@@ -35,4 +35,9 @@ Otherwise, the parameter "r_theta" (float) must be specified. It can be calculat
 For consideration of thermal inertia, pp.runpp parameter "tdpf_delay_s" specifies the time after a step change of current.
 The parameter "mc_joule_per_m_k" describes the mass * thermal capacity of the conductor per unit length and it must be provided in net.line.
 
+More detailed information about TDPF can be found in the tutorials:
+
+- `TDPF introduction <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow.ipynb>`_
+- `Sensitivity of TDPF parameters <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_parameters.ipynb>`_
+
 .. autofunction:: pandapower.runpp
