@@ -58,6 +58,8 @@ COMPARE GROUPS
 FIX GROUP DATA
 =================================================
 
+.. autofunction:: pandapower.check_unique_group_names
+
 .. autofunction:: pandapower.remove_not_existing_group_members
 
 .. autofunction:: pandapower.ensure_lists_in_group_element_column
