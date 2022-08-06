@@ -1,6 +1,9 @@
 Change Log
 =============
 
+[upcoming release] - 2022-..-..
+-------------------------------
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
 - [ADDED] group functionality
 
 [2.10.1] - 2022-07-31

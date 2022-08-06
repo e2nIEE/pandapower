@@ -15,7 +15,6 @@ import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
-from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 
@@ -26,9 +25,7 @@ from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 from pandapower.results import init_results
-from pandapower.pypower.idx_bus import  GS, BS
-from pandapower.shortcircuit.idx_bus import  K_G, K_SG, KAPPA
-from pandapower.shortcircuit.idx_brch import  K_ST
+from pandapower.pypower.idx_brch_sc import K_ST
 
 
 def calc_sc(net, bus=None,
