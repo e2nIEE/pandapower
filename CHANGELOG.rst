@@ -1,6 +1,8 @@
 Change Log
 =============
 
+- [ADDED] group functionality
+
 [2.10.1] - 2022-07-31
 -------------------------------
 - [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
