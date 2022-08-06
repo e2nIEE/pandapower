@@ -1228,6 +1228,7 @@ def drop_buses(net, buses, drop_elements=True):
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"].drop(res_buses, inplace=True)
+    drop_from_groups(net, "bus", buses)
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
@@ -1258,6 +1259,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
             else:
                 n_el = net[element].shape[0]
                 net[element].drop(eid, inplace=True)
+                drop_from_groups(net, element, eid)
                 # res_element
                 res_element = "res_" + element
                 if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
@@ -1294,6 +1296,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
+    drop_from_groups(net, table, trafos)
     logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
 
 
@@ -1314,6 +1317,7 @@ def drop_lines(net, lines):
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
     net["res_line"].drop(res_lines, inplace=True)
+    drop_from_groups(net, "line", lines)
     logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
 
 
@@ -1475,6 +1479,7 @@ def drop_elements_simple(net, element, idx):
     """
     idx = ensure_iterability(idx)
     net[element].drop(idx, inplace=True)
+    drop_from_groups(net, element, idx)
 
     # res_element
     res_element = "res_" + element
@@ -1540,12 +1545,27 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
-def drop_from_groups(net, element_type, element_index):
-    """ Wrapper function of drop_from_group() """
-    drop_from_group(net, element_type, element_index)
+def drop_from_group(net, index, element_type, element_index):
+    """Drops elements from the group of given index.
+    No errors are raised if elements are passed to be drop from groups which alread don't have these
+    elements as members.
+    A reverse function is available -> pp.group.append_to_group().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group from which the element should be dropped
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    """
+    drop_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_group(net, element_type, element_index, index=None):
+def drop_from_groups(net, element_type, element_index, index=None):
     """Drops elements from one or multple groups, defined by 'index'.
     No errors are raised if elements are passed to be drop from groups which alread don't have these
     elements as members.
@@ -1567,8 +1587,7 @@ def drop_from_group(net, element_type, element_index, index=None):
         index = net.group.index
     element_index = ensure_iterability(element_index)
 
-    to_check = np.ones(net.group.shape[0], dtype=bool)
-    to_check &= np.isin(net.group.index.values, index)
+    to_check = np.isin(net.group.index.values, index)
     to_check &= net.group.element_type.values == element_type
     keep = np.ones(net.group.shape[0], dtype=bool)
 
@@ -3407,6 +3426,43 @@ def _write_to_object_attribute(net, element, index, variable, values):
 
 # group function
 
+def group_row(net, index, element_type):
+    """Returns the row which consists the data of the requested group index and element type.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group
+    element_type : str
+        element type (defines which row of the data of the group should be returned)
+
+    Returns
+    -------
+    pandas.Series
+        data of net.group, defined by the index of the group and the element type
+
+    Raises
+    ------
+    KeyError
+        Now row exist for the requested group and element type
+    ValueError
+        Multiple rows exist for the requested group and element type
+    """
+    group_df = net.group.loc[[index]].set_index("element_type")
+    try:
+        row = group_df.loc[element_type]
+    except KeyError:
+        raise KeyError(f"Group {index} has no {element_type}s.")
+    if isinstance(row, pd.Series):
+        return row
+    elif isinstance(row, pd.DataFrame):
+        raise ValueError(f"Multiple {element_type} rows for group {index}")
+    else:
+        raise ValueError(f"Returning row {element_type} for group {index} failed.")
+
+
 def group_element_index(net, index, element_type):
     """Returns the indices of the elements of the group in the element table net[element_type]. This
     function considers net.group.reference_column.
@@ -3429,9 +3485,9 @@ def group_element_index(net, index, element_type):
     if element_type not in net.group.loc[[index], "element_type"].values:
         return pd.Index([], dtype=int)
 
-    data = net.group.loc[[index]].set_index("element_type").loc[element_type]
-    element = data.at["element"]
-    reference_column = data.at["reference_column"]
+    row = group_row(net, index, element_type)
+    element = row.at["element"]
+    reference_column = row.at["reference_column"]
 
     if reference_column is None or pd.isnull(reference_column):
         return pd.Index(element, dtype=int)

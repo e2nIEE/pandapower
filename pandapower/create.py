@@ -4127,10 +4127,10 @@ def _check_elements_existence(net, element_types, elements, reference_columns):
 
 def create_group(net, element_types, elements, name="", reference_columns=None, index=None,
                  **kwargs):
-    """
-    Add a new group to net['group'] dataframe.
+    """Add a new group to net['group'] dataframe.
 
-    Attention:
+    Attention
+    ----------
         If you declare a group but forget to declare all connected elements although
         you wants to (e.g. declaring lines but forgetting to mention the connected switches),
         you may get problems after using drop_elements_and_group() or other functions.
@@ -4138,30 +4138,26 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         'elements_dict', such as get_connecting_branches(),
         get_inner_branches(), get_connecting_elements_dict().
 
-    INPUT:
-        **net** - pandapower net
-
-        **element_types** (string or list of strings) - defines, together with 'elements', which
-        net elements belong to the group
-
-        **elements** (list of list of indices) - defines, together with 'element_types', which net
-        elements belong to the group
-
-    OPTIONAL:
-        **name** (str, "") - name of the group
-
-        **reference_columns** (string or list of strings, None) - If given, the elements_dict should
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_types : str or list of strings
+        defines, together with 'elements', which net elements belong to the group
+    elements : list of list of indices
+        defines, together with 'element_types', which net elements belong to the group
+    name : str, optional
+        name of the group, by default ""
+    reference_columns : string or list of strings, optional
+        If given, the elements_dict should
         not refer to DataFrames index but to another column. It is highly relevant that the
-        reference_column exists in all DataFrames of the grouped elements and have the same dtype.
+        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
+        by default None
+    index : int, optional
+        index for the dataframe net.group, by default None
 
-        **index** (int, None) - index for the dataframe net.group
-
-        **overwrite** (bool, False) - whether the entry in net.group with the same index should
-        be overwritten
-
-        ****kwargs** - key word arguments
-
-    EXAMPLE:
+    Example
+    -------
         create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
         or
         create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")

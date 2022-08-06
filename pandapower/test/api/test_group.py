@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from this import d
 import pytest
 from copy import deepcopy
 import numpy as np
@@ -36,7 +37,7 @@ def nets_to_test_group():
             "sgen": typed_list([2, 3], type_)}, name='1st Group',
             reference_column=reference_column)
         idx1 = pp.create_group(
-            net, "trafo", [typed_list(net.trafo.index[:3], type_)],
+            net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
             name='Group of transformers', index=3, reference_columns=reference_column)
         nets.append(net)
         idxs.append([idx0, idx1])
@@ -83,18 +84,34 @@ def test_group_element_index():
 def test_groups_equal():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        idx_new = pp.create_group(net, "trafo", [typed_list(net.trafo.index[:3], type_)],
+        idx_new = pp.create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
                               name='Group of transformers', reference_columns=rc)
 
         # ! compare groups
         assert pp.groups_equal(net, 3, idx_new)
 
 
+def test_set_group_reference_column():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        idx_new = pp.create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
+                              name='Group of transformers', reference_columns=rc)
+        assert pp.groups_equal(net, 3, idx_new)  # ensure that we have an equal group idx_new to
+        # compare with after using set_group_reference_column() for and back
+
+        pp.set_group_reference_column(net, 3, "origin_id")
+        assert net.group.reference_column.at[3] == "origin_id"
+        assert net.group.element.at[3] == net.trafo.origin_id.loc[:2].tolist()
+
+        pp.set_group_reference_column(net, 3, rc)
+        assert pp.groups_equal(net, 3, idx_new)
+
+
 def test_compare_group_elements():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        ok = pp.create_group(net, "trafo", [net.trafo.index[:3]], name='xxx')
-        fail1 = pp.create_group(net, ["trafo", "bus"], [net.trafo.index[:3], [0]], name='xxx')
+        ok = pp.create_group(net, "trafo", [net.trafo.loc[:2].index], name='xxx')
+        fail1 = pp.create_group(net, ["trafo", "bus"], [net.trafo.loc[:2].index, [0]], name='xxx')
         fail2 = pp.create_group(net, ["trafo"], [net.trafo.index[1:3]], name='xxx')
 
         # ! compare_group_elements
@@ -161,6 +178,32 @@ def test_remove_not_existing_group_members():
         assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
 
 
+def test_drop_element():
+    net = nw.case24_ieee_rts()
+    gr1 = pp.create_group_from_dict(net, {
+        "bus": [0, 1, 2], "gen": [0, 1], "sgen": [2, 3], "line": [0, 1], "trafo": [0, 1]},
+                                    name='1st Group', index=2)
+
+    pp.drop_lines(net, [0])
+    assert net.group.loc[[gr1]].set_index("element_type").at["line", "element"] == [1]
+    pp.drop_lines(net, [1])
+    assert "line" not in net.group.element_type.values
+
+    pp.drop_trafos(net, [1])
+    assert net.group.loc[[gr1]].set_index("element_type").at["trafo", "element"] == [0]
+
+    pp.drop_buses(net, [0], drop_elements=False)
+    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element"] == [1, 2]
+
+    pp.drop_buses(net, [1])  # not only bus 0 is dropped but also connected elements
+    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element"] == [2]
+    assert net.group.loc[[gr1]].set_index("element_type").at["gen", "element"] == [0]
+    assert net.group.loc[[gr1]].set_index("element_type").at["sgen", "element"] == [2]
+
+    pp.drop_elements_simple(net, "sgen", [2])
+    assert "sgen" not in net.group.element_type.values
+
+
 def test_drop_and_return():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
@@ -216,7 +259,9 @@ def test_append_to_group():
 
         pp.append_to_group(net, idxs[1], ["trafo", "line"],
                            [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
-        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo", "line"}
+        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
+            "gen", "sgen", "trafo", "line"}
+        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
 
 
 def test_drop_and_compare():
@@ -229,14 +274,14 @@ def test_drop_and_compare():
         copy_idx = pp.create_group(net, et3, elm3, reference_columns=rc3, name="copy of group 3")
 
         # drop elements which are not in group 3
-        pp.drop_from_group(net, "xward", [1, 17], index=3)
-        pp.drop_from_group(net, "line", 2, index=3)
+        pp.drop_from_group(net, 3, "xward", [1, 17])
+        pp.drop_from_group(net, 3, "line", 2)
 
         # check that group3 is still the same as the copy
         assert pp.compare_group_elements(net, 3, copy_idx)
 
         # drop some members
-        pp.drop_from_group(net, "trafo", 1, index=3)
+        pp.drop_from_group(net, 3, "trafo", 1)
         assert pp.group_element_lists(net, 3)[0] == ["trafo"]
         assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
         assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
@@ -269,6 +314,25 @@ def test_group_io():
     pdt.assert_frame_equal(net.group.loc[[gr2]], net2.group.loc[[gr2]])
 
 
+def test_count_group_elements():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+        pdt.assert_series_equal(
+            pp.count_group_elements(net, idxs[0]),
+            pd.Series({"gen": 2, "sgen": 2}, dtype=int))
+        pdt.assert_series_equal(
+            pp.count_group_elements(net, idxs[1]),
+            pd.Series({"trafo": 3}, dtype=int))
+
+
+def test_isin():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+        assert np.all(np.array([False, True, True, False]) == \
+            pp.isin_group(net, "sgen", [0, 2, 3, 4]))
+        assert pp.isin_group(net, "gen", 0)
+        assert not pp.isin_group(net, "gen", 0, index=idxs[1])
+        assert not pp.isin_group(net, "gen", 6)
+
+
 if __name__ == "__main__":
     if 0:
         pytest.main(['-x', "test_group.py"])
@@ -276,13 +340,17 @@ if __name__ == "__main__":
         test_group_create()
         test_group_element_index()
         test_groups_equal()
+        test_set_group_reference_column()
         test_compare_group_elements()
         test_ensure_lists_in_group_element_column()
         test_remove_not_existing_group_members()
+        test_drop_element()
         test_drop_and_return()
         test_set_out_of_service()
         test_append_to_group()
         test_drop_and_compare()
         test_res_power()
         test_group_io()
+        test_count_group_elements()
+        test_isin()
         pass
