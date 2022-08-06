@@ -2,7 +2,7 @@
 Groups
 ###########
 
-With pandapower version > 2.10.1, functionality to group network elements has been released.
+With pandapower version > 2.10.1, functionality to group network elements is available.
 Basically, these are helper functions to better handle and interact with multiple elements, even of
 different element types, such as buses, generators and lines, at once.
 
@@ -11,7 +11,7 @@ For first steps with group functionality, as often, it is recommended to have a 
 Plenty of group related functions are presented in the following.
 
 ====================================
-CREATE AND DELETE GROUPS
+Create and delete groups
 ====================================
 
 .. autofunction:: pandapower.create_group
@@ -23,7 +23,7 @@ CREATE AND DELETE GROUPS
 .. autofunction:: pandapower.drop_group_and_elements
 
 ====================================
-ADAPT GROUP MEMBERS
+Adapt group members
 ====================================
 
 .. autofunction:: pandapower.append_to_group
@@ -33,7 +33,7 @@ ADAPT GROUP MEMBERS
 .. autofunction:: pandapower.drop_from_groups
 
 =================================================
-ACCESS GROUP DATA AND EVALUATE MEMBERSHIP
+Access group data and evaluate membership
 =================================================
 
 .. autofunction:: pandapower.group_name
@@ -47,7 +47,7 @@ ACCESS GROUP DATA AND EVALUATE MEMBERSHIP
 .. autofunction:: pandapower.count_group_elements
 
 =================================================
-COMPARE GROUPS
+Compare groups
 =================================================
 
 .. autofunction:: pandapower.groups_equal
@@ -55,7 +55,7 @@ COMPARE GROUPS
 .. autofunction:: pandapower.compare_group_elements
 
 =================================================
-FIX GROUP DATA
+Fix group data
 =================================================
 
 .. autofunction:: pandapower.check_unique_group_names
@@ -67,7 +67,7 @@ FIX GROUP DATA
 .. autofunction:: pandapower.group_entries_exist_in_element_table
 
 =================================================
-MAKE USE OF GROUPS AND OTHERS
+Further group functions
 =================================================
 
 .. autofunction:: pandapower.set_group_in_service
