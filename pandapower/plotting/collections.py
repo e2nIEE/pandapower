@@ -430,7 +430,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
         **use_bus_geodata** (bool, False) - Defines whether bus or line geodata are used.
 
-         **infofunc** (function, None) - infofunction for the patch element
+        **infofunc** (function, None) - infofunction for the patch element
 
         **cmap** - colormap for the patch colors
 
@@ -483,6 +483,74 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if cmap is not None:
         if z is None:
             z = net.res_line.loading_percent.loc[lines_with_geo]
+        add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
+
+    return lc
+
+
+def create_dcline_collection(net, dclines=None, bus_geodata=None, infofunc=None, cmap=None,
+                             norm=None, picker=False, z=None, cbar_title="HVDC-Line Loading [%]",
+                             clim=None, plot_colormap=True, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower dclines.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **dclines** (list, None) - The dclines for which the collections are created. If None,
+        all dclines in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+        If None, net["bus_geodata"] is used
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the line collection
+
+        **z** (array, None) - array of line loading magnitudes for colormap. Used in case of given
+        cmap. If None net.res_line.loading_percent is used.
+
+        **cbar_title** (str, "Line Loading [%]") - colormap bar title in case of given cmap
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
+
+        **kwargs** - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+    """
+
+    use_bus_geodata = True
+
+    lines = get_index_array(dclines, net.dcline.index)
+    if len(lines) == 0:
+        return None
+
+    if use_bus_geodata:
+        coords, lines_with_geo = coords_from_node_geodata(
+            lines, net.dcline.from_bus.loc[lines].values, net.dcline.to_bus.loc[lines].values,
+            net["bus_geodata"], "line")
+
+    if len(lines_with_geo) == 0:
+        return None
+
+    infos = [infofunc(line) for line in lines_with_geo] if infofunc else []
+
+    lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+
+    loading_percent = \
+        100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
+
+    if cmap is not None:
+        if z is None:
+            z = loading_percent.loc[lines_with_geo]
         add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return lc
