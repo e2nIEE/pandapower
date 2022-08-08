@@ -549,7 +549,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
                      init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
                      neglect_open_switch_branches=False, consider_line_temperature=False,
-                     distributed_slack=False):
+                     distributed_slack=False, tdpf=False, tdpf_update_r_theta=True, tdpf_delay_s=None):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -569,6 +569,9 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "consider_line_temperature": consider_line_temperature,
+        "tdpf": tdpf,
+        "tdpf_update_r_theta": tdpf_update_r_theta,
+        "tdpf_delay_s": tdpf_delay_s,
         "distributed_slack": distributed_slack,
         "delta": delta,
         "trafo3w_losses": trafo3w_losses,
@@ -740,7 +743,7 @@ def _check_if_numba_is_installed(numba):
     return numba
 
 
-def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack):
+def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
     """
     Implement some checks to decide whether the package lightsim2grid can be used. The package implements a backend for
      power flow calculation in C++ and provides a speed-up. If lightsim2grid is "auto" (default), we don't bombard the
@@ -769,8 +772,74 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and multiple ext_grids are found, "
                                   "but distributed_slack=False.")
+    if tdpf:
+        # tdpf not yet implemented in lightsim2grid
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
 
     return True
+
+
+def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
+    required_columns = ["tdpf"]  # required, cannot be filled with assumptions
+    if "tdpf" not in net.line.columns:
+        tdpf_lines = np.array([])
+        # we raise the exception later
+    else:
+        tdpf_lines = net.line.loc[net.line.tdpf.fillna(False).astype(bool) & net.line.in_service].index.values
+
+    if len(tdpf_lines) == 0:
+        logger.info("TDPF: no relevant lines found")
+
+    # required for simplified approach if r_theta is provided, can be filled with simplified values:
+    default_values = {"temperature_degree_celsius": 20,  # starting temperature of lines
+                      "reference_temperature_degree_celsius": 20,  # reference temperature for line.r_ohm_per_km
+                      "air_temperature_degree_celsius": 35,  # temperature of air surrounding the conductors
+                      "alpha": 4.03e-3}  # thermal coefficient of resistance
+
+    if tdpf_update_r_theta:
+        # required for the detailed calculation of the weather effects, can be filled with default values:
+        default_values.update({"wind_speed_m_per_s": 0.6,  # wind speed
+                               "wind_angle_degree": 45,  # wind angle of attack
+                               "solar_radiation_w_per_sq_m": 900,  # solar radiation
+                               "solar_absorptivity": 0.5,  # coefficient of solar absorptivity
+                               "emissivity": 0.5})  # coefficient of solar emissivity
+        required_columns.append("conductor_outer_diameter_m")  # outer diameter of the conductor
+    else:
+        # make sure r_theta is provided (use the function pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise)
+        required_columns.append("r_theta")  # if a simplified method for calculating the line temperature is used
+
+    if tdpf_delay_s:
+        # for thermal inertia, mass * thermal capacity of the conductor per unit length:
+        required_columns.append("mc_joule_per_m_k")
+
+    # if np.any(np.setdiff1d(net.line.columns, required_columns)):
+    #     raise UserWarning(f"TDPF: required columns missing in net.line: {required_columns}")
+
+    missing_columns = []
+    for col in required_columns:
+        if col not in net.line.columns or np.any(net.line.loc[tdpf_lines, col].isnull()):
+            missing_columns.append(col)
+
+    if len(missing_columns) > 0:
+        raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
+
+    # check if unsupported elements are included
+    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.type == "cs")]) > 0 or \
+            "tdpf" in net.trafo or "tdpf" in net.trafo3w:
+        logger.warning("TDPF: temperature dependent power flow is only implemented for overhead lines")
+
+    # now fill in the default values
+    for col, val in default_values.items():
+        if col not in net.line.columns:
+            net.line[col] = np.nan
+        if np.any(np.isnan(net.line.loc[tdpf_lines, col])):
+            logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
+            net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
+
+    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
+        raise UserWarning("TDPF: temperature dependent power flow cannot be applied to lines that have r_ohm_per_km=0")
 
 
 # =============================================================================
@@ -951,7 +1020,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         trafo_loading, enforce_q_lims, check_connectivity,
                         voltage_depend_loads, passed_parameters=None,
                         consider_line_temperature=False,
-                        distributed_slack=False, **kwargs):
+                        distributed_slack=False,
+                        tdpf=False, tdpf_update_r_theta=True, tdpf_delay_s=None, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -991,7 +1061,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
-                                                       distributed_slack)
+                                                       distributed_slack, tdpf)
 
     ac = True
     mode = "pf"
@@ -1007,7 +1077,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
-        max_iteration = default_max_iteration[algorithm]
+        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "
@@ -1046,6 +1116,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             raise NotImplementedError(
                 'Distributed slack is only implemented for Newton Raphson algorithm.')
 
+    if tdpf:
+        _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s)
+
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -1056,7 +1129,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
                      consider_line_temperature=consider_line_temperature,
-                     distributed_slack=distributed_slack)
+                     distributed_slack=distributed_slack,
+                     tdpf=tdpf, tdpf_update_r_theta=tdpf_update_r_theta, tdpf_delay_s=tdpf_delay_s)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,

@@ -3,13 +3,6 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
-
-logger = logging.getLogger(__name__)
-
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -19,14 +12,23 @@ from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 from pandapower.pypower.idx_bus import GS, BS, BASE_KV
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
-from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
+from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G,\
     PS_TRAFO_IX, GS_P, BS_P, KAPPA
-from pandapower.shortcircuit.idx_brch import K_T, K_ST
+from pandapower.pypower.idx_brch_sc import K_T, K_ST
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _get_is_ppci_bus(net, bus):
     is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
+
 
 def _init_ppc(net):
     _check_sc_data_integrity(net)

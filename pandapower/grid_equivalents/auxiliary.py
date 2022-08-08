@@ -34,6 +34,10 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     vas = pd.Series(np.zeros(len(buses_to_add_ext_grids)),
                     index=buses_to_add_ext_grids)
     vms.loc[btaegwr] = net.res_bus.vm_pu.loc[btaegwr]
+    vms.loc[pd.Index(net.gen.bus.loc[net.gen.in_service]).intersection(vms.index)] = \
+        net.gen.vm_pu.loc[net.gen.in_service & net.gen.bus.isin(vms.index) &
+                          ~net.gen.bus.duplicated()].values  # avoid
+        # different vm_pu setpoints at same buses
     vas.loc[btaegwr] = net.res_bus.va_degree.loc[btaegwr]
 
     for ext_bus, vm, va in zip(buses_to_add_ext_grids, vms, vas):
@@ -117,7 +121,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
     for elm, bus_types in bebd.items():
         n_elms = net[elm].shape[0]
         if n_elms:
-            should_be_dropped = np.array([True]*n_elms)
+            should_be_dropped = np.ones((n_elms, ), dtype=bool)
             for bus_type in bus_types:
                 should_be_dropped &= net[elm][bus_type].isin(internal_buses)
             idx_to_drop = net[elm].index[should_be_dropped]
@@ -129,7 +133,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
                 net[elm].drop(idx_to_drop, inplace=True)
 
 
-def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen", 
+def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen",
                          existing_shift_degree=False):
     """
     The function calculats the parameters for zero power balance network
@@ -145,7 +149,7 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
         or ((net.trafo3w.hv_bus.isin(be_buses)) & \
              ((net.trafo3w.shift_mv_degree!=0) | (net.trafo3w.shift_lv_degree!=0))).any():
             existing_shift_degree = True
-            logger.info("Transformers with non-zero shift-degree are existed," + 
+            logger.info("Transformers with non-zero shift-degree are existed," +
                         " they could cause small inaccuracy.")
     # creata dataframe to collect the current injections of the external area
     nb_ext_buses = len(all_external_buses)

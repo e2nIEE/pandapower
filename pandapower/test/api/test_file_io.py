@@ -17,7 +17,7 @@ import pandapower.networks as networks
 import pandapower.topology as topology
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
+from pandapower.test.toolbox import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 from pandapower.toolbox import nets_equal
 
@@ -101,7 +101,7 @@ def test_json(net_in, tmp_path):
 
         for tab in ('bus_geodata', 'line_geodata'):
             if tab == 'bus_geodata':
-                geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
+                geometry = list(map(Point, net_geo[tab][["x", "y"]].values))
             else:
                 geometry = net_geo[tab].coords.apply(LineString)
             net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
