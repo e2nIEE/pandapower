@@ -428,4 +428,13 @@ def test_shifter_degree():
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', __file__])
+    if 0:
+        pytest.main(['-x', __file__])
+    else:
+        test_cost_consideration()
+        test_basic_usecases()
+        test_case9_with_slack_generator_in_external_net()
+        test_adopt_columns_to_separated_eq_elms()
+        # test_equivalent_groups()
+        test_shifter_degree()
+    pass

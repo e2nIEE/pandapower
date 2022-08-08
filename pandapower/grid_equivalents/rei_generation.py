@@ -2,7 +2,7 @@ import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     check_validity_of_Ybus_eq, drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
-    drop_and_edit_cost_functions
+    drop_and_edit_cost_functions, _runpp_except_voltage_angles
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -17,20 +17,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _runpp_except_voltage_angles(net, **kwargs):
-    if "calculate_voltage_angles" not in kwargs or not kwargs["calculate_voltage_angles"]:
-        pp.runpp(net, **kwargs)
-    else:
-        try:
-            pp.runpp(net, **kwargs)
-        except pp.LoadflowNotConverged:
-            kwargs1 = deepcopy(kwargs)
-            kwargs1["calculate_voltage_angles"] = False
-            pp.runpp(net, **kwargs1)
-            logger.warning("In REI generation, the power flow did converge only without "
-                           "calculate_voltage_angles.")
 
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
@@ -145,7 +131,7 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
 def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses,
                      load_separate=False, sgen_separate=True, gen_separate=True,
                      show_computing_time=False, calc_volt_angles=True,
-                     **kwargs):
+                     runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     The function builds the zero power balance network with
     calculated impedance and voltage
@@ -180,7 +166,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
-            show_computing_time, calc_volt_angles=calc_volt_angles)
+            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
     net_zpbn = net_external
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
@@ -367,7 +353,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
-    _runpp_except_voltage_angles(net_zpbn, calculate_voltage_angles=calc_volt_angles,
+    runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
                                  tolerance_mva=1e-6, max_iteration=100)
     return net_zpbn, net_internal, net_external
 
@@ -472,7 +458,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses,
                                     show_computing_time=False,
-                                    calc_volt_angles=True):
+                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
@@ -492,8 +478,8 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                  True, True)
     drop_measurements_and_controller(net_external, all_internal_buses)
     pp.drop_buses(net_external, all_internal_buses)
-#    add_ext_grids_to_boundaries(net_external, boundary_buses)
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles)
+#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"get_int_and_ext_nets\" " +
@@ -562,7 +548,8 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
 
 def _replace_ext_area_by_impedances_and_shunts(
         net_eq, bus_lookups, impedance_params, shunt_params, net_internal,
-        return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8):
+        return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8,
+        runpp_fct=_runpp_except_voltage_angles):
     """
     This function implements the parameters of the equivalent shunts and equivalent impedance
     """
@@ -572,7 +559,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     pp.drop_buses(net_eq, eg_buses_pd)
 
     try:
-        _runpp_except_voltage_angles(net_eq, calculate_voltage_angles=calc_volt_angles,
+        runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
                                      tolerance_mva=1e-6, max_iteration=100)
     except:
         logger.error("The power flow did not converge.")
@@ -636,5 +623,5 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_shunts["in_service"] = True
     net_eq["shunt"] = pd.concat([net_eq["shunt"], new_shunts])
 
-    _runpp_except_voltage_angles(net_eq, calculate_voltage_angles=calc_volt_angles,
-                                 tolerance_mva=1e-6, max_iteration=100)
+    runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
+              tolerance_mva=1e-6, max_iteration=100)
