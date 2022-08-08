@@ -254,7 +254,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 g_buses += [new_g_bus.tolist()]
                 t_buses += [new_t_bus.tolist()]
         else:
-            Z.drop([elm+"_ground", elm+"_separate_total", elm+"_integrated_total"], axis=1, inplace=True)
+            Z.drop([elm+"_ground", elm+"_separate_total", elm+"_integrated_total"], axis=1,
+                   inplace=True)
 
     # --- create load, sgen and gen
     elm_old = None
@@ -291,27 +292,32 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         if "integrated" in key:
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
-            net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                elm_org[list(other_cols_bool)][elm_org.bus.isin(all_external_buses)].values.sum() > 0
+            net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
+                elm_org.bus.isin(all_external_buses)].values.sum() > 0
         else:
-            if elm == "gen" and bus in net.ext_grid.bus.values and net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
-                net_zpbn[elm].name[elm_idx] = str(net.ext_grid.name[net.ext_grid.bus == bus].values[0]) + "-" + net_zpbn[elm].name[elm_idx]
+            if elm == "gen" and bus in net.ext_grid.bus.values and \
+                    net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
+                net_zpbn[elm].name[elm_idx] = str(net.ext_grid.name[
+                    net.ext_grid.bus == bus].values[0]) + "-" + net_zpbn[elm].name[elm_idx]
                 ext_grid_cols = list(set(elm_org.columns) & set(net.ext_grid.columns) - \
                     {"name", "bus", "p_mw", "sn_mva", "in_service", "scaling"})
-                net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][net.ext_grid.bus==bus].values[0]
+                net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][
+                    net.ext_grid.bus == bus].values[0]
             else:
-                names = elm_org.name[elm_org.bus==bus].values
+                names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
                 net_zpbn[elm].name[elm_idx] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
-                        elm_org[list(other_cols_number)][elm_org.bus==bus].sum(axis=0)
+                        elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                        elm_org[list(other_cols_bool)][elm_org.bus==bus].values.sum() > 0
+                        elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum() > 0
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
-                        elm_org[list(other_cols_bool | other_cols_number)][elm_org.bus==bus].values[0]
-                    net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][elm_org.bus==bus].values[0]
+                        elm_org[list(other_cols_bool | other_cols_number)][
+                            elm_org.bus == bus].values[0]
+                    net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
+                        elm_org.bus == bus].values[0]
         elm_old = net_zpbn.bus.name[i].split("_")[0]
 
     # --- match poly_cost to new created elements
@@ -604,7 +610,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_sws["closed"] = True
     new_sws["z_ohm"] = 0
     net_eq["switch"] = pd.concat([net_eq["switch"], new_sws])
-    # If some buses are connected through switches, their shunts are connected in parallel  
+    # If some buses are connected through switches, their shunts are connected in parallel
     # to same bus. The shunt parameters needs to be adapted. TODO
     if not not_very_low_imp.all():
         fb = impedance_params.from_bus[~not_very_low_imp].values.tolist()
@@ -615,12 +621,12 @@ def _replace_ext_area_by_impedances_and_shunts(
         # shunt_params.parameter[shunt_params.bus_pd.isin(tb)] = adapted_params
         shunt_params.drop(shunt_params.index[shunt_params.bus_pd.isin(fb)], inplace=True)
         shunt_params.drop(shunt_params.index[shunt_params.bus_pd.isin(tb)], inplace=True)
-        
+
     # --- create shunts
     max_idx = net_eq.shunt.index.max() if net_eq.shunt.shape[0] else 0
     shunt_buses = shunt_params.bus_pd.values.astype(int)
     new_shunts = pd.DataFrame({"bus": shunt_buses,
-                               "q_mvar": -shunt_params.parameter.values.imag * net_eq.sn_mva, 
+                               "q_mvar": -shunt_params.parameter.values.imag * net_eq.sn_mva,
                                "p_mw": shunt_params.parameter.values.real * net_eq.sn_mva
                                }, index=range(max_idx+1, max_idx+1+shunt_params.shape[0]))
     new_shunts["name"] = "eq_shunt"
