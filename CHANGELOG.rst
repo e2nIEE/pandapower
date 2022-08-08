@@ -3,11 +3,14 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
 - [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
 
 [2.10.1] - 2022-07-31
 -------------------------------
 - [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+- [ADDED] store and restore functionality of dataframe index names with to_json() and from_json()
+- [ADDED] generalization from_json() with parameter empty_dict_like_object
 
 [2.10.0] - 2022-07-29
 -------------------------------
