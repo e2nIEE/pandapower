@@ -1,5 +1,6 @@
 import pandapower as pp
-from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
+from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements, \
+    _runpp_except_voltage_angles
 import pandas as pd
 import numpy as np
 
@@ -63,7 +64,8 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
 
 
 def create_passive_external_net_for_ward_addmittance(
-    net, all_external_buses, boundary_buses, calc_volt_angles=True, runpp_fct=pp.runpp):
+    net, all_external_buses, boundary_buses, calc_volt_angles=True,
+    runpp_fct=_runpp_except_voltage_angles):
     """
     This function replace the wards and xward in external network by internal
     elements, and replace the power injections in external area by shunts
@@ -97,7 +99,7 @@ def create_passive_external_net_for_ward_addmittance(
 
 def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no_power,
                                     impedance_parameter, ext_buses_with_xward,
-                                    calc_volt_angles=True, runpp_fct=pp.runpp):
+                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     """replaces the external networks by wards and equivalent impedance"""
     # --- drop all external elements
     e_buses_pd = bus_lookups["bus_lookup_pd"]["e_area_buses"]
@@ -174,7 +176,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
 
 def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_no_power,
                                      impedance_parameter, ext_buses_with_xward,
-                                     calc_volt_angles=True, runpp_fct=pp.runpp):
+                                     calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     """replaces the external networks by xwards and equivalent impedance"""
     # --- drop all external elements
     e_buses_pd = bus_lookups["bus_lookup_pd"]["e_area_buses"]
@@ -276,7 +278,8 @@ def get_ppc_buses(net, buses, nogo_buses):
     return buses_ppc
 
 
-def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True, runpp_fct=pp.runpp):
+def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True,
+                           runpp_fct=_runpp_except_voltage_angles):
     """calculates the equivalent power injection at boundary buses,
     and then fills the equivalent power in wards"""
 

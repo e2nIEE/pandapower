@@ -2,12 +2,12 @@ import pandapower as pp
 import pandapower.topology as top
 import time
 from copy import deepcopy
-from pandapower.auxiliary import _add_dcline_gens, _runpp_except_voltage_angles
+from pandapower.auxiliary import _add_dcline_gens
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
     match_cost_functions_and_eq_net, check_network, adaptation_phase_shifter, \
-    get_boundary_vp
+    get_boundary_vp, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
@@ -270,7 +270,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             net_eq, net_internal, eq_type, show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
         # run final power flow calculation
-        net_eq = runpp_fct(net_eq, calculate_voltage_angles)
+        net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
         drop_assist_elms_by_creating_ext_net(net_eq)
         logger.debug("Only the equivalent net is returned.")

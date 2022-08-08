@@ -33,9 +33,11 @@ def _runpp_except_voltage_angles(net, **kwargs):
             pp.runpp(net, **kwargs1)
             logger.warning("In grid equivalent generation, the power flow did converge only without"
                            " calculate_voltage_angles.")
+    return net
 
 
-def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False, runpp_fct=pp.runpp,
+def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
+                                runpp_fct=_runpp_except_voltage_angles,
                                 calc_volt_angles=True, allow_net_change_for_convergence=False):
     """
     adds ext_grids for the given network. If the bus results are

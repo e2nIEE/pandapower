@@ -396,11 +396,11 @@ def test_shifter_degree():
     net.trafo3w.shift_mv_degree[0] = 90
     net.trafo3w.shift_lv_degree[0] = 150
     pp.runpp(net, calculate_voltage_angles=True)
-    
+
     boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
         list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
     i = net.ext_grid.bus.values[0]
-    
+
     for eq_type in  ["rei"]:
         for b in boundary_buses:
             net_rei = pp.grid_equivalents.get_equivalent(net, eq_type, [b], [i],
@@ -416,4 +416,13 @@ def test_shifter_degree():
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', __file__])
+    if 0:
+        pytest.main(['-x', __file__])
+    else:
+        test_cost_consideration()
+        test_basic_usecases()
+        test_case9_with_slack_generator_in_external_net()
+        test_adopt_columns_to_separated_eq_elms()
+        # test_equivalent_groups()
+        test_shifter_degree()
+    pass
