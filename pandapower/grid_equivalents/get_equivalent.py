@@ -329,8 +329,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                 # ATTENTION: If there are eq elements (elements that fit to the above query of
                 # new_idx) which already exist in net but are not included to other groups, they
                 # will be considered here which is wrong. Furthermore, the indices may have changed
-                # from net to net_eq, so that already existing Group without elm_col may fail their
-                # functionality
+                # from net to net_eq, so that already existing groups with reference_columns == None
+                # may fail their functionality
                 if "group" in net_eq and net_eq.group.shape[0]:
                     for idx in net_eq.group.index:
                         new_idx = new_idx.difference(net_eq.group.object.at[idx].get_idx(
