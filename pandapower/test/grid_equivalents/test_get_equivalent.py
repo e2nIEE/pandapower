@@ -48,7 +48,8 @@ def run_basic_usecases(eq_type, net=None):
         net = create_test_net()
 
     # UC1: get internal buses [0, 1, 5, 6] and equivalent connected to buses [1, 5]
-    eq_net1 = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses=[1, 5], internal_buses=[0, 6])
+    eq_net1 = pp.grid_equivalents.get_equivalent(
+        net, eq_type, boundary_buses=[1, 5], internal_buses=[0, 6])
     pp.runpp(eq_net1, calculate_voltage_angles=True)
 
     # UC2: don't get the internal buses [0, 1, 5, 6] but the boundary buses [2, 4] and the
@@ -60,22 +61,25 @@ def run_basic_usecases(eq_type, net=None):
     # boundary buses [1, 5] -> expected return are the boundary buses and the equivalent
     subnet = pp.select_subnet(net, list(range(1, 6)), include_results=True)
     subnet_rest = pp.select_subnet(net, [0, 1, 5, 6], include_results=True)
-    eq_net3a = pp.grid_equivalents.get_equivalent(subnet, eq_type, boundary_buses=[1, 5], internal_buses=None)
+    eq_net3a = pp.grid_equivalents.get_equivalent(
+        subnet, eq_type, boundary_buses=[1, 5], internal_buses=None)
 
     # UC3b tests whether this also works for 'internal_buses' as empty list
-    eq_net3b = pp.grid_equivalents.get_equivalent(subnet, eq_type, boundary_buses=[1, 5], internal_buses=[])
+    eq_net3b = pp.grid_equivalents.get_equivalent(
+        subnet, eq_type, boundary_buses=[1, 5], internal_buses=[])
     eq_net3a.sgen.drop(columns=["origin_id"], inplace=True)
     eq_net3b.sgen.drop(columns=["origin_id"], inplace=True)
 
-    elm_lists = pp.group_element_lists(eq_net3b.group.index[0])
-    idx2comp = pp.create_group(eq_net3a, elm_lists[0], elm_lists[1], reference_column=elm_lists[2])
-
     assert set(eq_net3a["group"].index) == set(eq_net3b["group"].index)
-    assert pp.compare_group_elements(eq_net3a, eq_net3a.group.index[0], idx2comp)
     assert pp.nets_equal(eq_net3a, eq_net3b, exclude_elms=["group"])
 
+    elm_lists = pp.group_element_lists(eq_net3b, eq_net3b.group.index[0])
+    idx2comp = pp.create_group(eq_net3a, elm_lists[0], elm_lists[1], reference_columns=elm_lists[2])
+    assert pp.compare_group_elements(eq_net3a, eq_net3a.group.index[0], idx2comp)
+
     # UC3: merge eq_net3 with subnet_rest
-    eq_net3 = pp.grid_equivalents.merge_internal_net_and_equivalent_external_net(eq_net3a, subnet_rest, eq_type)
+    eq_net3 = pp.grid_equivalents.merge_internal_net_and_equivalent_external_net(
+        eq_net3a, subnet_rest, eq_type)
     pp.runpp(eq_net3, calculate_voltage_angles=True)
     assert pp.nets_equal(net, create_test_net())
     return eq_net1, eq_net2, eq_net3
