@@ -392,7 +392,7 @@ def group_entries_exist_in_element_table(net, index, element_type):
 
 
 # =================================================
-# MAKE USE OF GROUPS AND OTHERS
+# FURTHER GROUP FUNCTIONS
 # =================================================
 
 
