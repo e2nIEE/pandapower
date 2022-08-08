@@ -452,5 +452,32 @@ def test_replace_elements_json_string(net_in):
     assert not nets_equal(net_orig, net_load)
 
 
+def test_json_generalized():
+    general_net0 = pp.pandapowerNet({
+        # structure data
+        "df1": [('col1', np.dtype(object)),
+                ('col2', 'f8'),],
+        "df2": [("col3", 'bool'),
+                 ("col4", "i8")]
+    })
+    general_net1 = copy.deepcopy(general_net0)
+    general_net1.df1.loc[0] = ["hey", 1.2]
+    general_net1.df2.loc[2] = [False, 2]
+
+    for general_in in [general_net0, general_net1]:
+        out = pp.from_json_string(pp.to_json(general_in),
+                                  empty_dict_like_object=pp.pandapowerNet({}))
+        assert sorted(list(out.keys())) == ["df1", "df2"]
+        assert pp.nets_equal(out, general_in)
+
+
+def test_json_index_names():
+    net_in = networks.mv_oberrhein()
+    net_in.bus.index.name = "bus_index"
+    net_out = pp.from_json_string(pp.to_json(net_in, store_index_names=True))
+    assert net_out.bus.index.name == "bus_index"
+    assert pp.nets_equal(net_out, net_in)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
