@@ -464,9 +464,9 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
     boundary_buses = set(boundary_buses)
     bb_buses = net.switch.element[(net.switch.et=="b") &
                                 (net.switch.element.isin(boundary_buses)) &
-                                (net.switch.bus.isin(boundary_buses))].tolist() 
-    boundary_buses -= set(bb_buses) 
-    
+                                (net.switch.bus.isin(boundary_buses))].tolist()
+    boundary_buses -= set(bb_buses)
+
     unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
@@ -477,7 +477,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
             "or out of service): " + str(sorted(unsupplied_boundary_buses)))
 
     if internal_buses & boundary_buses:
-        logger.info("Some internal buses are also contained in the boundary buses, " + 
+        logger.info("Some internal buses are also contained in the boundary buses, " +
                        "this could cause small inaccuracy.")
 
     # --- determine buses connected to boundary buses via bus-bus-switch
@@ -495,8 +495,8 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
                     "as the boundary. You can use the function " +
-                    "'get_connected_switch_buses' to find all these buses.")        
-    
+                    "'get_connected_switch_buses' to find all these buses.")
+
     # --- determine all internal buses
     all_internal_buses = set()
     if internal_buses is None:
@@ -602,11 +602,7 @@ if __name__ == "__main__":
     print(net.res_bus.loc[[0,3]])
     print(net_eq.res_bus.loc[[0,3]])
     print(net_eq.ward.loc[0])
-    
+
     net_eq.sn_mva = 10
     pp.runpp(net_eq, calculate_voltage_angles=True)
     print(net_eq.res_bus.loc[[0,3]])
-    
-    
- 
-
