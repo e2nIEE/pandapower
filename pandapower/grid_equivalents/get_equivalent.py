@@ -331,13 +331,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                 # will be considered here which is wrong. Furthermore, the indices may have changed
                 # from net to net_eq, so that already existing groups with reference_columns == None
                 # may fail their functionality
-                if "group" in net_eq and net_eq.group.shape[0]:
-                    for idx in net_eq.group.index:
-                        new_idx = new_idx.difference(net_eq.group.object.at[idx].get_idx(
-                            net_eq, elm))
+                new_idx = new_idx[~pp.isin_group(net_eq, elm, new_idx)]
 
             if len(new_idx):
-                eq_elms[elm] = new_idx
+                eq_elms[elm] = list(new_idx)
 
         gr_idx = pp.create_group_from_dict(net_eq, eq_elms, name=kwargs.get("group_name", eq_type))
         reference_column = kwargs.get("reference_column", None)

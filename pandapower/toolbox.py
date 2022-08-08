@@ -1224,11 +1224,11 @@ def drop_buses(net, buses, drop_elements=True):
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
+    drop_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"].drop(res_buses, inplace=True)
-    drop_from_groups(net, "bus", buses)
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
@@ -1258,8 +1258,8 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 drop_trafos(net, eid, table=element)
             else:
                 n_el = net[element].shape[0]
-                net[element].drop(eid, inplace=True)
                 drop_from_groups(net, element, eid)
+                net[element].drop(eid, inplace=True)
                 # res_element
                 res_element = "res_" + element
                 if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
@@ -1286,6 +1286,7 @@ def drop_trafos(net, trafos, table="trafo"):
     et = "t" if table == 'trafo' else "t3"
     # remove any affected trafo or trafo3w switches
     i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
+    drop_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
     num_switches = len(i)
 
@@ -1293,10 +1294,10 @@ def drop_trafos(net, trafos, table="trafo"):
     drop_measurements_at_elements(net, table, idx=trafos)
 
     # drop the trafos
+    drop_from_groups(net, table, trafos)
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
-    drop_from_groups(net, table, trafos)
     logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
 
 
@@ -1307,17 +1308,18 @@ def drop_lines(net, lines):
     """
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
+    drop_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
 
     # drop measurements
     drop_measurements_at_elements(net, "line", idx=lines)
 
     # drop lines and geodata
+    drop_from_groups(net, "line", lines)
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
     net["res_line"].drop(res_lines, inplace=True)
-    drop_from_groups(net, "line", lines)
     logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
 
 
@@ -1478,8 +1480,8 @@ def drop_elements_simple(net, element, idx):
     Drop elements and result entries from pandapower net.
     """
     idx = ensure_iterability(idx)
-    net[element].drop(idx, inplace=True)
     drop_from_groups(net, element, idx)
+    net[element].drop(idx, inplace=True)
 
     # res_element
     res_element = "res_" + element
@@ -1585,7 +1587,7 @@ def drop_from_groups(net, element_type, element_index, index=None):
     """
     if index is None:
         index = net.group.index
-    element_index = ensure_iterability(element_index)
+    element_index = pd.Index(ensure_iterability(element_index), dtype=int)
 
     to_check = np.isin(net.group.index.values, index)
     to_check &= net.group.element_type.values == element_type
@@ -1598,7 +1600,8 @@ def drop_from_groups(net, element_type, element_index, index=None):
                 element_index).tolist()
         else:
             net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(pd.Index(
-                net[element_type][rc].loc[element_index])).tolist()
+                net[element_type][rc].loc[element_index.intersection(
+                    net[element_type].index)])).tolist()
 
         if not len(net.group.element.iat[i]):
             keep[i] = False
@@ -1797,7 +1800,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
+            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata", "group")
             dtypes = net[element].dtypes
             try:
                 net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
