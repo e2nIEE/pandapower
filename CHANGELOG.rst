@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
 - [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
 
 [2.10.1] - 2022-07-31
