@@ -146,7 +146,7 @@ def test_to_and_from_ppc():
 
 
 def test_gencost_pwl():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [1, 0, 0, 2, 1,    0,  5, 7],
@@ -165,7 +165,7 @@ def test_gencost_pwl():
 
 
 def test_gencost_pwl_q():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [1, 0, 0, 2, 1,    0,  5, 7],
@@ -190,7 +190,7 @@ def test_gencost_pwl_q():
 
 
 def test_gencost_poly_part():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [2, 0, 0, 2, 14, 0],
@@ -205,7 +205,7 @@ def test_gencost_poly_part():
 
 
 def test_gencost_poly_q():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [2, 0, 0, 2, 14, 0],
@@ -225,7 +225,7 @@ def test_gencost_poly_q():
 
 
 def test_gencost_poly_q_part():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [2, 0, 0, 2, 14, 0],
@@ -244,7 +244,7 @@ def test_gencost_poly_q_part():
 
 
 def test_gencost_poly_pwl():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [1, 0, 0, 3,  1,   0,  5, 7, 10, 10],
@@ -269,7 +269,7 @@ def test_gencost_poly_pwl():
 
 
 def test_gencost_poly_pwl_part_mix():
-    case6 = get_testgrids('case6', 'ppc_testgrids.json')
+    case6 = get_testgrids('ppc_testgrids', 'case6.json')
     case6["gencost"] = np.array(
         [
             [1, 0, 0, 3,  1,   0,  5, 7, 10, 10],
