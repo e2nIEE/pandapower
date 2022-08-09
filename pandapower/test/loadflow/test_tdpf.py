@@ -368,6 +368,23 @@ def test_default_parameters():
     pp.runpp(net, tdpf=True, tdpf_delay_s=10 * 60)
 
 
+def test_with_user_pf_options():
+    net = simple_test_grid(0.5, 0.5)
+    net2 = net.deepcopy()
+    pp.set_user_pf_options(net, tdpf=True)
+    pp.runpp(net)
+    assert "r_ohm_per_km" in net.res_line
+    assert "temperature_degree_celsius" in net.res_line
+    assert len(net.res_line.loc[net.res_line.r_ohm_per_km.isnull()]) == 0
+    assert len(net.res_line.loc[net.res_line.temperature_degree_celsius.isnull()]) == 0
+
+    pp.runpp(net2, tdpf=True)
+    assert_res_equal(net, net2)
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, algorithm="bfsw")
+
+
 # Testing with a given Example from "IEEE Standard for Calculating the Current-Temperature
 # Relationship of Bare Overhead Conductors" Basic Example with Calculation, Page 23 and following
 def test_IEEE_example_1():

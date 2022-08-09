@@ -1061,8 +1061,19 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     permc_spec = kwargs.get("permc_spec", None)
     lightsim2grid = kwargs.get("lightsim2grid", "auto")
 
-    if "init" in overrule_options:
-        init = overrule_options["init"]
+    # for all the parameters from 'overrule_options' we need to collect them
+    # if they are used for any of the chjecks below:
+    algorithm = overrule_options.get("algorithm", algorithm)
+    calculate_voltage_angles = overrule_options.get("calculate_voltage_angles", calculate_voltage_angles)
+    init = overrule_options.get("init", init)
+    max_iteration = overrule_options.get("max_iteration", max_iteration)
+    voltage_depend_loads = overrule_options.get("voltage_depend_loads", voltage_depend_loads)
+    distributed_slack = overrule_options.get("distributed_slack", distributed_slack)
+    tdpf = overrule_options.get("tdpf", tdpf)
+    tdpf_update_r_theta = overrule_options.get("tdpf_update_r_theta", tdpf_update_r_theta)
+    tdpf_delay_s = overrule_options.get("tdpf_delay_s", tdpf_delay_s)
+    # the other parameters do not need to be collected manually:
+    # tolerance_mva, trafo_model, trafo_loading, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
     if numba:
@@ -1130,6 +1141,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 'Distributed slack is only implemented for Newton Raphson algorithm.')
 
     if tdpf:
+        if algorithm != 'nr':
+            raise NotImplementedError('TDPF is only implemented for Newton Raphson algorithm.')
         _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s)
 
     # init options

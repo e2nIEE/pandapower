@@ -483,6 +483,33 @@ def test_multivoltage_example_with_controller():
         net.res_bus.vm_pu.plot()
 
 
+def test_dist_slack_user_pf_options():
+    net = small_example_grid()
+    # if no slack_weight is given for ext_grid, 1 is assumed, because normally
+    # ext_grids are responsible to take the slack power
+    net.gen["slack_weight"] = 1
+
+    net2 = net.deepcopy()
+
+    pp.runpp(net, distributed_slack=True)
+
+    pp.set_user_pf_options(net2, distributed_slack=True)
+    pp.runpp(net2)
+
+    assert_res_equal(net, net2)
+    assert_results_correct(net)
+    assert_results_correct(net2)
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net, distributed_slack=True, algorithm="bfsw")
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net2, algorithm="bfsw")
+
+    pp.set_user_pf_options(net2, algorithm="bfsw")
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net2)
+
 # todo: implement distributed slack for when the grid has several disconnected zones
 
 
