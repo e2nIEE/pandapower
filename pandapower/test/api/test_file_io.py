@@ -479,5 +479,34 @@ def test_json_index_names():
     assert pp.nets_equal(net_out, net_in)
 
 
+def test_json_dict_of_stuff():
+    net1 = pp.networks.case9()
+    net2 = pp.networks.case14()
+    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
+    text = "hello world"
+    d = {"net1": net1, "net2": net2, "df": df, "text": text}
+    s = pp.to_json(d)
+    dd = pp.from_json_string(s)
+    assert d.keys() == dd.keys()
+    assert_net_equal(net1, dd["net1"])
+    assert_net_equal(net2, dd["net2"])
+    pp.dataframes_equal(df, dd["df"])
+    assert text == dd["text"]
+
+
+def test_json_list_of_stuff():
+    net1 = pp.networks.case9()
+    net2 = pp.networks.case14()
+    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
+    text = "hello world"
+    s = pp.to_json([net1, net2, df, text])
+    loaded_list = pp.from_json_string(s)
+
+    assert_net_equal(net1, loaded_list[0])
+    assert_net_equal(net2, loaded_list[1])
+    pp.dataframes_equal(df, loaded_list[2])
+    assert text == loaded_list[3]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
