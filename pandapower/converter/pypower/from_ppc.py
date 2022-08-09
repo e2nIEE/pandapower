@@ -255,7 +255,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         if isinstance(tap_side, str):
             tap_side_is_hv = np.array([tap_side == "hv"]*sum(~is_line))
         else:
-            tap_side_is_hv = tap_side == "hv"
+            tap_side_is_hv = np.array(tap_side == "hv")
         ratio_1 = ppc['branch'][~is_line, TAP].real
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1

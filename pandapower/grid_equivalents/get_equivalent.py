@@ -19,11 +19,6 @@ from pandapower.grid_equivalents.ward_generation import \
     _replace_external_area_by_wards, _replace_external_area_by_xwards
 
 try:
-    from misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
@@ -284,7 +279,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
         time_end-time_start), 2))
 
-    if group_imported and kwargs.get("add_group", True):
+    if kwargs.get("add_group", True):
         # declare a group for the new equivalent
         ib_buses_after_merge, be_buses_after_merge = \
             _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal)
@@ -317,20 +312,17 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                 # ATTENTION: If there are eq elements (elements that fit to the above query of
                 # new_idx) which already exist in net but are not included to other groups, they
                 # will be considered here which is wrong. Furthermore, the indices may have changed
-                # from net to net_eq, so that already existing Group without elm_col may fail their
-                # functionality
-                if "group" in net_eq and net_eq.group.shape[0]:
-                    for idx in net_eq.group.index:
-                        new_idx = new_idx.difference(net_eq.group.object.at[idx].get_idx(
-                            net_eq, elm))
+                # from net to net_eq, so that already existing groups with reference_columns == None
+                # may fail their functionality
+                new_idx = new_idx[~pp.isin_group(net_eq, elm, new_idx)]
 
             if len(new_idx):
-                eq_elms[elm] = new_idx
+                eq_elms[elm] = list(new_idx)
 
-        gr = Group(net_eq, eq_elms, name=kwargs.get("group_name", eq_type))
-        elm_col = kwargs.get("elm_col", None)
-        if elm_col is not None:
-            gr.set_elm_col(net_eq, elm_col)
+        gr_idx = pp.create_group_from_dict(net_eq, eq_elms, name=kwargs.get("group_name", eq_type))
+        reference_column = kwargs.get("reference_column", None)
+        if reference_column is not None:
+            pp.set_group_reference_column(net_eq, gr_idx, reference_column)
 
     return net_eq
 
@@ -589,3 +581,7 @@ if __name__ == "__main__":
     net_eq.sn_mva = 10
     pp.runpp(net_eq, calculate_voltage_angles=True)
     print(net_eq.res_bus.loc[[0,3]])
+
+
+
+

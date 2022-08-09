@@ -364,6 +364,19 @@ def _get_values(source, selection, lookup):
     return v
 
 
+def ensure_iterability(var, len_=None):
+    """
+    Ensures iterability of a variable (and optional length).
+    """
+    if hasattr(var, "__iter__") and not isinstance(var, str):
+        if isinstance(len_, int) and len(var) != len_:
+            raise ValueError("Length of variable differs from %i." % len_)
+    else:
+        len_ = len_ or 1
+        var = [var] * len_
+    return var
+
+
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:

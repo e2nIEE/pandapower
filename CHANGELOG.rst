@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
 - [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+- [ADDED] group functionality
 
 [2.10.1] - 2022-07-31
 -------------------------------
@@ -15,6 +16,7 @@ Change Log
 [2.10.0] - 2022-07-29
 -------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
 - [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
 - [ADDED] from_mpc() converter: added functionality to import .m files via external package
 - [CHANGED] from_ppc() converter: added option of tap_side and essential speed up

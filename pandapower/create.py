@@ -7,11 +7,12 @@
 from operator import itemgetter
 
 import pandas as pd
+from pandas.api.types import is_bool_dtype
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
 
 from pandapower import __version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
 import numpy as np
@@ -293,6 +294,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('level', dtype(object)),
             ('initial_run', "bool"),
             ("recycle", dtype(object))
+        ],
+        'group': [
+            ('name', dtype(object)),
+            ('element_type', dtype(object)),
+            ('element', dtype(object)),
+            ('reference_column', dtype(object)),
         ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -644,9 +651,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
     if geodata is not None:
         # works with a 2-tuple or a matching array
-        net.bus_geodata = pd.concat([net.bus_geodata,
-                                     pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
-                                                  index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat([
+            net.bus_geodata,
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+                         index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
@@ -822,8 +830,10 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
                            default_val=False)
+    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, **entries, **kwargs)
+    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1220,7 +1230,9 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
-    _set_multiple_entries(net, "sgen", index, **entries, **kwargs)
+    defaults_to_fill = [("controllable", False)]
+    _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1655,9 +1667,11 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_series_to_entries(entries, index, "pg_percent", pg_percent)
     _add_series_to_entries(entries, index, "power_station_trafo", power_station_trafo)
     _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=False)
+                           default_val=True)
+    defaults_to_fill = [("controllable", True)]
 
-    _set_multiple_entries(net, "gen", index, **entries, **kwargs)
+    _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -1988,13 +2002,15 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
-        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ['line'] * len(std_type)))
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
+            ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
-        entries["g_us_per_km"] = list(map(check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
-                                          [0.] * len(lineparam)))
+        entries["g_us_per_km"] = list(map(
+            check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
+            [0.] * len(lineparam)))
         entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
                                    [None] * len(lineparam)))
 
@@ -2675,11 +2691,14 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
     if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
+                               dtype=bool_, default_val=False)
     if vk_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_percent_characteristic",  vk_percent_characteristic, "Int64")
+        _add_series_to_entries(entries, index, "vk_percent_characteristic",
+                               vk_percent_characteristic, "Int64")
     if vkr_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_percent_characteristic", vkr_percent_characteristic, "Int64")
+        _add_series_to_entries(entries, index, "vkr_percent_characteristic",
+                               vkr_percent_characteristic, "Int64")
 
     _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
     _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
@@ -2695,7 +2714,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     if xn_ohm is not None:
         _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
 
-    _set_multiple_entries(net, "trafo", index, **entries, **kwargs)
+    defaults_to_fill = [("tap_dependent_impedance", False)]
+    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -3209,7 +3230,8 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
     if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance, dtype=bool_, default_val=False)
+        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
+                               dtype=bool_, default_val=False)
     if vk_hv_percent_characteristic is not None:
         _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic, "Int64")
     if vkr_hv_percent_characteristic is not None:
@@ -3222,8 +3244,10 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
         _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic, "Int64")
     if vkr_lv_percent_characteristic is not None:
         _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic, "Int64")
+    defaults_to_fill = [("tap_dependent_impedance", False)]
 
-    _set_multiple_entries(net, "trafo3w", index, **entries, **kwargs)
+    _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
 
     return index
 
@@ -4069,6 +4093,97 @@ def create_poly_costs(net, elements, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_
     return index
 
 
+def _group_parameter_list(element_types, elements, reference_columns):
+    """
+    Ensures that element_types, elements and reference_columns are iterables with same lengths.
+    """
+    if isinstance(elements, str) or not hasattr(elements, "__iter__"):
+        raise ValueError(f"'elements' should be a list of list of indices.")
+    if any([isinstance(el, str) or not hasattr(el, "__iter__") for el in elements]):
+        raise ValueError(f"In 'elements' each item should be a list of element indices.")
+    element_types = ensure_iterability(element_types, len_=len(elements))
+    reference_columns = ensure_iterability(reference_columns, len_=len(elements))
+    return element_types, elements, reference_columns
+
+
+def _check_elements_existence(net, element_types, elements, reference_columns):
+    """
+    Raises UserWarnings if elements does not exist in net.
+    """
+    for et, elm, rc in zip(element_types, elements, reference_columns):
+        if et not in net.keys():
+            raise UserWarning(f"Cannot create a group with elements of type '{et}', because "
+                              f"net[{et}] does not exist.")
+        if rc is None or pd.isnull(rc):
+            diff = pd.Index(elm).difference(net[et].index)
+        else:
+            if rc not in net[et].columns:
+                raise UserWarning(f"Cannot create a group with reference column '{rc}' for elements"
+                                  f" of type '{et}', because net[{et}][{rc}] does not exist.")
+            diff = pd.Index(elm).difference(pd.Index(net[et][rc]))
+        if len(diff):
+            raise UserWarning(f"Cannot create group with {et} members {diff}.")
+
+
+def create_group(net, element_types, elements, name="", reference_columns=None, index=None,
+                 **kwargs):
+    """Add a new group to net['group'] dataframe.
+
+    Attention
+    ----------
+        If you declare a group but forget to declare all connected elements although
+        you wants to (e.g. declaring lines but forgetting to mention the connected switches),
+        you may get problems after using drop_elements_and_group() or other functions.
+        There are different pandapower toolbox functions which may help you to define
+        'elements_dict', such as get_connecting_branches(),
+        get_inner_branches(), get_connecting_elements_dict().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_types : str or list of strings
+        defines, together with 'elements', which net elements belong to the group
+    elements : list of list of indices
+        defines, together with 'element_types', which net elements belong to the group
+    name : str, optional
+        name of the group, by default ""
+    reference_columns : string or list of strings, optional
+        If given, the elements_dict should
+        not refer to DataFrames index but to another column. It is highly relevant that the
+        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
+        by default None
+    index : int, optional
+        index for the dataframe net.group, by default None
+
+    Example
+    -------
+        create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        or
+        create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+    """
+    element_types, elements, reference_columns = _group_parameter_list(
+        element_types, elements, reference_columns)
+
+    _check_elements_existence(net, element_types, elements, reference_columns)
+
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
+
+    entries = dict(zip(["name", "element_type", "element", "reference_column"],
+                       [ name ,  element_types,  elements,  reference_columns]))
+
+    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+
+    return index[0]
+
+
+def create_group_from_dict(net, elements_dict, name="", reference_column=None, index=None,
+                           **kwargs):
+    """ Wrapper function of create_group(). """
+    return create_group(net, elements_dict.keys(), elements_dict.values(),
+                        name=name, reference_columns=reference_column, index=index, **kwargs)
+
+
 def _get_index_with_check(net, table, index, name=None):
     if name is None:
         name = table
@@ -4228,7 +4343,8 @@ def _set_entries(net, table, index, preserve_dtypes=True, **entries):
         _preserve_dtypes(net[table], dtypes)
 
 
-def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
+def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_fill=None,
+                          **entries):
     dtypes = None
     if preserve_dtypes:
         # store dtypes
@@ -4246,6 +4362,13 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)
 
+    # defaults_to_fill needed due to pandas bug https://github.com/pandas-dev/pandas/issues/46662:
+    # concat adds new bool columns as object dtype -> fix it by setting default value to net[table]
+    if defaults_to_fill is not None:
+        for col, val in defaults_to_fill:
+            if col in dd.columns and col not in net[table].columns:
+                net[table][col] = val
+
     # extend the table by the frame we just created
     try:
         net[table] = pd.concat([net[table], dd], sort=False)
@@ -4256,6 +4379,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, **entries):
     # and preserve dtypes
     if preserve_dtypes:
         _preserve_dtypes(net[table], dtypes)
+
 
 if __name__ == "__main__":
     net = create_empty_network()
