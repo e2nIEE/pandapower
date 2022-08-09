@@ -402,9 +402,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         for key in net_dummy.std_types:
             net.std_types[key] = dict(net_dummy.std_types[key], **net.std_types[key])
     if restore_index_names and "index_names" in net.keys():
-        if not isinstance(net.index_names, dict):
+        if not isinstance(net["index_names"], dict):
             raise ValueError("To restore the index names of the dataframes, a dict including this "
-                             f"information is expected, not {type(net.index_names)}")
+                             f"information is expected, not {type(net['index_names'])}")
         for key, index_name in net["index_names"].items():
             if key in net.keys():
                 net[key].index.name = index_name
