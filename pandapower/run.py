@@ -37,10 +37,10 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
-                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree', 'init_results',
+                           'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
                            'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid',
-                           'tdpf', 'tdpf_delay_s']
+                           'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()

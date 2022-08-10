@@ -31,9 +31,13 @@ from pandapower.pypower.idx_brch import BR_R, BR_X
 def en_net(request):
     # Create a Simple Example Network with 50 Hz
     # for 15, 24, 34, 48: the temperature is too low (ca. 71 °C rather than 80 °C), 679 ca. 76 °C
-    net = pp.create_empty_network()
+    net = create_single_line_net(request.param)
+    return net
 
-    std_type = request.param
+
+def create_single_line_net(std_type):
+    net = pp.create_empty_network()
+    pp.set_user_pf_options(net, init="dc", max_iteration=100)
 
     vn_kv = float(std_type.split(" ")[-1])
     b1 = pp.create_bus(net, vn_kv=vn_kv, name='b1_hv', type='n')
@@ -82,7 +86,7 @@ def prepare_case_30():
 
     # replicating the calculation from the paper Frank et.al.:
     net.line["alpha"] = 1 / (25 + 228.1)
-    net.line["r_theta"] = calc_r_theta_from_t_rise(net, 25)
+    net.line["r_theta_kelvin_per_mw"] = calc_r_theta_from_t_rise(net, 25)
     net.line["tdpf"] = net.line.r_ohm_per_km != 0
 
     net.line["temperature_degree_celsius"] = 25
@@ -182,7 +186,7 @@ def test_tdpf_frank():
     net.line["r1"] = net.line.r_ohm_per_km / z_base_ohm
     net.line["r2"] = net.res_line.r_ohm_per_km / z_base_ohm
     r_delta = (net.res_line.r_ohm_per_km - net.line.r_ohm_per_km) / net.line.r_ohm_per_km * 100
-    sorted_index = net.line.sort_values(by="r_theta", ascending=False).index
+    sorted_index = net.line.sort_values(by="r_theta_kelvin_per_mw", ascending=False).index
 
     line_mva = np.max(np.vstack([
         np.sqrt(net.res_line.p_from_mw ** 2 + net.res_line.q_from_mvar ** 2).loc[sorted_index].values,
@@ -196,7 +200,7 @@ def test_tdpf_frank():
     # compare p_loss
     assert np.allclose(ref2.PLoss_TDPF * net.sn_mva, net.res_line.loc[sorted_index, "pl_mw"], rtol=0, atol=1e-6)
     # compare R_Theta
-    assert np.allclose(ref2.R_THETA, net.line.loc[sorted_index, "r_theta"], rtol=0, atol=1e-6)
+    assert np.allclose(ref2.R_THETA, net.line.loc[sorted_index, "r_theta_kelvin_per_mw"], rtol=0, atol=1e-6)
     # compare difference of R
     assert np.allclose(ref2.R_diff.fillna(0) * 100, r_delta.loc[sorted_index].fillna(0), rtol=0, atol=1e-6)
     # compare loading
@@ -222,7 +226,7 @@ def test_temperature_r():
             net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
             pp.runpp(net2, consider_line_temperature=True)
 
-            net.res_line.drop(["temperature_degree_celsius"], axis=1, inplace=True)
+            net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
             assert_res_equal(net, net2)
 
             # now test transient results -> after 5 min
@@ -231,7 +235,7 @@ def test_temperature_r():
             net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
             pp.runpp(net2, consider_line_temperature=True)
 
-            net.res_line.drop(["temperature_degree_celsius"], axis=1, inplace=True)
+            net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
             assert_res_equal(net, net2)
 
 
@@ -255,8 +259,8 @@ def test_ngoko_vs_frank():
     Va = np.angle(net._ppc["internal"]["V"])
     i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
     # i_square_pu = np.square(net.res_line.i_ka.values*1e3)
-    r_theta = calc_r_theta(t_air_pu, a0, a1, a2, np.square(net.res_line.i_ka.values * 1e3), p_loss_pu)
-    T_frank = calc_T_frank(p_loss_pu, t_air_pu, r_theta, None, None, None)
+    r_theta_pu = calc_r_theta(t_air_pu, a0, a1, a2, np.square(net.res_line.i_ka.values * 1e3), p_loss_pu)
+    T_frank = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, None, None, None)
 
     assert np.array_equal(T_ngoko, T_frank)
 
@@ -320,7 +324,7 @@ def test_default_parameters():
     # with TDPF algorithm but no relevant tdpf lines the results must match with normal runpp:
     net.line["conductor_outer_diameter_m"] = np.nan
     pp.runpp(net, tdpf=True)
-    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
+    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
     assert_res_equal(net, net_backup)
 
     with pytest.raises(UserWarning, match="required columns .*'mc_joule_per_m_k'.* are missing"):
@@ -331,19 +335,19 @@ def test_default_parameters():
     net.line["tdpf"] = np.nan
     with pytest.raises(UserWarning, match="required columns .* are missing"):
         pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
-    net.line["r_theta"] = np.nan
+    net.line["r_theta_kelvin_per_mw"] = np.nan
     pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
-    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius"], axis=1, inplace=True)
+    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
     assert_res_equal(net, net_backup)
 
     # now define some tdpf lines with simplified method
     net.line.loc[[1, 2, 4], 'tdpf'] = True, 1, -8
     net.line.loc[1, 'alpha'] = 4.03e-3
-    net.line["r_theta"] = calc_r_theta_from_t_rise(net, 25)
+    net.line["r_theta_kelvin_per_mw"] = calc_r_theta_from_t_rise(net, 25)
     with pytest.raises(UserWarning, match="required columns .* are missing"):
         pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
     net.line['alpha'] = 4.03e-3
-    net.line["r_theta"] = calc_r_theta_from_t_rise(net, 25)
+    net.line["r_theta_kelvin_per_mw"] = calc_r_theta_from_t_rise(net, 25)
     pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
     # now test with "normal" TDPF
@@ -536,7 +540,7 @@ def test_EN_standard(en_net):
     more than 0.1 below absorptivity, this combination can be considered safe for thermal rating
     calculations without field measurements.
     """
-    pp.runpp(en_net, tdpf=True, init="dc", max_iteration=100)
+    pp.runpp(en_net, tdpf=True)
 
     max_cond_temp = 80
 

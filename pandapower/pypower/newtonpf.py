@@ -123,6 +123,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
+    r_theta_pu = 0
     if tdpf:
         if len(pq) > 0:
             pq_lookup = zeros(max(refpvpq) + 1, dtype=int)  # for TDPF
@@ -169,7 +170,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if tdpf_update_r_theta:
             r_theta_pu = calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu)
         # initial guess for T:
-        T = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau)
+        # T = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau)
+        T = T0.copy()  # better for e.g. timeseries calculation
         F_t = zeros(len(branch))
         # F_t[tdpf_lines] = T - T0
         F = r_[F, F_t]
@@ -238,7 +240,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i, J, Vm_it, Va_it, T * T_base
+    return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
