@@ -15,6 +15,7 @@ import time
 
 import pandapower as pp
 import pandapower.networks
+import pandapower.control
 from pandapower import pp_dir
 from pandapower.auxiliary import _preserve_dtypes
 from pandapower.sql_io import download_sql_table
@@ -45,6 +46,9 @@ def net_in(request):
     net = method()
     net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
     net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+    if len(net.trafo) > 0:
+        net.trafo.tap_side = "lv"
+        pp.control.DiscreteTapControl(net, net.trafo.index.values[0], 0.98, 1.02)
     return net
 
 
