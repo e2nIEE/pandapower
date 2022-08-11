@@ -203,13 +203,15 @@ def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, cat
     conn.commit()
 
 
-def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
+def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
                           grid_catalogue_name="grid_catalogue"):
     """
     Removes a grid model from the PostgreSQL database.
 
     Parameters
     ----------
+    grid_id : int
+        unique grid_id that will be used to identify the data for the grid model
     host : str
         hostname for the DB, e.g. "localhost"
     user : str
@@ -218,8 +220,6 @@ def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_
         name of the database
     schema : str
         name of the database schema (e.g. 'postgres')
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model
     grid_id_column : str
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
