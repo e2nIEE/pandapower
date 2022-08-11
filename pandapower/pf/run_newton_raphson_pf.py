@@ -158,13 +158,15 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["lightsim2grid"]:
         V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus.tocsc(), Sbus, V0, ref, pv, pq, ppci, options)
         T = None
+        r_theta_kelvin_per_mw = None
     else:
-        V, success, iterations, J, Vm_it, Va_it, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
+        V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
                                   "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt, "T": T})
+                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
+                                  "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T})
 
     return ppci, success, iterations
 

@@ -22,7 +22,7 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
 
     Returns
     -------
-    r_theta : array
+    r_theta_kelvin_per_mw : array
         Thermal resistance of the conductors R_{\Theta}
 
     References
@@ -33,8 +33,8 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
     r_for_t_rated_rise = net.line.r_ohm_per_km * (1 + net.line.alpha * t_rise_degree_celsius) * \
                          net.line.length_km / net.line.parallel
     p_rated_loss_mw = np.square(net.line.max_i_ka * np.sqrt(3)) * r_for_t_rated_rise
-    r_theta = t_rise_degree_celsius / p_rated_loss_mw
-    return r_theta
+    r_theta_kelvin_per_mw = t_rise_degree_celsius / p_rated_loss_mw
+    return r_theta_kelvin_per_mw
 
 
 def calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va):
@@ -96,7 +96,7 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
 
     Returns
     -------
-    r_theta : array
+    r_theta_pu : array
         Thermal resistance of the conductors R_{\Theta}
 
     References
@@ -125,7 +125,7 @@ def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
         active power losses in p.u.
     t_air_pu : array
         Air temperature in p.u.
-    r_theta : array
+    r_theta_pu : array
         Thermal resistance of the conductors R_{\Theta}
     tdpf_delay_s : float, None
         Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
@@ -283,8 +283,8 @@ def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_o
     return a0, a1, a2, tau
 
 
-def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_degree_celsius):
-    rho_air = 101325 / (287.058 * (t_amb_degree_celsius + 273))  # pressure 1 atm. / (R_specific * T)
+def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius):
+    rho_air = 101325 / (287.058 * (t_air_degree_celsius + 273))  # pressure 1 atm. / (R_specific * T)
     rho_air_relative = 1.  # relative air density
     # r_f = 0.05 # roughness of conductors
     r_f = 0.1 # roughness of conductors
@@ -306,19 +306,19 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_deg
     return h_c
 
 #
-# def calc_a0_a1_a2_old(t_amb_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, solar_absorptivity=0.5, emissivity=0.5):
-#     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_amb_degree_celsius)
+# def calc_a0_a1_a2_old(t_air_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, solar_absorptivity=0.5, emissivity=0.5):
+#     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_air_degree_celsius)
 #     r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
-#     h_r = 4 * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 3
-#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 3
-#     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_degree_celsius)
+#     h_r = 4 * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 3
+#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 3
+#     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius)
 #     # R0 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c))
 #     R0 = 1 / (h_r + h_c)
-#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_amb_degree_celsius + 273) ** 2
-#     R1 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c + kappa * (t_max - t_amb_degree_celsius)))
+#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 2
+#     R1 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c + kappa * (t_max - t_air_degree_celsius)))
 #     Ps = solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter
-#     #a0 = t_amb_degree_celsius + R0 * Ps
-#     a0 = t_amb_degree_celsius + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
+#     #a0 = t_air_degree_celsius + R0 * Ps
+#     a0 = t_air_degree_celsius + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
 #     a1 = R0 * r_amb_ohm_per_m
 #     # a2 = R0 * R1 * r_max_ohm_per_m * (alpha * r_ref_ohm_per_m - kappa)
 #     a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
@@ -359,7 +359,7 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_amb_deg
 
 
 def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va,
-                  r_theta, J, r, x, g):
+                  r_theta_pu, J, r, x, g):
     """
              / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
              | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -399,9 +399,9 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
     # todo: optimize and speed-up the code for the matrices (write numba versions)
     J13 = create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT)
     J23 = create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT)
-    J31 = create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g)
-    J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta, g)
-    J33 = create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT)
+    J31 = create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g)
+    J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g)
+    J33 = create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT)
 
     Jright = vstack([sparse(J13), sparse(J23)], format="csr")
     Jbtm = hstack([sparse(J31), sparse(J32), sparse(J33)], format="csr")
@@ -597,7 +597,7 @@ def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_d
     return J23
 
 
-def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta, g):
+def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -616,7 +616,7 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
     branch elements by row, m elements by column
     :param g:
     :param b:
-    :param r_theta:
+    :param r_theta_pu:
     :param Vm:
     :param Va:
     :param pvpq_lookup:
@@ -645,7 +645,7 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
     #
     #         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
     #         # J31[ij, mm] = sign * (g[ij] ** 2 + b[ij] ** 2) * C[ij] * B_mn
-    #         J31_old[ij, mm] = - 2 * r_theta[ij_lookup] * g[ij_lookup] * B_mn * C[ij_lookup]
+    #         J31_old[ij, mm] = - 2 * r_theta_pu[ij_lookup] * g[ij_lookup] * B_mn * C[ij_lookup]
 
     mf = np.r_[branch[tdpf_lines[in_pvpq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pvpq_t], T_BUS].real.astype(int)]
@@ -654,12 +654,12 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
 
     for in_pvpq, m, n in ((in_pvpq_f, mf, nf), (in_pvpq_t, mt, nt)):
         pq_j = pvpq_lookup[m]
-        J31[tdpf_lines[in_pvpq], pq_j] = - 2 * r_theta[in_pvpq] * g[in_pvpq] * Vm[m] * Vm[n] * np.sin(Va[m] - Va[n]) * C[in_pvpq]
+        J31[tdpf_lines[in_pvpq], pq_j] = - 2 * r_theta_pu[in_pvpq] * g[in_pvpq] * Vm[m] * Vm[n] * np.sin(Va[m] - Va[n]) * C[in_pvpq]
 
     return J31
 
 
-def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta, g):
+def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g):
     """
          / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -678,7 +678,7 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
     branch elements by ij, m elements by column
     :param g:
     :param b:
-    :param r_theta:
+    :param r_theta_pu:
     :param pq_lookup:
 
     """
@@ -706,7 +706,7 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
     #
     #         # A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
     #         # J32[ij, mm] = 2 * (g[ij]**2 + b[ij]**2) * C[ij] * A_mn / Vm[m]
-    #         J32_old[ij, mm] = - 2 * r_theta[ij_lookup] * g[ij_lookup] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[ij_lookup]
+    #         J32_old[ij, mm] = - 2 * r_theta_pu[ij_lookup] * g[ij_lookup] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[ij_lookup]
 
     mf = np.r_[branch[tdpf_lines[in_pq_f], F_BUS].real.astype(int)]
     mt = np.r_[branch[tdpf_lines[in_pq_t], T_BUS].real.astype(int)]
@@ -715,12 +715,12 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
 
     for in_pq, m, n in ((in_pq_f, mf, nf), (in_pq_t, mt, nt)):
         pq_j = pq_lookup[m]
-        J32[tdpf_lines[in_pq], pq_j] = - 2 * r_theta[in_pq] * g[in_pq] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[in_pq]
+        J32[tdpf_lines[in_pq], pq_j] = - 2 * r_theta_pu[in_pq] * g[in_pq] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[in_pq]
 
     return J32
 
 
-def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
+def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
     """
      / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
      | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -741,7 +741,7 @@ def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
     :param b:
     :param dg_dT:
     :param Vm:
-    :param r_theta:
+    :param r_theta_pu:
     :param pvpq_lookup:
 
     """
@@ -762,17 +762,17 @@ def create_J33(branch, tdpf_lines, r_theta, Vm, Va, dg_dT):
     #         if mn == ij:
     #             i, j = branch[ij, [F_BUS, T_BUS]].real.astype(int)
     #             # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
-    #             J33[mn, ij] = 1 - r_theta[ij_lookup] * (Vm[i]**2 + Vm[j]**2 - 2*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j])) * dg_dT[ij_lookup]
+    #             J33[mn, ij] = 1 - r_theta_pu[ij_lookup] * (Vm[i]**2 + Vm[j]**2 - 2*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j])) * dg_dT[ij_lookup]
 
     #use this instead:
     # for ij_lookup, ij in enumerate(tdpf_lines):
     #    i, j = branch[ij, [F_BUS, T_BUS]].real.astype(int)
     #    # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
-    #    J33[ij, ij] = 1 - r_theta[ij_lookup] * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT[ij_lookup]
+    #    J33[ij, ij] = 1 - r_theta_pu[ij_lookup] * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT[ij_lookup]
 
     # vectorized with numpy:
     i = branch[tdpf_lines, F_BUS].real.astype(int)
     j = branch[tdpf_lines, T_BUS].real.astype(int)
-    J33[tdpf_lines, tdpf_lines] = 1 - r_theta * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
+    J33[tdpf_lines, tdpf_lines] = 1 - r_theta_pu * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
 
     return J33

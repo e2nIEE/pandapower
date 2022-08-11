@@ -148,6 +148,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
 
         if net["_options"].get("tdpf", False):
             tpdf_lines = line_df.in_service & line_df.tdpf
+            res_line_df.loc[tpdf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
             no_tdpf_t = line_df.loc[~tpdf_lines].get("temperature_degree_celsius", default=20.)
             res_line_df.loc[tpdf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
             res_line_df.loc[~tpdf_lines, "temperature_degree_celsius"] = no_tdpf_t

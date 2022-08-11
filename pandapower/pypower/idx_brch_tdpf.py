@@ -20,7 +20,7 @@ WIND_ANGLE_DEGREE 			= start + 10  # Angle of attack, angle between wind directi
 SOLAR_RADIATION_W_PER_SQ_M 	= start + 11  # Solar radiation in W/m²
 GAMMA 						= start + 12  # absorption albedo, solar absorptivity
 EPSILON 					= start + 13  # radiative albedo, emissivity
-R_THETA 					= start + 14  # Thermal resistance R_Theta (Optional)
+R_THETA 					= start + 14  # Thermal resistance R_Theta in K/MW (Optional)
 OUTER_DIAMETER_M 			= start + 15  # outer diameter of the conductor
 MC_JOULE_PER_M_K 			= start + 16  # thermal inertia parameter of the conductor
 

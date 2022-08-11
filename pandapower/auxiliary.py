@@ -805,7 +805,7 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
     if len(tdpf_lines) == 0:
         logger.info("TDPF: no relevant lines found")
 
-    # required for simplified approach if r_theta is provided, can be filled with simplified values:
+    # required for simplified approach if r_theta_kelvin_per_mw is provided, can be filled with simplified values:
     default_values = {"temperature_degree_celsius": 20,  # starting temperature of lines
                       "reference_temperature_degree_celsius": 20,  # reference temperature for line.r_ohm_per_km
                       "air_temperature_degree_celsius": 35,  # temperature of air surrounding the conductors
@@ -820,8 +820,10 @@ def _check_tdpf_parameters(net, tdpf_update_r_theta, tdpf_delay_s):
                                "emissivity": 0.5})  # coefficient of solar emissivity
         required_columns.append("conductor_outer_diameter_m")  # outer diameter of the conductor
     else:
-        # make sure r_theta is provided (use the function pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise)
-        required_columns.append("r_theta")  # if a simplified method for calculating the line temperature is used
+        # make sure r_theta_kelvin_per_mw is provided
+        # (use the function pandapower.pf.create_jacobian_tdpf.calc_r_theta_from_t_rise)
+        # is relevant if a simplified method for calculating the line temperature is used
+        required_columns.append("r_theta_kelvin_per_mw")
 
     if tdpf_delay_s:
         # for thermal inertia, mass * thermal capacity of the conductor per unit length:
