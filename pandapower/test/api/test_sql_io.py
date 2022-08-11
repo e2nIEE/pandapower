@@ -80,7 +80,7 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
     connection_data, schema = get_postgresql_connection_data()
     grid_id = pp.to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
 
-    net_out = pp.from_postgresql(schema=schema, grid_id=grid_id, **connection_data, **kwargs)
+    net_out = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
 
     if not include_results:
         pp.runpp(net)
@@ -141,7 +141,7 @@ def test_delete():
     grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
     pp.delete_postgresql_net(**connection_data, schema=schema, grid_id=grid_id)
     with pytest.raises(UserWarning):
-        _ = pp.from_postgresql(schema=schema, grid_id=grid_id, **connection_data)
+        _ = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data)
 
     # check that it is not only deleted from the grid catalogue
     conn = psycopg2.connect(**connection_data)

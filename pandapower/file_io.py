@@ -88,8 +88,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     if not xlsxwriter_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = io_utils.to_dict_of_dfs(net, include_results=include_results,
-                                       include_empty_tables=include_empty_tables)
+    dict_net = io_utils.to_dict_of_dfs(net, include_results=include_results, include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
