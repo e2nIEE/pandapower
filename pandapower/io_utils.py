@@ -60,11 +60,7 @@ except:
 from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
-try:
-    from functools import singledispatch
-except ImportError:
-    # Python 2.7
-    from singledispatch import singledispatch
+from functools import singledispatch
 
 try:
     import fiona
