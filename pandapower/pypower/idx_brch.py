@@ -90,5 +90,4 @@ MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 BR_R_ASYM = 21
 BR_X_ASYM = 22
 
-
 branch_cols = 23

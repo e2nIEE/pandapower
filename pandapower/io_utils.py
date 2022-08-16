@@ -16,47 +16,48 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+from deepdiff.diff import DeepDiff
 
 import networkx
 import numpy
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
-from packaging import version
 
+try:
+    import psycopg2
+    import psycopg2.errors
+    import psycopg2.extras
+    PSYCOPG2_INSTALLED = True
+except ImportError:
+    psycopg2 = None
+    PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal
-
-from pandapower.auxiliary import get_free_id
-
 try:
     from cryptography.fernet import Fernet
-
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import hashlib
-
     hashlib_INSTALLED = True
 except ImportError:
     hashlib_INSTALLED = False
 try:
     import base64
-
     base64_INSTALLED = True
 except ImportError:
     base64_INSTALLED = False
 try:
     import zlib
-
     zlib_INSTALLED = True
 except:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import pandapowerNet, soft_dependency_error, _preserve_dtypes
+from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
 try:
@@ -92,7 +93,7 @@ logger = logging.getLogger(__name__)
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
     geo = pd.DataFrame(columns=columns, index=value.index)
-    if any(~value.coords.isnull()):
+    if "coords" in value.columns and any(~value.coords.isnull()):
         k = max(len(v) for v in value.coords.values)
         v = numpy.empty((len(value), k * 2))
         v.fill(numpy.nan)
@@ -174,7 +175,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].shape[0] == 0:  # skip empty dataframes
                 continue
             if pd_dict[k].index[0].isdigit():
-                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
+                pd_dict[k].set_index(pd_dict[k].index.astype(int), inplace=True)
         else:
             raise UserWarning("The network is an old version or corrupt. "
                               "Try to use the old load function")
@@ -222,11 +223,11 @@ def from_dict_of_dfs(dodfs):
             continue  # don't go into try..except
         else:
             net[item] = table
-        # set the index to be Int64Index
+        # set the index to be Int
         try:
-            net[item].set_index(net[item].index.astype(numpy.int64), inplace=True)
+            net[item].set_index(net[item].index.astype(int), inplace=True)
         except TypeError:
-            # TypeError: if not int64 index (e.g. str)
+            # TypeError: if not int index (e.g. str)
             pass
     restore_all_dtypes(net, dodfs["dtypes"])
     return net
@@ -288,9 +289,9 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
         if isinstance(item, dict) and "DF" in item:
             df_dict = item["DF"]
             if "columns" in df_dict:
-                # make sure the index is Int64Index
+                # make sure the index is Int
                 try:
-                    df_index = pd.Index(df_dict['index'], dtype=np.int64)
+                    df_index = pd.Index(df_dict['index'], dtype=int)
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
@@ -311,10 +312,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             else:
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    if version.parse(pd.__version__) < version.parse("0.21"):
-                        net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                    else:
-                        net[key] = net[key].reindex(item["columns"], axis=1)
+                    net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -449,7 +447,7 @@ class FromSerializableRegistry():
     def DataFrame(self):
         df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
         try:
-            df.set_index(df.index.astype(numpy.int64), inplace=True)
+            df.set_index(df.index.astype(int), inplace=True)
         except (ValueError, TypeError, AttributeError):
             logger.debug("failed setting int64 index")
         # recreate jsoned objects
@@ -458,13 +456,17 @@ class FromSerializableRegistry():
                 df[col] = df[col].apply(self.pp_hook)
         return df
 
-    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
+    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
+                                # empty_dict_like_object=None)
     def pandapowerNet(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
             return from_json_string(self.obj)
         else:
-            net = create_empty_network()
+            if self.empty_dict_like_object is None:
+                net = create_empty_network()
+            else:
+                net = self.empty_dict_like_object
             net.update(self.obj)
             return net
 
@@ -529,9 +531,9 @@ class FromSerializableRegistry():
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
-                df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+                df.set_index(df['id'].values.astype(int), inplace=True)
             else:
-                df.set_index(df.index.values.astype(numpy.int64), inplace=True)
+                df.set_index(df.index.values.astype(int), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
@@ -552,14 +554,17 @@ class PPJSONDecoder(json.JSONDecoder):
         # net = pandapowerNet.__new__(pandapowerNet)
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
+        empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
+                                               empty_dict_like_object=empty_dict_like_object,
                                                registry_class=FromSerializableRegistry)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry):
+def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
+            registry_class=FromSerializableRegistry):
     try:
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
@@ -577,6 +582,7 @@ def pp_hook(d, deserialize_pandas=True, registry_class=FromSerializableRegistry)
             fs = registry_class(obj, d, pp_hook)
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
+            fs.empty_dict_like_object = empty_dict_like_object
             return fs.from_serializable()
         else:
             return d
@@ -674,6 +680,16 @@ class JSONSerializableClass(object):
         return index
 
     def equals(self, other):
+        # todo: can this method be removed?
+        warn("JSONSerializableClass: the attribute 'equals' is deprecated "
+             "and will be removed in the future. Use the '__eq__' method instead, "
+             "by directly comparing the objects 'a == b'. "
+             "To check if two variables point to the same object, use 'a is b'", DeprecationWarning)
+
+        logger.warning("JSONSerializableClass: the attribute 'equals' is deprecated "
+                       "and will be removed in the future. Use the '__eq__' method instead, "
+                       "by directly comparing the objects 'a == b'. "
+                       "To check if two variables point to the same object, use 'a is b'")
 
         class UnequalityFound(Exception):
             pass
@@ -749,6 +765,29 @@ class JSONSerializableClass(object):
     def from_json(cls, json_string):
         d = json.loads(json_string, cls=PPJSONDecoder)
         return cls.from_dict(d)
+
+    def __eq__(self, other):
+        """
+        comparing class name and attributes instead of class object address directly.
+        This allows more flexibility,
+        e.g. when the class definition is moved to a different module.
+        Checking isinstance(other, self.__class__) for an early return without calling DeepDiff.
+        There is still a risk that the implementation details of the methods can differ
+        if the classes are from different modules.
+        The comparison is based on comparing dictionaries of the classes.
+        To this end, the dictionary comparison library deepdiff is used for recursive comparison.
+        """
+        if self.__class__.__name__ != other.__class__.__name__:
+            return False
+        else:
+            d = DeepDiff(self.__dict__, other.__dict__, ignore_nan_inequality=True,
+                         significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
+            return len(d) == 0
+
+    def __hash__(self):
+        # for now we use the address of the object for hash, but we can change it in the future
+        # to be based on the attributes e.g. with DeepHash or similar
+        return hash(id(self))
 
 
 def with_signature(obj, val, obj_module=None, obj_class=None):

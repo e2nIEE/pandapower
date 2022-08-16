@@ -14,4 +14,5 @@ These tools are:
 
     converter/pypower
     converter/matpower
+    converter/powerfactory
 

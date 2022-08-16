@@ -300,6 +300,11 @@ def _add_missing_columns(net, elements_to_deserialize):
             'z_ohm' not in net.switch:
         net.switch['z_ohm'] = 0
 
+    # Update the switch table with 'in_ka'
+    if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
+            'in_ka' not in net.switch:
+        net.switch['in_ka'] = np.nan
+
     if _check_elements_to_deserialize('measurement', elements_to_deserialize) and \
             "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
@@ -366,16 +371,9 @@ def _set_data_type_of_columns(net):
                     continue
                 if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
+                        net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                         errors="ignore")
 
 
 def _convert_to_mw(net):

@@ -48,7 +48,8 @@ def run_basic_usecases(eq_type, net=None):
         net = create_test_net()
 
     # UC1: get internal buses [0, 1, 5, 6] and equivalent connected to buses [1, 5]
-    eq_net1 = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses=[1, 5], internal_buses=[0, 6])
+    eq_net1 = pp.grid_equivalents.get_equivalent(
+        net, eq_type, boundary_buses=[1, 5], internal_buses=[0, 6])
     pp.runpp(eq_net1, calculate_voltage_angles=True)
 
     # UC2: don't get the internal buses [0, 1, 5, 6] but the boundary buses [2, 4] and the
@@ -60,19 +61,25 @@ def run_basic_usecases(eq_type, net=None):
     # boundary buses [1, 5] -> expected return are the boundary buses and the equivalent
     subnet = pp.select_subnet(net, list(range(1, 6)), include_results=True)
     subnet_rest = pp.select_subnet(net, [0, 1, 5, 6], include_results=True)
-    eq_net3a = pp.grid_equivalents.get_equivalent(subnet, eq_type, boundary_buses=[1, 5], internal_buses=None)
+    eq_net3a = pp.grid_equivalents.get_equivalent(
+        subnet, eq_type, boundary_buses=[1, 5], internal_buses=None)
 
     # UC3b tests whether this also works for 'internal_buses' as empty list
-    eq_net3b = pp.grid_equivalents.get_equivalent(subnet, eq_type, boundary_buses=[1, 5], internal_buses=[])
+    eq_net3b = pp.grid_equivalents.get_equivalent(
+        subnet, eq_type, boundary_buses=[1, 5], internal_buses=[])
     eq_net3a.sgen.drop(columns=["origin_id"], inplace=True)
     eq_net3b.sgen.drop(columns=["origin_id"], inplace=True)
-    if group_imported:
-        assert set(eq_net3a["group"].index) == set(eq_net3b["group"].index)
-        assert eq_net3a.group.object.at[0].compare_elms_dict(eq_net3a.group.object.at[0].elms_dict)
+
+    assert set(eq_net3a["group"].index) == set(eq_net3b["group"].index)
     assert pp.nets_equal(eq_net3a, eq_net3b, exclude_elms=["group"])
 
+    elm_lists = pp.group_element_lists(eq_net3b, eq_net3b.group.index[0])
+    idx2comp = pp.create_group(eq_net3a, elm_lists[0], elm_lists[1], reference_columns=elm_lists[2])
+    assert pp.compare_group_elements(eq_net3a, eq_net3a.group.index[0], idx2comp)
+
     # UC3: merge eq_net3 with subnet_rest
-    eq_net3 = pp.grid_equivalents.merge_internal_net_and_equivalent_external_net(eq_net3a, subnet_rest, eq_type)
+    eq_net3 = pp.grid_equivalents.merge_internal_net_and_equivalent_external_net(
+        eq_net3a, subnet_rest, eq_type)
     pp.runpp(eq_net3, calculate_voltage_angles=True)
     assert pp.nets_equal(net, create_test_net())
     return eq_net1, eq_net2, eq_net3
@@ -339,7 +346,6 @@ def test_adopt_columns_to_separated_eq_elms():
     assert pp.dataframes_equal(net.sgen[columns_to_check], eq_net.sgen[columns_to_check])
 
 
-@pytest.mark.skipif(not group_imported, reason="Group is not installed")
 def test_equivalent_groups():
     net = pp.networks.example_multivoltage()
     for elm in pp.pp_elements():
@@ -353,40 +359,46 @@ def test_equivalent_groups():
     ext1 = {42, 43, 44}
     bb1 = {37, 41}
     int1 = set(net.bus.index) - ext1 - bb1
-    net_eq1 = pp.grid_equivalents.get_equivalent(net, "rei", bb1, int1, elm_col="origin_id")
-    assert net_eq1.group.shape[0] == 1
+    net_eq1 = pp.grid_equivalents.get_equivalent(net, "rei", bb1, int1,
+                                                 reference_column="origin_id")
+    assert len(set(net_eq1.group.index)) == 1
+    gr1_idx = net_eq1.group.index[0]
     for elm, no in [("bus", 3), ("load", 1), ("sgen", 2)]:
-        assert len(net_eq1.group.object.at[0].elms_dict[elm]) == no
-    assert len(net_eq1.group.object.at[0].elms_dict["impedance"]) == net_eq1.impedance.shape[0] - 1
-    assert len(net_eq1.group.object.at[0].elms_dict["shunt"]) == net_eq1.shunt.shape[0] - 1
-    net_eq1.group.object.at[0].set_elm_col(net_eq1, "origin_id")
+        assert len(pp.group_row(net_eq1, gr1_idx, elm).at["element"]) == no
+    assert len(pp.group_row(net_eq1, gr1_idx, "impedance").at["element"]) == net_eq1.impedance.shape[0] - 1
+    assert len(pp.group_row(net_eq1, gr1_idx, "shunt").at["element"]) == net_eq1.shunt.shape[0] - 1
+    pp.set_group_reference_column(net_eq1, gr1_idx, "origin_id")
 
     bb2 = {37}
-    int2 = set(net_eq1.bus.index[net_eq1.bus.vn_kv > 11]) | set(net_eq1.group.object.at[
-        0].get_idx(net_eq1, "bus"))
+    int2 = set(net_eq1.bus.index[net_eq1.bus.vn_kv > 11]) | set(pp.group_element_index(
+        net_eq1, gr1_idx,"bus"))
 
     # test 2nd rei
     for sgen_separate in [True, False]:
         print("sgen_separate is " + str(sgen_separate))
-        net_eq2 = pp.grid_equivalents.get_equivalent(net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate,
-                                     elm_col="origin_id")
-        assert net_eq2.group.shape[0] == 2
-        assert len(set(net_eq2.group.object.at[1].elms_dict.keys()) ^ {
+        net_eq2 = pp.grid_equivalents.get_equivalent(
+            net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate, reference_column="origin_id")
+        gr2_idx = net_eq2.group.index[-1]
+        assert len(set(net_eq2.group.index)) == 2
+        assert len(set(pp.count_group_elements(net_eq2, gr2_idx).index) ^ {
             "bus", "load", "sgen", "impedance", "shunt"}) == 0
         no_sg = 6 if sgen_separate else 1  # number of expected sgens
         no_l = 1  # number of expected loads
         no_b = no_sg + no_l # number of expected buses
-        for elm, no in [("bus", no_b), ("load", no_l), ("sgen", no_sg), ("shunt", no_b+1)]:
-            assert len(net_eq2.group.object.at[1].elms_dict[elm]) == no
-        assert len(net_eq2.group.object.at[1].elms_dict["impedance"]) > 0.5 * no_b**2  # the number
-        # of impedances is lower than no_b**2 since imp < 1e-8 were dropped
+        # print(pp.count_group_elements(net_eq2, gr2_idx))
+        for elm, no in [("bus", no_b), ("load", no_l), ("sgen", no_sg)]:
+            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element"]) == no
+        assert len(pp.group_row(net_eq2, gr2_idx, "impedance").at["element"]) > 0.5 * (no_b-1)**2  # the
+        # number of impedances is lower than no_b**2 since imp < 1e-8 were dropped
 
     # test 2nd xward
-    net_eq2 = pp.grid_equivalents.get_equivalent(net_eq1, "xward", bb2, int2, elm_col="origin_id")
-    assert net_eq2.group.shape[0] == 2
-    assert len(set(net_eq2.group.object.at[1].elms_dict.keys()) ^ {"xward"}) == 0
+    net_eq2 = pp.grid_equivalents.get_equivalent(
+        net_eq1, "xward", bb2, int2, reference_column="origin_id")
+    gr2_idx = net_eq2.group.index[-1]
+    assert len(set(net_eq2.group.index)) == 2
+    assert len(set(pp.count_group_elements(net_eq2, gr2_idx).index) ^ {"xward"}) == 0
     for elm, no in [("xward", 1)]:
-        assert len(net_eq2.group.object.at[1].elms_dict[elm]) == no
+            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element"]) == no
 
 
 def test_shifter_degree():
@@ -396,11 +408,11 @@ def test_shifter_degree():
     net.trafo3w.shift_mv_degree[0] = 90
     net.trafo3w.shift_lv_degree[0] = 150
     pp.runpp(net, calculate_voltage_angles=True)
-    
+
     boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
         list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
     i = net.ext_grid.bus.values[0]
-    
+
     for eq_type in  ["rei"]:
         for b in boundary_buses:
             net_rei = pp.grid_equivalents.get_equivalent(net, eq_type, [b], [i],
@@ -416,4 +428,13 @@ def test_shifter_degree():
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', __file__])
+    if 0:
+        pytest.main(['-x', __file__])
+    else:
+        test_cost_consideration()
+        test_basic_usecases()
+        test_case9_with_slack_generator_in_external_net()
+        test_adopt_columns_to_separated_eq_elms()
+        # test_equivalent_groups()
+        test_shifter_degree()
+    pass
