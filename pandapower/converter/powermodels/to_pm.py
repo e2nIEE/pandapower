@@ -210,11 +210,11 @@ def get_branch_angles(row, correct_pm_network_data):
         if angmin < -60.:
             logger.debug("changed voltage angle minimum of branch {}, "
                          "to -60 from {} degrees".format(int(row[0].real), angmin))
-            angmin = -60.
+            angmin = -360.
         if angmax > 60.:
             logger.debug("changed voltage angle maximum of branch {} to 60. "
                          "from {} degrees".format(int(row[0].real), angmax))
-            angmax = 60.
+            angmax = 360.
     # convert to rad
     angmin = math.radians(angmin)
     angmax = math.radians(angmax)
@@ -468,44 +468,60 @@ def init_ne_line(net, new_line_index, construction_costs=None):
 
 def add_params_to_pm(net, pm):
     # add user defined parameters to pm
-    for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
-        param_cols = [col for col in net[elm].columns if 'pm_param' in col]
-        if not param_cols:
-            continue
-        elif "user_defined_params" not in pm.keys():
-            pm["user_defined_params"] = dict()
-        params = [param_col.split("/")[-1] for param_col in param_cols]
-        for param, param_col in zip(params, param_cols):
-            pd_idxs = net[elm].index[net[elm][param_col].notna()].tolist()
-            target_values = net[elm][param_col][pd_idxs].values.tolist()
+    pd_idxs_br = []
+    pm_idxs_br = []
+    br_elms = ["line", "trafo"]
+    for elm in ["bus", "line"]: #["bus", "line", "trafo", "gen", "load", "sgen"]:
+        if len(net[elm]) > 0:
+            param_cols = [col for col in net[elm].columns if 'pm_param' in col]
+            if not param_cols:
+                continue
+            elif "user_defined_params" not in pm.keys():
+                pm["user_defined_params"] = dict()
+            params = [param_col.split("/")[-1] for param_col in param_cols]
+            br_param = list(set(params) - {'side'})
+            for param, param_col in zip(params, param_cols):
+                pd_idxs = net[elm].index[net[elm][param_col].notna()].tolist()
+                target_values = net[elm][param_col][pd_idxs].values.tolist()
+                if elm in br_elms and param in br_param:
+                    pd_idxs_br += net[elm].index[net[elm][param_col].notna()].tolist()
+                    target_values = net[elm][param_col][pd_idxs_br].values.tolist()
+                if elm in ["line", "trafo"]:
+                    start, end = net._pd2pm_lookups["branch"][elm]
+                    pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs_br]
+                    pm_idxs = [int(v) + start for v in pd_pos]
+                elif elm == "sgen":
+                    pm_idxs = [int(v) for v in net._pd2pm_lookups[elm+"_controllable"][pd_idxs]]
+                    elm = "gen"
+                else:
+                    pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
+                df = pd.DataFrame(index=pm_idxs) if elm not in ["line", "trafo"] else pd.DataFrame(index=pm_idxs_br)   
+                df["element_index"] = pm_idxs
+                df["element_pp_index"] = pd_idxs if elm not in ["line", "trafo"] else pd_idxs_br
+                df["value"] = target_values
+                df["element"] = elm
+                pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
+
             if elm in ["line", "trafo"]:
-                start, end = net._pd2pm_lookups["branch"][elm]
-                pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs]
-                pm_idxs = [int(v) + start for v in pd_pos]
-            elif elm == "sgen":
-                pm_idxs = [int(v) for v in net._pd2pm_lookups[elm+"_controllable"][pd_idxs]]
-                elm = "gen"
-            else:
-                pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
-            df = pd.DataFrame(index=pm_idxs)
-            df["element"] = elm if elm not in ["line", "trafo"] else "branch"
-            df["element_index"] = pm_idxs
-            df["element_pp_index"] = pd_idxs
-            df["value"] = target_values
-            pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
-        if elm in ["line", "trafo"]:
-            for k in pm["user_defined_params"]["side"].keys():
-                side = pm["user_defined_params"]["side"][k]["value"]
-                side_bus_f = side + "_bus"
-                if elm == "line":
-                    side_bus_t = "from_bus" if side == "to" else "to_bus" 
-                if elm == "trafo":
-                    side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
-                pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
-                pm["user_defined_params"]["setpoint_q"][k]["f_bus"] = \
-                    net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
-                pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
-                    net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+                for bp in br_param:
+                    for k in pm["user_defined_params"]["side"].keys():
+                        side = pm["user_defined_params"]["side"][k]["value"]
+                        side_bus_f = side + "_bus"
+                        if elm == "line":
+                            side_bus_t = "from_bus" if side == "to" else "to_bus" 
+                        if elm == "trafo":
+                            side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
+                        pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
+                        ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
+                         
+                        pm["user_defined_params"][bp][k]["f_bus"] = \
+                            int(net._ppc_opf["branch"][ppcidx,0].real) + 1
+                        pm["user_defined_params"][bp][k]["t_bus"] = \
+                            int(net._ppc_opf["branch"][ppcidx,1].real) + 1
+                        # pm["user_defined_params"][bp][k]["f_bus"] = \
+                        #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                        # pm["user_defined_params"][bp][k]["t_bus"] = \
+                        #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
     return pm
 
 
