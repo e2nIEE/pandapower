@@ -435,6 +435,6 @@ if __name__ == "__main__":
         test_basic_usecases()
         test_case9_with_slack_generator_in_external_net()
         test_adopt_columns_to_separated_eq_elms()
-        # test_equivalent_groups()
+        test_equivalent_groups()
         test_shifter_degree()
     pass
