@@ -60,11 +60,7 @@ except:
 from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
 
-try:
-    from functools import singledispatch
-except ImportError:
-    # Python 2.7
-    from singledispatch import singledispatch
+from functools import singledispatch
 
 try:
     import fiona
@@ -111,15 +107,18 @@ def coords_to_df(value, geotype="line"):
     return geo
 
 
-def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_empty_tables=True):
+def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_parameters=True,
+                   include_empty_tables=True):
     dodfs = dict()
     dtypes = []
-    dodfs["parameters"] = dict()  # pd.DataFrame(columns=["parameter"])
+    parameters = dict()  # pd.DataFrame(columns=["parameter"])
     for item, value in net.items():
         # dont save internal variables and results (if not explicitely specified)
         if item.startswith("_") or (item.startswith("res") and not include_results):
             continue
         elif item == "std_types":
+            if not include_std_types:
+                continue
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
                 if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
                     dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
@@ -135,7 +134,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             continue
         elif isinstance(value, (int, float, bool, str)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
-            dodfs["parameters"][item] = net[item]
+            parameters[item] = net[item]
             continue
         elif not isinstance(value, pd.DataFrame):
             logger.warning("Could not serialize net.%s" % item)
@@ -155,13 +154,22 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
             if GEOPANDAS_INSTALLED and isinstance(value, geopandas.GeoDataFrame):
                 geo["geometry"] = [s.to_wkt() for s in net.line_geodata.geometry.values]
             dodfs[item] = geo
+        elif "object" in value.columns:
+            columns = [c for c in value.columns if c != "object"]
+            tab = value[columns].copy()
+            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
+            if "recycle" in tab.columns:
+                tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
         else:
             dodfs[item] = value
         # save dtypes
         for column, dtype in value.dtypes.iteritems():
             dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
-    dodfs["parameters"] = pd.DataFrame(dodfs["parameters"], index=[0])
+    if include_parameters and len(parameters) > 0:
+        dodfs["parameters"] = pd.DataFrame(parameters, index=[0])
     return dodfs
 
 
@@ -199,16 +207,20 @@ def df_to_coords(net, item, table):
             net[item].loc[i, "coords"] = coord
 
 
-def from_dict_of_dfs(dodfs):
-    net = create_empty_network()
-    for c in dodfs["parameters"].columns:
-        net[c] = dodfs["parameters"].at[0, c]
-        if c == "name" and pd.isnull(net[c]):
-            net[c] = ''
+def from_dict_of_dfs(dodfs, net=None):
+    if net is None:
+        net = create_empty_network()
     for item, table in dodfs.items():
-        if item in ("parameters", "dtypes"):
+        if item == "dtypes":
+            continue
+        elif item == "parameters":
+            for c in dodfs["parameters"].columns:
+                net[c] = dodfs["parameters"].at[0, c]
+                if c == "name" and pd.isnull(net[c]):
+                    net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
+            table.rename_axis(net[item].index.name, inplace=True)
             df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
@@ -216,12 +228,17 @@ def from_dict_of_dfs(dodfs):
         elif item.endswith("_profiles"):
             if "profiles" not in net.keys():
                 net["profiles"] = dict()
+            table.rename_axis(None, inplace=True)
             net["profiles"][item[:-9]] = table
             continue  # don't go into try..except
         elif item == "user_pf_options":
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
             continue  # don't go into try..except
         else:
+            for json_column in ("object", "recycle"):
+                if json_column in table.columns:
+                    table[json_column] = table[json_column].apply(lambda x: json.loads(x, cls=PPJSONDecoder))
+            table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
         # set the index to be Int
         try:
