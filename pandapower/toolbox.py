@@ -1745,7 +1745,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-               create_continuous_bus_indices=True, **kwargs):
+               create_continuous_bus_indices=True,
+               retain_original_indices_in_net1=False, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1801,6 +1802,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata", "group")
+            ignore_index = ignore_index & (not retain_original_indices_in_net1)
             dtypes = net[element].dtypes
             try:
                 net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
@@ -1808,6 +1810,10 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
             except:
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index)
+            if element not in ("bus", "res_bus", "bus_geodata", "line_geodata", "group") and not ignore_index:
+                start = net1.bus.index.max() + 1
+                net[element].index = net1[element].index.tolist() + \
+                    list(range(start, len(net2[element]) + start))
             _preserve_dtypes(net[element], dtypes)
     # update standard types of net by data of net2
     for type_ in net.std_types.keys():
