@@ -210,11 +210,11 @@ def get_branch_angles(row, correct_pm_network_data):
         if angmin < -60.:
             logger.debug("changed voltage angle minimum of branch {}, "
                          "to -60 from {} degrees".format(int(row[0].real), angmin))
-            angmin = -360.
+            angmin = -60.
         if angmax > 60.:
             logger.debug("changed voltage angle maximum of branch {} to 60. "
                          "from {} degrees".format(int(row[0].real), angmax))
-            angmax = 360.
+            angmax = 60.
     # convert to rad
     angmin = math.radians(angmin)
     angmax = math.radians(angmax)
