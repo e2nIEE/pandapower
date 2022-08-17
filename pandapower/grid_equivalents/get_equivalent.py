@@ -31,7 +31,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                    ward_type="ward_injection", adapt_va_degree=False,
                    calculate_voltage_angles=True,
                    allow_net_change_for_convergence=False,
-                   retain_original_internal_indices=True,
+                   retain_original_internal_indices=False,
                    runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     This function calculates and implements the rei or ward/xward network
