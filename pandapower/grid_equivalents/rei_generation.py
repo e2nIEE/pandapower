@@ -50,7 +50,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
         **eq_type** (str) -  the equavalten type
 
     OPTIONAL:
-        **check_validity** (bool, False) - XXXX
+        **check_validity** (bool, False) - TODO
 
     OUTPUT:
         **Ybus** - equivalent admittance matrix of the external network
