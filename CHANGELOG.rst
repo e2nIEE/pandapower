@@ -8,6 +8,7 @@ Change Log
 - [ADDED] group functionality
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 - [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
+- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
 
 [2.10.1] - 2022-07-31
 -------------------------------

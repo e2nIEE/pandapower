@@ -93,28 +93,30 @@ def download_sql_table(cursor, table_name, **id_columns):
     index_name = f"{table_name.split('.')[-1]}_id"
     if index_name in df.columns:
         df.set_index(index_name, inplace=True)
-        df.rename_axis(None, inplace=True)
     if len(id_columns) > 0:
         df.drop(id_columns.keys(), axis=1, inplace=True)
     return df
 
 
-def upload_sql_table(conn, cursor, table_name, table, create_new=True, index_name=None, timestamp=False, **id_columns):
-    # Create a list of tupples from the dataframe values
-    if len(id_columns.keys()) > 0:
-        tuples = [(*tuple(x), *id_columns.values()) for x in table.itertuples(index=index_name is None)]
-    else:
-        tuples = [tuple(x) for x in table.itertuples(index=index_name is None)]
-
+def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp=False, **id_columns):
     # index_name allows using a custom column for the table index and disregard the DataFrame index,
     # otherwise a <table_name>_id is used as index_name and DataFrame index is also uploaded to the database
     if index_name is None:
         index_name = f"{table_name.split('.')[-1]}_id"
         index_type = match_sql_type(str(table.index.dtype))
-        table_columns = table.columns
+        table_columns = [c for c in table.columns if c not in id_columns]
+        tuples_index = True
     else:
         index_type = match_sql_type(str(table[index_name].dtype))
-        table_columns = [c for c in table.columns if c != index_name]
+        table_columns = [c for c in table.columns if c != index_name and c not in id_columns]
+        tuples_index = False
+
+    # Create a list of tuples from the dataframe values
+    if len(id_columns.keys()) > 0:
+        tuples = [(*tuple(x), *id_columns.values())
+                  for x in table[table_columns].itertuples(index=tuples_index)]
+    else:
+        tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
 
     # Comma-separated dataframe columns
     sql_columns = [index_name, *table_columns, *id_columns.keys()]
@@ -201,13 +203,15 @@ def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, cat
     conn.commit()
 
 
-def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
+def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
                           grid_catalogue_name="grid_catalogue"):
     """
     Removes a grid model from the PostgreSQL database.
 
     Parameters
     ----------
+    grid_id : int
+        unique grid_id that will be used to identify the data for the grid model
     host : str
         hostname for the DB, e.g. "localhost"
     user : str
@@ -216,8 +220,6 @@ def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_
         name of the database
     schema : str
         name of the database schema (e.g. 'postgres')
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model
     grid_id_column : str
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
@@ -239,8 +241,8 @@ def delete_postgresql_net(host, user, password, database, schema, grid_id, grid_
     conn.commit()
 
 
-def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
-             grid_catalogue_name="grid_catalogue"):
+def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue",
+             empty_dict_like_object=None):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
@@ -255,6 +257,9 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
         name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
+    empty_dict_like_object : dict-like
+        If None, the output of pandapower.create_empty_network() is used as an empty element to be filled by
+        the grid data. Give another dict-like object to start filling that alternative object with the data.
 
     Returns
     -------
@@ -280,7 +285,7 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id",
 
         d[element] = tab
 
-    net = io_utils.from_dict_of_dfs(d)
+    net = io_utils.from_dict_of_dfs(d, net=empty_dict_like_object)
 
     return net
 
@@ -318,8 +323,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
-    d = io_utils.to_dict_of_dfs(net, include_results=include_results, fallback_to_pickle=False,
-                                include_empty_tables=False)
+    d = io_utils.to_dict_of_dfs(net, include_results=include_results, include_empty_tables=False)
     written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
     id_columns = {grid_id_column: written_grid_id}
     d["grid_tables"] = pd.DataFrame(d.keys(), columns=["table"])
@@ -327,8 +331,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
         table_name = element if schema is None else f"{schema}.{element}"
         # None causes postgresql error, np.nan is better
         create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
-        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name,
-                         table=element_table.replace(np.nan, None),
+        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table.replace(np.nan, None),
                          index_name=index_name, **id_columns)
         logger.debug(f"uploaded table {element}")
     return written_grid_id
@@ -397,7 +400,7 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
         hostname for connecting to the database
     user : str
         username for logging in
-    password
+    password : str
     database : str
         name of the database
     schema : str
@@ -427,28 +430,31 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
     return grid_id
 
 
-def from_postgresql(host, user, password, database, schema, grid_id, grid_id_column="grid_id",
-                    grid_catalogue_name="grid_catalogue"):
+def from_postgresql(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
+                    grid_catalogue_name="grid_catalogue", empty_dict_like_object=None):
     """
+    Downloads an existing pandapowerNet from a PostgreSQL database.
 
     Parameters
     ----------
+    grid_id : int
+        unique grid_id that will be used to identify the data for the grid model
     host : str
         hostname for connecting to the database
     user : str
         username for logging in
-    password
+    password : str
     database : str
         name of the database
     schema : str
         name of the database schema (e.g. 'postgres')
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model, default None.
-        If None, it will be set automatically by PostgreSQL
     grid_id_column : str
         name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     grid_catalogue_name : str
         name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
+    empty_dict_like_object : dict-like
+        If None, the output of pandapower.create_empty_network() is used as an empty element to be filled by
+        the grid data. Give another dict-like object to start filling that alternative object with the data.
 
     Returns
     -------
@@ -458,6 +464,6 @@ def from_postgresql(host, user, password, database, schema, grid_id, grid_id_col
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
     with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
-        net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name)
+        net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object)
 
     return net

@@ -69,6 +69,15 @@ def test_excel(net_in, tmp_path):
     assert net_out.user_pf_options == net_in.user_pf_options
 
 
+def test_excel_controllers(net_in, tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
+    pp.to_excel(net_in, filename)
+    net_out = pp.from_excel(filename)
+    assert net_in.controller.object.at[0] == net_out.controller.object.at[0]
+    assert_net_equal(net_in, net_out)
+
+
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
