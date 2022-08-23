@@ -193,7 +193,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
                 pass
         else:
             raise err
-    ctrl_variables['converged'] = net['converged'] or net.get('OPF_converged', True)
+    ctrl_variables['converged'] = net['converged'] or net.get('OPF_converged', False)
     return ctrl_variables
 
 
