@@ -431,6 +431,24 @@ def _create_eq_elms(net, buses, elm, branches=None, idx_start=None, sign=1,
     return pd.Index(new_idx)
 
 
+def eq_name(eq_type, other_zone=None, zone=None, number=None):
+    number_str = "" if number is None else " %i" % number
+    st = "%s%s equivalent" % (eq_type, number_str)
+    if other_zone is not None:
+        st += " of zone "
+        if isinstance(other_zone, str):
+            st += "'%s'" % other_zone
+        else:
+            st += str(other_zone)
+    if zone is not None:
+        st += " at zone "
+        if isinstance(zone, str):
+            st += "'%s'" % zone
+        else:
+            st += str(zone)
+    return st
+
+
 def get_branch_power(net, bus, power_type, branches_dict=None):
     """
     Sums power of branches connected to 'bus'. The power is summed negative (= how much power flows
