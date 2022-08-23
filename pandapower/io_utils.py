@@ -54,7 +54,7 @@ except ImportError:
 try:
     import zlib
     zlib_INSTALLED = True
-except:
+except ImportError:
     zlib_INSTALLED = False
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
@@ -157,7 +157,8 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif "object" in value.columns:
             columns = [c for c in value.columns if c != "object"]
             tab = value[columns].copy()
-            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder,
+                                                                       indent=2))
             tab = tab[value.columns]
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
@@ -237,7 +238,8 @@ def from_dict_of_dfs(dodfs, net=None):
         else:
             for json_column in ("object", "recycle"):
                 if json_column in table.columns:
-                    table[json_column] = table[json_column].apply(lambda x: json.loads(x, cls=PPJSONDecoder))
+                    table[json_column] = table[json_column].apply(
+                        lambda x: json.loads(x, cls=PPJSONDecoder))
             table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
         # set the index to be Int
@@ -317,12 +319,14 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
                     if key in point_geo_columns:
                         data = {"x": [row[0] for row in df_dict["data"]],
                                 "y": [row[1] for row in df_dict["data"]]}
-                        geo = [shapely.geometry.Point(row[2][0], row[2][1]) for row in df_dict["data"]]
+                        geo = [shapely.geometry.Point(row[2][0], row[2][1])
+                               for row in df_dict["data"]]
                     elif key in line_geo_columns:
                         data = {"coords": [row[0] for row in df_dict["data"]]}
                         geo = [shapely.geometry.LineString(row[1]) for row in df_dict["data"]]
 
-                    net[key] = geopandas.GeoDataFrame(data, crs=f"epsg:{epsg}", geometry=geo, index=df_index)
+                    net[key] = geopandas.GeoDataFrame(data, crs=f"epsg:{epsg}", geometry=geo,
+                                                      index=df_index)
                 else:
                     net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
                                             data=df_dict["data"])
