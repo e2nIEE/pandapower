@@ -3,34 +3,14 @@ from functools import reduce
 import operator
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_string_dtype
 import pandapower as pp
 import pandapower.topology as top
-from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements, ensure_origin_id
-from pandapower.grid_equivalents.get_equivalent import \
-    merge_internal_net_and_equivalent_external_net
-
-from pandaplan.core.network_equivalents.get_equivalent import get_equivalent
+from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
 
 try:
     from pandaplan.core import pplog as logging
 except ImportError:
     import logging
-try:
-    from pandaplan.core.misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-try:
-    from simbench import voltlvl_idx
-    simbench_imported = True
-except ImportError:
-    simbench_imported = False
-try:
-    from Distributed_OPF.network_equivalents.REI_toolbox import get_rei_eq
-    dOPF_imported = True
-except ImportError:
-    dOPF_imported = False
 
 logger = logging.getLogger(__name__)
 
