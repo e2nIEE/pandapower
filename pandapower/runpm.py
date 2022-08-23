@@ -134,7 +134,6 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
-
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="ACPPowerModel", pm_solver="juniper", correct_pm_network_data=True, silence=True,
@@ -197,6 +196,7 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
     read_ots_results(net)
 
+
 def runpm_storage_opf(net, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1., correct_pm_network_data=True, silence=True,
@@ -214,7 +214,7 @@ def runpm_storage_opf(net, calculate_voltage_angles=True,
                       enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                       voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_mn_storage",
+                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_storage",
                       correct_pm_network_data=correct_pm_network_data, silence=silence, pm_model=pm_model, pm_time_limits=pm_time_limits,
                       pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
 
