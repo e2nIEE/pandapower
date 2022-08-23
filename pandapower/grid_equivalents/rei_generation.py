@@ -2,7 +2,7 @@ import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     check_validity_of_Ybus_eq, drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
-    drop_and_edit_cost_functions
+    drop_and_edit_cost_functions, _runpp_except_voltage_angles
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -17,20 +17,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _runpp_except_voltage_angles(net, **kwargs):
-    if "calculate_voltage_angles" not in kwargs or not kwargs["calculate_voltage_angles"]:
-        pp.runpp(net, **kwargs)
-    else:
-        try:
-            pp.runpp(net, **kwargs)
-        except pp.LoadflowNotConverged:
-            kwargs1 = deepcopy(kwargs)
-            kwargs1["calculate_voltage_angles"] = False
-            pp.runpp(net, **kwargs1)
-            logger.warning("In REI generation, the power flow did converge only without "
-                           "calculate_voltage_angles.")
 
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
@@ -145,7 +131,7 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
 def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses,
                      load_separate=False, sgen_separate=True, gen_separate=True,
                      show_computing_time=False, calc_volt_angles=True,
-                     **kwargs):
+                     runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     The function builds the zero power balance network with
     calculated impedance and voltage
@@ -180,7 +166,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
-            show_computing_time, calc_volt_angles=calc_volt_angles)
+            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
     net_zpbn = net_external
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
@@ -254,7 +240,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 g_buses += [new_g_bus.tolist()]
                 t_buses += [new_t_bus.tolist()]
         else:
-            Z.drop([elm+"_ground", elm+"_separate_total", elm+"_integrated_total"], axis=1, inplace=True)
+            Z.drop([elm+"_ground", elm+"_separate_total", elm+"_integrated_total"], axis=1,
+                   inplace=True)
 
     # --- create load, sgen and gen
     elm_old = None
@@ -291,27 +278,32 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         if "integrated" in key:
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
-            net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                elm_org[list(other_cols_bool)][elm_org.bus.isin(all_external_buses)].values.sum() > 0
+            net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
+                elm_org.bus.isin(all_external_buses)].values.sum() > 0
         else:
-            if elm == "gen" and bus in net.ext_grid.bus.values and net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
-                net_zpbn[elm].name[elm_idx] = str(net.ext_grid.name[net.ext_grid.bus == bus].values[0]) + "-" + net_zpbn[elm].name[elm_idx]
+            if elm == "gen" and bus in net.ext_grid.bus.values and \
+                    net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
+                net_zpbn[elm].name[elm_idx] = str(net.ext_grid.name[
+                    net.ext_grid.bus == bus].values[0]) + "-" + net_zpbn[elm].name[elm_idx]
                 ext_grid_cols = list(set(elm_org.columns) & set(net.ext_grid.columns) - \
                     {"name", "bus", "p_mw", "sn_mva", "in_service", "scaling"})
-                net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][net.ext_grid.bus==bus].values[0]
+                net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][
+                    net.ext_grid.bus == bus].values[0]
             else:
-                names = elm_org.name[elm_org.bus==bus].values
+                names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
                 net_zpbn[elm].name[elm_idx] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
-                        elm_org[list(other_cols_number)][elm_org.bus==bus].sum(axis=0)
+                        elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                        elm_org[list(other_cols_bool)][elm_org.bus==bus].values.sum() > 0
+                        elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum() > 0
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
-                        elm_org[list(other_cols_bool | other_cols_number)][elm_org.bus==bus].values[0]
-                    net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][elm_org.bus==bus].values[0]
+                        elm_org[list(other_cols_bool | other_cols_number)][
+                            elm_org.bus == bus].values[0]
+                    net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
+                        elm_org.bus == bus].values[0]
         elm_old = net_zpbn.bus.name[i].split("_")[0]
 
     # --- match poly_cost to new created elements
@@ -361,7 +353,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
-    _runpp_except_voltage_angles(net_zpbn, calculate_voltage_angles=calc_volt_angles,
+    runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
                                  tolerance_mva=1e-6, max_iteration=100)
     return net_zpbn, net_internal, net_external
 
@@ -466,7 +458,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses,
                                     show_computing_time=False,
-                                    calc_volt_angles=True):
+                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
@@ -486,8 +478,8 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                  True, True)
     drop_measurements_and_controller(net_external, all_internal_buses)
     pp.drop_buses(net_external, all_internal_buses)
-#    add_ext_grids_to_boundaries(net_external, boundary_buses)
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles)
+#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"get_int_and_ext_nets\" " +
@@ -556,7 +548,8 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
 
 def _replace_ext_area_by_impedances_and_shunts(
         net_eq, bus_lookups, impedance_params, shunt_params, net_internal,
-        return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8):
+        return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8,
+        runpp_fct=_runpp_except_voltage_angles):
     """
     This function implements the parameters of the equivalent shunts and equivalent impedance
     """
@@ -566,7 +559,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     pp.drop_buses(net_eq, eg_buses_pd)
 
     try:
-        _runpp_except_voltage_angles(net_eq, calculate_voltage_angles=calc_volt_angles,
+        runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
                                      tolerance_mva=1e-6, max_iteration=100)
     except:
         logger.error("The power flow did not converge.")
@@ -604,7 +597,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_sws["closed"] = True
     new_sws["z_ohm"] = 0
     net_eq["switch"] = pd.concat([net_eq["switch"], new_sws])
-    # If some buses are connected through switches, their shunts are connected in parallel  
+    # If some buses are connected through switches, their shunts are connected in parallel
     # to same bus. The shunt parameters needs to be adapted. TODO
     if not not_very_low_imp.all():
         fb = impedance_params.from_bus[~not_very_low_imp].values.tolist()
@@ -615,12 +608,12 @@ def _replace_ext_area_by_impedances_and_shunts(
         # shunt_params.parameter[shunt_params.bus_pd.isin(tb)] = adapted_params
         shunt_params.drop(shunt_params.index[shunt_params.bus_pd.isin(fb)], inplace=True)
         shunt_params.drop(shunt_params.index[shunt_params.bus_pd.isin(tb)], inplace=True)
-        
+
     # --- create shunts
     max_idx = net_eq.shunt.index.max() if net_eq.shunt.shape[0] else 0
     shunt_buses = shunt_params.bus_pd.values.astype(int)
     new_shunts = pd.DataFrame({"bus": shunt_buses,
-                               "q_mvar": -shunt_params.parameter.values.imag * net_eq.sn_mva, 
+                               "q_mvar": -shunt_params.parameter.values.imag * net_eq.sn_mva,
                                "p_mw": shunt_params.parameter.values.real * net_eq.sn_mva
                                }, index=range(max_idx+1, max_idx+1+shunt_params.shape[0]))
     new_shunts["name"] = "eq_shunt"
@@ -630,5 +623,5 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_shunts["in_service"] = True
     net_eq["shunt"] = pd.concat([net_eq["shunt"], new_shunts])
 
-    _runpp_except_voltage_angles(net_eq, calculate_voltage_angles=calc_volt_angles,
-                                 tolerance_mva=1e-6, max_iteration=100)
+    runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
+              tolerance_mva=1e-6, max_iteration=100)

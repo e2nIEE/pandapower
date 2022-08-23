@@ -41,3 +41,12 @@ SQL
 .. autofunction:: pandapower.to_sqlite
 
 .. autofunction:: pandapower.from_sqlite
+
+PostgreSQL
+-----------
+
+.. autofunction:: pandapower.to_postgresql
+
+.. autofunction:: pandapower.from_postgresql
+
+.. autofunction:: pandapower.delete_postgresql_net
