@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
 import pandapower as pp
-
 import pandapower.networks
 import pandapower.grid_equivalents
+from random import sample
 
 try:
     from misc.groups import Group
@@ -427,14 +427,46 @@ def test_shifter_degree():
             assert va_error < 0.5
 
 
+def test_retain_original_internal_indices():
+    net = pp.networks.case30()
+    pp.replace_gen_by_sgen(net)
+    sgen_idxs = sample(list(range(100)), len(net.sgen))
+    line_idxs = sample(list(range(100)), len(net.line))
+    bus_idxs = sample(list(range(100)), len(net.bus))
+    bus_lookup = dict(zip(net.bus.index.tolist(), bus_idxs))
+    net.sgen.index = sgen_idxs
+    net.line.index = line_idxs
+    pp.reindex_buses(net, bus_lookup)
+    
+    pp.runpp(net)
+    eq_type = "rei"
+    boundary_buses = [bus_lookup[b] for b in [3, 9, 22]]
+    internal_buses = [bus_lookup[0]]
+    for retain_original_internal_indices in [False]:
+        net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
+                                                    calculate_voltage_angles=True,
+                                                    retain_original_internal_indices=\
+                                                        retain_original_internal_indices)
+        if retain_original_internal_indices:
+            assert net_eq.sgen.index.tolist()[:3] == sgen_idxs[:3]
+            assert set(net_eq.line.index.tolist()) - set(line_idxs) == set()
+            assert set(net_eq.bus.index.tolist()[:-2]) - set(bus_idxs) == set()
+        else:
+            assert net_eq.sgen.index.tolist() == list(range(len(net_eq.sgen)))
+            assert net_eq.line.index.tolist() == list(range(len(net_eq.line)))
+    
+
 if __name__ == "__main__":
     if 0:
         pytest.main(['-x', __file__])
     else:
-        test_cost_consideration()
-        test_basic_usecases()
-        test_case9_with_slack_generator_in_external_net()
-        test_adopt_columns_to_separated_eq_elms()
-        # test_equivalent_groups()
-        test_shifter_degree()
+        # test_cost_consideration()
+        # test_basic_usecases()
+        # test_case9_with_slack_generator_in_external_net()
+        # test_adopt_columns_to_separated_eq_elms()
+        test_equivalent_groups()
+    #     test_shifter_degree()
+    #     test_retain_original_internal_indices()
     pass
+
+    

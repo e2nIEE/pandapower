@@ -54,8 +54,8 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     xward_parameter, impedance_parameter = \
         _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups)
     xward_parameter["r_ohm"] = 0
-    xward_parameter["x_ohm"] = -1/xward_parameter.shunt.values.imag * \
-        net_external.sn_mva/2
+    xward_parameter["x_ohm"] = -1/xward_parameter.shunt.values.imag / \
+        net_external.sn_mva*net_external.bus.vn_kv[xward_parameter.bus_pd].values**2 #/2
         # np.square(net_external.bus.vn_kv[xward_parameter.bus_pd.values].values) / \
         # net_external.sn_mva/2
     xward_parameter["vm_pu"] = net_external.res_bus.vm_pu[xward_parameter.bus_pd.values].values
@@ -137,8 +137,8 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
         pp.create_ward(net_external, target_bus,
                        0.0,  # np.nan_to_num(-ward_parameter.power_eq[i].real),
                        0.0,  # np.nan_to_num(-ward_parameter.power_eq[i].imag),
-                       ward_parameter_no_power.shunt[i].real * sn, # / (net_external.res_bus.vm_pu[target_bus] ** 2),
-                       -ward_parameter_no_power.shunt[i].imag * sn, # / (net_external.res_bus.vm_pu[target_bus] ** 2),
+                       ward_parameter_no_power.shunt[i].real * sn / (net_external.res_bus.vm_pu[target_bus] ** 2),
+                       -ward_parameter_no_power.shunt[i].imag * sn / (net_external.res_bus.vm_pu[target_bus] ** 2),
                        name="network_equivalent")
 
     eq_power = net_external.res_ext_grid.copy()
@@ -211,7 +211,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
         pp.create_xward(net_external, target_bus,
                         0.0,  # np.nan_to_num(-xward_parameter.power_eq[i].real),
                         0.0,  # np.nan_to_num(-xward_parameter.power_eq[i].imag),
-                        xward_parameter_no_power.shunt[i].real * sn,
+                        xward_parameter_no_power.shunt[i].real * sn / xward_parameter_no_power.vm_pu[i]**2,
                         0.0,
                         xward_parameter_no_power.r_ohm[i],
                         np.nan_to_num(xward_parameter_no_power.x_ohm[i]),  # neginf=1e100 is commented since this led to error
