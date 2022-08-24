@@ -522,6 +522,8 @@ def test_dist_slack_with_enforce_q_lims():
     assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
     assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
 
+    assert_results_correct(net, tol=1e-6)
+
 # todo: implement distributed slack for when the grid has several disconnected zones
 
 
