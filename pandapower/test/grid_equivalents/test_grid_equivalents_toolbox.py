@@ -61,7 +61,6 @@ def boundary_testnet(which):
             [9, 5, 7, 8, 3]) & (net.bus.zone == "a")])
         expected_bb["a"]["external"] = set(net.bus.index[net.bus.name.isin(
             [9, 5, 7, 8, 3]) & (net.bus.zone == "b")]) | {new_bus}
-        trafo3w_buses = set(net.trafo3w[["hv_bus", "mv_bus", "lv_bus"]].values.flatten())
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
@@ -110,9 +109,12 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
         assert not len({"internal", "external"} - set(boundary_buses[key].keys()))
 
     # --- check boundary_buses content
-    for zone in ["a", "b"]:
-        for in_ext in ["internal", "external"]:
-            assert boundary_buses[zone][in_ext] == expected_bb[zone][in_ext]
+    trafo3w_buses = set(net.trafo3w[["hv_bus", "mv_bus", "lv_bus"]].values.flatten())
+    in_ext = ["internal", "external"]
+    for in_ext1, in_ext2 in zip(in_ext,in_ext[::-1]):
+        assert boundary_buses["a"][in_ext1] == expected_bb["a"][in_ext1]
+        assert boundary_buses["b"][in_ext1] - trafo3w_buses == \
+            boundary_buses["a"][in_ext2] - trafo3w_buses
 
     # --- check boundary_branches content
     assert boundary_branches["a"] == expected_bbr
