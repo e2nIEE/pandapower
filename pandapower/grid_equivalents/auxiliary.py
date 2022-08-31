@@ -8,8 +8,8 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-import uuid
 from pandapower.auxiliary import _init_runpp_options
+import uuid
 
 try:
     import pandaplan.core.pplog as logging
@@ -65,7 +65,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         add_eg += [pp.create_ext_grid(net, ext_bus,
                                       vm, va, name="assist_ext_grid")]
         new_bus = pp.create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
-        pp.create_impedance(net, ext_bus, new_bus, 0.0001, 0.0001, net.sn_mva,
+        pp.create_impedance(net, ext_bus, new_bus, 1e8, 1e8, net.sn_mva,
                             name="assist_impedance")
 
     # works fine if there is only one slack in net:
@@ -598,10 +598,8 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                   name="phase_shifter_adapter_"+str(lb))
         # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
         #                name="phase_shifter_adapter_"+str(lb))
-    print("debug")
     # runpp_fct(net, calculate_voltage_angles=True)
     return net
-
 
 if __name__ == "__main__":
     pass

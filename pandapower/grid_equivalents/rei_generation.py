@@ -50,7 +50,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
         **eq_type** (str) -  the equavalten type
 
     OPTIONAL:
-        **check_validity** (bool, False) - XXXX
+        **check_validity** (bool, False) - TODO
 
     OUTPUT:
         **Ybus** - equivalent admittance matrix of the external network
@@ -354,7 +354,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
     runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
-                                 tolerance_mva=1e-6, max_iteration=100)
+                                 tolerance_mva=1e-3, max_iteration=100)
     return net_zpbn, net_internal, net_external
 
 

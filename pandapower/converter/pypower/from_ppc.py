@@ -160,7 +160,7 @@ def _from_ppc_gen(net, ppc):
     # create gen
     idx_gen = create_gens(
         net, buses=bus_pos[is_gen], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
-        p_mw=ppc['gen'][is_gen, PG],
+        p_mw=ppc['gen'][is_gen, PG], sn_mva=ppc['gen'][is_gen, MBASE],
         in_service=(ppc['gen'][is_gen, GEN_STATUS] > 0), controllable=True,
         max_p_mw=ppc['gen'][is_gen, PMAX], min_p_mw=ppc['gen'][is_gen, PMIN],
         max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN])
@@ -168,7 +168,7 @@ def _from_ppc_gen(net, ppc):
     # create sgen
     idx_sgen = create_sgens(
         net, buses=bus_pos[is_sgen], p_mw=ppc['gen'][is_sgen, PG],
-        q_mvar=ppc['gen'][is_sgen, QG], type="",
+        q_mvar=ppc['gen'][is_sgen, QG], sn_mva=ppc['gen'][is_sgen, MBASE], type="",
         in_service=(ppc['gen'][is_sgen, GEN_STATUS] > 0),
         max_p_mw=ppc['gen'][is_sgen, PMAX], min_p_mw=ppc['gen'][is_sgen, PMIN],
         max_q_mvar=ppc['gen'][is_sgen, QMAX], min_q_mvar=ppc['gen'][is_sgen, QMIN],
