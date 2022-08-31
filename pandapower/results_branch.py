@@ -147,11 +147,11 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
 
         if net["_options"].get("tdpf", False):
-            tpdf_lines = line_df.in_service & line_df.tdpf
-            res_line_df.loc[tpdf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
-            no_tdpf_t = line_df.loc[~tpdf_lines].get("temperature_degree_celsius", default=20.)
-            res_line_df.loc[tpdf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
-            res_line_df.loc[~tpdf_lines, "temperature_degree_celsius"] = no_tdpf_t
+            tdpf_lines = ppc["internal"]['branch_is'][f:t] & line_df.tdpf
+            res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
+            no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
+            res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
