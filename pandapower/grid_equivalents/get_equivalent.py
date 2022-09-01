@@ -31,6 +31,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                    ward_type="ward_injection", adapt_va_degree=False,
                    calculate_voltage_angles=True,
                    allow_net_change_for_convergence=False,
+                   retain_original_internal_indices=False,
                    runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     This function calculates and implements the rei or ward/xward network
@@ -118,10 +119,13 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             decreased to values that minimize the difference to the given res_bus.va_degree values.
 
         **allow_net_change_for_convergence** (bool, False) - if the net doesn't converge at the
-        first internal power flow, which is in add_ext_grids_to_boundaries(), and this parameter is
-        True, the code tests if changes to unusual impedance values solve the divergence issue.
+            first internal power flow, which is in add_ext_grids_to_boundaries(), and this parameter is
+            True, the code tests if changes to unusual impedance values solve the divergence issue.
 
         **calculate_voltage_angles** (bool, True) - parameter passed to internal runpp() runs
+        
+        **retain_original_internal_indices** (bool, False) - if True, the element indices in 
+            the internal net are retained; otherwise the indices will be reordered from 0. 
 
         ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate,
         group_name,
@@ -263,7 +267,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         logger.debug("Merging of internal and equivalent network begins.")
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, eq_type, show_computing_time,
-            calc_volt_angles=calculate_voltage_angles)
+            calc_volt_angles=calculate_voltage_angles,
+            retain_original_internal_indices=retain_original_internal_indices)
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
@@ -329,7 +334,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
 def merge_internal_net_and_equivalent_external_net(
         net_eq, net_internal, eq_type, show_computing_time=False,
-        calc_volt_angles=False, **kwargs):
+        calc_volt_angles=False, retain_original_internal_indices=False, **kwargs):
     """
     Merges the internal network and the equivalent external network.
     It is expected that the boundaries occur in both, equivalent net and
@@ -367,6 +372,7 @@ def merge_internal_net_and_equivalent_external_net(
 
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(net_internal, net_eq, validate=kwargs.pop("validate", False),
+                               retain_original_indices_in_net1=retain_original_internal_indices,
                                **kwargs)
     try:
         merged_net.gen.max_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.max_p_mw.values

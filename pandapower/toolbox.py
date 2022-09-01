@@ -1745,7 +1745,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-               create_continuous_bus_indices=True, **kwargs):
+               create_continuous_bus_indices=True,
+               retain_original_indices_in_net1=False, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1800,14 +1801,16 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata", "group")
+            elm_with_critical_index = element in ("bus", "res_bus", "bus_geodata", "line_geodata",
+                                                  "group")
+            ignore_index = not retain_original_indices_in_net1 and not elm_with_critical_index
             dtypes = net[element].dtypes
-            try:
-                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
-                                         sort=False)
-            except:
-                # pandas legacy < 0.21
-                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index)
+            net[element] = pd.concat([net[element], net2[element]], sort=False,
+                                     ignore_index=ignore_index)
+            if retain_original_indices_in_net1 and not elm_with_critical_index:
+                start = net1.bus.index.max() + 1
+                net[element].index = net1[element].index.tolist() + \
+                    list(range(start, len(net2[element]) + start))
             _preserve_dtypes(net[element], dtypes)
     # update standard types of net by data of net2
     for type_ in net.std_types.keys():
@@ -2517,7 +2520,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
     existing_cols_to_keep = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(
         cols_to_keep)
-    # add missing columns to net.gen which should be kept
+    # add columns which should be kept from sgen but miss in gen to net.gen
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
         net.gen[col] = np.nan

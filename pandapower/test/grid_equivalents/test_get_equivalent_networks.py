@@ -69,11 +69,10 @@ def test_networks():
             net.sn_mva = sn_mva
             pp.runpp(net)
 
-            # todo: make this run on GitHub Actions
-            # max_error, related_values = get_max_error(
-            #     net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
-            #     buses_out_of_service=[9])
-            # assert max_error < epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
+                buses_out_of_service=[9])
+            assert max_error < epsilon
 
             max_error, related_values = get_max_error(
                 net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True)
@@ -109,11 +108,10 @@ def test_networks():
                 buses_out_of_service=[4, 8], switch_changes=[['b', 2, 25]])
             assert max_error <= epsilon
 
-            # TODO: make this run on GitHub Actions
-            # max_error, related_values = get_max_error(
-            #     net, eq_type, boundary_buses=[15, 25], internal_buses=[30], return_internal=True,
-            #     switch_changes=[['t', 11, 4], ['t', 11, 3]])
-            # assert max_error <= epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[15, 25], internal_buses=[30], return_internal=True,
+                switch_changes=[['t', 11, 4], ['t', 11, 3]])
+            assert max_error <= epsilon
 
             # case118
             logging.debug('case118:')
@@ -126,17 +124,15 @@ def test_networks():
                 va_degree=va_degree)
             assert max_error <= epsilon
 
-            # TODO: make this run on GitHub Actions
-            # max_error, related_values = get_max_error(
-            #     net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True,
-            #     va_degree=va_degree)
-            # assert max_error <= epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True,
+                va_degree=va_degree)
+            assert max_error <= epsilon
 
-            # TODO: make this run on GitHub Actions
-            # max_error, related_values = get_max_error(
-            #     net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True,
-            #     va_degree=va_degree)
-            # assert max_error <= epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True,
+                va_degree=va_degree)
+            assert max_error <= epsilon
 
             max_error, related_values = get_max_error(
                 net, eq_type, boundary_buses=[18, 22, 37, 64], internal_buses=[68],
@@ -148,17 +144,15 @@ def test_networks():
                 return_internal=True, va_degree=va_degree)
             assert max_error <= epsilon
 
-            # TODO: make this run on GitHub Actions
-            # max_error, related_values = get_max_error(
-            #     net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68],
-            #     return_internal=True, va_degree=va_degree)
-            # assert max_error <= epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68],
+                return_internal=True, va_degree=va_degree)
+            assert max_error <= epsilon
 
-        # TODO: make this run on GitHub Actions
-        # max_error, related_values = get_max_error(
-        #     net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68],
-        #     return_internal=True, va_degree=va_degree)
-        # assert max_error <= epsilon
+            max_error, related_values = get_max_error(
+                net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68],
+                return_internal=True, va_degree=va_degree)
+            assert max_error <= epsilon
 
 
 def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
@@ -177,7 +171,6 @@ def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
 
     # --- calulate max. error
     max_error, related_values = calc_max_error(net, net_eq, return_internal, **kwargs)
-
     return max_error, related_values
 
 
