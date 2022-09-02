@@ -163,10 +163,6 @@ def load_std_type(net, name, element="line"):
         raise UserWarning("Unknown standard %s type %s" % (element, name))
 
 
-def check_entry_in_std_type(param, entry, else_val):
-    return param[entry] if entry in param else else_val
-
-
 def std_type_exists(net, name, element="line"):
     """
     Checks if a standard type exists.
