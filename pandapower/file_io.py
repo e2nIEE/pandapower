@@ -28,6 +28,7 @@ from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
+from pandapower.std_types import basic_std_types
 import pandapower.io_utils as io_utils
 
 try:
@@ -398,9 +399,8 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
     if add_basic_std_types:
         # get std-types and add only new keys ones
-        net_dummy = create_empty_network()
-        for key in net_dummy.std_types:
-            net.std_types[key] = dict(net_dummy.std_types[key], **net.std_types[key])
+        for key, std_types in basic_std_types().items():
+            net.std_types[key] = dict(std_types, **net.std_types[key])
     if restore_index_names and hasattr(net, "keys") and "index_names" in net.keys():
         if not isinstance(net["index_names"], dict):
             raise ValueError("To restore the index names of the dataframes, a dict including this "
