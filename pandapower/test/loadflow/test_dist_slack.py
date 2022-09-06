@@ -118,9 +118,10 @@ def assert_results_correct(net, tol=1e-8):
     slack_weights = _get_slack_weights(net)
 
     # assert power balance is correct
-    assert abs(result_p_mw.sum() - consumed_p_mw) < tol
+    assert abs(result_p_mw.sum() - consumed_p_mw) < tol, "power balance is wrong"
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw, atol=tol, rtol=0)
+    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
+                       atol=tol, rtol=0), "distributed slack weights formula has a wrong result"
 
 
 def check_xward_results(net, tol=1e-9):
