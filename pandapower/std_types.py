@@ -163,10 +163,6 @@ def load_std_type(net, name, element="line"):
         raise UserWarning("Unknown standard %s type %s" % (element, name))
 
 
-def check_entry_in_std_type(param, entry, else_val):
-    return param[entry] if entry in param else else_val
-
-
 def std_type_exists(net, name, element="line"):
     """
     Checks if a standard type exists.
@@ -366,9 +362,7 @@ def add_temperature_coefficient(net, fill=None):
     parameter_from_std_type(net, "alpha", fill=fill)
 
 
-def add_basic_std_types(net):
-    if "std_types" not in net:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+def basic_line_std_types():
 
     alpha_al = 4.03e-3
     alpha_cu = 3.93e-3
@@ -807,8 +801,10 @@ def add_basic_std_types(net):
          "q_mm2": 679,
          "alpha": alpha_al}
     }
-    create_std_types(net, data=linetypes, element="line")
+    return linetypes
 
+
+def basic_trafo_std_types():
     trafotypes = {
         # derived from Oswald - Transformatoren - Vorlesungsskript Elektrische Energieversorgung I
         # another recommendable references for distribution transformers is Werth:
@@ -1060,8 +1056,10 @@ def add_basic_std_types(net):
             "tap_step_percent": 2.5,
             "tap_phase_shifter": False},
     }
-    create_std_types(net, data=trafotypes, element="trafo")
+    return trafotypes
 
+
+def basic_trafo3w_std_types():
     trafo3wtypes = {
         # generic trafo3w
         "63/25/38 MVA 110/20/10 kV":
@@ -1111,5 +1109,41 @@ def add_basic_std_types(net):
             "tap_max": 10,
             "tap_step_percent": 1.2}
     }
+    return trafo3wtypes
+
+
+def basic_std_types():
+    return {
+        "line"   : basic_line_std_types(),
+        "trafo"  : basic_trafo_std_types(),
+        "trafo3w": basic_trafo3w_std_types()
+    }
+
+
+def add_basic_std_types(net):
+    """Adds basic standard types of the pandapower library to the net provided. These standard types
+    are the same types that are available with output of `pandapower.create_empty_network()` and
+    `pandapower.create_empty_network(add_stdtypes=True)` respectively.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net which should receive the basic standard types
+
+    Returns
+    -------
+    tuple of dictionaries
+        line, trafo and trafo3w types as dictionaries which have been added to the net.
+    """
+
+    if "std_types" not in net:
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+
+    linetypes = basic_line_std_types()
+    trafotypes = basic_trafo_std_types()
+    trafo3wtypes = basic_trafo3w_std_types()
+
+    create_std_types(net, data=linetypes, element="line")
+    create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     return linetypes, trafotypes, trafo3wtypes

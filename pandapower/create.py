@@ -14,7 +14,7 @@ from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, 
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
-from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
+from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
 
 try:
@@ -2008,11 +2008,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
-        entries["g_us_per_km"] = list(map(
-            check_entry_in_std_type, lineparam, ["g_us_per_km"] * len(lineparam),
-            [0.] * len(lineparam)))
-        entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
-                                   [None] * len(lineparam)))
+        entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
+            lineparam]
+        entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
