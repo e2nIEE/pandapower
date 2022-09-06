@@ -36,7 +36,7 @@ setup(
     name='pandapower',
     version='2.10.1',
     author='Leon Thurner, Alexander Scheidler',
-    author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
+    author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
