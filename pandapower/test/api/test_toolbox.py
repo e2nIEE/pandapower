@@ -14,6 +14,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.toolbox as tb
+import pandapower.control
 from pandapower.test.toolbox import assert_net_equal
 
 
@@ -164,6 +165,22 @@ def test_nets_equal():
     net["load"]["p_mw"][net["load"].index[0]] += 0.0001
     assert tb.nets_equal(original, net, atol=0.1)
     assert tb.nets_equal(net, original, atol=0.1)
+
+    # check controllers
+    original.trafo.tap_side.fillna("hv", inplace=True)
+    net1 = original.deepcopy()
+    net2 = original.deepcopy()
+    pp.control.ContinuousTapControl(net1, 0, 1.0)
+    pp.control.ContinuousTapControl(net2, 0, 1.0)
+    c1 = net1.controller.at[0, "object"]
+    c2 = net2.controller.at[0, "object"]
+    assert c1 == c2
+    assert c1 is not c2
+    assert tb.nets_equal(net1, net2)
+    c1.vm_set_pu = 1.01
+    assert c1 != c2
+    assert tb.nets_equal(net1, net2, exclude_elms=["controller"])
+    assert not tb.nets_equal(net1, net2)
 
 
 def test_clear_result_tables():
@@ -1191,6 +1208,20 @@ def test_get_connected_elements_dict():
     assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
     conn = pp.get_connected_elements_dict(net, [3, 4])
     assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5, 6]}
+
+
+def test_get_connected_elements_empty_in_service():
+    # would cause an error with respect_in_service=True for the case of:
+    #  - empty element tables
+    #  - element tables without in_service column (e.g. measurement)
+    #  - element_table was unbound for the element table measurement
+    #  see #1592
+    net = nw.example_simple()
+    net.bus.in_service.at[6] = False
+    conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
+    assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
+    conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
+    assert conn == {'line': [1, 3], 'switch': [1, 2, 7], 'trafo': [0], 'bus': [2, 5]}
 
 
 def test_replace_ward_by_internal_elements():

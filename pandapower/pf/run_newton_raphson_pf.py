@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, an
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, GS, BS, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -86,7 +86,12 @@ def ppci_to_pfsoln(ppci, options):
             ref = internal["ref"]
             ref_gens = internal["ref_gens"]
 
-        _, pfsoln = _get_numba_functions(ppci, options)
+        makeYbus, pfsoln = _get_numba_functions(ppci, options)
+
+        if options["tdpf"]:
+            # needs to be updated to match the new R because of the temperature
+            internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
+
         result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
                       internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens)
         return result_pfsoln
@@ -152,19 +157,23 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     # run the newton power flow
     if options["lightsim2grid"]:
         V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus.tocsc(), Sbus, V0, ref, pv, pq, ppci, options)
+        T = None
+        r_theta_kelvin_per_mw = None
     else:
-        V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options)
+        V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
                                   "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt})
+                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
+                                  "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T})
 
     return ppci, success, iterations
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
     baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    bus_backup_p_q = bus[:, [PD, QD]].copy()
 
     qlim = options["enforce_q_lims"]
     limited = []  # list of indices of gens @ Q lims
@@ -223,10 +232,12 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
 
     if len(limited) > 0:
         # restore injections from limited gens [those at Q limits]
+        bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PV  # & set bus type back to PV
         gen[limited, QG] = fixedQg[limited]  # restore Qg value,
         for i in range(len(limited)):  # [one at a time, since they may be at same bus]
             bi = gen[limited[i], GEN_BUS].astype(int)  # re-adjust load,
-            bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
+            gen[limited[i], PG] = bus_backup_p_q[bi, 0] - bus[bi, PD]
+            bus[bi, [PD, QD]] = bus_backup_p_q[bi, :]
             gen[limited[i], GEN_STATUS] = 1  # and turn gen back on
 
     return ppci, success, iterations, bus, gen, branch

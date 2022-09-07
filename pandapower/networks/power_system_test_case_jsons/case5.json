@@ -5,53 +5,53 @@
     "bus": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"in_service\",\"max_vm_pu\",\"min_vm_pu\",\"name\",\"type\",\"vn_kv\",\"zone\"],\"index\":[0,1,2,3,4],\"data\":[[true,1.1,0.9,0,\"b\",230.0,1.0],[true,1.1,0.9,1,\"b\",230.0,1.0],[true,1.1,0.9,2,\"b\",230.0,1.0],[true,1.1,0.9,3,\"b\",230.0,1.0],[true,1.1,0.9,4,\"b\",230.0,1.0]]}",
+      "_object": "{\"columns\":[\"name\",\"vn_kv\",\"type\",\"zone\",\"in_service\",\"max_vm_pu\",\"min_vm_pu\"],\"index\":[0,1,2,3,4],\"data\":[[0,230.0,\"b\",1.0,true,1.1,0.9],[1,230.0,\"b\",1.0,true,1.1,0.9],[2,230.0,\"b\",1.0,true,1.1,0.9],[3,230.0,\"b\",1.0,true,1.1,0.9],[4,230.0,\"b\",1.0,true,1.1,0.9]]}",
       "orient": "split",
       "dtype": {
+        "name": "object",
+        "vn_kv": "float64",
+        "type": "object",
+        "zone": "object",
         "in_service": "bool",
         "max_vm_pu": "float64",
-        "min_vm_pu": "float64",
-        "name": "object",
-        "type": "object",
-        "vn_kv": "float64",
-        "zone": "object"
+        "min_vm_pu": "float64"
       }
     },
     "load": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"const_i_percent\",\"const_z_percent\",\"controllable\",\"in_service\",\"name\",\"p_mw\",\"q_mvar\",\"scaling\",\"sn_mva\",\"type\"],\"index\":[0,1,2],\"data\":[[1,0.0,0.0,false,true,null,300.0,98.609999999999999,1.0,null,null],[2,0.0,0.0,false,true,null,300.0,98.609999999999999,1.0,null,null],[3,0.0,0.0,false,true,null,400.0,131.469999999999999,1.0,null,null]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"const_z_percent\",\"const_i_percent\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"controllable\"],\"index\":[0,1,2],\"data\":[[null,1,300.0,98.609999999999999,0.0,0.0,null,1.0,true,null,false],[null,2,300.0,98.609999999999999,0.0,0.0,null,1.0,true,null,false],[null,3,400.0,131.469999999999999,0.0,0.0,null,1.0,true,null,false]]}",
       "orient": "split",
       "dtype": {
-        "bus": "uint32",
-        "const_i_percent": "float64",
-        "const_z_percent": "float64",
-        "controllable": "bool",
-        "in_service": "bool",
         "name": "object",
+        "bus": "uint32",
         "p_mw": "float64",
         "q_mvar": "float64",
-        "scaling": "float64",
+        "const_z_percent": "float64",
+        "const_i_percent": "float64",
         "sn_mva": "float64",
-        "type": "object"
+        "scaling": "float64",
+        "in_service": "bool",
+        "type": "object",
+        "controllable": "bool"
       }
     },
     "sgen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"controllable\",\"in_service\",\"name\",\"p_mw\",\"q_mvar\",\"scaling\",\"sn_mva\",\"type\",\"current_source\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\"],\"index\":[0],\"data\":[[0,true,true,null,170.0,0.0,1.0,null,\"\",true,170.0,0.0,127.5,-127.5]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"current_source\",\"controllable\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\"],\"index\":[0],\"data\":[[null,0,170.0,0.0,null,1.0,true,\"\",true,true,170.0,0.0,127.5,-127.5]]}",
       "orient": "split",
       "dtype": {
-        "bus": "int64",
-        "controllable": "bool",
-        "in_service": "bool",
         "name": "object",
+        "bus": "int64",
         "p_mw": "float64",
         "q_mvar": "float64",
-        "scaling": "float64",
         "sn_mva": "float64",
+        "scaling": "float64",
+        "in_service": "bool",
         "type": "object",
         "current_source": "bool",
+        "controllable": "bool",
         "max_p_mw": "float64",
         "min_p_mw": "float64",
         "max_q_mvar": "float64",
@@ -142,30 +142,30 @@
     "gen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"controllable\",\"in_service\",\"name\",\"p_mw\",\"scaling\",\"sn_mva\",\"type\",\"vm_pu\",\"slack\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\",\"slack_weight\"],\"index\":[0,1,2],\"data\":[[0,true,true,null,40.0,1.0,null,null,1.0,false,40.0,0.0,30.0,-30.0,0.0],[2,true,true,null,323.490000000000009,1.0,null,null,1.0,false,520.0,0.0,390.0,-390.0,0.0],[4,true,true,null,466.509999999999991,1.0,null,null,1.0,false,600.0,0.0,450.0,-450.0,0.0]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"vm_pu\",\"sn_mva\",\"min_q_mvar\",\"max_q_mvar\",\"scaling\",\"slack\",\"in_service\",\"slack_weight\",\"type\",\"controllable\",\"max_p_mw\",\"min_p_mw\"],\"index\":[0,1,2],\"data\":[[null,0,40.0,1.0,null,-30.0,30.0,1.0,false,true,0.0,null,true,40.0,0.0],[null,2,323.490000000000009,1.0,null,-390.0,390.0,1.0,false,true,0.0,null,true,520.0,0.0],[null,4,466.509999999999991,1.0,null,-450.0,450.0,1.0,false,true,0.0,null,true,600.0,0.0]]}",
       "orient": "split",
       "dtype": {
-        "bus": "uint32",
-        "controllable": "bool",
-        "in_service": "bool",
         "name": "object",
+        "bus": "uint32",
         "p_mw": "float64",
-        "scaling": "float64",
-        "sn_mva": "float64",
-        "type": "object",
         "vm_pu": "float64",
-        "slack": "bool",
-        "max_p_mw": "float64",
-        "min_p_mw": "float64",
-        "max_q_mvar": "float64",
+        "sn_mva": "float64",
         "min_q_mvar": "float64",
-        "slack_weight": "float64"
+        "max_q_mvar": "float64",
+        "scaling": "float64",
+        "slack": "bool",
+        "in_service": "bool",
+        "slack_weight": "float64",
+        "type": "object",
+        "controllable": "bool",
+        "max_p_mw": "float64",
+        "min_p_mw": "float64"
       }
     },
     "switch": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\",\"in_ka\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "bus": "int64",
@@ -174,7 +174,8 @@
         "type": "object",
         "closed": "bool",
         "name": "object",
-        "z_ohm": "float64"
+        "z_ohm": "float64",
+        "in_ka": "float64"
       }
     },
     "shunt": {
@@ -196,42 +197,42 @@
     "ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"in_service\",\"name\",\"va_degree\",\"vm_pu\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\",\"slack_weight\"],\"index\":[0],\"data\":[[3,true,null,0.0,1.0,200.0,0.0,150.0,-150.0,1.0]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"vm_pu\",\"va_degree\",\"slack_weight\",\"in_service\",\"max_p_mw\",\"min_p_mw\",\"max_q_mvar\",\"min_q_mvar\"],\"index\":[0],\"data\":[[null,3,1.0,0.0,1.0,true,200.0,0.0,150.0,-150.0]]}",
       "orient": "split",
       "dtype": {
-        "bus": "uint32",
-        "in_service": "bool",
         "name": "object",
-        "va_degree": "float64",
+        "bus": "uint32",
         "vm_pu": "float64",
+        "va_degree": "float64",
+        "slack_weight": "float64",
+        "in_service": "bool",
         "max_p_mw": "float64",
         "min_p_mw": "float64",
         "max_q_mvar": "float64",
-        "min_q_mvar": "float64",
-        "slack_weight": "float64"
+        "min_q_mvar": "float64"
       }
     },
     "line": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"c_nf_per_km\",\"df\",\"from_bus\",\"g_us_per_km\",\"in_service\",\"length_km\",\"max_i_ka\",\"max_loading_percent\",\"name\",\"parallel\",\"r_ohm_per_km\",\"std_type\",\"to_bus\",\"type\",\"x_ohm_per_km\"],\"index\":[0,1,2,3,4,5],\"data\":[[35.702054026915398,1.0,0,0.0,true,1.0,1.00408742467761,100.0,null,1,1.48649,null,1,\"ol\",14.8649],[32.99431397431227,1.0,0,0.0,true,1.0,99999.0,100.0,null,1,1.60816,null,3,\"ol\",16.081600000000002],[156.74806304513703,1.0,0,0.0,true,1.0,99999.0,100.0,null,1,0.33856,null,4,\"ol\",3.3856],[92.865455137426011,1.0,1,0.0,true,1.0,99999.0,100.0,null,1,0.57132,null,2,\"ol\",5.7132],[33.796607323231719,1.0,2,0.0,true,1.0,99999.0,100.0,null,1,1.57113,null,3,\"ol\",15.7113],[33.796607323231719,1.0,3,0.0,true,1.0,0.60245245480657,100.0,null,1,1.57113,null,4,\"ol\",15.7113]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"from_bus\",\"to_bus\",\"length_km\",\"r_ohm_per_km\",\"x_ohm_per_km\",\"c_nf_per_km\",\"g_us_per_km\",\"max_i_ka\",\"df\",\"parallel\",\"type\",\"in_service\",\"max_loading_percent\"],\"index\":[0,1,2,3,4,5],\"data\":[[null,null,0,1,1.0,1.48649,14.8649,35.702054026915398,0.0,1.00408742467761,1.0,1,\"ol\",true,100.0],[null,null,0,3,1.0,1.60816,16.081600000000002,32.99431397431227,0.0,99999.0,1.0,1,\"ol\",true,100.0],[null,null,0,4,1.0,0.33856,3.3856,156.74806304513703,0.0,99999.0,1.0,1,\"ol\",true,100.0],[null,null,1,2,1.0,0.57132,5.7132,92.865455137426011,0.0,99999.0,1.0,1,\"ol\",true,100.0],[null,null,2,3,1.0,1.57113,15.7113,33.796607323231719,0.0,99999.0,1.0,1,\"ol\",true,100.0],[null,null,3,4,1.0,1.57113,15.7113,33.796607323231719,0.0,0.60245245480657,1.0,1,\"ol\",true,100.0]]}",
       "orient": "split",
       "dtype": {
-        "c_nf_per_km": "float64",
-        "df": "float64",
-        "from_bus": "uint32",
-        "g_us_per_km": "float64",
-        "in_service": "bool",
-        "length_km": "float64",
-        "max_i_ka": "float64",
-        "max_loading_percent": "float64",
         "name": "object",
-        "parallel": "uint32",
-        "r_ohm_per_km": "float64",
         "std_type": "object",
+        "from_bus": "uint32",
         "to_bus": "uint32",
+        "length_km": "float64",
+        "r_ohm_per_km": "float64",
+        "x_ohm_per_km": "float64",
+        "c_nf_per_km": "float64",
+        "g_us_per_km": "float64",
+        "max_i_ka": "float64",
+        "df": "float64",
+        "parallel": "uint32",
         "type": "object",
-        "x_ohm_per_km": "float64"
+        "in_service": "bool",
+        "max_loading_percent": "float64"
       }
     },
     "trafo": {
@@ -360,7 +361,7 @@
     "xward": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"in_service\",\"slack_weight\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"slack_weight\",\"in_service\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -372,8 +373,8 @@
         "r_ohm": "float64",
         "x_ohm": "float64",
         "vm_pu": "float64",
-        "in_service": "bool",
-        "slack_weight": "float64"
+        "slack_weight": "float64",
+        "in_service": "bool"
       }
     },
     "measurement": {
@@ -419,6 +420,15 @@
         "cq2_eur_per_mvar2": "float64"
       }
     },
+    "characteristic": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "object": "object"
+      }
+    },
     "controller": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -453,8 +463,9 @@
         "coords": "object"
       }
     },
-    "version": "2.7.1",
+    "version": "2.10.1",
     "converged": true,
+    "OPF_converged": false,
     "name": "",
     "f_hz": 60,
     "sn_mva": 100,
@@ -1451,6 +1462,16 @@
         "q_mvar": "float64"
       }
     },
+    "res_switch": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "i_ka": "float64",
+        "loading_percent": "float64"
+      }
+    },
     "res_bus_est": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -1550,6 +1571,16 @@
         "i_to_ka": "float64"
       }
     },
+    "res_switch_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "i_ka": "float64",
+        "loading_percent": "float64"
+      }
+    },
     "res_bus_sc": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -1587,6 +1618,12 @@
       "orient": "split"
     },
     "res_sgen_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_switch_sc": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
       "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
@@ -1766,7 +1803,6 @@
         "q_c_mvar": "float64"
       }
     },
-    "user_pf_options": {},
-    "OPF_converged": false
+    "user_pf_options": {}
   }
 }

@@ -57,4 +57,9 @@ def test_from_mpc_m():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_from_mpc.py"])
+    if 0:
+        pytest.main(["test_from_mpc.py"])
+    else:
+        test_from_mpc_mat()
+        test_from_mpc_m()
+        pass

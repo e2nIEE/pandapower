@@ -1,5 +1,6 @@
 import pandapower as pp
-from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
+from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements, \
+    _runpp_except_voltage_angles
 import pandas as pd
 import numpy as np
 
@@ -53,8 +54,8 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     xward_parameter, impedance_parameter = \
         _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups)
     xward_parameter["r_ohm"] = 0
-    xward_parameter["x_ohm"] = -1/xward_parameter.shunt.values.imag * \
-        net_external.sn_mva/2
+    xward_parameter["x_ohm"] = -1/xward_parameter.shunt.values.imag / \
+        net_external.sn_mva*net_external.bus.vn_kv[xward_parameter.bus_pd].values**2 #/2
         # np.square(net_external.bus.vn_kv[xward_parameter.bus_pd.values].values) / \
         # net_external.sn_mva/2
     xward_parameter["vm_pu"] = net_external.res_bus.vm_pu[xward_parameter.bus_pd.values].values
@@ -62,9 +63,9 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     return xward_parameter, impedance_parameter
 
 
-def create_passive_external_net_for_ward_addmittance(net, all_external_buses,
-                                                     boundary_buses,
-                                                     calc_volt_angles=True):
+def create_passive_external_net_for_ward_addmittance(
+    net, all_external_buses, boundary_buses, calc_volt_angles=True,
+    runpp_fct=_runpp_except_voltage_angles):
     """
     This function replace the wards and xward in external network by internal
     elements, and replace the power injections in external area by shunts
@@ -93,18 +94,18 @@ def create_passive_external_net_for_ward_addmittance(net, all_external_buses,
     for elm in ["sgen", "gen", "load", "storage"]:
         target_idx = net[elm].index[net[elm].bus.isin(all_external_buses)]
         net[elm].drop(target_idx, inplace=True)
-    pp.runpp(net, calculate_voltage_angles=calc_volt_angles)
+    runpp_fct(net, calculate_voltage_angles=calc_volt_angles)
 
 
 def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no_power,
                                     impedance_parameter, ext_buses_with_xward,
-                                    calc_volt_angles=True):
+                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     """replaces the external networks by wards and equivalent impedance"""
     # --- drop all external elements
     e_buses_pd = bus_lookups["bus_lookup_pd"]["e_area_buses"]
     pp.drop_buses(net_external, e_buses_pd)
     drop_internal_branch_elements(net_external, bus_lookups["boundary_buses_inclusive_bswitch"])
-#    pp.runpp(net_external, calculate_voltage_angles=True)
+#    runpp_fct(net_external, calculate_voltage_angles=True)
 
     # --- drop shunt elements attached to boundary buses
     traget_shunt_idx = net_external.shunt.index[net_external.shunt.bus.isin(bus_lookups[
@@ -136,8 +137,8 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
         pp.create_ward(net_external, target_bus,
                        0.0,  # np.nan_to_num(-ward_parameter.power_eq[i].real),
                        0.0,  # np.nan_to_num(-ward_parameter.power_eq[i].imag),
-                       ward_parameter_no_power.shunt[i].real * sn, # / (net_external.res_bus.vm_pu[target_bus] ** 2),
-                       -ward_parameter_no_power.shunt[i].imag * sn, # / (net_external.res_bus.vm_pu[target_bus] ** 2),
+                       ward_parameter_no_power.shunt[i].real * sn / (net_external.res_bus.vm_pu[target_bus] ** 2),
+                       -ward_parameter_no_power.shunt[i].imag * sn / (net_external.res_bus.vm_pu[target_bus] ** 2),
                        name="network_equivalent")
 
     eq_power = net_external.res_ext_grid.copy()
@@ -152,7 +153,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
 
     eq_power.p_mw -= \
         pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
@@ -167,7 +168,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     net_external.poly_cost = net_external.poly_cost[0:0]
     net_external.pwl_cost = net_external.pwl_cost[0:0]
     if len(ext_buses_with_xward):
-        pp.drop_buses(net_external, 
+        pp.drop_buses(net_external,
                       net_external.bus.index.tolist()[-(len(ext_buses_with_xward)):])
     # net_external.ward.qs_mvar[i] = eq_power.q_mvar[
     #     net_external.ext_grid.bus == ward_parameter_no_power.bus_pd[i]]
@@ -175,7 +176,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
 
 def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_no_power,
                                      impedance_parameter, ext_buses_with_xward,
-                                     calc_volt_angles=True):
+                                     calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
     """replaces the external networks by xwards and equivalent impedance"""
     # --- drop all external elements
     e_buses_pd = bus_lookups["bus_lookup_pd"]["e_area_buses"]
@@ -210,7 +211,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
         pp.create_xward(net_external, target_bus,
                         0.0,  # np.nan_to_num(-xward_parameter.power_eq[i].real),
                         0.0,  # np.nan_to_num(-xward_parameter.power_eq[i].imag),
-                        xward_parameter_no_power.shunt[i].real * sn,
+                        xward_parameter_no_power.shunt[i].real * sn / xward_parameter_no_power.vm_pu[i]**2,
                         0.0,
                         xward_parameter_no_power.r_ohm[i],
                         np.nan_to_num(xward_parameter_no_power.x_ohm[i]),  # neginf=1e100 is commented since this led to error
@@ -229,7 +230,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    pp.runpp(net_external, calculate_voltage_angles=calc_volt_angles, 
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles,
              tolerance_mva=1e-6, max_iteration=100)
 
     eq_power.p_mw -= \
@@ -245,7 +246,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     net_external.poly_cost=net_external.poly_cost[0:0]
     net_external.pwl_cost=net_external.pwl_cost[0:0]
     if len(ext_buses_with_xward):
-        pp.drop_buses(net_external, 
+        pp.drop_buses(net_external,
                       net_external.bus.index.tolist()[-(len(ext_buses_with_xward)):])
 
 def get_ppc_buses(net, buses, nogo_buses):
@@ -277,7 +278,8 @@ def get_ppc_buses(net, buses, nogo_buses):
     return buses_ppc
 
 
-def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True):
+def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True,
+                           runpp_fct=_runpp_except_voltage_angles):
     """calculates the equivalent power injection at boundary buses,
     and then fills the equivalent power in wards"""
 
@@ -299,7 +301,7 @@ def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True):
                                    va_degree=net.res_bus.va_degree[bus],
                                    name="assist_ext_grid")
 
-    pp.runpp(net, calculate_voltage_angles=calc_volt_angles)
+    runpp_fct(net, calculate_voltage_angles=calc_volt_angles)
     for i in power_eq.index:
         power_eq.power_eq[i] = net.res_ext_grid.p_mw[net.ext_grid.bus == power_eq.bus[i]].values + \
             1j*net.res_ext_grid.q_mvar[net.ext_grid.bus == power_eq.bus[i]].values
