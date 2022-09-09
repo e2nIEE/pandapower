@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 import pandapower as pp
@@ -5,8 +8,8 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-import uuid
 from pandapower.auxiliary import _init_runpp_options
+import uuid
 
 try:
     import pandaplan.core.pplog as logging
@@ -14,9 +17,27 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+home = str(Path.home())
+desktop = os.path.join(home, "Desktop")
+
+
+def _runpp_except_voltage_angles(net, **kwargs):
+    if "calculate_voltage_angles" not in kwargs or not kwargs["calculate_voltage_angles"]:
+        pp.runpp(net, **kwargs)
+    else:
+        try:
+            pp.runpp(net, **kwargs)
+        except pp.LoadflowNotConverged:
+            kwargs1 = deepcopy(kwargs)
+            kwargs1["calculate_voltage_angles"] = False
+            pp.runpp(net, **kwargs1)
+            logger.warning("In grid equivalent generation, the power flow did converge only without"
+                           " calculate_voltage_angles.")
+    return net
 
 
 def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
+                                runpp_fct=_runpp_except_voltage_angles,
                                 calc_volt_angles=True, allow_net_change_for_convergence=False):
     """
     adds ext_grids for the given network. If the bus results are
@@ -34,13 +55,17 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     vas = pd.Series(np.zeros(len(buses_to_add_ext_grids)),
                     index=buses_to_add_ext_grids)
     vms.loc[btaegwr] = net.res_bus.vm_pu.loc[btaegwr]
+    vms.loc[pd.Index(net.gen.bus.loc[net.gen.in_service]).intersection(vms.index)] = \
+        net.gen.vm_pu.loc[net.gen.in_service & net.gen.bus.isin(vms.index) &
+                          ~net.gen.bus.duplicated()].values  # avoid
+        # different vm_pu setpoints at same buses
     vas.loc[btaegwr] = net.res_bus.va_degree.loc[btaegwr]
 
     for ext_bus, vm, va in zip(buses_to_add_ext_grids, vms, vas):
         add_eg += [pp.create_ext_grid(net, ext_bus,
                                       vm, va, name="assist_ext_grid")]
         new_bus = pp.create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
-        pp.create_impedance(net, ext_bus, new_bus, 0.0001, 0.0001, net.sn_mva,
+        pp.create_impedance(net, ext_bus, new_bus, 1e8, 1e8, net.sn_mva,
                             name="assist_impedance")
 
     # works fine if there is only one slack in net:
@@ -48,8 +73,8 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         slack_buses = net.gen.bus.loc[net.gen.slack]
         net.gen.slack = False
         try:
-            pp.runpp(net, calculate_voltage_angles=calc_volt_angles,
-                     max_iteration=100)
+            runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
+                      max_iteration=100)
         except pp.LoadflowNotConverged as e:
             if allow_net_change_for_convergence:
 
@@ -61,7 +86,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                 for no, idx in enumerate(imp_neg):
                     net.impedance.loc[idx, ["rft_pu", "rtf_pu", "xft_pu", "xtf_pu"]] *= -1
                     try:
-                        pp.runpp(net, calculate_voltage_angles=True, max_iteration=100)
+                        runpp_fct(net, calculate_voltage_angles=True, max_iteration=100)
                         logger.warning("The sign of these impedances were changed to enable a power"
                                     f" flow: {imp_neg[:no]}")
                         break
@@ -80,7 +105,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                         net.impedance[col].loc[is2small] = sign * 5e-6
                     if changes:
                         try:
-                            pp.runpp(net, calculate_voltage_angles=calc_volt_angles,
+                            runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
                                     max_iteration=100)
                             logger.warning("Reactances of these impedances has been increased to "
                                         f"enable a power flow: {is2small}")
@@ -88,11 +113,13 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                             diag = pp.diagnostic(net)
                             print(net)
                             print(diag.keys())
+                            pp.to_json(net, os.path.join(desktop, "diverged_net.json"))
                             raise pp.LoadflowNotConverged(e)
                     else:
                         diag = pp.diagnostic(net)
                         print(net)
                         print(diag.keys())
+                        pp.to_json(net, os.path.join(desktop, "diverged_net.json"))
                         raise pp.LoadflowNotConverged(e)
             else:
                 raise pp.LoadflowNotConverged(e)
@@ -101,7 +128,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         va = net.res_bus.va_degree.loc[slack_buses]
         va_ave = va.sum() / va.shape[0]
         net.ext_grid.va_degree.loc[add_eg] -= va_ave
-        pp.runpp(net, calculate_voltage_angles=calc_volt_angles,
+        runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
                  max_iteration=100)
 
 
@@ -117,7 +144,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
     for elm, bus_types in bebd.items():
         n_elms = net[elm].shape[0]
         if n_elms:
-            should_be_dropped = np.array([True]*n_elms)
+            should_be_dropped = np.ones((n_elms, ), dtype=bool)
             for bus_type in bus_types:
                 should_be_dropped &= net[elm][bus_type].isin(internal_buses)
             idx_to_drop = net[elm].index[should_be_dropped]
@@ -129,7 +156,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
                 net[elm].drop(idx_to_drop, inplace=True)
 
 
-def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen", 
+def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen",
                          existing_shift_degree=False):
     """
     The function calculats the parameters for zero power balance network
@@ -139,13 +166,13 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 
         **v** - voltage at new buses
     """
-#    pp.runpp(net, calculate_voltage_angles=True)
+#    runpp_fct(net, calculate_voltage_angles=True)
     be_buses = boundary_buses + all_external_buses
     if ((net.trafo.hv_bus.isin(be_buses)) & (net.trafo.shift_degree!=0)).any() \
         or ((net.trafo3w.hv_bus.isin(be_buses)) & \
              ((net.trafo3w.shift_mv_degree!=0) | (net.trafo3w.shift_lv_degree!=0))).any():
             existing_shift_degree = True
-            logger.info("Transformers with non-zero shift-degree are existed," + 
+            logger.info("Transformers with non-zero shift-degree are existed," +
                         " they could cause small inaccuracy.")
     # creata dataframe to collect the current injections of the external area
     nb_ext_buses = len(all_external_buses)
@@ -571,7 +598,8 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                   name="phase_shifter_adapter_"+str(lb))
         # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
         #                name="phase_shifter_adapter_"+str(lb))
-    print("debug")
-    # pp.runpp(net, calculate_voltage_angles=True)
+    # runpp_fct(net, calculate_voltage_angles=True)
     return net
 
+if __name__ == "__main__":
+    pass

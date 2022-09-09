@@ -319,13 +319,11 @@ def check_bus_voltages(net, result, trafo_vector_group):
     #         max_tol = tol
     # print('Voltage Magnitude for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
 
-    tolerances = {'YNyn': 1e-07,
-                  'Dyn': 1e-07,
+    tolerances = {'YNyn': 1e-05,
+                  'Dyn': 1e-05,
                   'Yzn': 1e-03}
 
-    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group])
-    if not np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_vm_pu, result)
+    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group], rtol=0), f"Incorrect results for {trafo_vector_group}"
 
 
 def check_line_currents(net, result, trafo_vector_group):
@@ -438,6 +436,7 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
 
 def test_trafo_asym():
     nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
+    # only 3 vector groups are supported in the 3ph power flow
     for trafo_vector_group in ["YNyn", "Dyn", "Yzn"]:
         net = pp.from_json(nw_dir + '/runpp_3ph Validation.json')
         net['trafo'].vector_group = trafo_vector_group

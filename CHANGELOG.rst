@@ -3,7 +3,34 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+- [ADDED] group functionality
+- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
+- [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
+- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
+
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+- [ADDED] store and restore functionality of dataframe index names with to_json() and from_json()
+- [ADDED] generalization from_json() with parameter empty_dict_like_object
+
+[2.10.0] - 2022-07-29
+-------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
+- [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
+- [ADDED] from_mpc() converter: added functionality to import .m files via external package
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
+- [CHANGED] drop support of pandas versions < 1.0
+- [ADDED] parameter in_ka for rated switch current
+- [ADDED] current and loading result for switches
+- [FIXED] bug for disabled continous tap controllers
+- [ADDED] File I/O download and upload pandapowerNet to PostgreSQL
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
 
 [2.9.0]- 2022-03-23
 ----------------------
@@ -19,7 +46,7 @@ Change Log
 - [CHANGED] use numpy to vectorize trafo_control
 - [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
 - [CHANGED] remove code duplication in const_control, characteristic_control
-- [ADDED] added the funtionality to import grid data from PowerFactory
+- [ADDED] added the functionality to import grid data from PowerFactory
 - [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06
