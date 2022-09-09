@@ -1929,6 +1929,12 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                                           [0.] * len(lineparam)))
         entries["type"] = list(map(check_entry_in_std_type, lineparam, ["type"] * len(lineparam),
                                    [None] * len(lineparam)))
+        try:
+            entries["r0_ohm_per_km"] = list(map(itemgetter("r0_ohm_per_km"), lineparam))
+            entries["x0_ohm_per_km"] = list(map(itemgetter("x0_ohm_per_km"), lineparam))
+            entries["c0_nf_per_km"] = list(map(itemgetter("c0_nf_per_km"), lineparam))
+        except:
+            pass
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
 
