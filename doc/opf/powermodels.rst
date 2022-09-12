@@ -3,6 +3,12 @@
 Optimization with PandaModels.jl
 =================================
 
+Introduction
+--------------------
+
+`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>` (pandapower + PowerModels.jl) is a Julia package enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
+
+
 Installation
 --------------
 
