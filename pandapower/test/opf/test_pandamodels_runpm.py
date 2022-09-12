@@ -33,7 +33,6 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     print(e)
 
 
-@pytest.fixture
 def create_cigre_grid_with_time_series():
     net = nw.create_cigre_network_mv("pv_wind")
     min_vm_pu = 0.95
@@ -575,7 +574,7 @@ def test_runpm_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_storage_opt(create_cigre_grid_with_time_series):
-    net = create_cigre_grid_with_time_series                   
+    net = create_cigre_grid_with_time_series()
     pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
     
     assert net._pm_org_result["multinetwork"]
