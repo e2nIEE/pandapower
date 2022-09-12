@@ -573,7 +573,7 @@ def test_runpm_vstab():
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
-def test_storage_opt(create_cigre_grid_with_time_series):
+def test_storage_opt():
     net = create_cigre_grid_with_time_series()
     pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
     
