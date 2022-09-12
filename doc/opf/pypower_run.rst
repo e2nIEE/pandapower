@@ -4,6 +4,13 @@ Optimization with PYPOWER
 
 You can run an Optimal Power Flow using the PYPOWER OPF
 
+.. warning::
+
+    The optimization with pypower functionality does not have the best convergence properties.
+    Therefore, even if the network configuration is appropriate as an optimization problem,
+    e.g. easily checked by :ref:`pandapower.opf_task<pandapower.opf_task>`, :ref:`pandapower.runopp<pandapower.runopp>` may not converge.
+
+
 AC OPF
 -----------------------------------
 
@@ -26,13 +33,6 @@ References:
       - R. D. Zimmerman, C. E. Murillo-Sánchez, and R. J. Thomas, "MATPOWER: Steady-State
         Operations, Planning and Analysis Tools for Power Systems Research and Education,"
         Power Systems, IEEE Transactions on, vol. 26, no. 1, pp. 12-19, Feb. 2011.
-
-
-.. note::
-
-    The optimization with pypower does not have the best convergence properties.
-    Therefore, even if the network configuration is appropriate as an optimization problem,
-    e.g. easily checked by :ref:`pandapower.opf_task<pandapower.opf_task>`, :ref:`pandapower.runopp<pandapower.runopp>` may not converge.
 
 
 DC OPF
