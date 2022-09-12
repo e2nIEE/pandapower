@@ -579,7 +579,6 @@ def test_storage_opt():
 
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
     
-    print("xxxxxxxxxxx", json_path)
     net = create_cigre_grid_with_time_series(json_path)
     pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
     assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
@@ -611,6 +610,5 @@ if __name__ == '__main__':
     if 0:
         pytest.main(['-x', __file__])
     else:
-        test_time_series()
-    
+        test_storage_opt()
     pass
