@@ -576,7 +576,7 @@ def test_runpm_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_storage_opt():
-    json_path = os.path.join(pp_dir, "test/opf/cigre_timeseries_15min.json")
+    json_path = os.path.join(pp_dir, "test\opf\cigre_timeseries_15min.json")
     net = create_cigre_grid_with_time_series(json_path)
     pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
     
@@ -588,7 +588,7 @@ def test_storage_opt():
 
 def test_time_series():
     
-    json_path = os.path.join(pp_dir, "test\\opf\\cigre_timeseries_15min.json")
+    json_path = os.path.join(pp_dir, "test\opf\cigre_timeseries_15min.json")
     print("xxxxxxxxxxx", json_path)
     net = create_cigre_grid_with_time_series(json_path)
     pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
