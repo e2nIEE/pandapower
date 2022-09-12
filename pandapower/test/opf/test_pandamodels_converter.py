@@ -81,7 +81,7 @@ def test_obj_factors(net_3w_trafo_opf):
     
     
 def test_time_series():
-    net = create_cigre_grid_with_time_series()
+    net = create_cigre_grid_with_time_series("cigre_timeseries_15min.json")
     pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
     assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
     assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
