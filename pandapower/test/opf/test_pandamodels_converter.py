@@ -22,7 +22,6 @@ from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
-from pandapower.test.opf.test_pandamodels_runpm import create_cigre_grid_with_time_series
 from copy import deepcopy
 
 
@@ -79,15 +78,6 @@ def test_obj_factors(net_3w_trafo_opf):
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["2"] == 2
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
     
-    
-def test_time_series():
-    net = create_cigre_grid_with_time_series("cigre_timeseries_15min.json")
-    pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
-    assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
-    assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
-    assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
-    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)]) 
-
 
 
 if __name__ == '__main__':
@@ -95,6 +85,5 @@ if __name__ == '__main__':
         pytest.main(['-x', __file__])
     else:
         test_obj_factors()
-        test_time_series()
         
     pass

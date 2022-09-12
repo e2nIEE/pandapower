@@ -19,7 +19,7 @@ from pandapower.converter.powermodels.to_pm import init_ne_line
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
-
+from pandapower.converter import convert_pp_to_pm
 
 try:
     from julia.core import UnsupportedPythonError
@@ -581,6 +581,15 @@ def test_storage_opt():
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 10
+
+
+def test_time_series():
+    net = create_cigre_grid_with_time_series("cigre_timeseries_15min.json")
+    pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
+    assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
+    assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
+    assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
+    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)]) 
 
 
 if __name__ == '__main__':
