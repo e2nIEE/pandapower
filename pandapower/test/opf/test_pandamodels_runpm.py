@@ -33,7 +33,7 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     print(e)
 
 
-def create_cigre_grid_with_time_series(ts_file):
+def create_cigre_grid_with_time_series():
     net = nw.create_cigre_network_mv("pv_wind")
     min_vm_pu = 0.95
     max_vm_pu = 1.05
@@ -55,7 +55,7 @@ def create_cigre_grid_with_time_series(ts_file):
     net.sgen.loc[8, "type"] = "wind"
 
     # read the example time series
-    time_series = pd.read_json(ts_file)
+    time_series = pd.read_json("cigre_timeseries_15min.json")
     time_series.sort_index(inplace=True)
 
     # this example time series has a 15min resolution with 96 time steps for one day
@@ -574,7 +574,7 @@ def test_runpm_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_storage_opt():
-    net = create_cigre_grid_with_time_series("cigre_timeseries_15min.json")
+    net = create_cigre_grid_with_time_series()
     pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
     
     assert net._pm_org_result["multinetwork"]
@@ -584,7 +584,7 @@ def test_storage_opt():
 
 
 def test_time_series():
-    net = create_cigre_grid_with_time_series("cigre_timeseries_15min.json")
+    net = create_cigre_grid_with_time_series()
     pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
     assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
     assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
@@ -593,10 +593,10 @@ def test_time_series():
 
 
 if __name__ == '__main__':
-    if 2:
+    if 1:
         pytest.main(['-x', __file__])
     else:
-        # test_pm_ac_powerflow_simple()
-        test_compare_pwl_and_poly()
+        test_time_series()
+        # test_compare_pwl_and_poly()
     
     pass
