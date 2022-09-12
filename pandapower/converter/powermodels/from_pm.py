@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import pandas as pd
 from copy import deepcopy
 from pandapower.auxiliary import _clean_up
 from pandapower.converter import logger
@@ -18,6 +19,7 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     # read power models results from result_pm to result (== ppc with results)
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net["_pm_result"] = result.copy()
+    net["_pm_org_result"] = result_pm["solution"]
     if "ne_branch" in result_pm["solution"].keys():
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
@@ -31,13 +33,14 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
         else:
             neti = deepcopy(net)
             removed_keys = set(net.keys()) - pp_elements(res_elements=True) - \
-                {"_options", "_is_elements", "_pd2ppc_lookups", "res_bus"} + \
-                {"measurement", "asymmetric_load", "asymmetric_sgen"}
+                {"_options", "_is_elements", "_pd2ppc_lookups", "res_bus", "res_switch"} | \
+                {"measurement"}
             for rk in removed_keys:
                 neti.pop(rk)
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)
+                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp)+1)])
                 result[tp] = deepcopy(neti)
             net["res_ts_opt"] = result
         _clean_up(net)
@@ -46,6 +49,24 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
         _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
         raise OPFNotConverged("PowerModels.jl OPF not converged")   
+
+
+def add_storage_results(net, result_pmi):
+    if "storage" in result_pmi:
+        df = net.res_storage
+        df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
+        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
+    pm_idx = [str(i) for i in range(1, len(net.storage)+1, 1)]
+    pd_idx = net.storage.index.tolist()
+    for m, d in zip(pd_idx, pm_idx):
+        net.res_storage["ps"][m] = result_pmi["storage"][d]["ps"]
+        net.res_storage["qs"][m] = result_pmi["storage"][d]["qs"]
+        net.res_storage["se"][m] = result_pmi["storage"][d]["se"]
+        net.res_storage["sc"][m] = result_pmi["storage"][d]["sc"]
+        net.res_storage["sc_on"][m] = result_pmi["storage"][d]["sc_on"]
+        net.res_storage["sd"] = result_pmi["storage"][d]["sd"]
+        net.res_storage["sd_on"] = result_pmi["storage"][d]["sd_on"]
+        net.res_storage["qsc"] = result_pmi["storage"][d]["qsc"]
 
 
 def add_time_series_data_to_net(net, controller, tp):

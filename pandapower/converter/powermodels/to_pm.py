@@ -338,6 +338,8 @@ def ppc_to_pm(net, ppci):
         pm["branch"][str(idx)] = branch
 
     for idx, row in enumerate(ppci["gen"], start=1):
+        # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
+        #     continue
         gen = dict()
         gen["pg"] = row[PG]
         gen["qg"] = row[QG]
@@ -390,6 +392,8 @@ def ppc_to_pm(net, ppci):
         logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
         ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
     for idx, row in enumerate(ppci["gencost"], start=1):
+        # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
+        #     continue
         gen = pm["gen"][str(idx)]
         gen["model"] = int(row[MODEL])
         gen["startup"] = 0.0
@@ -468,44 +472,79 @@ def init_ne_line(net, new_line_index, construction_costs=None):
 
 def add_params_to_pm(net, pm):
     # add user defined parameters to pm
+    pd_idxs_br = []
+    pm_idxs_br = []
+    br_elms = ["line", "trafo"]
+    pm["user_defined_params"] = dict()
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
             continue
-        elif "user_defined_params" not in pm.keys():
-            pm["user_defined_params"] = dict()
         params = [param_col.split("/")[-1] for param_col in param_cols]
+        br_param = list(set(params) - {'side'})
         for param, param_col in zip(params, param_cols):
             pd_idxs = net[elm].index[net[elm][param_col].notna()].tolist()
             target_values = net[elm][param_col][pd_idxs].values.tolist()
+            if elm in br_elms and param in br_param:
+                pd_idxs_br += net[elm].index[net[elm][param_col].notna()].tolist()
+                target_values = net[elm][param_col][pd_idxs_br].values.tolist()
             if elm in ["line", "trafo"]:
                 start, end = net._pd2pm_lookups["branch"][elm]
-                pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs]
+                pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs_br]
                 pm_idxs = [int(v) + start for v in pd_pos]
             elif elm == "sgen":
                 pm_idxs = [int(v) for v in net._pd2pm_lookups[elm+"_controllable"][pd_idxs]]
                 elm = "gen"
             else:
                 pm_idxs = [int(v) for v in net._pd2pm_lookups[elm][pd_idxs]]
-            df = pd.DataFrame(index=pm_idxs)
-            df["element"] = elm if elm not in ["line", "trafo"] else "branch"
+            df = pd.DataFrame(index=pm_idxs) if elm not in ["line", "trafo"] else pd.DataFrame(index=pm_idxs_br)   
             df["element_index"] = pm_idxs
-            df["element_pp_index"] = pd_idxs
+            df["element_pp_index"] = pd_idxs if elm not in ["line", "trafo"] else pd_idxs_br
             df["value"] = target_values
+            df["element"] = elm
             pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
+
         if elm in ["line", "trafo"]:
-            for k in pm["user_defined_params"]["side"].keys():
-                side = pm["user_defined_params"]["side"][k]["value"]
-                side_bus_f = side + "_bus"
-                if elm == "line":
-                    side_bus_t = "from_bus" if side == "to" else "to_bus" 
-                if elm == "trafo":
-                    side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
-                pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
-                pm["user_defined_params"]["setpoint_q"][k]["f_bus"] = \
-                    net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
-                pm["user_defined_params"]["setpoint_q"][k]["t_bus"] = \
-                    net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+            for bp in br_param:
+                for k in pm["user_defined_params"]["side"].keys():
+                    side = pm["user_defined_params"]["side"][k]["value"]
+                    side_bus_f = side + "_bus"
+                    if elm == "line":
+                        side_bus_t = "from_bus" if side == "to" else "to_bus" 
+                    if elm == "trafo":
+                        side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
+                    pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
+                    ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
+                     
+                    pm["user_defined_params"][bp][k]["f_bus"] = \
+                        int(net._ppc_opf["branch"][ppcidx,0].real) + 1
+                    pm["user_defined_params"][bp][k]["t_bus"] = \
+                        int(net._ppc_opf["branch"][ppcidx,1].real) + 1
+                # pm["user_defined_params"][bp][k]["f_bus"] = \
+                #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                # pm["user_defined_params"][bp][k]["t_bus"] = \
+                #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+
+    # add controllable sgen:
+    dic = {}
+    if "user_defined_params" in pm.keys():
+        for elm in ["gen", "sgen_controllable"]:
+            if elm in net._pd2pm_lookups.keys():
+                pm_idxs = net._pd2pm_lookups[elm] 
+                for k in pm_idxs[pm_idxs!=-1]:
+                    dic[str(k)] = k
+        if dic != {}:
+            pm["user_defined_params"]["gen_and_controllable_sgen"] = dic
+    
+    # add objective factors for multi optimization
+    if "obj_factors" in net.keys():
+        assert type(net.obj_factors) == list
+        assert sum(net.obj_factors) <= 1
+        dic = {}
+        for i, k in enumerate(net.obj_factors):
+            dic["fac_"+str(i+1)] = k        
+        pm["user_defined_params"]["obj_factors"] = dic
+
     return pm
 
 
@@ -514,6 +553,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     if from_time_step is None or to_time_step is None:
         raise ValueError("please define 'from_time_step' " +
                          "and 'to_time_step' to call time-series optimizaiton ")
+    tp_list = list(range(from_time_step, to_time_step))
     if len(net.controller):
         load_dict, gen_dict = {}, {}
         pm["time_series"] = {"load": load_dict, "gen": gen_dict,
@@ -528,7 +568,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                 elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
                 df = content["object"].data_source.df
                 for pd_ei in elm_idxs:
-                    if element == "sgen" and net[element].controllable[pd_ei]:
+                    if element == "sgen" and "controllable" in net[element].columns and net[element].controllable[pd_ei]:
                         pm_ei = net._pd2pm_lookups[element+"_controllable"][pd_ei]
                         pm_elm = "gen"
                     else:
@@ -538,8 +578,8 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                         pm["time_series"][pm_elm][str(pm_ei)] = {}
                     target_ts = df[pd_ei][from_time_step:to_time_step].values
                     pm["time_series"][pm_elm][str(pm_ei)][variable] = \
-                       {str(m):n for m, n in enumerate(list(-target_ts))} if (element!="load" and pm_elm not in element) \
-                            else {str(m):n for m, n in enumerate(list(target_ts))} 
+                       {str(tp_list[m]):n for m, n in enumerate(list(-target_ts))} if (element!="load" and pm_elm not in element) \
+                            else {str(tp_list[m]):n for m, n in enumerate(list(target_ts))} 
     return pm
 
 
