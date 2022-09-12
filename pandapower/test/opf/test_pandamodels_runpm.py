@@ -57,7 +57,7 @@ def create_cigre_grid_with_time_series():
     net.sgen.loc[8, "type"] = "wind"
 
     # read the example time series
-    json_path = os.path.join(pp_dir, "cigre_timeseries_15min.json")
+    json_path = os.path.join(pp_dir, "test\\opf\\cigre_timeseries_15min.json")
     time_series = pd.read_json(json_path)
     time_series.sort_index(inplace=True)
 
