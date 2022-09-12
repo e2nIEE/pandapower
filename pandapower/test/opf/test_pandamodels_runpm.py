@@ -3,13 +3,13 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import os
 import copy
 from pandapower.control import ConstControl
 from pandapower.timeseries import DFData
 import numpy as np
 import pandas as pd
 import pytest
-
 import pandapower as pp
 import pandapower.networks as nw
 import pandapower.control
@@ -20,6 +20,8 @@ from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.converter import convert_pp_to_pm
+from pandapower import pp_dir
+
 
 try:
     from julia.core import UnsupportedPythonError
@@ -55,7 +57,8 @@ def create_cigre_grid_with_time_series():
     net.sgen.loc[8, "type"] = "wind"
 
     # read the example time series
-    time_series = pd.read_json("cigre_timeseries_15min.json")
+    json_path = os.path.join(pp_dir, "cigre_timeseries_15min.json")
+    time_series = pd.read_json(json_path)
     time_series.sort_index(inplace=True)
 
     # this example time series has a 15min resolution with 96 time steps for one day
@@ -582,21 +585,20 @@ def test_storage_opt():
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 10
 
-# TODO
-# def test_time_series():
-#     net = create_cigre_grid_with_time_series()
-#     pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
-#     assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
-#     assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
-#     assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
-#     assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)]) 
+
+def test_time_series():
+    net = create_cigre_grid_with_time_series()
+    pm = convert_pp_to_pm(net, from_time_step=5, to_time_step=26)
+    assert "gen_and_controllable_sgen" not in  pm["user_defined_params"]
+    assert len(pm["time_series"]["gen"].keys()) == 0 # because all sgen are not controllable, they are treated as loads.
+    assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
+    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)]) 
 
 
 if __name__ == '__main__':
     if 1:
         pytest.main(['-x', __file__])
     else:
-        # test_time_series()
         test_compare_pwl_and_poly()
     
     pass
