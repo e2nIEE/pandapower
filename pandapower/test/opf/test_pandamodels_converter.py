@@ -7,23 +7,17 @@ import copy
 import json
 import os
 import numpy as np
-import pandas as pd
 import pytest
 import pandapower.control
 import pandapower.timeseries
 import pandapower as pp
-import pandapower.networks as nw
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
-from pandapower.control import ConstControl
-from pandapower.timeseries import DFData
 from pandapower.converter.powermodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
-from copy import deepcopy
-
 
 try:
     from julia.core import UnsupportedPythonError
@@ -36,6 +30,7 @@ try:
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
     print(e)
+
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
     # tests if the conversion to power models works

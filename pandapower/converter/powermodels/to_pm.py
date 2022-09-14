@@ -315,9 +315,9 @@ def ppc_to_pm(net, ppci):
         branch["b_to"] = row[BR_B].real / 2.0
 
         if net._options["opf_flow_lim"] == "S":  # or branch["transformer"]:
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
+            branch["rate_a"] = row[RATE_A].real / ppci["baseMVA"] if row[RATE_A] > 0 else row[RATE_B].real / ppci["baseMVA"]
+            branch["rate_b"] = row[RATE_B].real / ppci["baseMVA"]
+            branch["rate_c"] = row[RATE_C].real / ppci["baseMVA"]
         elif net._options["opf_flow_lim"] == "I":  # need to call _run_opf_cl from PowerModels
             f = net._pd2ppc_lookups["branch"]["line"][0]
             f = int(row[F_BUS].real)  # from bus of this line
@@ -366,9 +366,9 @@ def ppc_to_pm(net, ppci):
             branch["b_to"] = row[BR_B].real / 2.0
 
             if net._options["opf_flow_lim"] == "S":  # --> Rate_a is always needed for the TNEP problem, right?
-                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-                branch["rate_b"] = row[RATE_B].real
-                branch["rate_c"] = row[RATE_C].real
+                branch["rate_a"] = row[RATE_A].real / ppci["baseMVA"] if row[RATE_A] > 0 else row[RATE_B].real / ppci["baseMVA"]
+                branch["rate_b"] = row[RATE_B].real / ppci["baseMVA"]
+                branch["rate_c"] = row[RATE_C].real / ppci["baseMVA"]
             elif net._options["opf_flow_lim"] == "I":
                 f, t = net._pd2ppc_lookups["branch"]["line"]
                 f = int(row[F_BUS].real)  # from bus of this line
