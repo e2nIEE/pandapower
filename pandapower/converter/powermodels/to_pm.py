@@ -277,20 +277,20 @@ def ppc_to_pm(net, ppci):
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
 
-        pd = row[PD]
-        qd = row[QD]
+        pd_value = row[PD]
+        qd_value = row[QD]
 
         # pd and qd are the PQ values in the ppci, if they are equal to the sum in load data is
         # consistent
         if idx in pd_bus:
-            pd -= pd_bus[idx]
-            qd -= qd_bus[idx]
+            pd_value -= pd_bus[idx]
+            qd_value -= qd_bus[idx]
         # if not we have to add more loads wit the remaining value
-        pq_mismatch = not np.allclose(pd, 0.) or not np.allclose(qd, 0.)
+        pq_mismatch = not np.allclose(pd_value, 0.) or not np.allclose(qd_value, 0.)
         if pq_mismatch:
             # This will be called if ppc PQ != sum at bus.
             logger.info("PQ mismatch. Adding another load at idx {}".format(load_idx))
-            pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
+            pm["load"][str(load_idx)] = {"pd": pd_value, "qd": qd_value, "load_bus": idx,
                                          "status": True, "index": load_idx}
             load_idx += 1
         # if bs or gs != 0. -> shunt element at this bus
@@ -337,21 +337,34 @@ def ppc_to_pm(net, ppci):
         branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
-    for idx, row in enumerate(ppci["gen"], start=1):
-        # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
-        #     continue
-        gen = dict()
-        gen["pg"] = row[PG]
-        gen["qg"] = row[QG]
-        gen["gen_bus"] = int(row[GEN_BUS]) + 1
-        gen["vg"] = row[VG]
-        gen["qmax"] = row[QMAX]
-        gen["gen_status"] = int(row[GEN_STATUS])
-        gen["qmin"] = row[QMIN]
-        gen["pmin"] = row[PMIN]
-        gen["pmax"] = row[PMAX]
-        gen["index"] = idx
-        pm["gen"][str(idx)] = gen
+    # create pm["gen"]
+    # for idx, row in enumerate(ppci["gen"], start=1):
+    #             gen = dict()
+    #     gen["pg"] = row[PG]
+    #     gen["qg"] = row[QG]
+    #     gen["gen_bus"] = int(row[GEN_BUS]) + 1
+    #     gen["vg"] = row[VG]
+    #     gen["qmax"] = row[QMAX]
+    #     gen["gen_status"] = int(row[GEN_STATUS])
+    #     gen["qmin"] = row[QMIN]
+    #     gen["pmin"] = row[PMIN]
+    #     gen["pmax"] = row[PMAX]
+    #     gen["index"] = idx
+    #     pm["gen"][str(idx)] = gen
+    gen_idxs_pm = [str(i+1) for i in range(len(ppci["gen"]))]
+    gen_df = pd.DataFrame(index=gen_idxs_pm)
+    gen_df["pg"] = ppci["gen"][:, PG]
+    gen_df["qg"] = ppci["gen"][:, QG]
+    gen_df["gen_bus"] = (ppci["gen"][:, GEN_BUS] + 1).astype(int)
+    gen_df["vg"] = ppci["gen"][:, VG]
+    gen_df["qmax"] = ppci["gen"][:, QMAX]
+    gen_df["gen_status"] = ppci["gen"][:, GEN_STATUS].astype(int)
+    gen_df["qmin"] = ppci["gen"][:, QMIN]
+    gen_df["pmin"] = ppci["gen"][:, PMIN]
+    gen_df["pmax"] = ppci["gen"][:, PMAX]
+    gen_df["index"] = list(map(int, gen_idxs_pm))
+    pm["gen"] = gen_df.astype(object).T.to_dict()
+     
 
     if "ne_branch" in ppci:
         for idx, row in enumerate(ppci["ne_branch"], start=1):
