@@ -337,20 +337,7 @@ def ppc_to_pm(net, ppci):
         branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
-    # create pm["gen"]
-    # for idx, row in enumerate(ppci["gen"], start=1):
-    #             gen = dict()
-    #     gen["pg"] = row[PG]
-    #     gen["qg"] = row[QG]
-    #     gen["gen_bus"] = int(row[GEN_BUS]) + 1
-    #     gen["vg"] = row[VG]
-    #     gen["qmax"] = row[QMAX]
-    #     gen["gen_status"] = int(row[GEN_STATUS])
-    #     gen["qmin"] = row[QMIN]
-    #     gen["pmin"] = row[PMIN]
-    #     gen["pmax"] = row[PMAX]
-    #     gen["index"] = idx
-    #     pm["gen"][str(idx)] = gen
+    #### create pm["gen"]
     gen_idxs_pm = [str(i+1) for i in range(len(ppci["gen"]))]
     gen_df = pd.DataFrame(index=gen_idxs_pm)
     gen_df["pg"] = ppci["gen"][:, PG]
@@ -363,8 +350,30 @@ def ppc_to_pm(net, ppci):
     gen_df["pmin"] = ppci["gen"][:, PMIN]
     gen_df["pmax"] = ppci["gen"][:, PMAX]
     gen_df["index"] = list(map(int, gen_idxs_pm))
+    # add cost-parameters
+    if len(ppci["gencost"]) > len(ppci["gen"]):
+        logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
+        ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
+    gen_df["startup"] = 0.0
+    gen_df["shutdown"] = 0.0
+    model_type = ppci["gencost"][:, MODEL].astype(int)
+    gen_df["model"] = model_type
+    # calc ncost and cost
+    ncost = np.array([0.0] * len(ppci["gen"]))
+    cost = [[0, 0, 0] for i in gen_idxs_pm]
+    ncost[model_type==1] = ppci["gencost"][:, NCOST][model_type==1]
+    ncost[model_type==2] = 3
+    for i in np.where(model_type==1)[0]:
+        cost[i] = ppci["gencost"][i, COST:COST + ncost[i] * 2].tolist()
+    for i in np.where(model_type==2)[0]:
+        cost_value = ppci["gencost"][i, COST:].tolist()
+        if len(cost_value) > 3:
+            raise ValueError("Maximum quadratic cost function allowed")
+        cost[i][-len(cost_value):] = cost_value
+    gen_df["ncost"] = ncost
+    gen_df["cost"] = cost
+    # dataframe to dict
     pm["gen"] = gen_df.astype(object).T.to_dict()
-     
 
     if "ne_branch" in ppci:
         for idx, row in enumerate(ppci["ne_branch"], start=1):
@@ -401,27 +410,25 @@ def ppc_to_pm(net, ppci):
             branch["construction_cost"] = row[CONSTRUCTION_COST].real
             pm["ne_branch"][str(idx)] = branch
 
-    if len(ppci["gencost"]) > len(ppci["gen"]):
-        logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
-        ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
-    for idx, row in enumerate(ppci["gencost"], start=1):
-        # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
-        #     continue
-        gen = pm["gen"][str(idx)]
-        gen["model"] = int(row[MODEL])
-        gen["startup"] = 0.0
-        gen["shutdown"] = 0.0
-        if gen["model"] == 1:
-            gen["ncost"] = int(row[NCOST])
-            gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
-        elif gen["model"] == 2:
-            gen["ncost"] = 3
-            gen["cost"] = [0] * 3
-            costs = row[COST:]
-            if len(costs) > 3:
-                logger.info(costs)
-                raise ValueError("Maximum quadratic cost function allowed")
-            gen["cost"][-len(costs):] = costs
+    # if len(ppci["gencost"]) > len(ppci["gen"]):
+    #     logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
+    #     ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
+    # for idx, row in enumerate(ppci["gencost"], start=1):
+    #     # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
+    #     #     continue
+    #     gen = pm["gen"][str(idx)]
+    #     gen["model"] = int(row[MODEL])
+    #     if gen["model"] == 1:
+    #         gen["ncost"] = int(row[NCOST])
+    #         gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
+    #     elif gen["model"] == 2:
+    #         gen["ncost"] = 3
+    #         gen["cost"] = [0] * 3
+    #         costs = row[COST:]
+    #         if len(costs) > 3:
+    #             logger.info(costs)
+    #             raise ValueError("Maximum quadratic cost function allowed")
+    #         gen["cost"][-len(costs):] = costs
     return pm
 
 
