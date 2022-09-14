@@ -38,7 +38,22 @@ Input Parameters
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
-   
+.. note:: vkr_percent can be calculated as follow :
+
+    .. math::
+        :nowrap:
+
+        \begin{align*}
+        vkr\_percent &= \frac{P\_cu}{S\_trafo} \cdot 100
+        \end{align*}
+
+    | Where
+    | P\_cu is the power loss in the copper in kW
+    | S\_trafo is the rated apparent power of the transformer in kW
+
+
+
+
 Electric Model
 =================
 

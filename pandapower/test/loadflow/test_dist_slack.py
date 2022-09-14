@@ -118,9 +118,10 @@ def assert_results_correct(net, tol=1e-8):
     slack_weights = _get_slack_weights(net)
 
     # assert power balance is correct
-    assert abs(result_p_mw.sum() - consumed_p_mw) < tol
+    assert abs(result_p_mw.sum() - consumed_p_mw) < tol, "power balance is wrong"
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw, atol=tol, rtol=0)
+    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
+                       atol=tol, rtol=0), "distributed slack weights formula has a wrong result"
 
 
 def check_xward_results(net, tol=1e-9):
@@ -509,6 +510,40 @@ def test_dist_slack_user_pf_options():
     pp.set_user_pf_options(net2, algorithm="bfsw")
     with pytest.raises(NotImplementedError):
         pp.runpp(net2)
+
+
+def test_dist_slack_with_enforce_q_lims():
+    net = pp.networks.case9()
+    net.ext_grid['slack_weight'] = 1 / 3
+    net.gen['slack_weight'] = 1 / 3
+
+    net.gen.at[0, 'max_q_mvar'] = 10
+    net.gen.at[1, 'max_q_mvar'] = 0.5
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True, numba=False)
+    assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
+    assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
+
+    assert_results_correct(net, tol=1e-6)
+
+
+def test_dist_slack_with_enforce_q_lims_duplicate_gens():
+    net = pp.networks.case9()
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.07)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.01)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.2)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.1)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.05)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.25)
+    net.gen['slack_weight'] = 1 / 8
+    net.ext_grid['slack_weight'] = 1 / 8
+
+    net.gen.at[0, 'max_q_mvar'] = 10
+    net.gen.at[1, 'max_q_mvar'] = 0.5
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True)
+    assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
+    assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
+
+    assert_results_correct(net, tol=1e-6)
 
 # todo: implement distributed slack for when the grid has several disconnected zones
 
