@@ -60,7 +60,7 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     """calculates the xwards and the equivalent impedance"""
     t_start = time.perf_counter()
     xward_parameter, impedance_parameter = \
-        _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups)
+        _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computing_time)
     xward_parameter["r_ohm"] = 0
     xward_parameter["x_ohm"] = -1/xward_parameter.shunt.values.imag / \
         net_external.sn_mva*net_external.bus.vn_kv[xward_parameter.bus_pd].values**2 #/2
