@@ -359,7 +359,7 @@ def ppc_to_pm(net, ppci):
     model_type = ppci["gencost"][:, MODEL].astype(int)
     gen_df["model"] = model_type
     # calc ncost and cost
-    ncost = np.array([0.0] * len(ppci["gen"]))
+    ncost = np.array([0] * len(ppci["gen"]))
     cost = [[0, 0, 0] for i in gen_idxs_pm]
     ncost[model_type==1] = ppci["gencost"][:, NCOST][model_type==1]
     ncost[model_type==2] = 3

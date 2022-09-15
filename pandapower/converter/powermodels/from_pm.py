@@ -55,19 +55,11 @@ def add_storage_results(net, result_pmi):
     if "storage" in result_pmi:
         df = net.res_storage
         df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
-        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
-    pm_idx = [str(i) for i in range(1, len(net.storage)+1, 1)]
-    pd_idx = net.storage.index.tolist()
-    for m, d in zip(pd_idx, pm_idx):
-        net.res_storage["ps"][m] = result_pmi["storage"][d]["ps"]
-        net.res_storage["qs"][m] = result_pmi["storage"][d]["qs"]
-        net.res_storage["se"][m] = result_pmi["storage"][d]["se"]
-        net.res_storage["sc"][m] = result_pmi["storage"][d]["sc"]
-        net.res_storage["sc_on"][m] = result_pmi["storage"][d]["sc_on"]
-        net.res_storage["sd"] = result_pmi["storage"][d]["sd"]
-        net.res_storage["sd_on"] = result_pmi["storage"][d]["sd_on"]
-        net.res_storage["qsc"] = result_pmi["storage"][d]["qsc"]
-
+        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index) 
+        controllable_storages = net.storage.index[net.storage.controllable==True]
+        df_pm = pd.DataFrame.from_dict(result_pmi["storage"]).T
+        df_pm.index = controllable_storages
+        df.loc[controllable_storages] = df_pm
 
 def add_time_series_data_to_net(net, controller, tp):
     from pandapower.control import ConstControl
