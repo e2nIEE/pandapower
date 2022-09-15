@@ -598,5 +598,6 @@ if __name__ == '__main__':
     if 0:
         pytest.main(['-x', __file__])
     else:
+        test_compare_pwl_and_poly(net_3w_trafo_opf)
         test_storage_opt()
     pass
