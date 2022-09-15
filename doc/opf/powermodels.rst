@@ -41,7 +41,7 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`, install it.
 
 7. Now install our interface `PandaModels.jl` by type :code:`add PandaModels` inside Julia package manager.
 
-8. Finally, you can then test whether the PandaModels.jl interface works: Navigate to your local pandapower test folder :code:`pandapower/pandapower/test/opf` folder and run :code:`python-jl test_powermodels.py` or :code:`pytest test_powermodels.py` if pytest is intalled. If everything works there should be no error.
+8. Finally, you can then test whether the PandaModels.jl interface works: Navigate to your local pandapower test folder :code:`pandapower/pandapower/test/opf` folder and run :code:`python-jl test_pandamodels_runpm.py` or :code:`pytest test_pandamodels_runpm.py` if pytest is intalled. If everything works there should be no error.
 
 
 Additional Solvers
