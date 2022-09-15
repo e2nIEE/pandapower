@@ -65,7 +65,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         add_eg += [pp.create_ext_grid(net, ext_bus,
                                       vm, va, name="assist_ext_grid")]
         new_bus = pp.create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
-        pp.create_impedance(net, ext_bus, new_bus, 1e8, 1e8, net.sn_mva,
+        pp.create_impedance(net, ext_bus, new_bus, 1e6, 1e6, net.sn_mva,
                             name="assist_impedance")
 
     # works fine if there is only one slack in net:
