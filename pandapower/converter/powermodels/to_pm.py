@@ -410,25 +410,6 @@ def ppc_to_pm(net, ppci):
             branch["construction_cost"] = row[CONSTRUCTION_COST].real
             pm["ne_branch"][str(idx)] = branch
 
-    # if len(ppci["gencost"]) > len(ppci["gen"]):
-    #     logger.warning("PowerModels.jl does not consider reactive power cost - costs are ignored")
-    #     ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
-    # for idx, row in enumerate(ppci["gencost"], start=1):
-    #     # if "storage_controllable" in net._pd2ppc_lookups.keys() and idx-1 in net._pd2ppc_lookups["storage_controllable"]:
-    #     #     continue
-    #     gen = pm["gen"][str(idx)]
-    #     gen["model"] = int(row[MODEL])
-    #     if gen["model"] == 1:
-    #         gen["ncost"] = int(row[NCOST])
-    #         gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
-    #     elif gen["model"] == 2:
-    #         gen["ncost"] = 3
-    #         gen["cost"] = [0] * 3
-    #         costs = row[COST:]
-    #         if len(costs) > 3:
-    #             logger.info(costs)
-    #             raise ValueError("Maximum quadratic cost function allowed")
-    #         gen["cost"][-len(costs):] = costs
     return pm
 
 
