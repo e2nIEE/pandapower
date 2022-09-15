@@ -100,11 +100,13 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             buses. If 'internal_buses' is an empty list or None, the whole
             grid is treated as external network.
 
-    OPTIONAL:
-         **return_internal** (bool, True) - Reservation of the internal network
+    OPTIONAL:  
+        **return_internal** (bool, True) - Reservation of the internal network
 
              If True, the internal network is reserved in the final equivalent
              network; otherwise only the external network is the output.
+             
+        **show_computing_time** (bool, False) - show computing time of each step
 
         **ward_type** (str, "ward_injection") - Type of ward and xward
 
@@ -128,7 +130,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             the internal net are retained; otherwise the indices will be reordered from 0. 
 
         ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate,
-        group_name,
+        group_name.
 
     OUTPUT:
          **net_eq** - The equivalent network in pandapower format
@@ -229,18 +231,21 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
         Ybus_eq = _calculate_equivalent_Ybus(net_external,  bus_lookups,
-                                             eq_type, check_validity=False)
+                                             eq_type, show_computing_time,
+                                             check_validity=False)
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
             ward_parameter_no_power, impedance_parameter = \
-                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups)
+                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups,
+                                                         show_computing_time)
 
             # --- replace external network by equivalent elements
             _replace_external_area_by_wards(net_external, bus_lookups,
                                             ward_parameter_no_power,
                                             impedance_parameter,
                                             ext_buses_with_xward,
+                                            show_computing_time,
                                             calc_volt_angles=calculate_voltage_angles,
                                             runpp_fct=runpp_fct)
         else:  # eq_type == "xward"
@@ -248,13 +253,15 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             xward_parameter_no_power, impedance_parameter = \
                 _calculate_xward_and_impedance_parameters(net_external,
                                                           Ybus_eq,
-                                                          bus_lookups)
+                                                          bus_lookups,
+                                                          show_computing_time)
 
             # --- replace external network by equivalent elements
             _replace_external_area_by_xwards(net_external, bus_lookups,
                                              xward_parameter_no_power,
                                              impedance_parameter,
                                              ext_buses_with_xward,
+                                             show_computing_time,
                                              calc_volt_angles=calculate_voltage_angles,
                                              runpp_fct=runpp_fct)
         net_eq = net_external
