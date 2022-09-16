@@ -379,9 +379,10 @@ def merge_internal_net_and_equivalent_external_net(
         pass
 
     # --- fuse or combine the boundary buses in external and internal nets
+    busname_col = "name_equivalent" if "name_equivalent" in merged_net.bus.columns.tolist() else "name"
     for bus in boundary_buses_inclusive_bswitch:
-        name = merged_net.bus.name_equivalent.loc[bus]
-        target_buses = merged_net.bus.index[merged_net.bus.name_equivalent == name]
+        name = merged_net.bus[busname_col].loc[bus]
+        target_buses = merged_net.bus.index[merged_net.bus[busname_col] == name]
         if len(target_buses) != 2:
             raise ValueError(
                 "The code expects all boundary buses to occur double. One because "

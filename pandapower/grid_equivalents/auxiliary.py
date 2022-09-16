@@ -315,7 +315,9 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
             net["res_"+elm].drop(res_target_elm_idx, inplace=True)
-    net.bus.drop(columns=["name_equivalent"], inplace=True)
+
+    if "name_equivalent" in net.bus.columns.tolist():
+        net.bus.drop(columns=["name_equivalent"], inplace=True)
 
 
 def build_ppc_and_Ybus(net):
