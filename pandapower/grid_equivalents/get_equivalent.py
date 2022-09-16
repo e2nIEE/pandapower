@@ -2,7 +2,6 @@ import pandapower as pp
 import pandapower.topology as top
 import time
 from copy import deepcopy
-from pandapower.auxiliary import _add_dcline_gens
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
@@ -139,18 +138,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     time_start = time.perf_counter()
     eq_type = eq_type.lower()
-    check_network(net)
+    net = deepcopy(net)
     if not len(boundary_buses):
         raise ValueError("No boundary buses are given.")
-
-    net = deepcopy(net)
-
-    if "dcline" in net and len(net.dcline.query("in_service")) > 0:
-        _add_dcline_gens(net)
-        dcline_index = net.dcline.index.values
-        net.dcline.loc[dcline_index, 'in_service'] = False
-        logger.info(f"replaced dcline {dcline_index} by gen elements")
-
+    check_network(net)
     logger.info(eq_type + " equivalent calculation started")
 
     # --- determine interal buses, external buses, buses connected to boundary buses via
@@ -164,7 +155,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     return_internal &= bool(len(all_internal_buses))
 
     # --- ensure unique boundary bus names
-    _ensure_unique_boundary_bus_names(net, boundary_buses)
+    _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
     # --- check and create reference buses
     add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
@@ -389,8 +380,8 @@ def merge_internal_net_and_equivalent_external_net(
 
     # --- fuse or combine the boundary buses in external and internal nets
     for bus in boundary_buses_inclusive_bswitch:
-        name = merged_net.bus.name.loc[bus]
-        target_buses = merged_net.bus.index[merged_net.bus.name == name]
+        name = merged_net.bus.name_equivalent.loc[bus]
+        target_buses = merged_net.bus.index[merged_net.bus.name_equivalent == name]
         if len(target_buses) != 2:
             raise ValueError(
                 "The code expects all boundary buses to occur double. One because "
@@ -482,8 +473,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "bus-bus-switches. They could be the nodes on the same bus bar " +
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
-                    "as the boundary. You can use the function " +
-                    "'get_connected_switch_buses' to find all these buses.")
+                    "as the boundary. They are: %s:" % boundary_buses_inclusive_bswitch)
 
     # --- determine all internal buses
     all_internal_buses = set()

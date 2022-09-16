@@ -272,7 +272,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 if net_zpbn[elm][c].dtype == np.number or net_zpbn[elm][c].dtype == np.int64:
                     other_cols_number |= {c}
                     other_cols -= {c}
-                elif net_zpbn[elm][c].dtype == bool or set(elm_org[c].values) & {False, True}: # tpye-object can also be True of False
+                elif net_zpbn[elm][c].dtype == bool or set(elm_org[c].values) & {False, True}: # type-object can also be True of False
                     other_cols_bool |= {c}
                     other_cols -= {c}
                 else:
