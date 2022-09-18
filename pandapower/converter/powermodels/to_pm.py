@@ -215,9 +215,9 @@ def get_branch_angles(row, correct_pm_network_data):
             logger.debug("changed voltage angle maximum of branch {} to 60. "
                          "from {} degrees".format(int(row[0].real), angmax))
             angmax = 60.
-    # convert to rad
-    angmin = math.radians(angmin)
-    angmax = math.radians(angmax)
+    # convert to rad (per unit value)
+    angmin = math.radians(angmin) #/ (360/(2*np.pi))
+    angmax = math.radians(angmax) #/ (360/(2*np.pi))
     return angmin, angmax
 
 
@@ -249,6 +249,7 @@ def ppc_to_pm(net, ppci):
           "ne_branch": dict(), "switch": dict(),
           "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
+    baseMVA = ppci["baseMVA"]
     load_idx = 1
     shunt_idx = 1
     # PowerModels has a load model -> add loads and sgens to pm["load"]
@@ -294,8 +295,8 @@ def ppc_to_pm(net, ppci):
                                          "status": True, "index": load_idx}
             load_idx += 1
         # if bs or gs != 0. -> shunt element at this bus
-        bs = row[BS]
-        gs = row[GS]
+        bs = row[BS] / baseMVA # to be validated
+        gs = row[GS] / baseMVA # to be validated
         if not np.allclose(bs, 0.) or not np.allclose(gs, 0.):
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
                                            "status": True, "index": shunt_idx}
@@ -307,17 +308,17 @@ def ppc_to_pm(net, ppci):
         branch = dict()
         branch["index"] = idx
         branch["transformer"] = bool(idx > n_lines)
-        branch["br_r"] = row[BR_R].real
-        branch["br_x"] = row[BR_X].real
-        branch["g_fr"] = - row[BR_B].imag / 2.0
-        branch["g_to"] = - row[BR_B].imag / 2.0
-        branch["b_fr"] = row[BR_B].real / 2.0
-        branch["b_to"] = row[BR_B].real / 2.0
+        branch["br_r"] = row[BR_R].real / baseMVA
+        branch["br_x"] = row[BR_X].real / baseMVA
+        branch["g_fr"] = - row[BR_B].imag / 2.0 / baseMVA
+        branch["g_to"] = - row[BR_B].imag / 2.0 / baseMVA
+        branch["b_fr"] = row[BR_B].real / 2.0 * baseMVA
+        branch["b_to"] = row[BR_B].real / 2.0 * baseMVA
 
         if net._options["opf_flow_lim"] == "S":  # or branch["transformer"]:
-            branch["rate_a"] = row[RATE_A].real / ppci["baseMVA"] if row[RATE_A] > 0 else row[RATE_B].real / ppci["baseMVA"]
-            branch["rate_b"] = row[RATE_B].real / ppci["baseMVA"]
-            branch["rate_c"] = row[RATE_C].real / ppci["baseMVA"]
+            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+            branch["rate_b"] = row[RATE_B].real
+            branch["rate_c"] = row[RATE_C].real
         elif net._options["opf_flow_lim"] == "I":  # need to call _run_opf_cl from PowerModels
             f = net._pd2ppc_lookups["branch"]["line"][0]
             f = int(row[F_BUS].real)  # from bus of this line
@@ -380,17 +381,17 @@ def ppc_to_pm(net, ppci):
             branch = dict()
             branch["index"] = idx
             branch["transformer"] = False
-            branch["br_r"] = row[BR_R].real
-            branch["br_x"] = row[BR_X].real
-            branch["g_fr"] = - row[BR_B].imag / 2.0
-            branch["g_to"] = - row[BR_B].imag / 2.0
-            branch["b_fr"] = row[BR_B].real / 2.0
-            branch["b_to"] = row[BR_B].real / 2.0
+            branch["br_r"] = row[BR_R].real / baseMVA
+            branch["br_x"] = row[BR_X].real / baseMVA
+            branch["g_fr"] = - row[BR_B].imag / 2.0 / baseMVA
+            branch["g_to"] = - row[BR_B].imag / 2.0 / baseMVA
+            branch["b_fr"] = row[BR_B].real / 2.0 * baseMVA
+            branch["b_to"] = row[BR_B].real / 2.0 * baseMVA
 
             if net._options["opf_flow_lim"] == "S":  # --> Rate_a is always needed for the TNEP problem, right?
-                branch["rate_a"] = row[RATE_A].real / ppci["baseMVA"] if row[RATE_A] > 0 else row[RATE_B].real / ppci["baseMVA"]
-                branch["rate_b"] = row[RATE_B].real / ppci["baseMVA"]
-                branch["rate_c"] = row[RATE_C].real / ppci["baseMVA"]
+                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
+                branch["rate_b"] = row[RATE_B].real
+                branch["rate_c"] = row[RATE_C].real
             elif net._options["opf_flow_lim"] == "I":
                 f, t = net._pd2ppc_lookups["branch"]["line"]
                 f = int(row[F_BUS].real)  # from bus of this line
