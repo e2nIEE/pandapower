@@ -21,7 +21,7 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.converter import convert_pp_to_pm
 from pandapower import pp_dir
-
+from pandapower.opf.pm_storage import read_pm_storage_results
 
 try:
     from julia.core import UnsupportedPythonError
@@ -587,15 +587,23 @@ def test_storage_opt():
     assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)]) 
       
     net = create_cigre_grid_with_time_series(json_path)
-    pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)   
+    pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
+    storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 10
 
+    net = create_cigre_grid_with_time_series(json_path)
+    net.sn_mva = 89
+    pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
+    storage_results_89 = read_pm_storage_results(net)
+    
+    assert abs(storage_results_89[0].values - storage_results_89[0].values).max() < 1e-6 
+
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
         test_storage_opt()
