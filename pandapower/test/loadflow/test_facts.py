@@ -17,7 +17,7 @@ from pandapower.test.toolbox import assert_res_equal
 def test_svc():
     net = pp.networks.case9()
     pp.create_shunt(net, 3, 0, 0, 345)
-    net.shunt["set_vm_pu"] = 1.
+    net.shunt["set_vm_pu"] = 1.02
     net.shunt["svc_firing_angle"] = 45.
     pp.runpp(net, lightsim2grid=False, max_iteration=10)
 
