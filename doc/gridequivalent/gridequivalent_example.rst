@@ -4,12 +4,12 @@
 Grid Equivalent Example
 #############################
 
-Here is ein example of what you can do:
+Here is an example of what you can do:
 
 Create Example Network
 --------------------------------------------------
 
-First, we create a example network.
+First, we create an example network.
 
 .. code:: python
 
@@ -23,7 +23,7 @@ First, we create a example network.
     
 Define Grid Areas
 --------------------------------------------------
-The created network is shown below. Assuming that, it is divided into two subsystems. The buses (red) [0, 3, 4, 8] belong to the internal subsystem, which should be remained, and the external subsystem consists of buses (green) [1, 2, 5, 6, 7] that are going to be reduced. The boundary buses are [4, 8] belonging to the internal subsystem.
+The created network is shown below. Assuming that the buses (red) [0, 3, 4, 8] belong to the internal subsystem which should be remained, and the external subsystem consists of buses (green) [1, 2, 5, 6, 7] that are going to be reduced. The boundary buses [4, 8] are belonging to the internal subsystem.
 
 .. image:: /pics/gridequivalent/full_case9.png
 	:width: 42em
@@ -31,10 +31,10 @@ The created network is shown below. Assuming that, it is divided into two subsys
 	:align: center
     
 
-Call Grid Equivalent Calculation
+Execute Grid Equivalent Calculation
 --------------------------------------------------
 
-According to the above assumptions, we call the Ward-equivalent calculation. The input variables are:
+According to the above assumptions, input variables for the Ward-equivalent are:
 
 .. code:: python
 
@@ -70,7 +70,7 @@ We can compare the power flow results between the original grid "net" and the re
 	:alt: alternate Text
 	:align: center
 
-It can be seen that the power flow results (**vm_pu**, **va_degree**) of the internal buses [0, 3, 4, 8] in both grids are the same, i.e., the equivalent calculation is successful. The **p_mw** and **q_mvar** values at the boundary buses [4, 8] are different due to the created Ward elements. The figure below shows the reduced grid.
+It can be seen that the power flow results (**vm_pu**, **va_degree**) of the internal buses [0, 3, 4, 8] in both grids are the same (the difference is smaller than :math:`10^{-6}` pu or degree), i.e., the equivalent calculation is successful. The **p_mw** and **q_mvar** values at the boundary buses [4, 8] are different due to the created Ward elements. The figure below shows the reduced grid.
 
 .. image:: /pics/gridequivalent/reduced_case9.png
 	:width: 42em
@@ -96,6 +96,6 @@ We can print the calculated Ward elements using:
 |
  
 .. Note::
-    If you compare the resulting (x)ward-parameters between **pandapower** and **powerfactory**, you will see they are not the same. 
-    This is because in "powerfactory" the admittance matrix is reconstructed according to a voltage sensitivity analysis, 
+    If you compare the resulting (x)ward-parameters between **pandapower** and **PowerFactory**, you will see they are different. 
+    This is because in **PowerFactory** the admittance matrix is reconstructed according to a voltage sensitivity analysis, 
     which is not open-source and leads to the difference. 
