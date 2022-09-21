@@ -12,14 +12,15 @@
 """
 
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, max, \
-    zeros_like, column_stack, flatnonzero, nan_to_num
+    zeros_like, column_stack, flatnonzero, nan_to_num, ones_like, deg2rad, pi, sin
+from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
+from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
@@ -27,6 +28,8 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
+
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -101,8 +104,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
+    pq_lookup = zeros(max(refpvpq) + 1, dtype=int)
+    pq_lookup[pq] = arange(len(pq))
+
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
+
+    svc_buses = flatnonzero(nan_to_num(bus[:, SVC]))
+    svc_set_vm_pu = bus[svc_buses, SET_VM_PU]
+    x_control = deg2rad(bus[svc_buses, SVC_FIRING_ANGLE])
 
     nref = len(ref)
     npv = len(pv)
@@ -114,12 +124,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     j4 = j2 + npq  # j3:j4 - V angle of pq buses
     j5 = j4
     j6 = j4 + npq  # j5:j6 - V mag of pq buses
-    j7 = j6
+    j6a = j6 + len(x_control)
+    j7 = j6a
 
     # make initial guess for the slack
     slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
+    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
 
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
@@ -201,6 +212,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             J = create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
                               pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta_pu, J, r, x, g)
 
+        if len(svc_buses) > 0:
+            # todo: what are the X_L and X_Cvar? take them from net.shunt inputs instead
+            X_L = ones_like(svc_buses)
+            X_Cvar = ones_like(svc_buses) * 0.5
+            K_J = vstack([eye(J.shape[0], format="csr"), csr_matrix((len(x_control), J.shape[0]))], format="csr")
+            J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
+            J_m = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, X_L, X_Cvar)
+            J = J + J_m
+
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
         if dist_slack:
@@ -210,6 +230,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if npq and not iwamoto:
             Va[pq] = Va[pq] + dx[j3:j4]
             Vm[pq] = Vm[pq] + dx[j5:j6]
+        if len(x_control) > 0:
+            x_control = x_control + dx[j6:j6a]
         if tdpf:
             T = T + dx[j7:][tdpf_lines]
 
@@ -225,10 +247,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Vm_it = column_stack((Vm_it, Vm))
             Va_it = column_stack((Va_it, Va))
 
-        if voltage_depend_loads:
+        if voltage_depend_loads or len(svc_buses) > 0:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
-        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
+        if len(svc_buses) > 0:
+            y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * X_L / X_Cvar) / (pi * X_L)  # * np.exp(-1j * np.pi / 2)
+            q_svc = abs(V[svc_buses]) ** 2 * y_svc
+            Sbus[svc_buses] -= q_svc*1j
+
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
 
         if tdpf:
             i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
@@ -240,10 +267,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         converged = _check_for_convergence(F, tol)
 
+    # todo: return x_control and then use it to calculate q_mvar for net.res_shunt
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
-def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
+def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None, svc_buses=None, svc_set_vm_pu=None, x_control=None):
     # evalute F(x)
     if dist_slack:
         # we include the slack power (slack * contribution factors) in the mismatch calculation
@@ -252,6 +280,9 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
     else:
         mis = V * conj(Ybus * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
+    if len(svc_buses) > 0:
+        Fc = abs(V[svc_buses]) - svc_set_vm_pu
+        F = r_[F, Fc]
     return F
 
 

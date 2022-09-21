@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
-    VM, VA, CID, CZD, bus_cols, REF
+    VM, VA, CID, CZD, bus_cols, REF, SVC, SET_VM_PU, SVC_FIRING_ANGLE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 
 try:
@@ -511,6 +511,16 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
+
+    # SVC firing angle
+    if "svc_firing_angle" in s.columns:
+        svc = s.loc[~s.svc_firing_angle.isnull()].index.values
+        b = s.loc[svc, 'bus'].values
+        a = s.loc[svc, 'svc_firing_angle'].values
+        v = s.loc[svc, 'set_vm_pu'].values
+        ppc["bus"][bus_lookup[b], SVC] = True
+        ppc["bus"][bus_lookup[b], SET_VM_PU] = v
+        ppc["bus"][bus_lookup[b], SVC_FIRING_ANGLE] = a
 
 
 # Short circuit relevant routines
