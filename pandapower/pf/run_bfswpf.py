@@ -14,7 +14,6 @@ from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
 from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pandapower.pypower.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
-from six import iteritems
 
 from pandapower.auxiliary import ppException
 from pandapower.pypower.bustypes import bustypes
@@ -427,7 +426,7 @@ def _run_bfswpf(ppci, options, **kwargs):
         trafos_shift = dict(list(zip(list(zip(branch[brch_shift_mask, F_BUS].real.astype(int),
                                               branch[brch_shift_mask, T_BUS].real.astype(int))),
                                      branch[brch_shift_mask, SHIFT].real)))
-        for trafo_ind, shift_degree in iteritems(trafos_shift):
+        for trafo_ind, shift_degree in trafos_shift.items():
             neti = 0
             # if multiple reference nodes, find in which network trafo is located
             if len(ref) > 0:

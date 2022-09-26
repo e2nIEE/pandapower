@@ -155,7 +155,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
     def append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_cols):
         """ iterate throw all boundaries which matches this_zone and add the other_zone_bus to
         boundary_buses """
-        for idx, ozc in other_zone_cols.iteritems():
+        for idx, ozc in other_zone_cols.items():
             other_zone = boundaries[zone_cols].values[idx, ozc]
             if isinstance(other_zone, np.generic):
                 other_zone = other_zone.item()
