@@ -155,7 +155,7 @@ def test_append_set_to_dict():
 
 
 if __name__ == "__main__":
-    if 0:
+    if 1:
         pytest.main([__file__, '-x'])
     else:
         test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1()
