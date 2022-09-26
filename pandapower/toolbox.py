@@ -2160,7 +2160,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
         given, the sn_mva values of the impedances are considered.
     """
-    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
     for (idx, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
