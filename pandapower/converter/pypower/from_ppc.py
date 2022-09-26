@@ -81,12 +81,12 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         logger.info('There are false baseKV given in the pypower case file.')
 
     net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
-
+    net._options = {}
 
     _from_ppc_bus(net, ppc)
-    gen_lookup = _from_ppc_gen(net, ppc)
-    _from_ppc_branch(net, ppc, f_hz, **kwargs)
-    _from_ppc_gencost(net, ppc, gen_lookup, check=kwargs.get("check_costs", True))
+    net._options["gen_lookup"] = _from_ppc_gen(net, ppc)
+    net._options["bra_lookup"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
+    _from_ppc_gencost(net, ppc, net._options["gen_lookup"], check=kwargs.get("check_costs", True))
 
     # areas are unconverted
 
@@ -94,9 +94,6 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
-
-    net._options = {}
-    net._options["gen_lookup"] = gen_lookup
 
     return net
 
@@ -106,10 +103,11 @@ def _from_ppc_bus(net, ppc):
 
     # create buses
     idx_buses = create_buses(
-        net, ppc['bus'].shape[0], name=ppc['bus'][:, BUS_I].astype(int),
+        net, ppc['bus'].shape[0], name=ppc.get("bus_name", None),
         vn_kv=ppc['bus'][:, BASE_KV], type="b", zone=ppc['bus'][:, ZONE],
         in_service=(ppc['bus'][:, BUS_TYPE] != 4).astype(bool),
-        max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN])
+        max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN],
+        index=ppc['bus'][:, BUS_I].astype(int))
 
     # create loads
     is_load = (ppc['bus'][:, PD] > 0) | ((ppc['bus'][:, PD] == 0) & (ppc['bus'][:, QD] != 0))
@@ -147,32 +145,36 @@ def _from_ppc_gen(net, ppc):
     # vg_bus_lookup = vg_bus_lookup.drop_duplicates(subset=["bus"], keep="last").set_index("bus")["vg"]
     vg_bus_lookup = vg_bus_lookup.drop_duplicates(subset=["bus"]).set_index("bus")["vg"]
 
+    gen_name = ppc.get("gen_name", np.array([None]*n_gen))
+
     # create ext_grid
     idx_eg = list()
     for i in np.arange(n_gen, dtype=int)[is_ext_grid]:
         idx_eg.append(create_ext_grid(
-            net, bus=bus_pos[i], vm_pu=vg_bus_lookup.at[bus_pos[i]],
+            net, bus=net.bus.index[bus_pos[i]], vm_pu=vg_bus_lookup.at[bus_pos[i]],
             va_degree=ppc['bus'][bus_pos[i], VA],
             in_service=(ppc['gen'][i, GEN_STATUS] > 0).astype(bool),
             max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
-            max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN]))
+            max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN],
+            name=gen_name[i]))
 
     # create gen
     idx_gen = create_gens(
-        net, buses=bus_pos[is_gen], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
+        net, buses=net.bus.index[bus_pos[is_gen]], vm_pu=vg_bus_lookup.loc[bus_pos[is_gen]].values,
         p_mw=ppc['gen'][is_gen, PG], sn_mva=ppc['gen'][is_gen, MBASE],
         in_service=(ppc['gen'][is_gen, GEN_STATUS] > 0), controllable=True,
         max_p_mw=ppc['gen'][is_gen, PMAX], min_p_mw=ppc['gen'][is_gen, PMIN],
-        max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN])
+        max_q_mvar=ppc['gen'][is_gen, QMAX], min_q_mvar=ppc['gen'][is_gen, QMIN],
+        name=gen_name[is_gen])
 
     # create sgen
     idx_sgen = create_sgens(
-        net, buses=bus_pos[is_sgen], p_mw=ppc['gen'][is_sgen, PG],
+        net, buses=net.bus.index[bus_pos[is_sgen]], p_mw=ppc['gen'][is_sgen, PG],
         q_mvar=ppc['gen'][is_sgen, QG], sn_mva=ppc['gen'][is_sgen, MBASE], type="",
         in_service=(ppc['gen'][is_sgen, GEN_STATUS] > 0),
         max_p_mw=ppc['gen'][is_sgen, PMAX], min_p_mw=ppc['gen'][is_sgen, PMIN],
         max_q_mvar=ppc['gen'][is_sgen, QMAX], min_q_mvar=ppc['gen'][is_sgen, QMIN],
-        controllable=True)
+        controllable=True, name=gen_name[is_sgen])
 
     neg_p_gens = np.arange(n_gen, dtype=int)[(ppc['gen'][:, PG] < 0) & (is_gen | is_sgen)]
     neg_p_lim_false = np.arange(n_gen, dtype=int)[ppc['gen'][:, PMIN] > ppc['gen'][:, PMAX]]
@@ -188,15 +190,18 @@ def _from_ppc_gen(net, ppc):
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
     # gen_lookup
-    gen_lookup = pd.DataFrame({
-        'element': np.r_[idx_eg, idx_gen, idx_sgen],
-        'element_type': ["ext_grid"]*sum(is_ext_grid) + ["gen"]*sum(is_gen) + ["sgen"]*sum(is_sgen)
-        })
+    gen_lookup = pd.DataFrame({"element": [-1]*n_gen, "element_type": [""]*n_gen})
+    for is_, idx, et in zip([is_ext_grid, is_gen, is_sgen],
+                            [idx_eg, idx_gen, idx_sgen],
+                            ["ext_grid", "gen", "sgen"]):
+        gen_lookup["element"].loc[is_] = idx
+        gen_lookup["element_type"].loc[is_] = et
     return gen_lookup
 
 
 def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     """ branch data -> create line, trafo """
+    n_bra = ppc["branch"].shape[0]
 
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
@@ -210,6 +215,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
     is_line, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
 
+    bra_name = ppc.get("branch_name", ppc.get("bra_name", np.array([None]*n_bra)))
+
     # --- create line
     Zni = ppc['bus'][to_bus, BASE_KV]**2/baseMVA  # ohm
     max_i_ka = ppc['branch'][:, 5]/ppc['bus'][to_bus, BASE_KV]/np.sqrt(3)
@@ -218,8 +225,9 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         max_i_ka[i_is_zero] = MAX_VAL
         logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                      "maximum branch flow")
-    create_lines_from_parameters(
-        net, from_buses=from_bus[is_line], to_buses=to_bus[is_line], length_km=1,
+    idx_line = create_lines_from_parameters(
+        net, from_buses=net.bus.index[from_bus[is_line]], to_buses=net.bus.index[to_bus[is_line]],
+        length_km=1, name=bra_name[is_line],
         r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]).real,
         x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]).real,
         c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2).real,
@@ -273,15 +281,23 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vkr_percent = rk * sn * 100 / baseMVA
         vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
-        create_transformers_from_parameters(
-            net, hv_buses=hv_bus, lv_buses=lv_bus, sn_mva=sn,
-            vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv,
+        idx_trafo = create_transformers_from_parameters(
+            net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
+            vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[~is_line],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
             shift_degree=ppc['branch'][~is_line, SHIFT].real,
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0)
     # unused data of ppc: rateB, rateC
+
+    # bra_lookup
+    bra_lookup = pd.DataFrame({"element": [-1]*n_bra, "element_type": [""]*n_bra})
+    bra_lookup["element"].loc[is_line] = idx_line
+    bra_lookup["element_type"].loc[is_line] = "line"
+    bra_lookup["element"].loc[~is_line] = idx_trafo
+    bra_lookup["element_type"].loc[~is_line] = "trafo"
+    return bra_lookup
 
 
 def _get_bus_pos(ppc, bus_names):
