@@ -512,10 +512,11 @@ def validate_from_ppc(ppc, net, max_diff_values={
     >>> pandapower.runpp(net)
     >>> pf_match = pandapower.converter.validate_from_ppc(ppc, net)
     """
-    if "_from_ppc_lookups" not in net.keys() or "gen" not in net._from_ppc_lookups.keys() or \
-            "bra" not in net._from_ppc_lookups.keys():
+    if "_from_ppc_lookups" not in net.keys() or \
+            ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0) or \
+            ("branch" not in net._from_ppc_lookups.keys() and len(ppc["branch"]) > 0):
         raise ValueError(
-            "net._from_ppc_lookups must contain a lookup (dict of keys 'bra' and 'gen')")
+            "net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
     if net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
         logger.debug("runpp() is performed by validate_from_ppc() since res_bus is empty.")
@@ -538,7 +539,7 @@ def validate_from_ppc(ppc, net, max_diff_values={
     # --- branch
     pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
     from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=int)
-    for et in net._from_ppc_lookups["bra"].element_type.unique():
+    for et in net._from_ppc_lookups["branch"].element_type.unique():
         if et == "line":
             from_to_cols = ["from_bus", "to_bus"]
             res_cols = ['p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar']
@@ -548,11 +549,11 @@ def validate_from_ppc(ppc, net, max_diff_values={
         else:
             raise NotImplementedError(
                 f"result columns for element type {et} are not implemented.")
-        is_et = net._from_ppc_lookups["bra"].element_type == et
+        is_et = net._from_ppc_lookups["branch"].element_type == et
         pp_res["branch"][is_et] += net[f"res_{et}"].loc[
-            net._from_ppc_lookups["bra"].element.loc[is_et], res_cols].values
+            net._from_ppc_lookups["branch"].element.loc[is_et], res_cols].values
         from_to_buses[is_et] = net[et].loc[
-            net._from_ppc_lookups["bra"].element.loc[is_et], from_to_cols].values
+            net._from_ppc_lookups["branch"].element.loc[is_et], from_to_cols].values
 
     # switch direction as in ppc
     correct_from_to = np.all(from_to_buses == ppc["branch"][:, F_BUS:T_BUS+1].astype(int), axis=1)
