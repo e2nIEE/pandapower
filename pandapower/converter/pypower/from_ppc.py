@@ -24,13 +24,6 @@ except ImportError:
     import logging
 logger = logging.getLogger(__name__)
 
-try:
-    from pypower import ppoption, runpf, runopf, rundcpf, rundcopf
-    ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
-    pypower_import = True
-except ImportError:
-    pypower_import = False
-
 ppc_elms = ["bus", "branch", "gen"]
 
 
@@ -86,7 +79,6 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     if validate_conversion:
         logger.setLevel(logging.DEBUG)
-        runpp(net)
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
 
@@ -119,7 +111,7 @@ def _from_ppc_bus(net, ppc):
     create_shunts(net, idx_buses[is_shunt], p_mw=ppc['bus'][is_shunt, GS],
                      q_mvar=-ppc['bus'][is_shunt, BS])
 
-    # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
+    # unused data from ppc: VM, VA (partwise: in ext_grid), BUS_AREA
 
 
 def _from_ppc_gen(net, ppc):
@@ -181,7 +173,7 @@ def _from_ppc_gen(net, ppc):
     if len(neg_q_lim_false):
         logger.info(f'These gen have QMIN > QMAX: {neg_q_lim_false}.')
 
-    # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
+    # unused data from ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
     # gen_lookup
@@ -286,7 +278,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side=tap_side, tap_neutral=0)
     else:
         idx_trafo = []
-    # unused data of ppc: rateB, rateC
+    # unused data from ppc: rateB, rateC
 
     # bra_lookup
     bra_lookup = pd.DataFrame({"element": [-1]*n_bra, "element_type": [""]*n_bra})
@@ -461,7 +453,7 @@ def _from_ppc_gencost(net, ppc, gen_lookup, check=True):
 def _validate_diff_res(diff_res, max_diff_values):
     val = True
     for et_val in ['gen_q_mvar', 'branch_p_mw', 'branch_q_mvar', 'gen_p_mw', 'bus_va_degree',
-                    'bus_vm_pu']:
+                   'bus_vm_pu']:
         if max_diff_values[et_val] is not None:
             et = et_val.split("_")[0]
             log_key = et if et != "gen" else "gen_p" if "p" in et_val else "gen_q_sum_per_bus"
@@ -527,9 +519,9 @@ def validate_from_ppc(ppc, net, max_diff_values={
 
     if net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
         logger.debug("runpp() is performed by validate_from_ppc() since res_bus is empty.")
-        runpp(net, calculate_voltage_angles=True)
+        runpp(net, calculate_voltage_angles=True, trafo_model="pi")
 
-    # --- store pypower powerflow results
+    # --- pypower powerflow results -> ppc_res -----------------------------------------------------
     ppc_res = dict.fromkeys(ppc_elms)
     ppc_res["bus"] = ppc['bus'][:, 7:9]
     ppc_res["branch"] = ppc['branch'][:, 13:17]
@@ -537,23 +529,43 @@ def validate_from_ppc(ppc, net, max_diff_values={
     ppc_res["gen_p"] = ppc_res["gen"][:, :1]
     ppc_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(ppc_res["gen"][:, -1:], ppc)
 
-    # --- pandapower bus result table
+    # --- pandapower powerflow results -> pp_res ---------------------------------------------------
     pp_res = dict.fromkeys(ppc_elms)
-    pp_res["bus"] = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(int), ['vm_pu', 'va_degree']].values
-    pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
-    pp_res["gen"] = np.zeros(ppc_res["gen"].shape)
 
+    # --- bus
+    pp_res["bus"] = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(int), ['vm_pu', 'va_degree']].values
+
+    # --- branch
+    pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
+    from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=int)
     for et in net._from_ppc_lookups["bra"].element_type.unique():
         if et == "line":
+            from_to_cols = ["from_bus", "to_bus"]
             res_cols = ['p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar']
         elif et == "trafo":
+            from_to_cols = ["hv_bus", "lv_bus"]
             res_cols = ['p_hv_mw', 'q_hv_mvar', 'p_lv_mw', 'q_lv_mvar']
         else:
-            raise NotImplementedError(f"result columns for element type {et} are not implemented.")
+            raise NotImplementedError(
+                f"result columns for element type {et} are not implemented.")
         is_et = net._from_ppc_lookups["bra"].element_type == et
         pp_res["branch"][is_et] += net[f"res_{et}"].loc[
             net._from_ppc_lookups["bra"].element.loc[is_et], res_cols].values
+        from_to_buses[is_et] = net[et].loc[
+            net._from_ppc_lookups["bra"].element.loc[is_et], from_to_cols].values
 
+    # switch direction as in ppc
+    correct_from_to = np.all(from_to_buses == ppc["branch"][:, F_BUS:T_BUS+1].astype(int), axis=1)
+    switch_from_to = np.all(from_to_buses[:, ::-1] == ppc["branch"][:, F_BUS:T_BUS+1].astype(
+        int), axis=1)
+    if not np.all(correct_from_to | switch_from_to):
+        raise ValueError("ppc branch from and to buses don't fit to pandapower from and to + "
+                        "hv and lv buses.")
+    if np.any(switch_from_to):
+        pp_res["branch"][switch_from_to, :] = pp_res["branch"][switch_from_to, :][:, [2, 3, 0, 1]]
+
+    # --- gen
+    pp_res["gen"] = np.zeros(ppc_res["gen"].shape)
     res_cols = ['p_mw', 'q_mvar']
     for et in net._from_ppc_lookups["gen"].element_type.unique():
         is_et = net._from_ppc_lookups["gen"].element_type == et
@@ -575,7 +587,7 @@ def validate_from_ppc(ppc, net, max_diff_values={
             logger.debug(f"Maximum {var_str} difference between pandapower and pypower: "
                          "%.2e %s" % (np.max(abs(diff)), unit))
 
-    # --- do the powerflow result comparison
+    # --- do the powerflow result comparison -------------------------------------------------------
     pf_match = _validate_diff_res(diff_res, max_diff_values)
 
     # --- case of missmatch: result comparison with different max_diff (unwanted behaviour of
