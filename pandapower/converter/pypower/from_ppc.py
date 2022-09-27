@@ -72,7 +72,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
-    net._from_ppc_lookups["bra"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
+    net._from_ppc_lookups["branch"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
     _from_ppc_gencost(net, ppc, net._from_ppc_lookups["gen"], check=kwargs.get("check_costs", True))
 
     # areas are unconverted
@@ -280,13 +280,13 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         idx_trafo = []
     # unused data from ppc: rateB, rateC
 
-    # bra_lookup
-    bra_lookup = pd.DataFrame({"element": [-1]*n_bra, "element_type": [""]*n_bra})
-    bra_lookup["element"].loc[is_line] = idx_line
-    bra_lookup["element_type"].loc[is_line] = "line"
-    bra_lookup["element"].loc[~is_line] = idx_trafo
-    bra_lookup["element_type"].loc[~is_line] = "trafo"
-    return bra_lookup
+    # branch_lookup: which branches are lines, and which ones are transformers
+    branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
+    branch_lookup["element"].loc[is_line] = idx_line
+    branch_lookup["element_type"].loc[is_line] = "line"
+    branch_lookup["element"].loc[~is_line] = idx_trafo
+    branch_lookup["element_type"].loc[~is_line] = "trafo"
+    return branch_lookup
 
 
 def _get_bus_pos(ppc, bus_names):
