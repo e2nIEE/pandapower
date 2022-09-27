@@ -72,7 +72,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
-    net._from_ppc_lookups["bra"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
+    net._from_ppc_lookups["branch"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
     _from_ppc_gencost(net, ppc, net._from_ppc_lookups["gen"], check=kwargs.get("check_costs", True))
 
     # areas are unconverted
