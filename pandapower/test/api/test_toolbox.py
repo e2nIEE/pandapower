@@ -1330,8 +1330,7 @@ def test_repl_to_line_with_switch():
             REPL = pp.create_line(net, from_bus=fbus, to_bus=tbus, length_km=len, std_type=std)
 
             for bus in fbus, tbus:
-                if bus in net.switch[(net.switch.closed == False) &
-                                     (net.switch.element == testindex)].bus.values:
+                if bus in net.switch[~net.switch.closed & (net.switch.element == testindex)].bus.values:
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
