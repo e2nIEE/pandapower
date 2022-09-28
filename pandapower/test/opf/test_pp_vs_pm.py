@@ -22,7 +22,6 @@ try:
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
-    print(e)
 
 try:
     import pandaplan.core.pplog as logging
@@ -70,7 +69,6 @@ def case5_pm_matfile_I():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_case5_pm_pd2ppc():
-
     # load net
     net = case5_pm_matfile_I()
     # run pd2ppc with ext_grid controllable = False

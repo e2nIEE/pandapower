@@ -29,7 +29,7 @@ def test_element_bus_tuples():
     assert {bus for (elm, bus) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
                                             'lv_bus'}
     assert len(pp.element_bus_tuples(bus_elements=False, res_elements=True)) > \
-        1.5*len(pp.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
+           1.5 * len(pp.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
 
 
 def test_pp_elements():
@@ -40,7 +40,7 @@ def test_pp_elements():
     assert "sgen" in elms
     assert len(pp.pp_elements(bus=False, other_elements=False, bus_elements=True,
                               branch_elements=False)) == \
-        len(pp.element_bus_tuples(bus_elements=True, branch_elements=False))
+           len(pp.element_bus_tuples(bus_elements=True, branch_elements=False))
 
 
 def test_branch_element_bus_dict():
@@ -418,7 +418,7 @@ def test_drop_inactive_elements():
                     continue
                 if len(table) > 0:
                     sum_of_elements += len(table)
-                    print(element)
+                    # print(element)
             except TypeError:
                 # _ppc is initialized with None and clashes when checking
                 continue
@@ -1147,7 +1147,6 @@ def test_replace_gen_sgen():
 
 
 def test_replace_pq_elmtype():
-
     def check_elm_shape(net, elm_shape: dict):
         for elm, no in elm_shape.items():
             assert net[elm].shape[0] == no
@@ -1342,7 +1341,7 @@ def test_repl_to_line_with_switch():
             tbus_repl = net.res_bus.loc[tbus]
 
             ploss_repl = (net.res_line.loc[REPL].p_from_mw - net.res_line.loc[REPL].p_to_mw)
-            qloss_repl =(net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar)
+            qloss_repl = (net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar)
 
             # get ne line impedances
             new_idx = tb.repl_to_line(net, testindex, std, in_service=True)
@@ -1356,10 +1355,10 @@ def test_repl_to_line_with_switch():
             tbus_ne = net.res_bus.loc[tbus]
             ploss_ne = (net.res_line.loc[testindex].p_from_mw -
                         net.res_line.loc[testindex].p_to_mw) + \
-                (net.res_line.loc[new_idx].p_from_mw - net.res_line.loc[new_idx].p_to_mw)
+                       (net.res_line.loc[new_idx].p_from_mw - net.res_line.loc[new_idx].p_to_mw)
             qloss_ne = (net.res_line.loc[testindex].q_from_mvar -
                         net.res_line.loc[testindex].q_to_mvar) + \
-                (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
+                       (net.res_line.loc[new_idx].q_from_mvar - net.res_line.loc[new_idx].q_to_mvar)
 
             assert_series_equal(fbus_repl, fbus_ne, atol=1e-2)
             assert_series_equal(tbus_repl, tbus_ne)
@@ -1426,11 +1425,11 @@ def test_merge_same_bus_generation_plants():
     net.sgen.min_p_mw.at[1] = np.nan
 
     # prepare expatation values
-    dupl_buses = [0,  1,  6, 12, 14, 21, 22]
+    dupl_buses = [0, 1, 6, 12, 14, 21, 22]
     n_plants = sum([net[elm].bus.isin(dupl_buses).sum() for elm in gen_elms])
     assert n_plants > len(dupl_buses)  # check that in net are plants with same buses
     expected_no_of_plants = sum([net[elm].shape[0] for elm in gen_elms]) - n_plants + \
-        len(dupl_buses)
+                            len(dupl_buses)
 
     # run function
     something_merged = tb.merge_same_bus_generation_plants(net)
@@ -1441,12 +1440,12 @@ def test_merge_same_bus_generation_plants():
     assert len(buses) == len(set(buses))  # no dupl buses in gen plant dfs
     n_plants = sum([net[elm].shape[0] for elm in gen_elms])
     assert n_plants == expected_no_of_plants
-    assert np.isclose(net.ext_grid.p_disp_mw.at[0], 95.1*2)  # correct value sum (p_disp)
-    assert np.isclose(net.gen.p_mw.at[0], 10*2 + 76*2)  # correct value sum (p_mw)
-    assert np.isclose(net.gen.min_p_mw.at[0], 16*2 + 15.2)  # correct value sum (min_p_mw) (
+    assert np.isclose(net.ext_grid.p_disp_mw.at[0], 95.1 * 2)  # correct value sum (p_disp)
+    assert np.isclose(net.gen.p_mw.at[0], 10 * 2 + 76 * 2)  # correct value sum (p_mw)
+    assert np.isclose(net.gen.min_p_mw.at[0], 16 * 2 + 15.2)  # correct value sum (min_p_mw) (
     # 1x 15.2 has been removed above)
-    assert np.isclose(net.gen.max_p_mw.at[0], 20*2 + 76*2)  # correct value sum (max_p_mw)
-    assert np.isclose(net.gen.min_q_mvar.at[8], -10 - 16*5)  # correct value sum (min_q_mvar)
+    assert np.isclose(net.gen.max_p_mw.at[0], 20 * 2 + 76 * 2)  # correct value sum (max_p_mw)
+    assert np.isclose(net.gen.min_q_mvar.at[8], -10 - 16 * 5)  # correct value sum (min_q_mvar)
     assert np.isclose(net.gen.max_q_mvar.at[8], 16)  # correct value sum (max_q_mvar) (
     # the sgen max_q_mvar column has been removed above)
     idx_sgen22 = net.sgen.index[net.sgen.bus == 22]
