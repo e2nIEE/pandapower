@@ -5,7 +5,7 @@
 
 
 try:
-    import pandaplan.core.pplog as logging
+    import pplog as logging
 except ImportError:
     import logging
 
@@ -15,6 +15,7 @@ import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 
@@ -25,7 +26,6 @@ from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 from pandapower.results import init_results
-from pandapower.pypower.idx_brch_sc import K_ST
 
 
 def calc_sc(net, bus=None,
@@ -55,9 +55,9 @@ def calc_sc(net, bus=None,
 
             - "3ph" for three-phase
 
-            - "2ph" for two-phase (phase-to-phase) short-circuits
+            - "2ph" for two-phase short-circuits
 
-            - "1ph" for single-phase-to-ground faults
+            - "1ph" for single-phase ground faults
 
         **case** (str, "max")
 
@@ -215,11 +215,12 @@ def _calc_sc_1ph(net, bus):
     ppc, ppci = _init_ppc(net)
     # Create k updated ppci
     ppci_bus = _get_is_ppci_bus(net, bus)
-    _, ppci, _ = _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
+    _, ppci, _ =\
+        _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
+    ppc_0, ppci_0 = _pd2ppc_zero(net)
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
