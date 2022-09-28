@@ -579,14 +579,15 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
 
-def _calc_impedance_parameters_from_dataframe(net):
+def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     impedance = net.impedance
     sn_impedance = impedance["sn_mva"].values
     sn_net = net.sn_mva
-    rij = impedance["rft_pu"].values
-    xij = impedance["xft_pu"].values
-    rji = impedance["rtf_pu"].values
-    xji = impedance["xtf_pu"].values
+    suffix = "0" if zero_sequence else ""
+    rij = impedance[f"rft{suffix}_pu"].values
+    xij = impedance[f"xft{suffix}_pu"].values
+    rji = impedance[f"rtf{suffix}_pu"].values
+    xji = impedance[f"xtf{suffix}_pu"].values
 
     r = rij / sn_impedance * sn_net
     x = xij / sn_impedance * sn_net

@@ -3551,7 +3551,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     name=None, in_service=True, index=None, **kwargs):
+                     name=None, in_service=True, index=None,
+                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
     """
     Creates an per unit impedance element
 
@@ -3580,17 +3581,29 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         rtf_pu = rft_pu
     if xtf_pu is None:
         xtf_pu = xft_pu
+    if rft0_pu is not None and rtf0_pu is None:
+        rtf0_pu = rft0_pu
+    if xft0_pu is not None and xtf0_pu is None:
+        xtf0_pu = xft0_pu
 
     columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "name", "sn_mva",
                "in_service"]
     values = [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_mva, in_service]
-    _set_entries(net, "impedance", index, **dict(zip(columns, values)), **kwargs)
+    entries = dict(zip(columns, values))
+    _set_entries(net, "impedance", index, **entries, **kwargs)
+
+    if rft0_pu is not None:
+        _create_column_and_set_value(net, index, rft0_pu, "rft0_pu", "impedance")
+        _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
+        _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
+        _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
 
     return index
 
 
 def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_mva,
-                                       name=None, in_service=True, index=None, **kwargs):
+                                       name=None, in_service=True, index=None,
+                                       r0_ohm=None, x0_ohm=None, **kwargs):
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -3618,9 +3631,12 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     base_z_ohm = vn_kv ** 2 / sn_mva
     rft_pu = r_ohm / base_z_ohm
     xft_pu = x_ohm / base_z_ohm
+    rft0_pu = r0_ohm / base_z_ohm if r0_ohm is not None else None
+    xft0_pu = x0_ohm / base_z_ohm if x0_ohm is not None else None
 
     index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
-                             sn_mva=sn_mva, name=name, in_service=in_service, index=index, **kwargs)
+                             sn_mva=sn_mva, name=name, in_service=in_service, index=index,
+                             rft0_pu=rft0_pu, xft0_pu=xft0_pu, **kwargs)
     return index
 
 
