@@ -13,15 +13,15 @@ The polarizing quantity is usually a voltage calculated by rotating the input vo
 
 Running a fault scenario using  doc relay  is carried out with run_fault_scenario_doc function:
 
-.. autofunction:: pandaplan.core.protection.implementation.doc_relay_model.run_fault_scenario_doc
+.. autofunction:: pandapower.protection.implementation.doc_relay_model.run_fault_scenario_doc
 
 EXAMPLE:
 
 .. code:: python
 
     
-    import pandaplan.core.protection.implementation.doc_relay_model as doc_protection
-    import pandaplan.core.protection.implementation.example_grids as nw
+    import pandapower.protection.implementation.doc_relay_model as doc_protection
+    import pandapower.protection.implementation.example_grids as nw
     net = nw.load_4bus_net(open_loop =False)
     relay_configuration = {"switch_1": [0,"CB_dir","forward",86,45],
                             "switch_2": [1,"CB_dir","forward",86,45], 
