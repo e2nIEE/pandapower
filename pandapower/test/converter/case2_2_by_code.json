@@ -1330,7 +1330,7 @@
     },
     "user_pf_options": {},
     "_from_ppc_lookups": {
-      "bra": {
+      "branch": {
         "_module": "pandas.core.frame",
         "_class": "DataFrame",
         "_object": "{\"columns\":[\"element\",\"element_type\"],\"index\":[0],\"data\":[[0,\"trafo\"]]}",
