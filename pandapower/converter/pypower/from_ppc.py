@@ -373,7 +373,7 @@ def _add_polys_to_gencost(gencost, n_rows):
 def _from_ppc_gencost(net, ppc, gen_lookup, check=True):
     # --- gencost -> create polynomial_cost, piecewise_cost
 
-    if not 'gencost' in ppc:
+    if 'gencost' not in ppc:
         return
 
     if len(ppc['gencost'].shape) == 1:
