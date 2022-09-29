@@ -367,6 +367,10 @@ def merge_internal_net_and_equivalent_external_net(
         pp.drop_elements_at_buses(net_internal, boundary_buses_inclusive_bswitch,
                                   branch_elements=False)
 
+    # --- remove the inactive elements in net_eq. The inactive elements in net_internal
+    # will not be removed to retrain the origin internal elements
+    pp.drop_inactive_elements(net_eq)
+    
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(net_internal, net_eq, validate=kwargs.pop("validate", False),
                                retain_original_indices_in_net1=retain_original_internal_indices,
@@ -446,10 +450,11 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
         raise ValueError(
-            "Although get_equivalent() do not allow unsupplied boundary " +
+            "get_equivalent() do not allow unsupplied boundary " +
             "buses, these have no voltage results (possibly because power " +
             "flow results miss, the buses are isolated " +
-            "or out of service): " + str(sorted(unsupplied_boundary_buses)))
+            "or out of service): " + str(sorted(unsupplied_boundary_buses)) +
+            ". Remove these buses from the boundary buses and try again.")
 
     if internal_buses & boundary_buses:
         logger.info("Some internal buses are also contained in the boundary buses, " +
