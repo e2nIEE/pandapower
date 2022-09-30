@@ -166,7 +166,7 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         else:
             dodfs[item] = value
         # save dtypes
-        for column, dtype in value.dtypes.iteritems():
+        for column, dtype in value.dtypes.items():
             dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
     if include_parameters and len(parameters) > 0:

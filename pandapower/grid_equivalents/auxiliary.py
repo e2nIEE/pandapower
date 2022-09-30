@@ -8,7 +8,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-from pandapower.auxiliary import _init_runpp_options
+from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
 import uuid
 
 try:
@@ -292,15 +292,13 @@ def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
 
 
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
-    """ This function possibly changes the bus names of the boundaries buses to ensure
-        that the names are unique.
+    """ This function ad a unique name to each bounary bus. The original 
+        boundary bus names are retained.
     """
-    idx_dupl_null = net.bus.index[net.bus.name.duplicated(
-        keep=False) | net.bus.name.isnull()]
-    idx_add_names = set(boundary_buses) & set(idx_dupl_null)
-    if len(idx_add_names):
-        net.bus.name.loc[idx_add_names] = ["Boundary bus " + str(uuid.uuid1()) for _ in
-                                           idx_add_names]
+    assert "name_equivalent" not in net.bus.columns.tolist()
+    net.bus["name_equivalent"] = "uuid"
+    net.bus.name_equivalent.loc[boundary_buses] = ["Boundary bus " + str(uuid.uuid1()) for _ in
+                                                   boundary_buses]
 
 
 def drop_assist_elms_by_creating_ext_net(net, elms=None):
@@ -317,6 +315,9 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
             net["res_"+elm].drop(res_target_elm_idx, inplace=True)
+
+    if "name_equivalent" in net.bus.columns.tolist():
+        net.bus.drop(columns=["name_equivalent"], inplace=True)
 
 
 def build_ppc_and_Ybus(net):
@@ -524,7 +525,17 @@ def check_network(net):
     checks the given network. If the network does not meet conditions,
     the program will report an error.
     """
-    pass
+    # --- check invative elements
+    if net.res_bus.vm_pu.isnull().any():
+        logger.info("There are some inactive buses. It is suggested to remove "
+                    "them using 'pandapower.drop_inactive_elements()' "
+                    "before starting the grid equivalent calculation.")
+    # --- check dcline
+    if "dcline" in net and len(net.dcline.query("in_service")) > 0:
+        _add_dcline_gens(net)
+        dcline_index = net.dcline.index.values
+        net.dcline.loc[dcline_index, 'in_service'] = False
+        logger.info(f"replaced dcline {dcline_index} by gen elements")
     # --- condition 1: shift_degree of transformers must be 0.
     # if not np.allclose(net.trafo.shift_degree.values, 0) & \
     #         np.allclose(net.trafo3w.shift_mv_degree.values, 0) & \

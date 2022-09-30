@@ -931,7 +931,7 @@ def test_disconnected_elements(test_net, diag_params, diag_errors, report_method
     check_function = 'disconnected_elements'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.switch.closed.loc[37,38] = False
+    net.switch.loc[[37, 38], "closed"] = False
     pp.drop_trafos(net, [1])
     check_result = pp.disconnected_elements(net)
     if check_result:

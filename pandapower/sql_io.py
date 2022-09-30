@@ -101,6 +101,7 @@ def download_sql_table(cursor, table_name, **id_columns):
 def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp=False, **id_columns):
     # index_name allows using a custom column for the table index and disregard the DataFrame index,
     # otherwise a <table_name>_id is used as index_name and DataFrame index is also uploaded to the database
+    table = table.where(pd.notnull(table), None)
     if index_name is None:
         index_name = f"{table_name.split('.')[-1]}_id"
         index_type = match_sql_type(str(table.index.dtype))
@@ -331,7 +332,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
         table_name = element if schema is None else f"{schema}.{element}"
         # None causes postgresql error, np.nan is better
         create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
-        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table.replace(np.nan, None),
+        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table,
                          index_name=index_name, **id_columns)
         logger.debug(f"uploaded table {element}")
     return written_grid_id

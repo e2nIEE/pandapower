@@ -51,6 +51,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     estimation
     control
     timeseries
+    gridequivalent
     topology
     networks
     plotting
