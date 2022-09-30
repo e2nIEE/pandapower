@@ -543,13 +543,13 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
+        **vn_kv** (float) - The grid voltage level.
+
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
         **index** (int, default None) - Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
-
-        **vn_kv** (float) - The grid voltage level.
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
