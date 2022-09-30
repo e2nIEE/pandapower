@@ -66,8 +66,6 @@ def case5_pm_matfile_I():
     return net
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_case5_pm_pd2ppc():
     # load net
     net = case5_pm_matfile_I()
@@ -103,19 +101,12 @@ def test_case5_pm_pd2ppc():
 
     ppc = _pd2ppc(net)
     ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF])
-
-    bus2 = net._pd2ppc_lookups["bus"][net.ext_grid.bus[1]]
-    vmax0 = ppc[0]["bus"][ref_idx, VMAX]
-    vmin0 = ppc[0]["bus"][ref_idx, VMIN]
-
-    vmax1 = ppc[0]["bus"][bus2, VMAX]
-    vmin1 = ppc[0]["bus"][bus2, VMIN]
-
-    assert net.bus.min_vm_pu[net.ext_grid.bus].values[0] == vmin0
-    assert net.bus.max_vm_pu[net.ext_grid.bus].values[0] == vmax0
+   
+    vmax1 = ppc[0]["bus"][ref_idx, VMAX]
+    vmin1 = ppc[0]["bus"][ref_idx, VMIN]
 
     assert net.ext_grid.vm_pu.values[1] == vmin1
-    assert net.ext_grid.vm_pu.values[1] == vmax1
+    assert net.ext_grid.vm_pu.values[1] == vmax1   
 
 
 def test_opf_ext_grid_controllable():
@@ -164,8 +155,11 @@ def test_opf_ext_grid_controllable_pm():
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
     assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_new.res_bus.vm_pu[eg_bus]) < 0.0058
-    assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-3
+    assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-2
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    if 0:
+        pytest.main([__file__, "-xs"])
+    else:
+        test_case5_pm_pd2ppc()      
