@@ -366,11 +366,7 @@ def merge_internal_net_and_equivalent_external_net(
     if kwargs.get("drop_boundary_buses", True):
         pp.drop_elements_at_buses(net_internal, boundary_buses_inclusive_bswitch,
                                   branch_elements=False)
-
-    # --- remove buses without power flow results in net_eq
-    pp.drop_buses(net_eq, net_eq.res_bus.index[net_eq.res_bus.vm_pu.isnull()])
-
-    
+  
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(net_internal, net_eq, validate=kwargs.pop("validate", False),
                                retain_original_indices_in_net1=retain_original_internal_indices,
