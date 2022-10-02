@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov  5 14:31:23 2021
+This file included various test network for modelling and simulation different pandapower modules
 
-@author: plyta
 """
 import pandas as pd
 import pandapower as pp

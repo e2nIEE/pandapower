@@ -1,32 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Oct  9 18:05:10 2021
 
-@author: plyta
-"""
+#This function includes various function used for general functanalities such as plotting, grid search
+
 import pandapower as pp
 import copy
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 import math
+
+#    This function creates a short-circuit location (a bus) on a line.
 def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
-    """
-    This function creates a short-circuit location (a bus) on a line.
-    INPUT:
-        net - net object where relays are located
-        sc_location - array of sc location [line index, location on line (0-100% = 0-1)]
-                      location on line is always a value between 0 and 1!
-       
-    OUTPUT:
-        List of relay settings
-    """
     
     net = copy.deepcopy(net_copy)
-    # sc_line_idx = sc_location[0]
-    # sc_fraction = sc_location[1]
-    
     if sc_fraction < 0 or sc_fraction > 1:
         print("Please select line location that is between 0 and 1")
         return
@@ -36,10 +21,6 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
 
     aux_line = net.line.loc[sc_line_idx]
     
-
-    #delete line
-    # net.line = net.line.drop(sc_line_idx)
-
     # get bus voltage of the short circuit bus
     bus_vn_kv = net.bus.vn_kv.at[aux_line.from_bus]
 
@@ -59,34 +40,26 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
         print('input  Ratio of nominal current to short circuit current- k or  taking k=1')
         net.sgen['k']=1
 
-    # aksing for simbench grids
-
-    
-    
-    
     # set new lines
-
     sc_line1 = sc_line_idx
-
     net.line.at[sc_line1, 'to_bus'] = bus_sc
     net.line.at[sc_line1, 'length_km'] *= sc_fraction
 
 
-    sc_line2 = pp.create_line_from_parameters(net, bus_sc, aux_line.to_bus, length_km = aux_line.length_km*(1-sc_fraction), index = max_idx_line+1, r_ohm_per_km = aux_line.r_ohm_per_km, x_ohm_per_km = aux_line.x_ohm_per_km, c_nf_per_km = aux_line.c_nf_per_km, max_i_ka = aux_line.max_i_ka)
+    sc_line2 = pp.create_line_from_parameters(net, bus_sc, aux_line.to_bus, length_km = aux_line.length_km*(1-sc_fraction),
+    index = max_idx_line+1, r_ohm_per_km = aux_line.r_ohm_per_km, x_ohm_per_km = aux_line.x_ohm_per_km, c_nf_per_km = aux_line.c_nf_per_km, max_i_ka = aux_line.max_i_ka)
     
     if 'endtemp_degree' in net.line.columns:
         net.line.endtemp_degree.at[sc_line2] = net.line.endtemp_degree.at[sc_line1]
         
-        
-        
     net.line = net.line.sort_index()
+    
     # check if switches are connected to the line and set the switches to new lines
-
-    for switch_idx in net.switch.index:
-        if (aux_line.from_bus == net.switch.bus[switch_idx]) & (net.switch.element[switch_idx] == sc_line_idx):
-            net.switch.element[switch_idx] = sc_line1
-        elif (aux_line.to_bus == net.switch.bus[switch_idx]) & (net.switch.element[switch_idx] == sc_line_idx):
-            net.switch.element[switch_idx] = sc_line2
+    for switch_id in net.switch.index:
+        if (aux_line.from_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_idx):
+            net.switch.element[switch_id] = sc_line1
+        elif (aux_line.to_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_idx):
+            net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
     net.bus_geodata.loc[max_idx_bus+1] = None
@@ -102,6 +75,7 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
 
     return net
 
+# functon to create sc at full line
 def calc_faults_at_full_line(net, line, location_step_size = 0.01, start_location = 0.01, end_location = 1, sc_case = "min"):
     
     import pandapower.shortcircuit as sc
@@ -110,7 +84,6 @@ def calc_faults_at_full_line(net, line, location_step_size = 0.01, start_locatio
     fault_currents = []
     max_bus_idx = max(net.bus.index)
     location = start_location
-    
     while location < end_location:
         net_sc = create_sc_bus(net, line, location)
         sc.calc_sc(net_sc, case = sc_case)
@@ -119,22 +92,23 @@ def calc_faults_at_full_line(net, line, location_step_size = 0.01, start_locatio
         
         i+=1
         location = start_location + i*location_step_size
-        
-    
     return fault_currents
         
 
-def get_line_idx(net, switch_idx):
-    line_idx = net.switch.element.at[switch_idx]
+# get the line id from swithc id
+def get_line_idx(net, switch_id):
+    line_idx = net.switch.element.at[switch_id]
     return line_idx
 
-def get_bus_idx(net, switch_idx):
-    bus_idx = net.switch.bus.at[switch_idx]
+# get the bus id using switch if
+def get_bus_idx(net, switch_id):
+    bus_idx = net.switch.bus.at[switch_id]
     return bus_idx
 
-def get_opposite_side_bus_from_switch(net, switch_idx):
-    line_idx = get_line_idx(net, switch_idx)
-    is_from_bus = get_from_bus_info_switch(net, switch_idx)
+# get the frm and to bus of switch
+def get_opposite_side_bus_from_switch(net, switch_id):
+    line_idx = get_line_idx(net, switch_id)
+    is_from_bus = get_from_bus_info_switch(net, switch_id)
     
     if is_from_bus:
         opp_bus_idx = net.line.to_bus.at[line_idx]
@@ -143,6 +117,7 @@ def get_opposite_side_bus_from_switch(net, switch_idx):
     
     return opp_bus_idx
 
+# get the from abd to bus of given line
 def get_opposite_side_bus_from_bus_line(net, bus_idx, line_idx):
 
     is_from_bus = get_from_bus_info_bus_line(net, bus_idx, line_idx)
@@ -154,10 +129,11 @@ def get_opposite_side_bus_from_bus_line(net, bus_idx, line_idx):
     
     return opp_bus_idx
 
-def get_from_bus_info_switch(net, switch_idx):
+#get the from bus of given switch id
+def get_from_bus_info_switch(net, switch_id):
     
-    bus_idx = get_bus_idx(net,switch_idx)
-    line_idx = get_line_idx(net, switch_idx)
+    bus_idx = get_bus_idx(net,switch_id)
+    line_idx = get_line_idx(net, switch_id)
     
     for line in net.line.index: # can be written better
         if line == line_idx:
@@ -170,6 +146,7 @@ def get_from_bus_info_switch(net, switch_idx):
 
     return is_from_bus
 
+# get bus nfo of given line
 def get_from_bus_info_bus_line(net, bus_idx, line_idx):
     
     for line in net.line.index: # can be written better
@@ -183,73 +160,30 @@ def get_from_bus_info_bus_line(net, bus_idx, line_idx):
 
     return is_from_bus
 
-    
-# def get_longest_line(net, lines):
-
-#     i=0
-#     for line in lines:
-#         max_line_length = net.line.length_km.at[line]
-#         if i==0:
-#             line_before = line
-#             longest_line = line
-            
-#         else:
-#             if max_line_length > net.line.length_km.at[line_before]:
-#                 max_line_length = net.line.length_km.at[line]
-#                 longest_line = line
-                
-#             line_before = line
-#         i+=1
-        
-#     return longest_line
-
-# def get_shortest_line(net, lines):
-
-#     i=0
-#     for line in lines:
-#         min_line_length = net.line.length_km.at[line]
-#         if i==0:
-#             line_before = line
-#             shortest_line = line
-#         else:
-#             if min_line_length < net.line.length_km.at[line_before]:
-#                 min_line_length = net.line.length_km.at[line]
-#                 shortest_line = line
-                
-#             line_before = line
-#         i+=1
-        
-#     return shortest_line
-
+# get line impedence
 def get_line_impedance(net, line_idx):
     line_length = net.line.length_km.at[line_idx]
     line_r_per_km = net.line.r_ohm_per_km.at[line_idx]
     line_x_per_km = net.line.x_ohm_per_km.at[line_idx]
-    
     Z_line = complex(line_r_per_km*line_length, line_x_per_km*line_length) # Z = R + jX
-    
     return Z_line
 
+# get the low impedenceline
 def get_lowest_impedance_line(net, lines):
-
     i=0
-    
     for line in lines:
         impedance = abs(get_line_impedance(net, line))
-        
         if i==0:
             min_imp_line = line
             min_impedance = impedance
         else:
-            
             if impedance < min_impedance:
                 min_impedance = impedance
-                min_imp_line = line
-                
+                min_imp_line = line    
         i+=1
-        
     return min_imp_line
 
+# closed switches
 def check_for_closed_bus_switches(net_copy):
     net = copy.deepcopy(net_copy)
     closed_bus_switches = net.switch.loc[(net.switch.et == "b") & (net.switch.closed == True)]
@@ -258,8 +192,8 @@ def check_for_closed_bus_switches(net_copy):
         net = fuse_bus_switches(net, closed_bus_switches)
         
     return net
-    
 
+# get fused switches
 def fuse_bus_switches(net, bus_switches):
     
     for bus_switch in bus_switches.index:
@@ -270,8 +204,9 @@ def fuse_bus_switches(net, bus_switches):
     
     return net
 
-    
-def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_annotations=True):
+
+# plot the tripped grid of net_sc
+def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_annotations=True):
     
     import pandapower.plotting as plot
     import seaborn as sns
@@ -279,8 +214,7 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
     import mplcursors
     cursor=mplcursors.cursor(hover=False)
     
-
-    # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and timegrade backuo-yellow
+    # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
     
     ext_grid_busses = net.ext_grid.bus.values
     fault_location = [max(net.bus.index)]
@@ -308,7 +242,7 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
         trip_type = trip_decision.get("Trip Type")
         
         if trip_type=='backup':
-            trip_time=trip_decision.get("Trip time")
+            trip_time=trip_decision.get("Trip time [s]")
             backup_tripping_times.append(trip_time)
             
         backup_time=list(filter(None, backup_tripping_times))
@@ -322,37 +256,31 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
         
     for trip_idx in range(len(trip_decisions)):
         trip_decision = trip_decisions[trip_idx]
-        switch_idx = trip_decision.get("Switch")
+        switch_id = trip_decision.get("Switch ID")
         trip = trip_decision.get("Trip")
         trip_type = trip_decision.get("Trip Type")
-        trip_time=trip_decision.get("Trip time")
+        trip_time=trip_decision.get("Trip time [s]")
         
-
         #inst backup tripping
-        
-        
         if trip_type=='backup' and trip_time==trip_inst_backup:
-                inst_backup_switches.append(switch_idx)
+                inst_backup_switches.append(switch_id)
         #inst tripping       
         if trip_type == "instantaneous":
-            inst_trip_switches.append(switch_idx)
+            inst_trip_switches.append(switch_id)
             
         #backup tripping    
         elif "backup" in trip_type:
-                backup_trip_switches.append(switch_idx)
+                backup_trip_switches.append(switch_id)
         
-
     dist_to_bus = bus_size * 3.25
 
     #Inst relay trip, red colour 
-    
     if  len(inst_trip_switches)>0:
         
         sc_inst = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "red", switches = inst_trip_switches)
         collection.append(sc_inst)
     
     #backup relay based on time grade (yellow colour)
-    
     if  len(backup_trip_switches)>0:
 
         sc_backup = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "yellow", switches = backup_trip_switches)
@@ -378,8 +306,7 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
    
     #make annotations optional (if True then annotate else only plot)
     if plot_annotations:
-        # Line annotations
-        
+        # line annotations
         line_text=[]
         line_geodata=[]
         
@@ -416,7 +343,6 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
         line_annotate=plot.create_annotation_collection( texts=line_text, coords=line_geodata, size=0.06, prop=None)
         collection.append(line_annotate)
 
-    
         #Bus Annotatations
         bus_text=[]
         for i in net.bus_geodata.index:
@@ -436,11 +362,8 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
         bus_annotate=plot.create_annotation_collection( texts=bus_text, coords=bus_index, size=0.06, prop=None)
         collection.append(bus_annotate)
 
-        
-
-        
-        # Short circuit annottaions
     
+        # Short circuit annotations
         fault_geodata=[]
     
         fault_text=[]
@@ -464,11 +387,10 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
 
         
         # sc_location annotation
-        
         sc_text=[]
         sc_geodata=[]
         
-        sc_texts='   sc_location: '+str(sc_fraction*100)+'%'
+        sc_texts='   sc_location: '+str(sc_location*100)+'%'
     
         #font_size_bus=0.06  # font size of sc location     
         
@@ -486,60 +408,51 @@ def plot_tripped_grid(net, trip_decisions, sc_fraction, bus_size = 0.055,plot_an
         
         collection.append(sc_annotate)
 
-    
         # switch annotations
-            
         from pandapower.protection.utility_functions import switch_geodata
         switch_text=[]
         for Switches in trip_decisions:
             
-            Switch_index=Switches['Switch']
+            Switch_index=Switches['Switch ID']
             
             text_switch= r"sw_"+str(Switch_index)
             switch_text.append(text_switch)
-            
-            
+                 
         switch_geodata= switch_geodata(net, size= bus_size, distance_to_bus=3.25* bus_size)
-        
         i=0
         for i in range(len(switch_geodata)):
         
             switch_geodata[i]['x'] = switch_geodata[i]['x'] - 0.085  #scale the value if annotations overlap
             switch_geodata[i]['y'] = switch_geodata[i]['y'] + 0.055  #scale the value if annotations overlap
-            
             i=i+1
-    
         switch_annotate=plot.create_annotation_collection( texts=switch_text, coords=switch_geodata, size=0.06, prop=None)
-        
         collection.append(switch_annotate)
-        
     plot.draw_collections(collection)
-
     
+# find intersection between two lines y = m1*x+b1 & y = m2*x+b2
+ #https://moonbooks.org/Articles/How-to-write-a-simple-python-code-to-find-the-intersection-point-between-two-straight-lines-/
 def calc_line_intersection(m1, b1, m2, b2):
-    """
-    find intersection between two lines y = m1*x+b1 & y = m2*x+b2
-    https://moonbooks.org/Articles/How-to-write-a-simple-python-code-to-find-the-intersection-point-between-two-straight-lines-/
-    """
     xi = (b1-b2) / (m2-m1)
     yi = m1 * xi + b1
     
     return (xi, yi)
 
+# get connected lines using bus id
 def get_connected_lines(net, bus_idx):
     connected_lines = pp.get_connected_elements(net, "line", bus_idx)
     #connected_lines.remove(line_idx)
     return connected_lines
 
+    #Returns the index of the second bus an element is connected to, given a
+    #first one. E.g. the from_bus given the to_bus of a line.
+
 def next_buses(net, bus, element_id):
-    """
-    Returns the index of the second bus an element is connected to, given a
-    first one. E.g. the from_bus given the to_bus of a line.
-    """
+
     next_connected_bus=pp.next_bus(net,bus,element_id)
     return next_connected_bus
 
 
+# get the connected bus listr from start to end bus
 def source_to_end_path(net,start_bus,bus_list,bus_order):
     
     connected_lines=get_connected_lines(net,start_bus)
@@ -560,13 +473,13 @@ def source_to_end_path(net,start_bus,bus_list,bus_order):
     
     return bus_list
 
-#get connected switches
+#get connected switches with bus
 def get_connected_switches(net, buses):
     
     connected_switches=pp.get_connected_switches(net, buses, consider=('l'), status="closed")
     return connected_switches
 
-
+# get connected buses with a oven element
 def connected_bus_in_line(net, element):
      get_bus_line=pp.get_connected_buses_at_element(net, element, et='l', respect_in_service=False)
  
@@ -586,21 +499,15 @@ def get_line_path(net, bus_path,sc_line_idx=0):
 
         line_path.append(line)
         
-        #if net.switch.type[(net.switch.element==line) & (net.switch.type=="CB_dir")].any():
-            
-         #   if sc_line_idx not in line_path:
-                #line_path.remove()
-                
-          #      return []
     return line_path
     
+# get the coordinates for switches
 def switch_geodata(net, size, distance_to_bus):
     switch_geo=[]
         
     switches = []
     
     if len(switches) == 0:
-    
         lbs_switches = net.switch.index[net.switch.et == "l"]
     
     else:
@@ -644,7 +551,7 @@ def create_I_t_plot(trip_decisions,switch_id):
         
         lst_I=[trip_decisions[switch_id]['Ig'],trip_decisions[switch_id]['Igg']]
         lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['t_gg']]
-        fault_current=trip_decisions[switch_id]['Fault Current']
+        fault_current=trip_decisions[switch_id]['Fault Current [kA]']
         
 
         label='Relay:R'+str(switch_id)
@@ -715,8 +622,6 @@ def power_flow_end_points(net):
     return pf_loop_end_buses, pf_radial_end_buses
 
 
-
-
 #function calcuulate the bus path from start and end buses
 def bus_path_from_to_bus(net,radial_start_bus, loop_start_bus, end_bus):
     import networkx as nx
@@ -736,9 +641,6 @@ def bus_path_from_to_bus(net,radial_start_bus, loop_start_bus, end_bus):
    
     bus_path = radial_path + loop_path
     return bus_path
-
-
-
 
 # function calculate the switching times from the  bus path
 def get_switches_in_path(net, pathes):
@@ -780,18 +682,16 @@ def get_switches_in_path(net, pathes):
     return switches_in_path
 
 
-def get_vi_angle(net,switch_idx,powerflow_results=False):
+# calculate the angle betwen voltage and current with reference to voltage
+def get_vi_angle(net,switch_id,powerflow_results=False):
     
-    """RCA:The angle by which the current applied to the relay must be displaced 
-    from the voltage applied to the relay to produce maximum torque”
-"""
     pp.runpp(net)
-    line_idx =get_line_idx(net, switch_idx)
-    bus_idx = get_bus_idx(net,switch_idx)
+    line_idx =get_line_idx(net, switch_id)
+    bus_idx = get_bus_idx(net,switch_id)
     
     if powerflow_results:
         
-        if  get_from_bus_info_switch(net, switch_idx):
+        if  get_from_bus_info_switch(net, switch_id):
         
             P = net.res_line.p_from_mw.at[line_idx]
             Q = net.res_line.q_from_mvar.at[line_idx]
@@ -806,7 +706,7 @@ def get_vi_angle(net,switch_idx,powerflow_results=False):
         
     else:
         
-        if  get_from_bus_info_switch(net, switch_idx):
+        if  get_from_bus_info_switch(net, switch_id):
             
                 P = net.res_line_sc.p_from_mw.at[line_idx]
                 Q = net.res_line_sc.q_from_mvar.at[line_idx]
@@ -819,10 +719,6 @@ def get_vi_angle(net,switch_idx,powerflow_results=False):
                 Q = net.res_line_sc.q_to_mvar.at[line_idx]
                 vm = net.bus.vn_kv.at[bus_idx] * net.res_line_sc.vm_to_pu.at[line_idx]
                 
-        
-    #S=math.sqrt(P*P+Q*Q)
-    #power_factor=P/S
-    #vi_angle=math.degrees(math.acos(power_factor))
     
     if P>0 and Q>0:
         vi_angle = math.degrees(math.atan(Q/P))

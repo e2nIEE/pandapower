@@ -20,6 +20,5 @@ EXAMPLE:
     import pandapower.protection.implementation.oc_relay_model as oc_protection
     import pandapower.protection.implementation.example_grids as nw
     net = nw.load_6bus_net_directional(open_loop=True)
-    trip_decisions= oc_protection.run_fault_scenario_oc(net, sc_line_idx =5,
-	 sc_location =0.5,timegrade=[0.0,0.5,0.3])
-    print(trip_decisions)                                          
+    trip_decisions= oc_protection.run_fault_scenario_oc(net,sc_line_id=5,
+	 sc_location =0.5,tripping_time_auto=[0.0,0.5,0.3])                                         

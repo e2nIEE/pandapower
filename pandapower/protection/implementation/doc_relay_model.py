@@ -1,70 +1,31 @@
 
-
-# -*- coding: utf-8 -*-
-"""
-Created on Sun May 29 13:32:18 2022
-
-@author: amadhusoodhanan
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 13 14:21:55 2022
-
-@author: amadhusoodhanan
-
-This set of functions includes the functionalities implemented for over-current protection
-
-Overcurrent relay with time grade setings
-Protection relays typically have 4 functionalities:
-    - Input: short circuit line, location, time grade (t_gg, T_delta)
-    - relay settings 
-    - getting the measurements
-    - interpreting the measurements (e.g. check if measured value exceeds given threshold)
-    - react to measurements (Trip or No Trip)
-"""
-
+# This function implemenets the protecton module using dorectional over current relay
+# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandapower.shortcircuit as sc
 import copy
 import pandapower as pp
 import numpy as np
 import pandas as pd
-from pandapower.protection.implementation.utility_functions import *
-
+import math
+from pandaplan.core.protection.implementation.utility_functions import *
+import warnings
+warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
 
 # set the parameters
-
-def doc_parameters(net2, switch_idx,t_ig,t_igg,relay_configuration, sc_fraction=None,overload_factor=None,
-                  ct_current_factor=None, safety_factor=None,  doc_relay_trip_currents=None):  # all the factors can be re-considered
-    """
-    This function sets the parameters of the given relay
-    INPUT:
-        net - net object where relays are located
-        switch_idx - index of the switch the given relay is attached to
-        from_bus - information if this relay is located at a from_ or to_bus
-        max_ig - I> threshold of relay
-        max_igg - I>> threshold of relay
-        t_ig - t> setting of relay
-        t_igg - t>> setting of relay
-
-    OUTPUT:
-        List of relay settings
-    """
+def doc_parameters(net2, switch_id,t_ig,t_igg,relay_configuration, sc_fraction=None,overload_factor=None,
+                  ct_current_factor=None, safety_factor=None,  doc_pickup_current_manual=None):  # all the factors can be re-considered
 
     # load the reference network
     net = copy.deepcopy(net2)
-    
-    
     # get the line index and bus index from the line
-    line_idx = get_line_idx(net, switch_idx)
-    bus_idx = get_bus_idx(net, switch_idx)
+    line_idx = get_line_idx(net, switch_id)
+    bus_idx = get_bus_idx(net, switch_id)
     
     # get the user input confiuration of directional relay switch direction     
 
     for i, Key in enumerate(relay_configuration):
-        
-
-         if relay_configuration[Key][0]==switch_idx:
+         if relay_configuration[Key][0]==switch_id:
              
              # biasing of the relay(forward or reverse)
              direction=(relay_configuration[Key][2])
@@ -80,7 +41,8 @@ def doc_parameters(net2, switch_idx,t_ig,t_igg,relay_configuration, sc_fraction=
 
     
     # creat short circuit on the given line and location
-    if doc_relay_trip_currents is None:
+    if doc_pickup_current_manual is None:
+        
         net_sc = create_sc_bus(net, line_idx, sc_fraction)
         sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
         
@@ -90,44 +52,36 @@ def doc_parameters(net2, switch_idx,t_ig,t_igg,relay_configuration, sc_fraction=
         I_gg = net_sc.res_line_sc.ikss_ka.at[line_idx] * safety_factor
     
     else:
-        I_g= doc_relay_trip_currents[2] # take manual inputs
-        I_gg=doc_relay_trip_currents[1]
+        I_g= doc_pickup_current_manual[2] # take manual inputs
+        I_gg=doc_pickup_current_manual[1]
 
     # dictionary to store the relay settings for each lines
-    settings = {"net": net, "switch_idx": switch_idx, "line_idx": line_idx, "bus_idx": bus_idx,
+    settings = {"net": net, "switch_id": switch_id, "line_idx": line_idx, "bus_idx": bus_idx,
                 "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_ig,"tgg": t_igg, "MTA": MTA, "direction":direction,"OSA":OSA, "RCA": RCA}
     
     return settings
+
     # get the short circuit current values in the lines
 def doc_get_measurement_at_relay_location(net, settings):
-    switch_idx = settings.get("switch_idx")
-    line_idx = get_line_idx(net, switch_idx)
+    switch_id = settings.get("switch_id")
+    line_idx = get_line_idx(net, switch_id)
     i_ka = net.res_line_sc.ikss_ka.at[line_idx]
-    vi_angle=get_vi_angle(net,switch_idx)
+    vi_angle=get_vi_angle(net,switch_id)
     return i_ka, vi_angle
 
 
 def doc_get_trip_decision(net, settings, i_ka,vi_angle):
     
-        switch_idx = settings.get("switch_idx")
-        
+        switch_id = settings.get("switch_id")
         line_idx=settings.get("line_idx")
         max_ig = settings.get("Ig_ka")
         max_igg = settings.get("Igg_ka")
-        
         direction=settings.get("direction")
         OSA=settings.get("OSA")
         RCA=settings.get("RCA")
         MTA= settings.get("MTA")
-       
         t_ig = settings.get("tg")
         t_igg = settings.get("tgg")
-        
-        
-        #if vi_angle<=0:
-        #    vi_angle=-1*vi_angle
-        #    print(vi_angle)
-
         
         if vi_angle>=180+MTA or 0<vi_angle<MTA:
         #if  vi_angle>=MTA:
@@ -145,9 +99,7 @@ def doc_get_trip_decision(net, settings, i_ka,vi_angle):
 
         else:
             dir_trip=False #no trip
-        
-        #dir_trip,zone,direction=doc_direction(net,switch_idx,relay_configuration,powerflow_results=False) #direction of flow for directional relay
-        
+                
         if i_ka > max_igg and dir_trip==True:
             trip = True
             trip_type = "instantaneous"
@@ -165,18 +117,16 @@ def doc_get_trip_decision(net, settings, i_ka,vi_angle):
             trip_type = "no trip"
             trip_time = np.inf
             
-        trip_decision = {"Switch": switch_idx, 'Switch type': 'DOC', "Trip": trip, "Fault Current": i_ka, "Trip Type": trip_type,
-                         "Trip time": trip_time, "Ig": max_ig, "Igg": max_igg,'tg':t_ig, 't_gg':t_igg,'MTA':MTA, 'vi_angle':vi_angle,"Relay direction":direction, "Zone":zone}
+        trip_decision = {"Switch ID": switch_id, 'Switch type': 'DOC', "Trip": trip, "Fault Current [kA]": i_ka, "Trip Type": trip_type,
+                         "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg,'tg':t_ig, 't_gg':t_igg,'MTA':MTA,
+                         'vi_angle':vi_angle,"Relay direction":direction, "Zone":zone}
 
-        # show only relevant tripping logic
         
         return trip_decision
+# autmates time grading based of grid searches and powerflow end points
+def time_graded_overcurrent(net,tripping_time_auto, tripping_time_manual):
     
-    
-def time_graded_overcurrent(net,timegrade, relay_trip_times):
-    
-    
-    if timegrade:
+    if tripping_time_auto:
     
         # get end buses from meshed network and radial network if any
         pf_loop_end_buses, pf_radial_end_buses = power_flow_end_points(net)
@@ -199,7 +149,6 @@ def time_graded_overcurrent(net,timegrade, relay_trip_times):
                 pathes.append(path)
         pathes = [x for x in pathes if len(x) !=1]
         
-            
         time_lines={}
         time_switches={}
         tg_sw_setting=[]
@@ -211,47 +160,37 @@ def time_graded_overcurrent(net,timegrade, relay_trip_times):
             count=0
             # switching time based on the radial connections 
             for line in line_path:
-                time_lines[line]=count*timegrade[2]+timegrade[1]
+                time_lines[line]=count*tripping_time_auto[2]+tripping_time_auto[1]
                 count+=1
-                
-                #net.switch.closed.index at[switch_idx]
-                
+                                
         for switch in net.switch[net.switch.closed == True].index:
-
-            
             line_id=net.switch[net.switch.closed == True].element.at[switch]
-            
             tg = time_lines[line_id] 
-            
             time_switches[switch]=tg
-            
             tg_sw_setting.append([switch,tg])
     
         # if there is multiple time setting for each switch take only the highest one
             df_protection_settings = pd.DataFrame(tg_sw_setting)
             df_protection_settings = df_protection_settings.sort_values(by=1, ascending = False)
             df_protection_settings = df_protection_settings.groupby(0).head(1)
-            df_protection_settings["t_gg"] = [timegrade[0]] * len(df_protection_settings) 
-            df_protection_settings.columns=["switch_idx","t_g","t_gg"]
-            df_protection_settings= df_protection_settings.sort_values(by=['switch_idx'])
+            df_protection_settings["t_gg"] = [tripping_time_auto[0]] * len(df_protection_settings) 
+            df_protection_settings.columns=["switch_id","t_g","t_gg"]
+            df_protection_settings= df_protection_settings.sort_values(by=['switch_id'])
             df_protection_settings=df_protection_settings.reset_index(drop=True)
 
-
-    if   relay_trip_times is not None:
+    if   tripping_time_manual is not None:
          df_protection_settings=pd.DataFrame()
-         df_protection_settings['switch_idx']=relay_trip_times['switch_idx']
-         df_protection_settings['t_g']=relay_trip_times['t_g']
-         df_protection_settings['t_gg']=relay_trip_times['t_gg']
+         df_protection_settings['switch_id']=tripping_time_manual['switch_id']
+         df_protection_settings['t_g']=tripping_time_manual['t_g']
+         df_protection_settings['t_gg']=tripping_time_manual['t_gg']
          
     
     return df_protection_settings
 
-def run_fault_scenario_doc(net, sc_line_idx, sc_location,relay_configuration,timegrade=None,relay_trip_times=None,
+def run_fault_scenario_doc(net, sc_line_id, sc_location,relay_configuration,tripping_time_auto=None,tripping_time_manual=None,
                            sc_fraction=0.95, overload_factor=1.2,ct_current_factor=1.25,
-                           safety_factor=1,relay_trip_currents=None,plot_annotations=True, 
-                           plot_grid=True, i_t_plot=True):
+                           safety_factor=1,pickup_current_manual=None):
         
-      
     """
     
     The main function to create fault scenario in network at defined location to get the tripping decisons
@@ -259,7 +198,7 @@ def run_fault_scenario_doc(net, sc_line_idx, sc_location,relay_configuration,tim
        INPUT:
            **net** (pandapowerNet) - Pandapower network with switch type as 'CB_non_dir' in net.switch.type
            
-           **sc_line_idx** (int, index)- Index of the line to create the short circuit.
+           **sc_line_id** (int, index)- Index of the line to create the short circuit.
            
            **sc_location** (float)- Location of short circuit on the on line (between 0 and 1).
            
@@ -273,18 +212,18 @@ def run_fault_scenario_doc(net, sc_line_idx, sc_location,relay_configuration,tim
                - OSA (float, degree) : Operating Sector Angle is the quadrature angle (ideally 86° to 90°)
                - RCA (float, degree) : Relay Characteristics Angle is the angle by which the reference voltage is adjusted for better sensitivity  of the directional overcurrent relay
            
-           **timegrade** (list, float) - Relay tripping time calculated based on topological grid search.
+           **tripping_time_auto** (list, float) - Relay tripping time calculated based on topological grid search.
           
-            - timegrade =[t_gg, t_g and t_delta]
-            - t_gg: instantaneous tripping time in seconds,
-            - t_g:  primary backup tripping time in seconds, 
-            - t_delta: secondary backup tripping time in seconds
+            - tripping_time_auto =[t_>>, t_>, t_diff]
+            - t_>>(t_gg): instantaneous tripping time in seconds,
+            - t_>(t_g):  primary backup tripping time in seconds, 
+            - t_diff: time grading delay difference in seconds
+            
            "or" 
                 
-           **relay_trip_times**- (Dataframe, float) - (dataframe, float) - User defined relay trip currents given as a dataframe with columns as 'switch_idx', 't_gg', 't_g'
+           **tripping_time_manual**- (Dataframe, float) - (dataframe, float) - User defined relay trip currents given as a dataframe with columns as 'switch_id', 't_gg', 't_g'
            
-                    
-           (Note: either timegrade or the relay_trip_times needed to be provided and not both)
+           (Note: either tripping_time_auto or the tripping_time_manual needed to be provided and not both)
            
            **sc_fraction** (float, 0.95) - Maximum possible extent to which the short circuit can be created on the line
                                  
@@ -296,89 +235,46 @@ def run_fault_scenario_doc(net, sc_line_idx, sc_location,relay_configuration,tim
                     
             
         OPTIONAL:
-            **relay_trip_currents** - (DataFrame, None) - User defined relay trip currents given as a dataframe with columns as 'Switch_ID', 'Igg', 'Ig'
+            **pickup_current_manual** - (DataFrame, None) - User defined relay trip currents given as a dataframe with columns as 'switch_id', 'I_gg', 'I_g'
             
-            **plot_grid** (bool, True) - Plot tripped grid based on the trip decisions. 
-            
-            **plot_annotations** (bool, True) -Plot the annotations in the tripped grid.
-            
-            **i_t_plot** (bool, True) -Plot the current-time relationshio (i-t plot).
         
         OUTPUT:
-            **return** (list(Dict)) - Return trip decision of each relays
+            **return** (list(Dict),net_sc) - Return trip decision of each relays and short circuit net
         """""
     
     
     doc_relay_settings = []
-    
-    df_protection_settings =time_graded_overcurrent(net,timegrade,relay_trip_times)
-    
-    for switch_idx in net.switch.index:
-        if (net.switch.closed.at[switch_idx]) & (net.switch.type.at[switch_idx] == "CB_dir") & (net.switch.et.at[switch_idx] == "l"):
+    df_protection_settings =time_graded_overcurrent(net,tripping_time_auto,tripping_time_manual)
+    for switch_id in net.switch.index:
+        if (net.switch.closed.at[switch_id]) & (net.switch.type.at[switch_id] == "CB_dir") & (net.switch.et.at[switch_id] == "l"):
 
-            t_g=df_protection_settings.loc[df_protection_settings['switch_idx']==switch_idx]['t_g'].item()
+            t_g=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_g'].item()
             
+            t_gg=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_gg'].item()
             
-            t_gg=df_protection_settings.loc[df_protection_settings['switch_idx']==switch_idx]['t_gg'].item()
-            if relay_trip_currents is not None:
+            if pickup_current_manual is not None:
+                doc_pickup_current_manual=pickup_current_manual.iloc[switch_id]
                 
-                doc_relay_trip_currents=list(relay_trip_currents.loc[switch_idx])
-                settings = doc_parameters(net, switch_idx,t_g,t_gg, sc_fraction,relay_configuration, overload_factor,ct_current_factor, safety_factor, doc_relay_trip_currents)
-
+                settings = doc_parameters(net, switch_id,t_g,t_gg,relay_configuration, sc_fraction,
+                            overload_factor,ct_current_factor, safety_factor, doc_pickup_current_manual)
             else:
-                settings = doc_parameters(net, switch_idx,t_g,t_gg,relay_configuration, sc_fraction, overload_factor,ct_current_factor, safety_factor)
-            
-            
+                settings = doc_parameters(net, switch_id,t_g,t_gg,relay_configuration, sc_fraction,
+                            overload_factor,ct_current_factor, safety_factor)
             doc_relay_settings.append(settings)
 
-    net_sc = create_sc_bus(net, sc_line_idx, sc_location)
+    net_sc = create_sc_bus(net, sc_line_id, sc_location)
     sc.calc_sc(net_sc, bus = max(net_sc.bus.index), branch_results = True)
 
     trip_decisions = []
 
     for setting_idx in range(len(doc_relay_settings)):
-        # print(oc_relay_settings[setting_idx])
         i_ka,vi_angle = doc_get_measurement_at_relay_location(net_sc, doc_relay_settings[setting_idx])
-        
         trip_decision_doc = doc_get_trip_decision(net_sc, doc_relay_settings[setting_idx], i_ka,vi_angle)
-    
         trip_decisions.append(trip_decision_doc)
         
     # convert trip decisons to dataframe with necessary variables in output    
     df_trip_decison = pd.DataFrame.from_dict(trip_decisions)
-    
-    df_decisions=df_trip_decison[['Switch','Switch type','Trip', 'Fault Current','Trip time' ]]
-    
-    # rename the header 
-    df_decisions.columns = ['Switch ID','Switch type', 'Trip', 'Ikss [kA]', 'Trip time [s]']
-    
+    df_decisions=df_trip_decison[['Switch ID','Switch type', 'Trip', 'Fault Current [kA]', 'Trip time [s]']]
     print(df_decisions)
-    
-    
-    if plot_grid:
-        #coming from utility functions
-        if plot_annotations:
-            
-            plot_tripped_grid(net_sc, trip_decisions, sc_location,plot_annotations=True)
-            
-            
-        else:
-            plot_tripped_grid(net_sc, trip_decisions, sc_location,plot_annotations=False)
-        
-        #I-T plot needs to be implemented
-    if i_t_plot:
-        
-        
-        switch_id=[]
-        #plot only the instaneous trip decision
-        for trip_idx in range(len(trip_decisions)):
-            trip_decision = trip_decisions[trip_idx]
-            trip_type = trip_decision.get("Trip Type")
-            
-            if trip_type == "instantaneous":
-                switch_idx = trip_decision.get("Switch")
-        switch_id.append(switch_idx)
-        
-        create_I_t_plot(trip_decisions,switch_id)
-    
-    return trip_decisions
+    return trip_decisions, net_sc
+

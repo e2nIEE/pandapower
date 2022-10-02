@@ -1,13 +1,6 @@
 
+#This function test the function of doc relay model
 
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 19 21:43:58 2022
-
-@author: amadhusoodhanan
-
-This function test the function of doc relay model
-"""
 
 import pytest
 import numpy as np
@@ -33,9 +26,9 @@ from pandapower.protection.implementation.utility_functions import *
 
 
 # This function test the if manual configuration of doc parameters
-def test_doc_parameters_automated(switch_idx = 2, t_igg=0.07, t_ig=0.5, sc_fraction=0.95,
+def test_doc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fraction=0.95,
                               overload_factor=1.2, ct_current_factor=1.25,safety_factor=0.9,
-                              relay_configuration= {"switch_3": [2,  "CB_dir",
+                              relay_configuration= {"switch_3": [2,"CB_dir",
                                                     "forward",86, 45]}):
     
     net =  load_4bus_net(open_loop =False)
@@ -43,7 +36,7 @@ def test_doc_parameters_automated(switch_idx = 2, t_igg=0.07, t_ig=0.5, sc_fract
     # sanity chech of user defined input doc parameters
     assert type(net)==pandapower.auxiliary.pandapowerNet,\
         'net should be pandapower network'
-    assert switch_idx in net.switch.index,\
+    assert switch_id in net.switch.index,\
         'given switch id shoulb be in the switch index of the given network'
     assert  t_ig> t_igg, 't_g shoulbe be greater than t_gg'
     assert 0<sc_fraction<1 , 'sc fraction should be between 0 and 1'
@@ -53,9 +46,9 @@ def test_doc_parameters_automated(switch_idx = 2, t_igg=0.07, t_ig=0.5, sc_fract
 
     
     # get relay parameters from doc relay based on input parameters
-    relay_parameters = doc.doc_parameters(net, switch_idx, t_ig, t_igg,
+    relay_parameters = doc.doc_parameters(net, switch_id, t_ig, t_igg,
                                           relay_configuration,sc_fraction,
-                                        overload_factor, ct_current_factor, safety_factor,doc_relay_trip_currents=None)
+                                        overload_factor, ct_current_factor, safety_factor,doc_pickup_current_manual=None)
 
     #rtol = (B1 - A1)/A1 = 10
     #atol=B1-A1
@@ -83,20 +76,20 @@ def test_doc_parameters_automated(switch_idx = 2, t_igg=0.07, t_ig=0.5, sc_fract
     
 
     # Test the manual configuration of doc parameters
-def test_doc_parameters_manual(switch_idx=4,t_ig=0.5,t_igg=0.07, 
-                               relay_parameters= pd.DataFrame({'Switch_ID': [4],
-                                                               'Igg': [1.7],'Ig':[0.8]}),
+def test_doc_parameters_manual(switch_id=4,t_ig=0.5,t_igg=0.07, 
+                               relay_parameters= pd.DataFrame({'switch_id': [4],
+                                                               'I_gg': [1.7],'I_g':[0.8]}),
                                relay_configuration= {"switch_5": [4,  "CB_dir",
                                                     "forward",86, 45]}):
     
     net =  load_4bus_net(open_loop =False)
 
     # get relay parameters from doc relay based on input parameters
-    relay_settings = doc.doc_parameters(net, switch_idx, t_ig, t_igg,
-                     relay_configuration,doc_relay_trip_currents= relay_parameters.iloc[0])
+    relay_settings = doc.doc_parameters(net, switch_id, t_ig, t_igg,
+                     relay_configuration,doc_pickup_current_manual= relay_parameters.iloc[0])
     
     # expected result of doc parameters settings
-    res_relay_settings = {"net": net, "switch_idx": 4, "line_idx": 4, "bus_idx":4,
+    res_relay_settings = {"net": net, "switch_id": 4, "line_idx": 4, "bus_idx":4,
                     "Ig_ka": 0.8, "Igg_ka": 1.7,"tg": 0.5, "tgg": 0.07, "MTA": 41,
                     "direction":"forward","OSA":86, "RCA": 45}
     
@@ -116,7 +109,7 @@ def test_doc_parameters_manual(switch_idx=4,t_ig=0.5,t_igg=0.07,
 
     #test get measurement at relay location
 def test_doc_get_measurement_at_relay_location(sc_line_idx=3, sc_location=0.3,
-                                               settings = {"switch_idx":3}):
+                                               settings = {"switch_id":3}):
     
     net =  load_4bus_net(open_loop =False)
 
@@ -125,8 +118,8 @@ def test_doc_get_measurement_at_relay_location(sc_line_idx=3, sc_location=0.3,
         'sc_line_idx should be in the given network line index'
     assert  0<sc_location<1,'sc location should be be between 0 and 1'
     assert type(settings)==dict,\
-        'input settings with switch index should be dictionary with id as switch_idx'
-    assert settings.get("switch_idx") in net.switch.index,\
+        'input settings with switch index should be dictionary with id as switch_id'
+    assert settings.get("switch_id") in net.switch.index,\
         'switch id should be in the given network'
     
     # create sc for given line and location
@@ -144,8 +137,8 @@ def test_doc_get_measurement_at_relay_location(sc_line_idx=3, sc_location=0.3,
             degree tolerence with calculated value'
 
     #test the doc get trip decisions
-def test_doc_get_trip_decision(switch_idx=4,sc_line_idx=4 ,sc_location=0.5, 
-                            settings = {"net": None, "switch_idx":4,"Ig_ka":0.429 ,
+def test_doc_get_trip_decision(switch_id=4,sc_line_idx=4 ,sc_location=0.5, 
+                            settings = {"net": None, "switch_id":4,"Ig_ka":0.429 ,
                                         "Igg_ka": 1.68, "tg": 0.5,
                                         "tgg": 0.07,"MTA": 41,
                                         "direction":"forward",
@@ -158,18 +151,18 @@ def test_doc_get_trip_decision(switch_idx=4,sc_line_idx=4 ,sc_location=0.5,
     settings['net']=net
     
     # input sanity check
-    assert settings.get("switch_idx") in net.switch.index,\
+    assert settings.get("switch_id") in net.switch.index,\
         'switch id should be in the given network'
     
     # think how to change ika1, ika2, ika3
-    net_sc = create_sc_bus(net, switch_idx, sc_location)
+    net_sc = create_sc_bus(net, switch_id, sc_location)
     sc.calc_sc(net_sc, bus = max(net_sc.bus.index), branch_results = True)
     
     inst_trip_decisions=doc.doc_get_trip_decision(net_sc, settings, i_ka1,vi_angle1)
     assert  inst_trip_decisions['Trip Type'] == "instantaneous" ,\
         'i_ka >Igg, forward zone and forward biased or reverse zone and,\
             reverse biased for trip type instantaneous'
-    assert  inst_trip_decisions['Trip time'] == settings.get("tgg"),\
+    assert  inst_trip_decisions['Trip time [s]'] == settings.get("tgg"),\
         'instantaneous trip have trip time equal to Tgg'
     
     
@@ -177,53 +170,52 @@ def test_doc_get_trip_decision(switch_idx=4,sc_line_idx=4 ,sc_location=0.5,
     assert  backup_trip_decisions['Trip Type'] == "backup" , \
         'i_ka >Ig  forward zone and forward biased or reverse zone and reverse biased,\
             for trip type as backup'
-    assert  backup_trip_decisions['Trip time'] == settings.get("tg"),\
+    assert  backup_trip_decisions['Trip time [s]'] == settings.get("tg"),\
         'backup trip should have trip time equal to Tg'
 
     
     no_trip_trip_decisions=doc.doc_get_trip_decision(net_sc, settings, i_ka3,vi_angle3)
     assert  no_trip_trip_decisions['Trip Type'] == "no trip" ,\
         'i_ka <Ig, forward zone and reverse biased or reverse zone and forward biased then no trip'
-    assert  no_trip_trip_decisions['Trip time'] ==np.inf, 'If no trip, trip time should be infinity'
+    assert  no_trip_trip_decisions['Trip time [s]'] ==np.inf, 'If no trip, trip time should be infinity'
 
 
     no_trip_trip_decisions_dir=doc.doc_get_trip_decision(net_sc, settings, i_ka1,vi_angle3)
     assert  no_trip_trip_decisions_dir['Trip Type'] == "no trip" , \
         'i_ka >Igg, forward zone and reverse biased or reverse zone and forward biased  no trip'
-    assert  no_trip_trip_decisions_dir['Trip time'] ==np.inf, 'If no trip, trip time should be infinity'
+    assert  no_trip_trip_decisions_dir['Trip time [s]'] ==np.inf, 'If no trip, trip time should be infinity'
 
     #Test the manual time grading plan
-def test_time_graded_overcurrent_manual(relay_trip_times= pd.DataFrame
-                                        ({'switch_idx': [0,1,2,3,4],
+def test_time_graded_overcurrent_manual(tripping_time_manual= pd.DataFrame({'switch_id': [0,1,2,3,4],
                                         't_g':[0.5,0.8,1.1,1.4,1.7],
                                         't_gg': [0.05,0.06,0.07,0.07,0.05]})):
     # input sanity check
     net =  load_4bus_net(open_loop =False)
-    assert len(net.switch[net.switch.closed == True])==len(relay_trip_times),\
+    assert len(net.switch[net.switch.closed == True])==len(tripping_time_manual),\
         'Number of active relays in the network should be equal to the number of relay in relay trip times'
     
-    assert relay_trip_times.columns.values.tolist()==['switch_idx', 't_g', 't_gg'],\
+    assert tripping_time_manual.columns.values.tolist()==['switch_id', 't_g', 't_gg'],\
         'Input relay times  should have the given format and header name'
     
-    times=doc.time_graded_overcurrent(net,relay_trip_times=relay_trip_times, timegrade=None)
+    times=doc.time_graded_overcurrent(net,tripping_time_manual=tripping_time_manual, tripping_time_auto=None)
     
-    # check input switch time equal to in the times from timegrade
-    assert relay_trip_times.equals(times), \
-        'given relay time settings should be equal to the values in the timegrade function'
+    # check input switch time equal to in the times from tripping_time_auto
+    assert tripping_time_manual.equals(times), \
+        'given relay time settings should be equal to the values in the tripping_time_auto function'
     
     #Test the autmated time grading plan
-def test_time_graded_overcurrent_automated(timegrade=[0.07,0.5,0.3]): # timegrade=[tgg, tg, t_delta]
+def test_time_graded_overcurrent_automated(tripping_time_auto=[0.07,0.5,0.3]): # tripping_time_auto=[tgg, tg, t_delta]
     
     net =  load_4bus_net(open_loop =False)
 
     # Input sanity check 
-    times=doc.time_graded_overcurrent(net,timegrade, relay_trip_times=None)
-    relay_trip_times= pd.DataFrame({'switch_idx': [0,1,2,3,4],
+    times=doc.time_graded_overcurrent(net,tripping_time_auto, tripping_time_manual=None)
+    tripping_time_manual= pd.DataFrame({'switch_id': [0,1,2,3,4],
                                     't_g':[1.1,0.5,0.8,0.5,0.5],
                                     't_gg': [0.07,0.07,0.07,0.07,0.07]})
     
-    assert relay_trip_times.equals(times),\
-        'given relay time settings hould be equal from the timegrade function'
+    assert tripping_time_manual.equals(times),\
+        'given relay time settings hould be equal from the tripping_time_auto function'
 
 
 # Test the tripped grid
@@ -232,7 +224,7 @@ def test_time_graded_overcurrent_automated(timegrade=[0.07,0.5,0.3]): # timegrad
 #@pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
 
 def test_plot_tripped_grid(mock_show,sc_line_idx =4,sc_location =0.4,
-                           timegrade=[0.07,0.5,0.3],relay_configuration = {
+                           tripping_time_auto=[0.07,0.5,0.3],relay_configuration = {
                     "switch_1": [0,  "CB_dir",     "forward",    86, 45],
                     "switch_2": [1,  "CB_dir",     "forward",    86, 45], 
                     "switch_3": [2,  "CB_dir",     "forward",    86, 45],
@@ -241,11 +233,8 @@ def test_plot_tripped_grid(mock_show,sc_line_idx =4,sc_location =0.4,
     
     net=load_4bus_net(open_loop =False)
     # generate trip decisions
-    trip_decisions = doc.run_fault_scenario_doc(net,sc_line_idx, sc_location,relay_configuration,
-                                                timegrade=timegrade,plot_grid=False, i_t_plot=False)
-    # create sc network
-    net_sc = create_sc_bus(net, sc_line_idx, sc_location)
-    sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
+    trip_decisions,net_sc = doc.run_fault_scenario_doc(net,sc_line_idx, sc_location,relay_configuration,
+                                                tripping_time_auto=tripping_time_auto)
     
     # test the tripped grid
     doc.plot_tripped_grid(net_sc, trip_decisions,sc_location, plot_annotations=(True))
@@ -258,7 +247,7 @@ def test_plot_tripped_grid(mock_show,sc_line_idx =4,sc_location =0.4,
 #@pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
 
 def test_create_I_t_plot(mock_show,sc_line_idx =4,sc_location =0.4,
-                         timegrade=[0.07,0.5,0.3],switch_id=[0,3,4],
+                         tripping_time_auto=[0.07,0.5,0.3],switch_id=[0,3,4],
                          relay_configuration = {
                         "switch_1": [0,  "CB_dir",     "forward",    86, 45],
                         "switch_2": [1,  "CB_dir",     "forward",    86, 45], 
@@ -268,8 +257,8 @@ def test_create_I_t_plot(mock_show,sc_line_idx =4,sc_location =0.4,
     
     net=load_4bus_net(open_loop =False)
     # generate trip decisions
-    trip_decisions =doc.run_fault_scenario_doc(net,sc_line_idx, sc_location,relay_configuration, 
-                                                timegrade=timegrade,plot_grid=False, i_t_plot=False)
+    trip_decisions,net_sc =doc.run_fault_scenario_doc(net,sc_line_idx, sc_location,relay_configuration, 
+                                                tripping_time_auto=tripping_time_auto)
 
     # test the IT plot function working or not
     doc.create_I_t_plot(trip_decisions,switch_id)
