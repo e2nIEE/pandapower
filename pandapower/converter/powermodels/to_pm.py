@@ -512,20 +512,28 @@ def add_params_to_pm(net, pm):
                     side = pm["user_defined_params"]["side"][k]["value"]
                     side_bus_f = side + "_bus"
                     if elm == "line":
-                        side_bus_t = "from_bus" if side == "to" else "to_bus" 
+                        side_bus_t = "from_bus" if side == "to" else "to_bus"
                     if elm == "trafo":
                         side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
-                     
+                    
+                    if side in ["from", "hv"]:
+                        ppcrow_f = 0
+                        ppcrow_t = 1
+                    else:
+                        ppcrow_f = 1
+                        ppcrow_t = 0
+                        assert side in ["to", "lv"]
+
                     pm["user_defined_params"][bp][k]["f_bus"] = \
-                        int(net._ppc_opf["branch"][ppcidx,0].real) + 1
+                        int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
                     pm["user_defined_params"][bp][k]["t_bus"] = \
-                        int(net._ppc_opf["branch"][ppcidx,1].real) + 1
-                # pm["user_defined_params"][bp][k]["f_bus"] = \
-                #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
-                # pm["user_defined_params"][bp][k]["t_bus"] = \
-                #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+                        int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
+                    # pm["user_defined_params"][bp][k]["f_bus"] = \
+                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                    # pm["user_defined_params"][bp][k]["t_bus"] = \
+                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
 
     # add controllable sgen:
     dic = {}
