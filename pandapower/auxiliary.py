@@ -400,7 +400,7 @@ def _check_connectivity_opf(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -439,7 +439,7 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -470,7 +470,7 @@ def _subnetworks(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]

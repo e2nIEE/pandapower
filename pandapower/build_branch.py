@@ -642,10 +642,9 @@ def _switch_branches(net, ppc):
     calculate_voltage_angles = net._options["calculate_voltage_angles"]
     neglect_open_switch_branches = net._options["neglect_open_switch_branches"]
     mode = net._options["mode"]
-    open_switches = (net.switch.closed.values == False)
     n_bus = ppc["bus"].shape[0]
     for et, element in [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]:
-        switch_mask = open_switches & (net.switch.et.values == et)
+        switch_mask = ~net.switch.closed.values & (net.switch.et.values == et)
         if not switch_mask.any():
             continue
         nr_open_switches = np.count_nonzero(switch_mask)

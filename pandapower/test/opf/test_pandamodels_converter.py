@@ -29,7 +29,6 @@ try:
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
-    print(e)
 
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
@@ -69,10 +68,9 @@ def test_obj_factors(net_3w_trafo_opf):
     net["obj_factors"] = [0.9, 0.1]
     pm = convert_pp_to_pm(net)
     assert pm["user_defined_params"]["obj_factors"]["fac_1"] == 0.9
-    assert pm["user_defined_params"]["obj_factors"]["fac_2"] == 0.1    
+    assert pm["user_defined_params"]["obj_factors"]["fac_2"] == 0.1
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["2"] == 2
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
-    
 
 
 if __name__ == '__main__':
@@ -80,5 +78,5 @@ if __name__ == '__main__':
         pytest.main(['-x', __file__])
     else:
         test_obj_factors()
-        
+
     pass
