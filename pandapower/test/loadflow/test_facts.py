@@ -19,8 +19,13 @@ def test_svc():
     pp.create_shunt(net, 3, 0, 0, 345)
     net.shunt["set_vm_pu"] = 1.02
     net.shunt["svc_firing_angle"] = 45.
-    pp.runpp(net, lightsim2grid=False, max_iteration=10)
+    pp.runpp(net, lightsim2grid=False, max_iteration=10, numba=False)
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
+
+    net.shunt.q_mvar = -75.86557458
+    pp.runpp(net)
+    assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
+
 
 
 if __name__ == "__main__":

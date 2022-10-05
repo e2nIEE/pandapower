@@ -20,7 +20,7 @@ from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE
+from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE, QD
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
@@ -247,13 +247,18 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Vm_it = column_stack((Vm_it, Vm))
             Va_it = column_stack((Va_it, Va))
 
-        if voltage_depend_loads or len(svc_buses) > 0:
-            Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
-
         if len(svc_buses) > 0:
             y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * X_L / X_Cvar) / (pi * X_L)  # * np.exp(-1j * np.pi / 2)
             q_svc = abs(V[svc_buses]) ** 2 * y_svc
-            Sbus[svc_buses] -= q_svc*1j
+            bus[svc_buses, QD] = q_svc * baseMVA
+
+        if voltage_depend_loads or len(svc_buses) > 0:
+            Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
+
+        # if len(svc_buses) > 0:
+        #     y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * X_L / X_Cvar) / (pi * X_L)  # * np.exp(-1j * np.pi / 2)
+        #     q_svc = abs(V[svc_buses]) ** 2 * y_svc
+        #     Sbus[svc_buses] -= q_svc*1j
 
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
 
@@ -268,6 +273,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         converged = _check_for_convergence(F, tol)
 
     # todo: return x_control and then use it to calculate q_mvar for net.res_shunt
+    print(Sbus.imag)
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 

@@ -196,7 +196,7 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
     q_mvar = "qs_mvar" if element in ["ward", "xward"] else "q_mvar"
-    scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
+    scaling = el_data["scaling"].values if element not in ["ward", "xward", "shunt"] else 1.0
 
     element_in_service = _is_elements[element]
 
@@ -329,7 +329,7 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     b, p, q = np.array([]), np.array([]), np.array([])
 
     ac = net["_options"]["ac"]
-    elements = ["load", "motor", "sgen", "storage", "ward", "xward",
+    elements = ["load", "motor", "sgen", "storage", "ward", "xward", "shunt",
                 "asymmetric_load", "asymmetric_sgen"]
 
     if net["_options"]["voltage_depend_loads"] and ac:

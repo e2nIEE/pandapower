@@ -12,11 +12,11 @@
 """
 
 from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find, \
-    setdiff1d, intersect1d, r_, isin, arange
+    setdiff1d, intersect1d, r_, isin, arange, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.pypower.idx_bus import VM, VA, PD, QD
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, SVC
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, SL_FAC
 
 EPS = finfo(float).eps
@@ -41,9 +41,11 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=No
     # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus
     Sbus = V * conj(Ybus * V - Ibus)
+    print(Sbus.imag.round(2))
 
     _update_v(bus, V)
     _update_q(baseMVA, bus, gen, gbus, Sbus[gbus], on)
+    _update_q_svc(baseMVA, bus, Sbus)
 
     if limited_gens is not None and len(limited_gens) > 0:
         on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
@@ -139,3 +141,12 @@ def _update_q(baseMVA, bus, gen, gbus, Sbus, on):
         gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
                       (gen[on, QMAX] - gen[on, QMIN])  # ^ avoid div by 0
         gen[on[ig], QG] = Qg_save  # (terms are mult by 0 anyway)
+
+
+def _update_q_svc(baseMVA, bus, Sbus):
+    svc_buses = flatnonzero(nan_to_num(bus[:, SVC]))
+    if len(svc_buses) == 0:
+        return
+
+    # bus[svc_buses, QD] += Sbus[svc_buses].imag * baseMVA
+    print(bus[svc_buses, QD])
