@@ -157,7 +157,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     eq_power = net_external.res_ext_grid.copy()
     eq_power["bus"] = net_external.ext_grid.bus.values
     eq_power["elm"] = "ext_grid"
-    slack_gen = net_external.gen.index[net_external.gen.slack==True]
+    slack_gen = net_external.gen.index[net_external.gen.slack]
     if len(slack_gen) != 0:
         for i in slack_gen:
             new_eq_power = \
@@ -240,7 +240,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     eq_power = net_external.res_ext_grid.copy()
     eq_power["bus"] = net_external.ext_grid.bus.values
     eq_power["elm"] = "ext_grid"
-    slack_gen = net_external.gen.index[net_external.gen.slack==True]
+    slack_gen = net_external.gen.index[net_external.gen.slack]
     if len(slack_gen) != 0:
         for i in slack_gen:
             new_eq_power = \

@@ -721,8 +721,7 @@ def disconnected_elements(net):
         if not section & set(net.ext_grid.bus[net.ext_grid.in_service]).union(
                 net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
                 net.bus.in_service.loc[list(section)]):
-            section_buses = list(net.bus[net.bus.index.isin(section)
-                                         & (net.bus.in_service == True)].index)
+            section_buses = list(net.bus[net.bus.index.isin(section) & net.bus.in_service].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
             section_lines = list(get_connected_elements(net, 'line', section_buses,
                                                         respect_switches=True,
@@ -734,12 +733,9 @@ def disconnected_elements(net):
             section_trafos3w = list(get_connected_elements(net, 'trafo3w', section_buses,
                                                            respect_switches=True,
                                                            respect_in_service=True))
-            section_gens = list(net.gen[net.gen.bus.isin(section)
-                                        & (net.gen.in_service == True)].index)
-            section_sgens = list(net.sgen[net.sgen.bus.isin(section)
-                                          & (net.sgen.in_service == True)].index)
-            section_loads = list(net.load[net.load.bus.isin(section)
-                                          & (net.load.in_service == True)].index)
+            section_gens = list(net.gen[net.gen.bus.isin(section) & net.gen.in_service].index)
+            section_sgens = list(net.sgen[net.sgen.bus.isin(section) & net.sgen.in_service].index)
+            section_loads = list(net.load[net.load.bus.isin(section) & net.load.in_service].index)
 
             if section_buses:
                 section_dict['buses'] = section_buses
@@ -764,15 +760,12 @@ def disconnected_elements(net):
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
     isolated_trafos = set(
         (open_trafo_switches.groupby("element").count().query("bus > 1").index))
-    isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service == True]
-                                                           .index)))
+    isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service].index)))
     if isolated_trafos_is:
         disc_elements.append({'isolated_trafos': list(isolated_trafos_is)})
 
-    isolated_trafos3w = set(
-        (open_trafo_switches.groupby("element").count().query("bus > 2").index))
-    isolated_trafos3w_is = isolated_trafos3w.intersection((
-        set(net.trafo[net.trafo.in_service == True].index)))
+    isolated_trafos3w = set(open_trafo_switches.groupby("element").count().query("bus > 2").index)
+    isolated_trafos3w_is = isolated_trafos3w.intersection(set(net.trafo[net.trafo.in_service].index))
     if isolated_trafos3w_is:
         disc_elements.append({'isolated_trafos3w': list(isolated_trafos3w_is)})
 
