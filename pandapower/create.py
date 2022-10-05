@@ -543,13 +543,13 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
+        **vn_kv** (float) - The grid voltage level.
+
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
         **index** (int, default None) - Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
-
-        **vn_kv** (float) - The grid voltage level.
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
@@ -587,6 +587,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
     if coords is not None:
+        net["bus_geodata"].at[index, "coords"] = None
         net["bus_geodata"].at[index, "coords"] = coords
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
