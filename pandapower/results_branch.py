@@ -617,6 +617,7 @@ def _get_switch_results(net, i_ft, suffix=None):
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
         
+
 def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
 
@@ -636,6 +637,6 @@ def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka
             current, unit = current_parameter.split("_")
             side_current = "{}_{}_{}".format(current, side, unit)
             net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
-    open_switches = net.switch.closed.values==False
+    open_switches = ~net.switch.closed.values
     if any(open_switches):
         net[res_switch_df].loc[open_switches, current_parameter] = 0
