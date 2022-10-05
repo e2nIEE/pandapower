@@ -52,19 +52,20 @@ def init_output_writer(net, time_steps):
     output_writer.init_all(net)
 
 
-def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
-    """
-    Call in a loop to create terminal progress bar.
-    the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filled_length = int(length * iteration // total)
-    bar = fill * filled_length + '-' * (length - filled_length)
-    # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
-    # Print New Line on Complete
-    if iteration == total:
-        print("\n")
+#
+# def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+#     """
+#     Call in a loop to create terminal progress bar.
+#     the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+#     """
+#     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+#     filled_length = int(length * iteration // total)
+#     bar = fill * filled_length + '-' * (length - filled_length)
+#     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
+#     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
+#     # Print New Line on Complete
+#     if iteration == total:
+#         print("\n")
 
 
 def controller_not_converged(time_step, ts_variables):
@@ -83,6 +84,7 @@ def control_time_step(controller_order, time_step):
     for levelorder in controller_order:
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
+
 
 def finalize_step(controller_order, time_step):
     for levelorder in controller_order:

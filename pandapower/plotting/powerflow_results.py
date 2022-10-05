@@ -34,10 +34,9 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         voltage_column = net.res_bus.vm_pu
     if lines is None:
         lines = net.line.index
-    for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
+    for eg in net.ext_grid[net.ext_grid.in_service].bus:
         d = top.calc_distance_to_bus(net, eg)
-        for lix, line in net.line[(net.line.in_service == True) & net.line.index.isin(
-                lines)].iterrows():
+        for lix, line in net.line[net.line.in_service & net.line.index.isin(lines)].iterrows():
             if line.from_bus not in d.index:
                 continue
             if not ((net.switch.element == line.name) & ~net.switch.closed & (

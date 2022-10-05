@@ -429,7 +429,7 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         all_diffs["load_q_diff_is"] = load_q_diff_is
 
     logger.debug('verifying ext_grid')
-    eg_oos = net.ext_grid[net.ext_grid.in_service == False].index
+    eg_oos = net.ext_grid[~net.ext_grid.in_service].index
     ext_grid_p_diff = net.res_ext_grid.pf_p.replace(np.nan, 0).drop(eg_oos) - net.res_ext_grid.p_mw
     ext_grid_q_diff = net.res_ext_grid.pf_q.replace(np.nan, 0).drop(
         eg_oos) - net.res_ext_grid.q_mvar
