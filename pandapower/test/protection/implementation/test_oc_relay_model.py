@@ -23,7 +23,7 @@ from pandapower.protection.implementation.example_grids import *
 from pandapower.protection.implementation.utility_functions import *
 
 # This function test the if manual configuration of oc parameters is provided
-def test_oc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fraction=0.95,
+def test_oc_parameters_automated(switch_id = 2, t_gg=0.07, t_g=0.5, sc_fraction=0.95,
                               overload_factor=1.2, ct_current_factor=1.25,safety_factor=0.9):
     
     net=load_6bus_net_directional(open_loop=True)
@@ -31,7 +31,7 @@ def test_oc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fractio
     
     assert type(net)==pandapower.auxiliary.pandapowerNet, 'net should be pandapower network'
     assert switch_id in net.switch.index, 'given switch id shoulb be in the switch index of the given network'
-    assert  t_ig> t_igg, 't_g shoulbe be greater than t_gg'
+    assert  t_g> t_gg, 't_g shoulbe be greater than t_gg'
     assert 0<sc_fraction<1 , 'sc fraction should be between 0 and 1'
     assert 1<=overload_factor , 'overload should be between greater than or equal to 1'
     assert 0<ct_current_factor, 'ct current factor should be greater than 0'
@@ -39,7 +39,7 @@ def test_oc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fractio
 
     
     # get relay parameters from oc relay based on input parameters
-    relay_parameters = oc.oc_parameters(net, switch_id, t_ig, t_igg, sc_fraction,
+    relay_parameters = oc.oc_parameters(net, switch_id, t_g, t_gg, sc_fraction,
                                         overload_factor, ct_current_factor, safety_factor,oc_pickup_current_manual=None)
 
     #rtol = (B1 - A1)/A1 = 10
@@ -51,11 +51,11 @@ def test_oc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fractio
     assert relay_parameters['Igg_ka']>relay_parameters['Ig_ka'],  'Igg should be alwary greater than Ig'
 
 
-def test_oc_parameters_manual(switch_id=4,t_ig=0.5,t_igg=0.07, relay_parameters= pd.DataFrame({'Relay ID': [4],'Igg': [1.7],'Ig':[0.8]})):
+def test_oc_parameters_manual(switch_id=4,t_g=0.5,t_gg=0.07, relay_parameters= pd.DataFrame({'Relay ID': [4],'Igg': [1.7],'Ig':[0.8]})):
     # The default in the function are used for calculating oc parameters if no user defined values are provided
     net=load_6bus_net_directional(open_loop=True)
     # get relay parameters from oc relay based on input parameters
-    parameters = oc.oc_parameters(net, switch_id, t_ig, t_igg,oc_pickup_current_manual= relay_parameters.loc[0])
+    parameters = oc.oc_parameters(net, switch_id, t_g, t_gg,oc_pickup_current_manual= relay_parameters.loc[0])
     
     # expected result of oc parameters settings
     res_relay_settings = {"net": net, "switch_id": 4, "line_idx": 4, "bus_idx":4,

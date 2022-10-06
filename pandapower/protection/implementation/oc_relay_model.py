@@ -16,7 +16,7 @@ from pandapower.protection.implementation.utility_functions import *
 from pandapower.plotting import simple_plot
 
 # set the parameters
-def oc_parameters(net2, switch_id,t_ig,t_igg, sc_fraction=None, overload_factor=None,
+def oc_parameters(net2, switch_id,t_g,t_gg, sc_fraction=None, overload_factor=None,
                   ct_current_factor=None,safety_factor=None, oc_pickup_current_manual=None): 
     
     net = copy.deepcopy(net2)
@@ -45,7 +45,7 @@ def oc_parameters(net2, switch_id,t_ig,t_igg, sc_fraction=None, overload_factor=
     # dictionary to store the relay settings for each lines
 
     settings = {"net": net, "switch_id": switch_id, "line_idx": line_idx, "bus_idx": bus_idx,
-                "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_ig, "tgg": t_igg}
+                "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_g, "tgg": t_gg}
     
     return settings
 
@@ -62,19 +62,19 @@ def oc_get_trip_decision(net, settings, i_ka):
     switch_id = settings.get("switch_id")
     max_ig = settings.get("Ig_ka")
     max_igg = settings.get("Igg_ka")
-    t_ig = settings.get("tg")
-    t_igg = settings.get("tgg")
+    t_g = settings.get("tg")
+    t_gg = settings.get("tgg")
 
 
     if i_ka > max_igg:
         trip = True
         trip_type = "instantaneous"
-        trip_time = t_igg
+        trip_time = t_gg
         
     elif i_ka > max_ig:
         trip = True
         trip_type = "backup"
-        trip_time = t_ig 
+        trip_time = t_g 
 
     else:
         trip = False
@@ -82,7 +82,7 @@ def oc_get_trip_decision(net, settings, i_ka):
         trip_time = np.inf
      
     trip_decision = {"Switch ID": switch_id,'Switch type':'OC', "Trip": trip, "Fault Current [kA]": i_ka, "Trip Type": trip_type,
-                     "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg, 'tg':t_ig, 't_gg':t_igg}
+                     "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg, 'tg':t_g, 't_gg':t_gg}
     
     return trip_decision
 
@@ -239,3 +239,4 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,tripping_time_auto=None,t
     print(df_decisions)
     
     return trip_decisions, net_sc  
+

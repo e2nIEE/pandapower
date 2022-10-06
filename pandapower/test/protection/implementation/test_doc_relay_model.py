@@ -26,7 +26,7 @@ from pandapower.protection.implementation.utility_functions import *
 
 
 # This function test the if manual configuration of doc parameters
-def test_doc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fraction=0.95,
+def test_doc_parameters_automated(switch_id = 2, t_gg=0.07, t_g=0.5, sc_fraction=0.95,
                               overload_factor=1.2, ct_current_factor=1.25,safety_factor=0.9,
                               relay_configuration= {"switch_3": [2,"CB_dir",
                                                     "forward",86, 45]}):
@@ -38,7 +38,7 @@ def test_doc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fracti
         'net should be pandapower network'
     assert switch_id in net.switch.index,\
         'given switch id shoulb be in the switch index of the given network'
-    assert  t_ig> t_igg, 't_g shoulbe be greater than t_gg'
+    assert  t_g> t_gg, 't_g shoulbe be greater than t_gg'
     assert 0<sc_fraction<1 , 'sc fraction should be between 0 and 1'
     assert 1<=overload_factor , 'overload should be between greater than or equal to 1'
     assert 0<ct_current_factor, 'ct current factor should be greater than 0'
@@ -46,7 +46,7 @@ def test_doc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fracti
 
     
     # get relay parameters from doc relay based on input parameters
-    relay_parameters = doc.doc_parameters(net, switch_id, t_ig, t_igg,
+    relay_parameters = doc.doc_parameters(net, switch_id, t_g, t_gg,
                                           relay_configuration,sc_fraction,
                                         overload_factor, ct_current_factor, safety_factor,doc_pickup_current_manual=None)
 
@@ -76,7 +76,7 @@ def test_doc_parameters_automated(switch_id = 2, t_igg=0.07, t_ig=0.5, sc_fracti
     
 
     # Test the manual configuration of doc parameters
-def test_doc_parameters_manual(switch_id=4,t_ig=0.5,t_igg=0.07, 
+def test_doc_parameters_manual(switch_id=4,t_g=0.5,t_gg=0.07, 
                                relay_parameters= pd.DataFrame({'switch_id': [4],
                                                                'I_gg': [1.7],'I_g':[0.8]}),
                                relay_configuration= {"switch_5": [4,  "CB_dir",
@@ -85,7 +85,7 @@ def test_doc_parameters_manual(switch_id=4,t_ig=0.5,t_igg=0.07,
     net =  load_4bus_net(open_loop =False)
 
     # get relay parameters from doc relay based on input parameters
-    relay_settings = doc.doc_parameters(net, switch_id, t_ig, t_igg,
+    relay_settings = doc.doc_parameters(net, switch_id, t_g, t_gg,
                      relay_configuration,doc_pickup_current_manual= relay_parameters.iloc[0])
     
     # expected result of doc parameters settings

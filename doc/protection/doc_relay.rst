@@ -28,6 +28,6 @@ EXAMPLE:
                             "switch_3": [2,"CB_dir","forward",86,45],
                             "switch_4": [3,"CB_dir","forward",86,45],
                             "switch_5": [4,"CB_dir", "forward",86,45]}
-    trip_decisions = doc_protection.run_fault_scenario_doc(net,sc_line_id =2,sc_location = 0.5,
+    trip_decision,net_sc = doc_protection.run_fault_scenario_doc(net,sc_line_id =2,sc_location = 0.5,
                      relay_configuration= relay_configuration,tripping_time_auto=[0.07,0.5,0.3])                                          
                                             

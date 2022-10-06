@@ -8,12 +8,12 @@ import pandapower as pp
 import numpy as np
 import pandas as pd
 import math
-from pandaplan.core.protection.implementation.utility_functions import *
+from pandapower.protection.implementation.utility_functions import *
 import warnings
 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
 
 # set the parameters
-def doc_parameters(net2, switch_id,t_ig,t_igg,relay_configuration, sc_fraction=None,overload_factor=None,
+def doc_parameters(net2, switch_id,t_g,t_gg,relay_configuration, sc_fraction=None,overload_factor=None,
                   ct_current_factor=None, safety_factor=None,  doc_pickup_current_manual=None):  # all the factors can be re-considered
 
     # load the reference network
@@ -57,7 +57,7 @@ def doc_parameters(net2, switch_id,t_ig,t_igg,relay_configuration, sc_fraction=N
 
     # dictionary to store the relay settings for each lines
     settings = {"net": net, "switch_id": switch_id, "line_idx": line_idx, "bus_idx": bus_idx,
-                "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_ig,"tgg": t_igg, "MTA": MTA, "direction":direction,"OSA":OSA, "RCA": RCA}
+                "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_g,"tgg": t_gg, "MTA": MTA, "direction":direction,"OSA":OSA, "RCA": RCA}
     
     return settings
 
@@ -80,8 +80,8 @@ def doc_get_trip_decision(net, settings, i_ka,vi_angle):
         OSA=settings.get("OSA")
         RCA=settings.get("RCA")
         MTA= settings.get("MTA")
-        t_ig = settings.get("tg")
-        t_igg = settings.get("tgg")
+        t_g = settings.get("tg")
+        t_gg = settings.get("tgg")
         
         if vi_angle>=180+MTA or 0<vi_angle<MTA:
         #if  vi_angle>=MTA:
@@ -103,13 +103,13 @@ def doc_get_trip_decision(net, settings, i_ka,vi_angle):
         if i_ka > max_igg and dir_trip==True:
             trip = True
             trip_type = "instantaneous"
-            trip_time = t_igg
+            trip_time = t_gg
             
 
         elif i_ka > max_ig and dir_trip==True:
             trip = True
             trip_type = "backup"
-            trip_time = t_ig
+            trip_time = t_g
             
 
         else:
@@ -118,7 +118,7 @@ def doc_get_trip_decision(net, settings, i_ka,vi_angle):
             trip_time = np.inf
             
         trip_decision = {"Switch ID": switch_id, 'Switch type': 'DOC', "Trip": trip, "Fault Current [kA]": i_ka, "Trip Type": trip_type,
-                         "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg,'tg':t_ig, 't_gg':t_igg,'MTA':MTA,
+                         "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg,'tg':t_g, 't_gg':t_gg,'MTA':MTA,
                          'vi_angle':vi_angle,"Relay direction":direction, "Zone":zone}
 
         
