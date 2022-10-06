@@ -151,6 +151,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
         pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
     pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
+    # During the pm-generation, the pm-data is processed accorting to baseMVA=1.0
+    # Thus, the baseMVA für PowerModels is set to 1.0. 
+    pm["baseMVA"] = 1.0
     return net, pm, ppc, ppci
 
 
@@ -526,14 +529,14 @@ def add_params_to_pm(net, pm):
                         ppcrow_t = 0
                         assert side in ["to", "lv"]
 
-                    pm["user_defined_params"][bp][k]["f_bus"] = \
-                        int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
-                    pm["user_defined_params"][bp][k]["t_bus"] = \
-                        int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
                     # pm["user_defined_params"][bp][k]["f_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                    #     int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
                     # pm["user_defined_params"][bp][k]["t_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+                    #     int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
+                    pm["user_defined_params"][bp][k]["f_bus"] = \
+                        net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                    pm["user_defined_params"][bp][k]["t_bus"] = \
+                        net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
 
     # add controllable sgen:
     dic = {}

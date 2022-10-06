@@ -697,10 +697,10 @@ def test_runpm_qflex_and_multi_qflex():
 
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
         test_storage_opt()
-        # test_runpm_multi_vstab()
-        # test_runpm_qflex_and_multi_qflex()
-    pass
+        test_runpm_multi_vstab()
+        test_runpm_qflex_and_multi_qflex()
+
