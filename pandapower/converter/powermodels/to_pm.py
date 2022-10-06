@@ -151,7 +151,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
         pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
     pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
-    # During the pm-generation, the pm-data is processed accorting to baseMVA=1.0
+    # During the pm-generation, the pm-data is processed according to baseMVA=1.0.
     # Thus, the baseMVA für PowerModels is set to 1.0. 
     pm["baseMVA"] = 1.0
     return net, pm, ppc, ppci
