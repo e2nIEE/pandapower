@@ -529,14 +529,14 @@ def add_params_to_pm(net, pm):
                         ppcrow_t = 0
                         assert side in ["to", "lv"]
 
-                    # pm["user_defined_params"][bp][k]["f_bus"] = \
-                    #     int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
-                    # pm["user_defined_params"][bp][k]["t_bus"] = \
-                    #     int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
                     pm["user_defined_params"][bp][k]["f_bus"] = \
-                        net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                        int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
                     pm["user_defined_params"][bp][k]["t_bus"] = \
-                        net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
+                        int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
+                    # pm["user_defined_params"][bp][k]["f_bus"] = \
+                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
+                    # pm["user_defined_params"][bp][k]["t_bus"] = \
+                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
 
     # add controllable sgen:
     dic = {}
