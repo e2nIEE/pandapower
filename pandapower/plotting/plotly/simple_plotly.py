@@ -164,6 +164,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                               branch_trace_func=create_line_trace,
                                               node_trace_func=create_bus_trace,
                                               hoverinfo_func=get_hoverinfo,
+                                              filename=filename,
                                               auto_open=auto_open,
                                               showlegend=showlegend)
 
