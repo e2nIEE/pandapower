@@ -584,15 +584,19 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     sn_impedance = impedance["sn_mva"].values
     sn_net = net.sn_mva
     suffix = "0" if zero_sequence else ""
+
     rij = impedance[f"rft{suffix}_pu"].values
     xij = impedance[f"xft{suffix}_pu"].values
     rji = impedance[f"rtf{suffix}_pu"].values
     xji = impedance[f"xtf{suffix}_pu"].values
 
-    r = rij / sn_impedance * sn_net
-    x = xij / sn_impedance * sn_net
-    r_asym = (rji - rij) / sn_impedance * sn_net
-    x_asym = (xji - xij) / sn_impedance * sn_net
+    mode = net["_options"]["mode"]
+    sn_factor = 3. if mode == 'pf_3ph' and zero_sequence else 1.
+
+    r = rij / (sn_impedance * sn_factor) * sn_net
+    x = xij / (sn_impedance * sn_factor) * sn_net
+    r_asym = (rji - rij) / (sn_impedance * sn_factor) * sn_net
+    x_asym = (xji - xij) / (sn_impedance * sn_factor) * sn_net
     return r, x, r_asym, x_asym
 
 
