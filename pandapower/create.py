@@ -3578,6 +3578,10 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
 
+    if rft_pu is None or xft_pu is None or (rft0_pu is None and rtf0_pu is not None) or \
+            (xft0_pu is None and xtf0_pu is not None):
+        raise UserWarning("*ft_pu parameters are missing for impedance element")
+
     if rtf_pu is None:
         rtf_pu = rft_pu
     if xtf_pu is None:
