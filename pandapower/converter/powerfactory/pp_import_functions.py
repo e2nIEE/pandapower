@@ -12,7 +12,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
+logger = logging.getLogger(__name__)
 
 
 # make wrapper for GetAttribute
@@ -534,31 +534,32 @@ def import_switch(item, idx_cubicle):
     switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS"}
     cub = item.GetCubicle(idx_cubicle)
     if cub is None:
-        return None, None
+        return None, None, None
     switches = cub.GetContents('*.StaSwitch')
     if len(switches) > 1:
         logger.error('more then 1 switch found for %s: %s' % (item, switches))
     if len(switches) != 0:
         switch = switches[0]
         switch_in_service = not bool(switch.outserv) if switch.HasAttribute('outserv') else True
+        switch_name = switch.cDisplayName
         if not switch.HasAttribute('isclosed'):
             logger.warning('switch %s does not have the attribute isclosed!!!' % switch)
         switch_is_closed = bool(switch.on_off) and bool(switch.isclosed) and switch_in_service
         switch_usage = switch_types.get(switch.aUsage, 'unknown')
-        return switch_is_closed, switch_usage
+        return switch_is_closed, switch_usage, switch_name
     else:
-        return None, None
+        return None, None, None
 
 
 def create_connection_switches(net, item, number_switches, et, buses, elements):
     # False if open, True if closed, None if no switch
     logger.debug('creating connection switches')
     for i in range(number_switches):
-        switch_is_closed, switch_usage = import_switch(item, i)
+        switch_is_closed, switch_usage, switch_name = import_switch(item, i)
         logger.debug('switch closed: %s, switch_usage: %s' % (switch_is_closed, switch_usage))
         if switch_is_closed is not None:
             cd = pp.create_switch(net, bus=buses[i], element=elements[i], et=et,
-                                  closed=switch_is_closed, type=switch_usage)
+                                  closed=switch_is_closed, type=switch_usage, name=switch_name)
             net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
 
 
@@ -998,7 +999,7 @@ def monopolar_in_service(item):
     in_service = not bool(item.outserv)
 
     # False if open, True if closed, None if no switch
-    switch_is_closed, switch_usage = import_switch(item, 0)
+    switch_is_closed, _ , _ = import_switch(item, 0)
     if switch_is_closed is not None:
         logger.debug('element in service: <%s>, switch is closed: <%s>' %
                      (in_service, switch_is_closed))
@@ -2268,7 +2269,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
         side = np.nonzero(steps)[0]
         if len(side) > 1:
-            logger.warning("panadpower currently doesn't support 3w transformer with"
+            logger.warning("pandapower currently doesn't support 3w transformer with"
                            "multiple tap changers")
         elif len(side) == 1:
             ts = ["h", "m", "l"][side[0]]

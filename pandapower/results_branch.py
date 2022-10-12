@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
+from pandapower.pypower.idx_brch_tdpf import TDPF
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 
 
@@ -139,12 +140,19 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
 
     # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
-    if net["_options"]["consider_line_temperature"]:
+    if net["_options"]["consider_line_temperature"] or net["_options"].get("tdpf", False):
         base_kv = ppc["bus"][from_bus, BASE_KV]
         baseR = np.square(base_kv) / net.sn_mva
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
         res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
+
+        if net["_options"].get("tdpf", False):
+            tdpf_lines = ppc["internal"]['branch_is'][f:t] & np.nan_to_num(ppc['branch'][f:t, TDPF]).real.astype(bool)
+            res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
+            no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
+            res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
@@ -334,7 +342,9 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
                                   [net.res_bus_3ph['vm_c_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]]])
 
             # Branch Elements
-            i_branch = np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0]
+            i_branch = np.concatenate((np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0],
+                                       np.where(ppc0['branch'][:, T_BUS] == lv_bus)[0]))
+            i_branch = np.delete(i_branch, np.where(i_branch == i_trafo + f))  # delete the trafo itself from the list
             if len(i_branch > 0):
                 I_branch_012 = I012_f[:, i_branch]
                 I_branch_abc = sequence_to_phase(I_branch_012)
@@ -344,12 +354,13 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
             # Loads
             load_index = np.where(net.asymmetric_load['bus'] == lv_bus)[0]
             if len(load_index > 0):
-                S_load_abc = abs(np.array([net.res_asymmetric_load_3ph['p_a_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index]),
-                                           net.res_asymmetric_load_3ph['p_b_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index]),
-                                           net.res_asymmetric_load_3ph['p_c_mw'][load_index]
-                                           + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index])]))
+                S_load_abc = abs(np.array([
+                    np.array(net.res_asymmetric_load_3ph['p_a_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index])),
+                    np.array(net.res_asymmetric_load_3ph['p_b_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index])),
+                    np.array(net.res_asymmetric_load_3ph['p_c_mw'][load_index]
+                             + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index]))]))
                 I_load_abc = S_load_abc / (V_bus_abc / np.sqrt(3))
                 for x in range(len(I_load_abc[0])):
                     Iabc_sum += I_load_abc[:, x]
@@ -357,12 +368,13 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
             # Sgens
             sgen_bus_index = np.where(net.asymmetric_sgen['bus'] == lv_bus)[0]
             if len(sgen_bus_index > 0):
-                S_sgen_abc = abs(np.array([net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index]),
-                                           net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index]),
-                                           net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
-                                           + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index])]))
+                S_sgen_abc = abs(np.array([
+                    np.array(net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index])),
+                    np.array(net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index])),
+                    np.array(net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
+                             + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index]))]))
                 I_sgen_abc = S_sgen_abc / (V_bus_abc / np.sqrt(3))
                 for x in range(len(I_sgen_abc[0])):
                     Iabc_sum -= I_sgen_abc[:, x]
@@ -592,12 +604,39 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
 
 
 def _get_switch_results(net, i_ft, suffix=None):
-    if not "switch" in net._pd2ppc_lookups["branch"]:
+    if len(net.switch) == 0:
         return
-    f, t = net._pd2ppc_lookups["branch"]["switch"]
-    with np.errstate(invalid='ignore'):
-        i_ka = np.max(i_ft[f:t], axis=1)
-
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
-    net[res_switch_df] = pd.DataFrame(data=i_ka, columns=["i_ka"],
-                                      index=net.switch[net._impedance_bb_switches].index)
+
+    if "switch" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["switch"]
+        with np.errstate(invalid='ignore'):
+            i_ka = np.max(i_ft[f:t], axis=1)
+        net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
+    _copy_switch_results_from_branches(net, suffix)
+    if "in_ka" in net.switch.columns:
+        net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
+        
+
+def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
+    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
+
+    switch_lines = net.switch.element[net.switch.et=="l"]
+    if len(switch_lines) > 0:
+        res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
+        net[res_switch_df].loc[switch_lines.index, current_parameter] = net[res_line_df].loc[switch_lines.values, current_parameter].values
+        
+    switch_trafo = net.switch[net.switch.et.values=="t"]
+    if len(switch_trafo) > 0:
+        res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
+        for side in ["hv", "lv"]:
+            buses = net.trafo["{}_bus".format(side)].loc[switch_trafo.element.values].values
+            side_switch_trafo = switch_trafo[switch_trafo.bus.values==buses]
+            switches = side_switch_trafo.index
+            trafos = side_switch_trafo.element.values
+            current, unit = current_parameter.split("_")
+            side_current = "{}_{}_{}".format(current, side, unit)
+            net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
+    open_switches = ~net.switch.closed.values
+    if any(open_switches):
+        net[res_switch_df].loc[open_switches, current_parameter] = 0

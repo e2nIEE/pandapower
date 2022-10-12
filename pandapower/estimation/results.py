@@ -17,7 +17,7 @@ def _calc_power_flow(ppci, V):
     # calculate branch results (in ppc_i)
     baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
     Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
-    ppci['bus'], ppci['gen'], ppci['branch'] =\
+    ppci['bus'], ppci['gen'], ppci['branch'] = \
         pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
 
     # calculate bus power injections

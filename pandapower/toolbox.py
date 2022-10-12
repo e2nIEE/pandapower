@@ -12,9 +12,9 @@ from itertools import chain
 import networkx as nx
 import numpy as np
 import pandas as pd
+import pandas.testing as pdt
 import numbers
-from packaging import version
-from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
@@ -22,10 +22,6 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 
-try:
-    import pandas.testing as pdt
-except ImportError:
-    import pandas.util.testing as pdt
 
 try:
     from networkx.utils.misc import graphs_equal
@@ -73,7 +69,11 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     """
     Returns a set of pandapower elements.
     """
-    pp_elms = set(["bus"]) if bus else set()
+    pp_elms = set()
+    if bus:
+        pp_elms |= {"bus"}
+        if res_elements:
+            pp_elms |= {"res_bus"}
     pp_elms |= set([el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
     if other_elements:
@@ -83,17 +83,21 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     return pp_elms
 
 
-def branch_element_bus_dict(include_switch=False):
+def branch_element_bus_dict(include_switch=False, sort=False):
     """
     Returns a dict with keys of branch elements and values of bus column names as list.
     """
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
-    branch_elements = {ebt[0] for ebt in ebts}
-    bebd = {elm: [] for elm in branch_elements}
+    bebd = dict()
     for elm, bus in ebts:
-        bebd[elm].append(bus)
+        if elm in bebd.keys():
+            bebd[elm].append(bus)
+        else:
+            bebd[elm] = [bus]
     if not include_switch:
         del bebd["switch"]
+    if sort:
+        bebd = {elm: sorted(buses) for elm, buses in bebd.items()}
     return bebd
 
 
@@ -302,19 +306,6 @@ def compare_arrays(x, y):
         return np.equal(x, y) | ((x != x) & (y != y))
     else:
         raise ValueError("x and y needs to have the same shape.")
-
-
-def ensure_iterability(var, len_=None):
-    """
-    Ensures iterability of a variable (and optional length).
-    """
-    if hasattr(var, "__iter__") and not isinstance(var, str):
-        if isinstance(len_, int) and len(var) != len_:
-            raise ValueError("Length of variable differs from %i." % len_)
-    else:
-        len_ = len_ or 1
-        var = [var] * len_
-    return var
 
 
 # --- Information
@@ -715,6 +706,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
     pandapower net keys starting with "_" are ignored. Same for the key "et" (elapsed time).
 
+    If the element tables contain JSONSerializableClass objects, they will also be compared:
+    attributes are compared but not the addresses of the objects.
+
     INPUT:
         **net1** (pandapower net)
 
@@ -734,6 +728,9 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
         **kwargs** - key word arguments for dataframes_equal()
     """
+    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
+        logger.warning("At least one net is not of type pandapowerNet.")
+        return False
     not_equal, not_checked_keys = _nets_equal_keys(
         net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
         **kwargs)
@@ -752,10 +749,6 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
                      name_selection, **kwargs):
     """ Returns a lists of keys which are 1) not equal and 2) not checked.
     Used within nets_equal(). """
-    if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
-        logger.warning("At least one net is not of type pandapowerNet.")
-        return False
-
     if check_without_results and check_only_results:
         raise UserWarning("Please provide only one of the options to check without results or to "
                           "exclude results in comparison.")
@@ -784,37 +777,22 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
     not_checked_keys = list()
 
     if len(key_difference) > 0:
-        logger.warning("Networks entries mismatch at: %s" % key_difference)
-        return False
+        logger.warning(f"Networks entries mismatch at: {key_difference}")
+        return key_difference, set()
 
     # ... and then iter through the keys, checking for equality for each table
     for key in list(keys_to_check):
 
         if isinstance(net1[key], pd.DataFrame):
-            if not isinstance(net2[key], pd.DataFrame):
+            if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(net1[key], net2[key], **kwargs):
                 not_equal.append(key)
-            else:
-                if "object" in net1[key].columns and "object" in net2[key].columns and \
-                        isinstance(net1[key].object.dtype, object) and \
-                        isinstance(net1[key].object.dtype, object):
-                    logger.warning("net[%s]['object'] cannot be compared." % key)
-                    if not dataframes_equal(net1[key][net1[key].columns.difference(["object"])],
-                                            net2[key][net2[key].columns.difference(["object"])],
-                                            **kwargs):
-                        not_equal.append(key)
-                elif not dataframes_equal(net1[key], net2[key], **kwargs):
-                    not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):
             if not isinstance(net2[key], np.ndarray):
                 not_equal.append(key)
             else:
-                if version.parse(np.__version__) < version.parse("0.19"):
-                    if not compare_arrays(net1[key], net2[key]).all():
-                        not_equal.append(key)
-                else:
-                    if not np.array_equal(net1[key], net2[key], equal_nan=True):
-                        not_equal.append(key)
+                if not np.array_equal(net1[key], net2[key], equal_nan=True):
+                    not_equal.append(key)
 
         elif isinstance(net1[key], int) or isinstance(net1[key], float) or \
                 isinstance(net1[key], complex):
@@ -1184,16 +1162,9 @@ def set_data_type_of_columns_to_default(net):
                     if new_net[key][col].dtype == net[key][col].dtype:
                         continue
                     if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
+                        net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                         errors="ignore")
 
 
 # --- Modify topology
@@ -1253,6 +1224,7 @@ def drop_buses(net, buses, drop_elements=True):
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
+    drop_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
@@ -1286,6 +1258,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 drop_trafos(net, eid, table=element)
             else:
                 n_el = net[element].shape[0]
+                drop_from_groups(net, element, eid)
                 net[element].drop(eid, inplace=True)
                 # res_element
                 res_element = "res_" + element
@@ -1294,6 +1267,10 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                     net[res_element].drop(res_eid, inplace=True)
                 if net[element].shape[0] < n_el:
                     logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
+                # drop costs for the affected elements
+                for cost_elm in ["poly_cost", "pwl_cost"]:
+                    net[cost_elm].drop(net[cost_elm].index[(net[cost_elm].et == element) &
+                                                           (net[cost_elm].element.isin(eid))], inplace=True)
     if drop_measurements:
         drop_measurements_at_elements(net, "bus", idx=buses)
 
@@ -1309,6 +1286,7 @@ def drop_trafos(net, trafos, table="trafo"):
     et = "t" if table == 'trafo' else "t3"
     # remove any affected trafo or trafo3w switches
     i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
+    drop_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
     num_switches = len(i)
 
@@ -1316,6 +1294,7 @@ def drop_trafos(net, trafos, table="trafo"):
     drop_measurements_at_elements(net, table, idx=trafos)
 
     # drop the trafos
+    drop_from_groups(net, table, trafos)
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
@@ -1329,12 +1308,14 @@ def drop_lines(net, lines):
     """
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
+    drop_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
 
     # drop measurements
     drop_measurements_at_elements(net, "line", idx=lines)
 
     # drop lines and geodata
+    drop_from_groups(net, "line", lines)
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
@@ -1452,7 +1433,7 @@ def set_element_status(net, buses, in_service):
                 and "in_service" in net[element].columns:
             try:
                 idx = get_connected_elements(net, element, buses)
-                net[element].loc[idx, 'in_service'] = in_service
+                net[element].loc[list(idx), 'in_service'] = in_service
             except:
                 pass
 
@@ -1466,7 +1447,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
-    set_element_status(net, unsupplied, False)
+    set_element_status(net, list(unsupplied), False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
@@ -1499,6 +1480,7 @@ def drop_elements_simple(net, element, idx):
     Drop elements and result entries from pandapower net.
     """
     idx = ensure_iterability(idx)
+    drop_from_groups(net, element, idx)
     net[element].drop(idx, inplace=True)
 
     # res_element
@@ -1565,6 +1547,95 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
+def drop_from_group(net, index, element_type, element_index):
+    """Drops elements from the group of given index.
+    No errors are raised if elements are passed to be drop from groups which alread don't have these
+    elements as members.
+    A reverse function is available -> pp.group.append_to_group().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group from which the element should be dropped
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    """
+    drop_from_groups(net, element_type, element_index, index=index)
+
+
+def drop_from_groups(net, element_type, element_index, index=None):
+    """Drops elements from one or multple groups, defined by 'index'.
+    No errors are raised if elements are passed to be drop from groups which alread don't have these
+    elements as members.
+    A reverse function is available -> pp.group.append_to_group().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    index : int or list of integers, optional
+        Indices of the group(s) from which the element should be dropped. If None, the elements are
+        dropped from all groups, by default None
+    """
+    if index is None:
+        index = net.group.index
+    element_index = pd.Index(ensure_iterability(element_index), dtype=int)
+
+    to_check = np.isin(net.group.index.values, index)
+    to_check &= net.group.element_type.values == element_type
+    keep = np.ones(net.group.shape[0], dtype=bool)
+
+    for i in np.arange(len(to_check), dtype=int)[to_check]:
+        rc = net.group.reference_column.iat[i]
+        if rc is None or pd.isnull(rc):
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(
+                element_index).tolist()
+        else:
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(pd.Index(
+                net[element_type][rc].loc[element_index.intersection(
+                    net[element_type].index)])).tolist()
+
+        if not len(net.group.element.iat[i]):
+            keep[i] = False
+    net.group = net.group.loc[keep]
+
+
+def drop_group(net, index):
+    """Drops the group of given index.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group which should be dropped
+    """
+    net.group.drop(index, inplace=True)
+
+
+def drop_group_and_elements(net, index):
+    """
+    Drops all elements of the group and in net.group the group itself.
+    """
+    # functions like drop_trafos, drop_lines, drop_buses are not considered since all elements
+    # should be included in elements_dict
+    for et in net.group.loc[index, "element_type"].tolist():
+        idx = group_element_index(net, index, et)
+        net[et].drop(idx.intersection(net[et].index), inplace=True)
+        res_et = "res_" + et
+        if res_et in net.keys() and net[res_et].shape[0]:
+            net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
+    net.group.drop(index, inplace=True)
+
+
 def _select_cost_df(net, p2, cost_type):
     isin = np.array([False] * net[cost_type].shape[0])
     for et in net[cost_type].et.unique():
@@ -1629,6 +1700,16 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
+    relevant_characteristics = set()
+    for col in ("vk_percent_characteristic", "vkr_percent_characteristic"):
+        if col in net.trafo.columns:
+            relevant_characteristics |= set(net.trafo[~net.trafo[col].isnull(), col].values)
+    for col in (f"vk_hv_percent_characteristic", f"vkr_hv_percent_characteristic",
+                f"vk_mv_percent_characteristic", f"vkr_mv_percent_characteristic",
+                f"vk_lv_percent_characteristic", f"vkr_lv_percent_characteristic"):
+        if col in net.trafo3w.columns:
+            relevant_characteristics |= set(net.trafo3w[~net.trafo3w[col].isnull(), col].values)
+    p2.characteristic = net.characteristic.loc[list(relevant_characteristics)]
 
     _select_cost_df(net, p2, "poly_cost")
     _select_cost_df(net, p2, "pwl_cost")
@@ -1664,7 +1745,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-               create_continuous_bus_indices=True, **kwargs):
+               create_continuous_bus_indices=True,
+               retain_original_indices_in_net1=False, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1719,14 +1801,17 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            ignore_index = element not in ("bus", "res_bus", "bus_geodata", "line_geodata")
+            elm_with_critical_index = element in ("bus", "res_bus", "bus_geodata", "line_geodata",
+                                                  "group")
+            ignore_index = not retain_original_indices_in_net1 and not elm_with_critical_index
             dtypes = net[element].dtypes
-            try:
-                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index,
-                                         sort=False)
-            except:
-                # pandas legacy < 0.21
-                net[element] = pd.concat([net[element], net2[element]], ignore_index=ignore_index)
+            net[element] = pd.concat([net[element], net2[element]], sort=False,
+                                     ignore_index=ignore_index)
+            if retain_original_indices_in_net1 and not elm_with_critical_index and \
+                len(net1[element]):
+                start = int(net1[element].index.max()) + 1
+                net[element].index = net1[element].index.tolist() + \
+                    list(range(start, len(net2[element]) + start))
             _preserve_dtypes(net[element], dtypes)
     # update standard types of net by data of net2
     for type_ in net.std_types.keys():
@@ -1815,8 +1900,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # check switching state and add line switch if necessary:
     for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
-                             (net.switch.et == "l")].bus.values:
+        if bus in net.switch[~net.switch.closed & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
@@ -1884,8 +1968,8 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
 
     OPTIONAL:
         **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
-        elements dataframes. This column informs about which lines are the result of a merge of
-        generation plants.
+        elements dataframes. This column informs about which element table rows are the result of a
+        merge of generation plants.
 
         **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
 
@@ -2076,12 +2160,13 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
         given, the sn_mva values of the impedances are considered.
     """
-    index = ensure_iterability(index) if index is not None else net.line.index
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
-    for (_, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
+    for (idx, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
         if not np.isclose(imp.rft_pu, imp.rtf_pu) or not np.isclose(imp.xft_pu, imp.xtf_pu):
             if only_valid_replace:
+                index.remove(idx)
                 continue
             logger.error("impedance differs in from or to bus direction. lines always " +
                          "parameters always pertain in both direction. only from_bus to " +
@@ -2115,7 +2200,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         leads to equal power flow results. If False, capacitance and dielectric conductance will
         be neglected.
     """
-    index = ensure_iterability(index) if index is not None else net.line.index
+    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
     sn_mva = sn_mva or net.sn_mva
     sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
     sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
@@ -2126,8 +2211,9 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     for idx, line_ in net.line.loc[index].iterrows():
         if line_.c_nf_per_km or line_.g_us_per_km:
             if only_valid_replace:
+                index.remove(idx)
                 continue
-            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
+            logger.error(f"Capacitance and dielectric conductance of line {idx} cannot be "
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
@@ -2222,10 +2308,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
         to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_gen = pd.concat([net.res_gen, to_add])
-        else:
-            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
+        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
     return new_idx
 
@@ -2305,10 +2388,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         in_res = pd.Series(gens).isin(net["res_gen"].index).values
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add])
-        else:
-            net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
+        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
         net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
@@ -2390,10 +2470,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         in_res = pd.Series(gens).isin(net["res_gen"].index).values
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_sgen = pd.concat([net.res_sgen, to_add])
-        else:
-            net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
+        net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
         net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
     return new_idx
 
@@ -2443,7 +2520,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
 
     existing_cols_to_keep = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(
         cols_to_keep)
-    # add missing columns to net.gen which should be kept
+    # add columns which should be kept from sgen but miss in gen to net.gen
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
         net.gen[col] = np.nan
@@ -2491,10 +2568,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
         to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net.res_gen = pd.concat([net.res_gen, to_add])
-        else:
-            net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
+        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
         net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
     return new_idx
 
@@ -2610,10 +2684,7 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
         in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
         to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        if version.parse(pd.__version__) < version.parse("0.23"):
-            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add])
-        else:
-            net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
+        net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
         net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 
@@ -2745,9 +2816,9 @@ def get_element_index(net, element, name, exact_match=True):
     if exact_match:
         idx = net[element][net[element]["name"] == name].index
         if len(idx) == 0:
-            raise UserWarning("There is no %s with name %s" % (element, name))
+            raise UserWarning(f"There is no {element} with name {name}")
         if len(idx) > 1:
-            raise UserWarning("Duplicate %s names for %s" % (element, name))
+            raise UserWarning(f"Duplicate {element} names for {name}")
         return idx[0]
     else:
         return net[element][net[element]["name"].str.contains(name)].index
@@ -2874,6 +2945,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
     elif element == "measurement":
+        element_table = net[element]
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
                                                        (net.measurement.element_type == "bus")])
     elif element in pp_elements(bus=False, branch_elements=False):
@@ -2892,7 +2964,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
                                                 net.switch.element.isin(connected_elements)].index
             connected_elements -= set(net.switch.element[open_and_connected])
 
-    if respect_in_service:
+    if respect_in_service and "in_service" in element_table and not element_table.empty:
         connected_elements -= set(element_table[~element_table.in_service].index)
 
     return connected_elements
@@ -2968,8 +3040,8 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         connected_lvb_trafos = set(net.trafo.index[(
             net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
             in_service_constr])
-        cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
-        cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_lvb_trafos)].hv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_hvb_trafos)].lv_bus.values)
 
     # Gives the lv mv and hv buses of a 3 winding transformer
     if "t3" in consider or 'trafo3w' in consider:
@@ -2987,15 +3059,15 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         else:
             opened_buses_hv = opened_buses_mv = opened_buses_lv = set()
 
-        hvb_trafos3w = set(net.trafo3w.index[
+        hvb_trafos3w = net.trafo3w.index[
             net.trafo3w.hv_bus.isin(buses) & ~net.trafo3w.hv_bus.isin(opened_buses_hv) &
-            in_service_constr3w])
-        mvb_trafos3w = set(net.trafo3w.index[
+            in_service_constr3w]
+        mvb_trafos3w = net.trafo3w.index[
             net.trafo3w.mv_bus.isin(buses) & ~net.trafo3w.mv_bus.isin(opened_buses_mv) &
-            in_service_constr3w])
-        lvb_trafos3w = set(net.trafo3w.index[
+            in_service_constr3w]
+        lvb_trafos3w = net.trafo3w.index[
             net.trafo3w.lv_bus.isin(buses) & ~net.trafo3w.lv_bus.isin(opened_buses_lv) &
-            in_service_constr3w])
+            in_service_constr3w]
 
         cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(
             net.trafo3w.loc[hvb_trafos3w].lv_bus) - opened_buses_mv - opened_buses_lv)
@@ -3357,3 +3429,73 @@ def _write_to_object_attribute(net, element, index, variable, values):
             setattr(net[element]["object"].at[idx], variable, val)
     else:
         setattr(net[element]["object"].at[index], variable, values)
+
+# group function
+
+def group_row(net, index, element_type):
+    """Returns the row which consists the data of the requested group index and element type.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group
+    element_type : str
+        element type (defines which row of the data of the group should be returned)
+
+    Returns
+    -------
+    pandas.Series
+        data of net.group, defined by the index of the group and the element type
+
+    Raises
+    ------
+    KeyError
+        Now row exist for the requested group and element type
+    ValueError
+        Multiple rows exist for the requested group and element type
+    """
+    group_df = net.group.loc[[index]].set_index("element_type")
+    try:
+        row = group_df.loc[element_type]
+    except KeyError:
+        raise KeyError(f"Group {index} has no {element_type}s.")
+    if isinstance(row, pd.Series):
+        return row
+    elif isinstance(row, pd.DataFrame):
+        raise ValueError(f"Multiple {element_type} rows for group {index}")
+    else:
+        raise ValueError(f"Returning row {element_type} for group {index} failed.")
+
+
+def group_element_index(net, index, element_type):
+    """Returns the indices of the elements of the group in the element table net[element_type]. This
+    function considers net.group.reference_column.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group
+    element_type : str
+        name of the element table to which the returned indices of the elements of the group belong
+        to
+
+    Returns
+    -------
+    pd.Index
+        indices of the elements of the group in the element table net[element_type]
+    """
+    if element_type not in net.group.loc[[index], "element_type"].values:
+        return pd.Index([], dtype=int)
+
+    row = group_row(net, index, element_type)
+    element = row.at["element"]
+    reference_column = row.at["reference_column"]
+
+    if reference_column is None or pd.isnull(reference_column):
+        return pd.Index(element, dtype=int)
+
+    return net[element_type].index[net[element_type][reference_column].isin(element)]

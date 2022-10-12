@@ -39,17 +39,20 @@ def version_check():
                           "Please upgrade your python-plotly installation, "
                           "e.g., via pip install --upgrade plotly")
     if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning("Your plotly version {} is no longer supported.\r\n"
+        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
                           "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly".format(__version__))
+                          "e.g., via pip install --upgrade plotly")
 
 
 def _in_ipynb():
     """
     An auxiliary function which checks if plot is called from a jupyter-notebook or not
     """
-    from IPython import get_ipython
-    return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    try:
+        from IPython import get_ipython
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except ImportError:
+        return False
 
 
 def sum_line_length(pts):
@@ -78,7 +81,7 @@ def get_line_neutral(coord):
 
 def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="white", infofunc=None,
                              trace_name='edge_center', use_line_geodata=False, showlegend=False,
-                             legendgroup=None):
+                             legendgroup=None, hoverlabel=None):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -109,6 +112,8 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                         marker=dict(color=color, size=size, symbol=patch_type),
                         showlegend=showlegend, legendgroup=legendgroup)
+    if hoverlabel is not None:
+        center_trace.update({'hoverlabel': hoverlabel})
 
     if not use_line_geodata:
         center_trace['x'], center_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
@@ -352,7 +357,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
-                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent'):
+                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
     """
     Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the
     more generic _create_line_trace function.
@@ -418,7 +423,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                                 branch_element=branch_element,
                                 separator_element=separator_element,
                                 node_element=node_element,
-                                cmap_vals_category=cmap_vals_category)
+                                cmap_vals_category=cmap_vals_category,
+                                hoverlabel=hoverlabel)
 
 
 def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_separators=False,
@@ -426,7 +432,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                          legendgroup=None, cmap=None, cbar_title=None, show_colorbar=True,
                          cmap_vals=None, cmin=None, cmax=None, cpos=1.1, branch_element='line',
                          separator_element='switch', node_element='bus',
-                         cmap_vals_category='loading_percent'):
+                         cmap_vals_category='loading_percent', hoverlabel=None):
     """
     Creates a plotly trace of branch elements. The rather generic, non-power net specific names
     were introduced to make it usable in other packages, e.g. for pipe networks.
@@ -652,7 +658,8 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         infofunc = infofunc.loc[sorted_idx]
     center_trace = create_edge_center_trace(branch_traces, color=color, infofunc=infofunc,
                                             use_line_geodata=use_branch_geodata,
-                                            showlegend=False, legendgroup=legendgroup)
+                                            showlegend=False, legendgroup=legendgroup,
+                                            hoverlabel=hoverlabel)
     branch_traces.append(center_trace)
 
     return branch_traces
@@ -758,7 +765,7 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
                                  hoverinfo='text', mode='lines', name=trace_name,
-                               legendgroup="transformer", showlegend=False)
+                               legendgroup=trace_name, showlegend=False)
 
             trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
@@ -772,13 +779,13 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 
     center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
                                                     use_line_geodata=use_line_geodata,
-                                            showlegend=False, legendgroup="transformer")
+                                            showlegend=False, legendgroup=trace_name)
     trafo_traces.append(center_trace)
     return trafo_traces
 
 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
-                aspectratio='auto', filename='temp-plot.html', auto_open=True):
+                aspectratio='auto', filename='temp-plot.html', auto_open=True, **kwargs):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
     :func:`create_trafo_trace`)
@@ -814,7 +821,6 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **figure** (graph_objs._figure.Figure) figure object
 
     """
-
     if on_map:
         try:
             on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])
@@ -862,10 +868,13 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
-                 ), )
+                     ),
+                )
+    a = kwargs.get('annotation')
+    if a:
+        fig.add_annotation(a)
 
     # check if geodata are real geographical lat/lon coordinates using geopy
-
     if on_map:
         try:
             mapbox_access_token = _get_mapbox_token()

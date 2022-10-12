@@ -12,9 +12,7 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger("PowerFactory Converter")
-logger.setLevel("INFO")
-
+logger = logging.getLogger(__name__)
 
 from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
