@@ -522,6 +522,7 @@ def test_3ph_with_impedance():
     nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
     net = pp.from_json(nw_dir + '/runpp_3ph Validation.json')
     net.line.c_nf_per_km = 0.
+    net.line.c0_nf_per_km = 0.
     net_imp = net.deepcopy()
     pp.replace_line_by_impedance(net_imp, net.line.index, 100)
     pp.runpp_3ph(net)
