@@ -2176,6 +2176,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         if max_i == 'imp.sn_mva':
             max_i = imp.sn_mva / vn / np.sqrt(3)
         new_index.append(create_line_from_parameters(
+
             net, imp.from_bus, imp.to_bus,
             length_km=1,
             r_ohm_per_km=imp.rft_pu * Zni,
