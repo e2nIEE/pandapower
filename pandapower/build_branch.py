@@ -74,7 +74,7 @@ def _initialize_branch_lookup(net):
     start = 0
     end = 0
     net._pd2ppc_lookups["branch"] = {}
-    for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
+    for element in ["line", "impedance", "trafo", "trafo3w", "xward"]:
         if len(net[element]) > 0:
             if element == "trafo3w":
                 end = start + len(net[element]) * 3
@@ -579,20 +579,27 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
 
-def _calc_impedance_parameters_from_dataframe(net):
+def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     impedance = net.impedance
-    sn_impedance = impedance["sn_mva"].values
-    sn_net = net.sn_mva
-    rij = impedance["rft_pu"].values
-    xij = impedance["xft_pu"].values
-    rji = impedance["rtf_pu"].values
-    xji = impedance["xtf_pu"].values
+    suffix = "0" if zero_sequence else ""
 
-    r = rij / sn_impedance * sn_net
-    x = xij / sn_impedance * sn_net
-    r_asym = (rji - rij) / sn_impedance * sn_net
-    x_asym = (xji - xij) / sn_impedance * sn_net
-    return r, x, r_asym, x_asym
+    rij = impedance[f"rft{suffix}_pu"].values
+    xij = impedance[f"xft{suffix}_pu"].values
+    rji = impedance[f"rtf{suffix}_pu"].values
+    xji = impedance[f"xtf{suffix}_pu"].values
+
+    mode = net["_options"]["mode"]
+    sn_factor = 3. if mode == 'pf_3ph' else 1.
+    sn_impedance = impedance["sn_mva"].values if mode == 'sc' else 1.
+    sn_net = net.sn_mva if mode == 'sc' else 1.
+
+    r_f = (rij * sn_factor) / (sn_impedance * sn_net)
+    x_f = (xij * sn_factor) / (sn_impedance * sn_net)
+    r_t = (rji * sn_factor) / (sn_impedance * sn_net)
+    x_t = (xji * sn_factor) / (sn_impedance * sn_net)
+    r_asym = r_t - r_f
+    x_asym = x_t - x_f
+    return r_f, x_f, r_asym, x_asym
 
 
 def _calc_xward_parameter(net, ppc):
