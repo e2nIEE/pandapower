@@ -784,7 +784,8 @@ def _nets_equal_keys(net1, net2, check_only_results, check_without_results, excl
     for key in list(keys_to_check):
 
         if isinstance(net1[key], pd.DataFrame):
-            if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(net1[key], net2[key], **kwargs):
+            if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(
+                    net1[key], net2[key], **kwargs):
                 not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):
