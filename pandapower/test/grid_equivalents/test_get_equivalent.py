@@ -442,7 +442,7 @@ def test_retain_original_internal_indices():
     eq_type = "rei"
     boundary_buses = [bus_lookup[b] for b in [3, 9, 22]]
     internal_buses = [bus_lookup[0]]
-    for retain_original_internal_indices in [False]:
+    for retain_original_internal_indices in [True, False]:
         net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
                                                     calculate_voltage_angles=True,
                                                     retain_original_internal_indices=\
@@ -461,10 +461,10 @@ if __name__ == "__main__":
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
-        # test_basic_usecases()
+        test_basic_usecases()
         # test_case9_with_slack_generator_in_external_net()
         # test_adopt_columns_to_separated_eq_elms()
-        test_equivalent_groups()
+        # test_equivalent_groups()
         # test_shifter_degree()
         # test_retain_original_internal_indices()
     pass

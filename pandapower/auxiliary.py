@@ -32,7 +32,6 @@ from collections.abc import MutableMapping
 import numpy as np
 import pandas as pd
 import scipy as sp
-import six
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
@@ -85,7 +84,7 @@ class ADict(dict, MutableMapping):
         return self.copy(), self._allow_invalid_attributes
 
     def __dir__(self):
-        return list(six.iterkeys(self))
+        return list(self.keys())
 
     def __setstate__(self, state):
         mapping, allow_invalid_attributes = state
@@ -224,7 +223,7 @@ class ADict(dict, MutableMapping):
             'register').
         """
         return (
-                isinstance(key, six.string_types) and
+                isinstance(key, str) and
                 not hasattr(cls, key)
         )
 
@@ -269,7 +268,7 @@ class pandapowerNet(ADict):
 
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.iteritems()):
+    for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
@@ -401,7 +400,7 @@ def _check_connectivity_opf(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -440,7 +439,7 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -471,7 +470,7 @@ def _subnetworks(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]

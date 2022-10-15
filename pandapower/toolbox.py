@@ -1808,8 +1808,9 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
             dtypes = net[element].dtypes
             net[element] = pd.concat([net[element], net2[element]], sort=False,
                                      ignore_index=ignore_index)
-            if retain_original_indices_in_net1 and not elm_with_critical_index:
-                start = net1.bus.index.max() + 1
+            if retain_original_indices_in_net1 and not elm_with_critical_index and \
+                len(net1[element]):
+                start = int(net1[element].index.max()) + 1
                 net[element].index = net1[element].index.tolist() + \
                     list(range(start, len(net2[element]) + start))
             _preserve_dtypes(net[element], dtypes)
@@ -1900,8 +1901,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # check switching state and add line switch if necessary:
     for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
-                             (net.switch.et == "l")].bus.values:
+        if bus in net.switch[~net.switch.closed & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
@@ -2161,7 +2161,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
         given, the sn_mva values of the impedances are considered.
     """
-    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
     for (idx, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):

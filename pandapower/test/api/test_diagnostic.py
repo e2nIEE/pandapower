@@ -374,16 +374,10 @@ class TestInvalidValues:
 
 def test_no_ext_grid(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
-    check_function = 'no_ext_grid'
-    diag_params = copy.deepcopy(diag_params)
-    report_methods = copy.deepcopy(report_methods)
     net.ext_grid = net.ext_grid.drop(0)
     check_result = pp.no_ext_grid(net)
-    if check_result:
-        diag_results = {check_function: check_result}
-    else:
-        diag_results = {}
-    assert diag_results[check_function] == True
+    # I removed some unused code from here, it seemed redundant
+    assert check_result
 
 
 def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, diag_errors, report_methods):
@@ -516,7 +510,7 @@ def test_switch_configuration(test_net, diag_params, diag_errors, report_methods
     net.load.p_mw.at[4] *= 1000
     check_result = pp.wrong_switch_configuration(net)
     diag_results = {check_function: check_result}
-    assert diag_results[check_function] == False
+    assert not diag_results[check_function]
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
@@ -931,7 +925,7 @@ def test_disconnected_elements(test_net, diag_params, diag_errors, report_method
     check_function = 'disconnected_elements'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.switch.closed.loc[37,38] = False
+    net.switch.loc[[37, 38], "closed"] = False
     pp.drop_trafos(net, [1])
     check_result = pp.disconnected_elements(net)
     if check_result:
