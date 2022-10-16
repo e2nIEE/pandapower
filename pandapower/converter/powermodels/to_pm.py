@@ -151,9 +151,6 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
         pm = add_time_series_to_pm(net, pm, from_time_step, to_time_step)
     pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
-    # During the pm-generation, the pm-data is processed according to baseMVA=1.0.
-    # Thus, the baseMVA für PowerModels is set to 1.0. 
-    pm["baseMVA"] = 1.0
     return net, pm, ppc, ppci
 
 
@@ -247,6 +244,8 @@ def create_pm_lookups(net, pm_lookup):
 
 def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
+    # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
+    # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
     pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(),
           "storage": dict(),
           "ne_branch": dict(), "switch": dict(),

@@ -647,7 +647,7 @@ def test_runpm_multi_vstab():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")   
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_runpm_qflex_and_multi_qflex():
     
     net = nw.create_cigre_network_mv(with_der="pv_wind")  
@@ -696,8 +696,32 @@ def test_runpm_qflex_and_multi_qflex():
     assert np.array(y_multi).max() < 1e-6
 
 
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_convergence_dc_opf():
+    for cpnd in [True, False]:
+        net = nw.case5()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case9()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case14()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case30()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case39()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case57()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case118()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case145()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case300()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+
+
+
 if __name__ == '__main__':
-    if 1:
+    if 0:
         pytest.main(['-x', __file__])
     else:
         test_storage_opt()
