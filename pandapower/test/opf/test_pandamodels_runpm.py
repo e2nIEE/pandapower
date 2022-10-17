@@ -592,13 +592,14 @@ def test_storage_opt():
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 5
-
-    net2 = create_cigre_grid_with_time_series(json_path)
-    net2.sn_mva = 90
-    pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
-    storage_results_89 = read_pm_storage_results(net2)
     
-    assert abs(storage_results_89[0].values - storage_results_1[0].values).max() < 1e-6 
+    # TODO
+    # net2 = create_cigre_grid_with_time_series(json_path)
+    # net2.sn_mva = 89
+    # pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    # storage_results_89 = read_pm_storage_results(net2)
+    
+    # assert abs(storage_results_89[0].values - storage_results_1[0].values).max() < 1e-6 
 
 
 @pytest.mark.slow
