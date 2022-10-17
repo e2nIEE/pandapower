@@ -16,6 +16,7 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+import pandas.errors
 from deepdiff.diff import DeepDiff
 
 import networkx
@@ -262,6 +263,8 @@ def restore_all_dtypes(net, dtypes):
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             pass
+        except pandas.errors.IntCastingNaNError:
+            logger.info(f"could not convert dtype in {v.element}: {v.column}")
 
 
 def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
