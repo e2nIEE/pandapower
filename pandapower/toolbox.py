@@ -2183,8 +2183,8 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
             x_ohm_per_km=imp.xft_pu * Zni,
             c_nf_per_km=0,
             max_i_ka=max_i,
-            r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else None,
-            x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else None,
+            r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
+            x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
             c0_nf_per_km=0,
             parallel=1,
             name=imp.name, in_service=imp.in_service))
