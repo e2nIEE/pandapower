@@ -7,25 +7,47 @@
 import numpy as np
 import pandapower as pp
 import pandapower.networks
-from pandapower.control import ContinuousTapControl
-from pandapower.pypower.idx_bus import PD, GS, VM
-from pandapower.pypower.idx_brch import PF
+from pandapower.pypower.idx_bus import BS, SVC_FIRING_ANGLE
 import pytest
-from pandapower.test.toolbox import assert_res_equal
 
 
 def test_svc():
     net = pp.networks.case9()
+    net3 = net.deepcopy()
+    lidx = pp.create_load(net3, 3, 0, 0)
     pp.create_shunt(net, 3, 0, 0, 345)
-    net.shunt["set_vm_pu"] = 1.02
-    net.shunt["svc_firing_angle"] = 45.
-    pp.runpp(net, lightsim2grid=False, max_iteration=10, numba=False)
-    assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
-
-    net.shunt.q_mvar = -75.86557458
+    net2 = net.deepcopy()
+    net.shunt["controllable"] = True
+    net.shunt["set_vm_pu"] = 1.04
+    net.shunt["thyristor_firing_angle_degree"] = 90.
+    net.shunt["svc_x_l_ohm"] = 1
+    net.shunt["svc_x_cvar_ohm"] = 1.1
     pp.runpp(net)
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
 
+    net3.load.loc[lidx, "q_mvar"] = net.res_shunt.q_mvar.at[0]
+    pp.runpp(net3)
+
+    net2.shunt.q_mvar.at[0] = -net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], BS]
+    pp.runpp(net2)
+    assert np.isclose(net2.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
+    assert np.isclose(net2.res_bus.at[3, 'q_mvar'], net.res_bus.at[3, 'q_mvar'], rtol=0, atol=1e-6)
+    assert np.isclose(net2.res_shunt.at[0, 'vm_pu'], net.res_shunt.at[0, 'vm_pu'], rtol=0, atol=1e-6)
+    assert np.isclose(net2.res_shunt.at[0, 'q_mvar'], net.res_shunt.at[0, 'q_mvar'], rtol=0, atol=1e-6)
+
+    pp.runpp(net)
+    assert np.allclose(net.shunt.q_mvar, -net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], BS],
+                       rtol=0, atol=1e-6)
+    assert np.allclose(np.deg2rad(net.shunt.thyristor_firing_angle_degree),
+                       net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], SVC_FIRING_ANGLE],
+                       rtol=0, atol=1e-6)
+
+    net.shunt.controllable = False
+    pp.runpp(net)
+    assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_bus.at[3, 'q_mvar'], net2.res_bus.at[3, 'q_mvar'], rtol=0, atol=1e-5)
+    assert np.isclose(net.res_shunt.at[0, 'vm_pu'], net2.res_shunt.at[0, 'vm_pu'], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_shunt.at[0, 'q_mvar'], net2.res_shunt.at[0, 'q_mvar'], rtol=0, atol=1e-5)
 
 
 if __name__ == "__main__":

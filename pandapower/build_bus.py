@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
-    VM, VA, CID, CZD, bus_cols, REF, SVC, SET_VM_PU, SVC_FIRING_ANGLE
+    VM, VA, CID, CZD, bus_cols, REF, SVC, SET_VM_PU, SVC_FIRING_ANGLE, SVC_X_L, SVC_X_CVAR
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 
 try:
@@ -512,15 +512,16 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
 
-    # SVC firing angle
-    if "svc_firing_angle" in s.columns:
-        svc = s.loc[~s.svc_firing_angle.isnull()].index.values
+    # SVC controllable shunts  # todo: make a separate element for that
+    if "controllable" in s.columns and np.any(s.controllable):
+        svc = s.loc[s.controllable].index.values
         b = s.loc[svc, 'bus'].values
-        a = s.loc[svc, 'svc_firing_angle'].values
-        v = s.loc[svc, 'set_vm_pu'].values
+        z_base_ohm = np.square(net.bus.loc[b, "vn_kv"]) / net.sn_mva
         ppc["bus"][bus_lookup[b], SVC] = True
-        ppc["bus"][bus_lookup[b], SET_VM_PU] = v
-        ppc["bus"][bus_lookup[b], SVC_FIRING_ANGLE] = a
+        ppc["bus"][bus_lookup[b], SET_VM_PU] = s.loc[svc, 'set_vm_pu'].values
+        ppc["bus"][bus_lookup[b], SVC_FIRING_ANGLE] = np.deg2rad(s.loc[svc, 'thyristor_firing_angle_degree'].values)
+        ppc["bus"][bus_lookup[b], SVC_X_L] = s.loc[svc, 'svc_x_l_ohm'].values / z_base_ohm
+        ppc["bus"][bus_lookup[b], SVC_X_CVAR] = s.loc[svc, 'svc_x_cvar_ohm'].values / z_base_ohm
 
 
 # Short circuit relevant routines

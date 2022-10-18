@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, an
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS, SVC
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -88,7 +88,7 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
 
         makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-        if options["tdpf"]:
+        if options["tdpf"] or any(internal["bus"][:, SVC]):
             # needs to be updated to match the new R because of the temperature
             internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
 
@@ -162,7 +162,6 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     else:
         V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
 
-    # todo: adjust Ybus
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
                                   "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,

@@ -90,5 +90,7 @@ SL_FAC = 15
 SVC = 16  # bool: is it an SVC bus?
 SET_VM_PU = 17  # SVC voltage setpoint
 SVC_FIRING_ANGLE = 18  # Thyristor firing angle for SVC
+SVC_X_L = 19
+SVC_X_CVAR = 20
 
-bus_cols = 19
+bus_cols = 21

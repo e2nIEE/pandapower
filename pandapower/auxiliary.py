@@ -790,6 +790,12 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
 
+    if len(net.shunt) and "controllable" in net.shunt and np.any(net.shunt.controllable):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunts are present, "
+                                  "SVC controllable shunts not implemented yet.")
+
     return True
 
 
@@ -1102,7 +1108,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
-        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
+        with_svc_shunts = len(net.shunt) > 0 and "controllable" in net.shunt and np.any(net.shunt.controllable)
+        # tdpf is an option rather than algorithm; svc need more iterations to converge
+        max_iteration = 30 if tdpf or with_svc_shunts else default_max_iteration[algorithm]
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "

@@ -20,7 +20,7 @@ from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
-from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE, QD
+from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE, BS, SVC_X_L, SVC_X_CVAR
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
@@ -112,7 +112,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     svc_buses = flatnonzero(nan_to_num(bus[:, SVC]))
     svc_set_vm_pu = bus[svc_buses, SET_VM_PU]
-    x_control = deg2rad(bus[svc_buses, SVC_FIRING_ANGLE])
+    x_control = bus[svc_buses, SVC_FIRING_ANGLE]
+    if len(svc_buses) > 0:
+        svc_x_l_pu = bus[svc_buses, SVC_X_L]
+        svc_x_cvar_pu = bus[svc_buses, SVC_X_CVAR]
+        Sbus_backup = Sbus.copy()
 
     nref = len(ref)
     npv = len(pv)
@@ -213,12 +217,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                               pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta_pu, J, r, x, g)
 
         if len(svc_buses) > 0:
-            # todo: what are the X_L and X_Cvar? take them from net.shunt inputs instead
-            X_L = ones_like(svc_buses)
-            X_Cvar = ones_like(svc_buses) * 0.5
             K_J = vstack([eye(J.shape[0], format="csr"), csr_matrix((len(x_control), J.shape[0]))], format="csr")
             J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
-            J_m = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, X_L, X_Cvar)
+            J_m = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, svc_x_l_pu, svc_x_cvar_pu)
             J = J + J_m
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -248,17 +249,12 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Va_it = column_stack((Va_it, Va))
 
         if len(svc_buses) > 0:
-            y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * X_L / X_Cvar) / (pi * X_L)  # * np.exp(-1j * np.pi / 2)
-            q_svc = abs(V[svc_buses]) ** 2 * y_svc
-            bus[svc_buses, QD] = q_svc * baseMVA
+            y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * svc_x_l_pu / svc_x_cvar_pu) / (pi * svc_x_l_pu)
+            q_svc = y_svc
+            Sbus[svc_buses] = Sbus_backup[svc_buses] - q_svc * 1j
 
-        if voltage_depend_loads or len(svc_buses) > 0:
+        if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
-
-        # if len(svc_buses) > 0:
-        #     y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * X_L / X_Cvar) / (pi * X_L)  # * np.exp(-1j * np.pi / 2)
-        #     q_svc = abs(V[svc_buses]) ** 2 * y_svc
-        #     Sbus[svc_buses] -= q_svc*1j
 
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
 
@@ -272,8 +268,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         converged = _check_for_convergence(F, tol)
 
-    # todo: return x_control and then use it to calculate q_mvar for net.res_shunt
-    print(Sbus.imag)
+    # write q_svc, x_control in ppc["bus"] and then later calculate q_mvar for net.res_shunt
+    if len(svc_buses) > 0:
+        bus[svc_buses, BS] += -q_svc * baseMVA * (1 / svc_set_vm_pu) ** 2
+        bus[svc_buses, SVC_FIRING_ANGLE] = x_control
+
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
@@ -286,7 +285,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
     else:
         mis = V * conj(Ybus * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
-    if len(svc_buses) > 0:
+    if svc_buses is not None and len(svc_buses) > 0:
         Fc = abs(V[svc_buses]) - svc_set_vm_pu
         F = r_[F, Fc]
     return F
