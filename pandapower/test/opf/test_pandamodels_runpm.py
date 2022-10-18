@@ -697,6 +697,38 @@ def test_runpm_qflex_and_multi_qflex():
     assert np.array(y_multi).max() < 1e-6
 
 
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_ploss():
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
+    net.load['controllable'] = False
+    net.sgen['controllable'] = True
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
+    net.bus["max_vm_pu"] = 1.1
+    net.bus["min_vm_pu"] = 0.9
+    net.ext_grid["max_q_mvar"] = 10000.0
+    net.ext_grid["min_q_mvar"] = -10000.0
+    net.ext_grid["max_p_mw"] = 10000.0
+    net.ext_grid["min_p_mw"] = -10000.0
+    net.trafo["max_loading_percent"] = 100.0
+    net.line["max_loading_percent"] = 100.0
+    net.line["pm_param/target_branch"] = True
+    net.switch.loc[:, "closed"] = True
+    pp.runpp(net)
+    net_org = deepcopy(net)
+    pp.runpm_ploss(net)
+
+    assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
+
+    net.line.drop(columns=["pm_param/target_branch"], inplace=True)
+    net.trafo["pm_param/target_branch"] = True
+    pp.runpm_ploss(net)
+
+    assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
+
+
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_convergence_dc_opf():
     for cpnd in [True, False]:
@@ -736,7 +768,7 @@ if __name__ == '__main__':
     if 0:
         pytest.main(['-x', __file__])
     else:
-        test_storage_opt()
-        # test_runpm_multi_vstab()
+        # test_storage_opt()
+        test_runpm_ploss()
         # test_runpm_qflex_and_multi_qflex()
 
