@@ -162,4 +162,6 @@ if __name__ == "__main__":
     if 0:
         pytest.main([__file__, "-xs"])
     else:
-        test_case5_pm_pd2ppc()      
+        test_case5_pm_pd2ppc()
+        test_opf_ext_grid_controllable_pm()
+        
