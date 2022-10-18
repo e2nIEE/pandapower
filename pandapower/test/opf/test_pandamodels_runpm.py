@@ -593,13 +593,13 @@ def test_storage_opt():
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 5
     
-    # TODO
-    # net2 = create_cigre_grid_with_time_series(json_path)
-    # net2.sn_mva = 89
-    # pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
-    # storage_results_89 = read_pm_storage_results(net2)
+
+    net2 = create_cigre_grid_with_time_series(json_path)
+    net2.sn_mva = 100.0
+    pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    storage_results_100 = read_pm_storage_results(net2)
     
-    # assert abs(storage_results_89[0].values - storage_results_1[0].values).max() < 1e-6 
+    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6 
 
 
 @pytest.mark.slow
@@ -720,12 +720,23 @@ def test_convergence_dc_opf():
         pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
 
 
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_ac_opf_differnt_snmva():
+    net = nw.case9()
+    res = pd.DataFrame(columns=net.bus.index.tolist())
+    for i, snmva in enumerate([1, 13, 45, 78, 98, 100]):
+        net.sn_mva = snmva
+        pp.runpm_ac_opf(net)
+        res.loc[i] = net.res_bus.vm_pu.values
+    for i in res.columns:
+        assert res[i].values.min() - res[i].values.max() < 1e-10
+
 
 if __name__ == '__main__':
     if 0:
         pytest.main(['-x', __file__])
     else:
         test_storage_opt()
-        test_runpm_multi_vstab()
-        test_runpm_qflex_and_multi_qflex()
+        # test_runpm_multi_vstab()
+        # test_runpm_qflex_and_multi_qflex()
 
