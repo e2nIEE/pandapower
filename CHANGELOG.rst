@@ -12,6 +12,7 @@ Change Log
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
+- [ADDED] Added implementation of SVC in net.shunt according to PhD dissertation of Ara Panosyan, PhD.
 
 [2.10.1] - 2022-07-31
 -------------------------------
