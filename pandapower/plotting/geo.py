@@ -239,7 +239,7 @@ def dump_to_geojson(net, epsg=4326, node=True, branch=True):
                 for i, [x, y] in enumerate(coords):
                     x2, y2 = _convert_xy_epsg(x, y, epsg_in=epsg, epsg_out=4326)
                     coords[i] = (x2, y2)
-            geom = geojson.MultiLineString(coords)
+            geom = geojson.LineString(coords)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
     return geojson.FeatureCollection(features)
