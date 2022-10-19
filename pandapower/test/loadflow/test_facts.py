@@ -11,6 +11,11 @@ from pandapower.pypower.idx_bus import BS, SVC_FIRING_ANGLE
 import pytest
 
 
+def facts_case_study_grid():
+    net = pp.create_empty_network()
+    return net
+
+
 def test_svc():
     net = pp.networks.case9()
     net3 = net.deepcopy()
