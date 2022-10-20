@@ -590,13 +590,13 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
 
     mode = net["_options"]["mode"]
     sn_factor = 3. if mode == 'pf_3ph' else 1.
-    sn_impedance = impedance["sn_mva"].values if mode == 'sc' else 1.
-    sn_net = net.sn_mva if mode == 'sc' else 1.
+    sn_impedance = impedance["sn_mva"].values
+    sn_net = net.sn_mva
 
-    r_f = (rij * sn_factor) / (sn_impedance * sn_net)
-    x_f = (xij * sn_factor) / (sn_impedance * sn_net)
-    r_t = (rji * sn_factor) / (sn_impedance * sn_net)
-    x_t = (xji * sn_factor) / (sn_impedance * sn_net)
+    r_f = (rij * sn_factor) / sn_impedance * sn_net
+    x_f = (xij * sn_factor) / sn_impedance * sn_net
+    r_t = (rji * sn_factor) / sn_impedance * sn_net
+    x_t = (xji * sn_factor) / sn_impedance * sn_net
     r_asym = r_t - r_f
     x_asym = x_t - x_f
     return r_f, x_f, r_asym, x_asym

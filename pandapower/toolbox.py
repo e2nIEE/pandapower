@@ -2233,11 +2233,11 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         par = parallel[idx]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus,
-            rft_pu=line_.r_ohm_per_km * line_.length_km / (Zni * par),
-            xft_pu=line_.x_ohm_per_km * line_.length_km / (Zni * par),
+            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
+            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
             sn_mva=sn_mva[i],
-            rft0_pu=line_.r0_ohm_per_km * line_.length_km / (Zni * par) if "r0_ohm_per_km" in net.line.columns else None,
-            xft0_pu=line_.x0_ohm_per_km * line_.length_km / (Zni * par) if "x0_ohm_per_km" in net.line.columns else None,
+            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
+            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
             name=line_.name,
             in_service=line_.in_service))
         i += 1
