@@ -169,7 +169,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
-    # pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
+    pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
     
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
