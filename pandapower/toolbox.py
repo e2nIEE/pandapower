@@ -3222,26 +3222,55 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
 
 def get_connected_elements_dict(
         net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
-        connected_buses=True, connected_bus_elements=True, connected_branch_elements=True,
-        connected_other_elements=True):
-    """Returns a dict of lists of connected elements."""
-    pp_elms = pp_elements(
-        bus=connected_buses, bus_elements=connected_bus_elements,
-        branch_elements=connected_branch_elements, other_elements=connected_other_elements,
-        res_elements=False)
+        element_types=None, **kwargs):
+    """Returns a dict of lists of connected elements.
+
+    Parameters
+    ----------
+    net : _type_
+        _description_
+    buses : iterable of buses
+        buses as origin to search for connected elements
+    respect_switches : bool, optional
+        _description_, by default True
+    respect_in_service : bool, optional
+        _description_, by default False
+    include_empty_lists : bool, optional
+        if True, the output doesn't have values of empty lists but may lack of element types as
+        keys, by default False
+    element_types : iterable of strings, optional
+        types elements which are analyzed for connection. If not given, all pandapower element types
+        are analyzed. That list of all element types can also be restricted by key word arguments
+        "connected_buses", "connected_bus_elements", "connected_branch_elements" and
+        "connected_other_elements", by default None
+
+    Returns
+    -------
+    dict[str,list]
+        elements connected to given buses
+    """
+    if element_types is None:
+        element_types = pp_elements(
+            bus=kwargs.get("connected_buses", True),
+            bus_elements=kwargs.get("connected_bus_elements", True),
+            branch_elements=kwargs.get("connected_branch_elements", True),
+            other_elements=kwargs.get("connected_other_elements", True),
+            cost_tables=False,
+            res_elements=False)
+
     connected = dict()
-    for elm in pp_elms:
-        if elm == "bus":
+    for et in element_types:
+        if et == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
                                        respect_in_service=respect_in_service)
-        elif elm == "switch":
+        elif et == "switch":
             conn = get_connected_switches(net, buses)
         else:
             conn = get_connected_elements(
-                net, elm, buses, respect_switches=respect_switches,
+                net, et, buses, respect_switches=respect_switches,
                 respect_in_service=respect_in_service)
         if include_empty_lists or len(conn):
-            connected[elm] = list(conn)
+            connected[et] = list(conn)
     return connected
 
 
