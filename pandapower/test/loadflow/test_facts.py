@@ -26,7 +26,7 @@ def test_svc():
     net.shunt["set_vm_pu"] = 1.04
     net.shunt["thyristor_firing_angle_degree"] = 90.
     net.shunt["svc_x_l_ohm"] = 1
-    net.shunt["svc_x_cvar_ohm"] = 1.1
+    net.shunt["svc_x_cvar_ohm"] = 10
     pp.runpp(net)
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
 
