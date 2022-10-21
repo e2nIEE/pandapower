@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from packaging import version
 
-from pandapower import __version__
+from pandapower import __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
@@ -24,7 +24,9 @@ def convert_format(net, elements_to_deserialize=None):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
+    if not hasattr(net, 'format_version'):
+        net.format_version = net.version
+    if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
@@ -43,7 +45,7 @@ def convert_format(net, elements_to_deserialize=None):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
-    net.version = __version__
+    net.version = __format_version__
     return net
 
 

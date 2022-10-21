@@ -7,11 +7,10 @@
 from operator import itemgetter
 
 import pandas as pd
-from pandas.api.types import is_bool_dtype
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
 
-from pandapower import __version__
+from pandapower import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type, check_entry_in_std_type
@@ -512,6 +511,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             "gen": None,
                             "branch": None},
         "version": __version__,
+        "format_version": __format_version__,
         "converged": False,
         "OPF_converged": False,
         "name": name,
