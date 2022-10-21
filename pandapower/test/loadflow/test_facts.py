@@ -4,11 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import pytest
 import numpy as np
 import pandapower as pp
+
 import pandapower.networks
 from pandapower.pypower.idx_bus import BS, SVC_FIRING_ANGLE
-import pytest
 
 
 def facts_case_study_grid():
@@ -23,10 +24,10 @@ def test_svc():
     pp.create_shunt(net, 3, 0, 0, 345)
     net2 = net.deepcopy()
     net.shunt["controllable"] = True
-    net.shunt["set_vm_pu"] = 1.04
+    net.shunt["set_vm_pu"] = 0.96
     net.shunt["thyristor_firing_angle_degree"] = 90.
-    net.shunt["svc_x_l_ohm"] = 1
-    net.shunt["svc_x_cvar_ohm"] = 10
+    net.shunt["svc_x_l_ohm"] = 500
+    net.shunt["svc_x_cvar_ohm"] = 10000
     pp.runpp(net)
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
 

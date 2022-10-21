@@ -12,7 +12,7 @@
 """
 
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, max, \
-    zeros_like, column_stack, flatnonzero, nan_to_num, ones_like, deg2rad, pi, sin
+    zeros_like, column_stack, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
@@ -29,7 +29,7 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -249,8 +249,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Va_it = column_stack((Va_it, Va))
 
         if len(svc_buses) > 0:
-            y_svc = (2 * (pi - x_control) + sin(2 * x_control) + pi * svc_x_l_pu / svc_x_cvar_pu) / (pi * svc_x_l_pu)
-            q_svc = y_svc
+            y_svc = calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu)
+            q_svc = square(abs(V[svc_buses])) * y_svc
             Sbus[svc_buses] = Sbus_backup[svc_buses] - q_svc * 1j
 
         if voltage_depend_loads:
