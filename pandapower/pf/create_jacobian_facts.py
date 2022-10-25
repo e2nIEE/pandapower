@@ -8,12 +8,17 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 
-def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, in_pu=True, v_base_kv=None, baseMVA=None):
-    if not in_pu:
-        x_control = np.deg2rad(x_control)
-        z_base_ohm = np.square(v_base_kv) / baseMVA
-        svc_x_l_pu = svc_x_l_pu / z_base_ohm
-        svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
+def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
+    x_control = np.deg2rad(x_control)
+    z_base_ohm = np.square(v_base_kv) / baseMVA
+    svc_x_l_pu = svc_x_l_pu / z_base_ohm
+    svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
+    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
+    y_svc /= z_base_ohm
+    return y_svc
+
+
+def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
     return y_svc
 
@@ -23,7 +28,7 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, s
     # J_C_Q_c = dQ_SVC_i / d_alpha_SVC = 2 * V_i ** 2 * (np.cos(2*alpha_SVC - 1) / np.pi * X_L
     # J_C_C_d, J_C_C_u, J_C_C_c - ?  # "depend on the controlled parameter and the corresponding mismatch equation"
     #y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu) # * np.exp(-1j * np.pi / 2)
-    y_svc = calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu)
+    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
     q_svc = abs(V[svc_buses]) ** 2 * y_svc
 
     J_m = np.zeros_like(J.toarray())

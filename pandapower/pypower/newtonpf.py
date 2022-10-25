@@ -29,7 +29,7 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -249,7 +249,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Va_it = column_stack((Va_it, Va))
 
         if len(svc_buses) > 0:
-            y_svc = calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu)
+            y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
             q_svc = square(abs(V[svc_buses])) * y_svc
             Sbus[svc_buses] = Sbus_backup[svc_buses] - q_svc * 1j
 
