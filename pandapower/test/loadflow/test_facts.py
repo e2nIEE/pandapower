@@ -27,8 +27,8 @@ def test_svc(vm_set_pu):
     net.shunt["controllable"] = True
     net.shunt["set_vm_pu"] = vm_set_pu
     net.shunt["thyristor_firing_angle_degree"] = 90.
-    net.shunt["svc_x_l_ohm"] = 500
-    net.shunt["svc_x_cvar_ohm"] = -1000
+    net.shunt["svc_x_l_ohm"] = 1
+    net.shunt["svc_x_cvar_ohm"] = -10
     pp.runpp(net)
     assert 90 <= net.shunt.at[0, "thyristor_firing_angle_degree"] <= 180
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
