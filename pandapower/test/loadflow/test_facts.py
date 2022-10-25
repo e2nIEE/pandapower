@@ -4,11 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import pytest
 import numpy as np
 import pandapower as pp
+
 import pandapower.networks
 from pandapower.pypower.idx_bus import BS, SVC_FIRING_ANGLE
-import pytest
 
 
 def facts_case_study_grid():
@@ -55,18 +56,20 @@ def facts_case_study_grid():
     return net
 import matplotlib.pyplot
 
-def test_svc():
+@pytest.mark.parametrize("vm_set_pu", [0.96, 1., 1.04])
+def test_svc(vm_set_pu):
     net = pp.networks.case9()
     net3 = net.deepcopy()
     lidx = pp.create_load(net3, 3, 0, 0)
     pp.create_shunt(net, 3, 0, 0, 345)
     net2 = net.deepcopy()
     net.shunt["controllable"] = True
-    net.shunt["set_vm_pu"] = 1.04
+    net.shunt["set_vm_pu"] = vm_set_pu
     net.shunt["thyristor_firing_angle_degree"] = 90.
     net.shunt["svc_x_l_ohm"] = 1
-    net.shunt["svc_x_cvar_ohm"] = 1.1
+    net.shunt["svc_x_cvar_ohm"] = -10
     pp.runpp(net)
+    assert 90 <= net.shunt.at[0, "thyristor_firing_angle_degree"] <= 180
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.shunt.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
 
     net3.load.loc[lidx, "q_mvar"] = net.res_shunt.q_mvar.at[0]
