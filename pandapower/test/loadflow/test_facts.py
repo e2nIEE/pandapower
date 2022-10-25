@@ -26,14 +26,14 @@ def facts_case_study_grid():
 
     pp.create_ext_grid(net,bus=b1,vm_pu=1,va_degree=0)
 
-    pp.create_line_from_parameters(net,name="L1",from_bus=b3,to_bus=b4,length_km=30, r_ohm_per_km=0.049, x_ohm_per_km=0.136,g_us_per_km=0,c_nf_per_km=142,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L2",from_bus=b3,to_bus=b4,length_km=30, r_ohm_per_km=0.049, x_ohm_per_km=0.136,g_us_per_km=0,c_nf_per_km=142,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L3",from_bus=b4,to_bus=b5,length_km=100, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L4",from_bus=b4,to_bus=b6,length_km=100, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L5",from_bus=b5,to_bus=b7,length_km=220, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L6",from_bus=b6,to_bus=b8,length_km=140, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L7",from_bus=b5,to_bus=b6,length_km=180, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
-    pp.create_line_from_parameters(net,name="L8",from_bus=b7,to_bus=b8,length_km=180, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1)
+    pp.create_line_from_parameters(net,name="L1",from_bus=b3,to_bus=b4,length_km=30, r_ohm_per_km=0.049, x_ohm_per_km=0.136,g_us_per_km=0,c_nf_per_km=142,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L2",from_bus=b3,to_bus=b4,length_km=30, r_ohm_per_km=0.049, x_ohm_per_km=0.136,g_us_per_km=0,c_nf_per_km=142,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L3",from_bus=b4,to_bus=b5,length_km=100, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L4",from_bus=b4,to_bus=b6,length_km=100, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L5",from_bus=b5,to_bus=b7,length_km=220, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L6",from_bus=b6,to_bus=b8,length_km=140, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L7",from_bus=b5,to_bus=b6,length_km=180, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
+    pp.create_line_from_parameters(net,name="L8",from_bus=b7,to_bus=b8,length_km=180, r_ohm_per_km=0.081, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11,max_i_ka=1.5)
 
    # pp.create_line_from_parameters(net,name="L9",from_bus=3,to_bus=4,length_km=100, r_ohm_per_km=0.312, x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11)
 
