@@ -74,9 +74,8 @@ def test_some_sgens_not_controllable():
     pp.runopp(net, calculate_voltage_angles=False)
     assert net["OPF_converged"]
     # check if p_mw of non conrollable sgens are unchanged
-    assert np.allclose(net.res_sgen.p_mw[net.sgen.controllable == False], net.sgen.p_mw[net.sgen.controllable == False])
-    assert not np.allclose(net.res_sgen.p_mw[net.sgen.controllable == True],
-                           net.sgen.p_mw[net.sgen.controllable == True])
+    assert np.allclose(net.res_sgen.p_mw[~net.sgen.controllable], net.sgen.p_mw[~net.sgen.controllable])
+    assert not np.allclose(net.res_sgen.p_mw[net.sgen.controllable], net.sgen.p_mw[net.sgen.controllable])
 
 
 if __name__ == "__main__":

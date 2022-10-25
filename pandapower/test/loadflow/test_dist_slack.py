@@ -15,9 +15,17 @@ from pandapower.test.toolbox import assert_res_equal
 
 try:
     import numba
+
     numba_installed = True
 except ImportError:
     numba_installed = False
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def small_example_grid():
@@ -29,9 +37,12 @@ def small_example_grid():
 
     pp.create_load(net, 1, p_mw=100, q_mvar=100)
 
-    pp.create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
-    pp.create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
-    pp.create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
     return net
 
 
@@ -50,10 +61,11 @@ def _get_xward_result(net):
 
     for b, x_id in zip(net.xward.query("in_service").bus.values, net.xward.query("in_service").index.values):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
-        p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] **2 * net["xward"].at[x_id, "pz_mw"]
+        p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] ** 2 * net["xward"].at[x_id, "pz_mw"]
         internal_results = np.append(internal_results, p_shunt)
         connected = pp.toolbox.get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
-                                                           connected_branch_elements=False, connected_other_elements=False)
+                                                           connected_branch_elements=False,
+                                                           connected_other_elements=False)
         for e, idx in connected.items():
             # first, count the total slack weights per bus, and obtain the variable part of the active power
             total_weight = 0
@@ -118,9 +130,10 @@ def assert_results_correct(net, tol=1e-8):
     slack_weights = _get_slack_weights(net)
 
     # assert power balance is correct
-    assert abs(result_p_mw.sum() - consumed_p_mw) < tol
+    assert abs(result_p_mw.sum() - consumed_p_mw) < tol, "power balance is wrong"
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw, atol=tol, rtol=0)
+    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
+                       atol=tol, rtol=0), "distributed slack weights formula has a wrong result"
 
 
 def check_xward_results(net, tol=1e-9):
@@ -244,12 +257,13 @@ def test_xward_manually():
     pp.create_line_from_parameters(net, 2, 3, 1, 0.02, 0.2, 0, 1)
 
     net.load.at[1, 'p_mw'] = net_1._ppc['bus'][net_1.xward.bus.at[0], PD]
-    assert np.isclose(200-net.load.at[1, 'p_mw'], slack_power*2/3, rtol=0, atol=1e-6)
+    assert np.isclose(200 - net.load.at[1, 'p_mw'], slack_power * 2 / 3, rtol=0, atol=1e-6)
     pp.runpp(net)
 
     assert np.isclose(net_1.res_gen.at[0, 'p_mw'], net.res_gen.at[0, 'p_mw'], rtol=0, atol=1e-6)
     assert np.isclose(net_1.res_gen.at[0, 'q_mvar'], net.res_gen.at[0, 'q_mvar'], rtol=0, atol=1e-6)
-    assert np.isclose(net_1.res_bus.at[2, 'p_mw'], net.res_bus.at[2, 'p_mw'] + net.res_line.at[3, 'p_from_mw'], rtol=0, atol=1e-6)
+    assert np.isclose(net_1.res_bus.at[2, 'p_mw'], net.res_bus.at[2, 'p_mw'] + net.res_line.at[3, 'p_from_mw'], rtol=0,
+                      atol=1e-6)
     assert np.allclose(net_1.res_bus.vm_pu, net.res_bus.loc[0:2, 'vm_pu'], rtol=0, atol=1e-6)
     assert np.allclose(net_1.res_bus.va_degree, net.res_bus.loc[0:2, 'va_degree'], rtol=0, atol=1e-6)
 
@@ -336,7 +350,8 @@ def test_xward_gen_same_bus():
 def test_separate_zones():
     net = small_example_grid()
     b1, b2 = pp.create_buses(net, 2, 110)
-    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
     pp.create_ext_grid(net, b1)
     pp.create_load(net, b2, 100)
 
@@ -348,7 +363,7 @@ def test_separate_zones():
 def case9_simplified():
     net = pp.create_empty_network()
     pp.create_buses(net, 9, vn_kv=345.)
-    lines = [[0, 3],[3, 4],[4, 5],[2, 5],[5, 6],[6, 7],[7, 1],[7, 8],[8, 3]]
+    lines = [[0, 3], [3, 4], [4, 5], [2, 5], [5, 6], [6, 7], [7, 1], [7, 8], [8, 3]]
 
     for i, (fb, tb) in enumerate(lines):
         pp.create_line_from_parameters(net, fb, tb, 1, 20, 100, 0, 1)
@@ -442,7 +457,8 @@ def test_multivoltage_example_with_controller():
 
     # take results for gen and xward from net to net2 and compare results
     net2.gen.p_mw = net.res_gen.p_mw
-    net2.xward.ps_mw = net._ppc['bus'][net._pd2ppc_lookups['bus'][net.xward.bus], PD] - net.load.loc[net.load.bus.isin([34,32]), 'p_mw'].values
+    net2.xward.ps_mw = net._ppc['bus'][net._pd2ppc_lookups['bus'][net.xward.bus], PD] - net.load.loc[
+        net.load.bus.isin([34, 32]), 'p_mw'].values
     pp.runpp(net2)
 
     assert_res_equal(net, net2)
@@ -450,16 +466,16 @@ def test_multivoltage_example_with_controller():
     assert_results_correct(net)
 
     if do_output:
-        print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        print("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
-                                                           net.res_gen.p_mw.at[0]))
+        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
+        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
+                                                                 net.res_gen.p_mw.at[0]))
         net.res_bus.vm_pu.plot()
 
-    assert np.isclose(net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]-gen_p_disp)
+    assert np.isclose(net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0] - gen_p_disp)
     assert expected_slack_power / 2 - tol < net.res_ext_grid.p_mw.at[0] < expected_slack_power / 2 + tol
     losses_without_controller = -net.res_bus.p_mw.sum()
     slack_power_without_controller = net.res_ext_grid.p_mw.at[0] + net.res_gen.p_mw.at[0] - \
-        gen_p_disp
+                                     gen_p_disp
 
     # test distributed_slack with controller
     run_and_assert_numba(net, run_control=True)
@@ -468,18 +484,18 @@ def test_multivoltage_example_with_controller():
 
     losses_with_controller = -net.res_bus.p_mw.sum()
     expected_slack_power = slack_power_without_controller - losses_without_controller + \
-        losses_with_controller
+                           losses_with_controller
     slack_power_without_controller = net.res_ext_grid.p_mw.at[0] + net.res_gen.p_mw.at[0] - \
-        gen_p_disp
+                                     gen_p_disp
 
     assert np.isclose(expected_slack_power, slack_power_without_controller, atol=1e-5)
-    assert np.isclose(net.res_ext_grid.p_mw.at[0], expected_slack_power/2, atol=1e-5)
-    assert np.isclose(net.res_gen.p_mw.at[0], expected_slack_power/2+gen_p_disp, atol=1e-5)
+    assert np.isclose(net.res_ext_grid.p_mw.at[0], expected_slack_power / 2, atol=1e-5)
+    assert np.isclose(net.res_gen.p_mw.at[0], expected_slack_power / 2 + gen_p_disp, atol=1e-5)
 
     if do_output:
-        print("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        print("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
-                                                           net.res_gen.p_mw.at[0]))
+        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
+        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0],
+                                                                 net.res_gen.p_mw.at[0]))
         net.res_bus.vm_pu.plot()
 
 
@@ -509,6 +525,41 @@ def test_dist_slack_user_pf_options():
     pp.set_user_pf_options(net2, algorithm="bfsw")
     with pytest.raises(NotImplementedError):
         pp.runpp(net2)
+
+
+def test_dist_slack_with_enforce_q_lims():
+    net = pp.networks.case9()
+    net.ext_grid['slack_weight'] = 1 / 3
+    net.gen['slack_weight'] = 1 / 3
+
+    net.gen.at[0, 'max_q_mvar'] = 10
+    net.gen.at[1, 'max_q_mvar'] = 0.5
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True, numba=False)
+    assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
+    assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
+
+    assert_results_correct(net, tol=1e-6)
+
+
+def test_dist_slack_with_enforce_q_lims_duplicate_gens():
+    net = pp.networks.case9()
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.07)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.01)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.2)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.1)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.05)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.25)
+    net.gen['slack_weight'] = 1 / 8
+    net.ext_grid['slack_weight'] = 1 / 8
+
+    net.gen.at[0, 'max_q_mvar'] = 10
+    net.gen.at[1, 'max_q_mvar'] = 0.5
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True)
+    assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
+    assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
+
+    assert_results_correct(net, tol=1e-6)
+
 
 # todo: implement distributed slack for when the grid has several disconnected zones
 
