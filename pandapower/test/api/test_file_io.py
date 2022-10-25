@@ -379,6 +379,8 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, str)
     pp.to_json(net_select, filename)
     net_select = pp.from_json(filename)
+    print(net.trafo)
+    print(net_select.trafo)
     assert_net_equal(net, net_select)
 
 
