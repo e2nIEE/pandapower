@@ -168,6 +168,9 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             net, boundary_buses, all_internal_buses, all_external_buses,
             show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
     net_zpbn = net_external
+    # --- remove buses without power flow results in net_eq
+    pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
+    
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
     #     and creat new buses and impedance
@@ -272,9 +275,11 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 if net_zpbn[elm][c].dtype == np.number or net_zpbn[elm][c].dtype == np.int64:
                     other_cols_number |= {c}
                     other_cols -= {c}
-                if net_zpbn[elm][c].dtype == bool:
+                elif net_zpbn[elm][c].dtype == bool or set(elm_org[c].values) & {False, True}: # type-object can also be True of False
                     other_cols_bool |= {c}
                     other_cols -= {c}
+                else:
+                    pass
         if "integrated" in key:
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
@@ -297,11 +302,11 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                        elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum() > 0
+                        elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum(axis=0) > 0
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
                         elm_org[list(other_cols_bool | other_cols_number)][
-                            elm_org.bus == bus].values[0]
+                            elm_org.bus == bus].values[0] 
                     net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
                         elm_org.bus == bus].values[0]
         elm_old = net_zpbn.bus.name[i].split("_")[0]

@@ -119,7 +119,7 @@ def _pd2ppc(net, sequence=None):
         _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
-        
+
         # TODO Roman: Implementation wind generation units IEC 60909-2016
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
