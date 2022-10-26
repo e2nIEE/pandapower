@@ -5,7 +5,7 @@ Over Current Relay
 
 Definite Time Overcurrent Relays :
 
-When the current magnitude is greater than its pick-up value, over-current relays (oc relay) start to operate after a specified time delay.
+When the current magnitude is greater than its pick-up value, over-current relays (oc relay) start to operate after a specified time delay (Definite Time Over Current Relay).
 Here, the relay's operating time is independent of the current magnitude over the pick-up current.
 To obtain the appropriate operating time, a time delay mechanism is included.
 

@@ -1072,7 +1072,6 @@ def radial_bus_net_branch():
     
 
 def oc_relay_net(open_loop=True):
-    import pandapower as pp
     net = pp.create_empty_network()  # create an empty network
 
     # busbars and nodes
@@ -1169,4 +1168,63 @@ def oc_relay_net(open_loop=True):
     net.bus_geodata.y.at[6] = -4
 
 
+    return net
+
+
+def doc_relay_net(open_loop = False):
+    
+    #create an empty network
+    net = pp.create_empty_network()
+    
+    # define buses
+    bus0 = pp.create_bus(net,name = "Bus_extgrid", vn_kv = 20, type = "b")
+    bus1 = pp.create_bus(net,name = "Bus_line1", vn_kv = 20, type = "b")
+    bus2 = pp.create_bus(net,name = "Bus_load", vn_kv = 20, type = "b")
+    bus3 = pp.create_bus(net,name = "Bus_line2", vn_kv = 20, type = "b")
+    
+    # external grids
+    pp.create_ext_grid(net, bus0, vm_pu = 1.0, va_degree = 0, s_sc_max_mva = 100, s_sc_min_mva = 50,
+                                           rx_max = 0.1, rx_min = 0.1)
+    # defne lines
+    line1 = pp.create_line_from_parameters(net, bus0, bus1, length_km = 5, index = 1, r_ohm_per_km = 0.169,
+                                           x_ohm_per_km = 0.118438, c_nf_per_km = 273, max_i_ka = 0.361)
+    line2 = pp.create_line_from_parameters(net, bus1, bus2, length_km = 4, index = 2, r_ohm_per_km = 0.256,
+                                           x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
+    line3 = pp.create_line_from_parameters(net, bus1, bus3, length_km = 4, index = 3, r_ohm_per_km = 0.256,
+                                           x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
+    line4 = pp.create_line_from_parameters(net, bus3, bus2, length_km = 0.5, index =4, r_ohm_per_km = 0.256,
+                                           x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
+    
+    # define short-circuit end temperature of the line
+    net.line["endtemp_degree"] = 250
+    
+    #switches
+    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_dir", closed = True, index = 0)
+    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_dir", closed = True, index = 1)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_dir", closed = True, index = 2)
+    if open_loop:
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = False, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = False, index = 4)
+    else:
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = True, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = True, index = 4)
+        
+    # define load
+    pp.create_load(net, bus2, p_mw = 5, q_mvar= 0, scaling = 1, name="load 1")
+    
+    # initialise geo coordinates
+    net.bus_geodata.loc[0] = None
+    net.bus_geodata.loc[1] = None
+    net.bus_geodata.loc[2] = None
+    net.bus_geodata.loc[3] = None
+    
+    # define geo coordinates for better visualisation in plotting
+    net.bus_geodata.x.at[0] = 0
+    net.bus_geodata.x.at[1] = 0
+    net.bus_geodata.x.at[2] = -1
+    net.bus_geodata.x.at[3] = 1
+    net.bus_geodata.y.at[0] = 1
+    net.bus_geodata.y.at[1] = 0
+    net.bus_geodata.y.at[2] = -1
+    net.bus_geodata.y.at[3] = -1
     return net

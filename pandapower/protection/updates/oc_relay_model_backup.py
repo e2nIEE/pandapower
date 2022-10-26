@@ -16,38 +16,52 @@ from pandapower.protection.implementation.utility_functions import *
 from pandapower.plotting import simple_plot
 
 # set the parameters
-def oc_parameters(net2, switch_id,t_g,t_gg, sc_fraction=None, overload_factor=None,
-                  ct_current_factor=None,safety_factor=None, oc_pickup_current_manual=None): 
+def oc_parameters(net,tripping_time_auto=None,tripping_time_manual=None,
+                          sc_fraction=0.95, overload_factor=1.2, ct_current_factor=1.25,
+                          safety_factor=1, pickup_current_manual=None): 
     
-    net = copy.deepcopy(net2)
-
-    # get the line index and bus index from the line
-    line_idx = get_line_idx(net, switch_id)
-    
-    bus_idx = get_bus_idx(net, switch_id)
-
-    
-    # creat short circuit on the given line and location
-    if oc_pickup_current_manual is None:
+    df_protection_settings =time_graded_overcurrent(net,tripping_time_auto,tripping_time_manual)
+    oc_relay_settings = []
+    for switch_id in net.switch.index:
         
-        net_sc = create_sc_bus(net, line_idx, sc_fraction)
-        sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
+        if (net.switch.closed.at[switch_id]) & (net.switch.type.at[switch_id] == "CB_non_dir") & (
+                net.switch.et.at[switch_id] == "l"):
 
-    
-    #net.ext_grid['s_sc_max_mva'] = 1000
-    # I_g and I_gg current treshold calculation
-        I_g = net_sc.line.max_i_ka.at[line_idx] * overload_factor * ct_current_factor
-        I_gg = net_sc.res_line_sc.ikss_ka.at[line_idx] * safety_factor
-    
-    else:
-        I_g= oc_pickup_current_manual[2] # take manual inputs
-        I_gg=oc_pickup_current_manual[1]
-    # dictionary to store the relay settings for each lines
+            t_g=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_g'].item()
+            
+            t_gg=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_gg'].item()
+            
+            net = copy.deepcopy(net)
 
-    settings = {"net": net, "switch_id": switch_id, "line_idx": line_idx, "bus_idx": bus_idx,
+            # get the line index and bus index from the line
+            line_idx = get_line_idx(net, switch_id)
+            
+            bus_idx = get_bus_idx(net, switch_id)
+            
+            if pickup_current_manual is not None:
+                
+                I_g= oc_pickup_current_manual[2] # take manual inputs
+                I_gg=oc_pickup_current_manual[1]
+
+            else:
+                
+                net_sc = create_sc_bus(net, line_idx, sc_fraction)
+                sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
+
+            
+                #net.ext_grid['s_sc_max_mva'] = 1000
+                # I_g and I_gg current treshold calculation
+                I_g = net_sc.line.max_i_ka.at[line_idx] * overload_factor * ct_current_factor
+                I_gg = net_sc.res_line_sc.ikss_ka.at[line_idx] * safety_factor
+                
+            settings = {"switch_id": switch_id, "line_idx": line_idx, "bus_idx": bus_idx,
                 "Ig_ka": I_g, "Igg_ka": I_gg, "tg": t_g, "tgg": t_gg}
-    
-    return settings
+            
+            oc_relay_settings.append(settings)
+
+    return  oc_relay_settings
+
+
 
     # get the short circuit current values in the lines
 def oc_get_measurement_at_relay_location(net, settings):
@@ -153,9 +167,7 @@ def time_graded_overcurrent(net,tripping_time_auto, tripping_time_manual):
     return df_protection_settings
 
 
-def run_fault_scenario_oc(net, sc_line_id, sc_location,tripping_time_auto=None,tripping_time_manual=None,
-                          sc_fraction=0.95, overload_factor=1.2, ct_current_factor=1.25,
-                          safety_factor=1, pickup_current_manual=None):
+def run_fault_scenario_oc(net, sc_line_id, sc_location,relay_settings):
 
     """
     The main function to create fault scenario in network at defined location to get the tripping decisons
@@ -167,11 +179,11 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,tripping_time_auto=None,t
            
            **sc_location** (float)- Location of short circuit on the on line (between 0 and 1). 
            
-           **tripping_time_auto** (list, float) - Relay tripping time calculated based on topological grid search.
+           **relay_settings** (list(Dict)) - relay settings required for creating fault scenario
           
-            - tripping_time_auto =[t>>, t>, t_diff]
-            - t>> (t_gg): instantaneous tripping time in seconds,
-            - t> (t_g):  primary backup tripping time in seconds, 
+            - tripping_time_auto =[t_>>, t_>, t_diff]
+            - t_>> (t_gg): instantaneous tripping time in seconds,
+            - t_> (t_g):  primary backup tripping time in seconds, 
             - t_diff: time grading delay difference in seconds
             
            "or" 
@@ -198,28 +210,6 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,tripping_time_auto=None,t
         """
 
     
-    df_protection_settings =time_graded_overcurrent(net,tripping_time_auto,tripping_time_manual)
-    oc_relay_settings = []
-    for switch_id in net.switch.index:
-        
-        if (net.switch.closed.at[switch_id]) & (net.switch.type.at[switch_id] == "CB_non_dir") & (
-                net.switch.et.at[switch_id] == "l"):
-
-            t_g=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_g'].item()
-            
-            t_gg=df_protection_settings.loc[df_protection_settings['switch_id']==switch_id]['t_gg'].item()
-            
-            if pickup_current_manual is not None:
-                
-                oc_pickup_current_manual=list(pickup_current_manual.loc[switch_id])
-                settings = oc_parameters(net, switch_id,t_g,t_gg, sc_fraction, overload_factor,ct_current_factor, safety_factor, oc_pickup_current_manual)
-
-            else:
-                settings = oc_parameters(net, switch_id,t_g,t_gg, sc_fraction, overload_factor,ct_current_factor, safety_factor)
-
-            oc_relay_settings.append(settings)
-            
-        
     net_sc = create_sc_bus(net, sc_line_id, sc_location)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
 
@@ -239,3 +229,17 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,tripping_time_auto=None,t
     print(df_decisions)
     
     return trip_decisions, net_sc  
+
+if __name__ == "__main__":
+    
+    from pandaplan.core.protection.implementation.example_grids import *
+    net = load_6bus_net_directional(open_loop=True)
+    simple_plot(net, plot_loads=True, plot_sgens=True, plot_line_switches=True)
+    
+    
+    relay_settings=oc_parameters(net,tripping_time_auto=[0.07,0.5,0.3])
+
+    # here user can define the time grade according to their choice # by default  Tgg is 0.07 and Tg=0.5 Tdelta=0.3
+    trip_decisions,net_sc= run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings=relay_settings)
+    
+    #create additional I_T plot

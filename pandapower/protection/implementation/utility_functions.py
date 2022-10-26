@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import math
 
 #    This function creates a short-circuit location (a bus) on a line.
-def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
-    
+def create_sc_bus(net_copy, sc_line_id, sc_fraction):
+
     net = copy.deepcopy(net_copy)
     if sc_fraction < 0 or sc_fraction > 1:
         print("Please select line location that is between 0 and 1")
@@ -19,7 +19,7 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
     max_idx_line = max(net.line.index)
     max_idx_bus = max(net.bus.index)
 
-    aux_line = net.line.loc[sc_line_idx]
+    aux_line = net.line.loc[sc_line_id]
     
     # get bus voltage of the short circuit bus
     bus_vn_kv = net.bus.vn_kv.at[aux_line.from_bus]
@@ -41,7 +41,7 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
         net.sgen['k']=1
 
     # set new lines
-    sc_line1 = sc_line_idx
+    sc_line1 = sc_line_id
     net.line.at[sc_line1, 'to_bus'] = bus_sc
     net.line.at[sc_line1, 'length_km'] *= sc_fraction
 
@@ -56,9 +56,9 @@ def create_sc_bus(net_copy, sc_line_idx, sc_fraction):
     
     # check if switches are connected to the line and set the switches to new lines
     for switch_id in net.switch.index:
-        if (aux_line.from_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_idx):
+        if (aux_line.from_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_id):
             net.switch.element[switch_id] = sc_line1
-        elif (aux_line.to_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_idx):
+        elif (aux_line.to_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_id):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
@@ -274,6 +274,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
         
     dist_to_bus = bus_size * 3.25
 
+
     #Inst relay trip, red colour 
     if  len(inst_trip_switches)>0:
         
@@ -409,7 +410,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
         collection.append(sc_annotate)
 
         # switch annotations
-        from pandapower.protection.utility_functions import switch_geodata
+        #from pandapower.protection.implemeutility_functions import switch_geodata
         switch_text=[]
         for Switches in trip_decisions:
             
@@ -418,7 +419,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
             text_switch= r"sw_"+str(Switch_index)
             switch_text.append(text_switch)
                  
-        switch_geodata= switch_geodata(net, size= bus_size, distance_to_bus=3.25* bus_size)
+        switch_geodata= switch_geodatas(net, size= bus_size, distance_to_bus=3.25* bus_size)
         i=0
         for i in range(len(switch_geodata)):
         
@@ -486,7 +487,7 @@ def connected_bus_in_line(net, element):
      return get_bus_line
  
     # line path from bus path #
-def get_line_path(net, bus_path,sc_line_idx=0):
+def get_line_path(net, bus_path,sc_line_id=0):
     line_path=[]
     
     for i in range(len(bus_path)-1):
@@ -502,7 +503,7 @@ def get_line_path(net, bus_path,sc_line_idx=0):
     return line_path
     
 # get the coordinates for switches
-def switch_geodata(net, size, distance_to_bus):
+def switch_geodatas(net, size, distance_to_bus):
     switch_geo=[]
         
     switches = []
@@ -702,8 +703,6 @@ def get_vi_angle(net,switch_id,powerflow_results=False):
             Q = net.res_line.q_to_mvar.at[line_idx]
             
             vm = net.bus.vn_kv.at[bus_idx] * net.res_line.vm_to_pu.at[line_idx]
-            
-        
     else:
         
         if  get_from_bus_info_switch(net, switch_id):
