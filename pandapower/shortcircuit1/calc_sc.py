@@ -5,7 +5,7 @@
 
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -15,10 +15,9 @@ import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
-from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-import pandapower as pp
+
 from pandapower.shortcircuit.currents import _calc_ikss,\
     _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
@@ -26,6 +25,7 @@ from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 from pandapower.results import init_results
+from pandapower.pypower.idx_brch_sc import K_ST
 
 
 def calc_sc(net, bus=None,
@@ -55,9 +55,9 @@ def calc_sc(net, bus=None,
 
             - "3ph" for three-phase
 
-            - "2ph" for two-phase short-circuits
+            - "2ph" for two-phase (phase-to-phase) short-circuits
 
-            - "1ph" for single-phase ground faults
+            - "1ph" for single-phase-to-ground faults
 
         **case** (str, "max")
 
@@ -120,9 +120,9 @@ def calc_sc(net, bus=None,
         raise ValueError(
             'specify network structure as "meshed", "radial" or "auto"')
 
-    # if branch_results:
-    #     logger.warning("Branch results are in beta mode and might not always be reliable, "
-    #                    "especially for transformers")
+    if branch_results:
+        logger.warning("Branch results are in beta mode and might not always be reliable, "
+                       "especially for transformers")
 
     # Convert bus to numpy array
     if bus is None:
@@ -150,115 +150,6 @@ def calc_sc(net, bus=None,
     else:
         raise ValueError("Invalid fault %s" % fault)
 
-"""
-JanLipp
-add calc_sc_withpp
-"""
-def calc_sc_withpp(net, bus=None,
-                   fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip= True,
-                   ith=True, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-                   branch_results=True, check_connectivity=True, return_all_currents=False,
-                   inverse_y=True):
-    """
-    Calculates minimal or maximal symmetrical short-circuit currents.
-    The calculation is based on the method of the equivalent voltage source
-    according to DIN/IEC EN 60909.
-    The initial short-circuit alternating current *ikss* is the basis of the short-circuit
-    calculation and is therefore always calculated.
-    Other short-circuit currents can be calculated from *ikss* with the conversion factors defined
-    in DIN/IEC EN 60909.
-
-    The output is stored in the net.res_bus_sc table as a short_circuit current
-    for each bus.
-
-    INPUT:
-        **net** (pandapowerNet) pandapower Network
-
-        ***fault** (str, 3ph) type of fault
-
-            - "3ph" for three-phase
-
-            - "2ph" for two-phase short-circuits
-
-        **case** (str, "max")
-
-            - "max" for maximal current calculation
-
-            - "min" for minimal current calculation
-
-        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
-
-            - 6 for 6% voltage tolerance
-
-            - 10 for 10% voltage olerance
-
-        **r_fault_ohm** (float, 0) fault resistance in Ohm
-
-        **x_fault_ohm** (float, 0) fault reactance in Ohm
-
-    OUTPUT:
-
-    EXAMPLE:
-        calc_sc(net)
-
-        print(net.res_bus_sc)
-    """
-
-    try:
-        
-        if fault not in ["3ph", "2ph", "1ph"]:
-            raise NotImplementedError(
-                "Only 3ph, 2ph and 1ph short-circuit currents implemented")
-
-        if len(net.gen) and (ip or ith):
-            logger.warning("aperiodic, thermal short-circuit currents are only implemented for "
-                           "faults far from generators!")
-
-        if case not in ['max', 'min']:
-            raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
-                                    "circuit current')
-
-        if topology not in ["meshed", "radial", "auto"]:
-            raise ValueError(
-                'specify network structure as "meshed", "radial" or "auto"')
-        
-        """
-        JanLipp
-        Auskommentiert
-        """
-        # if branch_results:
-        #     logger.warning("Branch results are in beta mode and might not always be reliable, "
-        #                     "especially for transformers")
-        """
-        """
-        # Convert bus to numpy array
-        if bus is None:
-            bus = net.bus.index.values
-        else:
-            bus = np.array([bus]).ravel()
-
-        kappa = ith or ip
-        net["_options"] = {}
-        _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                          check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
-                          init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
-                          recycle=None)
-        _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
-                        topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
-                        x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                        branch_results=branch_results, return_all_currents=return_all_currents,
-                        inverse_y=inverse_y)
-        init_results(net, "sc")
-
-        if fault in ("2ph", "3ph"):
-            _calc_sc(net, bus)
-        elif fault == "1ph":
-            _calc_sc_1ph(net, bus)
-        else:
-            raise ValueError("Invalid fault %s" % fault)
-    except:
-        # print("run_pp")
-        pp.runpp(net)
 
 def _calc_current(net, ppci_orig, bus):
     # Select required ppci bus
@@ -324,12 +215,11 @@ def _calc_sc_1ph(net, bus):
     ppc, ppci = _init_ppc(net)
     # Create k updated ppci
     ppci_bus = _get_is_ppci_bus(net, bus)
-    _, ppci, _ =\
-        _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
+    _, ppci, _ = _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
     _calc_ybus(ppci)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net)
+    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
