@@ -495,7 +495,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
 
 def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
                                         show_computing_time=False,
-                                        max_allowed_impedance=1e10, **kwargs):
+                                        max_allowed_impedance=1e8, **kwargs):
     """ This function calculates the equivalent parameters
 
     INPUT:

@@ -341,7 +341,7 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     """
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
-            net[elm]["pm_param/side"]=None
+            net[elm]["pm_param/side"] = None
             net[elm]["pm_param/side"][net[elm]["pm_param/target_branch"]==True] = "from"
 
     net._options = {}

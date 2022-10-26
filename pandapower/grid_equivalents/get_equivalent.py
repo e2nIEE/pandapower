@@ -558,29 +558,33 @@ if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     import pandapower.networks as pn
     net = pn.case9()
+    net.ext_grid.vm_pu = 1.04
+    net.gen.vm_pu[0] = 1.025
+    net.gen.vm_pu[1] = 1.025
+    
     net.poly_cost.drop(net.poly_cost.index, inplace=True)
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
     # pp.replace_gen_by_sgen(net)
-    net.sn_mva = 109.00
-    boundary_buses = [3]
+    # net.sn_mva = 109.00
+    boundary_buses = [4, 8]
     internal_buses = [0]
     return_internal = True
     show_computing_time = False
     pp.runpp(net, calculate_voltage_angles=True)
     net_org = deepcopy(net)
-    eq_type = "ward"
+    eq_type = "rei"
     net_eq = get_equivalent(net, eq_type, boundary_buses,
                             internal_buses,
                             return_internal=return_internal,
                             show_computing_time=False,
                             calculate_voltage_angles=True)
-    print(net.res_bus.loc[[0,3]])
-    print(net_eq.res_bus.loc[[0,3]])
-    print(net_eq.ward.loc[0])
+    print(net.res_bus)
+    # print(net_eq.res_bus.loc[[0,3]])
+    # print(net_eq.ward.loc[0])
 
-    net_eq.sn_mva = 10
-    pp.runpp(net_eq, calculate_voltage_angles=True)
-    print(net_eq.res_bus.loc[[0,3]])
+    # net_eq.sn_mva = 10
+    # pp.runpp(net_eq, calculate_voltage_angles=True)
+    # print(net_eq.res_bus.loc[[0,3]])
 
 
 
