@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from packaging import version
 
-from pandapower import __format_version__
+from pandapower import __format_version__, __version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
@@ -46,6 +46,7 @@ def convert_format(net, elements_to_deserialize=None):
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
     net.format_version = __format_version__
+    net.version = __version__
     return net
 
 
