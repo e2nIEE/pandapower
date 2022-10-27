@@ -42,7 +42,7 @@ setup(
     long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=1.0",
+    install_requires=["pandas<1.5",
                       "networkx>=2.5",
                       "scipy",
                       "numpy",
