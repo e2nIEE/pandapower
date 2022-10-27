@@ -45,7 +45,7 @@ def convert_format(net, elements_to_deserialize=None):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
-    net.version = __format_version__
+    net.format_version = __format_version__
     return net
 
 
