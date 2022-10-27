@@ -492,7 +492,7 @@ class FromSerializableRegistry():
             else:
                 net = self.empty_dict_like_object
             net.update(self.obj)
-            if 'format_version' not in self.self_obj:
+            if 'format_version' not in self.obj:
                 del net.format_version
             return net
 
