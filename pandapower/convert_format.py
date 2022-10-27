@@ -33,15 +33,15 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if version.parse(str(net.version)) < version.parse("2.4.0"):
+    if version.parse(str(net.format_version)) < version.parse("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.version, float) and net.version < 2:
+    if isinstance(net.format_version, float) and net.format_version < 2:
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if isinstance(net.version, float) and net.version < 1.6:
+    if isinstance(net.format_version, float) and net.format_version < 1.6:
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
