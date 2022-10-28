@@ -46,7 +46,6 @@ def convert_format(net, elements_to_deserialize=None):
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
     net.format_version = __format_version__
-    net.version = __version__
     return net
 
 
