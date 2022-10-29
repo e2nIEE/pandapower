@@ -934,6 +934,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
 
+        sec_coords = None
         if coords:
             try:
                 scaling_factor = sum(sec_len) / calc_len_coords(coords)
@@ -946,7 +947,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
 
         lines_to_create.append(create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2,
                                                   name=name, parallel=parallel,
-                                                  is_unbalanced=is_unbalanced, coords=sec_coords))
+                                                  is_unbalanced=is_unbalanced, line_idx=None, coords=sec_coords))
         lines_to_create[-1]["section"] = section_name
         lines_to_create[-1]["pf_loading"] = line_loading
         lines_to_create[-1]["folder_id"] = line.fold_id.loc_name
