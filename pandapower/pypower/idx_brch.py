@@ -90,4 +90,10 @@ MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 BR_R_ASYM = 21
 BR_X_ASYM = 22
 
-branch_cols = 23
+TCSC = 23
+TCSC_SET_P_MW = 24
+TCSC_THYRISTOR_FIRING_ANGLE = 25
+TCSC_X_L = 26
+TCSC_X_CVAR = 27
+
+branch_cols = 28

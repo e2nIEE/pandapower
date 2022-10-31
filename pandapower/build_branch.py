@@ -13,7 +13,7 @@ import pandas as pd
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, branch_cols
+    BR_R_ASYM, BR_X_ASYM, branch_cols, TCSC, TCSC_SET_P_MW, TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_L, TCSC_X_CVAR
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
@@ -577,6 +577,14 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
+    if "controllable" in net.impedance.columns and len(net.impedance.query("controllable")) > 0:
+        tcsc = net.impedance.controllable.values.astype(bool)
+        br_idx = np.arange(f, t)[tcsc]
+        branch[f:t, TCSC] = tcsc
+        branch[br_idx, TCSC_SET_P_MW] = net.impedance.set_p_to_mw.loc[tcsc].values / net.sn_mva
+        branch[br_idx, TCSC_THYRISTOR_FIRING_ANGLE] = net.impedance.thyristor_firing_angle_degree.loc[tcsc].values
+        branch[br_idx, TCSC_X_L] = net.impedance.tcsc_x_l_ohm.loc[tcsc].values
+        branch[br_idx, TCSC_X_CVAR] = net.impedance.tcsc_x_cvar_ohm.loc[tcsc].values
 
 
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):

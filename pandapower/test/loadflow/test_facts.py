@@ -97,5 +97,16 @@ def test_svc(vm_set_pu):
     assert np.isclose(net.res_shunt.at[0, 'q_mvar'], net2.res_shunt.at[0, 'q_mvar'], rtol=0, atol=1e-5)
 
 
+def test_tcsc():
+    net = pp.networks.case5()
+    pp.replace_line_by_impedance(net, 2, 50, False)
+    net.impedance.loc[0, 'controllable'] = True
+    net.impedance.loc[0, 'set_p_to_mw'] = 150
+    net.impedance["thyristor_firing_angle_degree"] = 90.
+    net.impedance["tcsc_x_l_ohm"] = 1
+    net.impedance["tcsc_x_cvar_ohm"] = -10
+    pp.runpp(net)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

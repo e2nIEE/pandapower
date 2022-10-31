@@ -6,6 +6,7 @@
 
 import numpy as np
 from scipy.sparse import csr_matrix
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
 
 
 def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
@@ -23,7 +24,7 @@ def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     return y_svc
 
 
-def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, svc_x_l_pu, svc_x_cvar_pu):
+def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x_control_lookup, svc_x_l_pu, svc_x_cvar_pu):
     # dQ_SVC_i/du_i = 2 * q_svc_i
     # J_C_Q_c = dQ_SVC_i / d_alpha_SVC = 2 * V_i ** 2 * (np.cos(2*alpha_SVC - 1) / np.pi * X_L
     # J_C_C_d, J_C_C_u, J_C_C_c - ?  # "depend on the controlled parameter and the corresponding mismatch equation"
@@ -60,3 +61,49 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, s
     J_m = csr_matrix(J_m)
 
     return J_m
+
+
+def create_J_modification_tcsc(J, tcsc_branches, pvpq, pq, pq_lookup, V, x_control, x_control_lookup, tcsc_x_l_pu, tcsc_x_cvar_pu):
+    y_svc = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    q_svc = abs(V[tcsc_branches]) ** 2 * y_svc
+
+    J_m = np.zeros_like(J.toarray())
+
+    # J_C_Q_u
+    J_C_Q_u = np.zeros(shape=(len(pq), len(pq)))
+    J_C_Q_u[pq_lookup[tcsc_branches], pq_lookup[tcsc_branches]] = 2 * q_svc
+    # count pvpq rows and pvpq columns from top left
+    J_m[len(pvpq):len(pvpq) + len(pq), len(pvpq):len(pvpq) + len(pq)] = J_C_Q_u
+
+    # J_C_Q_c
+    J_C_Q_c = np.zeros(shape=(len(pq), len(x_control)))
+    J_C_Q_c[pq_lookup[tcsc_branches], :] = 2 * abs(V[tcsc_branches]) ** 2 * (np.cos(2 * x_control) - 1) / (np.pi * tcsc_x_l_pu)
+    # count pvpq rows and pvpq columns from top left
+    J_m[len(pvpq):len(pvpq) + len(pq), len(pvpq) + len(pq):len(pvpq) + len(pq) + len(x_control)] = J_C_Q_c
+
+    # J_C_C_d - will be all zero (ignoring)
+
+    # J_C_C_u
+    # d(Ui - Ui,set)/d(Ui) = dUi/dUi = 1
+    J_C_C_u = np.zeros(shape=(len(x_control), len(pq)))
+    J_C_C_u[:, pq_lookup[tcsc_branches]] = 1
+    # count pvpq rows and pvpq columns from top left
+    J_m[len(pvpq) + len(pq):len(pvpq) + len(pq) + len(x_control), len(pvpq):len(pvpq) + len(pq)] = J_C_C_u
+
+    # J_C_C_c
+    # d(Ui - Ui,set) / d x_control = 0
+
+    J_m = csr_matrix(J_m)
+
+    return J_m
+
+
+def evaluate_Fx_TCSC(Ybus, V, branch, tcsc_branches, pvpq_lookup):
+    tcsc_fb, tcsc_tb = branch[tcsc_branches, [F_BUS, T_BUS]].real.astype(int)
+    fb = pvpq_lookup[tcsc_fb]
+    tb = pvpq_lookup[tcsc_tb]
+    Vm_f = np.abs(V[fb])
+    Va_f = np.angle(V[fb])
+    Vm_t = np.abs(V[tb])
+    Va_t = np.angle(V[tb])
+    p_tcsc = Vm_f * np.abs(Ybus[fb,tb]) * Vm_t * np.cos((Va_t - Va_f) + np.angle(Ybus[tb,:] - Ybus[fb,:]))

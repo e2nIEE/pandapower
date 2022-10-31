@@ -10,7 +10,7 @@
 
 """Solves the power flow using a full Newton's method.
 """
-
+import numpy as np
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, max, \
     zeros_like, column_stack, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix, eye, vstack
@@ -21,7 +21,8 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_FIRING_ANGLE, BS, SVC_X_L, SVC_X_CVAR
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, TCSC, TCSC_SET_P_MW, TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_L, \
+    TCSC_X_CVAR
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
@@ -29,7 +30,7 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu, create_J_modification_tcsc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -113,10 +114,20 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc_buses = flatnonzero(nan_to_num(bus[:, SVC]))
     svc_set_vm_pu = bus[svc_buses, SET_VM_PU]
     x_control = bus[svc_buses, SVC_FIRING_ANGLE]
+    x_control_lookup = np.zeros_like(x_control)
     if len(svc_buses) > 0:
         svc_x_l_pu = bus[svc_buses, SVC_X_L]
         svc_x_cvar_pu = bus[svc_buses, SVC_X_CVAR]
         Sbus_backup = Sbus.copy()
+
+    tcsc_branches = flatnonzero(nan_to_num(branch[:, TCSC]))
+    tcsc_set_p_pu = branch[tcsc_branches, TCSC_SET_P_MW].real
+    x_control_tcsc = branch[tcsc_branches, SVC_FIRING_ANGLE].real
+    x_control = r_[x_control, x_control_tcsc]
+    x_control_lookup = r_[x_control_lookup, np.ones_like(x_control_tcsc)]
+    if len(tcsc_branches) > 0:
+        tcsc_x_l_pu = branch[tcsc_branches, TCSC_X_L].real
+        tcsc_x_cvar_pu = branch[tcsc_branches, TCSC_X_CVAR].real
 
     nref = len(ref)
     npv = len(pv)
@@ -134,7 +145,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # make initial guess for the slack
     slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
+    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
+                     tcsc_branches, tcsc_set_p_pu)
 
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
@@ -216,11 +228,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             J = create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
                               pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta_pu, J, r, x, g)
 
-        if len(svc_buses) > 0:
+        if len(svc_buses) > 0 or len(tcsc_branches) > 0:
             K_J = vstack([eye(J.shape[0], format="csr"), csr_matrix((len(x_control), J.shape[0]))], format="csr")
             J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
-            J_m = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, svc_x_l_pu, svc_x_cvar_pu)
-            J = J + J_m
+            J_m_svc = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x_control_lookup,
+                                                svc_x_l_pu, svc_x_cvar_pu)
+            J_m_tcsc = create_J_modification_tcsc(J, tcsc_branches, pvpq, pq, pq_lookup, V, x_control, x_control_lookup,
+                                                  tcsc_x_l_pu, tcsc_x_cvar_pu)
+            J = J + J_m_svc + J_m_tcsc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
@@ -256,7 +271,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
-        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu, x_control)
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
+                         tcsc_branches, tcsc_set_p_pu)
 
         if tdpf:
             i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
@@ -276,7 +292,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
-def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None, svc_buses=None, svc_set_vm_pu=None, x_control=None):
+def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None, svc_buses=None, svc_set_vm_pu=None, tcsc_branches=None, tcsc_set_p_mw=None):
     # evalute F(x)
     if dist_slack:
         # we include the slack power (slack * contribution factors) in the mismatch calculation
@@ -286,8 +302,8 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         mis = V * conj(Ybus * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
     if svc_buses is not None and len(svc_buses) > 0:
-        Fc = abs(V[svc_buses]) - svc_set_vm_pu
-        F = r_[F, Fc]
+        Fc_svc = abs(V[svc_buses]) - svc_set_vm_pu
+        F = r_[F, Fc_svc]
     return F
 
 
