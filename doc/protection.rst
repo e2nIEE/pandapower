@@ -41,7 +41,6 @@ As of now pandapower is capable of simulating fault scenario using:
     :maxdepth: 2
     
     protection/oc_relay
-    protection/doc_relay
 
 More detailed documentation please refer `netzschutztechnik <https://www.vde-verlag.de/buecher/665393/netzschutztechnik.html>`_
 

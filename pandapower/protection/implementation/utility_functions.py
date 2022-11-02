@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from math import isinf
 
 #    This function creates a short-circuit location (a bus) on a line.
 def create_sc_bus(net_copy, sc_line_id, sc_fraction):
@@ -204,11 +205,11 @@ def fuse_bus_switches(net, bus_switches):
     
     return net
 
-
 # plot the tripped grid of net_sc
 def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_annotations=True):
     
     import pandapower.plotting as plot
+    import heapq
     import seaborn as sns
     clrs = sns.color_palette(palette="colorblind", n_colors=10)
     import mplcursors
@@ -229,49 +230,36 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
     
     collection = [lc, bc_extgrid, bc, bc_fault_location ]
     
+ 
+    tripping_times=[]
+
+    for trip_idx in range(len(trip_decisions)):
+       trip_time= trip_decisions[trip_idx].get("Trip time [s]")
+       tripping_times.append(trip_time)
+    tripping_times = [v for v in tripping_times if not isinf(v)]
+    backup_tripping_times=copy.deepcopy(tripping_times)
+    backup_tripping_times.remove(min(backup_tripping_times)) and  backup_tripping_times.remove(heapq.nsmallest(2,backup_tripping_times)[-1])
+       
     inst_trip_switches = []
-    backup_trip_switches = [] #timegrading plan
-    inst_backup_switches=[] #   
-    
-    # inst backup time when trip time is second smallest than inst trip time
-    backup_tripping_times=[]
-    
+    backup_trip_switches = [] 
+    inst_backup_switches=[]  
     
     for trip_idx in range(len(trip_decisions)):
-        trip_decision = trip_decisions[trip_idx]
-        trip_type = trip_decision.get("Trip Type")
-        
-        if trip_type=='backup':
-            trip_time=trip_decision.get("Trip time [s]")
-            backup_tripping_times.append(trip_time)
-            
-        backup_time=list(filter(None, backup_tripping_times))
-        
-        if len(backup_time)==0:
-            
-            trip_inst_backup=None
-        else:
-            trip_inst_backup=min(backup_time)
-            
-        
-    for trip_idx in range(len(trip_decisions)):
-        trip_decision = trip_decisions[trip_idx]
-        switch_id = trip_decision.get("Switch ID")
-        trip = trip_decision.get("Trip")
-        trip_type = trip_decision.get("Trip Type")
-        trip_time=trip_decision.get("Trip time [s]")
-        
-        #inst backup tripping
-        if trip_type=='backup' and trip_time==trip_inst_backup:
-                inst_backup_switches.append(switch_id)
-        #inst tripping       
-        if trip_type == "instantaneous":
-            inst_trip_switches.append(switch_id)
-            
-        #backup tripping    
-        elif "backup" in trip_type:
-                backup_trip_switches.append(switch_id)
-        
+       trip_decision = trip_decisions[trip_idx]
+       switch_id = trip_decision.get("Switch ID")
+       trip = trip_decision.get("Trip")
+       trip_time=trip_decision.get("Trip time [s]")
+       
+       if trip_time== heapq.nsmallest(2,tripping_times)[-1]:
+               inst_backup_switches.append(switch_id)
+               
+       if trip_time==min(tripping_times):
+               inst_trip_switches.append(switch_id)      
+       
+       if trip_time in backup_tripping_times and trip==True:
+           
+           backup_trip_switches.append(switch_id)
+      
     dist_to_bus = bus_size * 3.25
 
 
@@ -621,6 +609,8 @@ def power_flow_end_points(net):
                 pf_loop_end_buses.append(bus)
                  
     return pf_loop_end_buses, pf_radial_end_buses
+
+
 
 
 #function calcuulate the bus path from start and end buses
