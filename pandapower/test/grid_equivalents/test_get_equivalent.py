@@ -154,10 +154,10 @@ def test_cost_consideration():
 
         # check elements
         check_elements_amount(eq_net1, {"bus": 6, "load": 3, "sgen": 3, "shunt": 5, "ext_grid": 1,
-                                        "line": 2, "impedance": 10, cost_type: 4},
+                                        "line": 2, "impedance": 7, cost_type: 4},
                               check_all_pp_elements=True)
         check_elements_amount(eq_net2, {"bus": 5, "load": 3, "sgen": 2, "shunt": 5, "ext_grid": 1,
-                                        "impedance": 10, cost_type: 3},
+                                        "impedance": 7, cost_type: 3},
                               check_all_pp_elements=True)
         assert all(eq_net1.sgen.index.values == np.array([0, 1, 2]))  # simple create_sgen()
         # without index=... expected
@@ -209,7 +209,7 @@ def test_basic_usecases():
             assert np.allclose(net1.bus.min_vm_pu.values,
                                np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
             check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
-                                         "line": 0, "impedance": 3}, check_all_pp_elements=True)
+                                         "line": 0, "impedance": 2}, check_all_pp_elements=True)
             check_res_bus(net, net2)
             assert np.allclose(net2.bus.min_vm_pu.values,
                                net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
@@ -460,13 +460,13 @@ if __name__ == "__main__":
     if 0:
         pytest.main(['-x', __file__])
     else:
-        # test_cost_consideration()
+        test_cost_consideration()
         test_basic_usecases()
-        # test_case9_with_slack_generator_in_external_net()
-        # test_adopt_columns_to_separated_eq_elms()
-        # test_equivalent_groups()
-        # test_shifter_degree()
-        # test_retain_original_internal_indices()
+        test_case9_with_slack_generator_in_external_net()
+        test_adopt_columns_to_separated_eq_elms()
+        test_equivalent_groups()
+        test_shifter_degree()
+        test_retain_original_internal_indices()
     pass
 
     
