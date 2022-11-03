@@ -9,7 +9,7 @@ import numpy as np
 import pandapower as pp
 
 import pandapower.networks
-from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu
+from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu, calc_tcsc_p_pu
 from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
 
 
@@ -120,10 +120,10 @@ def test_tcsc_simple():
     net.impedance['controllable'] = True
     net.impedance['set_p_to_mw'] = 20
     net.impedance["thyristor_firing_angle_degree"] = 130.
-    net.impedance["tcsc_x_l_ohm"] = 0.5
-    net.impedance["tcsc_x_cvar_ohm"] = -1
+    net.impedance["tcsc_x_l_ohm"] = 1
+    net.impedance["tcsc_x_cvar_ohm"] = -10
 
-    pp.runpp(net, max_iteration=1000)
+    pp.runpp(net, max_iteration=10)
 
     net.impedance.controllable = False
     y = calc_y_svc_pu(np.deg2rad(116.09807835), 0.5, -1)
@@ -145,19 +145,112 @@ def test_tcsc_simple2():
     net.impedance['controllable'] = True
     net.impedance['set_p_to_mw'] = 20
     net.impedance["thyristor_firing_angle_degree"] = 130.
-    net.impedance["tcsc_x_l_ohm"] = 0.5
-    net.impedance["tcsc_x_cvar_ohm"] = -1
+    net.impedance["tcsc_x_l_ohm"] = 1
+    net.impedance["tcsc_x_cvar_ohm"] = -10
 
-    pp.runpp(net, max_iteration=1000)
+    pp.runpp(net, max_iteration=100)
 
     net.impedance.controllable = False
-    y = calc_y_svc_pu(np.deg2rad(116.09807835), 0.5, -1)
+    y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
 #    net.impedance.rft_pu
     net.impedance.xft_pu = -1/y
     net.impedance.xtf_pu = -1/y
     pp.runpp(net)
 
-#test_tcsc()
+
+def test_calc_tcsc_p_pu():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 1, 100, 25)
+
+    pp.runpp(net)
+
+    V = net._ppc["internal"]["V"]
+    tcsc_fb = 0
+    tcsc_tb = 1
+    Ybus = net._ppc["internal"]["Ybus"]
+
+    z_base_ohm = np.square(110) / 1
+    x_pu = net.line.length_km.values * (net.line.r_ohm_per_km.values + net.line.x_ohm_per_km.values * 1j) / z_base_ohm
+    y_pu = 1 / x_pu
+    S = V * np.conj(Ybus * V)
+
+    abs(V[0]) * abs(y_pu) * abs(V[1]) * np.cos(np.angle(V[1]) - np.angle(V[0]) + np.angle(y_pu))
+
+
+    p, A, phi = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
+
+
+def test_tcsc_firing_angle_formula():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_impedance(net, 0, 1, 0, 0.001, 1)
+    #pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 1, 100, 25)
+
+    z_base_ohm = np.square(110) / 1
+    #y_pu = calc_y_svc_pu(np.deg2rad(134.438395), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    y_pu = 1/(-18.9/z_base_ohm)
+    print((1/y_pu) * z_base_ohm)
+    #    net.impedance.rft_pu
+    net.impedance.xft_pu = 1 / y_pu
+    net.impedance.xtf_pu = 1 / y_pu
+    pp.runpp(net)
+    print(net.res_line.loc[0])
+    print(net.res_impedance.loc[0])
+
+
+def test_tcsc_firing_angle_formula():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 1, 1, 0, 0.01, 0, 0.664)
+    pp.create_load(net, 1, 100, 25)
+
+    z_base_ohm = np.square(110) / 1
+    #y_pu = calc_y_svc_pu(np.deg2rad(134.438395), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    #y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    print((1/y_pu) * z_base_ohm)
+    #    net.impedance.rft_pu
+    #net.line.loc[1, "x_ohm_per_km"] = (1 / y_pu) * z_base_ohm
+    net.line.loc[1, "x_ohm_per_km"] = -18.9
+    pp.runpp(net, max_iteration=100)
+    print(net.res_line)
+
+
+def test_tcsc_firing_angle_formula():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 1, 100, 25)
+
+    z_base_ohm = np.square(110) / 1
+    #y_pu = calc_y_svc_pu(np.deg2rad(134.438395), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    y_pu = calc_y_svc_pu(np.deg2rad(141), 1 / z_base_ohm, -10 / z_base_ohm)
+    #y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
+    print((1/y_pu) )
+    print((1/y_pu) * z_base_ohm)
+    print(xtcsc(np.deg2rad(141), 1, -10) / z_base_ohm)
+    #    net.impedance.rft_pu
+    pp.create_shunt(net, 1, -y_pu, y_pu)
+    pp.runpp(net)
+    print(net.res_line.loc[0])
+
+
+def xtcr(x, x_l):
+    return np.pi * x_l / (2*(np.pi - x) + np.sin(2*x))
+
+def xtcsc(x, x_l, x_c):
+    return np.pi * x_l / (2*(np.pi-x) + np.sin(2*x) + np.pi*x_l/x_c)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
