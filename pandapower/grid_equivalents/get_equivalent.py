@@ -213,7 +213,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
-
+        
+        # --- remove buses without power flow results in net_eq
+        pp.drop_buses(net_external, net_external.res_bus.index[net_external.res_bus.vm_pu.isnull()])
+    
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
             net_external, boundary_buses, all_internal_buses,
