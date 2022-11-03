@@ -7,7 +7,7 @@
 import numpy as np
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, SVC, SVC_FIRING_ANGLE
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, SVC, SVC_THYRISTOR_FIRING_ANGLE
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
@@ -437,7 +437,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
                 logger.debug(f"found {lsi} controllable shunts (SVC), the value of q_mvar will be divided equally.")
             net.shunt.loc[net.shunt.bus == b_svc, "q_mvar"] = -ppc["bus"][bi_svc, BS] / lsi
             net.shunt.loc[net.shunt.bus == b_svc, "thyristor_firing_angle_degree"] = \
-                np.rad2deg(ppc["bus"][bi_svc, SVC_FIRING_ANGLE])
+                np.rad2deg(ppc["bus"][bi_svc, SVC_THYRISTOR_FIRING_ANGLE])
 
     if len(s) > 0:
         sidx = bus_lookup[s["bus"].values]

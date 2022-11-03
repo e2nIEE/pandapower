@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
-    VM, VA, CID, CZD, bus_cols, REF, SVC, SET_VM_PU, SVC_FIRING_ANGLE, SVC_X_L, SVC_X_CVAR
+    VM, VA, CID, CZD, bus_cols, REF, SVC, SET_VM_PU, SVC_THYRISTOR_FIRING_ANGLE, SVC_X_L, SVC_X_CVAR
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 
 try:
@@ -521,7 +521,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         z_base_ohm = np.square(net.bus.loc[b, "vn_kv"]) / net.sn_mva
         ppc["bus"][bus_lookup[b], SVC] = True
         ppc["bus"][bus_lookup[b], SET_VM_PU] = s.loc[svc, 'set_vm_pu'].values
-        ppc["bus"][bus_lookup[b], SVC_FIRING_ANGLE] = np.deg2rad(s.loc[svc, 'thyristor_firing_angle_degree'].values)
+        ppc["bus"][bus_lookup[b], SVC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(s.loc[svc, 'thyristor_firing_angle_degree'].values)
         ppc["bus"][bus_lookup[b], SVC_X_L] = s.loc[svc, 'svc_x_l_ohm'].values / z_base_ohm
         ppc["bus"][bus_lookup[b], SVC_X_CVAR] = s.loc[svc, 'svc_x_cvar_ohm'].values / z_base_ohm
 

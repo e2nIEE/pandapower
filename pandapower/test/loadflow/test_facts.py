@@ -9,7 +9,8 @@ import numpy as np
 import pandapower as pp
 
 import pandapower.networks
-from pandapower.pypower.idx_bus import BS, SVC_FIRING_ANGLE
+from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu
+from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
 
 
 def facts_case_study_grid():
@@ -86,7 +87,7 @@ def test_svc(vm_set_pu):
     assert np.allclose(net.shunt.q_mvar, -net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], BS],
                        rtol=0, atol=1e-6)
     assert np.allclose(np.deg2rad(net.shunt.thyristor_firing_angle_degree),
-                       net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], SVC_FIRING_ANGLE],
+                       net._ppc["bus"][net._pd2ppc_lookups["bus"][net.shunt.bus.values], SVC_THYRISTOR_FIRING_ANGLE],
                        rtol=0, atol=1e-6)
 
     net.shunt.controllable = False
@@ -97,7 +98,7 @@ def test_svc(vm_set_pu):
     assert np.isclose(net.res_shunt.at[0, 'q_mvar'], net2.res_shunt.at[0, 'q_mvar'], rtol=0, atol=1e-5)
 
 
-def test_tcsc():
+def test_tcsc_case5():
     net = pp.networks.case5()
     pp.replace_line_by_impedance(net, [2, 3], 50, False)
     net.impedance['controllable'] = True
@@ -107,6 +108,56 @@ def test_tcsc():
     net.impedance["tcsc_x_cvar_ohm"] = -10
     pp.runpp(net)
 
+
+def test_tcsc_simple():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_impedance(net, 0, 1, 0, 0.001, 1)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 1, 100, 25)
+
+    net.impedance['controllable'] = True
+    net.impedance['set_p_to_mw'] = 20
+    net.impedance["thyristor_firing_angle_degree"] = 130.
+    net.impedance["tcsc_x_l_ohm"] = 0.5
+    net.impedance["tcsc_x_cvar_ohm"] = -1
+
+    pp.runpp(net, max_iteration=1000)
+
+    net.impedance.controllable = False
+    y = calc_y_svc_pu(np.deg2rad(116.09807835), 0.5, -1)
+#    net.impedance.rft_pu
+    net.impedance.xft_pu = -1/y
+    net.impedance.xtf_pu = -1/y
+    pp.runpp(net)
+
+
+def test_tcsc_simple2():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_impedance(net, 1, 2, 0, 0.001, 1)
+    pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 2, 100, 25)
+
+    net.impedance['controllable'] = True
+    net.impedance['set_p_to_mw'] = 20
+    net.impedance["thyristor_firing_angle_degree"] = 130.
+    net.impedance["tcsc_x_l_ohm"] = 0.5
+    net.impedance["tcsc_x_cvar_ohm"] = -1
+
+    pp.runpp(net, max_iteration=1000)
+
+    net.impedance.controllable = False
+    y = calc_y_svc_pu(np.deg2rad(116.09807835), 0.5, -1)
+#    net.impedance.rft_pu
+    net.impedance.xft_pu = -1/y
+    net.impedance.xtf_pu = -1/y
+    pp.runpp(net)
+
+#test_tcsc()
 
 if __name__ == "__main__":
     pytest.main([__file__])
