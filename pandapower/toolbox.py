@@ -2176,7 +2176,17 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         if max_i == 'imp.sn_mva':
             max_i = imp.sn_mva / vn / np.sqrt(3)
         new_index.append(create_line_from_parameters(
-            net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni, imp.xft_pu * Zni, 0, max_i,
+
+            net, imp.from_bus, imp.to_bus,
+            length_km=1,
+            r_ohm_per_km=imp.rft_pu * Zni,
+            x_ohm_per_km=imp.xft_pu * Zni,
+            c_nf_per_km=0,
+            max_i_ka=max_i,
+            r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
+            x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
+            c0_nf_per_km=0,
+            parallel=1,
             name=imp.name, in_service=imp.in_service))
     net.impedance.drop(index, inplace=True)
     return new_index
@@ -2206,6 +2216,9 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
     if len(sn_mva) != len(index):
         raise ValueError("index and sn_mva must have the same length.")
+
+    parallel = net.line["parallel"].values
+
     i = 0
     new_index = []
     for idx, line_ in net.line.loc[index].iterrows():
@@ -2217,9 +2230,15 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
+        par = parallel[idx]
         new_index.append(create_impedance(
-            net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
-            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+            net, line_.from_bus, line_.to_bus,
+            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
+            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
+            sn_mva=sn_mva[i],
+            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
+            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
+            name=line_.name,
             in_service=line_.in_service))
         i += 1
     drop_lines(net, index)
