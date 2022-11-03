@@ -74,7 +74,7 @@ def _initialize_branch_lookup(net):
     start = 0
     end = 0
     net._pd2ppc_lookups["branch"] = {}
-    for element in ["line", "impedance", "trafo", "trafo3w", "xward"]:
+    for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
         if len(net[element]) > 0:
             if element == "trafo3w":
                 end = start + len(net[element]) * 3
