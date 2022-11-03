@@ -579,12 +579,13 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
     if "controllable" in net.impedance.columns and len(net.impedance.query("controllable")) > 0:
         tcsc = net.impedance.controllable.values.astype(bool)
+        z_base_ohm = np.square(net.bus.loc[net.impedance.loc[tcsc, 'from_bus'].values, "vn_kv"].values) / net.sn_mva
         br_idx = np.arange(f, t)[tcsc]
         branch[f:t, TCSC] = tcsc
         branch[br_idx, TCSC_SET_P_MW] = net.impedance.set_p_to_mw.loc[tcsc].values / net.sn_mva
-        branch[br_idx, TCSC_THYRISTOR_FIRING_ANGLE] = net.impedance.thyristor_firing_angle_degree.loc[tcsc].values
-        branch[br_idx, TCSC_X_L] = net.impedance.tcsc_x_l_ohm.loc[tcsc].values
-        branch[br_idx, TCSC_X_CVAR] = net.impedance.tcsc_x_cvar_ohm.loc[tcsc].values
+        branch[br_idx, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net.impedance.thyristor_firing_angle_degree.loc[tcsc].values)
+        branch[br_idx, TCSC_X_L] = net.impedance.tcsc_x_l_ohm.loc[tcsc].values / z_base_ohm
+        branch[br_idx, TCSC_X_CVAR] = net.impedance.tcsc_x_cvar_ohm.loc[tcsc].values / z_base_ohm
 
 
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
