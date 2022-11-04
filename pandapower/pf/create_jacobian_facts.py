@@ -63,16 +63,16 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x
     return J_m
 
 
-def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_i, tcsc_j, tcsc_fb, tcsc_tb, pvpq, pq, tcsc_branches,
+def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, tcsc_i, tcsc_j, tcsc_fb, tcsc_tb, pvpq, pq, tcsc_branches,
                                x_control, x_control_lookup, tcsc_x_l_pu, tcsc_x_cvar_pu,
                                tcsc_in_pq_f, tcsc_in_pq_t, tcsc_in_pvpq_f, tcsc_in_pvpq_t):
-    p_tcsc_ij, A, phi_tcsc_ij = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
-    q_tcsc_ii, q_tcsc_ij = calc_tcsc_q_pu(Ybus, V, tcsc_fb, tcsc_tb)
+    p_tcsc_ij, A, phi_tcsc_ij = calc_tcsc_p_pu(Ybus_tcsc, V, tcsc_fb, tcsc_tb)
+    q_tcsc_ii, q_tcsc_ij = calc_tcsc_q_pu(Ybus_tcsc, V, tcsc_fb, tcsc_tb)
 
-    Sbus = V * np.conj(Ybus * V)
+    Sbus = V * np.conj(Ybus_tcsc * V)
     p_tcsc_ij = Sbus[tcsc_tb].real
     q_tcsc_ij = Sbus[tcsc_tb].imag
-    phi_tcsc_ij = np.angle(Ybus[tcsc_fb, tcsc_tb])
+    phi_tcsc_ij = np.angle(Ybus_tcsc[tcsc_fb, tcsc_tb])
 
     y_tcsc = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
@@ -86,27 +86,46 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
     nf_pq = np.r_[branch[tcsc_branches[tcsc_in_pq_f], T_BUS].real.astype(int)]
     nt_pq = np.r_[branch[tcsc_branches[tcsc_in_pq_t], F_BUS].real.astype(int)]
 
+    p_tcsc_ij = np.zeros_like(tcsc_fb, dtype=np.float64)
+    q_tcsc_ii = np.zeros_like(tcsc_fb, dtype=np.float64)
+    q_tcsc_ij = np.zeros_like(tcsc_fb, dtype=np.float64)
+    for i, (f, t) in enumerate(zip(tcsc_fb, tcsc_tb)):
+        p_tcsc_ij[i] = np.abs(V[f]) * np.abs(Ybus_tcsc[f, t]) * np.abs(V[t]) * \
+                       np.cos(np.angle(V[f]) - np.angle(V[t]) + np.angle(Ybus_tcsc[f, t]))
+        q_tcsc_ii[i] = np.square(np.abs(V[f])) * np.abs(Ybus_tcsc[f, f])
+        q_tcsc_ij[i] = np.abs(V[f]) * np.abs(Ybus_tcsc[f, t]) * np.abs(V[t]) * \
+                       np.sin(np.angle(V[f]) - np.angle(V[t]) + np.angle(Ybus_tcsc[f, t]))
+
     # J_C_P_d
     J_C_P_d = np.zeros(shape=(len(pvpq), len(pvpq)))
-    for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
-        i = pvpq_lookup[m]
-        j = pvpq_lookup[n]
-        #J_C_P_d[i, i] = -q_tcsc_ij
-        #J_C_P_d[j, i] = q_tcsc_ij
-        J_C_P_d[i, i] = -Sbus[tcsc_tb].imag
-        J_C_P_d[j, i] = Sbus[tcsc_tb].imag
-    #J_C_P_d[0:len(tcsc_branches), tcsc_i] = -q_tcsc_ij
-    #J_C_P_d[0:len(tcsc_branches), tcsc_j] = q_tcsc_ij
+    J_C_P_d[pvpq_lookup[mf_pvpq], pvpq_lookup[mf_pvpq]] = -q_tcsc_ij
+    J_C_P_d[pvpq_lookup[nf_pvpq], pvpq_lookup[mf_pvpq]] = -q_tcsc_ij
+    J_C_P_d[pvpq_lookup[mf_pvpq], pvpq_lookup[nf_pvpq]] = q_tcsc_ij
+    J_C_P_d[pvpq_lookup[nf_pvpq], pvpq_lookup[nf_pvpq]] = q_tcsc_ij
+    # for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
+    #     i = pvpq_lookup[m]
+    #     j = pvpq_lookup[n]
+    #     #J_C_P_d[i, i] = -q_tcsc_ij
+    #     #J_C_P_d[j, i] = q_tcsc_ij
+    #     J_C_P_d[i, i] = -Sbus[tcsc_tb].imag
+    #     J_C_P_d[j, i] = Sbus[tcsc_tb].imag
+    # #J_C_P_d[0:len(tcsc_branches), tcsc_i] = -q_tcsc_ij
+    # #J_C_P_d[0:len(tcsc_branches), tcsc_j] = q_tcsc_ij
+
 
     # J_C_P_u
     J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)))
-    for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pq), (tcsc_in_pvpq_t, mt_pvpq, nt_pq)):
-        i = pvpq_lookup[m]
-        j = pq_lookup[n]
-        #J_C_P_u[i, i] = p_tcsc_ij
-        #J_C_P_u[i, j] = p_tcsc_ij
-        J_C_P_u[i, i] = Sbus[tcsc_tb].real
-        J_C_P_u[i, j] = Sbus[tcsc_tb].real
+    J_C_P_u[pvpq_lookup[mf_pvpq], pvpq_lookup[mf_pq]] = p_tcsc_ij
+    J_C_P_u[pvpq_lookup[nf_pvpq], pvpq_lookup[mf_pq]] = p_tcsc_ij
+    J_C_P_u[pvpq_lookup[mf_pvpq], pvpq_lookup[nf_pq]] = p_tcsc_ij
+    J_C_P_u[pvpq_lookup[nf_pvpq], pvpq_lookup[nf_pq]] = p_tcsc_ij
+    # for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pq), (tcsc_in_pvpq_t, mt_pvpq, nt_pq)):
+    #     i = pvpq_lookup[m]
+    #     j = pq_lookup[n]
+    #     #J_C_P_u[i, i] = p_tcsc_ij
+    #     #J_C_P_u[i, j] = p_tcsc_ij
+    #     J_C_P_u[i, i] = Sbus[tcsc_tb].real
+    #     J_C_P_u[i, j] = Sbus[tcsc_tb].real
 
 
     # checking is wrong here. add an if-clause?
@@ -115,13 +134,17 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
 
     # J_C_Q_d
     J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)))
-    for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pq, nf_pvpq), (tcsc_in_pvpq_t, mt_pq, nt_pvpq)):
-        i = pq_lookup[m]
-        j = pvpq_lookup[n]
-        #J_C_Q_d[i, i] = p_tcsc_ij
-        #J_C_Q_d[i, j] = -p_tcsc_ij
-        J_C_Q_d[i, i] = Sbus[tcsc_tb].real
-        J_C_Q_d[i, j] = -Sbus[tcsc_tb].real
+    J_C_Q_d[pvpq_lookup[mf_pq], pvpq_lookup[mf_pvpq]] = p_tcsc_ij
+    J_C_Q_d[pvpq_lookup[nf_pq], pvpq_lookup[mf_pvpq]] = p_tcsc_ij
+    J_C_Q_d[pvpq_lookup[mf_pq], pvpq_lookup[nf_pvpq]] = -p_tcsc_ij
+    J_C_Q_d[pvpq_lookup[nf_pq], pvpq_lookup[nf_pvpq]] = -p_tcsc_ij
+    # for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pq, nf_pvpq), (tcsc_in_pvpq_t, mt_pq, nt_pvpq)):
+    #     i = pq_lookup[m]
+    #     j = pvpq_lookup[n]
+    #     #J_C_Q_d[i, i] = p_tcsc_ij
+    #     #J_C_Q_d[i, j] = -p_tcsc_ij
+    #     J_C_Q_d[i, i] = Sbus[tcsc_tb].real
+    #     J_C_Q_d[i, j] = -Sbus[tcsc_tb].real
 
 
 
@@ -131,14 +154,18 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
 
     # J_C_Q_u
     J_C_Q_u = np.zeros(shape=(len(pq), len(pq)))
-    for in_pq, m, n in ((tcsc_in_pq_f, mf_pq, nf_pq ), (tcsc_in_pq_t, mt_pq, nt_pq )):
-        i = pvpq_lookup[m]
-        j = pvpq_lookup[n]
-        #J_C_Q_u[i, i] = 2*q_tcsc_ii + q_tcsc_ij
-        #J_C_Q_u[i, j] = q_tcsc_ij
-        if len(m) == 0 or len(n) == 0: continue
-        J_C_Q_u[i, i] = 2*np.square(np.abs(V[m])) * np.abs(Ybus[m, m]) + Sbus[tcsc_tb].imag
-        J_C_Q_u[i, j] = Sbus[tcsc_tb].imag
+    J_C_Q_u[pvpq_lookup[mf_pq], pvpq_lookup[mf_pq]] = 2 * q_tcsc_ii + q_tcsc_ij
+    J_C_Q_u[pvpq_lookup[nf_pq], pvpq_lookup[mf_pq]] = 2 * q_tcsc_ii + q_tcsc_ij
+    J_C_Q_u[pvpq_lookup[mf_pq], pvpq_lookup[nf_pq]] = q_tcsc_ij
+    J_C_Q_u[pvpq_lookup[nf_pq], pvpq_lookup[nf_pq]] = q_tcsc_ij
+    # for in_pq, m, n in ((tcsc_in_pq_f, mf_pq, nf_pq ), (tcsc_in_pq_t, mt_pq, nt_pq )):
+    #     i = pvpq_lookup[m]
+    #     j = pvpq_lookup[n]
+    #     #J_C_Q_u[i, i] = 2*q_tcsc_ii + q_tcsc_ij
+    #     #J_C_Q_u[i, j] = q_tcsc_ij
+    #     if len(m) == 0 or len(n) == 0: continue
+    #     J_C_Q_u[i, i] = 2 * np.square(np.abs(V[m])) * np.abs(Ybus_tcsc[m, m]) + Sbus[tcsc_tb].imag
+    #     J_C_Q_u[i, j] = Sbus[tcsc_tb].imag
 
 
     #J_C_Q_u[0:len(tcsc_branches), tcsc_i] = 2*q_tcsc_ii + q_tcsc_ij
@@ -147,12 +174,14 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
     # J_C_P_c
     J_C_P_c = np.zeros(shape=(len(pvpq), len(x_control)))
     aux_term = 2*(np.cos(2*x_control[x_control_lookup==1] - 1)) / (np.pi * tcsc_x_l_pu * y_tcsc)
+    J_C_P_c[pvpq_lookup[mf_pvpq], :] = aux_term * p_tcsc_ij
+    J_C_P_c[pvpq_lookup[mt_pvpq], :] = aux_term * p_tcsc_ij
 
-    for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
-        i = pvpq_lookup[m]
-        #J_C_P_c[i, x_control_lookup==1] = aux_term * p_tcsc_ij
-        J_C_P_c[i, x_control_lookup==1] = aux_term * Sbus[tcsc_tb].real
-        #J_C_P_c[i, j] = aux_term * p_tcsc_ij
+    # for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
+    #     i = pvpq_lookup[m]
+    #     #J_C_P_c[i, x_control_lookup==1] = aux_term * p_tcsc_ij
+    #     J_C_P_c[i, x_control_lookup==1] = aux_term * Sbus[tcsc_tb].real
+    #     #J_C_P_c[i, j] = aux_term * p_tcsc_ij
 
 
 
@@ -161,11 +190,13 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
 
     # J_C_Q_c
     J_C_Q_c = np.zeros(shape=(len(pq), len(x_control)))
-    for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
-        i = pvpq_lookup[m]
-        if len(m) == 0: continue
-        #J_C_Q_c[i, x_control_lookup==1] = aux_term * (q_tcsc_ii + q_tcsc_ij)
-        J_C_Q_c[i, x_control_lookup==1] = aux_term * (np.square(np.abs(V[m])) * np.abs(Ybus[m, m]) + Sbus[tcsc_tb].imag)
+    J_C_Q_c[pvpq_lookup[mf_pq], :] = aux_term * (q_tcsc_ii + q_tcsc_ij)
+    J_C_Q_c[pvpq_lookup[mt_pq], :] = aux_term * (q_tcsc_ii + q_tcsc_ij)
+    # for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
+    #     i = pvpq_lookup[m]
+    #     if len(m) == 0: continue
+    #     #J_C_Q_c[i, x_control_lookup==1] = aux_term * (q_tcsc_ii + q_tcsc_ij)
+    #     J_C_Q_c[i, x_control_lookup==1] = aux_term * (np.square(np.abs(V[m])) * np.abs(Ybus_tcsc[m, m]) + Sbus[tcsc_tb].imag)
 
 
 #    J_C_Q_c[0:len(tcsc_branches), x_control_lookup==1] = aux_term * (q_tcsc_ii + q_tcsc_ij)
@@ -188,6 +219,7 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
         j = pvpq_lookup[n]
         if len(m) == 0: continue
         J_C_C_u[x_control_lookup==1, i] = A / abs(V[m]) * np.cos(np.angle(V[n]) - np.angle(V[m]) + phi_tcsc_ij)
+        J_C_C_u[x_control_lookup==1, j] = A / abs(V[n]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + phi_tcsc_ij)
 
     #J_C_C_u[:, tcsc_i] = A / abs(V[tcsc_i]) * np.cos(np.angle(V[tcsc_j]) - np.angle(V[tcsc_i]) + phi_tcsc_ij)
     #J_C_C_u[:, tcsc_j] = A / abs(V[tcsc_j]) * np.cos(np.angle(V[tcsc_j]) - np.angle(V[tcsc_i]) + phi_tcsc_ij)
