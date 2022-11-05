@@ -168,7 +168,7 @@ def convert_epsg_bus_geodata(net, epsg_in=4326, epsg_out=31467):
     return net
 
 
-def convert_crs(net, epsg_in=4326, epsg_out=31467, switch=False):
+def convert_crs(net, epsg_in=4326, epsg_out=31467):
     """
     Converts bus and line geodata in net from epsg_in to epsg_out
     if GeoDataFrame data is present convert_geodata_to_gis should be used to update geometries after crs conversion
@@ -179,35 +179,29 @@ def convert_crs(net, epsg_in=4326, epsg_out=31467, switch=False):
     :type epsg_in: int, default 4326 (= WGS84)
     :param epsg_out: epsg projection to be transformed to
     :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
-    :param switch: swap x, y coordinate while transforming
-    :type switch: bool, default True
     :return: net - the given pandapower network (no copy!)
     """
-    if epsg_in == epsg_out and not switch:
+    if epsg_in == epsg_out:
         return
 
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "pyproj")
-    transformer = Transformer.from_crs(epsg_in, epsg_out)
+    transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
     def _geo_bus_transformer(r):
-        if switch:
-            (y, x) = transformer.transform(r.y, r.x)
-        else:
-            (y, x) = transformer.transform(r.x, r.y)
+        (x, y) = transformer.transform(r.x, r.y)
         coords = r.coords
         if coords and not pd.isna(coords):
-            iterator = transformer.itransform(coords, switch=switch)
-            coords = list(iterator)
+            coords = _geo_line_transformer(coords)
         return pd.Series([x, y, coords], ["x", "y", "coords"])
 
     def _geo_line_transformer(r):
-        iterator = transformer.itransform(r, switch=switch)
-        line = list(iterator)
-        return line
+        return list(transformer.itransform(r))
 
     net.bus_geodata = net.bus_geodata.apply(lambda r: _geo_bus_transformer(r), axis=1)
     net.line_geodata.coords = net.line_geodata.coords.apply(lambda r: _geo_line_transformer(r))
+    net.bus_geodata.attrs = {"crs": f"EPSG:{epsg_out}"}
+    net.line_geodata.attrs = {"crs": f"EPSG:{epsg_out}"}
 
 
 def dump_to_geojson(net, nodes=False, branches=False):
@@ -290,5 +284,27 @@ def dump_to_geojson(net, nodes=False, branches=False):
         for uid, row in iterator:
             geom = geojson.LineString(row.coords)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
-
+    # find and set crs if available
+    crs_bus = None
+    if nodes and "crs" in net.bus_geodata.attrs:
+        crs_bus = net.bus_geodata.attrs["crs"]
+    crs_line = None
+    if branches and "crs" in net.line_geodata.attrs:
+        crs_line = net.line_geodata.attrs["crs"]
+    crs = {
+        "type": "name",
+        "properties": {
+            "name": ""
+        }
+    }
+    if crs_bus:
+        if crs_line and crs_line != crs_bus:
+            raise ValueError("Bus and Line crs mismatch")
+        crs["properties"]["name"] = crs_bus
+    elif crs_line:
+        crs["properties"]["name"] = crs_line
+    else:
+        crs = None
+    if crs:
+        return geojson.FeatureCollection(features, crs=crs)
     return geojson.FeatureCollection(features)
