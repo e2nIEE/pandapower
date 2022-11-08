@@ -139,7 +139,7 @@ def test_tcsc_simple2():
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
     pp.create_impedance(net, 1, 2, 0, 0.001, 1)
-    pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
+    # pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
     pp.create_load(net, 2, 100, 25)
 
     net.impedance['controllable'] = True
@@ -150,13 +150,13 @@ def test_tcsc_simple2():
 
     pp.runpp(net, max_iteration=100)
 
-    net.impedance.controllable = False
-    y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
-#    net.impedance.rft_pu
-    net.impedance.xft_pu = -1/y
-    net.impedance.xtf_pu = -1/y
-    pp.runpp(net)
-
+#     net.impedance.controllable = False
+#     y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
+# #    net.impedance.rft_pu
+#     net.impedance.xft_pu = -1/y
+#     net.impedance.xtf_pu = -1/y
+#     pp.runpp(net)
+#
 
 def test_calc_tcsc_p_pu():
     net = pp.create_empty_network()
