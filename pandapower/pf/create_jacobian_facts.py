@@ -324,16 +324,16 @@ def calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb):
     y_ij_pu = Ybus[tcsc_fb, tcsc_tb]
     y_ji_pu = Ybus[tcsc_tb, tcsc_fb]
 
-    phi_tcsc_ij = np.angle(y_ij_pu)
-    phi_tcsc_ji = np.angle(y_ji_pu)
+    phi_tcsc_ij = np.array(np.angle(y_ij_pu))[0]
+    phi_tcsc_ji = np.array(np.angle(y_ji_pu))[0]
 
     #A = Vm_f * np.abs(np.array(Ybus[tcsc_fb, tcsc_tb])[0]) * Vm_t
-    A_ij = Vm_f * np.abs(y_ij_pu) * Vm_t
-    A_ji = Vm_f * np.abs(y_ji_pu) * Vm_t
+    A_ij = np.array(Vm_f * np.abs(y_ij_pu) * Vm_t)[0]
+    A_ji = np.array(Vm_f * np.abs(y_ji_pu) * Vm_t)[0]
 
 
-    p_tcsc_ij = A_ij * np.cos(delta_ij + phi_tcsc_ij)
-    p_tcsc_ji = A_ji * np.cos(delta_ji + phi_tcsc_ji)
+    p_tcsc_ij = np.array(A_ij * np.cos(delta_ij + phi_tcsc_ij))
+    p_tcsc_ji = np.array(A_ji * np.cos(delta_ji + phi_tcsc_ji))
 
     return p_tcsc_ij, p_tcsc_ji,A_ij,A_ji,phi_tcsc_ij,phi_tcsc_ji
 
@@ -366,13 +366,13 @@ def calc_tcsc_q_pu(Ybus, V, tcsc_fb, tcsc_tb):
     y_ji_pu = Ybus[tcsc_tb, tcsc_fb]
 
 
-    q_tcsc_ii = np.square(Vm_f) * np.abs(np.array(y_ii_pu))
+    q_tcsc_ii = np.array(np.square(Vm_f) * np.abs(np.array(y_ii_pu)))[0]
 
-    q_tcsc_jj = np.square(Vm_t) * np.abs(np.array(y_jj_pu))
+    q_tcsc_jj = np.array(np.square(Vm_t) * np.abs(np.array(y_jj_pu)))[0]
 
-    q_tcsc_ij = Vm_f * np.abs(np.array(y_ij_pu)) * Vm_t * np.sin(delta_ij + phi_tcsc_ij)
+    q_tcsc_ij = np.array(Vm_f * np.abs(np.array(y_ij_pu)) * Vm_t * np.sin(delta_ij + phi_tcsc_ij))[0]
 
-    q_tcsc_ji = Vm_t * np.abs(np.array(y_ji_pu)) * Vm_f * np.sin(delta_ji + phi_tcsc_ji)
+    q_tcsc_ji = np.array(Vm_t * np.abs(np.array(y_ji_pu)) * Vm_f * np.sin(delta_ji + phi_tcsc_ji))[0]
 
 
     # q_tcsc_ij = Vm_f * np.abs(np.array(Ybus[tcsc_fb, tcsc_tb])[0]) * Vm_t * np.sin(delta_ij + phi_tcsc_ij)

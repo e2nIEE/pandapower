@@ -30,7 +30,8 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu, create_J_modification_tcsc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu, create_J_modification_tcsc, \
+    calc_tcsc_p_pu
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -355,12 +356,14 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         Fc_svc = abs(V[svc_buses]) - svc_set_vm_pu
         F = r_[F, Fc_svc]
     if len(tcsc_branches) > 0:
-        #p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
-        Sbus_new = V * conj(Ybus * V)
-        p_tcsc = Sbus_new[tcsc_tb].real
-        F_tcsc = p_tcsc - tcsc_set_p_pu
+        # p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
+
+        p_tcsc_ij = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)[0]
+        # Sbus_new = V * conj(Ybus * V)
+        # p_tcsc = Sbus_new[tcsc_tb].real
+        F_tcsc = p_tcsc_ij - tcsc_set_p_pu
         F = r_[F, F_tcsc]
-        print(p_tcsc)
+        # print(p_tcsc)
     return F
 
 
