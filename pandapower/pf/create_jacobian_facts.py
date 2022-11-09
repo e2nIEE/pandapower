@@ -63,12 +63,12 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x
     return J_m
 
 
-def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_i, tcsc_j, tcsc_fb, tcsc_tb, pvpq, pq, tcsc_branches,
+def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, tcsc_i, tcsc_j, tcsc_fb, tcsc_tb, pvpq, pq, tcsc_branches,
                                x_control, x_control_lookup, tcsc_x_l_pu, tcsc_x_cvar_pu,
                                tcsc_in_pq_f, tcsc_in_pq_t, tcsc_in_pvpq_f, tcsc_in_pvpq_t):
 
-    p_tcsc_ij, p_tcsc_ji,A_ij,A_ji,phi_tcsc_ij,phi_tcsc_ji = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
-    q_tcsc_ii, q_tcsc_ij,q_tcsc_jj,q_tcsc_ji = calc_tcsc_q_pu(Ybus, V, tcsc_fb, tcsc_tb)
+    p_tcsc_ij, p_tcsc_ji,A_ij,A_ji,phi_tcsc_ij,phi_tcsc_ji = calc_tcsc_p_pu(Ybus_tcsc, V, tcsc_fb, tcsc_tb)
+    q_tcsc_ii, q_tcsc_ij,q_tcsc_jj,q_tcsc_ji = calc_tcsc_q_pu(Ybus_tcsc, V, tcsc_fb, tcsc_tb)
 
     # Sbus = V * np.conj(Ybus * V)
     # p_tcsc_ij = Sbus[tcsc_tb].real
@@ -86,6 +86,16 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus, V, tcsc_
     mt_pq = np.r_[branch[tcsc_branches[tcsc_in_pq_t], T_BUS].real.astype(int)]
     nf_pq = np.r_[branch[tcsc_branches[tcsc_in_pq_f], T_BUS].real.astype(int)]
     nt_pq = np.r_[branch[tcsc_branches[tcsc_in_pq_t], F_BUS].real.astype(int)]
+
+    # p_tcsc_ij = np.zeros_like(tcsc_fb, dtype=np.float64)
+    # q_tcsc_ii = np.zeros_like(tcsc_fb, dtype=np.float64)
+    # q_tcsc_ij = np.zeros_like(tcsc_fb, dtype=np.float64)
+    # for i, (f, t) in enumerate(zip(tcsc_fb, tcsc_tb)):
+    #     p_tcsc_ij[i] = np.abs(V[f]) * np.abs(Ybus_tcsc[f, t]) * np.abs(V[t]) * \
+    #                    np.cos(np.angle(V[f]) - np.angle(V[t]) + np.angle(Ybus_tcsc[f, t]))
+    #     q_tcsc_ii[i] = np.square(np.abs(V[f])) * np.abs(Ybus_tcsc[f, f])
+    #     q_tcsc_ij[i] = np.abs(V[f]) * np.abs(Ybus_tcsc[f, t]) * np.abs(V[t]) * \
+    #                    np.sin(np.angle(V[f]) - np.angle(V[t]) + np.angle(Ybus_tcsc[f, t]))
 
     # J_C_P_d
     # J_C_P_d = np.zeros(shape=(len(pvpq), len(pvpq)))
