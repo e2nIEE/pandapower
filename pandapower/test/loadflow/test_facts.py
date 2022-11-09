@@ -134,21 +134,21 @@ def test_tcsc_simple():
 
 
 def test_tcsc_simple2():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 3, 110)
     pp.create_ext_grid(net, 0)
-    pp.create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
-    pp.create_impedance(net, 1, 2, 0, 0.001, 100)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_impedance(net, 1, 2, 0.001, 0.001, 1)
     # pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
     pp.create_load(net, 2, 100, 25)
 
     net.impedance['controllable'] = True
     net.impedance['set_p_to_mw'] = -20
-    net.impedance["thyristor_firing_angle_degree"] = 141.
-    net.impedance["tcsc_x_l_ohm"] = 1
-    net.impedance["tcsc_x_cvar_ohm"] = -10
+    net.impedance["thyristor_firing_angle_degree"] = 141.95177933
+    net.impedance["tcsc_x_l_ohm"] = 10
+    net.impedance["tcsc_x_cvar_ohm"] = -100
 
-    pp.runpp(net, max_iteration=10)
+    pp.runpp(net, max_iteration=200)
 
     net.impedance.controllable = False
     y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)

@@ -221,7 +221,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus = Ybus.tocsr()
     if len(tcsc_branches):
         y_tcsc = calc_y_svc_pu(x_control[x_control_lookup == 1], tcsc_x_l_pu, tcsc_x_cvar_pu)
-        branch[tcsc_branches, BR_X] = -1/y_tcsc
+        #branch[tcsc_branches, BR_X] = -1/y_tcsc
         Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
 
         #### TODO    
@@ -244,7 +244,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         if len(tcsc_branches):
             y_tcsc = calc_y_svc_pu(x_control[x_control_lookup==1], tcsc_x_l_pu, tcsc_x_cvar_pu)
-            branch[tcsc_branches, BR_X] = -1/y_tcsc
+            #branch[tcsc_branches, BR_X] = -1/y_tcsc
             Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
             print("x_control", np.rad2deg(x_control), "BR_X", 1/y_tcsc, "F", F)
                     
@@ -322,6 +322,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         bus[svc_buses, BS] += -q_svc * baseMVA * (1 / svc_set_vm_pu) ** 2
         bus[svc_buses, SVC_THYRISTOR_FIRING_ANGLE] = x_control
 
+    print("i", i)
+    print("P", (V * conj(Ybus * V)*baseMVA).real.round(2))
+    print("Q", (V * conj(Ybus * V)*baseMVA).imag.round(2))
+    print("P TCSC", (V * conj(Ybus_tcsc * V)*baseMVA).real.round(3))
+    print("Q TCSC", (V * conj(Ybus_tcsc * V)*baseMVA).imag.round(3))
+    print("P tot", (V * conj((Ybus+Ybus_tcsc) * V)*baseMVA).real.round(3))
+    print("Q tot", (V * conj((Ybus+Ybus_tcsc) * V)*baseMVA).imag.round(3))
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
@@ -344,7 +351,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         p_tcsc = Sbus_tcsc[tcsc_tb].real
         F_tcsc = p_tcsc - tcsc_set_p_pu
         F = r_[F, F_tcsc]
-        # print(p_tcsc)
+        print(p_tcsc)
     return F
 
 
@@ -355,7 +362,7 @@ def _check_for_convergence(F, tol):
 
 def makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    y_tcsc_pu = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    y_tcsc_pu = -calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
     for y_tcsc_pu_i, i, j in zip(y_tcsc_pu, tcsc_fb, tcsc_tb):
         Ybus_tcsc[i, i] += y_tcsc_pu_i * 1j
         Ybus_tcsc[i, j] += -y_tcsc_pu_i * 1j
