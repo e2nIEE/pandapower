@@ -289,8 +289,8 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, 
             continue
 
         # todo: angles
-        #B = abs(V[m]) * abs(V[n]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + 0*np.angle(Ybus_tcsc[m,n]))
-        B = abs(V[m]) * abs(V[n]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + np.angle(Ybus_tcsc[m,n]))
+        B = abs(V[m]) * abs(V[n]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + 0*np.angle(Ybus_tcsc[m,n]))
+        # B = abs(V[m]) * abs(V[n]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + np.angle(Ybus_tcsc[m,n]))
         J_C_C_c[x_control_lookup == 1, x_control_lookup == 1] = - 2 * B * np.cos(2 * x_control[x_control_lookup==1]-1) / (np.pi * tcsc_x_l_pu)
     print("JCCc", J_C_C_c)
 
