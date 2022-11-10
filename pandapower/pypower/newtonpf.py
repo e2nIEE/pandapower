@@ -248,7 +248,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
             print("x_control", np.rad2deg(x_control), "BR_X", 1/y_tcsc, "F", F)
                     
-        J = create_jacobian_matrix(Ybus+Ybus_tcsc, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        # here: if J is "Jacobian for the original system", then it should be based on Ybus
+        J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        # J = create_jacobian_matrix(Ybus+Ybus_tcsc, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         if tdpf:
             # p.u. values for T, a1, a2, I, S

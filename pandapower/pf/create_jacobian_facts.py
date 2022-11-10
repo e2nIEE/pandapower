@@ -7,6 +7,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.dSbus_dV import dSbus_dV
 
 
 def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
@@ -70,6 +71,15 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, 
     # p_tcsc_ij = Sbus[tcsc_tb].real
     # q_tcsc_ij = Sbus[tcsc_tb].imag
     # phi_tcsc_ij = np.angle(Ybus[tcsc_fb, tcsc_tb])
+
+    dS_dVm, dS_dVa = dSbus_dV(Ybus=Ybus_tcsc, V=V)
+
+    rows_pvpq = np.array([pvpq]).T
+    cols_pvpq = pvpq
+    J11 = dS_dVa[rows_pvpq, cols_pvpq].real
+    J12 = dS_dVm[rows_pvpq, pq].real
+    J21 = dS_dVa[np.array([pq]).T, cols_pvpq].imag
+    J22 = dS_dVm[np.array([pq]).T, pq].imag
 
     y_tcsc = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
