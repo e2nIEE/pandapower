@@ -351,7 +351,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controller(net, buses):
+def drop_measurements_and_controller(net, buses, skip_controller=False):
     """This function drops the measurements of the given buses.
     Also, the related controller parameter will be removed. """
     # --- dropping measurements
@@ -376,26 +376,15 @@ def drop_measurements_and_controller(net, buses):
 
     # --- dropping controller
     """
-    only for test at present, only consider sgen.
+    test at present, only sgen and load are considered.
     """
-    if len(net.controller):
-        if len(net.sgen) != len(set(net.sgen.name.values)):
-            raise ValueError("if controllers are used, please give a name for every "
-                             "element, and make sure the name is unique.")
-        # only the sgen controllers are considered
-        idx_pool = net.sgen.index[net.sgen.bus.isin(buses)].tolist()
-        target_idx = []
-        for idx in net.controller.index:
-            try:  # problem caused by contoller
-                sgen_idx = net.controller.object[idx].gid[0]
-            except TypeError:
-                sgen_idx = net.controller.object[idx].gid
-            except AttributeError:
-                sgen_idx = net.controller.object[idx].element_index[0]
-
-            if sgen_idx in idx_pool:
-                target_idx.append(idx)
-        net.controller.drop(target_idx, inplace=True)
+    if len(net.controller) and not skip_controller:
+        for i in net.controller.index:
+            elm = net.controller.object[i].__dict__["element"]
+            if len(net[elm]) != len(set(net[elm].name.values)):
+                raise ValueError("if controllers are used, please give a name for every "
+                                 "element ("+elm+"), and make sure the name is unique.")
+        net.controller.drop(net.controller.index, inplace=True)
 
 
 def match_controller_and_new_elements(net, net_org):

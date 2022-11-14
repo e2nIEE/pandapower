@@ -493,7 +493,6 @@ def test_controller():
     net.sgen.name = ["sgen0", "sgen1", "sgen3"]
     net.load.name = ["load0", "load1", "load2", "load3"]
     
-    
     # load time series
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
     time_series = pd.read_json(json_path)
@@ -532,9 +531,18 @@ def test_controller():
     assert net_eq.controller.object[0].__dict__["element_index"] == [0, 2]
     assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
 
-
+    # test individual controller:
+    net.controller.drop(net.controller.index, inplace=True)
+    for li in net.load.index:
+        ConstControl(net, element='load', variable='p_mw', element_index=[li],
+                     data_source=DFData(load_ts), profile_name=[li])
+    assert len(net.controller) == 4
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                retain_original_internal_indices=True)
+    assert net_eq.controller.index.tolist() == [0, 2]
+    
 if __name__ == "__main__":
-    if 1:
+    if 0:
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
