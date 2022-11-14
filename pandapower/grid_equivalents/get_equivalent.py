@@ -276,7 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         logger.debug("Only the equivalent net is returned.")
 
     # match the controller and the new elements
-    match_controller_and_new_elements(net_eq)
+    match_controller_and_new_elements(net_eq, net)
     # delete bus in poly_cost
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
@@ -392,9 +392,12 @@ def merge_internal_net_and_equivalent_external_net(
                 "'%s'." % str(target_buses))
         pp.fuse_buses(merged_net, target_buses[0], target_buses[1])
 
-    # drop assist elements
+    # --- drop assist elements
     drop_assist_elms_by_creating_ext_net(merged_net)
 
+    # --- drop repeated characteristic 
+    drop_repeated_characteristic(merged_net)
+    
     # --- reindex buses named with "total" (done by REI)
     is_total_bus = merged_net.bus.name.astype(str).str.contains("total", na=False)
     if sum(is_total_bus):
@@ -409,6 +412,18 @@ def merge_internal_net_and_equivalent_external_net(
                     round((t_end-t_start), 2))
 
     return merged_net
+
+
+def drop_repeated_characteristic(net):
+    idxs = []
+    repeated_idxs = []
+    for m in net.characteristic.index:
+        idx = net.characteristic.object[m].__dict__["index"]
+        if idx in idxs:
+            repeated_idxs.append(m)
+        else:
+            idxs.append(idx)     
+    net.characteristic.drop(repeated_idxs, inplace=True)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,

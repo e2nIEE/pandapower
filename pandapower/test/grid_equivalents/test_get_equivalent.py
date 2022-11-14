@@ -3,7 +3,12 @@ import numpy as np
 import pandapower as pp
 import pandapower.networks
 import pandapower.grid_equivalents
+import os
+import pandas as pd
 from random import sample
+from pandapower.control import ConstControl
+from pandapower import pp_dir
+from pandapower.timeseries import DFData
 
 try:
     from misc.groups import Group
@@ -454,19 +459,94 @@ def test_retain_original_internal_indices():
         else:
             assert net_eq.sgen.index.tolist() == list(range(len(net_eq.sgen)))
             assert net_eq.line.index.tolist() == list(range(len(net_eq.line)))
+
+
+def test_switch_sgens():
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_bus(net, 345)
+    pp.create_switch(net, 9, 1, "b")
+    pp.create_sgen(net, 9, 10, 10)
+    pp.runpp(net)
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0])   
+    assert max(net.res_bus.vm_pu[[0, 3, 4, 8]].values - net_eq.res_bus.vm_pu[[0, 3, 4, 8]].values) < 1e-6
+    assert max(net.res_bus.va_degree[[0, 3, 4, 8]].values - net_eq.res_bus.va_degree[[0, 3, 4, 8]].values) < 1e-6
+
+
+def test_characteristic():
+    net = pp.networks.example_multivoltage()
+    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent', 
+                                            [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    pp.runpp(net)
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [41], [0])
+    assert len(net_eq.characteristic) == 1
+
+
+def test_controller():
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_load(net, 5, 10, 10)
+    pp.create_sgen(net, 3, 1, 1)
     
+    net.sgen.loc[:, "type"] = "wind"
+    net.load.loc[:, "type"] = "residential"
+    net.sgen.name = ["sgen0", "sgen1", "sgen3"]
+    net.load.name = ["load0", "load1", "load2", "load3"]
+    
+    
+    # load time series
+    json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
+    time_series = pd.read_json(json_path)
+    time_series.sort_index(inplace=True)
+    sgen_p = net["sgen"].loc[:, "p_mw"].values
+    load_p = net["load"].loc[:, "p_mw"].values
+    sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
+    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist())
+    for t in range(96):
+        load_ts.loc[t] = load_p * time_series.at[t, "residential"]
+        sgen_ts.loc[t] = sgen_p * time_series.at[t, "wind"]
+
+    # create control
+    ConstControl(net, element="load", variable="p_mw",
+                 element_index=net.load.index.tolist(), profile_name=net.load.index.tolist(),
+                 data_source=DFData(load_ts))
+    ConstControl(net, element="sgen", variable="p_mw",
+                 element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
+                 data_source=DFData(sgen_ts))
+    
+    pp.runpp(net)
+
+    # getting equivalent
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0])
+    
+    assert net_eq.controller.object[0].__dict__["element_index"] == [0, 1]
+    assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 1]
+    for i in net.controller.index:
+        assert set(net_eq.controller.object[i].__dict__["element_index"]) - \
+            set(net.controller.object[i].__dict__["element_index"]) == set([])
+        assert set(net_eq.controller.object[i].__dict__["profile_name"]) - \
+            set(net.controller.object[i].__dict__["profile_name"]) == set([])
+
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                retain_original_internal_indices=True)
+    assert net_eq.controller.object[0].__dict__["element_index"] == [0, 2]
+    assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
+
 
 if __name__ == "__main__":
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
-        test_cost_consideration()
-        test_basic_usecases()
-        test_case9_with_slack_generator_in_external_net()
-        test_adopt_columns_to_separated_eq_elms()
-        test_equivalent_groups()
-        test_shifter_degree()
-        test_retain_original_internal_indices()
+        # test_cost_consideration()
+        # test_basic_usecases()
+        # test_case9_with_slack_generator_in_external_net()
+        # test_adopt_columns_to_separated_eq_elms()
+        # test_equivalent_groups()
+        # test_shifter_degree()
+        # test_retain_original_internal_indices()
+        # test_switch_sgens()
+        # test_characteristic()
+        test_controller()
     pass
 
     

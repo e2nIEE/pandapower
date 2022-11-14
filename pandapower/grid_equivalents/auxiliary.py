@@ -206,8 +206,8 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
                              sign) / net.sn_mva
                 S[sn][k] = sum(net[ele].sn_mva[ind].values) + \
                     1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
-                S[power.replace('_separate', '_integrated')][0] += S[power][k]
-                S[sn.replace('_separate', '_integrated')][0] += S[sn][k]
+                S[power.replace('_separate', '_integrated')] += S[power][k]
+                S[sn.replace('_separate', '_integrated')] += S[sn][k]
         S.ext_bus[k] = all_external_buses[k]
         S.v_m[k] = net.res_bus.vm_pu[i]
         S.v_cpx[k] = S.v_m[k] * \
@@ -398,14 +398,15 @@ def drop_measurements_and_controller(net, buses):
         net.controller.drop(target_idx, inplace=True)
 
 
-def match_controller_and_new_elements(net):
-    """This function makes the original controllers and the
-    new created sgen to match"""
+def match_controller_and_new_elements(net, net_org):
     """
-    only for test at present. only consider sgen.
+    This function makes the original controllers and the
+    new created sgen to match
+    
+    test at present: controllers in the external area are removed.
     """
     if len(net.controller):
-        count = 0
+        tobe_removed = []
         if "origin_all_internal_buses" in net.bus_lookups and \
                 "boundary_buses_inclusive_bswitch" in net.bus_lookups:
             internal_buses = net.bus_lookups["origin_all_internal_buses"] + \
@@ -413,45 +414,22 @@ def match_controller_and_new_elements(net):
         else:
             internal_buses = []
         for idx in net.controller.index.tolist():
-            # net.controller.object[idx].net = net
-            try:
-                bus = net.controller.object[idx].bus
-            except AttributeError:
-                bus = net.controller.object[idx].element_buses[0]
+            elm = net.controller.object[idx].__dict__["element"]
+            var = net.controller.object[idx].__dict__["variable"]
+            elm_idxs = net.controller.object[idx].__dict__["element_index"]
+            org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
+            
+            new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
+            if len(new_elm_idxs) == 0:
+                tobe_removed.append(idx)
             else:
-                pass
-            # --- remove repeated controller at the boundary buses
-            if bus in net.bus_lookups["boundary_buses_inclusive_bswitch"]:
-                count += 1
-                if count == 2:
-                    net.controller.drop(idx, inplace=True)
-                    continue
-
-            if bus in internal_buses:
-                try:
-                    name = net.controller.object[idx].name
-                except KeyError:
-                    name = "found_no_element"
-            else:
-                name = "_rei_"+str(bus)
-
-            new_idx = net.sgen.index[net.sgen.name.str.strip(
-            ).str[-len(name):] == name].values
-            if len(new_idx):
-                assert len(new_idx) == 1
-                new_bus = net.sgen.bus[new_idx[0]]
-                net.controller.object[idx].gid = new_idx[0]
-                net.controller.object[idx].element_index = [new_idx[0]]
-                net.controller.object[idx].bus = new_bus
-                net.controller.object[idx].element_buses = np.array(
-                    [new_bus], dtype="int64")
-            else:
-                net.controller.drop(idx, inplace=True)
-
-    """
-    TODO: After nets merging, the net information in controller is not updated.
-    """
-
+                profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
+                
+                net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
+                net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
+                net.controller.object[idx].__dict__["profile_name"] = profile_name
+        net.controller.drop(tobe_removed, inplace=True)    
+    # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
     """
