@@ -547,19 +547,20 @@ def test_motor():
     net = pp.networks.case9()
     pp.replace_gen_by_sgen(net)
     pp.create_motor(net, 5, 12, 0.9, scaling=0.8, loading_percent=89, efficiency_percent=90)
-    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95)
+    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95, inplace=False)
     pp.create_motor(net, 6, 10, 0.6, scaling=0.4, loading_percent=98, efficiency_percent=88)
     pp.create_motor(net, 3, 3, 0.6, scaling=0.4, loading_percent=89, efficiency_percent=99)
     pp.create_motor(net, 4, 6, 0.96, scaling=0.4, loading_percent=78, efficiency_percent=90)
     pp.runpp(net)
     values1 = net.res_bus.vm_pu.values.copy()
 
-    for eq in ["rei", "ward", "xward"]:    
+    for eq in ["rei", "ward", "xward"]:   
         net_eq = pp.grid_equivalents.get_equivalent(net, eq, [4, 8], [0], 
                                                     retain_original_internal_indices=True)
     
         assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-8
         assert net_eq.motor.bus.values.tolist() == [3, 4]
+    
     
     replace_motor_by_load(net, net.bus.index.tolist())
     assert len(net.motor) == 0
@@ -583,7 +584,7 @@ if __name__ == "__main__":
         # test_retain_original_internal_indices()
         # test_switch_sgens()
         # test_characteristic()
-        test_controller()
+        # test_controller()
         test_motor()
     pass
 
