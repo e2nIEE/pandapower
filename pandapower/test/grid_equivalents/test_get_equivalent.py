@@ -554,11 +554,12 @@ def test_motor():
     pp.runpp(net)
     values1 = net.res_bus.vm_pu.values.copy()
 
-    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
-                                                retain_original_internal_indices=True)
-
-    assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-10
-    assert net_eq.motor.bus.values.tolist() == [3, 4]
+    for eq in ["rei", "ward", "xward"]:    
+        net_eq = pp.grid_equivalents.get_equivalent(net, eq, [4, 8], [0], 
+                                                    retain_original_internal_indices=True)
+    
+        assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-8
+        assert net_eq.motor.bus.values.tolist() == [3, 4]
     
     replace_motor_by_load(net, net.bus.index.tolist())
     assert len(net.motor) == 0
