@@ -2,7 +2,8 @@ import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     check_validity_of_Ybus_eq, drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
-    drop_and_edit_cost_functions, _runpp_except_voltage_angles
+    drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
+        replace_motor_by_load
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups    
 from copy import deepcopy
 import pandas as pd
@@ -488,6 +489,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                  True, True)
     drop_measurements_and_controller(net_external, all_internal_buses)
     pp.drop_buses(net_external, all_internal_buses)
+    replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
 #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     _integrate_power_elements_connected_with_switch_buses(net_external, all_external_buses) # for sgens, gens, and loads

@@ -9,6 +9,7 @@ from random import sample
 from pandapower.control import ConstControl
 from pandapower import pp_dir
 from pandapower.timeseries import DFData
+from pandapower.grid_equivalents.auxiliary import replace_motor_by_load
 
 try:
     from misc.groups import Group
@@ -540,7 +541,34 @@ def test_controller():
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
                                                 retain_original_internal_indices=True)
     assert net_eq.controller.index.tolist() == [0, 2]
+
+
+def test_motor():
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_motor(net, 5, 12, 0.9, scaling=0.8, loading_percent=89, efficiency_percent=90)
+    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95)
+    pp.create_motor(net, 6, 10, 0.6, scaling=0.4, loading_percent=98, efficiency_percent=88)
+    pp.create_motor(net, 3, 3, 0.6, scaling=0.4, loading_percent=89, efficiency_percent=99)
+    pp.create_motor(net, 4, 6, 0.96, scaling=0.4, loading_percent=78, efficiency_percent=90)
+    pp.runpp(net)
+    values1 = net.res_bus.vm_pu.values.copy()
+
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                retain_original_internal_indices=True)
+
+    assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-10
+    assert net_eq.motor.bus.values.tolist() == [3, 4]
     
+    replace_motor_by_load(net, net.bus.index.tolist())
+    assert len(net.motor) == 0
+    assert len(net.res_motor) == 0
+    assert len(net.load) == 8
+    assert len(net.res_load) == 8
+    pp.runpp(net)
+    values2 = net.res_bus.vm_pu.values.copy()
+    assert max(values1 - values2) < 1e-10    
+        
 if __name__ == "__main__":
     if 0:
         pytest.main(['-x', __file__])
@@ -555,6 +583,7 @@ if __name__ == "__main__":
         # test_switch_sgens()
         # test_characteristic()
         test_controller()
+        test_motor()
     pass
 
     

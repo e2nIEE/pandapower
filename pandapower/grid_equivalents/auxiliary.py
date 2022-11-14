@@ -579,5 +579,25 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
     # runpp_fct(net, calculate_voltage_angles=True)
     return net
 
+
+def replace_motor_by_load(net, all_external_buses):
+    """ 
+    replace the 'external' motors by loads. The name is modified.
+    e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
+    """
+    motors = net.motor.index[net.motor.bus.isin(all_external_buses)]
+    for mi, m in net.motor.loc[motors].iterrows():
+        p_mech = m.pn_mech_mw / (m.efficiency_percent / 100)
+        p_mw = p_mech * m.loading_percent / 100 * m.scaling
+        s = p_mw / m.cos_phi
+        q_mvar = np.sqrt(s**2 - p_mw**2)
+        net.load.loc[0]
+        li = pp.create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
+                            in_service=m.in_service, name="equivalent_motor_"+str(m.name))
+        net.res_load.loc[li] = p_mw, q_mvar
+    net.motor.drop(motors, inplace=True)
+    net.res_motor.drop(motors, inplace=True)
+  
+
 if __name__ == "__main__":
     pass

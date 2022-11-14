@@ -171,7 +171,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if len(ext_buses_with_xward):
         logger.debug("xward elements of the external network are replaced by internal elements")
         pp.replace_xward_by_internal_elements(net, xwards=ext_buses_with_xward.index)
-
+ 
     # --- switch from ward injection to ward addmittance if requested
     if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
         create_passive_external_net_for_ward_addmittance(
