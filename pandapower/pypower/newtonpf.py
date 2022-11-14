@@ -158,7 +158,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # evaluate F(x0)
 
     Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-    F = _evaluate_Fx(Ybus+Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
+    F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
                      tcsc_branches, tcsc_set_p_pu, tcsc_fb, tcsc_tb, Ybus_tcsc)
 
     T_base = 100  # T in p.u. for better convergence
@@ -306,7 +306,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
-        F = _evaluate_Fx(Ybus+Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
+        F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
                          tcsc_branches, tcsc_set_p_pu, tcsc_fb, tcsc_tb, Ybus_tcsc)
 
         if tdpf:
@@ -342,7 +342,10 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         mis = V * conj(Ybus * V) - Sbus + slack_weights * slack
         F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
     else:
-        mis = V * conj(Ybus * V) - Sbus
+        Sbus2 = np.zeros_like(Sbus)
+        # Sbus2[tcsc_fb] = -tcsc_set_p_pu
+        Sbus2[tcsc_tb] = tcsc_set_p_pu
+        mis = V * conj(Ybus * V) + V * conj(Ybus_tcsc * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
     if svc_buses is not None and len(svc_buses) > 0:
         Fc_svc = abs(V[svc_buses]) - svc_set_vm_pu
@@ -352,7 +355,11 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         Sbus_tcsc = V * conj(Ybus_tcsc * V)
         p_tcsc = Sbus_tcsc[tcsc_tb].real
         F_tcsc = p_tcsc - tcsc_set_p_pu
+
+        # Pb_c = r_[Sbus_tcsc[pv].real,Sbus_tcsc[pq].real, Sbus_tcsc[pq].imag]
+        # F = r_[F+Pb_c]
         F = r_[F, F_tcsc]
+
         print(p_tcsc)
     return F
 
