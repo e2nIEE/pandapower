@@ -269,6 +269,7 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, 
     for in_pvpq, m, n in ((tcsc_in_pvpq_f, mf_pvpq, nf_pvpq), (tcsc_in_pvpq_t, mt_pvpq, nt_pvpq)):
         i = pvpq_lookup[m]
         j = pvpq_lookup[n]
+        # todo: it becomes negative for j
         J_C_C_d[x_control_lookup==1, i] = np.abs(V[m]) * np.abs(Ybus_tcsc[m, n]) * np.abs(V[n]) * np.sin(np.angle(V[m]) - np.angle(V[n]) + np.angle(np.array(Ybus_tcsc[m,n])))  #### A_ij = A_ji    phi_tcsc_ij = phi_tcsc_ji
 
     # # J_C_C_u
@@ -288,6 +289,7 @@ def create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, 
         i = pq_lookup[m]
         j = pq_lookup[n]
         if len(m) == 0: continue
+        # todo: is different
         J_C_C_u[x_control_lookup==1, i] = np.abs(V[m]) * np.abs(Ybus_tcsc[m, n]) * np.abs(V[n]) / abs(V[m]) * np.cos(np.angle(V[m]) - np.angle(V[n]) + np.angle(np.array(Ybus_tcsc[m,n])))
 
     # J_C_C_c
