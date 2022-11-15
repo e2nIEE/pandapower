@@ -318,7 +318,7 @@ def test_tcsc_simple5():
     net.impedance["tcsc_x_l_ohm"] = 10
     net.impedance["tcsc_x_cvar_ohm"] = -100
 
-    pp.runpp(net, max_iteration=500)
+    pp.runpp(net, max_iteration=200)
 
     net.impedance.controllable = False
     y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
