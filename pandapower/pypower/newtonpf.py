@@ -220,7 +220,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     Ybus = Ybus.tocsr()
     if len(tcsc_branches):
-        y_tcsc = calc_y_svc_pu(x_control[x_control_lookup == 1], tcsc_x_l_pu, tcsc_x_cvar_pu)
+        #y_tcsc = calc_y_svc_pu(x_control[x_control_lookup == 1], tcsc_x_l_pu, tcsc_x_cvar_pu)
         #branch[tcsc_branches, BR_X] = -1/y_tcsc
         Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
 
@@ -243,10 +243,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             g, b = calc_g_b(r, x)
 
         if len(tcsc_branches):
-            y_tcsc = calc_y_svc_pu(x_control[x_control_lookup==1], tcsc_x_l_pu, tcsc_x_cvar_pu)
+            #y_tcsc = calc_y_svc_pu(x_control[x_control_lookup==1], tcsc_x_l_pu, tcsc_x_cvar_pu)
             #branch[tcsc_branches, BR_X] = -1/y_tcsc
             Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-            print("x_control", np.rad2deg(x_control), "BR_X", 1/y_tcsc, "F", F)
+            print(i, "x_control", np.rad2deg(x_control))#, "BR_X", 1/y_tcsc, "F", F)
                     
         # here: if J is "Jacobian for the original system", then it should be based on Ybus
         J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
@@ -343,10 +343,11 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
     elif len(tcsc_branches) > 0:
         # p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
-        Sbus_tcsc = V * conj(Ybus_tcsc * V)
-        mis = V * conj(Ybus * V) + Sbus_tcsc - Sbus
+        mis = V * conj((Ybus + Ybus_tcsc) * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
 
+        Sbus_tcsc = V * conj(Ybus_tcsc * V)
+        # todo: compare all 3 values e.g. [.., .., ..] and [0, 20, -20] -> take always full array
         p_tcsc = Sbus_tcsc[tcsc_tb].real
         F_tcsc = p_tcsc - tcsc_set_p_pu
 
@@ -355,6 +356,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         F = r_[F, F_tcsc]
 
         print(p_tcsc)
+        print(F)
     else:
         mis = V * conj(Ybus * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
