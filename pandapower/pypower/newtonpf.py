@@ -341,18 +341,12 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         # we include the slack power (slack * contribution factors) in the mismatch calculation
         mis = V * conj(Ybus * V) - Sbus + slack_weights * slack
         F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
-    else:
-        Sbus2 = np.zeros_like(Sbus)
-        # Sbus2[tcsc_fb] = -tcsc_set_p_pu
-        Sbus2[tcsc_tb] = tcsc_set_p_pu
-        mis = V * conj(Ybus * V) + V * conj(Ybus_tcsc * V) - Sbus
-        F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
-    if svc_buses is not None and len(svc_buses) > 0:
-        Fc_svc = abs(V[svc_buses]) - svc_set_vm_pu
-        F = r_[F, Fc_svc]
-    if len(tcsc_branches) > 0:
-        #p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
+    elif len(tcsc_branches) > 0:
+        # p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
         Sbus_tcsc = V * conj(Ybus_tcsc * V)
+        mis = V * conj(Ybus * V) + Sbus_tcsc - Sbus
+        F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
+
         p_tcsc = Sbus_tcsc[tcsc_tb].real
         F_tcsc = p_tcsc - tcsc_set_p_pu
 
@@ -361,6 +355,12 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
         F = r_[F, F_tcsc]
 
         print(p_tcsc)
+    else:
+        mis = V * conj(Ybus * V) - Sbus
+        F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
+    if svc_buses is not None and len(svc_buses) > 0:
+        Fc_svc = abs(V[svc_buses]) - svc_set_vm_pu
+        F = r_[F, Fc_svc]
     return F
 
 
