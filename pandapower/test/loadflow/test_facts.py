@@ -302,5 +302,31 @@ def xtcsc(x, x_l, x_c):
     return np.pi * x_l / (2*(np.pi-x) + np.sin(2*x) + np.pi*x_l/x_c)
 
 
+def test_tcsc_simple5():
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_buses(net, 4, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_impedance(net, 2, 3, 1e20, 1e20, 1)
+    pp.create_load(net, 3, 100, 25)
+
+    net.impedance['controllable'] = True
+    net.impedance['set_p_to_mw'] = -20
+    net.impedance["thyristor_firing_angle_degree"] = 90
+    net.impedance["tcsc_x_l_ohm"] = 10
+    net.impedance["tcsc_x_cvar_ohm"] = -100
+
+    pp.runpp(net, max_iteration=500)
+
+    net.impedance.controllable = False
+    y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
+#    net.impedance.rft_pu
+    net.impedance.xft_pu = -1/y
+    net.impedance.xtf_pu = -1/y
+    pp.runpp(net)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
