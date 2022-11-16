@@ -132,8 +132,8 @@ def run_contingency_ls2g(net, **kwargs):
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
     net.res_line["max_loading_percent"] = np.nanmax(kamps, axis=0) / net.line.max_i_ka * 100
-    min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
-    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
+    # min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
+    # net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1):
