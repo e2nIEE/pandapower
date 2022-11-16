@@ -19,7 +19,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True, run=pp.runpp):
+def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
+                    contingency_evaluation_function=pp.runpp, **kwargs):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     The variable "temperature_degree_celsius" can be used insteas of "loading_percent" to obtain max. temperature.
@@ -35,7 +36,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         options for power flow calculation in N-1 cases
     write_to_net: bool
         whether to write the results of contingency analysis to net (in "res_" tables)
-    run : func
+    contingency_evaluation_function : func
         function to use for power flow calculation, default pp.runpp
 
     Returns
@@ -64,7 +65,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                 continue
             net[element].at[i, 'in_service'] = False
             try:
-                run(net, **pf_options_nminus1)
+                contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
                 _update_contingency_results(net, contingency_results, result_variables, nminus1=True)
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
@@ -72,7 +73,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                 net[element].at[i, 'in_service'] = True
 
     # for n-0
-    run(net, **pf_options)
+    contingency_evaluation_function(net, **pf_options, **kwargs)
     _update_contingency_results(net, contingency_results, result_variables, nminus1=False)
 
     if write_to_net:
