@@ -15,6 +15,7 @@ import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 

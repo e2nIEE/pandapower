@@ -30,4 +30,8 @@ GS_P        = start + 19
 BS_P        = start + 20
 SKSS        = start + 21
 
-bus_cols_sc = 22
+PHI_IKSS1 = start + 22
+PHI_IKSS2 = start + 23
+PHI_IKCV  = start + 24
+
+bus_cols_sc = 25

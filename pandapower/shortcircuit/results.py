@@ -6,7 +6,8 @@
 import numpy as np
 import pandas as pd
 
-from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, PKSS_F, QKSS_F, PKSS_T, QKSS_T, \
+    VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T
 from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
@@ -40,14 +41,20 @@ def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
         else:
             case = calc_options["case"]
             branch_results_cols = [IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T]
+            branch_results_cols_add = [PKSS_F, QKSS_F, PKSS_T, QKSS_T, VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F,
+                                       VKSS_ANGLE_T]  # added new calculation values
             if case == "max":
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.maximum(np.nan_to_num(ppci["branch"][:, branch_results_cols]),
                                np.nan_to_num(ppci_orig["branch"][:, branch_results_cols]))
+                # excluding new values from nan to num
+                ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
             else:
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.minimum(np.nan_to_num(ppci["branch"][:, branch_results_cols], nan=1e10),
                                np.nan_to_num(ppci_orig["branch"][:, branch_results_cols], nan=1e10))
+                # excluding new values from nan to num
+                ppci_orig["branch"][:, branch_results_cols] = ppci["branch"][:, branch_results_cols_add]
 
 
 def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
@@ -114,10 +121,25 @@ def _get_line_results(net, ppc):
         f, t = branch_lookup["line"]
         minmax = np.max if case == "max" else np.min
         net.res_line_sc["ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+
+        # adding columns for new calculated VPQ
+        net.res_line_sc["p_from_mw"] = ppc["branch"][f:t, PKSS_F].real
+        net.res_line_sc["q_from_mvar"] = ppc["branch"][f:t, QKSS_F].real
+
+        net.res_line_sc["p_to_mw"] = ppc["branch"][f:t, PKSS_T].real
+        net.res_line_sc["q_to_mvar"] = ppc["branch"][f:t, QKSS_T].real
+
+        net.res_line_sc["vm_from_pu"] = ppc["branch"][f:t, VKSS_MAGN_F].real
+        net.res_line_sc["va_from_degree"] = ppc["branch"][f:t, VKSS_ANGLE_F].real
+
+        net.res_line_sc["vm_to_pu"] = ppc["branch"][f:t, VKSS_MAGN_T].real
+        net.res_line_sc["va_to_degree"] = ppc["branch"][f:t, VKSS_ANGLE_T].real
+
         if net._options["ip"]:
             net.res_line_sc["ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
         if net._options["ith"]:
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
+
 
 def _get_switch_results(net, ppc):
     if len(net.switch) == 0:
