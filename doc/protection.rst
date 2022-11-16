@@ -29,11 +29,11 @@ The following figure summarizes the functionality of the protection module and h
     :align: center
 
 
-The functions Parametrization, Measurement, and Tripping are called inside the 
+The functions Parametrization, Measurement, and Tripping decisions are called inside the 
 function run_fault_scenario. Additionally, two more files are provided: the utility_functions 
 and example_grids. Inside the example_grids function, grids used for the model 
-validations are provided. The utility_functions file provides standard functions 
-for each relay model (e.g., plotting functions, search functions).
+validations are provided. The utility_functions provides standard functions 
+for all relay models (e.g., plotting functions, search functions).
 
 As of now pandapower is capable of simulating fault scenario using:
 
@@ -42,6 +42,7 @@ As of now pandapower is capable of simulating fault scenario using:
     
     protection/oc_relay
 
-More detailed documentation please refer `netzschutztechnik <https://www.vde-verlag.de/buecher/665393/netzschutztechnik.html>`_
+.. seealso::
+	- *Netzschutztechnik-Anlagentechnik für elektrische Verteilungsnetze* by Walter Schossig, Thomas Schossig, 2018.
 
    

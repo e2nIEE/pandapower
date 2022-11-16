@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from math import isinf
+import warnings
+warnings.filterwarnings('ignore') 
 
 #    This function creates a short-circuit location (a bus) on a line.
 def create_sc_bus(net_copy, sc_line_id, sc_fraction):
@@ -418,8 +420,6 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
         collection.append(switch_annotate)
     plot.draw_collections(collection)
     
-# find intersection between two lines y = m1*x+b1 & y = m2*x+b2
- #https://moonbooks.org/Articles/How-to-write-a-simple-python-code-to-find-the-intersection-point-between-two-straight-lines-/
 def calc_line_intersection(m1, b1, m2, b2):
     xi = (b1-b2) / (m2-m1)
     yi = m1 * xi + b1
@@ -474,8 +474,9 @@ def connected_bus_in_line(net, element):
  
      return get_bus_line
  
-    # line path from bus path #
+    
 def get_line_path(net, bus_path,sc_line_id=0):
+    """line path from bus path """
     line_path=[]
     
     for i in range(len(bus_path)-1):
@@ -490,8 +491,10 @@ def get_line_path(net, bus_path,sc_line_id=0):
         
     return line_path
     
-# get the coordinates for switches
+
 def switch_geodatas(net, size, distance_to_bus):
+    """get the coordinates for switches at moddile of the line"""
+    
     switch_geo=[]
         
     switches = []
@@ -526,8 +529,9 @@ def switch_geodatas(net, size, distance_to_bus):
     return switch_geo
 
 
-# function create I-T plot using tripping decsions
+
 def create_I_t_plot(trip_decisions,switch_id):
+    """function create I-T plot using tripping decsions"""
     
     import mplcursors
     #switch_id=[4]
@@ -539,7 +543,7 @@ def create_I_t_plot(trip_decisions,switch_id):
     for counter, switch_id in enumerate(switch_id):
         
         lst_I=[trip_decisions[switch_id]['Ig'],trip_decisions[switch_id]['Igg']]
-        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['t_gg']]
+        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['tgg']]
         fault_current=trip_decisions[switch_id]['Fault Current [kA]']
         
 
@@ -576,8 +580,9 @@ def create_I_t_plot(trip_decisions,switch_id):
     'I:{} kA,t:{} s'.format(round(sel.target[0],2), round(sel.target[1],2))))
     
 
-# function calculate end point from meshed grid and the start point from the radial grid to ext grid
+
 def power_flow_end_points(net):
+    """function calculate end point from meshed grid and the start point from the radial grid to ext grid"""
     
     pf_net = copy.deepcopy(net)
     pp.runpp(pf_net)    
@@ -612,9 +617,8 @@ def power_flow_end_points(net):
 
 
 
-
-#function calcuulate the bus path from start and end buses
 def bus_path_from_to_bus(net,radial_start_bus, loop_start_bus, end_bus):
+    """#function calcuulate the bus path from start and end buses"""
     import networkx as nx
     loop_path=[]
     radial_path = []
@@ -633,8 +637,9 @@ def bus_path_from_to_bus(net,radial_start_bus, loop_start_bus, end_bus):
     bus_path = radial_path + loop_path
     return bus_path
 
-# function calculate the switching times from the  bus path
+
 def get_switches_in_path(net, pathes):
+    """# function calculate the switching times from the  bus path"""
     
     Lines_in_path = []
     
@@ -673,8 +678,9 @@ def get_switches_in_path(net, pathes):
     return switches_in_path
 
 
-# calculate the angle betwen voltage and current with reference to voltage
+
 def get_vi_angle(net,switch_id,powerflow_results=False):
+    """calculate the angle betwen voltage and current with reference to voltage"""
     
     pp.runpp(net)
     line_idx =get_line_idx(net, switch_id)
@@ -725,6 +731,109 @@ def get_vi_angle(net,switch_id,powerflow_results=False):
         
         vi_angle =math.inf
     return vi_angle
+
+
+
+def bus_path_multiple_ext_bus(net):
+    
+    """ Return the longest bus path from all the ext buses in the network"""
+    from pandapower.topology.create_graph import create_nxgraph 
+    import networkx as nx
+    G = create_nxgraph(net)
+    bus_path=[]
+
+    for line_id in net.line.index:
+             
+        #line_id=62
+        from_bus =net.line.from_bus.at[line_id]
+        to_bus =net.line.to_bus.at[line_id]
+        max_bus_path=[]
+        
+        if net.trafo.empty:
+            for ext_bus in net.ext_grid.bus:
+                from_bus_path = nx.shortest_path(G, source=ext_bus, target=from_bus)
+    
+                to_bus_path=nx.shortest_path(G, source=ext_bus, target=to_bus)
+                
+                max_bus_path.append( max([from_bus_path , to_bus_path]))
+            else:
+             
+             for ext_bus in set(net.trafo.lv_bus):
+                 from_bus_path = nx.shortest_path(G, source=ext_bus, target=from_bus)
+     
+                 to_bus_path=nx.shortest_path(G, source=ext_bus, target=to_bus)
+                 
+                 max_bus_path.append( max([from_bus_path , to_bus_path]))
+                        
+            bus_path.append(sorted(max_bus_path, key=len)[0])
+
+    return bus_path
+
+  # get the line path from the given bus path
+def get_line_path(net, bus_path):
+    
+        
+    """ Function return the list of line path from the given bus path"""
+    line_path=[]
+    for i in range(len(bus_path)-1):
+        bus1=bus_path[i]
+        bus2=bus_path[i+1]
+        line1=net.line[(net.line.from_bus==bus1) & (net.line.to_bus==bus2)].index.to_list()
+        line2=net.line[(net.line.from_bus==bus2) & (net.line.to_bus==bus1)].index.to_list()
+        if len(line2)==0:
+            line_path.append(line1[0])
+            
+        if len(line1)==0:
+            line_path.append(line2[0])
+    return line_path
+
+def parallel_lines(net):
+    
+    """ Function return the list of parallel lines in the network"""
+    
+    parallel=[]
+    
+    #parallel_lines
+    for i in net.line.index:
+        for j in net.line.index:
+            
+            if i!=j:
+            
+                if net.line.loc[i].from_bus==net.line.loc[j].from_bus :
+                
+                    if net.line.loc[i].to_bus==net.line.loc[j].to_bus:
+                        
+                        parallel.append([i,j])
+                        
+                if net.line.loc[i].from_bus==net.line.loc[j].to_bus :
+                    
+                    if  net.line.loc[i].to_bus==net.line.loc[j].from_bus :
+                        
+                        parallel.append([i,j])
+                        
+                if net.line.loc[i].to_bus==net.line.loc[j].from_bus :
+                    
+                    if  net.line.loc[i].from_bus==net.line.loc[j].to_bus :
+                        
+                        parallel.append([i,j])
+                
+                if net.line.loc[i].to_bus==net.line.loc[j].to_bus :
+                    
+                    if  net.line.loc[i].from_bus==net.line.loc[j].from_bus :
+                        
+                        parallel.append([i,j])
+        
+        parallel_line=[list(i) for i in set(map(tuple, parallel))]
+        
+        #remove duplicates   
+        new_parallel = []
+        for l in parallel_line:
+            if l not in new_parallel:
+                new_parallel.append(l)
+                            
+        
+    return new_parallel
+    
 
 
 
