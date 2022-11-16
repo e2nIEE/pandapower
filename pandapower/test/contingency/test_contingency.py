@@ -85,3 +85,31 @@ def test_contingency_timeseries():
         assert np.array_equal(res0["line"][var], net.res_line[var]), var
         assert np.array_equal(res["line"][var], ow.output[f"res_line.{var}"].iloc[-1, :]), var
         assert np.array_equal(res0["line"][var], ow.output[f"res_line.{var}"].iloc[0, :]), var
+
+
+def test_with_lightsim2grid():
+    net = pp.networks.case9()
+
+    # pandapower and lightsim2grid behave differently when the grid becomes isolated from the ext_grid:
+    # pandapower selects next gen and uses it as ext_grid, and lightsim2grid does not and therefore has nan for results
+    # to circumvent this issue in this test, we add parallel lines to the grid
+
+    pp.create_lines_from_parameters(net, net.line.from_bus.values, net.line.to_bus.values, net.line.length_km.values,
+                                    net.line.r_ohm_per_km.values, net.line.x_ohm_per_km.values,
+                                    net.line.c_nf_per_km.values,
+                                    net.line.max_i_ka.values)
+
+    nminus1_cases = {"line": {"index": net.line.index.values}}
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net)
+
+    assert np.allclose(res["line"]["max_loading_percent"], net.res_line.max_loading_percent.values, atol=1e-9, rtol=0)
+    assert np.allclose(res["line"]["min_loading_percent"], net.res_line.min_loading_percent.values, atol=1e-9, rtol=0)
+    assert np.allclose(res["bus"]["max_vm_pu"], net.res_bus.max_vm_pu.values, atol=1e-9, rtol=0)
+    assert np.allclose(res["bus"]["min_vm_pu"], net.res_bus.min_vm_pu.values, atol=1e-9, rtol=0)
+
+
+def run_for_from_bus_loading(net, **kwargs):
+    pp.runpp(net, **kwargs)
+    net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100

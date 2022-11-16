@@ -8,6 +8,8 @@ A tutorial that introduces this feature with an example is available at `Conting
 
 .. autofunction:: pandapower.contingency.run_contingency
 
+.. autofunction:: pandapower.contingency.run_contingency_ls2g
+
 .. autofunction:: pandapower.contingency.get_element_limits
 
 .. autofunction:: pandapower.contingency.check_elements_within_limits

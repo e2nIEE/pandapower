@@ -10,6 +10,14 @@ import pandas as pd
 import pandapower as pp
 
 try:
+    from lightsim2grid.gridmodel import init as init_ls2g
+    from lightsim2grid_cpp import SecurityAnalysisCPP
+
+    lightsim2grid_installed = True
+except ImportError:
+    lightsim2grid_installed = False
+
+try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
@@ -84,6 +92,46 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                 net[f"res_{element}"].loc[index, var] = val
 
     return contingency_results
+
+
+def run_contingency_ls2g(net, **kwargs):
+    """
+    Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
+    Limitation: the results for branch flows are valid only for the "from_bus" of lines and "hv_bus" of transformers.
+    This can lead to a small difference to the results using pandapower.
+    The results are written in pandapower results tables.
+    Make sure that the N-1 cases do not lead to isolated grid, otherwise results with pandapower and this function will
+    be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated, but
+    lightsim2grid would simply return nan as results for such a contingency situation.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+
+    Returns
+    -------
+    None
+    """
+    if not lightsim2grid_installed:
+        raise UserWarning("lightsim2grid package not installed. "
+                          "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
+    pp.runpp(net, **kwargs)
+    lightsim_grid_model = init_ls2g(net)
+    s = SecurityAnalysisCPP(lightsim_grid_model)
+    s.add_all_n1()
+    # v_init = np.ones_like(net.bus.index.values, dtype=np.complex128)
+    s.compute(net._ppc["internal"]["V"], net._options["max_iteration"], net._options["tolerance_mva"] / net.sn_mva)
+    v_res = s.get_voltages()
+    s.compute_flows()
+    kamps = s.get_flows()
+
+    vm_pu = np.abs(v_res)
+    net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
+    net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
+
+    net.res_line["max_loading_percent"] = np.nanmax(kamps, axis=0) / net.line.max_i_ka * 100
+    min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
+    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1):
