@@ -8,8 +8,6 @@ import numpy as np
 import pandas as pd
 
 import pandapower as pp
-import pandapower.networks
-from pandapower.pd2ppc import _pd2ppc
 
 try:
     import pandaplan.core.pplog as logging
@@ -23,7 +21,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                     contingency_evaluation_function=pp.runpp, **kwargs):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
-    The variable "temperature_degree_celsius" can be used insteas of "loading_percent" to obtain max. temperature.
+    The variable "temperature_degree_celsius" can be used instead of "loading_percent" to obtain max. temperature.
 
     Parameters
     ----------
@@ -77,9 +75,9 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     _update_contingency_results(net, contingency_results, result_variables, nminus1=False)
 
     if write_to_net:
-        for element, elm_res in contingency_results.items():
-            index = elm_res["index"]
-            for var, val in elm_res.items():
+        for element, element_results in contingency_results.items():
+            index = element_results["index"]
+            for var, val in element_results.items():
                 if var == "index" or var in net[f"res_{element}"].columns.values:
                     continue
                 net[f"res_{element}"].loc[index, var] = val
@@ -227,11 +225,27 @@ def _log_violation(element, var, val, limit_index, mask):
 
 
 def report_contingency_results(element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6):
+    """
+    Print log messages for elements with violations of limits
+
+    Parameters
+    ----------
+    element_limits : dict
+    contingency_results : dict
+    branch_tol : float
+        tolerance for branch results
+    bus_tol : float
+        tolerance for bus results
+
+    Returns
+    -------
+    None
+    """
     for element, results in contingency_results.items():
         limit = element_limits[element]
         index = _get_iloc_index(results["index"], limit["index"])
         for var, val in results.items():
-            tol = bus_tol if element=="bus" else branch_tol
+            tol = bus_tol if element == "bus" else branch_tol
             if var == "index":
                 continue
             if "min" in var:
