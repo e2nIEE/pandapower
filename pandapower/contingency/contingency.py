@@ -118,12 +118,14 @@ def run_contingency_ls2g(net, **kwargs):
     pp.runpp(net, **kwargs)
     lightsim_grid_model = init_ls2g(net)
     s = SecurityAnalysisCPP(lightsim_grid_model)
-    s.add_all_n1()
+    # s.add_all_n1()
+    # todo: 1) take nminus1_cases argument 2) map line, trafo indices to lookup indices 3) define cases 4) map results
+    s.add_multiple_n1(np.arange(len(net.line)).tolist())
     # v_init = np.ones_like(net.bus.index.values, dtype=np.complex128)
     s.compute(net._ppc["internal"]["V"], net._options["max_iteration"], net._options["tolerance_mva"] / net.sn_mva)
     v_res = s.get_voltages()
     s.compute_flows()
-    kamps = s.get_flows()
+    kamps = s.get_flows()[:, 0:len(net.line)]
 
     vm_pu = np.abs(v_res)
     net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
