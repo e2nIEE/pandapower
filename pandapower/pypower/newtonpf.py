@@ -122,17 +122,28 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         Sbus_backup = Sbus.copy()
 
     tcsc_branches = flatnonzero(nan_to_num(branch[:, TCSC]))
-    tcsc_set_p_pu = branch[tcsc_branches, TCSC_SET_P_MW].real
-    x_control_tcsc = branch[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
+    tcsc_fb = branch[tcsc_branches, [F_BUS]].real.astype(int)
+    tcsc_tb = branch[tcsc_branches, [T_BUS]].real.astype(int)
+
+    tcsc_set_p_pu = np.zeros_like(V, dtype=np.float64)
+    tcsc_set_p_pu[tcsc_tb] = branch[tcsc_branches, TCSC_SET_P_MW].real
+    tcsc_set_p_pu[tcsc_fb] = -branch[tcsc_branches, TCSC_SET_P_MW].real
+
+    x_control_tcsc = np.zeros_like(V, dtype=np.float64)
+    x_control_tcsc[tcsc_tb] = branch[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
+    x_control_tcsc[tcsc_fb] = branch[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
     x_control = r_[x_control, x_control_tcsc]
     x_control_lookup = r_[x_control_lookup, np.ones_like(x_control_tcsc)]
     #if len(tcsc_branches) > 0:
-    tcsc_x_l_pu = branch[tcsc_branches, TCSC_X_L].real
-    tcsc_x_cvar_pu = branch[tcsc_branches, TCSC_X_CVAR].real
-    tcsc_fb = branch[tcsc_branches, [F_BUS]].real.astype(int)
-    tcsc_tb = branch[tcsc_branches, [T_BUS]].real.astype(int)
-    tcsc_i = pvpq_lookup[tcsc_fb]
-    tcsc_j = pvpq_lookup[tcsc_tb]
+
+    tcsc_x_l_pu = np.zeros_like(V, dtype=np.float64)
+    tcsc_x_l_pu[tcsc_tb] = branch[tcsc_branches, TCSC_X_L].real
+    tcsc_x_l_pu[tcsc_fb] = branch[tcsc_branches, TCSC_X_L].real
+
+    tcsc_x_cvar_pu = np.zeros_like(V, dtype=np.float64)
+    tcsc_x_cvar_pu[tcsc_tb] = branch[tcsc_branches, TCSC_X_CVAR].real
+    tcsc_x_cvar_pu[tcsc_fb] = branch[tcsc_branches, TCSC_X_CVAR].real
+
     tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pq)
     tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(int), pq)
     tcsc_in_pvpq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pvpq)
@@ -266,10 +277,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                     svc_x_l_pu, svc_x_cvar_pu)
                 J = J + J_m_svc
             if len(tcsc_branches):
-                J_m_tcsc = create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, tcsc_i, tcsc_j,
-                                                      tcsc_fb, tcsc_tb, pvpq, pq, tcsc_branches, x_control,
-                                                      x_control_lookup, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_in_pq_f,
-                                                      tcsc_in_pq_t, tcsc_in_pvpq_f, tcsc_in_pvpq_t)
+                J_m_tcsc = create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, tcsc_fb, tcsc_tb,
+                                                      pvpq, pq, tcsc_branches, x_control, x_control_lookup, tcsc_x_l_pu,
+                                                      tcsc_x_cvar_pu, tcsc_in_pq_f, tcsc_in_pq_t, tcsc_in_pvpq_f,
+                                                      tcsc_in_pvpq_t)
                 J = J + J_m_tcsc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -348,7 +359,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
 
         Sbus_tcsc = V * conj(Ybus_tcsc * V)
         # todo: compare all 3 values e.g. [.., .., ..] and [0, 20, -20] -> take always full array
-        p_tcsc = Sbus_tcsc[tcsc_tb].real
+        p_tcsc = Sbus_tcsc.real
         F_tcsc = p_tcsc - tcsc_set_p_pu
 
         # Pb_c = r_[Sbus_tcsc[pv].real,Sbus_tcsc[pq].real, Sbus_tcsc[pq].imag]
@@ -373,7 +384,7 @@ def _check_for_convergence(F, tol):
 
 def makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    y_tcsc_pu = -calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    y_tcsc_pu = -calc_y_svc_pu(x_control[tcsc_tb], tcsc_x_l_pu[tcsc_tb], tcsc_x_cvar_pu[tcsc_tb])
     for y_tcsc_pu_i, i, j in zip(y_tcsc_pu, tcsc_fb, tcsc_tb):
         Ybus_tcsc[i, i] += y_tcsc_pu_i * 1j
         Ybus_tcsc[i, j] += -y_tcsc_pu_i * 1j
