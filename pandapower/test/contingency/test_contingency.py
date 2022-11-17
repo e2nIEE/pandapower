@@ -88,13 +88,18 @@ def test_contingency_timeseries(get_net):
 def test_with_lightsim2grid(get_net, get_case):
     net = get_net
     case = get_case
+    rng = np.random.default_rng()
+
+    for element in ("line", "trafo"):
+        new_index = net[element].index.values.copy()
+        rng.shuffle(new_index)
+        pp.reindex_elements(net, element, new_index)
 
     if case == 0:
         nminus1_cases = {"line": {"index": net.line.index.values}}
     elif case == 1 and len(net.trafo) > 0:
         nminus1_cases = {"trafo": {"index": net.trafo.index.values}}
     else:
-        rng = np.random.default_rng()
         nminus1_cases = {element: {"index": rng.choice(net[element].index.values, rng.integers(1, len(net[element])))}
                          for element in ("line", "trafo") if len(net[element]) > 0}
 
