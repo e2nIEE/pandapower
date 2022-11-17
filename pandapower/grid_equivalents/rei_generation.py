@@ -169,7 +169,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
-    net_zpbn = net_external
+    net_zpbn = deepcopy(net_external)
     # --- remove buses without power flow results in net_eq
     pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
     
@@ -270,7 +270,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr, sn_mva=Sn)
 
     # ---- match other columns
-        elm_org = net[elm]
+        elm_org = net_external[elm]
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
@@ -657,17 +657,4 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
             else:  # There ars some "external" elements connected with bus-bus switches. 
                    # They will be aggregated.
                 elm1 = connected_elms[0]
-                name_list = [str(n) for n in net[elm].name[connected_elms].values]
-                net[elm].name[elm1] = "aggregated " + elm + " : " + " + ".join(name_list)
-                net[elm].p_mw[elm1] = (net[elm].p_mw[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                net[elm].sn_mva[elm1] = (net[elm].sn_mva[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                if elm != "gen":
-                    net[elm].q_mvar[elm1] = (net[elm].q_mvar[connected_elms].values * \
-                                             net[elm].scaling[connected_elms].values).sum()                                      
-                net[elm].drop(connected_elms[1:], inplace=True)
-    
-    pass
-    
-    
+                net[elm].bus[connected_elms] = net[elm].bus[elm1]
