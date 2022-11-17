@@ -20,6 +20,7 @@ except ImportError:
 
 try:
     from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
@@ -37,6 +38,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     The variable "temperature_degree_celsius" can be used instead of "loading_percent" to obtain max. temperature.
+    This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
 
     Parameters
     ----------
@@ -110,7 +112,7 @@ def _get_solver_type(options):
     return SolverType(solver_type)
 
 
-def run_contingency_ls2g(net, **kwargs):
+def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.runpp, **kwargs):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
     Limitation: the results for branch flows are valid only for the "from_bus" of lines and "hv_bus" of transformers.
@@ -120,10 +122,16 @@ def run_contingency_ls2g(net, **kwargs):
     be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated, but
     lightsim2grid would simply return nan as results for such a contingency situation.
     WARNING: continuous bus indices, 0-start, are required!
+    This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
 
     Parameters
     ----------
     net : pandapowerNet
+    nminus1_cases : dict
+        describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
+        Note: trafo3w is not supported
+    contingency_evaluation_function : func
+        function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
 
     Returns
     -------
@@ -132,32 +140,51 @@ def run_contingency_ls2g(net, **kwargs):
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
-    pp.runpp(net, **kwargs)
+    contingency_evaluation_function(net, **kwargs)
     lightsim_grid_model = init_ls2g(net)
     s = SecurityAnalysisCPP(lightsim_grid_model)
+    # todo: add option for DC power flow
     solver_type = _get_solver_type(net._options)
     s.change_solver(solver_type)
     # s.add_all_n1()
-    # todo: 1) take nminus1_cases argument 2) map line, trafo indices to lookup indices 3) define cases 4) map results
-    s.add_multiple_n1(np.arange(len(net.line), dtype=np.int64))
+    map_index = {}
+    for element, values in nminus1_cases.items():
+        index = np.array(_get_iloc_index(net[element].index.values, values["index"]), dtype=np.int64)
+        if element == "trafo3w":
+            raise NotImplementedError("trafo3w not implemented for lightsim2grid contingency analysis")
+        elif element == "trafo":
+            index += len(net.line)
+        map_index[element] = index
+        s.add_multiple_n1(index)
     # s.add_multiple_n1(net.line.index.values.astype(int))
-    v_init = net._ppc["internal"]["V"].astype(np.complex128)
-    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
+    v_init = net._ppc["internal"]["V"]
+    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"] / net.sn_mva)
     v_res = s.get_voltages()
     s.compute_flows()
     kamps_all = s.get_flows()
-    kamps = kamps_all[0:len(net.line), 0:len(net.line)]
 
     vm_pu = np.abs(v_res)
     net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
-    # max_i_ka = np.nanmax(kamps, where=~np.isnan(kamps), axis=0, initial=0)
-    max_i_ka = np.nanmax(kamps, axis=0)
-    net.res_line["max_loading_percent"] = max_i_ka / net.line.max_i_ka.values * 100
-    # min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
-    min_i_ka = np.nanmin(kamps, axis=0)
-    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka.values * 100
+    big_number = 1e6
+    if len(net.line) > 0:
+        kamps_line = kamps_all[:, 0:len(net.line)]
+        # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
+        max_i_ka = np.nanmax(kamps_line, axis=0)
+        net.res_line["max_loading_percent"] = max_i_ka / net.line.max_i_ka.values * 100
+        min_i_ka = np.nanmin(kamps_line, axis=0, where=kamps_line != 0, initial=big_number)  # this is quite daring tbh
+        min_i_ka[min_i_ka == big_number] = 0
+        # min_i_ka = np.nanmin(kamps_line, axis=0)
+        net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka.values * 100
+    if len(net.trafo) > 0:
+        max_i_ka_limit = net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))
+        kamps_trafo = kamps_all[:, len(net.line):len(net.line) + len(net.trafo)]
+        max_i_ka = np.nanmax(kamps_trafo, axis=0)
+        net.res_trafo["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
+        min_i_ka = np.nanmin(kamps_trafo, axis=0, where=kamps_trafo != 0, initial=big_number)
+        min_i_ka[min_i_ka == big_number] = 0
+        net.res_trafo["min_loading_percent"] = min_i_ka / max_i_ka_limit * 100
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1):
