@@ -119,6 +119,7 @@ def run_contingency_ls2g(net, **kwargs):
     Make sure that the N-1 cases do not lead to isolated grid, otherwise results with pandapower and this function will
     be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated, but
     lightsim2grid would simply return nan as results for such a contingency situation.
+    WARNING: continuous bus indices, 0-start, are required!
 
     Parameters
     ----------
@@ -138,7 +139,8 @@ def run_contingency_ls2g(net, **kwargs):
     s.change_solver(solver_type)
     # s.add_all_n1()
     # todo: 1) take nminus1_cases argument 2) map line, trafo indices to lookup indices 3) define cases 4) map results
-    s.add_multiple_n1(np.arange(len(net.line)).tolist())
+    s.add_multiple_n1(np.arange(len(net.line), dtype=np.int64))
+    # s.add_multiple_n1(net.line.index.values.astype(int))
     v_init = net._ppc["internal"]["V"].astype(np.complex128)
     s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
     v_res = s.get_voltages()
@@ -150,9 +152,12 @@ def run_contingency_ls2g(net, **kwargs):
     net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
-    net.res_line["max_loading_percent"] = np.nanmax(kamps, axis=0) / net.line.max_i_ka * 100
-    min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
-    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
+    # max_i_ka = np.nanmax(kamps, where=~np.isnan(kamps), axis=0, initial=0)
+    max_i_ka = np.nanmax(kamps, axis=0)
+    net.res_line["max_loading_percent"] = max_i_ka / net.line.max_i_ka.values * 100
+    # min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
+    min_i_ka = np.nanmin(kamps, axis=0)
+    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka.values * 100
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1):
