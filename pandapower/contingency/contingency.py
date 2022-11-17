@@ -11,11 +11,18 @@ import pandapower as pp
 
 try:
     from lightsim2grid.gridmodel import init as init_ls2g
-    from lightsim2grid_cpp import SecurityAnalysisCPP
+    from lightsim2grid_cpp import SecurityAnalysisCPP, SolverType
+    from lightsim2grid.newtonpf.newtonpf import _get_valid_solver
 
     lightsim2grid_installed = True
 except ImportError:
     lightsim2grid_installed = False
+
+try:
+    from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+    KLU_solver_available = True
+except ImportError:
+    KLU_solver_available = False
 
 try:
     import pandaplan.core.pplog as logging
@@ -94,6 +101,15 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     return contingency_results
 
 
+def _get_solver_type(options):
+    if options.get("distributed_slack", False):
+        solver_type = 1 if KLU_solver_available else 0
+    else:
+        solver_type = 7 if KLU_solver_available else 6
+
+    return SolverType(solver_type)
+
+
 def run_contingency_ls2g(net, **kwargs):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
@@ -118,22 +134,25 @@ def run_contingency_ls2g(net, **kwargs):
     pp.runpp(net, **kwargs)
     lightsim_grid_model = init_ls2g(net)
     s = SecurityAnalysisCPP(lightsim_grid_model)
+    solver_type = _get_solver_type(net._options)
+    s.change_solver(solver_type)
     # s.add_all_n1()
     # todo: 1) take nminus1_cases argument 2) map line, trafo indices to lookup indices 3) define cases 4) map results
     s.add_multiple_n1(np.arange(len(net.line)).tolist())
-    # v_init = np.ones_like(net.bus.index.values, dtype=np.complex128)
-    s.compute(net._ppc["internal"]["V"], net._options["max_iteration"], net._options["tolerance_mva"] / net.sn_mva)
+    v_init = net._ppc["internal"]["V"].astype(np.complex128)
+    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
     v_res = s.get_voltages()
     s.compute_flows()
-    kamps = s.get_flows()[:, 0:len(net.line)]
+    kamps_all = s.get_flows()
+    kamps = kamps_all[0:len(net.line), 0:len(net.line)]
 
     vm_pu = np.abs(v_res)
     net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
     net.res_line["max_loading_percent"] = np.nanmax(kamps, axis=0) / net.line.max_i_ka * 100
-    # min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
-    # net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
+    min_i_ka = np.nanmin(kamps, axis=0, where=kamps != 0, initial=100)  # this is quite daring tbh
+    net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka * 100
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1):
