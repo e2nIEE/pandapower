@@ -927,3 +927,102 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         plot(fig, filename=filename, auto_open=auto_open)
 
     return fig
+
+def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_plot="p_mw",
+                                 sizemode="area", color="red", patch_type="circle",
+                                 marker_scaling=1., trace_name="", infofunc=None,
+                                 node_element="bus"):
+    """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
+
+    Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
+    If present in the respective pandapower-net table, the "in_service" and "scaling" column will be
+    taken into account as factors to calculate the markers' weights.
+    Negative values might lead to unexpected results, especially when pos. and neg. values are
+    mixed in one column! All values are treated as absolute values.
+    If value = 0, no marker will be created.
+
+    Parameters
+    ----------
+    **net** (pandapipesNet): the pandapipes net of the plot
+
+    **elm_type** (str, default "load"): the element table in the net that holds the values to plot
+
+    **elm_ids** (list, default None): the element IDs of the elm_type table for which markers
+        will be created. If None, all IDs in net[elm_type] that are not 0 or NaN in the
+        `column_to_plot` will be used.
+
+    **column_to_plot** (str, default "p_mw"): the column in the net[elm_type] table that will be
+        plotted. The suffix (everything behind the last '_' in the column name) will be used as the
+        unit in the infofunction.
+
+    **sizemode** (str, default "area"): whether the markers' "area" or "diameter" (for circles)
+        will be proportional to the represented value
+
+    **color** (str, default "red") - color for the markers
+
+    **patch_type** (str, default "circle") - plotly marker style that will be used (other options
+        are triangle, triangle-down and many more, cf. https://plotly.com/python/marker-style/)
+
+    **marker_scaling** (float, default 1.) - factor to scale the size of all markers
+
+    **trace_name** (str, default ""): trace name for the legend. If empty, elm_type will be used.
+
+    **infofunc** (pd.Series, default None): hover-infofuction to overwrite the internal infofunction
+
+    **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
+        pandapower networks, "junction" for pandapipes networks
+
+    Returns
+    -------
+    marker_trace
+    """
+
+    # filter for relevant elements:
+    elm_ids = net[elm_type].loc[~net[elm_type][column_to_plot].isna()].index.tolist() \
+        if elm_ids is None else list(elm_ids)
+
+    # apply the scaling and in_service column, if available
+    elms_df = net[elm_type].loc[elm_ids]
+    scaling = elms_df.scaling if "scaling" in elms_df.columns else 1
+    in_service = elms_df.in_service if "in_service" in elms_df.columns else 1
+    elms_df["values_scaled"] = elms_df[column_to_plot] * in_service * scaling
+
+    # get sum per bus, if not a bus table already:
+    if elm_type not in [node_element, "res_"+node_element]:
+        values_by_bus = elms_df.groupby("bus").sum().values_scaled
+    else:
+        values_by_bus = elms_df.values_scaled
+    values_by_bus = values_by_bus.loc[values_by_bus != 0]
+
+    if any(values_by_bus < 0):
+        logger.warning("A marker trace cannot be created for negative values!\n"
+                       "They will be considered as absolute values. Items with negative values:\n"
+                       + str(values_by_bus.loc[values_by_bus < 0]))
+
+    # add geodata:
+    node_geodata = node_element + "_geodata"
+    x_list = net[node_geodata].loc[values_by_bus.index, 'x'].tolist()
+    y_list = net[node_geodata].loc[values_by_bus.index, 'y'].tolist()
+
+    # set up hover info:
+    unit = column_to_plot.split("_")[-1]
+    unit = unit.upper()
+    trace_name = trace_name if len(trace_name) else elm_type
+    if infofunc is None:
+        infofunc = values_by_bus.apply(lambda x: f"{trace_name} {x:.2f} {unit}")
+    if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
+            len(infofunc) == len(values_by_bus.index):
+        infofunc = pd.Series(index=values_by_bus.index, data=infofunc)
+
+    # set up the marker trace:
+    marker_trace = dict(type='scatter',
+                        text=infofunc,
+                        mode='markers',
+                        hoverinfo='text',
+                        name=trace_name,
+                        x=x_list,
+                        y=y_list)
+    marker_trace["marker"] = dict(color=color, size=values_by_bus.abs() * marker_scaling,
+                                  symbol=patch_type, sizemode=sizemode)
+
+    return marker_trace

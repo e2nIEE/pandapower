@@ -171,7 +171,10 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                               auto_open=auto_open,
                                               showlegend=showlegend)
     if additional_traces:
-        traces.extend(additional_traces)
+        if isinstance(additional_traces, dict):
+            traces.append(additional_traces)
+        else:
+            traces.extend(additional_traces)
 
     return draw_traces(traces, **settings)
 
@@ -255,7 +258,15 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
 
 if __name__ == '__main__':
     from pandapower import networks as nw
-    # net = nw.mv_oberrhein()
+    from pandapower.plotting.plotly.traces import create_weighted_marker_trace
     # simple_plotly(net)
-    net = nw.example_multivoltage()
-    fig = simple_plotly(net, trafo3w_color='k')
+    # net = nw.example_multivoltage()
+    # fig = simple_plotly(net, trafo3w_color='k')
+    net = nw.mv_oberrhein()
+    net.load.scaling = 1
+    net.sgen.scaling = 1
+    marker_trace_load = create_weighted_marker_trace(net, elm_type="load", column_to_plot="p_mw",
+                                                     color="red", marker_scaling=75)
+    marker_trace_sgen = create_weighted_marker_trace(net, elm_type="sgen", column_to_plot="p_mw",
+                                                     color="green", marker_scaling=75)
+    simple_plotly(net, bus_size=1, additional_traces=[marker_trace_load, marker_trace_sgen])
