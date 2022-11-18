@@ -87,15 +87,14 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
-        or on net.bus_geodata of the connected buses (False)
+        **use_line_geodata** (bool, True) - defines if lines patches are based on
+        net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
         If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be transformed to
         lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
 

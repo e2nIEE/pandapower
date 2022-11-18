@@ -4,7 +4,7 @@ Create & Draw Traces
 
 
 Plotly traces can be created from pandapower networks with the following functions.
-The traces can be passed as `additional_traces` (list) to the `simple_plotly` function.
+The traces can be passed as :code:`additional_traces` (list) to the :func:`simple_plotly` function.
 
 ++++++++++
 Bus Traces
@@ -33,7 +33,7 @@ Draw Traces
 Markers with weighted size
 ++++++++++++++++++++++++++
 
-The function `create_weighted_marker_trace` can be used to create additional traces with markers
+The function :func:`create_weighted_marker_trace()` can be used to create additional traces with markers
 (patches) for one column in one component table.
 
 .. autofunction:: pandapower.plotting.plotly.traces.create_weighted_marker_trace
