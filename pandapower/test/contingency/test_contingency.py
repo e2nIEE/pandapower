@@ -116,6 +116,31 @@ def test_with_lightsim2grid(get_net, get_case):
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
+def test_lightsim2grid_distributed_slack():
+    net = pp.networks.case9()
+    net.gen["slack_weight"] = 1
+    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    nminus1_cases = {"line": {"index": np.array([1, 2, 4, 5, 7, 8])}}
+
+    net1 = net.deepcopy()
+    net1.gen.loc[~net1.gen.slack, 'slack_weight'] = 0
+
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+                                         distributed_slack=True)
+    res1 = pp.contingency.run_contingency(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+                                        distributed_slack=True)
+    pp.contingency.run_contingency_ls2g(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    for var in ("loading_percent", "max_loading_percent", "min_loading_percent"):
+        assert np.allclose(res1["line"][var], net1.res_line[var].values, atol=1e-6, rtol=0)
+        assert np.allclose(res["line"][var], net.res_line[var].values, atol=1e-6, rtol=0)
+    for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
+        assert np.allclose(res1["bus"][var], net1.res_bus[var].values, atol=1e-9, rtol=0)
+        assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
+
+
 def run_for_from_bus_loading(net, **kwargs):
     pp.runpp(net, **kwargs)
     net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100

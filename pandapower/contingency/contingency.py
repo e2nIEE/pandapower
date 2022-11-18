@@ -6,13 +6,13 @@
 
 import numpy as np
 import pandas as pd
+import warnings
 
 import pandapower as pp
 
 try:
     from lightsim2grid.gridmodel import init as init_ls2g
     from lightsim2grid_cpp import SecurityAnalysisCPP, SolverType
-    from lightsim2grid.newtonpf.newtonpf import _get_valid_solver
 
     lightsim2grid_installed = True
 except ImportError:
@@ -103,15 +103,6 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     return contingency_results
 
 
-def _get_solver_type(options):
-    if options.get("distributed_slack", False):
-        solver_type = 1 if KLU_solver_available else 0
-    else:
-        solver_type = 7 if KLU_solver_available else 6
-
-    return SolverType(solver_type)
-
-
 def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.runpp, **kwargs):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
@@ -141,21 +132,36 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
     contingency_evaluation_function(net, **kwargs)
-    lightsim_grid_model = init_ls2g(net)
-    s = SecurityAnalysisCPP(lightsim_grid_model)
+
+    # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
+    if net._options.get("distributed_slack", False):
+        slack_backup = net.gen.slack.copy()
+        net.gen.loc[net.gen.slack_weight != 0, 'slack'] = True
+        msg = "LightSim cannot handle multiple slack bus at the moment. Only the first " \
+              "slack bus of pandapower will be used."
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", msg)
+            lightsim_grid_model = init_ls2g(net)
+        net.gen['slack'] = slack_backup
+        solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
+    else:
+        lightsim_grid_model = init_ls2g(net)
+        solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+
     # todo: add option for DC power flow
-    solver_type = _get_solver_type(net._options)
+    s = SecurityAnalysisCPP(lightsim_grid_model)
     s.change_solver(solver_type)
-    # s.add_all_n1()
-    map_index = {}
+
+    # map_index = {}
     for element, values in nminus1_cases.items():
         index = np.array(_get_iloc_index(net[element].index.values, values["index"]), dtype=np.int64)
         if element == "trafo3w":
             raise NotImplementedError("trafo3w not implemented for lightsim2grid contingency analysis")
         elif element == "trafo":
             index += len(net.line)
-        map_index[element] = index
+        # map_index[element] = index
         s.add_multiple_n1(index)
+
     # s.add_multiple_n1(net.line.index.values.astype(int))
     v_init = net._ppc["internal"]["V"]
     s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
