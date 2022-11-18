@@ -97,10 +97,10 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for each trace element. Indices should correspond
-            to the pandapower element indices
+        to the pandapower element indices
 
         **trace_name** (String, "buses") - name of the trace which will appear in the legend
 
@@ -153,19 +153,19 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for bus elements. Indices should correspond to
-            the pandapower element indices
+        the pandapower element indices
 
         **trace_name** (String, "buses") - name of the trace which will appear in the legend
 
         **color** (String, "blue") - color of buses in the trace
 
         **cmap** (String, None) - name of a colormap which exists within plotly
-            (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
-            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
-            discrete colormap can be used
+        (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
+        Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
+        discrete colormap can be used. Append "_r" for inversion.
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -224,7 +224,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for node elements. Indices should correspond to
                                          the node element indices
@@ -373,7 +373,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
 
         **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
-            the pandapower element indices
+        the pandapower element indices
 
         **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
@@ -385,6 +385,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
         colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
         Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        To revert the color map, append "_r" to the name.
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -438,7 +439,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     were introduced to make it usable in other packages, e.g. for pipe networks.
 
    INPUT:
-       **net** (pandapowerNet) - The  network
+       **net** (pandapowerNet) - The network
 
    OPTIONAL:
        **branches** (list, None) - The branches for which the collections are created.
@@ -684,15 +685,15 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         **width** (int, 5) - line width
 
         **infofunc** (pd.Series, None) - hoverinfo for trafo elements. Indices should correspond
-            to the pandapower element indices
+        to the pandapower element indices
 
         **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
         **color** (String, "green") - color of lines in the trace
 
         **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu,
-            Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
-            Blackbody, Earth, Electric, Viridis)
+        Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
+        Blackbody, Earth, Electric, Viridis)
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -811,7 +812,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-            network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **filename** (str, "temp-plot.html") - plots to a html file called filename
 
@@ -941,40 +942,40 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
     mixed in one column! All values are treated as absolute values.
     If value = 0, no marker will be created.
 
-    Parameters
-    ----------
-    **net** (pandapipesNet): the pandapipes net of the plot
+    INPUT:
+        **net** (pandapipesNet) - the pandapipes net of the plot
 
-    **elm_type** (str, default "load"): the element table in the net that holds the values to plot
+    OPTIONAL:
+        **elm_type** (str, default "load") - the element table in the net that holds the values
+        to plot
 
-    **elm_ids** (list, default None): the element IDs of the elm_type table for which markers
+        **elm_ids** (list, default None) - the element IDs of the elm_type table for which markers
         will be created. If None, all IDs in net[elm_type] that are not 0 or NaN in the
         `column_to_plot` will be used.
 
-    **column_to_plot** (str, default "p_mw"): the column in the net[elm_type] table that will be
-        plotted. The suffix (everything behind the last '_' in the column name) will be used as the
-        unit in the infofunction.
+        **column_to_plot** (str, default "p_mw") - the column in the net[elm_type] table that
+        will be plotted. The suffix (everything behind the last '_' in the column name) will be
+        used as the unit in the infofunction.
 
-    **sizemode** (str, default "area"): whether the markers' "area" or "diameter" (for circles)
+        **sizemode** (str, default "area") - whether the markers' "area" or "diameter" (for circles)
         will be proportional to the represented value
 
-    **color** (str, default "red") - color for the markers
+        **color** (str, default "red") - color for the markers
 
-    **patch_type** (str, default "circle") - plotly marker style that will be used (other options
+        **patch_type** (str, default "circle") - plotly marker style that will be used (other options
         are triangle, triangle-down and many more, cf. https://plotly.com/python/marker-style/)
 
-    **marker_scaling** (float, default 1.) - factor to scale the size of all markers
+        **marker_scaling** (float, default 1.) - factor to scale the size of all markers
 
-    **trace_name** (str, default ""): trace name for the legend. If empty, elm_type will be used.
+        **trace_name** (str, default ""): trace name for the legend. If empty, elm_type will be used.
 
-    **infofunc** (pd.Series, default None): hover-infofuction to overwrite the internal infofunction
+        **infofunc** (pd.Series, default None): hover-infofuction to overwrite the internal infofunction
 
-    **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
+        **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
         pandapower networks, "junction" for pandapipes networks
 
-    Returns
-    -------
-    marker_trace
+    OUTPUT:
+        **marker_trace**
     """
 
     # filter for relevant elements:

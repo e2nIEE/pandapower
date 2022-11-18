@@ -88,13 +88,13 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
-            or on net.bus_geodata of the connected buses (False)
+        or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
-            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
+        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
@@ -108,7 +108,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
-            any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
 
@@ -133,7 +133,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **showlegend** (bool, True) - If True, a legend will be shown
 
         **additional_traces** (list, None) - List with additional, user-created traces that will
-            be appended to the simple_plotly traces before drawing all traces
+        be appended to the simple_plotly traces before drawing all traces
 
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
@@ -258,15 +258,15 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
 
 if __name__ == '__main__':
     from pandapower import networks as nw
+    from pandapower.networks import mv_oberrhein
     from pandapower.plotting.plotly.traces import create_weighted_marker_trace
     # simple_plotly(net)
     # net = nw.example_multivoltage()
     # fig = simple_plotly(net, trafo3w_color='k')
-    net = nw.mv_oberrhein()
-    net.load.scaling = 1
-    net.sgen.scaling = 1
-    marker_trace_load = create_weighted_marker_trace(net, elm_type="load", column_to_plot="p_mw",
-                                                     color="red", marker_scaling=75)
-    marker_trace_sgen = create_weighted_marker_trace(net, elm_type="sgen", column_to_plot="p_mw",
-                                                     color="green", marker_scaling=75)
-    simple_plotly(net, bus_size=1, additional_traces=[marker_trace_load, marker_trace_sgen])
+    net = mv_oberrhein()
+    net.load.scaling, net.sgen.scaling = 1, 1
+    markers_load = create_weighted_marker_trace(net, elm_type="load", color="red",
+                                                marker_scaling=100)
+    markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
+                                                marker_scaling=100)
+    simple_plotly(net, bus_size=1, additional_traces=[markers_load, markers_sgen])
