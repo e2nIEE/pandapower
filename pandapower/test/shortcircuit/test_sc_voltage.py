@@ -37,7 +37,7 @@ def test_voltage_gen():
     net = simple_grid()
     z_base_ohm = np.square(110) / 100
     pp.create_gen(net, 1, p_mw=0, sn_mva=100, vn_kv=110,
-                  xdss_pu=0.14, rdss_ohm=0.00001653*z_base_ohm, cos_phi=0.85, pg_percent=0)
+                  xdss_pu=0.14, rdss_ohm=0.00001653 * z_base_ohm, cos_phi=0.85, pg_percent=0)
     sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 3.87955, atol=1e-6, rtol=0)
