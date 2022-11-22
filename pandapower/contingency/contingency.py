@@ -68,6 +68,11 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
 
     contingency_results = {element: {"index": net[element].index.values}
                            for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
+    for element in contingency_results.keys():
+        if element == "bus":
+            continue
+        contingency_results[element].update(
+            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool)})
     result_variables = {**{"bus": ["vm_pu"]},
                         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
     if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
@@ -82,7 +87,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
             net[element].at[i, 'in_service'] = False
             try:
                 contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
-                _update_contingency_results(net, contingency_results, result_variables, nminus1=True)
+                _update_contingency_results(net, contingency_results, result_variables, nminus1=True, i=i)
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
             finally:
@@ -174,30 +179,43 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
     big_number = 1e6
-    if len(net.line) > 0:
-        kamps_line = kamps_all[:, 0:len(net.line)]
+    for element in ("line", "trafo"):
+        if len(net[element]) == 0:
+            continue
+        if element == "line":
+            kamps_element = kamps_all[:, 0:len(net.line)]
+            max_i_ka_limit = net.line.max_i_ka.values
+        else:
+            kamps_element = kamps_all[:, len(net.line):len(net.line) + len(net.trafo)]
+            max_i_ka_limit = net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
-        max_i_ka = np.nanmax(kamps_line, axis=0)
-        net.res_line["max_loading_percent"] = max_i_ka / net.line.max_i_ka.values * 100
-        min_i_ka = np.nanmin(kamps_line, axis=0, where=kamps_line != 0, initial=big_number)  # this is quite daring tbh
+        max_i_ka = np.nanmax(kamps_element, axis=0)
+        net[f"res_{element}"]["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
+        min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0, initial=big_number)  # this is quite daring tbh
         min_i_ka[min_i_ka == big_number] = 0
         # min_i_ka = np.nanmin(kamps_line, axis=0)
-        net.res_line["min_loading_percent"] = min_i_ka / net.line.max_i_ka.values * 100
-    if len(net.trafo) > 0:
-        max_i_ka_limit = net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))
-        kamps_trafo = kamps_all[:, len(net.line):len(net.line) + len(net.trafo)]
-        max_i_ka = np.nanmax(kamps_trafo, axis=0)
-        net.res_trafo["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
-        min_i_ka = np.nanmin(kamps_trafo, axis=0, where=kamps_trafo != 0, initial=big_number)
-        min_i_ka[min_i_ka == big_number] = 0
-        net.res_trafo["min_loading_percent"] = min_i_ka / max_i_ka_limit * 100
+        net[f"res_{element}"]["min_loading_percent"] = min_i_ka / max_i_ka_limit * 100
+        s = 'max_loading_percent_nminus1' \
+            if 'max_loading_percent_nminus1' in net[element].columns else 'max_loading_percent'
+        loading_limit = net[element][s].values
+        causes_overloading = np.any(kamps_element > loading_limit * max_i_ka_limit / 100, axis=1)
+        net[f"res_{element}"]["causes_overloading"] = False
+        net[f"res_{element}"].loc[nminus1_cases[element]["index"], "causes_overloading"] = causes_overloading
 
 
-def _update_contingency_results(net, contingency_results, result_variables, nminus1):
+def _update_contingency_results(net, contingency_results, result_variables, nminus1, i=None):
     for element, vars in result_variables.items():
         for var in vars:
             val = net[f"res_{element}"][var].values
             if nminus1:
+                if var == "loading_percent":
+                    s = 'max_loading_percent_nminus1' \
+                        if 'max_loading_percent_nminus1' in net[element].columns \
+                        else 'max_loading_percent'
+                    loading_limit = net[element].loc[contingency_results[element]["index"], s].values
+                    if np.any(val > loading_limit):
+                        contingency_results[element]["causes_overloading"][
+                            contingency_results[element]["index"] == i] = True
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
                     func(val,

@@ -107,6 +107,8 @@ def test_with_lightsim2grid(get_net, get_case):
 
     pp.contingency.run_contingency_ls2g(net, nminus1_cases)
 
+    assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
         assert np.allclose(res["line"][f"{s}_loading_percent"],
