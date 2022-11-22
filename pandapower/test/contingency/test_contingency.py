@@ -90,31 +90,30 @@ def test_with_lightsim2grid(get_net, get_case):
     case = get_case
     rng = np.random.default_rng()
 
-    for element in ("line", "trafo"):
-        new_index = net[element].index.values.copy()
-        rng.shuffle(new_index)
-        pp.reindex_elements(net, element, new_index)
-
     if case == 0:
         nminus1_cases = {"line": {"index": net.line.index.values}}
     elif case == 1 and len(net.trafo) > 0:
         nminus1_cases = {"trafo": {"index": net.trafo.index.values}}
     else:
-        nminus1_cases = {element: {"index": rng.choice(net[element].index.values, rng.integers(1, len(net[element])))}
+        nminus1_cases = {element: {"index": rng.choice(net[element].index.values,
+                                                       rng.integers(1, len(net[element])), replace=False)}
                          for element in ("line", "trafo") if len(net[element]) > 0}
 
+    net.line.max_loading_percent = 50
     res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     pp.contingency.run_contingency_ls2g(net, nminus1_cases)
 
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+    if len(net.trafo) > 0:
+        assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
 
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
-        assert np.allclose(res["line"][f"{s}_loading_percent"],
+        assert np.allclose(np.nan_to_num(res["line"][f"{s}_loading_percent"]),
                            net.res_line[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
         if len(net.trafo) > 0:
-            assert np.allclose(res["trafo"][f"{s}_loading_percent"],
+            assert np.allclose(np.nan_to_num(res["trafo"][f"{s}_loading_percent"]),
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
@@ -191,17 +190,32 @@ def get_net(request):
                                         net.line.length_km.values,
                                         net.line.r_ohm_per_km.values, net.line.x_ohm_per_km.values,
                                         net.line.c_nf_per_km.values,
-                                        net.line.max_i_ka.values)
+                                        net.line.max_i_ka.values,
+                                        max_loading_percent=net.line.max_loading_percent.values)
 
         if len(net.trafo) > 0:
             pp.create_transformers_from_parameters(net, net.trafo.hv_bus.values, net.trafo.lv_bus.values,
                                                    net.trafo.sn_mva.values, net.trafo.vn_hv_kv.values,
                                                    net.trafo.vn_lv_kv.values, net.trafo.vkr_percent.values,
                                                    net.trafo.vk_percent.values, net.trafo.pfe_kw.values,
-                                                   net.trafo.i0_percent.values)
+                                                   net.trafo.i0_percent.values,
+                                                   max_loading_percent=net.trafo.max_loading_percent.values)
     if len(net.trafo) > 0:
         for col in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
             net.trafo[col].fillna(0, inplace=True)
+
+    rng = np.random.default_rng()
+    for element in ("line", "trafo", "trafo3w"):
+        if len(net[element]) == 0:
+            continue
+        new_index = net[element].index.values.copy()
+        rng.shuffle(new_index)
+        pp.reindex_elements(net, element, new_index)
+
+    pp.create_continuous_bus_index(net)
+
+    if np.any(net.line.max_i_ka > 10):
+        net.line.max_i_ka = 1
 
     return net
 

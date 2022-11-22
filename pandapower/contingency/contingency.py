@@ -87,7 +87,8 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
             net[element].at[i, 'in_service'] = False
             try:
                 contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
-                _update_contingency_results(net, contingency_results, result_variables, nminus1=True, i=i)
+                _update_contingency_results(net, contingency_results, result_variables, nminus1=True,
+                                            cause_element=element, cause_index=i)
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
             finally:
@@ -136,6 +137,11 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
+    # check for continuous bus index starting with 0:
+    n_bus = len(net.bus)
+    last_bus = net.bus.index[-1]
+    if net.bus.index[0] != 0 or last_bus != n_bus - 1 or sum(net.bus.index) != last_bus * n_bus / 2:
+        raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
@@ -153,18 +159,23 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         lightsim_grid_model = init_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
+    n_lines = len(net.line)
+    n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
+    n_trafos = len(net.trafo)
+    n_trafos_cases = len(nminus1_cases.get("trafo", {}).get("index", []))
+
     # todo: add option for DC power flow
     s = SecurityAnalysisCPP(lightsim_grid_model)
     s.change_solver(solver_type)
 
-    # map_index = {}
+    map_index = {}
     for element, values in nminus1_cases.items():
         index = np.array(_get_iloc_index(net[element].index.values, values["index"]), dtype=np.int64)
+        map_index[element] = index.copy()  # copy() because += n_lines happens later
         if element == "trafo3w":
             raise NotImplementedError("trafo3w not implemented for lightsim2grid contingency analysis")
         elif element == "trafo":
-            index += len(net.line)
-        # map_index[element] = index
+            index += n_lines
         s.add_multiple_n1(index)
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
@@ -178,32 +189,43 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     net.res_bus["max_vm_pu"] = np.nanmax(vm_pu, axis=0)
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
+    max_i_ka_limit_all = np.r_[
+        net.line.max_i_ka.values, net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))]
+    max_loading_limit_all = np.r_[net.line["max_loading_percent_nminus1"]
+                                  if "max_loading_percent_nminus1" in net.line.columns
+                                  else net.line["max_loading_percent"] if n_lines > 0 else [],
+                                  net.trafo["max_loading_percent_nminus1"]
+                                  if "max_loading_percent_nminus1" in net.trafo.columns
+                                  else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
+
     big_number = 1e6
     for element in ("line", "trafo"):
         if len(net[element]) == 0:
             continue
         if element == "line":
-            kamps_element = kamps_all[:, 0:len(net.line)]
-            max_i_ka_limit = net.line.max_i_ka.values
+            kamps_element = kamps_all[:, 0:n_lines]
+            kamps_element_cause = kamps_all[0:n_lines_cases, :]
+            max_i_ka_limit = max_i_ka_limit_all[0:n_lines]
         else:
-            kamps_element = kamps_all[:, len(net.line):len(net.line) + len(net.trafo)]
-            max_i_ka_limit = net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))
+            kamps_element = kamps_all[:, n_lines:n_lines + n_trafos]
+            kamps_element_cause = kamps_all[n_lines_cases:n_lines_cases + n_trafos_cases, :]
+            max_i_ka_limit = max_i_ka_limit_all[n_lines:n_lines + n_trafos]
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
         max_i_ka = np.nanmax(kamps_element, axis=0)
         net[f"res_{element}"]["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
-        min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0, initial=big_number)  # this is quite daring tbh
+        min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0,
+                             initial=big_number)  # this is quite daring tbh
         min_i_ka[min_i_ka == big_number] = 0
         # min_i_ka = np.nanmin(kamps_line, axis=0)
         net[f"res_{element}"]["min_loading_percent"] = min_i_ka / max_i_ka_limit * 100
-        s = 'max_loading_percent_nminus1' \
-            if 'max_loading_percent_nminus1' in net[element].columns else 'max_loading_percent'
-        loading_limit = net[element][s].values
-        causes_overloading = np.any(kamps_element > loading_limit * max_i_ka_limit / 100, axis=1)
+        causes_overloading = np.any(kamps_element_cause > max_loading_limit_all * max_i_ka_limit_all / 100, axis=1)
         net[f"res_{element}"]["causes_overloading"] = False
-        net[f"res_{element}"].loc[nminus1_cases[element]["index"], "causes_overloading"] = causes_overloading
+        if element in nminus1_cases:
+            # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
+            net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "causes_overloading"] = causes_overloading
 
 
-def _update_contingency_results(net, contingency_results, result_variables, nminus1, i=None):
+def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None, cause_index=None):
     for element, vars in result_variables.items():
         for var in vars:
             val = net[f"res_{element}"][var].values
@@ -214,8 +236,8 @@ def _update_contingency_results(net, contingency_results, result_variables, nmin
                         else 'max_loading_percent'
                     loading_limit = net[element].loc[contingency_results[element]["index"], s].values
                     if np.any(val > loading_limit):
-                        contingency_results[element]["causes_overloading"][
-                            contingency_results[element]["index"] == i] = True
+                        contingency_results[cause_element]["causes_overloading"][
+                            contingency_results[cause_element]["index"] == cause_index] = True
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
                     func(val,
@@ -337,10 +359,18 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     return True
 
 
-def _get_iloc_index(index, sub_index):
-    lookup_index = np.arange(index.max() + 1)
-    lookup_index[index] = np.arange(len(index))
+def _get_sub_index(index, sub_index):
+    lookup_index = np.zeros(index.max() + 1, dtype=np.int64)
+    lookup_index[index] = np.arange(len(index), dtype=np.int64)
     return lookup_index[sub_index]
+
+
+def _get_iloc_index(index, sub_index):
+    # index_dict = {k: i for i, k in enumerate(index)}
+    # return np.array([index_dict[i] for i in sub_index], dtype=np.int64)
+    # should be the same:
+    continuous_index = np.arange(len(index), dtype=np.int64)
+    return continuous_index[_get_sub_index(index, sub_index)]
 
 
 def _log_violation(element, var, val, limit_index, mask):
@@ -369,7 +399,7 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]
-        index = _get_iloc_index(results["index"], limit["index"])
+        index = _get_sub_index(results["index"], limit["index"])
         for var, val in results.items():
             tol = bus_tol if element == "bus" else branch_tol
             if var == "index":
