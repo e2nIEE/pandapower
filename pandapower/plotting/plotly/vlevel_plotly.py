@@ -30,8 +30,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     tutorial
 
     INPUT:
-        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
-        plotted as an example
+        **net** - The pandapower format network.
 
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
