@@ -10,7 +10,7 @@ import numpy as np
 from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
 
-from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
+from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
 

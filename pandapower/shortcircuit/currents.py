@@ -9,14 +9,10 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BASE_KV
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE
-from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH,\
+from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH,\
     X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G, K_SG, SKSS
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
-
-from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 
 def _calc_ikss(net, ppci, bus_idx):

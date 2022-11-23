@@ -36,7 +36,7 @@ setup(
     name='pandapower',
     version='2.10.1',
     author='Leon Thurner, Alexander Scheidler',
-    author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
+    author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
@@ -45,7 +45,7 @@ setup(
     install_requires=["pandas>=1.0",
                       "networkx>=2.5",
                       "scipy",
-                      "numpy>=0.11",
+                      "numpy",
                       "packaging",
                       "tqdm",
                       "deepdiff"],
@@ -56,7 +56,7 @@ setup(
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],  # , "lightsim2grid"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
@@ -64,6 +64,7 @@ setup(
                 "pytest", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
+                "psycopg2",  # for PostgreSQL I/O
                 "matpowercaseframes"
                 ]},  # "shapely", "pyproj", "fiona" are depedencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included

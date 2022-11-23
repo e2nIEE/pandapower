@@ -20,7 +20,7 @@ def test_to_ppc_and_mpc():
     functions = ['case4gs', 'case6ww', 'case30', 'case39']
     for fn in functions:
         # get pypower grids with results
-        ppc_net = get_testgrids(fn, 'pypower_cases.json')
+        ppc_net = get_testgrids('pypower_cases', fn+'.json')
 
         # get pandapower grids
         pandapower_module = __import__('pandapower', fromlist=['networks'])

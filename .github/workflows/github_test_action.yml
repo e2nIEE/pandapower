@@ -130,3 +130,36 @@ jobs:
       run: |
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  postgresql:
+    # for the one test to cover postgresql
+    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python-version: ['3.7', '3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[test,fileio]
+    - name: List of installed packages
+      run: |
+        pip list
+    - name: Create PostgreSQL database
+      run: |
+        sudo systemctl start postgresql.service
+        pg_isready
+        sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'" --command="\du"
+        sudo -u postgres createdb --owner=test_user sandbox
+        sudo -u postgres psql --command="\c sandbox" --command="CREATE SCHEMA test_schema AUTHORIZATION test_user"
+        PGPASSWORD=secret psql --username=test_user --host=localhost --list sandbox
+    - name: Test pandapower File I/O
+      run: |
+        python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
+        python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
