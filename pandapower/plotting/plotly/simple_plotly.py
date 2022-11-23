@@ -74,27 +74,27 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
 def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=1,
                   bus_size=10, ext_grid_size=20.0, bus_color="blue", line_color='grey',
-                  trafo_color='green',trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True):
+                  trafo_color='green', trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True,
+                  additional_traces=None):
     """
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
     INPUT:
-        **net** - The pandapower format network.
+        **net** (pandapowerNet) - The pandapower format network.
 
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
-            or on net.bus_geodata of the connected buses (False)
+        **use_line_geodata** (bool, True) - defines if lines patches are based on
+        net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
-            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
+        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
 
@@ -107,7 +107,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
-            any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
 
@@ -130,6 +130,9 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **auto_open** (bool, True) - automatically open plot in browser
 
         **showlegend** (bool, True) - If True, a legend will be shown
+
+        **additional_traces** (list, None) - List with additional, user-created traces that will
+        be appended to the simple_plotly traces before drawing all traces
 
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
@@ -166,13 +169,20 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                               filename=filename,
                                               auto_open=auto_open,
                                               showlegend=showlegend)
+    if additional_traces:
+        if isinstance(additional_traces, dict):
+            traces.append(additional_traces)
+        else:
+            traces.extend(additional_traces)
 
     return draw_traces(traces, **settings)
 
+
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
                            figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
-                           branch_color, trafo_color,trafo3w_color, ext_grid_color, node_element, branch_element,
-                           trans_element, trans3w_element, separator_element, branch_trace_func, node_trace_func,
+                           branch_color, trafo_color, trafo3w_color, ext_grid_color,
+                           node_element, branch_element, trans_element, trans3w_element,
+                           separator_element, branch_trace_func, node_trace_func,
                            hoverinfo_func, filename='temp-plot.html', auto_open=True,
                            showlegend=True):
     version_check()
@@ -247,7 +257,18 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
 
 if __name__ == '__main__':
     from pandapower import networks as nw
-    # net = nw.mv_oberrhein()
+    from pandapower.networks import mv_oberrhein
+    from pandapower.plotting.plotly.traces import create_weighted_marker_trace
     # simple_plotly(net)
-    net = nw.example_multivoltage()
-    fig = simple_plotly(net, trafo3w_color='k')
+    # net = nw.example_multivoltage()
+    # fig = simple_plotly(net, trafo3w_color='k')
+    net = mv_oberrhein()
+    net.load.scaling, net.sgen.scaling = 1, 1
+    # different markers and sizemodes as examples
+    markers_load = create_weighted_marker_trace(net, elm_type="load", color="red",
+                                                patch_type="triangle-up", sizemode="area",
+                                                marker_scaling=100)
+    markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
+                                                patch_type="circle-open", sizemode="diameter",
+                                                marker_scaling=100)
+    simple_plotly(net, bus_size=1, additional_traces=[markers_load, markers_sgen])
