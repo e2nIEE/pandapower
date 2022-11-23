@@ -13,6 +13,7 @@ Change Log
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
 - [ADDED] zero-sequence parameters for net.impedance
+- [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 
 [2.10.1] - 2022-07-31
 -------------------------------

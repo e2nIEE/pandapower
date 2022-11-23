@@ -28,6 +28,7 @@
 
 import copy
 from collections.abc import MutableMapping
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -61,7 +62,17 @@ def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      "requirements: %s requires '%s'." % (fct_name, required_packages))
+                      f"requirements: {fct_name} requires '{required_packages}'.")
+
+
+def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
+                                    default_value, category=DeprecationWarning, **kwargs):
+    if old_parameter_name in kwargs:
+        warnings.warn(f"Parameter '%s' has been renamed by '%s'." % (
+            old_parameter_name, new_parameter_name), category=category)
+        if new_parameter != default_value:
+            return kwargs.pop("boxcolor")
+    return new_parameter
 
 
 class ADict(dict, MutableMapping):
