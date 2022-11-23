@@ -68,9 +68,9 @@ def soft_dependency_error(fct_name, required_packages):
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
                                     default_value, category=DeprecationWarning, **kwargs):
     if old_parameter_name in kwargs:
-        warnings.warn(f"Parameter '%s' has been renamed by '%s'." % (
+        warnings.warn(f"Parameter '%s' has been renamed to '%s'." % (
             old_parameter_name, new_parameter_name), category=category)
-        if new_parameter != default_value:
+        if new_parameter == default_value:
             return kwargs.pop(old_parameter_name)
     return new_parameter
 
