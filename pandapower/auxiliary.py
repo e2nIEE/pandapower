@@ -71,7 +71,7 @@ def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_
         warnings.warn(f"Parameter '%s' has been renamed by '%s'." % (
             old_parameter_name, new_parameter_name), category=category)
         if new_parameter != default_value:
-            return kwargs.pop("boxcolor")
+            return kwargs.pop(old_parameter_name)
     return new_parameter
 
 
