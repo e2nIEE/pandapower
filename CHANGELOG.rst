@@ -6,14 +6,16 @@ Change Log
 - [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
 - [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
 - [ADDED] group functionality
-- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
+- [ADDED] auxiliary function warn_and_fix_parameter_renaming to throw a derpecation warning (not an Error) if old name of a parameter is used
 - [ADDED] zero-sequence parameters for net.impedance
+- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
 - [ADDED] additional_traces (prepared by the user) can be passed to simple_plotly
 
 - [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
+- [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 

@@ -30,7 +30,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
         INPUT:
-            **net** - The pandapower format network. If none is provided, mv_oberrhein() will be plotted as an example
+            **net** - The pandapower format network.
 
         OPTIONAL:
             **respect_switches** (bool, False) - Respect switches when artificial geodata is created
