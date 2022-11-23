@@ -54,6 +54,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                     ax.plot(x, y, linewidth=0.4 * np.sqrt(net.res_line.loading_percent.at[lix]),
                             **kwargs)
                 if bus_colors is not None:
+                    if isinstance(bus_colors, str):
+                        bus_colors = {b: bus_colors for b in net.bus.index}
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'or', color=bus_colors[bus], ms=bus_size)

@@ -264,8 +264,11 @@ if __name__ == '__main__':
     # fig = simple_plotly(net, trafo3w_color='k')
     net = mv_oberrhein()
     net.load.scaling, net.sgen.scaling = 1, 1
+    # different markers and sizemodes as examples
     markers_load = create_weighted_marker_trace(net, elm_type="load", color="red",
+                                                patch_type="triangle-up", sizemode="area",
                                                 marker_scaling=100)
     markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
+                                                patch_type="circle-open", sizemode="diameter",
                                                 marker_scaling=100)
     simple_plotly(net, bus_size=1, additional_traces=[markers_load, markers_sgen])

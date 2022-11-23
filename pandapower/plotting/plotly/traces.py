@@ -813,13 +813,14 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         will be plotted. The suffix (everything behind the last '_' in the column name) will be
         used as the unit in the infofunction.
 
-        **sizemode** (str, default "area") - whether the markers' "area" or "diameter" (for circles)
-        will be proportional to the represented value
+        **sizemode** (str, default "area") - whether the markers' "area" or "diameter"  will be
+        proportional to the represented value
 
         **color** (str, default "red") - color for the markers
 
-        **patch_type** (str, default "circle") - plotly marker style that will be used (other options
-        are triangle, triangle-down and many more, cf. https://plotly.com/python/marker-style/)
+        **patch_type** (str, default "circle") - plotly marker style that will be used (other
+        options are triangle-up, triangle-down and many more; for non-filled markers, append "-open"
+        cf. https://plotly.com/python/marker-style/)
 
         **marker_scaling** (float, default 1.) - factor to scale the size of all markers
 
