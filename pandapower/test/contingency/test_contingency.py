@@ -134,6 +134,10 @@ def test_lightsim2grid_distributed_slack():
                                         distributed_slack=True)
     pp.contingency.run_contingency_ls2g(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
+    assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+    if len(net.trafo) > 0:
+        assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
+
     for var in ("loading_percent", "max_loading_percent", "min_loading_percent"):
         assert np.allclose(res1["line"][var], net1.res_line[var].values, atol=1e-6, rtol=0)
         assert np.allclose(res["line"][var], net.res_line[var].values, atol=1e-6, rtol=0)
