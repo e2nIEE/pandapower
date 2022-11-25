@@ -1286,7 +1286,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                     only_v_results=False)
 
 
-def _internal_stored(net):
+def _internal_stored(net, ac=True):
     """
 
     The function newtonpf() needs these variables as inputs:
@@ -1306,8 +1306,12 @@ def _internal_stored(net):
     if net["_ppc"] is None:
         return False
 
-    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
-                              "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    if ac:
+        mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
+                                  "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    else:
+        mandatory_pf_variables = ["bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "ref_gens",
+                                  "Bbus", "Bf", "Pbusinj", "Pfinj", "Cft", "shift"]
     for var in mandatory_pf_variables:
         if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
             logger.warning("recycle is set to True, but internal variables are missing")
