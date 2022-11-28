@@ -13,7 +13,6 @@ Change Log
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
 - [ADDED] zero-sequence parameters for net.impedance
-- [ADDED] Added converter CGMES v2.4.15 to pandapower
 
 [2.10.1] - 2022-07-31
 -------------------------------
