@@ -1628,7 +1628,7 @@ def drop_group_and_elements(net, index):
     """
     # functions like drop_trafos, drop_lines, drop_buses are not considered since all elements
     # should be included in elements_dict
-    for et in net.group.loc[index, "element_type"].tolist():
+    for et in net.group.loc[[index], "element_type"].tolist():
         idx = group_element_index(net, index, et)
         net[et].drop(idx.intersection(net[et].index), inplace=True)
         res_et = "res_" + et

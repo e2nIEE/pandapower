@@ -211,6 +211,9 @@ def test_drop_and_return():
             net2 = deepcopy(net)
             pp.drop_group_and_elements(net2, 0)
 
+            net2b = deepcopy(net)
+            pp.drop_group_and_elements(net2b, 3)
+
             net3 = pp.return_group_as_net(
                 net, 0, keep_everything_else=keep_everything_else, verbose=False)
             if keep_everything_else:
@@ -220,9 +223,12 @@ def test_drop_and_return():
 
             assert net.gen.shape[0] == 10  # unchanged
             assert net2.gen.shape[0] == 8
+            assert net2b.gen.shape[0] == 10  # unchanged
+            assert net2b.trafo.shape[0] == 2
             assert set(net3.gen.index) == {0, 1}
             for elm in pp.pp_elements():
                 assert net2[elm].shape[0] <= net[elm].shape[0]
+                assert net2b[elm].shape[0] <= net[elm].shape[0]
                 assert set(net2[elm].index) | set(net3[elm].index) == set(net[elm].index)
                 assert net3[elm].shape[0] >= 0
 
