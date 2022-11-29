@@ -6,11 +6,11 @@ This file included various test network for modelling and simulation different p
 import pandas as pd
 import pandapower as pp
 import numpy as np
+pd.Series(dtype='float64')
 
 
 def load_4bus_net(open_loop = False):
     net = pp.create_empty_network() #create an empty network
-    
     
     #busbars and nodes
     bus0 = pp.create_bus(net,name = "Bus_extgrid", vn_kv = 20, type = "b")
@@ -21,57 +21,46 @@ def load_4bus_net(open_loop = False):
     
     #external grids
     pp.create_ext_grid(net, bus0, vm_pu = 1.0, va_degree = 0, s_sc_max_mva = 100, s_sc_min_mva = 50, rx_max = 0.1, rx_min = 0.1)
-    
-    #lines
-    #line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
-    #line2 = pp.create_line(net, bus1, bus2, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 2)
-    #line3 = pp.create_line(net, bus1, bus3, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 3)
-    
+        
     line1 = pp.create_line_from_parameters(net, bus0, bus1, length_km = 5, index = 1, r_ohm_per_km = 0.169, x_ohm_per_km = 0.118438, c_nf_per_km = 273, max_i_ka = 0.361)
     line2 = pp.create_line_from_parameters(net, bus1, bus2, length_km = 4, index = 2, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     line3 = pp.create_line_from_parameters(net, bus1, bus3, length_km = 4, index = 3, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     line4 = pp.create_line_from_parameters(net, bus3, bus2, length_km = 0.5, index =4, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     
-    #line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
-    
     net.line["endtemp_degree"] = 250
     
     
     #switches
-    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_dir", closed = True, index = 0)
-    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_dir", closed = True, index = 1)
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_dir", closed = True, index = 2)
+    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_directional", closed = True, index = 0)
+    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_directional", closed = True, index = 1)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_directional", closed = True, index = 2)
     # sw6 = pp.create_switch(net, bus3, line3, et="l", type = "CB", closed = True)
     
     if open_loop:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = False, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = False, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = False, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = False, index = 4)
     else:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = True, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = True, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = True, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = True, index = 4)
     
     #load
     pp.create_load(net, bus2, p_mw = 5, q_mvar= 0, scaling = 1, name="load 1")
-    #pp.create_sgen(net, bus3, p_mw =2, q_mvar=0, sn_mva =2)
-            
-    #geodata Zeilen initialisieren
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
     
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
-    #Knoten neue Koordinaten für Plot zuweisen
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -1
-    net.bus_geodata.x.at[3] = 1
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-1,1]
     
-    
-    net.bus_geodata.y.at[0] = 1
-    net.bus_geodata.y.at[1] = 0
-    net.bus_geodata.y.at[2] = -1
-    net.bus_geodata.y.at[3] = -1
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[1,0,-1,-1]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
+
     
     return net
 def load_4bus_net_oc_doc(open_loop = False):
@@ -88,56 +77,48 @@ def load_4bus_net_oc_doc(open_loop = False):
     #external grids
     pp.create_ext_grid(net, bus0, vm_pu = 1.0, va_degree = 0, s_sc_max_mva = 100, s_sc_min_mva = 50, rx_max = 0.1, rx_min = 0.1)
     
-    #lines
-    #line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
-    #line2 = pp.create_line(net, bus1, bus2, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 2)
-    #line3 = pp.create_line(net, bus1, bus3, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 3)
     
     line1 = pp.create_line_from_parameters(net, bus0, bus1, length_km = 5, index = 1, r_ohm_per_km = 0.169, x_ohm_per_km = 0.118438, c_nf_per_km = 273, max_i_ka = 0.361)
     line2 = pp.create_line_from_parameters(net, bus1, bus2, length_km = 4, index = 2, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     line3 = pp.create_line_from_parameters(net, bus1, bus3, length_km = 4, index = 3, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     line4 = pp.create_line_from_parameters(net, bus3, bus2, length_km = 0.5, index =4, r_ohm_per_km = 0.256, x_ohm_per_km = 0.126606, c_nf_per_km = 235, max_i_ka = 0.286)
     
-    #line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
     
     net.line["endtemp_degree"] = 250
     
     
     #switches
-    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_non_dir", closed = True, index = 0)
-    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_non_dir", closed = True, index = 1)
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_non_dir", closed = True, index = 2)
+    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_non_directional", closed = True, index = 0)
+    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_non_directional", closed = True, index = 1)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_non_directional", closed = True, index = 2)
     # sw6 = pp.create_switch(net, bus3, line3, et="l", type = "CB", closed = True)
     
     if open_loop:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = False, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = False, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = False, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = False, index = 4)
     else:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = True, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = True, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = True, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = True, index = 4)
     
     #load
     pp.create_load(net, bus2, p_mw = 5, q_mvar= 0, scaling = 1, name="load 1")
-            
-    #geodata Zeilen initialisieren
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
     
     
-    #Knoten neue Koordinaten für Plot zuweisen
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -1
-    net.bus_geodata.x.at[3] = 1
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-1,1]
     
-    net.bus_geodata.y.at[0] = 1
-    net.bus_geodata.y.at[1] = 0
-    net.bus_geodata.y.at[2] = -1
-    net.bus_geodata.y.at[3] = -1
-    
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[1,0,-1,-1]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
+
     return net
 
 def load_distance_test_grid():
@@ -166,26 +147,22 @@ def load_distance_test_grid():
     pp.create_load(net, bus4, p_mw = 10, q_mvar= 0, scaling = 1, name="load 2")
     
     net.line['endtemp_degree'] = 250
-    #geodata Zeilen initialisieren
-    #net.bus_geodata.loc[0] = None
-    #net.bus_geodata.loc[1] = None
-    #net.bus_geodata.loc[2] = None
-    #net.bus_geodata.loc[3] = None
-    #net.bus_geodata.loc[4] = None
     
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
-    #Knoten neue Koordinaten für Plot zuweisen
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = -1
-    net.bus_geodata.x.at[2] = 1
-    net.bus_geodata.x.at[3] = -1
-    net.bus_geodata.x.at[4] = 1
+    #Assign x geographic coordinates
+    x_geodatas=[0,-1,1,-1,1]
     
-    net.bus_geodata.y.at[0] = 0
-    net.bus_geodata.y.at[1] = -1
-    net.bus_geodata.y.at[2] = -1
-    net.bus_geodata.y.at[3] = -2
-    net.bus_geodata.y.at[4] = -2
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[0,-1,-1,-2,-2]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
+
     
     return net
 
@@ -210,18 +187,21 @@ def load_grid_with_infeed_110kv(infeed_s_sc_max_mva = 100, infeed_s_sc_min_mva =
     
     net.line['endtemp_degree'] = 250
     
-    #geodata Zeilen initialisieren
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 1
-    net.bus_geodata.x.at[2] = 0
     
-    net.bus_geodata.y.at[0] = 0
-    net.bus_geodata.y.at[1] = -1
-    net.bus_geodata.y.at[2] = -2
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
+    
+    #Assign x geographic coordinates
+    x_geodatas=[0,1,0]
+    
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[0,-1,-2]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
 
     return net
 
@@ -329,16 +309,11 @@ def load_6bus_net_non_directional(open_loop=False):
     bus7 = pp.create_bus(net, name="Bus_line4", vn_kv=20, type="n")
     bus8 = pp.create_bus(net, name="Bus_line5", vn_kv=20, type="n")
     
-    #bus9 = pp.create_bus(net, name="load1", vn_kv=20, type="n")
 
 
     # external grids
     pp.create_ext_grid(net, bus0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
 
-    # lines
-    # line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
-    # line2 = pp.create_line(net, bus1, bus2, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 2)
-    # line3 = pp.create_line(net, bus1, bus3, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 3)
 
     line0 = pp.create_line_from_parameters(net, bus0, bus1, length_km=2, index=0, r_ohm_per_km=0.169,
                                            x_ohm_per_km=0.118438, c_nf_per_km=273, max_i_ka=0.361)
@@ -371,89 +346,49 @@ def load_6bus_net_non_directional(open_loop=False):
     net.line["endtemp_degree"] = 250
 
     # switches
-    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_dir", closed=True, index=0)
-    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_dir", closed=True, index=1)
+    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_directional", closed=True, index=0)
+    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_directional", closed=True, index=1)
 
-    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_dir", closed = True, index=2)
+    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_directional", closed = True, index=2)
 
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_dir", closed=True, index=3)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_directional", closed=True, index=3)
 
-    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_dir", closed = True, index=4)
+    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_directional", closed = True, index=4)
 
-    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_dir", closed=True, index=5)
+    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_directional", closed=True, index=5)
     
-    sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_dir", closed=True, index=6)
+    sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_directional", closed=True, index=6)
     
-    sw7 = pp.create_switch(net, bus6, line7, et="l", type="CB_non_dir", closed=True, index=7)
+    sw7 = pp.create_switch(net, bus6, line7, et="l", type="CB_non_directional", closed=True, index=7)
     
     # bus bar connection
     if open_loop:
         
-        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_non_dir", closed=False, index=8)
-        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_non_dir", closed=False, index=9)
+        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_non_directional", closed=False, index=8)
+        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_non_directional", closed=False, index=9)
     else:
-        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_non_dir", closed=True, index=8)
-        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_non_dir", closed=True, index=9)
+        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_non_directional", closed=True, index=8)
+        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_non_directional", closed=True, index=9)
     
     
     pp.create_load(net, bus7, p_mw=5, q_mvar=1, scaling=1, name= "load 1")
 
-
-    # Define load
-
-
-#modifies load
-    #pp.create_load(net, bus8, p_mw=4, q_mvar=1, scaling=1, name="load 2")
-
-    # geodata Zeilen initialisieren
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
-    net.bus_geodata.loc[4] = None
-    net.bus_geodata.loc[5] = None
-    net.bus_geodata.loc[6] = None
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
-    #test
-    net.bus_geodata.loc[7] = None
-    net.bus_geodata.loc[8] = None
-
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-2,-2,-2,2,2,2,2]
     
-
-    # Knoten neue Koordinaten für Plot zuweisen
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -2
-    net.bus_geodata.x.at[3] = -2
-    
-    # test
-    net.bus_geodata.x.at[7] = -2
-    net.bus_geodata.x.at[8] = 2
-
-    
-    net.bus_geodata.x.at[4] = 2
-    net.bus_geodata.x.at[5] = 2
-    net.bus_geodata.x.at[6] = 2
-
-################################
-    net.bus_geodata.y.at[0] = 0
-    net.bus_geodata.y.at[1] = -1
-    net.bus_geodata.y.at[2] = -2
-    net.bus_geodata.y.at[3] = -4
-    
-    #test
-    net.bus_geodata.y.at[7] = -6
-    net.bus_geodata.y.at[8] =  -6
-
-
-    net.bus_geodata.y.at[4] = -2
-    net.bus_geodata.y.at[5] = -3
-    net.bus_geodata.y.at[6] = -4
-
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[0,-1,-2,-4,-6,-6,-2,-3,-4]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
 
     return net
-###  Test grid developed by Arjun:
-    
     
 def load_6bus_net_directional(open_loop=False):
     import pandapower as pp
@@ -478,10 +413,6 @@ def load_6bus_net_directional(open_loop=False):
     # external grids
     pp.create_ext_grid(net, bus0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
 
-    # lines
-    # line1 = pp.create_line(net, bus0, bus1, length_km = 5, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 1)
-    # line2 = pp.create_line(net, bus1, bus2, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 2)
-    # line3 = pp.create_line(net, bus1, bus3, length_km = 4, std_type = "NA2XS2Y 1x185 RM/25 12/20 kV", index = 3)
 
     line0 = pp.create_line_from_parameters(net, bus0, bus1, length_km=2, index=0, r_ohm_per_km=0.169,
                                            x_ohm_per_km=0.118438, c_nf_per_km=273, max_i_ka=0.361)
@@ -519,89 +450,51 @@ def load_6bus_net_directional(open_loop=False):
     net.line["endtemp_degree"] = 250
 
     # switches
-    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_dir", closed=True, index=0)
-    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_dir", closed=True, index=1)
+    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_directional", closed=True, index=0)
+    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_directional", closed=True, index=1)
 
-    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_dir", closed = True, index=2)
+    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_directional", closed = True, index=2)
 
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_dir", closed=True, index=3)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_directional", closed=True, index=3)
 
-    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_dir", closed = True, index=4)
+    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_directional", closed = True, index=4)
 
-    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_dir", closed=True, index=5)
+    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_directional", closed=True, index=5)
     
-    sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_dir", closed=True, index=6)
+    sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_directional", closed=True, index=6)
     
-    sw7 = pp.create_switch(net, bus6, line7, et="l", type="CB_non_dir", closed=True, index=7)
+    sw7 = pp.create_switch(net, bus6, line7, et="l", type="CB_non_directional", closed=True, index=7)
     
     # bus bar connection
     if open_loop:
         
-        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_dir", closed=False, index=8)
-        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_dir", closed=False, index=9)
+        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_directional", closed=False, index=8)
+        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_directional", closed=False, index=9)
     else:
-        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_dir", closed=True, index=8)
-        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_dir", closed=True, index=9)
+        sw8 = pp.create_switch(net, bus7, line8, et="l", type="CB_directional", closed=True, index=8)
+        sw9 = pp.create_switch(net, bus8, line8, et="l", type="CB_directional", closed=True, index=9)
     
-    #sw9 = pp.create_switch(net, bus6, line8, et="l", type="CB_non_dir", closed=True, index=8)
+    #sw9 = pp.create_switch(net, bus6, line8, et="l", type="CB_non_directional", closed=True, index=8)
     
     
     pp.create_load(net, bus7, p_mw=5, q_mvar=1, scaling=1, name= "load 1")
     pp.create_load(net, bus8, p_mw=10, q_mvar=1, scaling=1, name= "load 2")
-
-
-    # Define load
-
     
-
-#modifies load
-    #pp.create_load(net, bus8, p_mw=4, q_mvar=1, scaling=1, name="load 2")
-
-    # geodata Zeilen initialisieren
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
-    net.bus_geodata.loc[4] = None
-    net.bus_geodata.loc[5] = None
-    net.bus_geodata.loc[6] = None
     
-    #test
-    net.bus_geodata.loc[7] = None
-    net.bus_geodata.loc[8] = None
-
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
-
-    # Knoten neue Koordinaten für Plot zuweisen
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -2
-    net.bus_geodata.x.at[3] = -2
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-2,-2,-2,2,2,2,2]
     
-    # test
-    net.bus_geodata.x.at[7] = -2
-    net.bus_geodata.x.at[8] = 2
-
-    
-    net.bus_geodata.x.at[4] = 2
-    net.bus_geodata.x.at[5] = 2
-    net.bus_geodata.x.at[6] = 2
-
-################################
-    net.bus_geodata.y.at[0] = 0
-    net.bus_geodata.y.at[1] = -1
-    net.bus_geodata.y.at[2] = -2
-    net.bus_geodata.y.at[3] = -4
-    
-    #test
-    net.bus_geodata.y.at[7] = -6
-    net.bus_geodata.y.at[8] =  -6
-
-
-    net.bus_geodata.y.at[4] = -2
-    net.bus_geodata.y.at[5] = -3
-    net.bus_geodata.y.at[6] = -4
-
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[0,-1,-2,-4,-6,-6,-2,-3,-4]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
 
     return net
 
@@ -632,8 +525,6 @@ def three_radial_bus_net():
         bus15= pp.create_bus(net, name="Bus_load3", vn_kv=20, type="n")
 
         
-
-
         # external grids
         pp.create_ext_grid(net, bus0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
 
@@ -737,69 +628,20 @@ def three_radial_bus_net():
         pp.create_load(net, bus15, p_mw=4, q_mvar=1, scaling=1, name="load3")
         
 
-        # geodata Zeilen initialisieren
-        net.bus_geodata.loc[0] = None
-        net.bus_geodata.loc[1] = None
-        net.bus_geodata.loc[2] = None
-        net.bus_geodata.loc[3] = None
-        net.bus_geodata.loc[4] = None
-        net.bus_geodata.loc[5] = None
-        net.bus_geodata.loc[6] = None
-        net.bus_geodata.loc[7] = None
-        net.bus_geodata.loc[8] = None
-        net.bus_geodata.loc[9] = None
-        net.bus_geodata.loc[10] = None
-        net.bus_geodata.loc[11] = None
-        net.bus_geodata.loc[12] = None
-        net.bus_geodata.loc[13] = None
-        net.bus_geodata.loc[14] = None
-        net.bus_geodata.loc[15] = None
-
+        # Initialise geographic coordinates
+        for i in net.bus.index:
+            net.bus_geodata.loc[i]=None
         
-
-        # Knoten neue Koordinaten für Plot zuweisen
-        net.bus_geodata.x.at[0] =  0
-        net.bus_geodata.x.at[1] =  0
-        net.bus_geodata.x.at[2] =  0
-        net.bus_geodata.x.at[3] = -2
-        net.bus_geodata.x.at[4] = -2
-        net.bus_geodata.x.at[5] = -2
-        net.bus_geodata.x.at[6] = -2
+        #Assign x geographic coordinates
+        x_geodatas=[0,0,0,-2,-2,-2,-2,0,0,0,0,0,2,2,2,2]
         
-        net.bus_geodata.x.at[7] =  0
-        net.bus_geodata.x.at[8] =  0
-        net.bus_geodata.x.at[9] =  0
-        net.bus_geodata.x.at[9] =  0
-        net.bus_geodata.x.at[10] = 0
-        
-        net.bus_geodata.x.at[11] = 0
-        net.bus_geodata.x.at[12] = 2
-        net.bus_geodata.x.at[13] = 2
-        net.bus_geodata.x.at[14] = 2
-        net.bus_geodata.x.at[15] = 2
-
-        
-
-    ################################
-        net.bus_geodata.y.at[0] = 0
-        net.bus_geodata.y.at[1] = -1
-        net.bus_geodata.y.at[2] = -2
-        net.bus_geodata.y.at[3] = -3
-        net.bus_geodata.y.at[4] = -4
-        net.bus_geodata.y.at[5] = -5
-        net.bus_geodata.y.at[6] = -6
-        
-        net.bus_geodata.y.at[7] = -4.5
-        net.bus_geodata.y.at[8] = -5
-        net.bus_geodata.y.at[9] = -6
-        net.bus_geodata.y.at[10] = -7
-        net.bus_geodata.y.at[11] = -8
-        
-        net.bus_geodata.y.at[12] = -8
-        net.bus_geodata.y.at[13] = -9
-        net.bus_geodata.y.at[14] = -10
-        net.bus_geodata.y.at[15] = -12
-
+        for index, x_geodata in enumerate (x_geodatas):
+            net.bus_geodata.x.at[index]=x_geodata
+            
+        # Assign y geographic coordinates
+        y_geodatas=[0,-1,-2,-3,-4,-5,-6,-4.5,-5,-6,-7,-8,-8,-9,-10,-12]
+        for index, y_geodata in enumerate (y_geodatas):
+            net.bus_geodata.y.at[index]=y_geodata
         
         return net
     
@@ -983,90 +825,20 @@ def radial_bus_net_branch():
         
         pp.create_load(net, bus20, p_mw=4, q_mvar=1, scaling=1, name="load5")
 
-
+        # Initialise geographic coordinates
+        for i in net.bus.index:
+            net.bus_geodata.loc[i]=None
         
-
-        # geodata Zeilen initialisieren
-        net.bus_geodata.loc[0] = None
-        net.bus_geodata.loc[1] = None
-        net.bus_geodata.loc[2] = None
-        net.bus_geodata.loc[3] = None
-        net.bus_geodata.loc[4] = None
-        net.bus_geodata.loc[5] = None
-        net.bus_geodata.loc[6] = None
-        net.bus_geodata.loc[7] = None
-        net.bus_geodata.loc[8] = None
-        net.bus_geodata.loc[9] = None
-        net.bus_geodata.loc[10] = None
-        net.bus_geodata.loc[11] = None
-        net.bus_geodata.loc[12] = None
-        net.bus_geodata.loc[13] = None
-        net.bus_geodata.loc[14] = None
-        net.bus_geodata.loc[15] = None
-        net.bus_geodata.loc[16] = None
-        net.bus_geodata.loc[17] = None
-        net.bus_geodata.loc[18] = None
-        net.bus_geodata.loc[19] = None
-        net.bus_geodata.loc[20] = None
-
+        #Assign x geographic coordinates
+        x_geodatas=[0,0,-2,-2,-2,-3,-3,-3,-2,-2,-2,3,3,3,3,3,0,0,2,2,2]
         
-
-        # Knoten neue Koordinaten für Plot zuweisen
-        net.bus_geodata.x.at[0] =  0
-        net.bus_geodata.x.at[1] =  0
-        net.bus_geodata.x.at[2] =  -2
-        net.bus_geodata.x.at[3] = -2
-        net.bus_geodata.x.at[4] = -2
-        net.bus_geodata.x.at[5] = -3
-        net.bus_geodata.x.at[6] = -3
-        net.bus_geodata.x.at[7] =  -3
-        
-        net.bus_geodata.x.at[8] =  -2
-        net.bus_geodata.x.at[9] =  -2
-        net.bus_geodata.x.at[10] = -2
-        
-        net.bus_geodata.x.at[11] = 3
-        net.bus_geodata.x.at[12] = 3
-        net.bus_geodata.x.at[13] = 3
-        net.bus_geodata.x.at[14] = 3
-        net.bus_geodata.x.at[15] = 3
-        
-        net.bus_geodata.x.at[16]= 0
-        net.bus_geodata.x.at[17] = 0
-        
-        net.bus_geodata.x.at[18] = 2
-        net.bus_geodata.x.at[19] = 2
-        net.bus_geodata.x.at[20] = 2
-
-        
-
-    ################################
-        net.bus_geodata.y.at[0] = 0
-        net.bus_geodata.y.at[1] = -1
-        net.bus_geodata.y.at[2] = -1
-        net.bus_geodata.y.at[3] = -3
-        net.bus_geodata.y.at[4] = -5
-        net.bus_geodata.y.at[5] = -5
-        net.bus_geodata.y.at[6] = -7
-        net.bus_geodata.y.at[7] = -8
-        
-        net.bus_geodata.y.at[8] = -6
-        net.bus_geodata.y.at[9] = -8
-        net.bus_geodata.y.at[10] = -9
-        
-        net.bus_geodata.y.at[11] = -5
-        net.bus_geodata.y.at[12] = -7
-        net.bus_geodata.y.at[13] = -8
-        net.bus_geodata.y.at[14] = -10
-        net.bus_geodata.y.at[15] = -11
-        
-        net.bus_geodata.y.at[16] = -3
-        net.bus_geodata.y.at[17] = -4
-        
-        net.bus_geodata.y.at[18] = -1
-        net.bus_geodata.y.at[19] = -3
-        net.bus_geodata.y.at[20] = -4
-
+        for index, x_geodata in enumerate (x_geodatas):
+            net.bus_geodata.x.at[index]=x_geodata
+            
+        # Assign y geographic coordinates
+        y_geodatas=[0,-1,-1,-3,-5,-5,-7,-8,-6,-8,-9,-5,-7,-8,-10,-11,-3,-4,-1,-3,-4]
+        for index, y_geodata in enumerate (y_geodatas):
+            net.bus_geodata.y.at[index]=y_geodata
         
         return net
     
@@ -1107,66 +879,47 @@ def oc_relay_net(open_loop=True):
         
     line6 = pp.create_line_from_parameters(net, bus3, bus6, length_km=4, index=6, r_ohm_per_km=0.256,
                                            x_ohm_per_km=0.126606, c_nf_per_km=235, max_i_ka=0.286)
-    
-
     net.line["endtemp_degree"] = 250
 
-    # switches
-    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_dir", closed=True, index=0)
-    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_dir", closed=True, index=1)
+    # Define switches
+    swo=pp.create_switch(net, bus0, line0, et="l", type="CB_non_directional", closed=True, index=0)
+    sw1 = pp.create_switch(net, bus1, line1, et="l", type="CB_non_directional", closed=True, index=1)
 
-    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_dir", closed = True, index=2)
+    sw2 = pp.create_switch(net, bus2, line2, et="l", type = "CB_non_directional", closed = True, index=2)
 
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_dir", closed=True, index=3)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type="CB_non_directional", closed=True, index=3)
 
-    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_dir", closed = True, index=4)
+    sw4 = pp.create_switch(net, bus4, line4, et="l", type = "CB_non_directional", closed = True, index=4)
 
-    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_dir", closed=True, index=5)
-    
+    sw5 = pp.create_switch(net, bus5, line5, et="l", type="CB_non_directional", closed=True, index=5)
     # bus bar connection
     if open_loop:
-        
-        sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_dir", closed=False, index=6)
-        sw7 = pp.create_switch(net, bus6, line6, et="l", type="CB_non_dir", closed=False, index=7)
+        sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_directional", closed=False, index=6)
+        sw7 = pp.create_switch(net, bus6, line6, et="l", type="CB_non_directional", closed=False, index=7)
     else:
-        sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_dir", closed=True, index=6)
-        sw7 = pp.create_switch(net, bus6, line6, et="l", type="CB_non_dir", closed=True, index=7)
+        sw6 = pp.create_switch(net, bus3, line6, et="l", type="CB_non_directional", closed=True, index=6)
+        sw7 = pp.create_switch(net, bus6, line6, et="l", type="CB_non_directional", closed=True, index=7)
     
     #define load
     pp.create_load(net, bus3, p_mw=5, q_mvar=1, scaling=1, name= "load 1")
     pp.create_load(net, bus6, p_mw=2, q_mvar=1, scaling=1, name= "load 2")
 
-    # initialise geo coordinates
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
-    net.bus_geodata.loc[4] = None
-    net.bus_geodata.loc[5] = None
-    net.bus_geodata.loc[6] = None
-    
-    
-    #input geo coordinates
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -2
-    net.bus_geodata.x.at[3] = -2
 
     
-    net.bus_geodata.x.at[4] = 2
-    net.bus_geodata.x.at[5] = 2
-    net.bus_geodata.x.at[6] = 2
-
-    net.bus_geodata.y.at[0] = 0
-    net.bus_geodata.y.at[1] = -1
-    net.bus_geodata.y.at[2] = -2
-    net.bus_geodata.y.at[3] = -4
-
-
-    net.bus_geodata.y.at[4] = -2
-    net.bus_geodata.y.at[5] = -3
-    net.bus_geodata.y.at[6] = -4
-
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
+    
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-2,-2,2,2,2]
+    
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[0,-1,-2,-4,-2,-3,-4]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
 
     return net
 
@@ -1175,6 +928,7 @@ def doc_relay_net(open_loop = False):
     
     #create an empty network
     net = pp.create_empty_network()
+    
     
     # define buses
     bus0 = pp.create_bus(net,name = "Bus_extgrid", vn_kv = 20, type = "b")
@@ -1199,32 +953,32 @@ def doc_relay_net(open_loop = False):
     net.line["endtemp_degree"] = 250
     
     #switches
-    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_dir", closed = True, index = 0)
-    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_dir", closed = True, index = 1)
-    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_dir", closed = True, index = 2)
+    sw1 = pp.create_switch(net, bus0, line1, et="l", type = "CB_directional", closed = True, index = 0)
+    sw2 = pp.create_switch(net, bus1, line2, et="l", type = "CB_directional", closed = True, index = 1)
+    sw3 = pp.create_switch(net, bus1, line3, et="l", type = "CB_directional", closed = True, index = 2)
     if open_loop:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = False, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = False, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = False, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = False, index = 4)
     else:
-        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_dir", closed = True, index = 3)
-        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_dir", closed = True, index = 4)
+        sw4 = pp.create_switch(net, bus2, line4, et="l", type = "CB_directional", closed = True, index = 3)
+        sw5 = pp.create_switch(net, bus3, line4, et="l", type = "CB_directional", closed = True, index = 4)
         
     # define load
     pp.create_load(net, bus2, p_mw = 5, q_mvar= 0, scaling = 1, name="load 1")
+     
+    # Initialise geographic coordinates
+    for i in net.bus.index:
+        net.bus_geodata.loc[i]=None
     
-    # initialise geo coordinates
-    net.bus_geodata.loc[0] = None
-    net.bus_geodata.loc[1] = None
-    net.bus_geodata.loc[2] = None
-    net.bus_geodata.loc[3] = None
+    #Assign x geographic coordinates
+    x_geodatas=[0,0,-1,1]
     
-    # define geo coordinates for better visualisation in plotting
-    net.bus_geodata.x.at[0] = 0
-    net.bus_geodata.x.at[1] = 0
-    net.bus_geodata.x.at[2] = -1
-    net.bus_geodata.x.at[3] = 1
-    net.bus_geodata.y.at[0] = 1
-    net.bus_geodata.y.at[1] = 0
-    net.bus_geodata.y.at[2] = -1
-    net.bus_geodata.y.at[3] = -1
+    for index, x_geodata in enumerate (x_geodatas):
+        net.bus_geodata.x.at[index]=x_geodata
+        
+    # Assign y geographic coordinates
+    y_geodatas=[1,0,-1,-1]
+    for index, y_geodata in enumerate (y_geodatas):
+        net.bus_geodata.y.at[index]=y_geodata
+
     return net
