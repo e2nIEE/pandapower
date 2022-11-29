@@ -1111,7 +1111,7 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=int)[
-                (net.group.element_type == element) & net.group.reference_column.isnull()]:
+                (net.group.element_type == element).values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
 
     # --- adapt measurement link
