@@ -1852,22 +1852,23 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     UserWarning
         if validate is True and power flow results of the merged net deviate from input nets results
     """
+    old_params = {"retain_original_indices_in_net1", "create_continuous_bus_indices"}
     new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
-    msg_future_changes = f"In a future version merge_nets() will keep element indices and " + \
-        "prioritize net1 standard types. To silence this warning and to use the future " + \
-        f"functionality, explicitely pass at least one of the new parameters {new_params}."
+    msg1 = f"Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
+        "and prioritize net1 standard types by default."
+    msg2 = f"Parameters {old_params} are deprecated."
+    msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
+        f"{new_params}."
 
-    old_params_passed = not len(set(kwargs.keys()).intersection({
-            "retain_original_indices_in_net1", "create_continuous_bus_indices"}))
+    old_params_passed = not len(set(kwargs.keys()).intersection(old_params))
     new_params_passed = len(set(kwargs.keys()).intersection(new_params))
 
-    if new_params_passed:
-        return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
+    if old_params_passed:
+        raise FutureWarning(msg1 + msg2 + msg3)
+    elif not new_params_passed:
+        warnings.warn(msg1 + msg3, category=FutureWarning)
+    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
                            **kwargs)
-    else:
-        warnings.warn(msg_future_changes, category=FutureWarning)
-        return _merge_nets_deprecated(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
-                               **kwargs)
 
 
 def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
