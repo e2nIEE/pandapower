@@ -996,7 +996,7 @@ def reindex_buses(net, bus_lookup):
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=int)[
-                (net.group.element_type == "bus") & net.group.reference_column.isnull()]:
+                (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
 
     # --- adapt measurement link
