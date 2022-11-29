@@ -155,7 +155,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
     def append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_cols):
         """ iterate throw all boundaries which matches this_zone and add the other_zone_bus to
         boundary_buses """
-        for idx, ozc in other_zone_cols.iteritems():
+        for idx, ozc in other_zone_cols.items():
             other_zone = boundaries[zone_cols].values[idx, ozc]
             if isinstance(other_zone, np.generic):
                 other_zone = other_zone.item()
@@ -251,6 +251,23 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
             zones_without_connection))
 
     return boundary_buses, boundary_branches
+
+
+def get_connected_switch_buses_groups(net, buses):
+    all_buses = set()
+    bus_dict = []
+    mg_sw = top.create_nxgraph(net, include_trafos=False,
+                               include_trafo3ws=False,
+                               respect_switches=True,
+                               include_lines=False,
+                               include_impedances=False)
+    for bbus in buses:
+        if bbus in all_buses:
+            continue
+        new_bus_set = set(top.connected_component(mg_sw, bbus))
+        all_buses |= new_bus_set
+        bus_dict.append(list(new_bus_set))
+    return all_buses, bus_dict
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-from pandapower.auxiliary import _init_runpp_options
+from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
 import uuid
 
 try:
@@ -65,7 +65,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         add_eg += [pp.create_ext_grid(net, ext_bus,
                                       vm, va, name="assist_ext_grid")]
         new_bus = pp.create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
-        pp.create_impedance(net, ext_bus, new_bus, 1e8, 1e8, net.sn_mva,
+        pp.create_impedance(net, ext_bus, new_bus, 1e6, 1e6, net.sn_mva,
                             name="assist_impedance")
 
     # works fine if there is only one slack in net:
@@ -206,8 +206,8 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
                              sign) / net.sn_mva
                 S[sn][k] = sum(net[ele].sn_mva[ind].values) + \
                     1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
-                S[power.replace('_separate', '_integrated')][0] += S[power][k]
-                S[sn.replace('_separate', '_integrated')][0] += S[sn][k]
+                S[power.replace('_separate', '_integrated')] += S[power][k]
+                S[sn.replace('_separate', '_integrated')] += S[sn][k]
         S.ext_bus[k] = all_external_buses[k]
         S.v_m[k] = net.res_bus.vm_pu[i]
         S.v_cpx[k] = S.v_m[k] * \
@@ -292,15 +292,13 @@ def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
 
 
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
-    """ This function possibly changes the bus names of the boundaries buses to ensure
-        that the names are unique.
+    """ This function ad a unique name to each bounary bus. The original 
+        boundary bus names are retained.
     """
-    idx_dupl_null = net.bus.index[net.bus.name.duplicated(
-        keep=False) | net.bus.name.isnull()]
-    idx_add_names = set(boundary_buses) & set(idx_dupl_null)
-    if len(idx_add_names):
-        net.bus.name.loc[idx_add_names] = ["Boundary bus " + str(uuid.uuid1()) for _ in
-                                           idx_add_names]
+    assert "name_equivalent" not in net.bus.columns.tolist()
+    net.bus["name_equivalent"] = "uuid"
+    net.bus.name_equivalent.loc[boundary_buses] = ["Boundary bus " + str(uuid.uuid1()) for _ in
+                                                   boundary_buses]
 
 
 def drop_assist_elms_by_creating_ext_net(net, elms=None):
@@ -317,6 +315,9 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
             net["res_"+elm].drop(res_target_elm_idx, inplace=True)
+
+    if "name_equivalent" in net.bus.columns.tolist():
+        net.bus.drop(columns=["name_equivalent"], inplace=True)
 
 
 def build_ppc_and_Ybus(net):
@@ -350,7 +351,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controller(net, buses):
+def drop_measurements_and_controller(net, buses, skip_controller=False):
     """This function drops the measurements of the given buses.
     Also, the related controller parameter will be removed. """
     # --- dropping measurements
@@ -375,36 +376,26 @@ def drop_measurements_and_controller(net, buses):
 
     # --- dropping controller
     """
-    only for test at present, only consider sgen.
+    test at present, only sgen and load are considered.
+    """
+    if len(net.controller) and not skip_controller:
+        for i in net.controller.index:
+            elm = net.controller.object[i].__dict__["element"]
+            if len(net[elm]) != len(set(net[elm].name.values)):
+                raise ValueError("if controllers are used, please give a name for every "
+                                 "element ("+elm+"), and make sure the name is unique.")
+        net.controller.drop(net.controller.index, inplace=True)
+
+
+def match_controller_and_new_elements(net, net_org):
+    """
+    This function makes the original controllers and the
+    new created sgen to match
+    
+    test at present: controllers in the external area are removed.
     """
     if len(net.controller):
-        if len(net.sgen) != len(set(net.sgen.name.values)):
-            raise ValueError("if controllers are used, please give a name for every "
-                             "element, and make sure the name is unique.")
-        # only the sgen controllers are considered
-        idx_pool = net.sgen.index[net.sgen.bus.isin(buses)].tolist()
-        target_idx = []
-        for idx in net.controller.index:
-            try:  # problem caused by contoller
-                sgen_idx = net.controller.object[idx].gid[0]
-            except TypeError:
-                sgen_idx = net.controller.object[idx].gid
-            except AttributeError:
-                sgen_idx = net.controller.object[idx].element_index[0]
-
-            if sgen_idx in idx_pool:
-                target_idx.append(idx)
-        net.controller.drop(target_idx, inplace=True)
-
-
-def match_controller_and_new_elements(net):
-    """This function makes the original controllers and the
-    new created sgen to match"""
-    """
-    only for test at present. only consider sgen.
-    """
-    if len(net.controller):
-        count = 0
+        tobe_removed = []
         if "origin_all_internal_buses" in net.bus_lookups and \
                 "boundary_buses_inclusive_bswitch" in net.bus_lookups:
             internal_buses = net.bus_lookups["origin_all_internal_buses"] + \
@@ -412,45 +403,22 @@ def match_controller_and_new_elements(net):
         else:
             internal_buses = []
         for idx in net.controller.index.tolist():
-            # net.controller.object[idx].net = net
-            try:
-                bus = net.controller.object[idx].bus
-            except AttributeError:
-                bus = net.controller.object[idx].element_buses[0]
+            elm = net.controller.object[idx].__dict__["element"]
+            var = net.controller.object[idx].__dict__["variable"]
+            elm_idxs = net.controller.object[idx].__dict__["element_index"]
+            org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
+            
+            new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
+            if len(new_elm_idxs) == 0:
+                tobe_removed.append(idx)
             else:
-                pass
-            # --- remove repeated controller at the boundary buses
-            if bus in net.bus_lookups["boundary_buses_inclusive_bswitch"]:
-                count += 1
-                if count == 2:
-                    net.controller.drop(idx, inplace=True)
-                    continue
-
-            if bus in internal_buses:
-                try:
-                    name = net.controller.object[idx].name
-                except KeyError:
-                    name = "found_no_element"
-            else:
-                name = "_rei_"+str(bus)
-
-            new_idx = net.sgen.index[net.sgen.name.str.strip(
-            ).str[-len(name):] == name].values
-            if len(new_idx):
-                assert len(new_idx) == 1
-                new_bus = net.sgen.bus[new_idx[0]]
-                net.controller.object[idx].gid = new_idx[0]
-                net.controller.object[idx].element_index = [new_idx[0]]
-                net.controller.object[idx].bus = new_bus
-                net.controller.object[idx].element_buses = np.array(
-                    [new_bus], dtype="int64")
-            else:
-                net.controller.drop(idx, inplace=True)
-
-    """
-    TODO: After nets merging, the net information in controller is not updated.
-    """
-
+                profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
+                
+                net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
+                net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
+                net.controller.object[idx].__dict__["profile_name"] = profile_name
+        net.controller.drop(tobe_removed, inplace=True)    
+    # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
     """
@@ -524,7 +492,17 @@ def check_network(net):
     checks the given network. If the network does not meet conditions,
     the program will report an error.
     """
-    pass
+    # --- check invative elements
+    if net.res_bus.vm_pu.isnull().any():
+        logger.info("There are some inactive buses. It is suggested to remove "
+                    "them using 'pandapower.drop_inactive_elements()' "
+                    "before starting the grid equivalent calculation.")
+    # --- check dcline
+    if "dcline" in net and len(net.dcline.query("in_service")) > 0:
+        _add_dcline_gens(net)
+        dcline_index = net.dcline.index.values
+        net.dcline.loc[dcline_index, 'in_service'] = False
+        logger.info(f"replaced dcline {dcline_index} by gen elements")
     # --- condition 1: shift_degree of transformers must be 0.
     # if not np.allclose(net.trafo.shift_degree.values, 0) & \
     #         np.allclose(net.trafo3w.shift_mv_degree.values, 0) & \
@@ -600,6 +578,27 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
         #                name="phase_shifter_adapter_"+str(lb))
     # runpp_fct(net, calculate_voltage_angles=True)
     return net
+
+
+def replace_motor_by_load(net, all_external_buses):
+    """ 
+    replace the 'external' motors by loads. The name is modified.
+    e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
+    """
+    motors = net.motor.index[net.motor.bus.isin(all_external_buses)]
+    for mi, m in net.motor.loc[motors].iterrows():
+        p_mech = m.pn_mech_mw / (m.efficiency_percent / 100)
+        p_mw = p_mech * m.loading_percent / 100 * m.scaling
+        s = p_mw / m.cos_phi
+        q_mvar = np.sqrt(s**2 - p_mw**2)
+        p = p_mw if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
+        q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
+        li = pp.create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
+                            in_service=m.in_service, name="equivalent_motor_"+str(m.name))
+        net.res_load.loc[li] = p, q
+    net.motor.drop(motors, inplace=True)
+    net.res_motor.drop(motors, inplace=True)
+  
 
 if __name__ == "__main__":
     pass

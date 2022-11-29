@@ -1807,8 +1807,9 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
             dtypes = net[element].dtypes
             net[element] = pd.concat([net[element], net2[element]], sort=False,
                                      ignore_index=ignore_index)
-            if retain_original_indices_in_net1 and not elm_with_critical_index:
-                start = net1.bus.index.max() + 1
+            if retain_original_indices_in_net1 and not elm_with_critical_index and \
+                len(net1[element]):
+                start = int(net1[element].index.max()) + 1
                 net[element].index = net1[element].index.tolist() + \
                     list(range(start, len(net2[element]) + start))
             _preserve_dtypes(net[element], dtypes)
@@ -1899,8 +1900,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # check switching state and add line switch if necessary:
     for bus in net.line.at[idx, "to_bus"], net.line.at[idx, "from_bus"]:
-        if bus in net.switch[(net.switch.closed == False) & (net.switch.element == idx) &
-                             (net.switch.et == "l")].bus.values:
+        if bus in net.switch[~net.switch.closed & (net.switch.element == idx) & (net.switch.et == "l")].bus.values:
             create_switch(net, bus=bus, element=new_idx, closed=False, et="l", type="LBS")
 
     return new_idx
@@ -2160,7 +2160,7 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
         given, the sn_mva values of the impedances are considered.
     """
-    index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
     new_index = []
     for (idx, imp), max_i in zip(net.impedance.loc[index].iterrows(), max_i_ka):
@@ -2176,7 +2176,17 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
         if max_i == 'imp.sn_mva':
             max_i = imp.sn_mva / vn / np.sqrt(3)
         new_index.append(create_line_from_parameters(
-            net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni, imp.xft_pu * Zni, 0, max_i,
+
+            net, imp.from_bus, imp.to_bus,
+            length_km=1,
+            r_ohm_per_km=imp.rft_pu * Zni,
+            x_ohm_per_km=imp.xft_pu * Zni,
+            c_nf_per_km=0,
+            max_i_ka=max_i,
+            r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
+            x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
+            c0_nf_per_km=0,
+            parallel=1,
             name=imp.name, in_service=imp.in_service))
     net.impedance.drop(index, inplace=True)
     return new_index
@@ -2206,6 +2216,9 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
     if len(sn_mva) != len(index):
         raise ValueError("index and sn_mva must have the same length.")
+
+    parallel = net.line["parallel"].values
+
     i = 0
     new_index = []
     for idx, line_ in net.line.loc[index].iterrows():
@@ -2217,9 +2230,15 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
+        par = parallel[idx]
         new_index.append(create_impedance(
-            net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km * line_.length_km / Zni,
-            line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
+            net, line_.from_bus, line_.to_bus,
+            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
+            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
+            sn_mva=sn_mva[i],
+            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
+            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
+            name=line_.name,
             in_service=line_.in_service))
         i += 1
     drop_lines(net, index)

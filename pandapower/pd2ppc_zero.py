@@ -14,12 +14,15 @@ import pandapower.auxiliary as aux
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
-from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
+from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
+    BR_X_ASYM
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
-from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe,\
-     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter
+from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, \
+    _calc_nominal_ratio_from_dataframe, \
+    get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter, \
+    _calc_impedance_parameters_from_dataframe
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
@@ -84,6 +87,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     _add_line_sc_impedance_zero(net, ppc)
+    _add_impedance_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc, k_st=k_st)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
@@ -454,6 +458,26 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values *
                                 1e-9 * baseR * length * parallel)
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
+
+
+def _add_impedance_sc_impedance_zero(net, ppc):
+    branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if "impedance" not in branch_lookup:
+        return
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    branch = ppc["branch"]
+
+    f, t = branch_lookup["impedance"]
+
+    # impedance zero sequence impedance
+    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
+    branch[f:t, BR_R] = rij
+    branch[f:t, BR_X] = xij
+    branch[f:t, BR_R_ASYM] = r_asym
+    branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
+    branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
+    branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values.astype(np.int64)
 
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):

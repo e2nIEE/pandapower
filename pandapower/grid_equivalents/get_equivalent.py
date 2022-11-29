@@ -2,7 +2,6 @@ import pandapower as pp
 import pandapower.topology as top
 import time
 from copy import deepcopy
-from pandapower.auxiliary import _add_dcline_gens
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
@@ -47,88 +46,89 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
         - despite 'adapt_va_degree', va_degree at the slack bus showed deviations within large grids
 
-        - with large, real grids small deviations in the power flow results occured, in small grids
-        the results fit perfectly
+        - with large, real grids small deviations in the power flow results occured, in small grids \
+            the results fit perfectly
 
     INPUT:
-        **net** - The pandapower network including power flow results. Will
-                not be changed during this function.
+        **net** - The pandapower network including power flow results will not be changed during this function.
 
         **eq_type** (string) - type of the eqvalent network
 
             The following methods are available:
 
-                - "rei": The idea of rei equivalent is to aggregate the power
-                        and current injection of the external buses to one or
-                        more fictitious radial, equivalent and independent
-                        (rei) nodes. There are three types of the rei-node in
-                        this routine, i.e. the reserved load, the reserved sgen
-                        and the reserved gen (also ext_grid). According to the
-                        demand, these elements (load, sgen and gen) are
-                        considered in the function "_create_net_zpbn"
+                - "rei": The idea of rei equivalent is to aggregate the power \
+                        and current injection of the external buses to one or \
+                        more fictitious radial, equivalent and independent \
+                        (rei) nodes. There are three types of the rei-node in \
+                        this routine, i.e. the reserved load, the reserved sgen \
+                        and the reserved gen (also ext_grid). According to the \
+                        demand, these elements (load, sgen and gen) are \
+                        considered in the function "_create_net_zpbn" \
                         integrated or separately.
 
-                - "ward": The ward-type equivalent represents the external
-                        network with some equivalent impedance, shunts and
-                        power injections at boundary buses. The equivalent
-                        power injections represent the power of the elements
-                        (load, sgen and gen), which are removed by the
+                - "ward": The ward-type equivalent represents the external \
+                        network with some equivalent impedance, shunts and \
+                        power injections at boundary buses. The equivalent \
+                        power injections represent the power of the elements \
+                        (load, sgen and gen), which are removed by the \
                         equivalent calculation.
 
-                - "xward": The xward equivalent is an extended variation of
-                        the ward equivalent. Addition to the
-                        ward-representation, a fictitious PV node (generator)
-                        is added with zero active power injection at every
-                        boundary bus. The voltage of the PV node is set
+                - "xward": The xward equivalent is an extended variation of \
+                        the ward equivalent. Addition to the \
+                        ward-representation, a fictitious PV node (generator) \
+                        is added with zero active power injection at every \
+                        boundary bus. The voltage of the PV node is set \
                         according to the boundary bus voltage.
 
-                ward/xward has two mothods to develop an equivalent circuits,
-                i.e. the injection method and the admittance method. In the
-                admittance method, all the bus power injections in the external
-                networks are converted into shunt admittance before network
-                equivalent. That is the only difference between these two
-                methods. With the help of the function "adapt_net", these
+                ward/xward has two mothods to develop an equivalent circuits, \
+                i.e. the injection method and the admittance method. In the \
+                admittance method, all the bus power injections in the external \
+                networks are converted into shunt admittance before network \
+                equivalent. That is the only difference between these two \
+                methods. With the help of the function "adapt_net", these \
                 methods are configurable.
 
-        **boundary_buses** (iterable) - list of boundary bus indices, by which
-            the original network are divided into two networks, i.e. an
+        **boundary_buses** (iterable) - list of boundary bus indices, by which \
+            the original network are divided into two networks, i.e. an \
             internal network and an external network.
 
-        **internal_buses** (iterable) - list of bus indices, which are within
-            the internal network. The program will add buses which are
-            connected to this list of internal buses without passing boundary
-            buses. If 'internal_buses' is an empty list or None, the whole
+        **internal_buses** (iterable) - list of bus indices, which are within \
+            the internal network. The program will add buses which are \
+            connected to this list of internal buses without passing boundary \
+            buses. If 'internal_buses' is an empty list or None, the whole \
             grid is treated as external network.
 
-    OPTIONAL:
-         **return_internal** (bool, True) - Reservation of the internal network
+    OPTIONAL:  
+        **return_internal** (bool, True) - Reservation of the internal network
 
-             If True, the internal network is reserved in the final equivalent
+             If True, the internal network is reserved in the final equivalent \
              network; otherwise only the external network is the output.
+
+        **show_computing_time** (bool, False) - show computing time of each step
 
         **ward_type** (str, "ward_injection") - Type of ward and xward
 
-            ward and xward proposed two mothods called the Ward Injection
-            method and the Ward Admittance method to develop equivalent
-            circuits. The only difference between these methods is that in
-            the Ward Admittance method, all bus power in the external networks
+            ward and xward proposed two mothods called the Ward Injection \
+            method and the Ward Admittance method to develop equivalent \
+            circuits. The only difference between these methods is that in \
+            the Ward Admittance method, all bus power in the external networks \
             are converted into shunt admittances before network equivalent.
 
-        **adapt_va_degree** (bool, None) - if True, in add_ext_grids_to_boundaries(), the va_degree
-            of the additional ext_grids (if needed) at the boundary buses will be increased or
+        **adapt_va_degree** (bool, None) - if True, in add_ext_grids_to_boundaries(), the va_degree \
+            of the additional ext_grids (if needed) at the boundary buses will be increased or \
             decreased to values that minimize the difference to the given res_bus.va_degree values.
 
-        **allow_net_change_for_convergence** (bool, False) - if the net doesn't converge at the
-            first internal power flow, which is in add_ext_grids_to_boundaries(), and this parameter is
+        **allow_net_change_for_convergence** (bool, False) - if the net doesn't converge at the \
+            first internal power flow, which is in add_ext_grids_to_boundaries(), and this parameter is \
             True, the code tests if changes to unusual impedance values solve the divergence issue.
 
-        **calculate_voltage_angles** (bool, True) - parameter passed to internal runpp() runs
+        **calculate_voltage_angles** (bool, True) - parameter passed to internal runpp() runs.
         
-        **retain_original_internal_indices** (bool, False) - if True, the element indices in 
+        **retain_original_internal_indices** (bool, False) - if True, the element indices in \
             the internal net are retained; otherwise the indices will be reordered from 0. 
 
-        ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate,
-        group_name,
+        ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate, \
+        group_name.
 
     OUTPUT:
          **net_eq** - The equivalent network in pandapower format
@@ -137,18 +137,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     time_start = time.perf_counter()
     eq_type = eq_type.lower()
-    check_network(net)
+    net = deepcopy(net)
     if not len(boundary_buses):
         raise ValueError("No boundary buses are given.")
-
-    net = deepcopy(net)
-
-    if "dcline" in net and len(net.dcline.query("in_service")) > 0:
-        _add_dcline_gens(net)
-        dcline_index = net.dcline.index.values
-        net.dcline.loc[dcline_index, 'in_service'] = False
-        logger.info(f"replaced dcline {dcline_index} by gen elements")
-
+    check_network(net)
     logger.info(eq_type + " equivalent calculation started")
 
     # --- determine interal buses, external buses, buses connected to boundary buses via
@@ -162,7 +154,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     return_internal &= bool(len(all_internal_buses))
 
     # --- ensure unique boundary bus names
-    _ensure_unique_boundary_bus_names(net, boundary_buses)
+    _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
     # --- check and create reference buses
     add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
@@ -179,7 +171,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if len(ext_buses_with_xward):
         logger.debug("xward elements of the external network are replaced by internal elements")
         pp.replace_xward_by_internal_elements(net, xwards=ext_buses_with_xward.index)
-
+ 
     # --- switch from ward injection to ward addmittance if requested
     if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
         create_passive_external_net_for_ward_addmittance(
@@ -221,7 +213,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
-
+        
+        # --- remove buses without power flow results in net_eq
+        pp.drop_buses(net_external, net_external.res_bus.index[net_external.res_bus.vm_pu.isnull()])
+    
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
             net_external, boundary_buses, all_internal_buses,
@@ -229,18 +224,21 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
         Ybus_eq = _calculate_equivalent_Ybus(net_external,  bus_lookups,
-                                             eq_type, check_validity=False)
+                                             eq_type, show_computing_time,
+                                             check_validity=False)
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
             ward_parameter_no_power, impedance_parameter = \
-                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups)
+                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups,
+                                                         show_computing_time)
 
             # --- replace external network by equivalent elements
             _replace_external_area_by_wards(net_external, bus_lookups,
                                             ward_parameter_no_power,
                                             impedance_parameter,
                                             ext_buses_with_xward,
+                                            show_computing_time,
                                             calc_volt_angles=calculate_voltage_angles,
                                             runpp_fct=runpp_fct)
         else:  # eq_type == "xward"
@@ -248,13 +246,15 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             xward_parameter_no_power, impedance_parameter = \
                 _calculate_xward_and_impedance_parameters(net_external,
                                                           Ybus_eq,
-                                                          bus_lookups)
+                                                          bus_lookups,
+                                                          show_computing_time)
 
             # --- replace external network by equivalent elements
             _replace_external_area_by_xwards(net_external, bus_lookups,
                                              xward_parameter_no_power,
                                              impedance_parameter,
                                              ext_buses_with_xward,
+                                             show_computing_time,
                                              calc_volt_angles=calculate_voltage_angles,
                                              runpp_fct=runpp_fct)
         net_eq = net_external
@@ -276,7 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         logger.debug("Only the equivalent net is returned.")
 
     # match the controller and the new elements
-    match_controller_and_new_elements(net_eq)
+    match_controller_and_new_elements(net_eq, net)
     # delete bus in poly_cost
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
@@ -369,7 +369,7 @@ def merge_internal_net_and_equivalent_external_net(
     if kwargs.get("drop_boundary_buses", True):
         pp.drop_elements_at_buses(net_internal, boundary_buses_inclusive_bswitch,
                                   branch_elements=False)
-
+  
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(net_internal, net_eq, validate=kwargs.pop("validate", False),
                                retain_original_indices_in_net1=retain_original_internal_indices,
@@ -381,9 +381,10 @@ def merge_internal_net_and_equivalent_external_net(
         pass
 
     # --- fuse or combine the boundary buses in external and internal nets
+    busname_col = "name_equivalent" if "name_equivalent" in merged_net.bus.columns.tolist() else "name"
     for bus in boundary_buses_inclusive_bswitch:
-        name = merged_net.bus.name.loc[bus]
-        target_buses = merged_net.bus.index[merged_net.bus.name == name]
+        name = merged_net.bus[busname_col].loc[bus]
+        target_buses = merged_net.bus.index[merged_net.bus[busname_col] == name]
         if len(target_buses) != 2:
             raise ValueError(
                 "The code expects all boundary buses to occur double. One because "
@@ -391,9 +392,12 @@ def merge_internal_net_and_equivalent_external_net(
                 "'%s'." % str(target_buses))
         pp.fuse_buses(merged_net, target_buses[0], target_buses[1])
 
-    # drop assist elements
+    # --- drop assist elements
     drop_assist_elms_by_creating_ext_net(merged_net)
 
+    # --- drop repeated characteristic 
+    drop_repeated_characteristic(merged_net)
+    
     # --- reindex buses named with "total" (done by REI)
     is_total_bus = merged_net.bus.name.astype(str).str.contains("total", na=False)
     if sum(is_total_bus):
@@ -408,6 +412,18 @@ def merge_internal_net_and_equivalent_external_net(
                     round((t_end-t_start), 2))
 
     return merged_net
+
+
+def drop_repeated_characteristic(net):
+    idxs = []
+    repeated_idxs = []
+    for m in net.characteristic.index:
+        idx = net.characteristic.object[m].__dict__["index"]
+        if idx in idxs:
+            repeated_idxs.append(m)
+        else:
+            idxs.append(idx)     
+    net.characteristic.drop(repeated_idxs, inplace=True)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,
@@ -443,19 +459,16 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
         internal_buses = set(internal_buses)
 
     boundary_buses = set(boundary_buses)
-    bb_buses = net.switch.element[(net.switch.et=="b") &
-                                (net.switch.element.isin(boundary_buses)) &
-                                (net.switch.bus.isin(boundary_buses))].tolist()
-    boundary_buses -= set(bb_buses)
 
     unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
         raise ValueError(
-            "Although get_equivalent() do not allow unsupplied boundary " +
+            "get_equivalent() do not allow unsupplied boundary " +
             "buses, these have no voltage results (possibly because power " +
             "flow results miss, the buses are isolated " +
-            "or out of service): " + str(sorted(unsupplied_boundary_buses)))
+            "or out of service): " + str(sorted(unsupplied_boundary_buses)) +
+            ". Remove these buses from the boundary buses and try again.")
 
     if internal_buses & boundary_buses:
         logger.info("Some internal buses are also contained in the boundary buses, " +
@@ -475,8 +488,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "bus-bus-switches. They could be the nodes on the same bus bar " +
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
-                    "as the boundary. You can use the function " +
-                    "'get_connected_switch_buses' to find all these buses.")
+                    "as the boundary. They are: %s:" % boundary_buses_inclusive_bswitch)
 
     # --- determine all internal buses
     all_internal_buses = set()
@@ -564,29 +576,33 @@ if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     import pandapower.networks as pn
     net = pn.case9()
+    net.ext_grid.vm_pu = 1.04
+    net.gen.vm_pu[0] = 1.025
+    net.gen.vm_pu[1] = 1.025
+    
     net.poly_cost.drop(net.poly_cost.index, inplace=True)
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
     # pp.replace_gen_by_sgen(net)
-    net.sn_mva = 109.00
-    boundary_buses = [3]
+    # net.sn_mva = 109.00
+    boundary_buses = [4, 8]
     internal_buses = [0]
     return_internal = True
     show_computing_time = False
     pp.runpp(net, calculate_voltage_angles=True)
     net_org = deepcopy(net)
-    eq_type = "ward"
+    eq_type = "rei"
     net_eq = get_equivalent(net, eq_type, boundary_buses,
                             internal_buses,
                             return_internal=return_internal,
                             show_computing_time=False,
                             calculate_voltage_angles=True)
-    print(net.res_bus.loc[[0,3]])
-    print(net_eq.res_bus.loc[[0,3]])
-    print(net_eq.ward.loc[0])
+    print(net.res_bus)
+    # print(net_eq.res_bus.loc[[0,3]])
+    # print(net_eq.ward.loc[0])
 
-    net_eq.sn_mva = 10
-    pp.runpp(net_eq, calculate_voltage_angles=True)
-    print(net_eq.res_bus.loc[[0,3]])
+    # net_eq.sn_mva = 10
+    # pp.runpp(net_eq, calculate_voltage_angles=True)
+    # print(net_eq.res_bus.loc[[0,3]])
 
 
 
