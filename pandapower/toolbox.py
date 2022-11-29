@@ -1136,7 +1136,7 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
 
     # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
-        element_in_cost_df = net[cost_df].et == element
+        element_in_cost_df = (net[cost_df].et == element) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
             net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
                 element_in_cost_df], lookup)
