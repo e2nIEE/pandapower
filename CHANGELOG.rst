@@ -10,6 +10,7 @@ Change Log
 - [ADDED] zero-sequence parameters for net.impedance
 - [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
 - [ADDED] additional_traces (prepared by the user) can be passed to simple_plotly
+- [ADDED] Added converter CGMES v2.4.15 to pandapower
 - [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
