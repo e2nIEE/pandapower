@@ -3,8 +3,6 @@
 # Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-from this import d
 import pytest
 from copy import deepcopy
 import numpy as np

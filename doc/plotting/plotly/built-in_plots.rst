@@ -8,7 +8,7 @@ In order to get idea about interactive plot features and possibilities see the `
 Simple Plotting
 =============================
 
-The function simple_plotly() can be used for a simple interactive plotting.
+The function :func:`simple_plotly()` can be used for a simple interactive plotting.
 
 .. _simple_plotly:
 
@@ -48,7 +48,7 @@ Example simple plot on a map::
 Network coloring according to voltage levels
 ===============================================
 
-The function vlevel_plotly() is used to plot a network colored and labeled according to voltage levels.
+The function :func:`vlevel_plotly()` is used to plot a network colored and labeled according to voltage levels.
 
 .. _vlevel_plotly:
 
@@ -70,7 +70,7 @@ Example plot with mv_oberrhein network from the pandapower.networks package::
 Power Flow results
 =============================
 
-The function pf_res_plotly() is used to plot a network according to power flow results where a colormap is used to represent line loading and voltage magnitudes. For advanced possibilities see the tutorials.
+The function :func:`pf_res_plotly()` is used to plot a network according to power flow results where a colormap is used to represent line loading and voltage magnitudes. For advanced possibilities see the tutorials.
 
 .. _pf_res_plotly:
 
