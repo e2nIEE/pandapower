@@ -272,8 +272,9 @@ def check_unique_group_names(net, raise_=False):
     df = net.group[["name", "element_type"]].reset_index()
     if df.duplicated().any():
         raise ValueError("There are multiple groups with same index, name and element_type.")
-    del df["element_type"]
-    if df.duplicated().any():
+    single_name_per_index = [len(names) == 1 for names in net.group.reset_index().groupby("index")[
+        "name"].agg(set)]
+    if not all(single_name_per_index):
         warn = "There are multiple groups with same index and name."
         if raise_:
             raise UserWarning(warn)
