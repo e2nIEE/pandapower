@@ -373,8 +373,11 @@ def merge_internal_net_and_equivalent_external_net(
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(
         net_internal, net_eq, validate=kwargs.pop("validate", False),
-        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"),
-        merge_results=kwargs.pop("merge_results", False), **kwargs)
+        retain_original_indices_in_net1=retain_original_internal_indices,
+        # TODO: remove retain_original_indices_in_net1 and uncomment the following:
+        # net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"),
+        # merge_results=kwargs.pop("merge_results", False),
+        **kwargs)
     try:
         merged_net.gen.max_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.max_p_mw.values
         merged_net.gen.min_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.min_p_mw.values
