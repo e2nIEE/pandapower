@@ -8,6 +8,7 @@ import gc
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
+import warnings
 
 import networkx as nx
 import numpy as np
@@ -309,6 +310,17 @@ def compare_arrays(x, y):
 
 
 # --- Information
+def log_to_level(msg, logger, level):
+    if level == "error":
+        logger.error(msg)
+    elif level == "warning":
+        logger.warning(msg)
+    elif level == "info":
+        logger.info(msg)
+    elif level == "debug":
+        logger.debug(msg)
+
+
 def lf_info(net, numv=1, numi=2):  # pragma: no cover
     """
     Prints some basic information of the results in a net
@@ -972,20 +984,33 @@ def reindex_buses(net, bus_lookup):
     if len(missing_bus_indices):
         bus_lookup.update({b: b for b in missing_bus_indices})
 
+    # --- reindex buses
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
 
+    # --- adapt link in bus elements
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
-    bb_switches = net.switch[net.switch.et == "b"]
-    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+
+    # --- adapt group link
+    if net.group.shape[0]:
+        for row in np.arange(net.group.shape[0], dtype=int)[
+                (net.group.element_type == "bus") & net.group.reference_column.isnull()]:
+            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
+
+    # --- adapt measurement link
     bus_meas = net.measurement.element_type == "bus"
     net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"],
                                                            bus_lookup)
     side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
     net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
                                                          bus_lookup)
+
+    # --- adapt switch link
+    bb_switches = net.switch[net.switch.et == "b"]
+    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+
     return bus_lookup
 
 
@@ -1014,35 +1039,80 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
-def reindex_elements(net, element, new_indices, old_indices=None):
+def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=None):
     """
-    Changes the index of net[element].
+    Changes the index of the DataFrame net[element].
 
-    INPUT:
-      **net** - pandapower network
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        net with elements to reindex
+    element : str
+        name of element type to rename, e.g. "gen" or "load"
+    new_indices : typing.Union[list[int], pandas.Index[int]], optional
+        new indices to set, by default None
+    old_indices : typing.Union[list[int], pandas.Index[int]], optional
+        old indices to be replaced. If not given, all indices are
+        assumed in case of given new_indices, and all lookup keys are assumed in case of given
+        lookup, by default None
+    lookup : dict[int,int], optional
+        lookup to assign new indices to old indices, by default None
 
-      **element** (str) - name of the element table
+    Notes
+    -----
+    Either new_indices or lookup must be given.
+    old_indices can be given to limit the indices to be replaced. In case of given new_indices,
+    both must have the same length.
+    If element is "group", be careful to give new_indices without passing old_indices because group
+    indices do not need to be unique.
 
-      **new_indices** (iterable) - list of new indices
+    Examples
+    --------
+    >>> net = pp.create_empty_network()
+    >>> idx0 = pp.create_bus(net, 110)
+    >>> idx1 = 4
+    >>> idx2 = 7
 
-    OPTIONAL:
-      **old_indices** (iterable) - list of old/previous indices which will be replaced.
-      If None, all indices are considered.
+    Reindex using 'new_indices':
+    >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
+
+    Reindex using 'lookup':
+    >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
     """
-    old_indices = old_indices if old_indices is not None else net[element].index
-    if not len(new_indices) or not net[element].shape[0]:
+    if not net[element].shape[0]:
         return
-    assert len(new_indices) == len(old_indices)
-    lookup = dict(zip(old_indices, new_indices))
+    if new_indices is None and lookup is None:
+        raise ValueError("Either new_indices or lookup must be given.")
+    elif new_indices is not None and lookup is not None:
+        raise ValueError("Only one can be considered, new_indices or lookup.")
+    if new_indices is not None and not len(new_indices) or lookup is not None and not len(
+            lookup.keys()):
+        return
+
+    if new_indices is not None:
+        old_indices = old_indices if old_indices is not None else net[element].index
+        assert len(new_indices) == len(old_indices)
+        lookup = dict(zip(old_indices, new_indices))
+    elif old_indices is None:
+        old_indices = net[element].index.intersection(lookup.keys())
 
     if element == "bus":
         reindex_buses(net, lookup)
         return
 
     # --- reindex
-    net[element]["index"] = net[element].index
-    net[element].loc[old_indices, "index"] = get_indices(old_indices, lookup)
-    net[element].set_index("index", inplace=True)
+    new_index = pd.Series(net[element].index, index=net[element].index)
+    if element != "group":
+        new_index.loc[old_indices] = get_indices(old_indices, lookup)
+    else:
+        new_index.loc[old_indices] = get_indices(new_index.loc[old_indices].values, lookup)
+    net[element].set_index(pd.Index(new_index.values), inplace=True)
+
+    # --- adapt group link
+    if net.group.shape[0]:
+        for row in np.arange(net.group.shape[0], dtype=int)[
+                (net.group.element_type == element) & net.group.reference_column.isnull()]:
+            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
 
     # --- adapt measurement link
     if element in ["line", "trafo", "trafo3w"]:
@@ -1064,7 +1134,7 @@ def reindex_elements(net, element, new_indices, old_indices=None):
         net["line_geodata"].loc[old_indices, "index"] = get_indices(old_indices, lookup)
         net["line_geodata"].set_index("index", inplace=True)
 
-    # adapt index in cost dataframes
+    # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
         element_in_cost_df = net[cost_df].et == element
         if sum(element_in_cost_df):
@@ -1745,12 +1815,134 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-               create_continuous_bus_indices=True,
-               retain_original_indices_in_net1=False, **kwargs):
+def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
+    """Function to concatenate two nets into one data structure. The elements keep their indices
+    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
+    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+
+    Parameters
+    ----------
+    net1 : pp.pandapowerNet
+        first net to concatenate
+    net2 : pp.pandapowerNet
+        second net to concatenate
+    validate : bool, optional
+        whether power flow results should be compared against the results of the input nets,
+        by default True
+    merge_results : bool, optional
+        whether results tables should be concatenated, by default True
+    tol : float, optional
+        tolerance which is allowed to pass the results validate check (relevant if validate is
+        True), by default 1e-9
+    std_prio_on_net1 : bool, optional
+        whether net1 standard type should be kept if net2 has types with same names, by default True
+    return_net2_reindex_lookup : bool, optional
+        if True, the merged net AND a dict of lookups is returned, by default False
+    net2_reindex_log_level : str, optional
+        logging level of the message which element types of net2 got reindexed elements. Options
+        are, for example "debug", "info", "warning", "error", or None, by default "info"
+
+    Returns
+    -------
+    pp.pandapowerNet
+        net with concatenated element tables
+
+    Raises
+    ------
+    UserWarning
+        if validate is True and power flow results of the merged net deviate from input nets results
+    """
+    new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
+    msg_future_changes = f"In a future version merge_nets() will keep element indices and " + \
+        "prioritize net1 standard types. To silence this warning and to use the future " + \
+        f"functionality, explicitely pass at least one of the new parameters {new_params}."
+
+    old_params_passed = not len(set(kwargs.keys()).intersection({
+            "retain_original_indices_in_net1", "create_continuous_bus_indices"}))
+    new_params_passed = len(set(kwargs.keys()).intersection(new_params))
+
+    if new_params_passed:
+        return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
+                           **kwargs)
+    else:
+        warnings.warn(msg_future_changes, category=FutureWarning)
+        return _merge_nets_deprecated(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
+                               **kwargs)
+
+
+def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
+                std_prio_on_net1=True, return_net2_reindex_lookup=False,
+                net2_reindex_log_level="info", **runpp_kwargs):
+    """Function to concatenate two nets into one data structure. The elements keep their indices
+    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
+    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+    """
+    net = copy.deepcopy(net1)
+    net2 = copy.deepcopy(net2)
+
+    if validate:
+        runpp(net, **runpp_kwargs)
+        net1_res_bus = copy.deepcopy(net.res_bus)
+        runpp(net2, **runpp_kwargs)
+
+    # collect element types to copy from net2 to net (output)
+    elm_types = [elm_type for elm_type, df in net2.items() if not elm_type.startswith("_") and \
+        isinstance(df, pd.DataFrame) and df.shape[0] and elm_type != "dtypes" and \
+            (not elm_type.startswith("res_") or (merge_results and not validate))]
+
+    # reindex net2 elements if some indices already exist in net
+    reindex_lookup = dict()
+    for elm_type in elm_types:
+        is_dupl = pd.Series(net2[elm_type].index).isin(net[elm_type].index)
+        if any(is_dupl):
+            start = max(net1[elm_type].index.max(), net2[elm_type].index[~is_dupl].max()) + 1
+            old_indices = net2[elm_type].index[is_dupl]
+            if elm_type == "group":
+                old_indices = pd.Series(old_indices).loc[~pd.Series(old_indices).duplicated()].tolist()
+            new_indices = range(start, start + len(old_indices))
+            reindex_lookup[elm_type] = dict(zip(old_indices, new_indices))
+            reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
+    if len(reindex_lookup.keys()):
+        log_to_level("net2 elements of these types has been reindexed by merge_nets() because " + \
+            f"these exist already in net1: {list(reindex_lookup.keys())}", logger,
+            net2_reindex_log_level)
+
+    # copy dataframes from net2 to net (output)
+    for elm_type in elm_types:
+        dtypes = net[elm_type].dtypes
+        net[elm_type] = pd.concat([net[elm_type], net2[elm_type]])
+        _preserve_dtypes(net[elm_type], dtypes)
+
+    # copy standard types of net by data of net2
+    for type_ in net.std_types.keys():
+        if std_prio_on_net1:
+            net.std_types[type_] = {**net2.std_types[type_], **net.std_types[type_]}
+        else:
+            net.std_types[type_].update(net2.std_types[type_])
+
+    # validate vm results
+    if validate:
+        runpp(net, **runpp_kwargs)
+        dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1_res_bus.vm_pu.values))
+        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
+                       net2.res_bus.vm_pu.values))
+        if dev1 > tol or dev2 > tol:
+            raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
+
+    if return_net2_reindex_lookup:
+        return net, reindex_lookup
+    else:
+        return net
+
+
+def _merge_nets_deprecated(net1, net2, validate=True, merge_results=True, tol=1e-9,
+                    create_continuous_bus_indices=True,
+                    retain_original_indices_in_net1=False, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
+
+    Groups are not considered.
     """
     net = copy.deepcopy(net1)
     # net1 = copy.deepcopy(net1)  # commented to save time. net1 will not be changed (only by runpp)
