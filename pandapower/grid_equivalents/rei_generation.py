@@ -1,10 +1,11 @@
+from pandas.api.types import is_bool_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     check_validity_of_Ybus_eq, drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
         replace_motor_by_load
-from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups    
+from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -172,7 +173,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
     pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
-    
+
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
     #     and creat new buses and impedance
@@ -236,7 +237,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                     i_all_integrated.append(i)
                 # in case of integrated, the tightest vm limits are assumed
                 ext_buses = Z.ext_bus[~np.isnan(Z[elm+"_ground"])].values
-                ext_buses_name = "/".join([str(eb) for eb in ext_buses])                           
+                ext_buses_name = "/".join([str(eb) for eb in ext_buses])
                 new_t_bus = pp.create_bus(
                     net_zpbn, vn_kv, name=elm+"_integrated-total "+ext_buses_name,
                     max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
@@ -280,7 +281,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 if net_zpbn[elm][c].dtype == np.number or net_zpbn[elm][c].dtype == np.int64:
                     other_cols_number |= {c}
                     other_cols -= {c}
-                elif net_zpbn[elm][c].dtype == bool or set(elm_org[c].values) & {False, True}: # type-object can also be True of False
+                elif net_zpbn[elm][c].dtype == bool or (elm_org[c].dropna().shape[0] and \
+                        is_bool_dtype(elm_org[c].dropna())): # type-object can also be True of False
                     other_cols_bool |= {c}
                     other_cols -= {c}
                 else:
@@ -311,7 +313,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
                         elm_org[list(other_cols_bool | other_cols_number)][
-                            elm_org.bus == bus].values[0] 
+                            elm_org.bus == bus].values[0]
                     net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
                         elm_org.bus == bus].values[0]
         elm_old = net_zpbn.bus.name[i].split("_")[0]
@@ -646,15 +648,15 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
             if elm != "gen":
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) & 
+                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
                                                 (net[elm].in_service==True) &
                                                 ~((net[elm].p_mw==0) & (net[elm].q_mvar==0))]
             else:
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) & 
+                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
                                                 (net[elm].in_service==True)]
-            if len(connected_elms) <= 1: 
+            if len(connected_elms) <= 1:
                 continue
-            else:  # There ars some "external" elements connected with bus-bus switches. 
+            else:  # There ars some "external" elements connected with bus-bus switches.
                    # They will be aggregated.
                 elm1 = connected_elms[0]
                 name_list = [str(n) for n in net[elm].name[connected_elms].values]
@@ -665,9 +667,8 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
                                        net[elm].scaling[connected_elms].values).sum()
                 if elm != "gen":
                     net[elm].q_mvar[elm1] = (net[elm].q_mvar[connected_elms].values * \
-                                             net[elm].scaling[connected_elms].values).sum()                                      
+                                             net[elm].scaling[connected_elms].values).sum()
                 net[elm].drop(connected_elms[1:], inplace=True)
-    
+
     pass
-    
-    
+
