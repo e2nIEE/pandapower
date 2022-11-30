@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, an
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, GS, BS, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -63,7 +63,7 @@ def _run_newton_raphson_pf(ppci, options):
     return ppci
 
 
-def ppci_to_pfsoln(ppci, options):
+def ppci_to_pfsoln(ppci, options, limited_gens=None):
     internal = ppci["internal"]
     if options["only_v_results"]:
         # time series relevant hack which ONLY saves V from ppci
@@ -93,7 +93,7 @@ def ppci_to_pfsoln(ppci, options):
             internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
 
         result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
-                      internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens)
+                      internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens, limited_gens=limited_gens)
         return result_pfsoln
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
@@ -173,6 +173,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
     baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    bus_backup_p_q = bus[:, [PD, QD]].copy()
+    gen_backup_p = gen[:, PG].copy()
 
     qlim = options["enforce_q_lims"]
     limited = []  # list of indices of gens @ Q lims
@@ -180,7 +182,9 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
 
     while True:
         ppci, success, iterations = _run_ac_pf_without_qlims_enforced(ppci, options)
-        bus, gen, branch = ppci_to_pfsoln(ppci, options)
+        gen[:, PG] = gen_backup_p
+        bus[:, PD] = bus_backup_p_q[:, 0]
+        bus, gen, branch = ppci_to_pfsoln(ppci, options, limited)
 
         # find gens with violated Q constraints
         gen_status = gen[:, GEN_STATUS] > 0
@@ -209,11 +213,6 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
 
             # convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  # set Qg to binding
-            for i in range(len(mx)):  # [one at a time, since they may be at same bus]
-                gen[mx[i], GEN_STATUS] = 0  # temporarily turn off gen,
-                bi = gen[mx[i], GEN_BUS].astype(int)  # adjust load accordingly,
-                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
-
             #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
             #                raise ValueError('Sorry, pandapower cannot enforce Q '
             #                                 'limits for slack buses in systems '
@@ -226,15 +225,18 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             ref, pv, pq = bustypes(bus, gen)
 
             limited = r_[limited, mx].astype(int)
+
+            for i in range(len(limited)):  # [one at a time, since they may be at same bus]
+                gen[limited[i], GEN_STATUS] = 0  # temporarily turn off gen,
+                bi = gen[limited[i], GEN_BUS].astype(int)  # adjust load accordingly,
+                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]])
         else:
             break  # no more generator Q limits violated
 
     if len(limited) > 0:
         # restore injections from limited gens [those at Q limits]
+        bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PV  # & set bus type back to PV
         gen[limited, QG] = fixedQg[limited]  # restore Qg value,
-        for i in range(len(limited)):  # [one at a time, since they may be at same bus]
-            bi = gen[limited[i], GEN_BUS].astype(int)  # re-adjust load,
-            bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
-            gen[limited[i], GEN_STATUS] = 1  # and turn gen back on
-
+        gen[limited, GEN_STATUS] = 1  # turn gens back on
+        bus[:, [PD, QD]] = bus_backup_p_q
     return ppci, success, iterations, bus, gen, branch
