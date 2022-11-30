@@ -1860,7 +1860,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
         f"{new_params}."
 
-    old_params_passed = not len(set(kwargs.keys()).intersection(old_params))
+    old_params_passed = len(set(kwargs.keys()).intersection(old_params))
     new_params_passed = len(set(kwargs.keys()).intersection(new_params))
 
     if old_params_passed:
