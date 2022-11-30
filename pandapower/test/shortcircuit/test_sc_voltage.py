@@ -35,26 +35,26 @@ def simple_grid():
 
 def test_voltage_sgen():
     net = simple_grid()
-    pp.create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.2)
-    net.sgen["current_angle"] = -68.629871
+    pp.create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
+    net.sgen["current_angle"] = -90
     sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
-    assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 3.87955, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 739.153586, atol=1e-5, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "ikss_ka"], [0.428409, 3.879550], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "p_from_mw"], [11.853270, 67.051803], atol=1e-5, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "q_from_mvar"], [12.794845, 105.657389], atol=1e-5, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "p_to_mw"], [-10.808227, 0], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "q_to_mvar"], [-8.610268, 0], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "vm_from_pu"], [0.213685, 0.169299], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "va_from_degree"], [-17.016990, -25.662429], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.169299, 0], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-25.662429, 0], atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 1.825315, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 347.769263, atol=1e-5, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "ikss_ka"], [0.460706, 1.825315], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "p_from_mw"], [5.019259, 14.843061], atol=1e-5, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "q_from_mvar"], [10.901325, 23.389066], atol=1e-5, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "p_to_mw"], [-3.810707, 0], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "q_to_mvar"], [-5.862024, 0], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "vm_from_pu"], [0.134660, 0.076954], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "va_from_degree"], [-2.919632, -10.818133], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.076954, 0], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-10.818133, 0], atol=1e-6, rtol=0)
 
     sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
 
-    assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 4.491006, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 855.651656, atol=1e-5, rtol=0)
+    assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 1.860576, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 354.487419, atol=1e-5, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "ikss_ka"], [0.495930, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "p_from_mw"], [1.400422, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "q_from_mvar"], [5.607589, 0], atol=1e-6, rtol=0)
