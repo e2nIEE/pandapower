@@ -310,15 +310,15 @@ def compare_arrays(x, y):
 
 
 # --- Information
-def log_to_level(msg, logger, level):
+def log_to_level(msg, passed_logger, level):
     if level == "error":
-        logger.error(msg)
+        passed_logger.error(msg)
     elif level == "warning":
-        logger.warning(msg)
+        passed_logger.warning(msg)
     elif level == "info":
-        logger.info(msg)
+        passed_logger.info(msg)
     elif level == "debug":
-        logger.debug(msg)
+        passed_logger.debug(msg)
 
 
 def lf_info(net, numv=1, numi=2):  # pragma: no cover
@@ -996,7 +996,7 @@ def reindex_buses(net, bus_lookup):
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=int)[
-                (net.group.element_type == "bus") & net.group.reference_column.isnull()]:
+                (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
 
     # --- adapt measurement link
@@ -1111,7 +1111,7 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=int)[
-                (net.group.element_type == element) & net.group.reference_column.isnull()]:
+                (net.group.element_type == element).values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
 
     # --- adapt measurement link
