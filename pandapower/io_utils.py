@@ -492,7 +492,6 @@ class FromSerializableRegistry():
             else:
                 net = self.empty_dict_like_object
             net.update(self.obj)
-            if 'format_version' not in self.obj and 'format_version' in net: del net.format_version
             return net
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")

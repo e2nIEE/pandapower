@@ -394,7 +394,6 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
              "Please resave your grid using the current pandapower version.",
              DeprecationWarning)
         net = from_json_dict(net)
-        del net.format_version
 
     if convert:
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
