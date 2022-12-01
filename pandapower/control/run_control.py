@@ -11,7 +11,8 @@ try:
 except:
     import logging as pplog
 
-from pandapower import ppException, LoadflowNotConverged, OPFNotConverged
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower import ppException, LoadflowNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)

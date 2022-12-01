@@ -36,7 +36,8 @@ def boundary_testnet(which):
         net2.bus["zone"] = "b"
         net2.ext_grid["p_disp_mw"] = 71.9547
         pp.replace_ext_grid_by_gen(net2)
-        net = pp.merge_nets(net1, net2, merge_results=False, validate=False)
+        net = pp.merge_nets(net1, net2, merge_results=False, validate=False,
+                            net2_reindex_log_level=None)
         new_bus = pp.create_bus(net, 345, zone="b")
 
         # expected_bbr
@@ -155,11 +156,11 @@ def test_append_set_to_dict():
 
 
 if __name__ == "__main__":
-    if 1:
+    if 0:
         pytest.main([__file__, '-x'])
     else:
-        test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1()
-        test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2()
+        # test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1()
+        # test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2()
         test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches3()
-        test_append_set_to_dict()
+        # test_append_set_to_dict()
         pass
