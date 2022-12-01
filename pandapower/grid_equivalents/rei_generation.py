@@ -169,7 +169,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
-    net_zpbn = deepcopy(net_external)
+    net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
     pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
     
@@ -270,7 +270,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr, sn_mva=Sn)
 
     # ---- match other columns
-        elm_org = net_external[elm]
+        elm_org = net[elm]
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
@@ -492,7 +492,8 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
 #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
-    _integrate_power_elements_connected_with_switch_buses(net_external, all_external_buses) # for sgens, gens, and loads
+    _integrate_power_elements_connected_with_switch_buses(net, net_external, 
+                                                          all_external_buses) # for sgens, gens, and loads
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
@@ -641,8 +642,9 @@ def _replace_ext_area_by_impedances_and_shunts(
               tolerance_mva=1e-6, max_iteration=100)
 
 
-def _integrate_power_elements_connected_with_switch_buses(net, all_external_buses):
-    all_buses, bus_dict = get_connected_switch_buses_groups(net, all_external_buses)
+def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
+    all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
+                                                            all_external_buses)
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
             if elm != "gen":
@@ -658,3 +660,4 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
                    # They will be aggregated.
                 elm1 = connected_elms[0]
                 net[elm].bus[connected_elms] = net[elm].bus[elm1]
+                net_external[elm].bus[connected_elms] = net_external[elm].bus[elm1]

@@ -570,6 +570,36 @@ def test_motor():
     pp.runpp(net)
     values2 = net.res_bus.vm_pu.values.copy()
     assert max(values1 - values2) < 1e-10    
+
+
+def test_sgen_bswitch():
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_sgen(net, 1, 10)
+    pp.create_sgen(net, 1, 5, in_service=False)
+    pp.runpp(net)
+    net.sgen.name = ["aa", "bb", "cc", "dd"]
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                    retain_original_internal_indices=True)
+    assert net_eq.sgen.name[0] == 'aa//cc//dd-sgen_separate_rei_1'
+    assert net_eq.sgen.p_mw[0] == 173
+    
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_bus(net, 345)
+    pp.create_bus(net, 345)
+    pp.create_sgen(net, 9, 10)
+    pp.create_sgen(net, 10, 5, in_service=False)
+    pp.create_switch(net, 1, 9, "b")
+    pp.create_switch(net, 1, 10, "b")
+    net.sgen.name = ["aa", "bb", "cc", "dd"]
+    pp.runpp(net)
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                    retain_original_internal_indices=True)
+    
+    assert net_eq.sgen.name[0] == 'aa//cc-sgen_separate_rei_1'
+    assert net_eq.sgen.p_mw[0] == 173
+
         
 if __name__ == "__main__":
     if 1:
@@ -586,6 +616,7 @@ if __name__ == "__main__":
         # test_characteristic()
         # test_controller()
         test_motor()
+        test_sgen_bswitch()
     pass
 
     
