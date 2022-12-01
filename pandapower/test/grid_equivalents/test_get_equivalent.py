@@ -443,23 +443,21 @@ def test_retain_original_internal_indices():
     net.sgen.index = sgen_idxs
     net.line.index = line_idxs
     pp.reindex_buses(net, bus_lookup)
-    
+    first3buses = net.bus.index.tolist()[0:3]
+    assert not np.array_equal(first3buses, list(range(3)))
     pp.runpp(net)
     eq_type = "rei"
     boundary_buses = [bus_lookup[b] for b in [3, 9, 22]]
     internal_buses = [bus_lookup[0]]
-    for retain_original_internal_indices in [True, False]:
-        net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
-                                                    calculate_voltage_angles=True,
-                                                    retain_original_internal_indices=\
-                                                        retain_original_internal_indices)
-        if retain_original_internal_indices:
-            assert net_eq.sgen.index.tolist()[:3] == sgen_idxs[:3]
-            assert set(net_eq.line.index.tolist()) - set(line_idxs) == set()
-            assert set(net_eq.bus.index.tolist()[:-2]) - set(bus_idxs) == set()
-        else:
-            assert net_eq.sgen.index.tolist() == list(range(len(net_eq.sgen)))
-            assert net_eq.line.index.tolist() == list(range(len(net_eq.line)))
+
+    net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
+                                                calculate_voltage_angles=True,
+                                                retain_original_internal_indices=True)
+    
+    assert net_eq.sgen.index.tolist()[:3] == sgen_idxs[:3]
+    assert set(net_eq.line.index.tolist()) - set(line_idxs) == set()
+    assert set(net_eq.bus.index.tolist()[:-2]) - set(bus_idxs) == set()
+    assert np.array_equal(first3buses, net_eq.bus.index.tolist()[0:3])
 
 
 def test_switch_sgens():
@@ -602,7 +600,7 @@ def test_sgen_bswitch():
 
         
 if __name__ == "__main__":
-    if 1:
+    if 0:
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
@@ -611,12 +609,12 @@ if __name__ == "__main__":
         # test_adopt_columns_to_separated_eq_elms()
         # test_equivalent_groups()
         # test_shifter_degree()
-        # test_retain_original_internal_indices()
+        test_retain_original_internal_indices()
         # test_switch_sgens()
         # test_characteristic()
         # test_controller()
-        test_motor()
-        test_sgen_bswitch()
+        # test_motor()
+        # test_sgen_bswitch()
     pass
 
     
