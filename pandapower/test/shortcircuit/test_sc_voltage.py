@@ -15,8 +15,8 @@ import pandapower.shortcircuit as sc
 import pandas as pd
 from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
 
-pd.set_option("display.width", 1000)
-pd.set_option("display.max_columns", 1000)
+#pd.set_option("display.width", 1000)
+#pd.set_option("display.max_columns", 1000)
 
 
 def simple_grid():
@@ -36,19 +36,19 @@ def simple_grid():
 def test_voltage_sgen():
     net = simple_grid()
     pp.create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
-    net.sgen["current_angle"] = -90
+    # net.sn_mva = 110 * np.sqrt(3)
     sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 1.825315, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 347.769263, atol=1e-5, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "ikss_ka"], [0.460706, 1.825315], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "p_from_mw"], [5.019259, 14.843061], atol=1e-5, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "q_from_mvar"], [10.901325, 23.389066], atol=1e-5, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "q_from_mvar"], [10.701325, 23.389066], atol=1e-5, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "p_to_mw"], [-3.810707, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "q_to_mvar"], [-5.862024, 0], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "vm_from_pu"], [0.134660, 0.076954], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "vm_from_pu"], [0.134660, 0.079654], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "va_from_degree"], [-2.919632, -10.818133], atol=1e-6, rtol=0)
-    assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.076954, 0], atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.079654, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-10.818133, 0], atol=1e-6, rtol=0)
 
     sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
