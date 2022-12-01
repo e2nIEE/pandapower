@@ -77,7 +77,7 @@ def _transform_branch_geometry_to_coords(branch_geo):
     :type branch_geo: geopandas.GeoDataFrame
     :return: branch_geo - The given geodataframe with coords
     """
-    branch_geo["coords"] = branch_geo["coords"].geometry.apply(lambda x: list(x.coords))
+    branch_geo["coords"] = branch_geo.geometry.apply(lambda x: list(x.coords))
     return branch_geo
 
 

@@ -2,7 +2,9 @@ import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     check_validity_of_Ybus_eq, drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
-    drop_and_edit_cost_functions, _runpp_except_voltage_angles
+    drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
+        replace_motor_by_load
+from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups    
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -169,7 +171,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
-    # pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
+    pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
     
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
     # --- remove the original load, sgen and gen in exteranl area,
@@ -233,8 +235,10 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                         sn_mva,name="eq_impedance_ext_to_ground")
                     i_all_integrated.append(i)
                 # in case of integrated, the tightest vm limits are assumed
+                ext_buses = Z.ext_bus[~np.isnan(Z[elm+"_ground"])].values
+                ext_buses_name = "/".join([str(eb) for eb in ext_buses])                           
                 new_t_bus = pp.create_bus(
-                    net_zpbn, vn_kv, name=elm+"_integrated-total "+str(Z.ext_bus[0]),
+                    net_zpbn, vn_kv, name=elm+"_integrated-total "+ext_buses_name,
                     max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
                     min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max())
                 rft_pu, xft_pu = adapt_impedance_params(Z[elm+"_integrated_total"][0])
@@ -249,7 +253,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     # --- create load, sgen and gen
     elm_old = None
     for i in t_buses:
-        bus = int(net_zpbn.bus.name[i].split(" ")[1])
+        busstr = net_zpbn.bus.name[i].split(" ")[1]
+        bus = int(busstr.split("/")[0])
         key = net_zpbn.bus.name[i].split("-")[0]
         elm = net_zpbn.bus.name[i].split("_")[0]
         idx = S.index[S.ext_bus == bus].values[0]
@@ -257,12 +262,12 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         Q = S[key][idx].imag * sn_mva
         Sn = S["sn_"+key][idx].real
         if elm == "load":
-            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+str(bus), sn_mva=Sn)
+            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
         elif elm == "sgen":
-            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+str(bus), sn_mva=Sn)
+            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
         elif elm == "gen":
-            vm_pu = v[key+"_vm_total"][v.ext_bus == bus].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+str(bus), sn_mva=Sn)
+            vm_pu = v[key+"_vm_total"][v.ext_bus == int(busstr)].values.real
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr, sn_mva=Sn)
 
     # ---- match other columns
         elm_org = net[elm]
@@ -358,8 +363,9 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
+    # pp.runpp(net_zpbn)
     runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
-                                 tolerance_mva=1e-3, max_iteration=100)
+              tolerance_mva=1e-3, max_iteration=100)
     return net_zpbn, net_internal, net_external
 
 
@@ -470,7 +476,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controller(net_internal, all_external_buses)
+        drop_measurements_and_controller(net_internal, all_external_buses, True)
         drop_and_edit_cost_functions(net_internal,
                                      all_external_buses+boundary_buses,
                                      True, True)
@@ -483,7 +489,10 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                  True, True)
     drop_measurements_and_controller(net_external, all_internal_buses)
     pp.drop_buses(net_external, all_internal_buses)
+    replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
+#    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
+    _integrate_power_elements_connected_with_switch_buses(net_external, all_external_buses) # for sgens, gens, and loads
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
@@ -495,7 +504,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
 
 def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
                                         show_computing_time=False,
-                                        max_allowed_impedance=1e10, **kwargs):
+                                        max_allowed_impedance=1e8, **kwargs):
     """ This function calculates the equivalent parameters
 
     INPUT:
@@ -630,3 +639,35 @@ def _replace_ext_area_by_impedances_and_shunts(
 
     runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
               tolerance_mva=1e-6, max_iteration=100)
+
+
+def _integrate_power_elements_connected_with_switch_buses(net, all_external_buses):
+    all_buses, bus_dict = get_connected_switch_buses_groups(net, all_external_buses)
+    for elm in ["sgen", "load", "gen"]:
+        for bd in bus_dict:
+            if elm != "gen":
+                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) & 
+                                                (net[elm].in_service==True) &
+                                                ~((net[elm].p_mw==0) & (net[elm].q_mvar==0))]
+            else:
+                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) & 
+                                                (net[elm].in_service==True)]
+            if len(connected_elms) <= 1: 
+                continue
+            else:  # There ars some "external" elements connected with bus-bus switches. 
+                   # They will be aggregated.
+                elm1 = connected_elms[0]
+                name_list = [str(n) for n in net[elm].name[connected_elms].values]
+                net[elm].name[elm1] = "aggregated " + elm + " : " + " + ".join(name_list)
+                net[elm].p_mw[elm1] = (net[elm].p_mw[connected_elms].values * \
+                                       net[elm].scaling[connected_elms].values).sum()
+                net[elm].sn_mva[elm1] = (net[elm].sn_mva[connected_elms].values * \
+                                       net[elm].scaling[connected_elms].values).sum()
+                if elm != "gen":
+                    net[elm].q_mvar[elm1] = (net[elm].q_mvar[connected_elms].values * \
+                                             net[elm].scaling[connected_elms].values).sum()                                      
+                net[elm].drop(connected_elms[1:], inplace=True)
+    
+    pass
+    
+    

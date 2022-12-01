@@ -21,6 +21,8 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.converter import convert_pp_to_pm
 from pandapower import pp_dir
+from pandapower.opf.pm_storage import read_pm_storage_results
+
 
 try:
     from julia.core import UnsupportedPythonError
@@ -34,20 +36,21 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
 
 
-def create_cigre_grid_with_time_series(json_path):
-    net = nw.create_cigre_network_mv("pv_wind")
-    min_vm_pu = 0.95
-    max_vm_pu = 1.05
-
-    net["bus"].loc[:, "min_vm_pu"] = min_vm_pu
-    net["bus"].loc[:, "max_vm_pu"] = max_vm_pu
-    net["line"].loc[:, "max_loading_percent"] = 100.
-
-    # close all switches
-    net.switch.loc[:, "closed"] = True
-    # add storage to bus 10
-    pp.create_storage(net, 10, p_mw=0.5, max_e_mwh=.2, soc_percent=0., q_mvar=0., controllable=True)
-
+def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
+    if net is None:
+        net = nw.create_cigre_network_mv("pv_wind")
+        min_vm_pu = 0.95
+        max_vm_pu = 1.05
+    
+        net["bus"].loc[:, "min_vm_pu"] = min_vm_pu
+        net["bus"].loc[:, "max_vm_pu"] = max_vm_pu
+        net["line"].loc[:, "max_loading_percent"] = 100.
+    
+        # close all switches
+        net.switch.loc[:, "closed"] = True
+        # add storage to bus 10
+        pp.create_storage(net, 10, p_mw=0.5, max_e_mwh=.2, soc_percent=0., q_mvar=0., controllable=True)
+    
     # set the load type in the cigre grid, since it is not specified
     net["load"].loc[:, "type"] = "residential"
 
@@ -81,6 +84,24 @@ def create_cigre_grid_with_time_series(json_path):
     ConstControl(net, element="sgen", variable="p_mw",
                  element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                  data_source=DFData(sgen_ts))
+
+    if add_ts_constaints:
+        df_qmax, df_qmin = sgen_ts.copy(), sgen_ts.copy()
+        df_qmax[df_qmax.columns] = net.sgen.max_q_mvar
+        df_qmin[df_qmin.columns] = net.sgen.min_q_mvar
+
+        ConstControl(net, element="sgen", variable="max_p_mw",
+                      element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
+                      data_source=DFData(sgen_ts))
+        ConstControl(net, element="sgen", variable="min_p_mw",
+                      element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
+                      data_source=DFData(sgen_ts))
+        ConstControl(net, element="sgen", variable="max_q_mvar",
+                      element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
+                      data_source=DFData(df_qmax))
+        ConstControl(net, element="sgen", variable="min_q_mvar",
+                      element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
+                      data_source=DFData(df_qmin))
 
     return net
 
@@ -565,16 +586,189 @@ def test_storage_opt():
     assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)])
 
     net = create_cigre_grid_with_time_series(json_path)
-    pp.runpm_storage_opf(net, from_time_step=0, to_time_step=10)
+    pp.runpm_storage_opf(net, from_time_step=0, to_time_step=5)
+    storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
-    assert len(net.res_ts_opt) == 10
+    assert len(net.res_ts_opt) == 5
+    
+
+    net2 = create_cigre_grid_with_time_series(json_path)
+    net2.sn_mva = 100.0
+    pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    storage_results_100 = read_pm_storage_results(net2)
+    
+    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6 
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_runpm_multi_vstab():
+    net = nw.create_cigre_network_mv(with_der="pv_wind")     
+    net.load['controllable'] = False
+    net.sgen['controllable'] = True
+    # lower and upper bounds for buses
+    net.bus["max_vm_pu"] = 1.1
+    net.bus["min_vm_pu"] = 0.9
+    
+    # lower and upper bounds for external grid
+    net.ext_grid["max_q_mvar"] = 10000.0
+    net.ext_grid["min_q_mvar"] = -10000.0
+    net.ext_grid["max_p_mw"] = 10000.0
+    net.ext_grid["min_p_mw"] = -10000.0
+    
+    # lower and upper bounds for DERs
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
+    
+    net.trafo["max_loading_percent"] = 100.0
+    net.line["max_loading_percent"] = 100.0
+    
+    net.bus["pm_param/setpoint_v"] = None # add extra column
+    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.96
+
+    # load time series data for 96 time steps
+    json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
+    create_cigre_grid_with_time_series(json_path, net, True)
+
+    # run time series opf 
+    pp.runpm_multi_vstab(net, from_time_step=0, to_time_step=96)
+    assert len(net.res_ts_opt) == 96
+    
+    # get opf-results 
+    y_multi = []
+    for t in range(96):
+        y_multi.append(net.res_ts_opt[str(t)].res_bus.vm_pu[net.sgen.bus].values.mean() - 0.96)
+    
+    assert np.array(y_multi).max() < 0.018
+    assert np.array(y_multi).min() > -0.002
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_runpm_qflex_and_multi_qflex():
+    
+    net = nw.create_cigre_network_mv(with_der="pv_wind")  
+    pp.runpp(net)
+    
+    net.load['controllable'] = False
+    net.sgen['controllable'] = True
+    # lower and upper bounds for buses
+    net.bus["max_vm_pu"] = 1.1
+    net.bus["min_vm_pu"] = 0.9
+    
+    # lower and upper bounds for external grid
+    net.ext_grid["max_q_mvar"] = 10000.0
+    net.ext_grid["min_q_mvar"] = -10000.0
+    net.ext_grid["max_p_mw"] = 10000.0
+    net.ext_grid["min_p_mw"] = -10000.0
+    
+    # lower and upper bounds for DERs
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.828
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.828
+    
+    net.trafo["max_loading_percent"] = 100.0
+    net.line["max_loading_percent"] = 100.0
+    
+    net.trafo["pm_param/setpoint_q"] = None # add extra column
+    net.trafo["pm_param/setpoint_q"].loc[0] = -5
+    net.trafo["pm_param/side"] = None
+    net.trafo["pm_param/side"][0] = "lv"
+    
+    # run opf
+    pp.runpm_qflex(net)
+    opt_q = net.res_trafo.q_lv_mvar[0]
+    assert  abs(opt_q + 5) < 1e-6
+    
+    # test for multi_qflex
+    # load time series data for 96 time steps
+    json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
+    create_cigre_grid_with_time_series(json_path, net, True)
+    pp.runpm_multi_qflex(net, from_time_step=0, to_time_step=96)
+    # get opf-results 
+    y_multi = []
+    for t in range(96):
+        y_multi.append(abs(abs(net.res_ts_opt[str(t)].res_trafo.q_lv_mvar[0])-5))    
+    assert np.array(y_multi).max() < 1e-6
+
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_ploss():
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
+    net.load['controllable'] = False
+    net.sgen['controllable'] = True
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
+    net.bus["max_vm_pu"] = 1.1
+    net.bus["min_vm_pu"] = 0.9
+    net.ext_grid["max_q_mvar"] = 10000.0
+    net.ext_grid["min_q_mvar"] = -10000.0
+    net.ext_grid["max_p_mw"] = 10000.0
+    net.ext_grid["min_p_mw"] = -10000.0
+    net.trafo["max_loading_percent"] = 100.0
+    net.line["max_loading_percent"] = 100.0
+    net.line["pm_param/target_branch"] = True
+    net.switch.loc[:, "closed"] = True
+    pp.runpp(net)
+    net_org = deepcopy(net)
+    pp.runpm_ploss(net)
+
+    assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
+
+    net.line.drop(columns=["pm_param/target_branch"], inplace=True)
+    net.trafo["pm_param/target_branch"] = True
+    pp.runpm_ploss(net)
+
+    assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_convergence_dc_opf():
+    for cpnd in [True, False]:
+        net = nw.case5()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case9()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case14()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case30()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case39()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case57()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case118()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case145()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+        net = nw.case300()
+        pp.runpm_dc_opf(net, correct_pm_network_data=cpnd)
+
+
+@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+def test_ac_opf_differnt_snmva():
+    net = nw.case9()
+    res = pd.DataFrame(columns=net.bus.index.tolist())
+    for i, snmva in enumerate([1, 13, 45, 78, 98, 100]):
+        net.sn_mva = snmva
+        pp.runpm_ac_opf(net)
+        res.loc[i] = net.res_bus.vm_pu.values
+    for i in res.columns:
+        assert res[i].values.min() - res[i].values.max() < 1e-10
 
 
 if __name__ == '__main__':
     if 0:
         pytest.main(['-x', __file__])
     else:
-        test_storage_opt()
-    pass
+        # test_storage_opt()
+        test_runpm_ploss()
+        # test_runpm_qflex_and_multi_qflex()
+
