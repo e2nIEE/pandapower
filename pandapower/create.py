@@ -4254,13 +4254,13 @@ def _costs_existance_check(net, elements, et, power_type=None):
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):
-    if name is None:
-        name = table.capitalize() + "s"
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     contained = isin(net[table].index.values, index)
     if np_any(contained):
+        if name is None:
+            name = table.capitalize() + "s"
         raise UserWarning("%s with indexes %s already exist."
                           % (name, net[table].index.values[contained]))
     return index
