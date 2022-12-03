@@ -165,9 +165,9 @@ def test_cost_consideration():
         check_elements_amount(eq_net2, {"bus": 5, "load": 3, "sgen": 2, "shunt": 5, "ext_grid": 1,
                                         "impedance": 7, cost_type: 3},
                               check_all_pp_elements=True)
-        assert all(eq_net1.sgen.index.values == np.array([0, 1, 2]))  # simple create_sgen()
+        assert all(eq_net1.sgen.index.values == np.array([2, 3, 4]))  # simple create_sgen()
         # without index=... expected
-        assert all(eq_net2.sgen.index.values == np.array([0, 1]))
+        assert all(eq_net2.sgen.index.values == np.array([3, 4]))
 
         # --- check poly cost
         # eq_net1
@@ -332,7 +332,7 @@ def test_adopt_columns_to_separated_eq_elms():
     net.gen["origin_id"] = ["gen_"+str(i) for i in range(net.gen.shape[0])]
 
     eq_net = pp.grid_equivalents.get_equivalent(net, "rei", boundary_buses={4, 8}, internal_buses={0, 3},
-                                gen_separate=True)
+                                                gen_separate=True)
     columns_to_check = ["p_mw", "vm_pu", "sn_mva", "scaling", "controllable", "origin_id",
                         "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"]
     assert pp.dataframes_equal(net.gen[columns_to_check], eq_net.gen[columns_to_check])
@@ -517,8 +517,8 @@ def test_controller():
     # getting equivalent
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0])
     
-    assert net_eq.controller.object[0].__dict__["element_index"] == [0, 1]
-    assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 1]
+    assert net_eq.controller.object[0].__dict__["element_index"] == [0, 2]
+    assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
     for i in net.controller.index:
         assert set(net_eq.controller.object[i].__dict__["element_index"]) - \
             set(net.controller.object[i].__dict__["element_index"]) == set([])
@@ -597,19 +597,34 @@ def test_sgen_bswitch():
     
     assert net_eq.sgen.name[0] == 'aa//cc-sgen_separate_rei_1'
     assert net_eq.sgen.p_mw[0] == 173
-
+    
+    # add some columns for test
+    net.bus["voltLvl"]=1
+    net.sgen["col_mixed"] = ["1", 2, None, True]
+    net.sgen["col_same_str"] = ["str_test", "str_test", "str_test", "str_test"]
+    net.sgen["col_different_str"] = ["str_1", "str_2", "str_3", "str_4"]
+    net.sgen["bool"] = [False, True, False, False]
+    net.sgen["voltLvl"] = [1, 1, 1, 1]
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0])   
+    assert net_eq.sgen["col_mixed"][0] == "mixed data type"
+    assert net_eq.sgen["col_same_str"][0] == "str_test"
+    assert net_eq.sgen["col_different_str"][0] == "str_3//str_1"
+    assert net_eq.sgen["col_different_str"][1] == "str_2" 
+    assert net_eq.sgen["bool"][0] == False
+    assert net_eq.sgen["bool"][1] == True
+    assert net_eq.sgen["voltLvl"].values.tolist() == [1, 1]
         
 if __name__ == "__main__":
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
         # test_basic_usecases()
-        # test_case9_with_slack_generator_in_external_net()
+        test_case9_with_slack_generator_in_external_net()
         # test_adopt_columns_to_separated_eq_elms()
         # test_equivalent_groups()
         # test_shifter_degree()
-        test_retain_original_internal_indices()
+        # test_retain_original_internal_indices()
         # test_switch_sgens()
         # test_characteristic()
         # test_controller()
