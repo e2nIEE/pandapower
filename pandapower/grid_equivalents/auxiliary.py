@@ -591,10 +591,10 @@ def replace_motor_by_load(net, all_external_buses):
         p_mw = p_mech * m.loading_percent / 100 * m.scaling
         s = p_mw / m.cos_phi
         q_mvar = np.sqrt(s**2 - p_mw**2)
+        li = pp.create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
+                            in_service=m.in_service, name="equivalent_"+str(m["name"])+"_"+str(mi))
         p = p_mw if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
-        li = pp.create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
-                            in_service=m.in_service, name="equivalent_motor_"+str(m.name))
         net.res_load.loc[li] = p, q
     net.motor.drop(motors, inplace=True)
     net.res_motor.drop(motors, inplace=True)
