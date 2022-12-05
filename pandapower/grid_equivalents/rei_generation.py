@@ -492,7 +492,8 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
 #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
-    _integrate_power_elements_connected_with_switch_buses(net_external, all_external_buses) # for sgens, gens, and loads
+    _integrate_power_elements_connected_with_switch_buses(net, net_external, 
+                                                          all_external_buses) # for sgens, gens, and loads
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
@@ -641,8 +642,9 @@ def _replace_ext_area_by_impedances_and_shunts(
               tolerance_mva=1e-6, max_iteration=100)
 
 
-def _integrate_power_elements_connected_with_switch_buses(net, all_external_buses):
-    all_buses, bus_dict = get_connected_switch_buses_groups(net, all_external_buses)
+def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
+    all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
+                                                            all_external_buses)
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
             if elm != "gen":
@@ -657,17 +659,5 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
             else:  # There ars some "external" elements connected with bus-bus switches. 
                    # They will be aggregated.
                 elm1 = connected_elms[0]
-                name_list = [str(n) for n in net[elm].name[connected_elms].values]
-                net[elm].name[elm1] = "aggregated " + elm + " : " + " + ".join(name_list)
-                net[elm].p_mw[elm1] = (net[elm].p_mw[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                net[elm].sn_mva[elm1] = (net[elm].sn_mva[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                if elm != "gen":
-                    net[elm].q_mvar[elm1] = (net[elm].q_mvar[connected_elms].values * \
-                                             net[elm].scaling[connected_elms].values).sum()                                      
-                net[elm].drop(connected_elms[1:], inplace=True)
-    
-    pass
-    
-    
+                net[elm].bus[connected_elms] = net[elm].bus[elm1]
+                net_external[elm].bus[connected_elms] = net_external[elm].bus[elm1]
