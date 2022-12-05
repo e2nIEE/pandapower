@@ -155,39 +155,39 @@ def _add_missing_tables(net):
 
 def _create_seperate_cost_tables(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and "cost_per_kw" in net.gen:
-        for index, cost in net.gen.cost_per_kw.iteritems():
+        for index, cost in net.gen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kw" in net.sgen:
-        for index, cost in net.sgen.cost_per_kw.iteritems():
+        for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kw.iteritems():
+        for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
-        for index, cost in net.gen.cost_per_kvar.iteritems():
+        for index, cost in net.gen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kvar" in net.sgen:
-        for index, cost in net.sgen.cost_per_kvar.iteritems():
+        for index, cost in net.sgen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kvar" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+        for index, cost in net.ext_grid.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)

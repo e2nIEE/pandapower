@@ -28,11 +28,11 @@
 
 import copy
 from collections.abc import MutableMapping
+import warnings
 
 import numpy as np
 import pandas as pd
 import scipy as sp
-import six
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
@@ -62,7 +62,17 @@ def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      "requirements: %s requires '%s'." % (fct_name, required_packages))
+                      f"requirements: {fct_name} requires '{required_packages}'.")
+
+
+def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
+                                    default_value, category=DeprecationWarning, **kwargs):
+    if old_parameter_name in kwargs:
+        warnings.warn(f"Parameter '%s' has been renamed to '%s'." % (
+            old_parameter_name, new_parameter_name), category=category)
+        if new_parameter == default_value:
+            return kwargs.pop(old_parameter_name)
+    return new_parameter
 
 
 class ADict(dict, MutableMapping):
@@ -85,7 +95,7 @@ class ADict(dict, MutableMapping):
         return self.copy(), self._allow_invalid_attributes
 
     def __dir__(self):
-        return list(six.iterkeys(self))
+        return list(self.keys())
 
     def __setstate__(self, state):
         mapping, allow_invalid_attributes = state
@@ -224,7 +234,7 @@ class ADict(dict, MutableMapping):
             'register').
         """
         return (
-                isinstance(key, six.string_types) and
+                isinstance(key, str) and
                 not hasattr(cls, key)
         )
 
@@ -269,7 +279,7 @@ class pandapowerNet(ADict):
 
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.iteritems()):
+    for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
@@ -401,7 +411,7 @@ def _check_connectivity_opf(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -440,7 +450,7 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -471,7 +481,7 @@ def _subnetworks(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
