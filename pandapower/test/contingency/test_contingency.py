@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 import pandapower as pp
 import pandapower.networks
@@ -13,6 +14,7 @@ import pandapower.control
 import pandapower.timeseries
 import pandapower.contingency
 import pytest
+from pandapower.contingency.contingency import _convert_trafo_phase_shifter
 
 try:
     import pandaplan.core.pplog as logging
@@ -144,6 +146,45 @@ def test_lightsim2grid_distributed_slack():
     for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
         assert np.allclose(res1["bus"][var], net1.res_bus[var].values, atol=1e-9, rtol=0)
         assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
+
+
+def test_lightsim2grid_phase_shifters():
+    net = pp.create_empty_network()
+    pp.set_user_pf_options(net, calculate_voltage_angles=True)
+    pp.create_buses(net, 4, 110)
+    pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
+
+    pp.create_lines(net, [0,0], [1,1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+    pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
+                                          'hv', 0, 10, -10, 0, 1, 5, True, max_loading_percent=100)
+    pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+
+    pp.create_load(net, 3, 110)
+
+    nminus1_cases = {"line": {"index": net.line.index.values}}
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+                                        distributed_slack=True)
+
+    assert net.trafo.shift_degree.values[0] == 150
+    assert net.trafo.tap_pos.values[0] == 5
+    assert net.trafo.tap_phase_shifter.values[0]
+
+    assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+    if len(net.trafo) > 0:
+        assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
+
+    for var in ("loading_percent", "max_loading_percent", "min_loading_percent"):
+        assert np.allclose(res["line"][var], net.res_line[var].values, atol=1e-6, rtol=0)
+    for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
+        assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
+
+    pp.runpp(net)
+    bus_res = net.res_bus.copy()
+    _convert_trafo_phase_shifter(net)
+    pp.runpp(net)
+    assert_frame_equal(bus_res, net.res_bus)
 
 
 def run_for_from_bus_loading(net, **kwargs):
