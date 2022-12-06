@@ -10,6 +10,7 @@ Change Log
 - [ADDED] zero-sequence parameters for net.impedance
 - [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
 - [ADDED] additional_traces (prepared by the user) can be passed to simple_plotly
+- [ADDED] Added converter CGMES v2.4.15 to pandapower
 - [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
@@ -17,6 +18,7 @@ Change Log
 - [ADDED] helper functions for contingency calculation
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
+- [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
 
 [2.10.1] - 2022-07-31
 -------------------------------

@@ -547,7 +547,7 @@ def test_motor():
     net = pp.networks.case9()
     pp.replace_gen_by_sgen(net)
     pp.create_motor(net, 5, 12, 0.9, scaling=0.8, loading_percent=89, efficiency_percent=90)
-    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95, inplace=False)
+    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95, in_service=False)
     pp.create_motor(net, 6, 10, 0.6, scaling=0.4, loading_percent=98, efficiency_percent=88)
     pp.create_motor(net, 3, 3, 0.6, scaling=0.4, loading_percent=89, efficiency_percent=99)
     pp.create_motor(net, 4, 6, 0.96, scaling=0.4, loading_percent=78, efficiency_percent=90)
@@ -561,18 +561,48 @@ def test_motor():
         assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-8
         assert net_eq.motor.bus.values.tolist() == [3, 4]
     
-    
     replace_motor_by_load(net, net.bus.index.tolist())
     assert len(net.motor) == 0
     assert len(net.res_motor) == 0
     assert len(net.load) == 8
     assert len(net.res_load) == 8
+    assert net.res_load.loc[4].values.tolist() == [0, 0]
     pp.runpp(net)
     values2 = net.res_bus.vm_pu.values.copy()
     assert max(values1 - values2) < 1e-10    
+
+
+def test_sgen_bswitch():
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_sgen(net, 1, 10)
+    pp.create_sgen(net, 1, 5, in_service=False)
+    pp.runpp(net)
+    net.sgen.name = ["aa", "bb", "cc", "dd"]
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                    retain_original_internal_indices=True)
+    assert net_eq.sgen.name[0] == 'aa//cc//dd-sgen_separate_rei_1'
+    assert net_eq.sgen.p_mw[0] == 173
+    
+    net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
+    pp.create_bus(net, 345)
+    pp.create_bus(net, 345)
+    pp.create_sgen(net, 9, 10)
+    pp.create_sgen(net, 10, 5, in_service=False)
+    pp.create_switch(net, 1, 9, "b")
+    pp.create_switch(net, 1, 10, "b")
+    net.sgen.name = ["aa", "bb", "cc", "dd"]
+    pp.runpp(net)
+    net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+                                                    retain_original_internal_indices=True)
+    
+    assert net_eq.sgen.name[0] == 'aa//cc-sgen_separate_rei_1'
+    assert net_eq.sgen.p_mw[0] == 173
+
         
 if __name__ == "__main__":
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
@@ -586,6 +616,7 @@ if __name__ == "__main__":
         # test_characteristic()
         # test_controller()
         test_motor()
+        test_sgen_bswitch()
     pass
 
     
