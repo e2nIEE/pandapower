@@ -68,6 +68,18 @@ def three_bus_permuted_index():
 #     return net
 
 
+def net_transformer_simple():
+    net = pp.create_empty_network(sn_mva=2)
+    b1 = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=.4)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    pp.create_transformer_from_parameters(net, b1, b2, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
+                                          vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
+                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
+                                          tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5)
+    return net
+
+
 def net_transformer():
     net = pp.create_empty_network(sn_mva=2)
     b1a = pp.create_bus(net, vn_kv=10.)

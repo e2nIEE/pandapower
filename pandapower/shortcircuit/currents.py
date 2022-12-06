@@ -107,6 +107,10 @@ def _current_source_current(net, ppci):
         return
     if any(pd.isnull(sgen.sn_mva)):
         raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
+    if "current_angle" in sgen.columns:
+        sgen_angle = sgen.current_angle.values
+    else:
+        sgen_angle = None
 
     baseI = ppci["internal"]["baseI"]
     sgen_buses = sgen.bus.values
@@ -116,20 +120,29 @@ def _current_source_current(net, ppci):
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
 
     i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+    if sgen_angle is not None:
+        i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
+    # if case == "min":
+    #     i_sgen_pu *= 0
+
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
-    ppci["bus"][buses, IKCV] = ikcv_pu
+    ppci["bus"][buses, IKCV] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
     ppci["bus"][:, PHI_IKCV_DEGREE] = 0
+    if sgen_angle is not None:
+        ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus)
-        ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
+        if sgen_angle is None:
+            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
         i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
         # todo test this
-        ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
+        if sgen_angle is None:
+            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSS2] = np.abs(i_kss_2 / baseI)
@@ -234,30 +247,33 @@ def _calc_branch_currents(net, ppci, bus_idx):
     Yt = ppci["internal"]["Yt"]
     baseI = ppci["internal"]["baseI"]
     n_bus = ppci["bus"].shape[0]
-    fb = np.real(ppci["branch"][:, 0]).astype(int)
-    tb = np.real(ppci["branch"][:, 1]).astype(int)
+    fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
+    tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
 
     # calculate voltage source branch current
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
-        V_ikss = (ikss1 * baseI * Zbus)[:, bus_idx]  # making it a complex calculation
-        if len(bus_idx) == 1:
-            V_ikss = -(V_ikss - max(V_ikss, key=abs))
-            V_ikss[np.abs(V_ikss) < 1e-10] = 0
+        V_ikss = (ikss1 * baseI * Zbus)  # making it a complex calculation
+        #V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0), np.arange(V_ikss.shape[1])] - V_ikss  # numpy indexing issue
+        V_ikss = V_ikss[:, bus_idx]
+        # V_ikss[np.abs(V_ikss) < 1e-10] = 0
+
     else:
-        # todo: here also complex V?
         ybus_fact = ppci["internal"]["ybus_fact"]
         V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
         for ix, b in enumerate(bus_idx):
             ikss = np.zeros(n_bus, dtype=np.complex128)
-            ikss[b] = ppci["bus"][b, IKSS1] * baseI[b]
+            ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
             V_ikss[:, ix] = ybus_fact(ikss)
+
+    V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0), np.arange(V_ikss.shape[1])] - V_ikss  # numpy indexing issue
+    V_ikss[np.abs(V_ikss) < 1e-10] = 0
 
     ikss1_all_f = Yf.dot(V_ikss)
     ikss1_all_t = Yt.dot(V_ikss)
-    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
-    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
+    ikss1_all_f[np.abs(ikss1_all_f) < 1e-10] = 0.
+    ikss1_all_t[np.abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
     current_sources = any(ppci["bus"][:, IKCV]) > 0
@@ -265,6 +281,7 @@ def _calc_branch_currents(net, ppci, bus_idx):
         ikcv = ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)
         ikss2 = ppci["bus"][:, IKSS2] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS2_DEGREE]))
         current = np.tile(ikcv, (n_sc_bus, 1))
+        # np.fill_diagonal(current, current.diagonal() - ikss2)
         for ix, b in enumerate(bus_idx):
             # current[ix, b] -= ppci["bus"][b, IKSS2] * np.exp(np.deg2rad(ppci["bus"][b, PHI_IKSS2_DEGREE])*1j)
             current[ix, b] -= ikss2[b]
@@ -279,10 +296,10 @@ def _calc_branch_currents(net, ppci, bus_idx):
             for ix, b in enumerate(bus_idx):
                 V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
 
-        fb = np.real(ppci["branch"][:, 0]).astype(int)
-        tb = np.real(ppci["branch"][:, 1]).astype(int)
+        fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
+        tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
 
-        V[abs(V) < 1e-10] = 0
+        V[np.abs(V) < 1e-10] = 0
 
         ikss2_all_f = Yf.dot(V)
         ikss2_all_t = Yt.dot(V)
@@ -299,6 +316,9 @@ def _calc_branch_currents(net, ppci, bus_idx):
         ikss_all_f = ikss1_all_f
         ikss_all_t = ikss1_all_t
 
+    ikss_all_f[np.abs(ikss_all_f) < 1e-10] = np.nan
+    ikss_all_t[np.abs(ikss_all_t) < 1e-10] = np.nan
+
     # calculate active and reactive power, voltages
     skss_all_f = np.conj(ikss_all_f) * V_ikss[fb]
     pkss_all_f = skss_all_f.real
@@ -308,23 +328,23 @@ def _calc_branch_currents(net, ppci, bus_idx):
     pkss_all_t = skss_all_t.real
     qkss_all_t = skss_all_t.imag
 
-    vkss_magn_all_f = abs(V_ikss[fb])
-    vkss_magn_all_t = abs(V_ikss[tb])
+    vkss_magn_all_f = np.abs(V_ikss[fb])
+    vkss_magn_all_t = np.abs(V_ikss[tb])
 
     vkss_angle_all_f = np.angle(V_ikss[fb], deg=True)
     vkss_angle_all_t = np.angle(V_ikss[tb], deg=True)
 
-    ikss_all_f = abs(ikss_all_f)
-    ikss_all_t = abs(ikss_all_t)
+    ikss_all_f = np.abs(ikss_all_f)
+    ikss_all_t = np.abs(ikss_all_t)
 
     if net._options["return_all_currents"]:
-        ppci["internal"]["branch_ikss_f"] = ikss_all_f / baseI[fb, None]
-        ppci["internal"]["branch_ikss_t"] = ikss_all_t / baseI[tb, None]
+        ppci["internal"]["branch_ikss_f"] = np.nan_to_num(ikss_all_f) / baseI[fb, None]
+        ppci["internal"]["branch_ikss_t"] = np.nan_to_num(ikss_all_t) / baseI[tb, None]
     else:
-        ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
-        ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
-        ppci["branch"][:, IKSS_F] = minmax(np.nan_to_num(ikss_all_f), axis=1) / baseI[fb]
-        ppci["branch"][:, IKSS_T] = minmax(np.nan_to_num(ikss_all_t), axis=1) / baseI[tb]
+        ikss_all_f[np.abs(ikss_all_f) < 1e-10] = np.nan
+        ikss_all_t[np.abs(ikss_all_t) < 1e-10] = np.nan
+        ppci["branch"][:, IKSS_F] = minmax(np.abs(ikss_all_f), axis=1) / baseI[fb]
+        ppci["branch"][:, IKSS_T] = minmax(np.abs(ikss_all_t), axis=1) / baseI[tb]
 
     if net._options["ip"]:
         kappa = ppci["bus"][:, KAPPA]
@@ -336,13 +356,13 @@ def _calc_branch_currents(net, ppci, bus_idx):
             ip_all_t = np.sqrt(2) * ikss1_all_t * kappa[bus_idx]
 
         if net._options["return_all_currents"]:
-            ppci["internal"]["branch_ip_f"] = abs(ip_all_f) / baseI[fb, None]
-            ppci["internal"]["branch_ip_t"] = abs(ip_all_t) / baseI[tb, None]
+            ppci["internal"]["branch_ip_f"] = np.nan_to_num(np.abs(ip_all_f)) / baseI[fb, None]
+            ppci["internal"]["branch_ip_t"] = np.nan_to_num(np.abs(ip_all_t)) / baseI[tb, None]
         else:
-            ip_all_f[abs(ip_all_f) < 1e-10] = np.nan
-            ip_all_t[abs(ip_all_t) < 1e-10] = np.nan
-            ppci["branch"][:, IP_F] = minmax(abs(np.nan_to_num(ip_all_f)), axis=1) / baseI[fb]
-            ppci["branch"][:, IP_T] = minmax(abs(np.nan_to_num(ip_all_t)), axis=1) / baseI[tb]
+            ip_all_f[np.abs(ip_all_f) < 1e-10] = np.nan
+            ip_all_t[np.abs(ip_all_t) < 1e-10] = np.nan
+            ppci["branch"][:, IP_F] = minmax(np.abs(ip_all_f), axis=1) / baseI[fb]
+            ppci["branch"][:, IP_T] = minmax(np.abs(ip_all_t), axis=1) / baseI[tb]
 
             # adding new calculated values to ppci
             # ppci["branch"][:, PKSS_F] = pkss_all_f.T * ppci["baseMVA"]
@@ -361,15 +381,15 @@ def _calc_branch_currents(net, ppci, bus_idx):
 
             # ppci["branch"][:, VKSS_MAGN_F] = vkss_magn_all_f.T
             # ppci["branch"][:, VKSS_MAGN_T] = vkss_magn_all_t.T
-            ppci["branch"][:, VKSS_MAGN_F] = np.nan_to_num(minmax(vkss_magn_all_f, axis=1))
-            ppci["branch"][:, VKSS_MAGN_T] = np.nan_to_num(minmax(vkss_magn_all_t, axis=1))
+            ppci["branch"][:, VKSS_MAGN_F] = minmax(vkss_magn_all_f, axis=1)
+            ppci["branch"][:, VKSS_MAGN_T] = minmax(vkss_magn_all_t, axis=1)
             # ppci["branch"][:, VKSS_MAGN_F] = vkss_magn_all_f
             # ppci["branch"][:, VKSS_MAGN_T] = vkss_magn_all_t
 
             # ppci["branch"][:, VKSS_ANGLE_F] = vkss_angle_all_f.T
             # ppci["branch"][:, VKSS_ANGLE_T] = vkss_angle_all_t.T
-            ppci["branch"][:, VKSS_ANGLE_F] = np.nan_to_num(minmax(vkss_angle_all_f, axis=1))
-            ppci["branch"][:, VKSS_ANGLE_T] = np.nan_to_num(minmax(vkss_angle_all_t, axis=1))
+            ppci["branch"][:, VKSS_ANGLE_F] = minmax(vkss_angle_all_f, axis=1)
+            ppci["branch"][:, VKSS_ANGLE_T] = minmax(vkss_angle_all_t, axis=1)
             # ppci["branch"][:, VKSS_ANGLE_F] = vkss_angle_all_f
             # ppci["branch"][:, VKSS_ANGLE_T] = vkss_angle_all_t
 
@@ -382,11 +402,11 @@ def _calc_branch_currents(net, ppci, bus_idx):
         ith_all_t = ikss_all_t * np.sqrt(m + n)
 
         if net._options["return_all_currents"]:
-            ppci["internal"]["branch_ith_f"] = ith_all_f / baseI[fb, None]
-            ppci["internal"]["branch_ith_t"] = ith_all_t / baseI[tb, None]
+            ppci["internal"]["branch_ith_f"] = np.nan_to_num(ith_all_f) / baseI[fb, None]
+            ppci["internal"]["branch_ith_t"] = np.nan_to_num(ith_all_t) / baseI[tb, None]
         else:
-            ppci["branch"][:, ITH_F] = minmax(np.nan_to_num(ith_all_f), axis=1) / baseI[fb]
-            ppci["branch"][:, ITH_T] = minmax(np.nan_to_num(ith_all_t), axis=1) / baseI[fb]
+            ppci["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
+            ppci["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
 
     # Update bus index for branch results
     if net._options["return_all_currents"]:

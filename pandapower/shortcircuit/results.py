@@ -54,7 +54,7 @@ def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
                     np.minimum(np.nan_to_num(ppci["branch"][:, branch_results_cols], nan=1e10),
                                np.nan_to_num(ppci_orig["branch"][:, branch_results_cols], nan=1e10))
                 # excluding new values from nan to num
-                ppci_orig["branch"][:, branch_results_cols] = ppci["branch"][:, branch_results_cols_add]
+                ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
 
 
 def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
@@ -211,6 +211,19 @@ def _get_trafo_results(net, ppc):
         f, t = branch_lookup["trafo"]
         net.res_trafo_sc["ikss_hv_ka"] = ppc["branch"][f:t, IKSS_F].real
         net.res_trafo_sc["ikss_lv_ka"] = ppc["branch"][f:t, IKSS_T].real
+
+        # adding columns for new calculated VPQ
+        net.res_trafo_sc["p_hv_mw"] = ppc["branch"][f:t, PKSS_F].real
+        net.res_trafo_sc["q_hv_mvar"] = ppc["branch"][f:t, QKSS_F].real
+
+        net.res_trafo_sc["p_lv_mw"] = ppc["branch"][f:t, PKSS_T].real
+        net.res_trafo_sc["q_lv_mvar"] = ppc["branch"][f:t, QKSS_T].real
+
+        net.res_trafo_sc["vm_hv_pu"] = ppc["branch"][f:t, VKSS_MAGN_F].real
+        net.res_trafo_sc["va_hv_degree"] = ppc["branch"][f:t, VKSS_ANGLE_F].real
+
+        net.res_trafo_sc["vm_lv_pu"] = ppc["branch"][f:t, VKSS_MAGN_T].real
+        net.res_trafo_sc["va_lv_degree"] = ppc["branch"][f:t, VKSS_ANGLE_T].real
 
 
 def _get_trafo_all_results(net, ppc, bus):
