@@ -30,7 +30,6 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                    ward_type="ward_injection", adapt_va_degree=False,
                    calculate_voltage_angles=True,
                    allow_net_change_for_convergence=False,
-                   retain_original_internal_indices=False,
                    runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     This function calculates and implements the rei or ward/xward network
@@ -98,7 +97,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             buses. If 'internal_buses' is an empty list or None, the whole \
             grid is treated as external network.
 
-    OPTIONAL:  
+    OPTIONAL:
         **return_internal** (bool, True) - Reservation of the internal network
 
              If True, the internal network is reserved in the final equivalent \
@@ -123,9 +122,6 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             True, the code tests if changes to unusual impedance values solve the divergence issue.
 
         **calculate_voltage_angles** (bool, True) - parameter passed to internal runpp() runs.
-        
-        **retain_original_internal_indices** (bool, False) - if True, the element indices in \
-            the internal net are retained; otherwise the indices will be reordered from 0. 
 
         ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate, \
         group_name.
@@ -214,6 +210,9 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             net, boundary_buses, all_internal_buses, all_external_buses,
             calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
 
+        # --- remove buses without power flow results in net_eq
+        pp.drop_buses(net_external, net_external.res_bus.index[net_external.res_bus.vm_pu.isnull()])
+
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
             net_external, boundary_buses, all_internal_buses,
@@ -264,8 +263,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         logger.debug("Merging of internal and equivalent network begins.")
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, eq_type, show_computing_time,
-            calc_volt_angles=calculate_voltage_angles,
-            retain_original_internal_indices=retain_original_internal_indices)
+            calc_volt_angles=calculate_voltage_angles)
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
@@ -273,7 +271,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         logger.debug("Only the equivalent net is returned.")
 
     # match the controller and the new elements
-    match_controller_and_new_elements(net_eq)
+    match_controller_and_new_elements(net_eq, net)
     # delete bus in poly_cost
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
@@ -331,7 +329,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
 def merge_internal_net_and_equivalent_external_net(
         net_eq, net_internal, eq_type, show_computing_time=False,
-        calc_volt_angles=False, retain_original_internal_indices=False, **kwargs):
+        calc_volt_angles=False, **kwargs):
     """
     Merges the internal network and the equivalent external network.
     It is expected that the boundaries occur in both, equivalent net and
@@ -363,14 +361,16 @@ def merge_internal_net_and_equivalent_external_net(
     drop_internal_branch_elements(net_internal, boundary_buses_inclusive_bswitch)
 
     # --- drop bus elements attached to boundary buses in the internal net
-    if kwargs.get("drop_boundary_buses", True):
+    if kwargs.pop("drop_boundary_buses", True):
         pp.drop_elements_at_buses(net_internal, boundary_buses_inclusive_bswitch,
                                   branch_elements=False)
-  
+
     # --- merge equivalent external net and internal net
-    merged_net = pp.merge_nets(net_internal, net_eq, validate=kwargs.pop("validate", False),
-                               retain_original_indices_in_net1=retain_original_internal_indices,
-                               **kwargs)
+    merged_net = pp.merge_nets(
+        net_internal, net_eq, validate=kwargs.pop("validate", False),
+        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"),
+        merge_results=kwargs.pop("merge_results", False),
+        **kwargs)
     try:
         merged_net.gen.max_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.max_p_mw.values
         merged_net.gen.min_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.min_p_mw.values
@@ -389,8 +389,11 @@ def merge_internal_net_and_equivalent_external_net(
                 "'%s'." % str(target_buses))
         pp.fuse_buses(merged_net, target_buses[0], target_buses[1])
 
-    # drop assist elements
+    # --- drop assist elements
     drop_assist_elms_by_creating_ext_net(merged_net)
+
+    # --- drop repeated characteristic
+    drop_repeated_characteristic(merged_net)
 
     # --- reindex buses named with "total" (done by REI)
     is_total_bus = merged_net.bus.name.astype(str).str.contains("total", na=False)
@@ -406,6 +409,18 @@ def merge_internal_net_and_equivalent_external_net(
                     round((t_end-t_start), 2))
 
     return merged_net
+
+
+def drop_repeated_characteristic(net):
+    idxs = []
+    repeated_idxs = []
+    for m in net.characteristic.index:
+        idx = net.characteristic.object[m].__dict__["index"]
+        if idx in idxs:
+            repeated_idxs.append(m)
+        else:
+            idxs.append(idx)
+    net.characteristic.drop(repeated_idxs, inplace=True)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,
@@ -558,29 +573,33 @@ if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     import pandapower.networks as pn
     net = pn.case9()
+    net.ext_grid.vm_pu = 1.04
+    net.gen.vm_pu[0] = 1.025
+    net.gen.vm_pu[1] = 1.025
+
     net.poly_cost.drop(net.poly_cost.index, inplace=True)
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
     # pp.replace_gen_by_sgen(net)
-    net.sn_mva = 109.00
-    boundary_buses = [3]
+    # net.sn_mva = 109.00
+    boundary_buses = [4, 8]
     internal_buses = [0]
     return_internal = True
     show_computing_time = False
     pp.runpp(net, calculate_voltage_angles=True)
     net_org = deepcopy(net)
-    eq_type = "ward"
+    eq_type = "rei"
     net_eq = get_equivalent(net, eq_type, boundary_buses,
                             internal_buses,
                             return_internal=return_internal,
                             show_computing_time=False,
                             calculate_voltage_angles=True)
-    print(net.res_bus.loc[[0,3]])
-    print(net_eq.res_bus.loc[[0,3]])
-    print(net_eq.ward.loc[0])
+    print(net.res_bus)
+    # print(net_eq.res_bus.loc[[0,3]])
+    # print(net_eq.ward.loc[0])
 
-    net_eq.sn_mva = 10
-    pp.runpp(net_eq, calculate_voltage_angles=True)
-    print(net_eq.res_bus.loc[[0,3]])
+    # net_eq.sn_mva = 10
+    # pp.runpp(net_eq, calculate_voltage_angles=True)
+    # print(net_eq.res_bus.loc[[0,3]])
 
 
 
