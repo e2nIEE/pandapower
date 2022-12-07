@@ -269,7 +269,7 @@ class pandapowerNet(ADict):
 
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.iteritems()):
+    for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
