@@ -9,7 +9,7 @@ from numpy import array, allclose, all
 import pandapower as pp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 

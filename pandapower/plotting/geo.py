@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
-from numpy import array
+from numpy import array, setdiff1d
 
 from pandapower.auxiliary import soft_dependency_error
 
@@ -77,7 +77,7 @@ def _transform_branch_geometry_to_coords(branch_geo):
     :type branch_geo: geopandas.GeoDataFrame
     :return: branch_geo - The given geodataframe with coords
     """
-    branch_geo["coords"] = branch_geo["coords"].geometry.apply(lambda x: list(x.coords))
+    branch_geo["coords"] = branch_geo.geometry.apply(lambda x: list(x.coords))
     return branch_geo
 
 

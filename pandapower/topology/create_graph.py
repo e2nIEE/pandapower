@@ -16,7 +16,7 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -109,6 +109,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     if multi:
         if graph_tool_available and library == "graph_tool":
             mg = GraphToolInterface(net.bus.index)
+        elif not graph_tool_available and library == "graph_tool":
+            raise UserWarning("graph_tool selected as the library for topological analysis but it is not installed")
         else:
             mg = nx.MultiGraph()
     else:

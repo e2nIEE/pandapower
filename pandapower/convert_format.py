@@ -12,7 +12,7 @@ from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -155,39 +155,39 @@ def _add_missing_tables(net):
 
 def _create_seperate_cost_tables(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and "cost_per_kw" in net.gen:
-        for index, cost in net.gen.cost_per_kw.iteritems():
+        for index, cost in net.gen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kw" in net.sgen:
-        for index, cost in net.sgen.cost_per_kw.iteritems():
+        for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kw.iteritems():
+        for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
-        for index, cost in net.gen.cost_per_kvar.iteritems():
+        for index, cost in net.gen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kvar" in net.sgen:
-        for index, cost in net.sgen.cost_per_kvar.iteritems():
+        for index, cost in net.sgen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kvar" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+        for index, cost in net.ext_grid.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
@@ -196,6 +196,8 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+    if _check_elements_to_deserialize('gen', elements_to_deserialize):
+        net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"}, inplace=True)
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
@@ -298,6 +300,11 @@ def _add_missing_columns(net, elements_to_deserialize):
             'z_ohm' not in net.switch:
         net.switch['z_ohm'] = 0
 
+    # Update the switch table with 'in_ka'
+    if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
+            'in_ka' not in net.switch:
+        net.switch['in_ka'] = np.nan
+
     if _check_elements_to_deserialize('measurement', elements_to_deserialize) and \
             "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
@@ -364,16 +371,9 @@ def _set_data_type_of_columns(net):
                     continue
                 if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
-                        if version.parse(pd.__version__) < version.parse("0.21"):
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                        else:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    if version.parse(pd.__version__) < version.parse("0.20.0"):
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
+                        net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                         errors="ignore")
 
 
 def _convert_to_mw(net):

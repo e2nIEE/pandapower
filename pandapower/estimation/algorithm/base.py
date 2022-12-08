@@ -15,7 +15,7 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         # Find pq bus with zero p,q and shunt admittance
         if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
             raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
-        zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG] == True).ravel()
+        zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]).ravel()
         eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = np.NaN
         # Withn pq buses with zero injection identify those who have also no p or q measurement
         p_zero_injections = zero_injection_bus
