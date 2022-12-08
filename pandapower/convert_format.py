@@ -24,8 +24,7 @@ def convert_format(net, elements_to_deserialize=None):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if not isinstance(net.version, str) or \
-            not hasattr(net, 'format_version') or \
+    if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
             version.parse(net.format_version) > version.parse(net.version):
         net.format_version = net.version
     if isinstance(net.format_version, str) and version.parse(net.format_version) >= version.parse(__format_version__):
@@ -48,6 +47,7 @@ def convert_format(net, elements_to_deserialize=None):
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
     net.format_version = __format_version__
+    net.version = __version__
     return net
 
 
