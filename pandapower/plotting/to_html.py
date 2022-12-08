@@ -99,7 +99,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
 
         edges += [{'from': int(fb),
                    'to': int(tb),
-                   'label': '%.2f Mw %.2f Km' % (imax, length)}
+                   'label': '%.2f kA %.2f Km' % (imax, length)}
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
@@ -113,7 +113,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
 
         edges += [{'from': int(fb),
                    'to': int(tb), 'dashes': 'true',
-                   'label': '%.2f Mw %.2f Km' % (imax, length)}
+                   'label': '%.2f kA %.2f Km' % (imax, length)}
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
