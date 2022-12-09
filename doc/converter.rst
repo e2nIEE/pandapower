@@ -12,8 +12,8 @@ These tools are:
 .. toctree::
     :maxdepth: 2
 
-    converter/pypower
+    converter/cgmes
     converter/matpower
     converter/powerfactory
-    converter/cgmes
+    converter/pypower
 
