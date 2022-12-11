@@ -19,8 +19,8 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 
-from pandapower.shortcircuit.currents import _calc_ikss,\
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
+from pandapower.shortcircuit.currents import _calc_ikss, \
+    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
@@ -187,7 +187,10 @@ def _calc_current(net, ppci_orig, bus):
             _calc_ith(net, this_ppci)
 
         if net._options["branch_results"]:
-            _calc_branch_currents(net, this_ppci, this_ppci_bus)
+            if net._options["fault"] == "3ph":
+                _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+            else:
+                _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
         _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
                                   calc_options=net._options)
@@ -239,7 +242,10 @@ def _calc_sc_1ph(net, bus):
     _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus)
 
     if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci, ppci_bus)
+        if net._options["fault"] == "3ph":
+            _calc_branch_currents_complex(net, ppci, ppci_bus)
+        else:
+            _calc_branch_currents(net, ppci, ppci_bus)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")

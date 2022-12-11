@@ -228,6 +228,35 @@ def test_all_currents_with_oos_elements():
 #                        np.array([0.69255026, 0.45574755, 0.44487882, 0., 0., 1.10747517]))
 
 
+def test_branch_all_currents_trafo_simple():
+    net = net_transformer_simple()
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=1)
+
+    assert np.isclose(net.res_bus_sc.ikss_ka, 9.749917, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.skss_mw, 6.75494, atol=1e-6, rtol=0)
+
+    assert np.isclose(net.res_trafo_sc.ikss_hv_ka, 0.389997, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.ikss_lv_ka, 9.749916, atol=1e-6, rtol=0)
+
+    assert np.isclose(net.res_trafo_sc.p_hv_mw, 0.549236, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.q_hv_mvar, 6.567902, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.p_lv_mw, 0, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.q_lv_mvar, 0, atol=1e-6, rtol=0)
+
+    assert np.isclose(net.res_trafo_sc.vm_hv_pu, 0.975705, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.va_hv_degree, 0.065838, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.vm_lv_pu, 0, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.va_lv_degree, 0, atol=1e-6, rtol=0)
+
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=False, bus=0)
+
+    assert np.isclose(net.res_bus_sc.ikss_ka, 5.773503, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.skss_mw, 100, atol=1e-6, rtol=0)
+
+    net.trafo.vn_hv_kv = 11
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=1)
+
+
 def test_branch_all_currents_trafo():
     net = net_transformer()
     sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., branch_results=True, return_all_currents=True)
