@@ -12,7 +12,6 @@ import operator
 import time
 import uuid
 from functools import reduce
-
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -252,6 +251,9 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     # --- create load, sgen and gen
     elm_old = None
+    max_load_idx = max(-1, net.load.index[~net.load.bus.isin(all_external_buses)].max() - len(net_zpbn.load))
+    max_sgen_idx = max(-1, net.sgen.index[~net.sgen.bus.isin(all_external_buses)].max() - len(net_zpbn.sgen))
+    max_gen_idx = max(-1, net.gen.index[~net.gen.bus.isin(all_external_buses)].max() - len(net_zpbn.gen))
     for i in t_buses:
         busstr = net_zpbn.bus.name[i].split(" ")[1]
         bus = int(busstr.split("/")[0])
@@ -262,12 +264,15 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         Q = S[key][idx].imag * sn_mva
         Sn = S["sn_"+key][idx].real
         if elm == "load":
-            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+busstr,
+                                     sn_mva=Sn, index=max_load_idx+len(net_zpbn.load)+1)
         elif elm == "sgen":
-            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr,
+                                     sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
             vm_pu = v[key+"_vm_total"][v.ext_bus == int(busstr)].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
+                                    sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
     # ---- match other columns
         elm_org = net[elm]
@@ -276,20 +281,40 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
             other_cols_number = set()
             other_cols_bool = set()
+            other_cols_str = set()
+            other_cols_none = set()
+            other_cols_mixed = set()
             for c in other_cols.copy():
-                if net_zpbn[elm][c].dtype == np.number or net_zpbn[elm][c].dtype == np.int64:
+                value_types = net[elm][c][elm_org.bus.isin(all_external_buses)].apply(type).unique()
+                if len(value_types) > 1:
+                    other_cols_mixed |= {c}
+                elif value_types[0] in (np.float, np.int):
                     other_cols_number |= {c}
-                    other_cols -= {c}
-                elif net_zpbn[elm][c].dtype == bool or set(elm_org[c].values) & {False, True}: # type-object can also be True of False
+                elif value_types[0] == bool:
                     other_cols_bool |= {c}
-                    other_cols -= {c}
-                else:
-                    pass
+                elif value_types[0] == str:
+                    other_cols_str |= {c}
+                else: # value_types[0] is None:
+                    other_cols_none |= {c}
+                other_cols -= {c}
+            assert len(other_cols) == 0
         if "integrated" in key:
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
+            if "voltLvl" in other_cols_number:
+                net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
+                    net_zpbn.bus.voltLvl[boundary_buses].max()
             net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
-                elm_org.bus.isin(all_external_buses)].values.sum() > 0
+                elm_org.bus.isin(all_external_buses)].values.sum() > 0        
+            all_str_values = list(zip(*elm_org[list(other_cols_str)]\
+                                      [elm_org.bus.isin(all_external_buses)].values[::-1]))
+            for asv, colid in zip(all_str_values, other_cols_str):
+                if len(set(asv)) == 1:
+                    net_zpbn[elm].loc[elm_idx, colid] = asv[0]
+                else:
+                    net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
+            net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+            net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
         else:
             if elm == "gen" and bus in net.ext_grid.bus.values and \
                     net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
@@ -306,11 +331,26 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
+                    if "voltLvl" in other_cols_number:
+                        net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
+                            net_zpbn.bus.voltLvl[boundary_buses].max()
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
                         elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum(axis=0) > 0
+                    
+                    all_str_values = list(zip(*elm_org[list(other_cols_str)]\
+                                              [elm_org.bus == bus].values[::-1]))
+                    for asv, colid in zip(all_str_values, other_cols_str):
+                        if len(set(asv)) == 1:
+                            net_zpbn[elm].loc[elm_idx, colid] = asv[0]
+                        else:
+                            net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"     
                 else:
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
-                        elm_org[list(other_cols_bool | other_cols_number)][
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number |
+                                                    other_cols_str | other_cols_none)] = \
+                        elm_org[list(other_cols_bool | other_cols_number |
+                                     other_cols_str | other_cols_none)][
                             elm_org.bus == bus].values[0] 
                     net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
                         elm_org.bus == bus].values[0]
