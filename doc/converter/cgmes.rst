@@ -12,6 +12,10 @@ In order to use this converter the following import is all that ist needed. ::
 
     from pandapower.converter import from_cim
 
+For a speed increase it is advisable to install numba into the used python environment. ::
+
+    pip install numba
+
 Using the Converter
 --------------------
 In order to start the converter the following method is used. At least the location of the CGMES-files that are to be converted must be specified.
