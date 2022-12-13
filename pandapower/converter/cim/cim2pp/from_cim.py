@@ -55,13 +55,10 @@ def from_cim(eq_file: str = None, ssh_file: str = None, tp_file: str = None, sv_
 
     :param eq_file: The path to the EQ file.
     :param ssh_file: The path to zhe SSH file.
-    :param tp_file: The path to the TP file. Optional, default: None. Note: If the source data is in Bus-Branch format,
-    the TP profile is needed to get the topological structure from the net!
+    :param tp_file: The path to the TP file. Optional, default: None. Note: If the source data is in Bus-Branch format, the TP profile is needed to get the topological structure from the net!
     :param sv_file: The path to the SV file. Optional, default: None
     :param encoding: The encoding from the files. Optional, default: utf-8
-    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-    resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a switch.
-    Optional, default: False
+    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a switch. Optional, default: False
     :param line_r_limit: The limit from resistance. Optional, default: 0.1
     :param line_x_limit: The limit from reactance. Optional, default: 0.1
     :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
