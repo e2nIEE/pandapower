@@ -4,6 +4,8 @@ CGMES to pandapower
 
 Convert CGMES 2.4.15 networks to pandapower.
 
+Developed and tested on Python 3.8.
+
 Setup
 -----
 In oder to use this converter the following import is all that ist needed. ::
