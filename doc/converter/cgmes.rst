@@ -6,7 +6,158 @@ Convert CGMES 2.4.15 networks to pandapower.
 
 **Supported** components:
 
+eq profil
+ - ControlArea
+ - TieFlow
  - ConnectivityNode (Buses)
- - ACLineSection (Lines)
+ - Bay
+ - Substation
+ - GeographicalRegion
+ - SubGeographicalRegion
+ - VoltageLevel
+ - BaseVoltage
+ - ExternalNetworkInjection (Slacks)
+ - ACLineSegment (Lines)
+ - Terminal
+ - DCNode
+ - DCEquipmentContainer
+ - DCConverterUnit
+ - DCLineSegment
+ - CsConverter
+ - VsConverter
+ - DCTerminal
+ - Breaker (Switches)
+ - Disconnector (Switches)
+ - Switch  (Switches)
+ - LoadBreakSwitch (Switches)
+ - EnergyConsumer (Loads)
+ - ConformLoad
+ - NonConformLoa
+ - StationSupply
+ - GeneratingUnit
+ - AsynchronousMachine (Gens)
+ - EnergySource (Gens)
+ - EnergySchedulingType
+ - StaticVarCompensator
+ - PowerTransformer
+ - TapChangerControl
+ - RatioTapChanger
+ - PhaseTapChangerLinear
+ - PhaseTapChangerAsymmetrical
+ - PhaseTapChangerSymmetrical
+ - PhaseTapChangerTabular
+ - PhaseTapChangerTablePoint
+ - RatioTapChangerTable
+ - RatioTapChangerTablePoint
+ - LinearShuntCompensator
+ - NonlinearShuntCompensator
+ - NonlinearShuntCompensatorPoint
+ - EquivalentInjection
+ - SeriesCompensator
+ - Analog
+ - AnalogValue
+ - MeasurementValueSource
 
-.. autofunction:: pandapower.converter.cim.cim2pp.from_cim
+eq_bd profil
+ - ConnectivityNode
+ - BaseVoltage
+ - Terminal
+ - EnergySource
+ - EnergySchedulingType
+
+ssh profil
+ - ControlArea
+ - ExternalNetworkInjection
+ - Terminal
+ - DCTerminal
+ - ACDCConverterDCTerminal
+ - CsConverter
+ - VsConverter
+ - Breaker
+ - Disconnector
+ - Switch
+ - LoadBreakSwitch
+ - EnergyConsumer
+ - ConformLoad
+ - NonConformLoad
+ - StationSupply
+ - RegulatingControl
+ - SynchronousMachine
+ - AsynchronousMachine
+ - EnergySource
+ - StaticVarCompensator
+ - TapChangerControl
+ - RatioTapChanger
+ - PhaseTapChangerLinear
+ - PhaseTapChangerAsymmetrical
+ - PhaseTapChangerSymmetrical
+ - PhaseTapChangerTabular
+ - LinearShuntCompensator
+ - NonlinearShuntCompensator
+ - EquivalentInjection
+
+sv profil
+ - SvVoltage
+ - SvPowerFlow
+ - SvShuntCompensatorSections
+ - SvTapStep
+
+tp profil
+ - TopologicalNode
+ - DCTopologicalNode
+ - ConnectivityNode
+ - Terminal
+ - DCTerminal
+ - ACDCConverterDCTerminal
+
+tp_bd profil
+ - TopologicalNode
+ - ConnectivityNode
+
+dl profil
+ - Diagram
+ - DiagramObject
+ - DiagramObjectPoint
+
+gl profil
+ - CoordinateSystem
+ - Location
+ - PositionPoint
+
+
+Setup
+-----
+In oder to use this converter the following import is all that ist needed. ::
+
+    from pandapower.converter import from_cim
+
+Using the Converter
+--------------------
+In order to start the converter the following method is used. At minimum the location of the to be converter CGMES files needs to be specified.
+
+.. autofunction:: pandapower.converter.cim.cim2pp.from_cim.from_cim
+
+The recommended way to to select the CGMES network files is via the file_list parameter.
+It accepts a folder of xml or xip files, single zip files or several zip files as a list.
+For example:
+
+Folder of xml or zip files ::
+
+    import os
+    curr_xml_dir = 'example_cim\\test\\'
+    cgmes_files = [curr_xml_dir + x for x in os.listdir(curr_xml_dir)]
+
+single zip file ::
+
+    cgmes_files = r'example_cim\CGMES_v2.4.15_RealGridTestConfiguration_v2.zip'
+
+several zip files ::
+
+    cgmes_files = [r'example_cim\CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip',
+                   r'example_cim\CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip']
+
+
+To start the converter the following line is used, it returns a pandapower network. ::
+
+    net = from_cim.from_cim(file_list=cgmes_files)
+
