@@ -30,7 +30,7 @@ def test_drop_internal_branch_elements():
 
 
 if __name__ == "__main__":
-    if 0:
+    if 1:
         pytest.main(['-x', __file__])
     else:
         test_drop_internal_branch_elements()
