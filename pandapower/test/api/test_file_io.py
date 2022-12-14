@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal
 import pytest
 
 import pandapower as pp
@@ -487,6 +488,32 @@ def test_json_index_names():
     net_out = pp.from_json_string(pp.to_json(net_in, store_index_names=True))
     assert net_out.bus.index.name == "bus_index"
     assert pp.nets_equal(net_out, net_in)
+
+
+def test_json_multiindex():
+
+    idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
+    col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
+    idx1 = pd.MultiIndex.from_tuples(idx_tuples)
+    idx2 = pd.MultiIndex.from_tuples(idx_tuples, names=[5, 6])
+    idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
+    col1 = pd.MultiIndex.from_tuples(col_tuples)
+    col2 = pd.MultiIndex.from_tuples(col_tuples, names=["7", "8"])
+    col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
+
+    for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
+        s_mi = pd.Series(range(4), index=idx)
+        df_mi = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx)
+        df_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), columns=col)
+        df_mi_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx, columns=col)
+
+        input =  {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
+        output = pp.from_json_string(pp.to_json(input, store_multiindex=True), convert=False)
+        assert_series_equal(input["a"], output["a"], check_dtype=False)
+        assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
+        assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
+        assert_frame_equal(input["d"], output["d"], check_dtype=False, check_column_type=False,
+                           check_index_type=False)
 
 
 def test_json_dict_of_stuff():

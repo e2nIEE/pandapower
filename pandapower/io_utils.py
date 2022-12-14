@@ -848,7 +848,8 @@ def json_pandapowernet(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) and not isinstance(
+        obj.columns, pd.MultiIndex) else "columns"
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
@@ -870,9 +871,10 @@ if GEOPANDAS_INSTALLED:
 @to_serializable.register(pd.Series)
 def json_series(obj):
     logger.debug('Series')
-    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable,
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
+    d = with_signature(obj, obj.to_json(orient=orient, default_handler=to_serializable,
                                         double_precision=15))
-    d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
+    d.update({'dtype': str(obj.dtypes), 'orient': orient, 'typ': 'series'})
     return d
 
 

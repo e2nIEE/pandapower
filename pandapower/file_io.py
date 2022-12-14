@@ -11,6 +11,7 @@ from warnings import warn
 
 import numpy
 import pandas as pd
+from pandas.api.types import is_integer_dtype
 from packaging import version
 import sys
 try:
@@ -96,7 +97,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json(net, filename=None, encryption_key=None, store_index_names=False):
+def to_json(net, filename=None, encryption_key=None, store_index_names=False,
+            store_multiindex=False):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -116,6 +118,10 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=False):
             net.
             Since pandapower does usually not use net[elm].index.name, the default is False.
 
+            **store_multiindex** (bool, False) - if True, additional dicts "df_multiindex_names" and
+            "series_multiindex_names" are stored into the json string to allow correct restoration
+            of MultiIndex DataFrames and Series
+            Since pandapower does usually not use pandas MultiIndex, the default is False.
 
         EXAMPLE:
 
@@ -123,17 +129,54 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=False):
 
     """
     # --- store index names
+    msg_index_names = "To store DataFrame index names, 'index_names' " \
+        "is used and thus should not be a key of net."
     if store_index_names:
         # To ensure correct index names (see https://github.com/e2nIEE/pandapower/issues/1410),
         # these are additionally stored to the json file as a dict.
         if "index_names" in net.keys():
-            raise ValueError("To store DataFrame index names, 'index_names' "
-                             "is used and thus should not be a key of net.")
+            raise ValueError(msg_index_names)
         net["index_names"] = {
             key: net[key].index.name for key in net.keys() if isinstance(
                 net[key], pd.DataFrame) and isinstance(net[key].index.name, str) and \
                 net[key].index.name != ""
         }
+    elif "index_names" in net.keys():
+        logger.warning(msg_index_names)
+
+    # --- store multiindex
+    multi_msg = "To ensure corret restoration of MultiIndex, 'df_multiindex_names' " \
+        "and 'series_multiindex_names' are used and thus should not be keys " \
+        "of net."
+    if store_multiindex:
+
+        # dataframe
+        if "df_multiindex_names" in net.keys() or "series_multiindex_names" in net.keys():
+            raise ValueError(multi_msg)
+        net["df_multiindex_names"] = {
+            key: {axis: list(getattr(net[key], axis).names) for axis in ["index", "columns"] if \
+                isinstance(getattr(net[key], axis), pd.MultiIndex)} for key in net.keys() if \
+                isinstance(net[key], pd.DataFrame) and (isinstance(net[key].index, pd.MultiIndex) \
+                or isinstance(net[key].columns, pd.MultiIndex))}
+        for key, mi_names in net["df_multiindex_names"].items():
+            if "columns" in mi_names.keys():
+                net[key] = net[key].T.reset_index().T
+            if "index" in mi_names.keys():
+                net[key].reset_index(inplace=True)
+
+        # series
+        net["series_multiindex_names"] = {
+            key: list(net[key].index.names) for key in net.keys() if \
+                isinstance(net[key], pd.Series) and (isinstance(net[key].index, pd.MultiIndex))}
+        for key in net["series_multiindex_names"].keys():
+            if net[key].name is None:
+                net[key].name = "Name_is_None"
+            elif net[key].name == "Name_is_None":
+                raise ValueError("Multiindex Series should not have 'Name_is_None' as name.")
+            net[key] = net[key].reset_index()
+
+    elif "df_multiindex_names" in net.keys() or "series_multiindex_names" in net.keys():
+        logger.warning(multi_msg)
 
     json_string = json.dumps(net, cls=io_utils.PPJSONEncoder, indent=2)
     if encryption_key is not None:
@@ -142,6 +185,10 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=False):
     if store_index_names:
         # remove the key "index_names" to not change net
         del net["index_names"]
+
+    if store_multiindex:
+        # restore changes to net
+        _restore_multiindex(net)
 
     if filename is None:
         return json_string
@@ -242,7 +289,7 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, restore_index_names=True):
+              empty_dict_like_object=None, restore_index_names=True, restore_multiindex=True):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -277,6 +324,10 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         **restore_index_names** (bool, True) - If True, the index names of dataframes in the net
         are restored using information of a dict "index_names" (if this dict is available).
 
+        **restore_multiindex** (bool, True) - If True, multiindex dataframes and series may be
+        restored correctly using information of dicts "df_multiindex_names" and
+        "series_multiindex_names" (if this dict is available).
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -307,7 +358,8 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
-                     replace_elements=None, empty_dict_like_object=None, restore_index_names=True):
+                     replace_elements=None, empty_dict_like_object=None, restore_index_names=True,
+                     restore_multiindex=True):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -401,6 +453,13 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
             net.std_types[key] = dict(std_types, **net.std_types[key])
+    if restore_multiindex and hasattr(net, "keys") and (
+            "df_multiindex_names" in net.keys() or "series_multiindex_names" in net.keys()):
+        if "df_multiindex_names" not in net.keys():
+            net["df_multiindex_names"] = dict()
+        if "series_multiindex_names" not in net.keys():
+            net["series_multiindex_names"] = dict()
+        _restore_multiindex(net, cast_str_to_int=True)
     if restore_index_names and hasattr(net, "keys") and "index_names" in net.keys():
         if not isinstance(net["index_names"], dict):
             raise ValueError("To restore the index names of the dataframes, a dict including this "
@@ -447,3 +506,47 @@ def from_json_dict(json_dict):
         else:
             net[key] = json_dict[key]
     return net
+
+
+def _restore_multiindex(net, cast_str_to_int=False):
+
+    def not_none_names(multiindex_names, allow_casting=True):
+        if cast_str_to_int and allow_casting:
+            return [_cast_str_to_int(nam) if nam is not None else f"level_{i_nam}" for i_nam, nam in
+                enumerate(multiindex_names)]
+        else:
+            return [nam if nam is not None else f"level_{i_nam}" for i_nam, nam in
+                enumerate(multiindex_names)]
+
+    for key, mi_names in net["df_multiindex_names"].items():
+        cast_idx = not is_integer_dtype(net[key].columns)
+        if "index" not in mi_names:
+            cast_col = not is_integer_dtype(net[key].iloc[:, 0])
+        else:
+            cast_col = not is_integer_dtype(net[key].index)
+            net[key].set_index(not_none_names(mi_names["index"], cast_idx), inplace=True)
+            net[key].index.names = mi_names["index"]
+        if "columns" in mi_names:
+            net[key] = net[key].T.set_index(not_none_names(mi_names["columns"], cast_col)).T
+            net[key].columns.names = mi_names["columns"]
+    for key, mi_names in net["series_multiindex_names"].items():
+        net[key] = net[key].set_index(not_none_names(mi_names)).iloc[:, 0]
+        net[key].index.names = mi_names
+        if net[key].name == "Name_is_None":
+            net[key].name = None
+    del net["df_multiindex_names"]
+    del net["series_multiindex_names"]
+
+
+def _isdigit_extended(string):
+    assert isinstance(string, str)
+    if string[0] in ('-', '+'):
+        return string[1:].isdigit()
+    return string.isdigit()
+
+
+def _cast_str_to_int(val):
+    if isinstance(val, str) and _isdigit_extended(val):
+        return int(val)
+    else:
+        return val

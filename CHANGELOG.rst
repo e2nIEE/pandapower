@@ -18,6 +18,7 @@ Change Log
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
+- [ADDED] new option for from_json() & to_json() to restore multiindex dataframes and series
 
 [2.10.1] - 2022-07-31
 -------------------------------
