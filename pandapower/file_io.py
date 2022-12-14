@@ -24,11 +24,20 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network
+from pandapower.std_types import basic_std_types
 import pandapower.io_utils as io_utils
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def to_pickle(net, filename):
     """
@@ -87,7 +96,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json(net, filename=None, encryption_key=None):
+def to_json(net, filename=None, encryption_key=None, store_index_names=False):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -97,11 +106,15 @@ def to_json(net, filename=None, encryption_key=None):
             **net** (dict) - The pandapower format network
 
             **filename** (string or file, None) - The absolute or relative path to the output file
-                                                  or a file-like object,
-                                                  if 'None' the function returns a json string
+            or a file-like object, if 'None' the function returns a json string
 
             **encrytion_key** (string, None) - If given, the pandapower network is stored as an
-                                               encrypted json string
+            encrypted json string
+
+            **store_index_names** (bool, False) - If True, an additional dict "index_names" is
+            stored into the json string which includes the index names of the dataframes within the
+            net.
+            Since pandapower does usually not use net[elm].index.name, the default is False.
 
 
         EXAMPLE:
@@ -109,9 +122,26 @@ def to_json(net, filename=None, encryption_key=None):
              >>> pp.to_json(net, "example.json")
 
     """
+    # --- store index names
+    if store_index_names:
+        # To ensure correct index names (see https://github.com/e2nIEE/pandapower/issues/1410),
+        # these are additionally stored to the json file as a dict.
+        if "index_names" in net.keys():
+            raise ValueError("To store DataFrame index names, 'index_names' "
+                             "is used and thus should not be a key of net.")
+        net["index_names"] = {
+            key: net[key].index.name for key in net.keys() if isinstance(
+                net[key], pd.DataFrame) and isinstance(net[key].index.name, str) and \
+                net[key].index.name != ""
+        }
+
     json_string = json.dumps(net, cls=io_utils.PPJSONEncoder, indent=2)
     if encryption_key is not None:
         json_string = io_utils.encrypt_string(json_string, encryption_key)
+
+    if store_index_names:
+        # remove the key "index_names" to not change net
+        del net["index_names"]
 
     if filename is None:
         return json_string
@@ -121,19 +151,6 @@ def to_json(net, filename=None, encryption_key=None):
     else:
         with open(filename, "w") as fp:
             fp.write(json_string)
-
-
-def to_sql(net, con, include_results=True):
-    dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
-    for name, data in dodfs.items():
-        data.to_sql(name, con, if_exists="replace")
-
-
-def to_sqlite(net, filename, include_results=True):
-    import sqlite3
-    conn = sqlite3.connect(filename)
-    to_sql(net, conn, include_results)
-    conn.close()
 
 
 def from_pickle(filename, convert=True):
@@ -224,7 +241,8 @@ def _from_excel_old(xls):
 
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None):
+              keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
+              empty_dict_like_object=None, restore_index_names=True):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -248,8 +266,16 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
         type library.
 
-        **replace_elements** (dict, None) - Keys are replaced by values found in json string. Both key and
-        value are supposed to be strings.
+        **replace_elements** (dict, None) - Keys are replaced by values found in json string.
+        Both key and value are supposed to be strings.
+
+        **empty_dict_like_object** (dict/pandapower.pandapowerNet/..., None) - If None,
+        the output of pandapower.create_empty_network() is used as an empty element to be filled by
+        the data of the json string. Give another dict-like object to start filling that alternative
+        object with the json data.
+
+        **restore_index_names** (bool, True) - If True, the index names of dataframes in the net
+        are restored using information of a dict "index_names" (if this dict is available).
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -267,14 +293,21 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         with open(filename, "r") as fp:
             json_string = fp.read()
 
-    return from_json_string(json_string, convert=convert, encryption_key=encryption_key,
-                            elements_to_deserialize=elements_to_deserialize,
-                            keep_serialized_elements=keep_serialized_elements,
-                            add_basic_std_types=add_basic_std_types, replace_elements=replace_elements)
+    return from_json_string(
+        json_string,
+        convert=convert,
+        encryption_key=encryption_key,
+        elements_to_deserialize=elements_to_deserialize,
+        keep_serialized_elements=keep_serialized_elements,
+        add_basic_std_types=add_basic_std_types,
+        replace_elements=replace_elements,
+        empty_dict_like_object=empty_dict_like_object,
+        restore_index_names=restore_index_names)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
-                     keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None):
+                     keep_serialized_elements=True, add_basic_std_types=False,
+                     replace_elements=None, empty_dict_like_object=None, restore_index_names=True):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -297,8 +330,16 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         **add_basic_std_types** (bool, False) - Add missing standard-types from pandapower standard
         type library.
 
-        **replace_elements** (dict, None) - Keys are replaced by values found in json string. Both key and
-        value are supposed to be strings.
+        **replace_elements** (dict, None) - Keys are replaced by values found in json string.
+        Both key and value are supposed to be strings.
+
+        **empty_dict_like_object** (dict/pandapower.pandapowerNet/..., None) - If None,
+        the output of pandapower.create_empty_network() is used as an empty element to be filled by
+        the data of the json string. Give another dict-like object to start filling that alternative
+        object with the json data.
+
+        **restore_index_names** (bool, True) - If True, the index names of dataframes in the net
+        are restored using information of a dict "index_names" (if this dict is available).
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -316,9 +357,11 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         json_string = io_utils.decrypt_string(json_string, encryption_key)
 
     if elements_to_deserialize is None:
-        net = json.loads(json_string, cls=io_utils.PPJSONDecoder)
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder,
+                         empty_dict_like_object=empty_dict_like_object)
     else:
-        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False)
+        net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
+                         empty_dict_like_object=empty_dict_like_object)
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
@@ -346,7 +389,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
     # After some time, this part can be removed.
-    if not isinstance(net, pandapowerNet):
+    if isinstance(net, dict) and "bus" in net and not isinstance(net, pandapowerNet):
         warn("This net is saved in older format, which will not be supported in future.\r\n"
              "Please resave your grid using the current pandapower version.",
              DeprecationWarning)
@@ -356,9 +399,16 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
     if add_basic_std_types:
         # get std-types and add only new keys ones
-        net_dummy = create_empty_network()
-        for key in net_dummy.std_types:
-            net.std_types[key] = dict(net_dummy.std_types[key], **net.std_types[key])
+        for key, std_types in basic_std_types().items():
+            net.std_types[key] = dict(std_types, **net.std_types[key])
+    if restore_index_names and hasattr(net, "keys") and "index_names" in net.keys():
+        if not isinstance(net["index_names"], dict):
+            raise ValueError("To restore the index names of the dataframes, a dict including this "
+                             f"information is expected, not {type(net['index_names'])}")
+        for key, index_name in net["index_names"].items():
+            if key in net.keys():
+                net[key].index.name = index_name
+        del net["index_names"]
 
     return net
 
@@ -396,24 +446,4 @@ def from_json_dict(json_dict):
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:
             net[key] = json_dict[key]
-    return net
-
-
-def from_sql(con):
-    cursor = con.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    dodfs = dict()
-    for t, in cursor.fetchall():
-        table = pd.read_sql_query("SELECT * FROM %s" % t, con, index_col="index")
-        table.index.name = None
-        dodfs[t] = table
-    net = io_utils.from_dict_of_dfs(dodfs)
-    return net
-
-
-def from_sqlite(filename, netname=""):
-    import sqlite3
-    con = sqlite3.connect(filename)
-    net = from_sql(con)
-    con.close()
     return net

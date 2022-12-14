@@ -17,7 +17,7 @@ import pandapower.networks as networks
 import pandapower.topology as topology
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, create_test_network, create_test_network2
+from pandapower.test.toolbox import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 from pandapower.toolbox import nets_equal
 
@@ -69,6 +69,15 @@ def test_excel(net_in, tmp_path):
     assert net_out.user_pf_options == net_in.user_pf_options
 
 
+def test_excel_controllers(net_in, tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
+    pp.to_excel(net_in, filename)
+    net_out = pp.from_excel(filename)
+    assert net_in.controller.object.at[0] == net_out.controller.object.at[0]
+    assert_net_equal(net_in, net_out)
+
+
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
@@ -101,7 +110,7 @@ def test_json(net_in, tmp_path):
 
         for tab in ('bus_geodata', 'line_geodata'):
             if tab == 'bus_geodata':
-                geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
+                geometry = list(map(Point, net_geo[tab][["x", "y"]].values))
             else:
                 geometry = net_geo[tab].coords.apply(LineString)
             net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
@@ -282,7 +291,7 @@ def test_convert_format_for_pp_objects(net_in):
     c2.u_lower = 0.99
     c2.u_upper = 1.1
     # needed to trigger conversion
-    net_in.version = "2.1.0"
+    net_in.format_version = "2.1.0"
 
     net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
     assert 'controller' in net_in.controller.columns
@@ -370,6 +379,7 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, str)
     pp.to_json(net_select, filename)
     net_select = pp.from_json(filename)
+    assert net.trafo.equals(net_select.trafo)
     assert_net_equal(net, net_select)
 
 
@@ -450,6 +460,62 @@ def test_replace_elements_json_string(net_in):
     assert net_load.controller.loc[0, 'object'].check_word == 'banana'
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
+
+
+def test_json_generalized():
+    general_net0 = pp.pandapowerNet({
+        # structure data
+        "df1": [('col1', np.dtype(object)),
+                ('col2', 'f8'),],
+        "df2": [("col3", 'bool'),
+                 ("col4", "i8")]
+    })
+    general_net1 = copy.deepcopy(general_net0)
+    general_net1.df1.loc[0] = ["hey", 1.2]
+    general_net1.df2.loc[2] = [False, 2]
+
+    for general_in in [general_net0, general_net1]:
+        out = pp.from_json_string(pp.to_json(general_in),
+                                  empty_dict_like_object=pp.pandapowerNet({}))
+        assert sorted(list(out.keys())) == ["df1", "df2"]
+        assert pp.nets_equal(out, general_in)
+
+
+def test_json_index_names():
+    net_in = networks.mv_oberrhein()
+    net_in.bus.index.name = "bus_index"
+    net_out = pp.from_json_string(pp.to_json(net_in, store_index_names=True))
+    assert net_out.bus.index.name == "bus_index"
+    assert pp.nets_equal(net_out, net_in)
+
+
+def test_json_dict_of_stuff():
+    net1 = pp.networks.case9()
+    net2 = pp.networks.case14()
+    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
+    text = "hello world"
+    d = {"net1": net1, "net2": net2, "df": df, "text": text}
+    s = pp.to_json(d)
+    dd = pp.from_json_string(s)
+    assert d.keys() == dd.keys()
+    assert_net_equal(net1, dd["net1"])
+    assert_net_equal(net2, dd["net2"])
+    pp.dataframes_equal(df, dd["df"])
+    assert text == dd["text"]
+
+
+def test_json_list_of_stuff():
+    net1 = pp.networks.case9()
+    net2 = pp.networks.case14()
+    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
+    text = "hello world"
+    s = pp.to_json([net1, net2, df, text])
+    loaded_list = pp.from_json_string(s)
+
+    assert_net_equal(net1, loaded_list[0])
+    assert_net_equal(net2, loaded_list[1])
+    pp.dataframes_equal(df, loaded_list[2])
+    assert text == loaded_list[3]
 
 
 if __name__ == "__main__":
