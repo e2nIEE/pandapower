@@ -39,6 +39,46 @@ def simplest_grid():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
 
     return net
+    
+
+@pytest.fixture
+def net_3w_trafo_opf():
+    net = pp.create_empty_network()
+
+    # create buses
+    bus1 = pp.create_bus(net, vn_kv=220.)
+    bus2 = pp.create_bus(net, vn_kv=110.)
+    bus3 = pp.create_bus(net, vn_kv=110.)
+    bus4 = pp.create_bus(net, vn_kv=110.)
+    bus5 = pp.create_bus(net, vn_kv=110.)
+
+    pp.create_bus(net, vn_kv=110., in_service=False)
+
+    # create 220/110 kV transformer
+    pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
+                                            vn_lv_kv=110, vk_hv_percent=10., vk_mv_percent=10.,
+                                            vk_lv_percent=10., vkr_hv_percent=0.5,
+                                            vkr_mv_percent=0.5, vkr_lv_percent=0.5, pfe_kw=100,
+                                            i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
+                                            sn_hv_mva=100, sn_mv_mva=50, sn_lv_mva=50)
+
+    # create 110 kV lines
+    pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
+
+    # create loads
+    pp.create_load(net, bus2, p_mw=60, controllable=False)
+    pp.create_load(net, bus3, p_mw=70, controllable=False)
+    pp.create_sgen(net, bus3, p_mw=10, controllable=False)
+
+    # create generators
+    pp.create_ext_grid(net, bus1, min_p_mw=0, max_p_mw=1000, max_q_mvar=0.01, min_q_mvar=0)
+    pp.create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
+    pp.create_gen(net, bus4, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
+    net.gen["controllable"] = False
+    return net
 
 
 @pytest.fixture

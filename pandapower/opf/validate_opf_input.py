@@ -35,7 +35,7 @@ def _check_necessary_opf_parameters(net, logger):
 
                 missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
                 na_col = [col for col in set(columns)-set(missing_col) if
-                          net[element_type][col].isnull().any()]
+                          net[element_type][col].loc[controllables].isnull().any()]
 
                 if len(missing_col):
                     if element_type != "ext_grid":

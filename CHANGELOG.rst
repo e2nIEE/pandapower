@@ -3,7 +3,32 @@ Change Log
 
 [upcoming release] - 2022-..-..
 -------------------------------
+- [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+- [ADDED] group functionality
+- [ADDED] auxiliary function warn_and_fix_parameter_renaming to throw a derpecation warning (not an Error) if old name of a parameter is used
+- [ADDED] zero-sequence parameters for net.impedance
+- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
+- [ADDED] additional_traces (prepared by the user) can be passed to simple_plotly
+- [ADDED] Added converter CGMES v2.4.15 to pandapower
+- [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
+- [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
+- [CHANGED] from_ppc(): revision of indexing and naming of elements
+- [CHANGED] Complete revision of validate_from_ppc()
+- [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
+- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
+- [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
+
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+- [ADDED] store and restore functionality of dataframe index names with to_json() and from_json()
+- [ADDED] generalization from_json() with parameter empty_dict_like_object
+
+[2.10.0] - 2022-07-29
+-------------------------------
 - [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
 - [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
 - [ADDED] from_mpc() converter: added functionality to import .m files via external package
 - [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
@@ -11,6 +36,10 @@ Change Log
 - [ADDED] parameter in_ka for rated switch current
 - [ADDED] current and loading result for switches
 - [FIXED] bug for disabled continous tap controllers
+- [ADDED] File I/O download and upload pandapowerNet to PostgreSQL
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
 
 [2.9.0]- 2022-03-23
 ----------------------
