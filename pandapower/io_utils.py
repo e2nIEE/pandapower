@@ -249,7 +249,10 @@ def from_dict_of_dfs(dodfs, net=None):
         except TypeError:
             # TypeError: if not int index (e.g. str)
             pass
-    restore_all_dtypes(net, dodfs["dtypes"])
+    if "dtypes" in dodfs:
+        restore_all_dtypes(net, dodfs["dtypes"])
+    elif "dtypes" in net:
+        restore_all_dtypes(net, net["dtypes"])
     return net
 
 
