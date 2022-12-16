@@ -268,13 +268,13 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
     #Inst relay trip, red colour 
     if  len(inst_trip_switches)>0:
         
-        sc_inst = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "red", switches = inst_trip_switches)
+        sc_inst = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "red", switch_index = inst_trip_switches)
         collection.append(sc_inst)
     
     #backup relay based on time grade (yellow colour)
     if  len(backup_trip_switches)>0:
 
-        sc_backup = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "yellow", switches = backup_trip_switches)
+        sc_backup = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "yellow", switch_index = backup_trip_switches)
     
         collection.append(sc_backup)
 
@@ -282,7 +282,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
     # orange colour for inst_backup relay
     if  len(inst_backup_switches)>0:
         
-        instant_sc_backup = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "orange", switches = inst_backup_switches)
+        instant_sc_backup = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "orange", switch_index = inst_backup_switches)
         
         collection.append(instant_sc_backup)
 
@@ -292,7 +292,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
         
         #closed switch-black
         sc = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "black",
-                                            switches = set(net.switch.index) - set(inst_trip_switches)- set(backup_trip_switches))
+                                            switch_index = set(net.switch.index) - set(inst_trip_switches)- set(backup_trip_switches))
         collection.append(sc)
    
     #make annotations optional (if True then annotate else only plot)
@@ -543,7 +543,7 @@ def create_I_t_plot(trip_decisions,switch_id):
     for counter, switch_id in enumerate(switch_id):
         
         lst_I=[trip_decisions[switch_id]['Ig'],trip_decisions[switch_id]['Igg']]
-        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['tgg']]
+        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['t_gg']]
         fault_current=trip_decisions[switch_id]['Fault Current [kA]']
         
 
