@@ -13,7 +13,6 @@ import operator
 import time
 import uuid
 from functools import reduce
-
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -253,6 +252,9 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     # --- create load, sgen and gen
     elm_old = None
+    max_load_idx = max(-1, net.load.index[~net.load.bus.isin(all_external_buses)].max() - len(net_zpbn.load))
+    max_sgen_idx = max(-1, net.sgen.index[~net.sgen.bus.isin(all_external_buses)].max() - len(net_zpbn.sgen))
+    max_gen_idx = max(-1, net.gen.index[~net.gen.bus.isin(all_external_buses)].max() - len(net_zpbn.gen))
     for i in t_buses:
         busstr = net_zpbn.bus.name[i].split(" ")[1]
         bus = int(busstr.split("/")[0])
@@ -263,12 +265,15 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         Q = S[key][idx].imag * sn_mva
         Sn = S["sn_"+key][idx].real
         if elm == "load":
-            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_load(net_zpbn, i, -float(P), -float(Q), name=key+"_rei_"+busstr,
+                                     sn_mva=Sn, index=max_load_idx+len(net_zpbn.load)+1)
         elif elm == "sgen":
-            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr,
+                                     sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
             vm_pu = v[key+"_vm_total"][v.ext_bus == int(busstr)].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr, sn_mva=Sn)
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
+                                    sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
     # ---- match other columns
         elm_org = net[elm]
@@ -277,21 +282,40 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
             other_cols_number = set()
             other_cols_bool = set()
+            other_cols_str = set()
+            other_cols_none = set()
+            other_cols_mixed = set()
             for c in other_cols.copy():
-                if net_zpbn[elm][c].dtype == np.number or net_zpbn[elm][c].dtype == np.int64:
+                value_types = net[elm][c][elm_org.bus.isin(all_external_buses)].apply(type).unique()
+                if len(value_types) > 1:
+                    other_cols_mixed |= {c}
+                elif value_types[0] in (np.float, np.int):
                     other_cols_number |= {c}
-                    other_cols -= {c}
-                elif net_zpbn[elm][c].dtype == bool or (elm_org[c].dropna().shape[0] and \
-                        is_bool_dtype(elm_org[c].dropna())): # type-object can also be True of False
+                elif value_types[0] == bool:
                     other_cols_bool |= {c}
-                    other_cols -= {c}
-                else:
-                    pass
+                elif value_types[0] == str:
+                    other_cols_str |= {c}
+                else: # value_types[0] is None:
+                    other_cols_none |= {c}
+                other_cols -= {c}
+            assert len(other_cols) == 0
         if "integrated" in key:
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
+            if "voltLvl" in other_cols_number:
+                net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
+                    net_zpbn.bus.voltLvl[boundary_buses].max()
             net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
                 elm_org.bus.isin(all_external_buses)].values.sum() > 0
+            all_str_values = list(zip(*elm_org[list(other_cols_str)]\
+                                      [elm_org.bus.isin(all_external_buses)].values[::-1]))
+            for asv, colid in zip(all_str_values, other_cols_str):
+                if len(set(asv)) == 1:
+                    net_zpbn[elm].loc[elm_idx, colid] = asv[0]
+                else:
+                    net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
+            net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+            net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
         else:
             if elm == "gen" and bus in net.ext_grid.bus.values and \
                     net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
@@ -308,11 +332,26 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
+                    if "voltLvl" in other_cols_number:
+                        net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
+                            net_zpbn.bus.voltLvl[boundary_buses].max()
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
                         elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum(axis=0) > 0
+
+                    all_str_values = list(zip(*elm_org[list(other_cols_str)]\
+                                              [elm_org.bus == bus].values[::-1]))
+                    for asv, colid in zip(all_str_values, other_cols_str):
+                        if len(set(asv)) == 1:
+                            net_zpbn[elm].loc[elm_idx, colid] = asv[0]
+                        else:
+                            net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
                 else:
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number)] = \
-                        elm_org[list(other_cols_bool | other_cols_number)][
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number |
+                                                    other_cols_str | other_cols_none)] = \
+                        elm_org[list(other_cols_bool | other_cols_number |
+                                     other_cols_str | other_cols_none)][
                             elm_org.bus == bus].values[0]
                     net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
                         elm_org.bus == bus].values[0]
@@ -494,7 +533,8 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
 #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
-    _integrate_power_elements_connected_with_switch_buses(net_external, all_external_buses) # for sgens, gens, and loads
+    _integrate_power_elements_connected_with_switch_buses(net, net_external,
+                                                          all_external_buses) # for sgens, gens, and loads
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
     t_end = time.perf_counter()
     if show_computing_time:
@@ -643,8 +683,9 @@ def _replace_ext_area_by_impedances_and_shunts(
               tolerance_mva=1e-6, max_iteration=100)
 
 
-def _integrate_power_elements_connected_with_switch_buses(net, all_external_buses):
-    all_buses, bus_dict = get_connected_switch_buses_groups(net, all_external_buses)
+def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
+    all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
+                                                            all_external_buses)
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
             if elm != "gen":
@@ -659,16 +700,5 @@ def _integrate_power_elements_connected_with_switch_buses(net, all_external_buse
             else:  # There ars some "external" elements connected with bus-bus switches.
                    # They will be aggregated.
                 elm1 = connected_elms[0]
-                name_list = [str(n) for n in net[elm].name[connected_elms].values]
-                net[elm].name[elm1] = "aggregated " + elm + " : " + " + ".join(name_list)
-                net[elm].p_mw[elm1] = (net[elm].p_mw[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                net[elm].sn_mva[elm1] = (net[elm].sn_mva[connected_elms].values * \
-                                       net[elm].scaling[connected_elms].values).sum()
-                if elm != "gen":
-                    net[elm].q_mvar[elm1] = (net[elm].q_mvar[connected_elms].values * \
-                                             net[elm].scaling[connected_elms].values).sum()
-                net[elm].drop(connected_elms[1:], inplace=True)
-
-    pass
-
+                net[elm].bus[connected_elms] = net[elm].bus[elm1]
+                net_external[elm].bus[connected_elms] = net_external[elm].bus[elm1]
