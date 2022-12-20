@@ -882,9 +882,40 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                         y=y_list)
     marker_trace["marker"] = dict(color=color, size=values_by_bus.abs() * marker_scaling,
                                   symbol=patch_type, sizemode=sizemode)
+    marker_trace["scale_trace_info"] = dict(marker_scaling=marker_scaling,
+                                            column_to_plot=column_to_plot)
 
     return marker_trace
 
+
+def scale_trace(net, weighted_trace, down_shift=0):
+    marker = weighted_trace["marker"]
+    scale_trace_info = weighted_trace["scale_trace_info"]
+    # scale trace
+    x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
+    x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
+
+    shift = 0
+    x_pos = x_max - ((x_max - x_min) * 0.1)
+    y_pos = y_min - ((y_max - y_min) * (0.2 * (down_shift + 1)))
+
+    mean = math.ceil(marker["size"].mean() / 5) * 5
+    unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
+    scale_trace = dict(type="scatter",
+                        x=[x_pos],
+                        y=[y_pos],
+                        mode="lines+markers+text",
+                        marker=dict(size=mean, color=marker['color']),
+                        text=[f"<b>scale: {mean / scale_trace_info['marker_scaling']} {unit}</b>"],
+                        textposition="top center",
+                        textfont=dict(
+                         family="Helvetica",
+                         size=14,
+                         color=marker['color']
+                        ),
+                        showlegend=False
+                       )
+    return scale_trace
 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
                 aspectratio='auto', filename='temp-plot.html', auto_open=True, **kwargs):
