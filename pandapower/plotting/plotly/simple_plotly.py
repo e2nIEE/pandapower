@@ -7,7 +7,7 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, scale_trace, \
     create_trafo_trace, draw_traces, version_check, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
@@ -172,9 +172,15 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     if additional_traces:
         if isinstance(additional_traces, dict):
             traces.append(additional_traces)
-        else:
-            traces.extend(additional_traces)
 
+            # traces.append(scale_traces(additional_traces))
+        else:
+            for shift, weighted_trace in enumerate(additional_traces):
+                sc_trace = scale_trace(net, weighted_trace, down_shift=shift)
+                weighted_trace.pop("scale_trace_info")
+                traces.extend([sc_trace])
+            traces.extend(additional_traces)
+            # traces.append(scale_traces(additional_traces))
     return draw_traces(traces, **settings)
 
 
