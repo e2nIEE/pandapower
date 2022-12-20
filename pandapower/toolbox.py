@@ -310,15 +310,15 @@ def compare_arrays(x, y):
 
 
 # --- Information
-def log_to_level(msg, logger, level):
+def log_to_level(msg, passed_logger, level):
     if level == "error":
-        logger.error(msg)
+        passed_logger.error(msg)
     elif level == "warning":
-        logger.warning(msg)
+        passed_logger.warning(msg)
     elif level == "info":
-        logger.info(msg)
+        passed_logger.info(msg)
     elif level == "debug":
-        logger.debug(msg)
+        passed_logger.debug(msg)
 
 
 def lf_info(net, numv=1, numi=2):  # pragma: no cover
@@ -1948,7 +1948,7 @@ def _merge_nets_deprecated(net1, net2, validate=True, merge_results=True, tol=1e
     # net1 = copy.deepcopy(net1)  # commented to save time. net1 will not be changed (only by runpp)
     net2 = copy.deepcopy(net2)
     if create_continuous_bus_indices:
-        create_continuou_bus_index(net2, start=net1.bus.index.max() + 1)
+        create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     if validate:
         runpp(net1, **kwargs)
         runpp(net2, **kwargs)
