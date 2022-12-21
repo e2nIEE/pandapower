@@ -917,16 +917,16 @@ def scale_trace(net, weighted_trace, down_shift=0):
     x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
     x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
 
-    shift = 0
-    x_pos = x_max - ((x_max - x_min) * 0.2)
-    y_pos = y_min - ((y_max - y_min) * (0.2 * (down_shift + 1)))
+    x_pos = x_max + (x_max - x_min) * 0.2
+    x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
+    y_pos = y_max - ((y_max - y_min) * (0.2 * down_shift ))
 
     mean = math.ceil(marker["size"].mean() / 5) * 5
     unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
 
     # second position is needed for correct marker sizing
     scale_trace = dict(type="scatter",
-                        x=[x_pos, x_pos],
+                        x=[x_pos, x_pos2],
                         y=[y_pos, y_pos],
                         mode="markers+text",
                         hoverinfo="skip",
