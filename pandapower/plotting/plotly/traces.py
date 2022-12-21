@@ -831,6 +831,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
         pandapower networks, "junction" for pandapipes networks
 
+        **show_scale_legend** (bool, default True): display a scale at the bottom right of the plot
+
     OUTPUT:
         **marker_trace**
     """
