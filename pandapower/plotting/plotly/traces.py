@@ -788,7 +788,7 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_plot="p_mw",
                                  sizemode="area", color="red", patch_type="circle",
                                  marker_scaling=1., trace_name="", infofunc=None,
-                                 node_element="bus"):
+                                 node_element="bus", show_scale_legend=True):
     """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
 
     Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
@@ -880,33 +880,60 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                         name=trace_name,
                         x=x_list,
                         y=y_list)
-    marker_trace["marker"] = dict(color=color, size=values_by_bus.abs() * marker_scaling,
-                                  symbol=patch_type, sizemode=sizemode)
-    marker_trace["scale_trace_info"] = dict(marker_scaling=marker_scaling,
-                                            column_to_plot=column_to_plot)
+    marker_trace["marker"] = dict(color=color,
+                                  size=values_by_bus.abs() * marker_scaling,
+                                  symbol=patch_type,
+                                  sizemode=sizemode)
+    # marker_trace["marker"]["sizeref"] = 2. * max(marker_trace["marker"]["size"]) / (max(marker_trace["marker"]["size"]) ** 2)
+    marker_trace["meta"] = dict(marker_scaling=marker_scaling,
+                                column_to_plot=column_to_plot,
+                                show_scale_legend=show_scale_legend)
 
     return marker_trace
 
 
 def scale_trace(net, weighted_trace, down_shift=0):
+    """Create a scale for a weighted_marker_scale.
+
+    Will be used with pandapipes.plotting.plotly.simple_plotly, when as "additional_trace").
+    If present in the respective pandapower-net table, the "in_service" and "scaling" column will be
+    taken into account as factors to calculate the markers' weights.
+    Negative values might lead to unexpected results, especially when pos. and neg. values are
+    mixed in one column! All values are treated as absolute values.
+    If value = 0, no marker will be created.
+
+    INPUT:
+        **net** (pandapipesNet) - the pandapipes net of the plot
+
+    OPTIONAL:
+
+
+    OUTPUT:
+        **scale_trace** (dict) - plotly figure as a dict
+    """
     marker = weighted_trace["marker"]
-    scale_trace_info = weighted_trace["scale_trace_info"]
+    scale_trace_info = weighted_trace["meta"]
     # scale trace
     x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
     x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
 
     shift = 0
-    x_pos = x_max - ((x_max - x_min) * 0.1)
+    x_pos = x_max - ((x_max - x_min) * 0.2)
+    x_pos2 =  x_max + ((x_max - x_min) * (0.2 * (down_shift + 1)))
     y_pos = y_min - ((y_max - y_min) * (0.2 * (down_shift + 1)))
 
     mean = math.ceil(marker["size"].mean() / 5) * 5
     unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
+
     scale_trace = dict(type="scatter",
-                        x=[x_pos],
-                        y=[y_pos],
-                        mode="lines+markers+text",
-                        marker=dict(size=mean, color=marker['color']),
-                        text=[f"<b>scale: {mean / scale_trace_info['marker_scaling']} {unit}</b>"],
+                        x=[x_pos, x_pos],
+                        y=[y_pos, y_pos],
+                        mode="markers+text",
+                        marker=dict(size=[mean, 0],
+                                    color=marker['color'],
+                                    symbol=marker["symbol"],
+                                    sizemode=marker["sizemode"]),
+                        text=[f"scale: {mean / scale_trace_info['marker_scaling']} {unit}", ""],
                         textposition="top center",
                         textfont=dict(
                          family="Helvetica",
