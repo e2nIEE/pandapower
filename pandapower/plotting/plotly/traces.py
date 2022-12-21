@@ -799,7 +799,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
     If value = 0, no marker will be created.
 
     INPUT:
-        **net** (pandapipesNet) - the pandapipes net of the plot
+        **net** (pandapowerNet) - the pandapower net of the plot
 
     OPTIONAL:
         **elm_type** (str, default "load") - the element table in the net that holds the values
@@ -895,18 +895,16 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
 def scale_trace(net, weighted_trace, down_shift=0):
     """Create a scale for a weighted_marker_scale.
 
-    Will be used with pandapipes.plotting.plotly.simple_plotly, when as "additional_trace").
-    If present in the respective pandapower-net table, the "in_service" and "scaling" column will be
-    taken into account as factors to calculate the markers' weights.
-    Negative values might lead to unexpected results, especially when pos. and neg. values are
-    mixed in one column! All values are treated as absolute values.
-    If value = 0, no marker will be created.
+    Will be used with pandapipes.plotting.plotly.simple_plotly, when "additional_trace" contains
+    a weighed_trace.
+
 
     INPUT:
-        **net** (pandapipesNet) - the pandapipes net of the plot
+        **net** (pandapowerNet) - the pandapower net of the plot
 
-    OPTIONAL:
+        **weighted_trace** (dict) - weighted plotly trace
 
+        **down_shift** (int) - shift to align different scales below each other
 
     OUTPUT:
         **scale_trace** (dict) - plotly figure as a dict
@@ -919,16 +917,17 @@ def scale_trace(net, weighted_trace, down_shift=0):
 
     shift = 0
     x_pos = x_max - ((x_max - x_min) * 0.2)
-    x_pos2 =  x_max + ((x_max - x_min) * (0.2 * (down_shift + 1)))
     y_pos = y_min - ((y_max - y_min) * (0.2 * (down_shift + 1)))
 
     mean = math.ceil(marker["size"].mean() / 5) * 5
     unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
 
+    # second position is needed for correct marker sizing
     scale_trace = dict(type="scatter",
                         x=[x_pos, x_pos],
                         y=[y_pos, y_pos],
                         mode="markers+text",
+                        hoverinfo="skip",
                         marker=dict(size=[mean, 0],
                                     color=marker['color'],
                                     symbol=marker["symbol"],
