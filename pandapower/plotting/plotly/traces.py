@@ -939,7 +939,7 @@ def scale_trace(net, weighted_trace, down_shift=0):
                         textfont=dict(
                          family="Helvetica",
                          size=14,
-                         color=marker['color']
+                         color="black"
                         ),
                         showlegend=False
                        )
