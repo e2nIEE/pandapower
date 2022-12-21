@@ -198,9 +198,10 @@ def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=
                      'res_bus', 'res_trafo', 'res_line', 'res_dcline', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen',
                      'res_bus_3ph', 'res_trafo_3ph', 'res_line_3ph', 'res_load_3ph', 'res_asymmetric_load_3ph', 'res_ext_grid_3ph', 'res_sgen_3ph']:
             item = getattr(net, name)
-            table = TABLE(TR(*map(TH, item.columns)),
-                          *[TR(*map(TD, row)) for row in item.values])
-            tables.append(DIV(H2(name), table))
+            if len(item):
+                table = TABLE(TR(*map(TH, item.columns)),
+                              *[TR(*map(TD, row)) for row in item.values])
+                tables.append(DIV(H2(name), table))
 
     page = HTML(
         HEAD(STYLE(style)),
