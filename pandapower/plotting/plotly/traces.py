@@ -835,6 +835,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
 
     OUTPUT:
         **marker_trace**
+
     """
 
     # filter for relevant elements:
@@ -886,55 +887,60 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                   size=values_by_bus.abs() * marker_scaling,
                                   symbol=patch_type,
                                   sizemode=sizemode)
-    # marker_trace["marker"]["sizeref"] = 2. * max(marker_trace["marker"]["size"]) / (max(marker_trace["marker"]["size"]) ** 2)
+    # additional info for the _create_scale_trace function:
     marker_trace["meta"] = dict(marker_scaling=marker_scaling,
                                 column_to_plot=column_to_plot,
-                                show_scale_legend=show_scale_legend)
+                                show_scale_legend=show_scale_legend,
+                                ref_size=math.ceil(marker_trace["marker"]["size"].mean() / 5) * 5,
+                                )
 
     return marker_trace
 
 
-def scale_trace(net, weighted_trace, down_shift=0):
-    """Create a scale for a weighted_marker_scale.
+def _create_scale_trace(net, weighted_trace, down_shift=0):
+    """Create a scale for a weighted_marker_trace (or marker size legend).
 
     Will be used with pandapipes.plotting.plotly.simple_plotly, when "additional_trace" contains
-    a weighed_trace.
-
+    a trace created by :func:`create_weighted_marker_trace` with :code:`show_scale_legend=True`.
+    The reference marker is of average size of all weighted markers, rounded to the next 5,
+    and comes with a string with the respective reference value and unit.
 
     INPUT:
         **net** (pandapowerNet) - the pandapower net of the plot
 
         **weighted_trace** (dict) - weighted plotly trace
 
-        **down_shift** (int) - shift to align different scales below each other
+        **down_shift** (int) - shift to align different scales below each other (prop. to y-offset)
 
     OUTPUT:
-        **scale_trace** (dict) - plotly figure as a dict
+        **scale_trace** (dict) - a plotly trace that includes the marker legend
+
     """
     marker = weighted_trace["marker"]
-    scale_trace_info = weighted_trace["meta"]
+    scale_info = weighted_trace["meta"]
     # scale trace
     x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
     x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
 
     x_pos = x_max + (x_max - x_min) * 0.2
     x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
-    y_pos = y_max - ((y_max - y_min) * (0.2 * down_shift ))
+    y_pos = y_max - ((y_max - y_min) * (0.2 * down_shift))
 
-    mean = math.ceil(marker["size"].mean() / 5) * 5
-    unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
+    unit = scale_info["column_to_plot"].split("_")[1].upper()
 
-    # second position is needed for correct marker sizing
+    # second (dummy) position is needed for correct marker sizing
     scale_trace = dict(type="scatter",
                         x=[x_pos, x_pos2],
                         y=[y_pos, y_pos],
                         mode="markers+text",
                         hoverinfo="skip",
-                        marker=dict(size=[mean, 0],
-                                    color=marker['color'],
+                        marker=dict(size=[scale_info["ref_size"], 0],
+                                    color=marker["color"],
                                     symbol=marker["symbol"],
                                     sizemode=marker["sizemode"]),
-                        text=[f"scale: {mean / scale_trace_info['marker_scaling']} {unit}", ""],
+                        text=[f"scale: "
+                              f"{scale_info['ref_size'] / scale_info['marker_scaling']} {unit}",
+                              ""],
                         textposition="top center",
                         textfont=dict(
                          family="Helvetica",
@@ -944,6 +950,7 @@ def scale_trace(net, weighted_trace, down_shift=0):
                         showlegend=False
                        )
     return scale_trace
+
 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
                 aspectratio='auto', filename='temp-plot.html', auto_open=True, **kwargs):
