@@ -7,8 +7,8 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check, _create_node_trace, _create_branch_trace
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, version_check, \
+    create_scale_trace,  create_trafo_trace, draw_traces, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -171,9 +171,17 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                               showlegend=showlegend)
     if additional_traces:
         if isinstance(additional_traces, dict):
-            traces.append(additional_traces)
-        else:
-            traces.extend(additional_traces)
+            additional_traces = [additional_traces]
+
+        shift = 0
+        for weighted_trace in additional_traces:
+            # for weighted_marker_traces "meta" should include information for the "scale legend"
+            if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
+                sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
+                traces.extend([sc_trace])
+                shift += 1
+
+        traces.extend(additional_traces)
 
     return draw_traces(traces, **settings)
 
@@ -270,5 +278,7 @@ if __name__ == '__main__':
                                                 marker_scaling=100)
     markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
                                                 patch_type="circle-open", sizemode="diameter",
-                                                marker_scaling=100)
-    simple_plotly(net, bus_size=1, additional_traces=[markers_load, markers_sgen])
+                                                marker_scaling=100, scale_marker_size=0.5)
+
+    fig = simple_plotly(net, bus_size=1, aspectratio="original", additional_traces=[markers_sgen,
+                                                                                    markers_load])
