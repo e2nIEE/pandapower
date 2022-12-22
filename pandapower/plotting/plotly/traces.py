@@ -788,7 +788,8 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_plot="p_mw",
                                  sizemode="area", color="red", patch_type="circle",
                                  marker_scaling=1., trace_name="", infofunc=None,
-                                 node_element="bus", show_scale_legend=True):
+                                 node_element="bus", show_scale_legend=True,
+                                 scale_marker_size=None):
     """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
 
     Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
@@ -832,6 +833,10 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         pandapower networks, "junction" for pandapipes networks
 
         **show_scale_legend** (bool, default True): display a scale at the bottom right of the plot
+
+        **scale_marker_size** (float, default None): adjustable size of the scale, gets multiplied
+        with `marker_scaling`. Default size is the average size of the respective weighted markers
+        rounded to 5
 
     OUTPUT:
         **marker_trace**
@@ -889,7 +894,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
     # marker_trace["marker"]["sizeref"] = 2. * max(marker_trace["marker"]["size"]) / (max(marker_trace["marker"]["size"]) ** 2)
     marker_trace["meta"] = dict(marker_scaling=marker_scaling,
                                 column_to_plot=column_to_plot,
-                                show_scale_legend=show_scale_legend)
+                                show_scale_legend=show_scale_legend,
+                                scale_marker_size=scale_marker_size)
 
     return marker_trace
 
@@ -921,8 +927,15 @@ def scale_trace(net, weighted_trace, down_shift=0):
     x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
     y_pos = y_max - ((y_max - y_min) * (0.2 * down_shift ))
 
-    mean = math.ceil(marker["size"].mean() / 5) * 5
+    # p_mw...q_mvar ..
     unit = scale_trace_info["column_to_plot"].split("_")[1].upper()
+
+    # default is the average rounded to 5
+    if not scale_trace_info["scale_marker_size"]:
+        scale_size = math.ceil(marker["size"].mean() / 5) * 5
+
+    else:
+        scale_size = scale_trace_info["scale_marker_size"] * scale_trace_info['marker_scaling']
 
     # second position is needed for correct marker sizing
     scale_trace = dict(type="scatter",
@@ -930,11 +943,11 @@ def scale_trace(net, weighted_trace, down_shift=0):
                         y=[y_pos, y_pos],
                         mode="markers+text",
                         hoverinfo="skip",
-                        marker=dict(size=[mean, 0],
+                        marker=dict(size=[scale_size, 0],
                                     color=marker['color'],
                                     symbol=marker["symbol"],
                                     sizemode=marker["sizemode"]),
-                        text=[f"scale: {mean / scale_trace_info['marker_scaling']} {unit}", ""],
+                        text=[f"scale: {scale_size / scale_trace_info['marker_scaling']} {unit}", ""],
                         textposition="top center",
                         textfont=dict(
                          family="Helvetica",
