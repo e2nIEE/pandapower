@@ -1,9 +1,10 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
+- [FIXED] bugfix in toolbox._merge_nets_deprecated
 
 [2.11.0] - 2022-12-14
 -------------------------------
