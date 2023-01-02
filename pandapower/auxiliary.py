@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -62,7 +62,10 @@ def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      f"requirements: {fct_name} requires '{required_packages}'.")
+                      f"requirements: {fct_name} requires '{required_packages}'. \n"
+                      f"{required_packages} could not be imported.\n"
+                      "To install all pandapower dependencies, "
+                      "pip install pandapower['all'] can be used.")
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
