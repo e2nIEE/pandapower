@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 from pandapower.control.controller.trafo_control import TrafoController
@@ -33,11 +33,11 @@ class DiscreteTapControl(TrafoController):
     """
 
     def __init__(self, net, tid, vm_lower_pu, vm_upper_pu, side="lv", trafotype="2W",
-                 tol=1e-3, in_service=True, order=0, drop_same_existing_ctrl=False,
+                 tol=1e-3, in_service=True, level=0, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"tid": tid, 'trafotype': trafotype}
-        super().__init__(net, tid, side, tol=tol, in_service=in_service, order=order, trafotype=trafotype,
+        super().__init__(net, tid, side, tol=tol, in_service=in_service, level=level, order=order, trafotype=trafotype,
                          drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
                          **kwargs)
 

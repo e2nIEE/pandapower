@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -325,10 +325,16 @@ def test_reindex_elements():
     pp.reindex_elements(net, "switch", new_sw_idx)
     assert np.allclose(net.switch.index.values, new_sw_idx)
 
+    net2 = copy.deepcopy(net)
+
     previous_idx = new_sw_idx[:3]
     new_sw_idx = [2, 3, 4]
     pp.reindex_elements(net, "switch", new_sw_idx, previous_idx)
     assert np.allclose(net.switch.index.values[:3], new_sw_idx)
+
+    # using lookup
+    pp.reindex_elements(net2, "switch", lookup=dict(zip(previous_idx, new_sw_idx)))
+    assert_net_equal(net, net2)
 
     pp.reindex_elements(net, "line", [77, 22], [2, 0])
     assert np.allclose(net.line.index.values, [22, 1, 77, 3])
@@ -476,6 +482,33 @@ def test_get_connected_lines_at_bus():
     assert set(lines) == {line0, line1, line3}
 
 
+def test_merge_indices():
+    net1 = nw.create_cigre_network_mv()
+    pp.create_pwl_cost(net1, 0, "load", [[0, 20, 1], [20, 30, 2]])
+    pp.create_pwl_cost(net1, 2, "load", [[0, 20, 0.5], [20, 30, 2]])
+    pp.reindex_buses(net1, {3: 29})
+    assert 29 in net1.bus.index.values
+    assert 29 in net1.load.bus.values
+
+    net2 = nw.create_cigre_network_mv(with_der="pv_wind")
+    pp.create_pwl_cost(net2, 1, "load", [[0, 20, 1], [20, 30, 2]], index=5)
+    pp.create_pwl_cost(net2, 2, "sgen", [[0, 20, 0.5], [20, 30, 2]])
+
+    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
+
+    # check
+    for et in pp.pp_elements(cost_tables=True):
+        assert net[et].shape[0] == net1[et].shape[0] + net2[et].shape[0]
+    assert net.bus.index.tolist() == net1.bus.index.tolist() + [
+        i+29+1 if i < 3 else i+29 if i > 3 else 3 for i in net2.bus.index]
+    assert net.load.index.tolist() == list(range(net.load.shape[0]))
+    assert net.load.bus.tolist() == net1.load.bus.tolist() + [
+        i+29+1 if i < 3 else i+29 if i > 3 else 3 for i in net2.load.bus]
+    assert net.pwl_cost.index.tolist() == [0, 1, 5, 6]
+    assert net.pwl_cost.element.tolist() == [0, 2, 19, 2]
+    assert net.pwl_cost.et.tolist() == ["load"]*3 + ["sgen"]
+
+
 def test_merge_and_split_nets():
     net1 = nw.mv_oberrhein()
     pp.create_poly_cost(net1, 2, "sgen", 8)
@@ -491,18 +524,24 @@ def test_merge_and_split_nets():
 
     net1_before = copy.deepcopy(net1)
     net2_before = copy.deepcopy(net2)
-    net = pp.merge_nets(net1, net2)
+    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
     pp.runpp(net)
 
+    # check that merge_nets() doesn't change inputs (but result tables)
     assert_net_equal(net1, net1_before, check_without_results=True)
     assert_net_equal(net2, net2_before, check_without_results=True)
+
+    # check that results of merge_nets() fit
     assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
     assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
+    # check content of merge_nets() output
     assert np.array_equal(
-        pd.concat([net1.sgen.name.loc[net1.poly_cost.element], net2.sgen.name.loc[net2.poly_cost.element]]).values,
+        pd.concat([net1.sgen.name.loc[net1.poly_cost.element],
+                   net2.sgen.name.loc[net2.poly_cost.element]]).values,
         net.sgen.name.loc[net.poly_cost.element].values)
 
+    # check that results stay the same after net split
     net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
     assert pp.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
 
@@ -520,12 +559,48 @@ def test_merge_asymmetric():
 
     net1_before = copy.deepcopy(net1)
     net2_before = copy.deepcopy(net2)
-    net3 = pp.merge_nets(net1, net2)
+    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
 
     assert_net_equal(net1, net1_before, check_without_results=True)
     assert_net_equal(net2, net2_before, check_without_results=True)
-    assert len(net3.asymmetric_load.bus.unique()) == 2 * n_load_busses
-    assert len(net3.asymmetric_sgen.bus.unique()) == 2 * n_sgen_busses
+    assert len(net.asymmetric_load.bus.unique()) == 2 * n_load_busses
+    assert len(net.asymmetric_sgen.bus.unique()) == 2 * n_sgen_busses
+
+
+def test_merge_with_groups():
+    """Test that group data are correctly considered by merge_nets()
+    """
+    net1 = nw.create_cigre_network_mv()
+    net2 = nw.create_cigre_network_mv()
+    for elm in ["bus", "load", "line"]:
+        net2[elm].name = "new " + net2[elm].name
+    pp.create_group(net1, "bus", [[0, 2]], name="group of net1")
+    pp.create_group(net2, ["bus", "load"], [[1], [0, 3]], name="group1 of net2")
+    pp.create_group(net2, ["line"], [[1, 3]], name="group2 of net2", index=4)
+
+    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
+
+    # check that all group lines are available
+    assert net.group.shape[0] == net1.group.shape[0] + net2.group.shape[0]
+
+    # check (adapted) index
+    assert set(net.group.index) == {0, 5, 4}
+
+    # check that net2 groups link to the same elements as later in net.group (checking by element names)
+    assert net2.bus.name.loc[pp.group_element_index(net2, 0, "bus")].tolist() == \
+        net.bus.name.loc[pp.group_element_index(net, 5, "bus")].tolist()
+    assert net2.load.name.loc[pp.group_element_index(net2, 0, "load")].tolist() == \
+        net.load.name.loc[pp.group_element_index(net, 5, "load")].tolist()
+    assert net2.trafo.name.loc[pp.group_element_index(net2, 4, "trafo")].tolist() == \
+        net.trafo.name.loc[pp.group_element_index(net, 4, "trafo")].tolist()
+
+    # check that net2 groups link to the same elements as later in net.group (checking by element index)
+    assert list(pp.group_element_index(net, 0, "bus")) == [0, 2]
+    assert list(pp.group_element_index(net, 5, "bus")) == [net1.bus.shape[0]+1]
+    assert list(pp.group_element_index(net, 5, "load")) == list(np.array([0, 3], dtype=int) + \
+        net1.load.shape[0])
+    assert list(pp.group_element_index(net, 4, "line")) == list(np.array([1, 3], dtype=int) + \
+        net1.line.shape[0])
 
 
 def test_select_subnet():
