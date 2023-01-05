@@ -66,6 +66,12 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI }}
           TWINE_REPOSITORY: pypi
 
+      - name: Sleep for 90s to make release available
+        uses: juliangruber/sleep-action@v1
+        with:
+          time: 90s
+
+
   build:
 
     runs-on: ${{ matrix.os }}
