@@ -1,0 +1,100 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# A coverage report will be created for the Python 3.8 version
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: release
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      upload_server:
+        description: 'upload server'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - 'testpypi'
+          - 'pypi'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  upload:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Sets up python3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      # Installs and upgrades pip, installs other dependencies and installs the package from setup.py
+      - name: Install dependencies
+        run: |
+          # Upgrade pip
+          python3 -m pip install --upgrade pip
+          # Install twine
+          python3 -m pip install setuptools wheel twine
+
+      # Upload to TestPyPI
+      - name: Build and Upload to TestPyPI
+        if: ${{ inputs.upload_server == 'testpypi'}}
+        run: |
+          python3 setup.py sdist --formats=zip
+          twine check dist/* --strict 
+          python3 -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
+          TWINE_REPOSITORY: testpypi
+
+      # Upload to PyPI
+      - name: Build and Upload to PyPI
+        if: ${{ inputs.upload_server == 'pypi' }}
+        run: |
+          python3 setup.py sdist --formats=zip
+          twine check dist/* --strict 
+          python3 -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI }}
+          TWINE_REPOSITORY: pypi
+
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10']
+        os:  [ ubuntu-latest, windows-latest ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies TestPyPI
+        if: ${{ inputs.upload_server == 'testpypi'}}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest nbmake python-igraph pytest-split numba seaborn
+          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower[all]
+      - name: Install dependencies PyPI
+        if: ${{ inputs.upload_server == 'pypi'}}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest nbmake python-igraph pytest-split numba seaborn
+          pip install pandapower
+      - name: List all installed packages
+        run: |
+          pip list
+      - name: Test with pytest
+        run: |
+          pytest
+          pytest --nbmake -n=auto "./tutorials"
