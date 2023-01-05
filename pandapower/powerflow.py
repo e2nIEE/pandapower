@@ -100,12 +100,6 @@ def _recycled_powerflow(net, **kwargs):
             "baseMVA": net["_ppc"]["internal"]["baseMVA"],
             "internal": net["_ppc"]["internal"],
             }
-    if not ac:
-        # DC recycle
-        result = _run_dc_pf(ppci, recycle)
-        _ppci_to_net(result, net)
-        # todo: update values
-        return
     if algorithm not in ['nr', 'iwamoto_nr'] and ac:
         raise ValueError("recycle is only available with Newton-Raphson power flow. Choose "
                          "algorithm='nr'")
@@ -135,6 +129,12 @@ def _recycled_powerflow(net, **kwargs):
     ppci = _ppc2ppci(ppc, net, ppci=ppci)
     ppci["internal"] = net["_ppc"]["internal"]
     net["_ppc"] = ppc
+
+    if not ac:
+        # DC recycle
+        result = _run_dc_pf(ppci, recycle)
+        _ppci_to_net(result, net)
+        return
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)

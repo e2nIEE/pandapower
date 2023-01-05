@@ -62,12 +62,7 @@ def makeBdc(bus, branch, return_csr=True):
     ##      |    | = |          | * |     | + |       |
     ##      | Pt |   | Btf  Btt |   | Vat |   | Ptinj |
     ##
-    stat = branch[:, BR_STATUS]               ## ones at in-service branches
-    b = stat / branch[:, BR_X]                ## series susceptance
-    tap = ones(nl)                            ## default tap ratio = 1
-    i = find(real(branch[:, TAP]))               ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])                   ## assign non-zero tap ratios
-    b = b / tap
+    b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
     f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
@@ -95,4 +90,14 @@ def phase_shift_injection(b, shift, Cft):
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  ## Pbusinj = Cf * Pfinj + Ct * Ptinj
     return Pfinj, Pbusinj
+
+
+def calc_b_from_branch(branch, nl):
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    b = stat / branch[:, BR_X]  ## series susceptance
+    tap = ones(nl)  ## default tap ratio = 1
+    i = find(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    b = b / tap
+    return b
 

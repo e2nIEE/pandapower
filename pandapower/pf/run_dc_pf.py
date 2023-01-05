@@ -10,11 +10,11 @@ from time import perf_counter
 import numpy as np
 from numpy import pi, zeros, real, bincount
 
-from pandapower.pypower.idx_brch import PF, PT, QF, QT, SHIFT, BR_STATUS, BR_X
+from pandapower.pypower.idx_brch import PF, PT, QF, QT, SHIFT, BR_STATUS, BR_X, TAP
 from pandapower.pypower.idx_bus import VA, GS
 from pandapower.pypower.idx_gen import PG, GEN_BUS
 from pandapower.pypower.dcpf import dcpf
-from pandapower.pypower.makeBdc import makeBdc, phase_shift_injection
+from pandapower.pypower.makeBdc import makeBdc, phase_shift_injection, calc_b_from_branch
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
@@ -22,33 +22,40 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_res
 def _run_dc_pf(ppci, recycle=False):
     t0 = perf_counter()
 
-    if isinstance(recycle, dict) and not recycle["trafo"] and "Bbus" in ppci["internal"]:
+    # if TAP is changed, the Bbus and Bf must be calculated from scratch
+    # if SHIFT is changed, we can still save some time by only calculating the Pbusinj and Pfinj
+    if isinstance(recycle, dict) and "Bbus" in ppci["internal"] and \
+            np.array_equal(ppci['internal']['branch'][:, TAP], ppci["branch"][:, TAP]):
         baseMVA = ppci['baseMVA']
         bus = ppci['bus']
         gen = ppci['gen']
         branch = ppci['branch']
-        ref = ppci['ref']
-        pv = ppci['pv']
-        pq = ppci['pq']
-        ref_gens = ppci['ref_gens']
+        ref = ppci["internal"]['ref']
+        pv = ppci["internal"]['pv']
+        pq = ppci["internal"]['pq']
+        ref_gens = ppci["internal"]['ref_gens']
         B, Bf = ppci["internal"]['Bbus'], ppci["internal"]['Bf']
         # check if transformer phase shift has changed and update phase shift injections:
-        if np.array_equal(ppci['internal']['shift'], branch[:, SHIFT]):
+        if np.array_equal(ppci['internal']['branch'][:, SHIFT], branch[:, SHIFT]):
             Pbusinj, Pfinj = ppci["internal"]['Pbusinj'], ppci["internal"]['Pfinj']
         else:
             Cft = ppci['internal']['Cft']
-            Pfinj, Pbusinj = phase_shift_injection(branch[:, BR_STATUS] / branch[:, BR_X], branch[:, SHIFT], Cft)
+            b = calc_b_from_branch(branch, branch.shape[0])
+            Pfinj, Pbusinj = phase_shift_injection(b, branch[:, SHIFT], Cft)
+            ppci['internal']['shift'] = branch[:, SHIFT]
+            ppci['internal']['Pbusinj'] = Pbusinj
+            ppci['internal']['Pfinj'] = Pfinj
     else:
         baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
 
-        ppci['baseMVA'] = baseMVA
-        ppci['bus'] = bus
-        ppci['gen'] = gen
-        ppci['branch'] = branch
-        ppci['ref'] = ref
-        ppci['pv'] = pv
-        ppci['pq'] = pq
-        ppci['ref_gens'] = ref_gens
+        ppci["internal"]['baseMVA'] = baseMVA
+        ppci["internal"]['bus'] = bus
+        ppci["internal"]['gen'] = gen
+        ppci["internal"]['branch'] = branch
+        ppci["internal"]['ref'] = ref
+        ppci["internal"]['pv'] = pv
+        ppci["internal"]['pq'] = pq
+        ppci["internal"]['ref_gens'] = ref_gens
 
         ## build B matrices and phase shift injections
         B, Bf, Pbusinj, Pfinj, Cft = makeBdc(bus, branch)
@@ -70,6 +77,7 @@ def _run_dc_pf(ppci, recycle=False):
 
     ## "run" the power flow
     Va = dcpf(B, Pbus, Va0, ref, pv, pq)
+    ppci["internal"]["V"] = Va
 
     ## update data matrices with solution
     branch[:, [QF, QT]] = zeros((branch.shape[0], 2))
