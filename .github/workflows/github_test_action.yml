@@ -192,3 +192,25 @@ jobs:
         run: |
           pytest --nbmake -n=auto "./tutorials"
   
+  docs_check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.8' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check docs for Python ${{ matrix.python-version }}
+        uses: e2nIEE/sphinx-action@master
+        with:
+          pre-build-command: "apt-get update -y && apt-get install -y git;
+                              git --version;
+                              python -m pip install --upgrade pip;
+                              python -m pip install git+https://github.com/e2nIEE/pandapower@develop#egg=pandapower;
+                              python -m pip install .;
+                              pip install matplotlib"
+          build-command: "sphinx-build -b html source _build -W"
+          docs-folder: "doc/"
