@@ -212,5 +212,5 @@ jobs:
                               python -m pip install git+https://github.com/e2nIEE/pandapower@develop#egg=pandapower;
                               python -m pip install .;
                               pip install matplotlib"
-          build-command: "sphinx-build -b html source _build -W"
+          build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
