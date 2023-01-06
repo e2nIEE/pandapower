@@ -51,12 +51,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.8' }}
         run: |
-          pytest --splits 4 --group ${{ matrix.group }}
+          pytest --splits 2 --group ${{ matrix.group }}
       - name: Test with pytest and Codecov
         if: ${{ matrix.python-version == '3.8' }}
         run: |
           pip install pytest-cov
-          pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }}
+          pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
       - name: Upload coverage to Codecov
         if: ${{ matrix.python-version == '3.8' }}
         uses: codecov/codecov-action@v1
@@ -164,3 +164,31 @@ jobs:
       run: |
         python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
         python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+
+  tutorial_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9']
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest nbmake pytest-xdist python-igraph numba seaborn
+          ./.install_julia.sh 1.6
+          pip install julia
+          python ./.install_pycall.py
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .["all"]
+      - name: List all installed packages
+        run: |
+          pip list
+      - name: Test with pytest
+        run: |
+          pytest --nbmake -n=auto "./tutorials"
+  
