@@ -77,7 +77,12 @@ class LPAlgorithm(BaseAlgorithm):
         A = np.c_[H, -H, Im, -Im]
 
         if ortools_available and with_ortools:
-            return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
+            try:
+                return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
+            except:  # pragma: no cover
+                warnings.warn("A problem appeared while using the ortools linear solver."
+                              "SciPy linprog is used instead.")
+                return LPAlgorithm._solve_scipy(c_T.ravel(), A, r, n)
         else:
             return LPAlgorithm._solve_scipy(c_T.ravel(), A, r, n)
 
@@ -103,7 +108,8 @@ class LPAlgorithm(BaseAlgorithm):
         error_margin = 1e-10
 
         # Create the solver object...
-        solver = pywraplp.Solver.CreateSolver('GLOP')
+        #'GLOP' fails with ortools version > 9.4.1874
+        solver = pywraplp.Solver.CreateSolver('SCIP')
 
 
         # Create the states...
