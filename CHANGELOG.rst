@@ -1,6 +1,12 @@
 Change Log
 =============
 
+[upcoming release] - 2023-..-..
+-------------------------------
+- [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
+- [FIXED] documentation of powerfactory converter
+
+
 [2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
