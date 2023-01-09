@@ -66,10 +66,10 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI }}
           TWINE_REPOSITORY: pypi
 
-      - name: Sleep for 180s to make release available
+      - name: Sleep for 300s to make release available
         uses: juliangruber/sleep-action@v1
         with:
-          time: 180s
+          time: 300s
 
 
   build:
@@ -79,28 +79,39 @@ jobs:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
         os:  [ ubuntu-latest, windows-latest ]
+        group: [ 1, 2 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies TestPyPI
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest nbmake pytest-xdist python-igraph pytest-split numba seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
+          if ${{ matrix.python-version == '3.7' }}; then python -m pip install pypower; fi
+          if ${{ matrix.python-version != '3.7' }}; then python -m pip install numba; fi
+          if ${{ matrix.python-version == '3.7' }}; then python -m pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
+      - name: Install Julia
+        if: ${{ matrix.python-version == '3.7' }}
+        run: |
+          ./.install_julia.sh 1.5
+          pip install julia
+          python ./.install_pycall.py
+      - name: Install pandapower from TestPyPI
         if: ${{ inputs.upload_server == 'testpypi'}}
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pytest nbmake python-igraph pytest-split numba seaborn
-          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower[all]
-      - name: Install dependencies PyPI
+          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower
+      - name: Install pandapower from PyPI
         if: ${{ inputs.upload_server == 'pypi'}}
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pytest nbmake python-igraph pytest-split numba seaborn
           pip install pandapower
       - name: List all installed packages
         run: |
           pip list
       - name: Test with pytest
         run: |
-          pytest
+          pytest --splits 2 --group ${{ matrix.group }}
           pytest --nbmake -n=auto "./tutorials"
