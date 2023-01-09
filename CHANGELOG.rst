@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2022-..-..
+-------------------------------
+- [CHANGED] cim2pp converter documentation fixes
+
 [2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
