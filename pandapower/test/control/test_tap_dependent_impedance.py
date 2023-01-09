@@ -154,9 +154,13 @@ def test_characteristic_diagnostic():
     import io
     s = io.StringIO()
     h = logging.StreamHandler(stream=s)
-    pp.control.util.diagnostic.logger.addHandler(h)
+    logger = pp.control.util.diagnostic.logger
+    logger.addHandler(h)
 
+    old_level = logger.level
+    logger.setLevel("INFO")
     trafo_characteristics_diagnostic(net)
+    logger.setLevel(old_level)
 
     msg = s.getvalue()
 
