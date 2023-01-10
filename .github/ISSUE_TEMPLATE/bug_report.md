@@ -59,4 +59,4 @@ from the Anaconda Prompt/Terminal/command line . --->
 
 
 ## Labels
-* [ ] Choose a `label` at the right side (e.g. `bug`, `controller`, `OPF`...)
+* [ ] Choose a `labels` at the right side (e.g. `bug`, `controller`, `OPF`...)

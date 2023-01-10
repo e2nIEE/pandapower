@@ -16,4 +16,4 @@ assignees: ''
 * [ ] Browse the [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for usefull code snippets and examples of use
 
 ## Labels
-* [ ] Choose a `label` at the right side (e.g. `bug`, `controller`, `OPF`...)
+* [ ] Choose a `labels` at the right side (e.g. `bug`, `controller`, `OPF`...)
