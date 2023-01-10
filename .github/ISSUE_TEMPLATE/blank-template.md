@@ -12,7 +12,8 @@ assignees: ''
 ### Issue Report Checklist
 
 * [ ] Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports
-* [ ] Read the relevant sections of the [Documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
+* [ ] Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
+* [ ] Browse the [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for usefull code snippets and examples of use
 
 ## Labels
-* [ ] Choose a `Label`at the right side (e.g. `bug`, `controller`, `OPF`...)
+* [ ] Choose a `labels` at the right side (e.g. `bug`, `controller`, `OPF`...)
