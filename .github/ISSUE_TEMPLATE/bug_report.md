@@ -1,31 +1,48 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: bug
-assignees: ''
+<!--- **PLEASE READ:** When submitting here, please ensure you've completed the following checklist and checked the boxes to confirm. Issue reports without it may be closed. Thanks! --->
 
----
+### Issue Report Checklist
 
-**Describe the bug**
-A clear and concise description of what the bug is. If there is already a similar issue, please consider upvoting it.
+* [ ] Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports
+* [ ] Read the relevant sections of the [Documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
+* [ ] Reproduced the issue after updating with pip install --upgrade pandapower`` (or ``git pull``)
+* [ ] Tried basic troubleshooting (if a bug/error)
+    * [ ] Restarted interpreter
+    * [ ] Checked the pythonpath
+* [ ] Completed the **Problem Description**, **Steps to Reproduce** and **Version** sections below
 
-**To Reproduce**
-Steps to reproduce the behavior. Please try to provide a minimal example code.
 
-**Error message**
-The following Error message occurred (incl. trace back)
+## Problem Description
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
 
-**Python environment (please complete the following information):**
- - OS: [e.g. Windows 10]
- - pandapipes version [e.g., the version tag if you use the master version (from pip) or branch/commit ID)
- - list of dependencies incl. version numbers[result from `pip list`]
+### What steps reproduce the problem?
 
-**Additional context**
-Add any other context about the problem here. Also, please add related issues if there are any.
+1. 
+2. 
+3. 
+
+### What is the expected output? What do you see instead?
+
+
+
+### Paste Traceback/Error Below (if applicable)
+<!--- Copy from error dialog or View > Panes > Internal Console --->
+
+```python-traceback
+
+PASTE TRACEBACK HERE
+
+```
+
+## Versions
+<!--- You can get this information from the "pip list" or "conda list" command
+from the Anaconda Prompt/Terminal/command line . --->
+
+* pandas version: 
+* networkx version: 
+* scipy version: 
+* numpy version: 
+* packaging version: 
+* tqdm version: 
+* deepdiff version: 
+* Operating System name/version: 
