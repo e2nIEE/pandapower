@@ -1,1 +1,1 @@
-from pandapower.converter.powermodels.to_pm import *
+from pandapower.converter.pandamodels.to_pm import *
