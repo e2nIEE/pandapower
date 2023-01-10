@@ -1,4 +1,4 @@
-.. _powermodels:
+.. _pandamodels:
 
 Optimization with PandaModels.jl
 =================================
@@ -6,7 +6,7 @@ Optimization with PandaModels.jl
 Introduction
 --------------------
 
-`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>` (pandapower + PowerModels.jl) is a Julia package enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
+`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>` (pandapower + PowerModels.jl) is an interface (Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
 
 
 Installation
@@ -37,7 +37,7 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`, install it.
 
 5. To call Julia from Python, install the pyjulia package with :code:`pip install julia`. Afterwards, test if everything works by importing PowerModels from Python with: :code:`from julia.PowerModels import run_ac_opf`. This takes some time, since Python starts a julia instance in the background, but it if the import completes without error everything is configured correctly and you can now use PowerModels to optimize pandapower networks.
 
-6. Additional packages are required to use the pandapower - PandaModels.jl interface with all features like TNEP or OTS. Install the "JSON" and "JuMP" packages with, e.g., :code:`julia -e 'import Pkg; Pkg.add("JSON"); Pkg.add("JuMP");` and maybe also `julia -e 'import Pkg; Pkg.add("Cbc"); Pkg.add("Juniper")'` to get the TNEP and OTS libraries. Alternatively, install these packages by entering :code:`]` inside the julia console and calling :code:`add JSON` :code:`add JuMP`
+6. Additional packages are required to use the pandapower - PowerModels.jl interface with all features like TNEP or OTS. Install the "JSON" and "JuMP" packages with, e.g., :code:`julia -e 'import Pkg; Pkg.add("JSON"); Pkg.add("JuMP");` and maybe also `julia -e 'import Pkg; Pkg.add("Cbc"); Pkg.add("Juniper")'` to get the TNEP and OTS libraries. Alternatively, install these packages by entering :code:`]` inside the julia console and calling :code:`add JSON` :code:`add JuMP`
 
 7. Now install our interface `PandaModels.jl` by type :code:`add PandaModels` inside Julia package manager.
 
@@ -99,7 +99,7 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are co
 Usage
 ------
 
-The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_powermodels.ipynb>`__.
+The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_opf.ipynb>`__.
 
 .. autofunction:: pandapower.runpm_ac_opf
 
@@ -107,6 +107,6 @@ The usage is explained in the `PowerModels tutorial <https://github.com/e2nIEE/p
 
 .. autofunction:: pandapower.runpm
 
-The TNEP optimization is explained in the `PowerModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/tnep_powermodels.ipynb>`__. Additional packages including "juniper"
+The TNEP optimization is explained in the `PandaModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_tnep.ipynb>`__. Additional packages including "juniper"
 
 .. autofunction:: pandapower.runpm_tnep
