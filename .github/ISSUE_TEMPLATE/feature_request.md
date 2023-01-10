@@ -11,8 +11,8 @@ assignees: ''
 
 ### Feature Checklist
 * [ ] Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar feature requests
-* [ ] Read the relevant sections of the [Documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
-* [ ] Browse the [Tutorials]https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [Tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test)
+* [ ] Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
+* [ ] Browse the repository, [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for already existing functionalities
 
 
 **Describe the solution you'd like**
