@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import sys
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
 
-
-import matplotlib.pyplot as plt
-
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
@@ -51,7 +55,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             **trafo_size** (float, 1.0) - Relative size of trafos to plot.
 
             **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
-            
+
             **plot_gens** (bool, False) - Flag to decide whether gen symbols should be drawn.
 
             **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
@@ -185,6 +189,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
     ax = draw_collections(collections, ax=ax)
     if show_plot:
+        if not MATPLOTLIB_INSTALLED:
+            soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
         plt.show()
     return ax
 

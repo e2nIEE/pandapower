@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import copy
@@ -31,6 +31,12 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+if not MATPLOTLIB_INSTALLED:
+    logger.warning("matplotlib could not be imported. "
+                   "It is required for many plotting functions. \nThus, this might lead to errors "
+                   "with some plotting functions. To install all pandapower dependencies, "
+                   "pip install pandapower['all'] can be used.")
 
 
 class CustomTextPath(TextPath):
@@ -928,9 +934,11 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
             logger.warning("z is None and no net is provided")
 
     # the busbar is just a line collection with coords from net.bus_geodata
-    return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None,
-                                  norm=norm, cmap=cmap, infofunc=infofunc, picker=picker, z=z,
-                                  cbar_title=cbar_title, clim=clim, **kwargs)
+    lc = create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None,
+                                norm=norm, cmap=cmap, infofunc=infofunc, picker=picker, z=z,
+                                cbar_title=cbar_title, clim=clim, **kwargs)
+
+    return lc
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, picker=False,
@@ -963,9 +971,12 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
+
+    color = kwargs.pop("color", "k")
+
     load_pc, load_lc = _create_node_element_collection(
         node_coords, load_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, **kwargs)
+        picker=picker, line_color=color, **kwargs)
     return load_pc, load_lc
 
 
@@ -999,9 +1010,12 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.gen.loc[gens, "bus"].values, ["x", "y"]].values
+
+    color = kwargs.pop("color", "k")
+
     gen_pc, gen_lc = _create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, **kwargs)
+        picker=picker, line_color=color, **kwargs)
     return gen_pc, gen_lc
 
 
@@ -1035,9 +1049,12 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     sgens = get_index_array(sgens, net.sgen.index)
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
+
+    color = kwargs.pop("color", "k")
+
     sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, **kwargs)
+        picker=picker, line_color=color, **kwargs)
     return sgen_pc, sgen_lc
 
 
@@ -1071,9 +1088,12 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
     """
     infos = [infofunc(i) for i in range(len(storages))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.storage.loc[storages, "bus"].values, ["x", "y"]].values
+
+    color = kwargs.pop("color", "k")
+
     storage_pc, storage_lc = _create_node_element_collection(
         node_coords, storage_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, **kwargs)
+        picker=picker, line_color=color, **kwargs)
     return storage_pc, storage_lc
 
 
@@ -1116,9 +1136,11 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
 
+    color = kwargs.pop("color", "k")
+
     ext_grid_pc, ext_grid_lc = _create_node_element_collection(
         node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, hatch='XXX', **kwargs)
+        picker=picker, hatch='XXX', line_color=color, **kwargs)
 
     return ext_grid_pc, ext_grid_lc
 

@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from operator import itemgetter
 
 import pandas as pd
-from pandas.api.types import is_bool_dtype
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d
 
-from pandapower import __version__
+from pandapower import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -512,6 +511,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             "gen": None,
                             "branch": None},
         "version": __version__,
+        "format_version": __format_version__,
         "converged": False,
         "OPF_converged": False,
         "name": name,
@@ -543,13 +543,13 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
+        **vn_kv** (float) - The grid voltage level.
+
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
         **index** (int, default None) - Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
-
-        **vn_kv** (float) - The grid voltage level.
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
@@ -587,6 +587,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
     if coords is not None:
+        net["bus_geodata"].at[index, "coords"] = None
         net["bus_geodata"].at[index, "coords"] = coords
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
@@ -3557,7 +3558,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     name=None, in_service=True, index=None, **kwargs):
+                     name=None, in_service=True, index=None,
+                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
     """
     Creates an per unit impedance element
 
@@ -3582,21 +3584,37 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
 
+    if rft_pu is None or xft_pu is None or (rft0_pu is None and rtf0_pu is not None) or \
+            (xft0_pu is None and xtf0_pu is not None):
+        raise UserWarning("*ft_pu parameters are missing for impedance element")
+
     if rtf_pu is None:
         rtf_pu = rft_pu
     if xtf_pu is None:
         xtf_pu = xft_pu
+    if rft0_pu is not None and rtf0_pu is None:
+        rtf0_pu = rft0_pu
+    if xft0_pu is not None and xtf0_pu is None:
+        xtf0_pu = xft0_pu
 
     columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "name", "sn_mva",
                "in_service"]
     values = [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_mva, in_service]
-    _set_entries(net, "impedance", index, **dict(zip(columns, values)), **kwargs)
+    entries = dict(zip(columns, values))
+    _set_entries(net, "impedance", index, **entries, **kwargs)
+
+    if rft0_pu is not None:
+        _create_column_and_set_value(net, index, rft0_pu, "rft0_pu", "impedance")
+        _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
+        _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
+        _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
 
     return index
 
 
 def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_mva,
-                                       name=None, in_service=True, index=None, **kwargs):
+                                       name=None, in_service=True, index=None,
+                                       r0_ohm=None, x0_ohm=None, **kwargs):
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -3624,9 +3642,12 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     base_z_ohm = vn_kv ** 2 / sn_mva
     rft_pu = r_ohm / base_z_ohm
     xft_pu = x_ohm / base_z_ohm
+    rft0_pu = r0_ohm / base_z_ohm if r0_ohm is not None else None
+    xft0_pu = x0_ohm / base_z_ohm if x0_ohm is not None else None
 
     index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
-                             sn_mva=sn_mva, name=name, in_service=in_service, index=index, **kwargs)
+                             sn_mva=sn_mva, name=name, in_service=in_service, index=index,
+                             rft0_pu=rft0_pu, xft0_pu=xft0_pu, **kwargs)
     return index
 
 
@@ -4239,13 +4260,13 @@ def _costs_existance_check(net, elements, et, power_type=None):
 
 
 def _get_multiple_index_with_check(net, table, index, number, name=None):
-    if name is None:
-        name = table.capitalize() + "s"
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     contained = isin(net[table].index.values, index)
     if np_any(contained):
+        if name is None:
+            name = table.capitalize() + "s"
         raise UserWarning("%s with indexes %s already exist."
                           % (name, net[table].index.values[contained]))
     return index

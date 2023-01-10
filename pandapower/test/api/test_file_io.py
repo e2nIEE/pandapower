@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -291,7 +291,7 @@ def test_convert_format_for_pp_objects(net_in):
     c2.u_lower = 0.99
     c2.u_upper = 1.1
     # needed to trigger conversion
-    net_in.version = "2.1.0"
+    net_in.format_version = "2.1.0"
 
     net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
     assert 'controller' in net_in.controller.columns
@@ -379,6 +379,7 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, str)
     pp.to_json(net_select, filename)
     net_select = pp.from_json(filename)
+    assert net.trafo.equals(net_select.trafo)
     assert_net_equal(net, net_select)
 
 

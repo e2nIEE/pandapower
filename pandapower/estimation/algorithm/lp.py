@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -102,8 +102,8 @@ class LPAlgorithm(BaseAlgorithm):
         # Just to ensure floating point precision if there are any
         error_margin = 1e-10
 
-        # Create the solver object...
-        solver = pywraplp.Solver.CreateSolver('GLOP')
+        #'GLOP' fails with ortools version > 9.4.1874
+        solver = pywraplp.Solver.CreateSolver('SCIP')
 
 
         # Create the states...

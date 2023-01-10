@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -16,6 +16,7 @@ from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
 import numpy as np
+import pandas.errors
 from deepdiff.diff import DeepDiff
 
 import networkx
@@ -166,7 +167,7 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         else:
             dodfs[item] = value
         # save dtypes
-        for column, dtype in value.dtypes.iteritems():
+        for column, dtype in value.dtypes.items():
             dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
     if include_parameters and len(parameters) > 0:
@@ -248,7 +249,10 @@ def from_dict_of_dfs(dodfs, net=None):
         except TypeError:
             # TypeError: if not int index (e.g. str)
             pass
-    restore_all_dtypes(net, dodfs["dtypes"])
+    if "dtypes" in dodfs:
+        restore_all_dtypes(net, dodfs["dtypes"])
+    elif "dtypes" in net:
+        restore_all_dtypes(net, net["dtypes"])
     return net
 
 
@@ -262,6 +266,8 @@ def restore_all_dtypes(net, dtypes):
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             pass
+        except pandas.errors.IntCastingNaNError:
+            logger.info(f"could not convert dtype in {v.element}: {v.column}")
 
 
 def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
