@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import copy
@@ -31,6 +31,12 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+if not MATPLOTLIB_INSTALLED:
+    logger.warning("matplotlib could not be imported. "
+                   "It is required for many plotting functions. \nThus, this might lead to errors "
+                   "with some plotting functions. To install all pandapower dependencies, "
+                   "pip install pandapower['all'] can be used.")
 
 
 class CustomTextPath(TextPath):

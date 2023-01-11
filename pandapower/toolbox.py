@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -310,15 +310,15 @@ def compare_arrays(x, y):
 
 
 # --- Information
-def log_to_level(msg, logger, level):
+def log_to_level(msg, passed_logger, level):
     if level == "error":
-        logger.error(msg)
+        passed_logger.error(msg)
     elif level == "warning":
-        logger.warning(msg)
+        passed_logger.warning(msg)
     elif level == "info":
-        logger.info(msg)
+        passed_logger.info(msg)
     elif level == "debug":
-        logger.debug(msg)
+        passed_logger.debug(msg)
 
 
 def lf_info(net, numv=1, numi=2):  # pragma: no cover

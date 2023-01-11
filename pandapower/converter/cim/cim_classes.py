@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
 import logging
@@ -502,7 +502,7 @@ class CimParser:
         ns_dict = dict()
         if prf not in ns_dict.keys():
             ns_dict[prf] = dict()
-        for _, element_type in element_types.iteritems():
+        for _, element_type in element_types.items():
             element_type_c = re.sub('{.*}', '', element_type)
             prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
             # rename the columns (remove the namespaces)

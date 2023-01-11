@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -147,6 +147,10 @@ class BasicCtrl(JSONSerializableClass):
         container.controller.loc[self.index, 'in_service'] = in_service
 
 
+    def level_reset(self, prosumer):
+        pass
+
+
 class Controller(BasicCtrl):
     """
     Base-Class of all controllable elements within a network.
@@ -155,7 +159,7 @@ class Controller(BasicCtrl):
     def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
                  matching_params=None, **kwargs):
-        super(Controller, self).__init__(net, index)
+        super(Controller, self).__init__(net, index, **kwargs)
         self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
