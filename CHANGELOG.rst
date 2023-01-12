@@ -1,14 +1,17 @@
 Change Log
 =============
 
-[upcoming release] - 2022-..-..
+[upcoming release] - 2023-..-..
 -------------------------------
+- [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
+- [FIXED] documentation of powerfactory converter
 - [CHANGED] cim2pp converter documentation fixes
 
 [2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
 - [FIXED] bugfix in toolbox._merge_nets_deprecated
+- [CHANGED] added tests for pp.control.Characteristic, removed Characteristic.target
 
 [2.11.0] - 2022-12-14
 -------------------------------
