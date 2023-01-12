@@ -495,6 +495,7 @@ class FromSerializableRegistry():
         is_multicolumn = self.d.pop('is_multicolumn', False)
         index_name = self.d.pop('index_name', None)
         index_names = self.d.pop('index_names', None)
+        column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
         df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
@@ -512,6 +513,8 @@ class FromSerializableRegistry():
         # restore index name and Multiindex
         if index_name is not None:
             df.index.name = index_name
+        if column_name is not None:
+            df.columns.name = column_name
         if is_multiindex:
             try:
                 df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(
@@ -916,6 +919,8 @@ def json_dataframe(obj):
     # Multiindex))
     if obj.index.name is not None:
         d['index_name'] = obj.index.name
+    if obj.columns.name is not None:
+        d['column_name'] = obj.columns.name
     if type(obj.index) == pd.MultiIndex and set(obj.index.names) != {None}:
         d['index_names'] = obj.index.names
     if type(obj.columns) == pd.MultiIndex and set(obj.columns.names) != {None}:

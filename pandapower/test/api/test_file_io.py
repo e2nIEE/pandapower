@@ -506,10 +506,12 @@ def test_json_simple_index_type():
 def test_json_index_names():
     net_in = networks.mv_oberrhein()
     net_in.bus.index.name = "bus_index"
+    net_in.line.columns.name = "line_column"
     net_in["test_series"] = pd.Series([8], index=pd.Index([2], name="idx_name"))
     json_str = pp.to_json(net_in)
     net_out = pp.from_json_string(json_str)
     assert net_out.bus.index.name == "bus_index"
+    assert net_out.line.columns.name == "line_column"
     assert net_out.test_series.index.name == "idx_name"
     assert pp.nets_equal(net_out, net_in)
 
