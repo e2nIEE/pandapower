@@ -641,10 +641,11 @@ class PPJSONDecoder(json.JSONDecoder):
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
+        registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
                                                empty_dict_like_object=empty_dict_like_object,
-                                               registry_class=FromSerializableRegistry)}
+                                               registry_class=registry_class)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
