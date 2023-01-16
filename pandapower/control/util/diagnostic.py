@@ -72,7 +72,7 @@ def trafo_characteristics_diagnostic(net):
             logger.info("No %s with tap-dependent impedance found." % trafo_table)
             continue
         # check if there are any missing characteristics
-        tap_dependent_impedance = net[trafo_table]['tap_dependent_impedance'].values
+        tap_dependent_impedance = net[trafo_table]['tap_dependent_impedance'].fillna(False).values
         logger.info(f"{trafo_table}: found {sum(tap_dependent_impedance)} transformer(s) with tap-dependent impedance")
         if len(np.intersect1d(net[trafo_table].columns, cols)) == 0:
             logger.warning("No columns defined for transformer tap characteristics in %s. "
