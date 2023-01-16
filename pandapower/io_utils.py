@@ -482,7 +482,7 @@ class FromSerializableRegistry():
                 ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(
                     literal_eval).tolist())
             except:
-                logger.info("Converting index to multiindex failed.")
+                logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
                     ser.index.names = index_names
@@ -523,7 +523,7 @@ class FromSerializableRegistry():
                 # slower alternative code:
                 # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
             except:
-                logger.info("Converting index to multiindex failed.")
+                logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
                     df.index.names = index_names
@@ -532,7 +532,7 @@ class FromSerializableRegistry():
                 df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(
                     literal_eval).tolist())
             except:
-                logger.info("Converting columns to multiindex failed.")
+                logger.warning("Converting columns to multiindex failed.")
             else:
                 if column_names is not None:
                     df.columns.names = column_names
@@ -923,9 +923,9 @@ def json_dataframe(obj):
         d['index_name'] = obj.index.name
     if obj.columns.name is not None:
         d['column_name'] = obj.columns.name
-    if type(obj.index) == pd.MultiIndex and set(obj.index.names) != {None}:
+    if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
         d['index_names'] = obj.index.names
-    if type(obj.columns) == pd.MultiIndex and set(obj.columns.names) != {None}:
+    if isinstance(obj.columns, pd.MultiIndex) and set(obj.columns.names) != {None}:
         d['column_names'] = obj.columns.names
 
     # store info that index is of type Multiindex originally
@@ -957,7 +957,7 @@ def json_series(obj):
     # Multiindex))
     if obj.index.name is not None:
         d['index_name'] = obj.index.name
-    if type(obj.index) == pd.MultiIndex and set(obj.index.names) != {None}:
+    if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
         d['index_names'] = obj.index.names
 
     # store info that index is of type Multiindex originally
