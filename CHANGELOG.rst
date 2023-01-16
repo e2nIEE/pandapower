@@ -9,14 +9,11 @@ Change Log
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] feature: protection - implementation of over-current protection relay 
 
-
-
 [2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
 - [FIXED] bugfix in toolbox._merge_nets_deprecated
 - [CHANGED] added tests for pp.control.Characteristic, removed Characteristic.target
-
 
 [2.11.0] - 2022-12-14
 -------------------------------
@@ -33,8 +30,8 @@ Change Log
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
-- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
+- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 
 [2.10.1] - 2022-07-31
 -------------------------------
