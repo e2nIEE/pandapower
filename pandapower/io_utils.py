@@ -500,11 +500,12 @@ class FromSerializableRegistry():
 
         df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
 
-        if self.d.get("orient", False) == "columns" or not df.shape[0]:
+        if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:
                 df.set_index(df.index.astype(int), inplace=True)
             except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting index to int")
+        if self.d.get("orient", False) == "columns":
             try:
                 df.columns = df.columns.astype(int)
             except (ValueError, TypeError, AttributeError):
