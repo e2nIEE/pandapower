@@ -12,9 +12,9 @@ assignees: ''
 ### Issue Report Checklist
 
 * [ ] Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports
-* [ ] Read the relevant sections of the [Documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
-* [ ] Browse the [Tutorials]https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [Tests]
-* [ ] Reproduced the issue after updating with pip install --upgrade pandapower`` (or ``git pull``)
+* [ ] Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html) 
+* [ ] Browse the [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for usefull code snippets and examples of use
+* [ ] Reproduced the issue after updating with `pip install --upgrade pandapower` (or `git pull`)
 * [ ] Tried basic troubleshooting (if a bug/error)
     * [ ] Restarted interpreter
     * [ ] Checked the pythonpath
@@ -58,5 +58,5 @@ from the Anaconda Prompt/Terminal/command line . --->
 * Operating System name/version: 
 
 
-## Labels
-* [ ] Choose a `Label`at the right side (e.g. `bug`, `controller`, `OPF`...)
+## Labels (if access available)
+* [ ] Choose a `labels` at the right side (e.g. `bug`, `controller`, `OPF`...)
