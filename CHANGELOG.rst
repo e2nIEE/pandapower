@@ -6,6 +6,7 @@ Change Log
 - [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
 - [FIXED] documentation of powerfactory converter
 - [CHANGED] cim2pp converter documentation fixes
+- [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 
 [2.11.1] - 2023-01-02
 -------------------------------
