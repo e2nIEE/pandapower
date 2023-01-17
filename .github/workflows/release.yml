@@ -1,6 +1,5 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# A coverage report will be created for the Python 3.8 version
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# This workflow will create a Python package and upload it to testPyPi or PyPi
+# Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
 
 name: release
 
@@ -20,7 +19,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  
   upload:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
@@ -114,4 +113,7 @@ jobs:
       - name: Test with pytest
         run: |
           pytest --splits 2 --group ${{ matrix.group }}
+      - name: Test tutorials
+        run: |
           pytest --nbmake -n=auto "./tutorials"
+          
