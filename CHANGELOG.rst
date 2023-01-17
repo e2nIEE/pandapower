@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[2.11.2] - 2023-01-17
+-------------------------------
+- [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
+
 [2.11.1] - 2023-01-02
 -------------------------------
 - [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
