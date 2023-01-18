@@ -111,4 +111,4 @@ jobs:
           pip list
       - name: Test with pytest
         run: |
-          pytest --splits 2 --group ${{ matrix.group }}
+          pytest --splits 2 --group ${{ matrix.group }} --pyargs pandapower.test
