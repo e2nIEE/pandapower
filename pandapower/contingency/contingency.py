@@ -221,6 +221,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
             kamps_element_cause = kamps_all[n_lines_cases:n_lines_cases + n_trafos_cases, :]
             max_i_ka_limit = max_i_ka_limit_all[n_lines:n_lines + n_trafos]
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
+        cause_index = np.nanargmax(kamps_element, axis=0)
+        cause_element = np.where(cause_index < n_lines_cases, "line", "trafo")
         max_i_ka = np.nanmax(kamps_element, axis=0)
         net[f"res_{element}"]["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
         min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0,
@@ -233,6 +235,13 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
             net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "causes_overloading"] = causes_overloading
+        cause_mask = cause_element == "line"
+        if "line" in map_index:
+            cause_index[cause_mask] = np.sort(map_index["line"])[cause_index[cause_mask]]
+        if "trafo" in map_index:
+            cause_index[~cause_mask] = np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]
+        net[f"res_{element}"]["cause_index"] = cause_index
+        net[f"res_{element}"]["cause_element"] = cause_element
 
 
 def _convert_trafo_phase_shifter(net):

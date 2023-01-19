@@ -187,6 +187,51 @@ def test_lightsim2grid_phase_shifters():
     assert_frame_equal(bus_res, net.res_bus)
 
 
+def test_cause_element_index():
+    net = pp.networks.case14()
+    for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
+        net.trafo[c] = 0
+    net.gen["slack_weight"] = 1
+    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    nminus1_cases = {"line": {"index": np.array([4, 2, 1, 5, 7, 8])},
+                     "trafo": {"index": np.array([2, 3, 1, 0, 4])}}
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
+
+    check_cause_index(net, nminus1_cases)
+
+
+def check_cause_index(net, nminus1_cases):
+    """
+    This is a not so efficient but very easy to understand auxiliary function to test the "cause element" feature
+    that is otherwise complicated to test properly.
+    """
+    net_copy = net.deepcopy()
+    elements_to_check = [e for e in ("line", "trafo") if len(net[e]) > 0]
+    for check_element in elements_to_check:
+        result_table = net_copy[f"res_{check_element}"]
+        # here we iterate over the "to check" elements
+        for check_element_index in net[check_element].index.values:
+            element_max_loading = 0
+            element_cause_index = -1
+            cause_element = None
+            # here we run the n-1 calculation
+            for nminus1_element, nminus1_element_index in nminus1_cases.items():
+                for nminus1_idx in nminus1_element_index["index"]:
+                    net[nminus1_element].at[nminus1_idx, 'in_service'] = False
+                    run_for_from_bus_loading(net)
+                    net[nminus1_element].at[nminus1_idx, 'in_service'] = True
+                    if net[f"res_{check_element}"].at[check_element_index, 'loading_percent'] > element_max_loading:
+                        element_max_loading = net[f"res_{check_element}"].at[check_element_index, 'loading_percent']
+                        element_cause_index = nminus1_idx
+                        cause_element = nminus1_element
+
+            assert result_table.at[check_element_index, 'cause_index'] == element_cause_index
+            assert result_table.at[check_element_index, 'cause_element'] == cause_element
+            assert np.isclose(result_table.at[check_element_index, 'max_loading_percent'], element_max_loading,
+                              rtol=0, atol=1e-6)
+
+
 def run_for_from_bus_loading(net, **kwargs):
     pp.runpp(net, **kwargs)
     net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100
