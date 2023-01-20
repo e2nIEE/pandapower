@@ -271,9 +271,12 @@ def _update_contingency_results(net, contingency_results, result_variables, nmin
                         if 'max_loading_percent_nminus1' in net[element].columns \
                         else 'max_loading_percent'
                     loading_limit = net[element].loc[contingency_results[element]["index"], s].values
-                    if np.any(val > loading_limit):
+                    cause_mask = val > loading_limit
+                    if np.any(cause_mask):
                         contingency_results[cause_element]["causes_overloading"][
                             contingency_results[cause_element]["index"] == cause_index] = True
+                        contingency_results[element]["cause_index"][cause_mask] = cause_index
+                        contingency_results[element]["cause_element"][cause_mask] = cause_element
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
                     func(val,
