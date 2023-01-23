@@ -154,7 +154,7 @@ def test_lightsim2grid_phase_shifters():
     pp.create_buses(net, 4, 110)
     pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
 
-    pp.create_lines(net, [0,0], [1,1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+    pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
                                           'hv', 0, 10, -10, 0, 1, 5, True, max_loading_percent=100)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
@@ -196,7 +196,19 @@ def test_cause_element_index():
     nminus1_cases = {"line": {"index": np.array([4, 2, 1, 5, 7, 8])},
                      "trafo": {"index": np.array([2, 3, 1, 0, 4])}}
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    cause_res_copy_line = net.res_line.copy()
+    cause_res_copy_trafo = net.res_trafo.copy()
+
+    check_cause_index(net, nminus1_cases)
+
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    columns = ["loading_percent", "max_loading_percent", "min_loading_percent", "causes_overloading", "cause_element",
+               "cause_index"]
+    assert_frame_equal(net.res_line[columns], cause_res_copy_line[columns], rtol=0, atol=1e-6, check_dtype=False)
+    assert_frame_equal(net.res_trafo[columns], cause_res_copy_trafo[columns], rtol=0, atol=1e-6, check_dtype=False)
 
     check_cause_index(net, nminus1_cases)
 

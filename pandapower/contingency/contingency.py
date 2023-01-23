@@ -72,7 +72,9 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         if element == "bus":
             continue
         contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool)})
+            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
+             "cause_element": np.empty_like(net[element].index.values, dtype=np.object),
+             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
     result_variables = {**{"bus": ["vm_pu"]},
                         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
     if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
@@ -270,13 +272,16 @@ def _update_contingency_results(net, contingency_results, result_variables, nmin
                     s = 'max_loading_percent_nminus1' \
                         if 'max_loading_percent_nminus1' in net[element].columns \
                         else 'max_loading_percent'
+                    # this part with cause_mask and max_mask is not very efficient nor orderly
                     loading_limit = net[element].loc[contingency_results[element]["index"], s].values
                     cause_mask = val > loading_limit
                     if np.any(cause_mask):
                         contingency_results[cause_element]["causes_overloading"][
                             contingency_results[cause_element]["index"] == cause_index] = True
-                        contingency_results[element]["cause_index"][cause_mask] = cause_index
-                        contingency_results[element]["cause_element"][cause_mask] = cause_element
+                    max_mask = val > contingency_results[element].get("max_loading_percent", np.full_like(val, -1))
+                    if np.any(max_mask):
+                        contingency_results[element]["cause_index"][max_mask] = cause_index
+                        contingency_results[element]["cause_element"][max_mask] = cause_element
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
                     func(val,
