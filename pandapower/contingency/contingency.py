@@ -454,6 +454,8 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
             elif "max" in var:
                 mask = val[index] > limit['max_limit_nminus1'] + tol
                 _log_violation(element, var, val[index], limit["index"], mask)
+            elif "cause" in var:
+                continue
             else:
                 mask_max = val[index] > limit['max_limit'] + tol
                 _log_violation(element, var, val[index], limit["index"], mask_max)
