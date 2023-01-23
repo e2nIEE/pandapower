@@ -61,15 +61,15 @@ In the resulting pandapower-network, the following should be noted:
 eq profile
  - ControlArea
  - TieFlow
- - ConnectivityNode (Buses)
+ - ConnectivityNode
  - Bay
  - Substation
  - GeographicalRegion
  - SubGeographicalRegion
  - VoltageLevel
  - BaseVoltage
- - ExternalNetworkInjection (Slacks)
- - ACLineSegment (Lines)
+ - ExternalNetworkInjection
+ - ACLineSegment
  - Terminal
  - DCNode
  - DCEquipmentContainer
@@ -78,17 +78,17 @@ eq profile
  - CsConverter
  - VsConverter
  - DCTerminal
- - Breaker (Switches)
- - Disconnector (Switches)
- - Switch  (Switches)
- - LoadBreakSwitch (Switches)
- - EnergyConsumer (Loads)
+ - Breaker
+ - Disconnector
+ - Switch
+ - LoadBreakSwitch
+ - EnergyConsumer
  - ConformLoad
  - NonConformLoa
  - StationSupply
  - GeneratingUnit
- - AsynchronousMachine (Gens)
- - EnergySource (Gens)
+ - AsynchronousMachine
+ - EnergySource
  - EnergySchedulingType
  - StaticVarCompensator
  - PowerTransformer
