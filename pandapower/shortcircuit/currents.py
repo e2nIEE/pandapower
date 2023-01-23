@@ -374,7 +374,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
             ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
             V_ikss[:, ix] = ybus_fact(ikss)
 
-    V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0), np.arange(V_ikss.shape[1])] - V_ikss  # numpy indexing issue
+    V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0), np.arange(V_ikss.shape[1])] * np.array([[1.1], [1]]) - V_ikss  # numpy indexing issue
     V_ikss[np.abs(V_ikss) < 1e-10] = 0
 
     ikss1_all_f = Yf.dot(V_ikss)
