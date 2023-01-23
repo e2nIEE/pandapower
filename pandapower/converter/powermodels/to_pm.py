@@ -50,11 +50,11 @@ class NumpyEncoder(json.JSONEncoder):
 
 def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      calculate_voltage_angles=True,
-                     ac=True, silence=True, trafo_model="t", delta=1e-8, trafo3w_losses="hv",
-                     check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
-                     pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, **kwargs):
+                     ac=True, silence=True, trafo_model="t", delta=1e-8, delta_xward_vm_pu=1e-3,
+                     trafo3w_losses="hv", check_connectivity=True, pp_to_pm_callback=None,
+                     pm_model="ACPPowerModel", pm_solver="ipopt", pm_mip_solver="cbc",
+                     pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8, voltage_depend_loads=False,
+                     from_time_step=None, to_time_step=None, **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -113,7 +113,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=voltage_depend_loads, delta=delta,
-                     trafo3w_losses=trafo3w_losses)
+                     delta_xward_vm_pu=delta_xward_vm_pu, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, silence=silence,
@@ -602,5 +602,3 @@ def allow_multi_ext_grids(net, pm, ext_grids=None):
     for b in target_pm_buses:
         pm["bus"][str(b)]["bus_type"] = 3
     return pm
-    
-   

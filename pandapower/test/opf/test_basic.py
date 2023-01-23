@@ -952,5 +952,54 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
 
 
+def test_xward():
+    #FIXME: Ideas for a test needed, or remove the test.
+    #TODO: Remove the next three lines
+    import warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+
+    net=pp.create_empty_network()
+    pp.create_bus(net, 0.4, min_vm_pu=0.9, max_vm_pu=1.1)
+    pp.create_bus(net, 0.4, min_vm_pu=0.9, max_vm_pu=1.1)
+    pp.create_line(net,0,1,1, "NAYY 4x50 SE", "line")
+    pp.create_ext_grid(net,0)
+    pp.create_xward(
+        net,
+        bus=1,
+        pz_mw=0.03,
+        qz_mvar=0.01,
+        ps_mw=-0.03,
+        qs_mvar=0.01,
+        vm_pu=0.895,
+        x_ohm=0.01,
+        r_ohm=0.02,
+    )
+    pp.runpp(net)
+    #TODO: Remove print statement
+    print(
+        net.res_xward.vm_pu.iloc[0] - net["_options"]["delta_xward_vm_pu"],
+        net.res_xward.vm_internal_pu.iloc[0],
+        net.res_xward.vm_pu.iloc[0] + net["_options"]["delta_xward_vm_pu"],
+    )
+    assert not (
+        (net.res_xward.vm_pu.iloc[0] - net["_options"]["delta_xward_vm_pu"])
+        <= net.res_xward.vm_internal_pu.iloc[0]
+        <= (net.res_xward.vm_pu.iloc[0] + net["_options"]["delta_xward_vm_pu"])
+    )
+    pp.runopp(net)
+    #TODO: Remove print statement
+    print(
+        net.res_xward.vm_pu.iloc[0] - net["_options"]["delta_xward_vm_pu"],
+        net.res_xward.vm_internal_pu.iloc[0],
+        net.res_xward.vm_pu.iloc[0] + net["_options"]["delta_xward_vm_pu"],
+    )
+    assert (
+        (net.res_xward.vm_pu.iloc[0] - net["_options"]["delta_xward_vm_pu"])
+        <= net.res_xward.vm_internal_pu.iloc[0]
+        <= (net.res_xward.vm_pu.iloc[0] + net["_options"]["delta_xward_vm_pu"])
+    )
+
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

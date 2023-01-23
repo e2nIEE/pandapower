@@ -572,10 +572,11 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
                      switch_rx_ratio, enforce_q_lims, recycle, delta=1e-10,
-                     voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
-                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
-                     neglect_open_switch_branches=False, consider_line_temperature=False,
-                     distributed_slack=False, tdpf=False, tdpf_update_r_theta=True, tdpf_delay_s=None):
+                     delta_xward_vm_pu=1e-3, voltage_depend_loads=False,
+                     trafo3w_losses="hv", init_vm_pu=1.0, init_va_degree=0,
+                     p_lim_default=1e9, q_lim_default=1e9, neglect_open_switch_branches=False,
+                     consider_line_temperature=False, distributed_slack=False, tdpf=False,
+                     tdpf_update_r_theta=True, tdpf_delay_s=None):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -600,6 +601,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "tdpf_delay_s": tdpf_delay_s,
         "distributed_slack": distributed_slack,
         "delta": delta,
+        "delta_xward_vm_pu": delta_xward_vm_pu,
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
         "init_va_degree": init_va_degree,
@@ -1216,7 +1218,8 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
 
 
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
-                         init, numba, trafo3w_losses, consider_line_temperature=False, **kwargs):
+                         delta_xward_vm_pu, init, numba, trafo3w_losses,
+                         consider_line_temperature=False, **kwargs):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -1237,15 +1240,15 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, swit
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=kwargs.get("voltage_depend_loads", False),
-                     delta=delta, trafo3w_losses=trafo3w_losses,
+                     delta=delta, delta_xward_vm_pu=delta_xward_vm_pu, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba,
                      lightsim2grid=lightsim2grid,
                      only_v_results=only_v_results, use_umfpack=use_umfpack, permc_spec=permc_spec)
 
 
-def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, trafo3w_losses,
-                           **kwargs):
+def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, delta_xward_vm_pu,
+                           trafo3w_losses, **kwargs):
     mode = "opf"
     ac = False
     init = "flat"
@@ -1264,7 +1267,8 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+                     voltage_depend_loads=False, delta=delta, delta_xward_vm_pu=delta_xward_vm_pu,
+                     trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac,
                      only_v_results=only_v_results,
                      use_umfpack=use_umfpack, permc_spec=permc_spec)

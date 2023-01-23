@@ -284,7 +284,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity=True,
-           suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, init="flat", numba=True,
+           suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, delta_xward_vm_pu=1e-3, init="flat", numba=True,
            trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
     """
         Runs the  pandapower Optimal Power Flow.
@@ -347,6 +347,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
 
             **delta** (float, 1e-10) - power tolerance
 
+            **delta_xward_vm_pu** (float, 1e-3) - tolerance of the auxiliary bus of the xward
+
             **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
             **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided\
@@ -367,7 +369,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
     _check_necessary_opf_parameters(net, logger)
     _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
                          check_connectivity=check_connectivity,
-                         switch_rx_ratio=switch_rx_ratio, delta=delta, init=init, numba=numba,
+                         switch_rx_ratio=switch_rx_ratio, delta=delta,
+                         delta_xward_vm_pu=delta_xward_vm_pu, init=init, numba=numba,
                          trafo3w_losses=trafo3w_losses,
                          consider_line_temperature=consider_line_temperature, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
@@ -376,7 +379,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
 
 
 def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True,
-             switch_rx_ratio=0.5, delta=1e-10, trafo3w_losses="hv", **kwargs):
+             switch_rx_ratio=0.5, delta=1e-10, delta_xward_vm_pu=1e-3, trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -409,6 +412,8 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
         **delta** (float, 1e-10) - power tolerance
 
+        **delta_xward_vm_pu** (float, 1e-3) - tolerance of the auxiliary bus of the xward
+
         **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
     """
     if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
@@ -419,6 +424,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
     _init_rundcopp_options(net, check_connectivity=check_connectivity,
                            switch_rx_ratio=switch_rx_ratio, delta=delta,
+                           delta_xward_vm_pu=delta_xward_vm_pu,
                            trafo3w_losses=trafo3w_losses, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)

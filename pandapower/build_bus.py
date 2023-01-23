@@ -352,6 +352,9 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     if net._options["mode"] == "opf":
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
+        if element == "xward":
+            ppc["bus"][aux_idx, VMAX] = net.xward.vm_pu + net._options["delta_xward_vm_pu"]
+            ppc["bus"][aux_idx, VMIN] = net.xward.vm_pu - net._options["delta_xward_vm_pu"]
 
     if net._options["init_vm_pu"] == "results":
         ppc["bus"][aux_idx, VM] = net["res_%s" % element]["vm_internal_pu"].values
