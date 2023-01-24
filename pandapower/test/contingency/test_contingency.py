@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 import pandapower as pp
 import pandapower.networks
@@ -13,6 +14,7 @@ import pandapower.control
 import pandapower.timeseries
 import pandapower.contingency
 import pytest
+from pandapower.contingency.contingency import _convert_trafo_phase_shifter
 
 try:
     import pandaplan.core.pplog as logging
@@ -134,12 +136,112 @@ def test_lightsim2grid_distributed_slack():
                                         distributed_slack=True)
     pp.contingency.run_contingency_ls2g(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
+    assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+    if len(net.trafo) > 0:
+        assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
+
     for var in ("loading_percent", "max_loading_percent", "min_loading_percent"):
         assert np.allclose(res1["line"][var], net1.res_line[var].values, atol=1e-6, rtol=0)
         assert np.allclose(res["line"][var], net.res_line[var].values, atol=1e-6, rtol=0)
     for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
         assert np.allclose(res1["bus"][var], net1.res_bus[var].values, atol=1e-9, rtol=0)
         assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
+
+
+def test_lightsim2grid_phase_shifters():
+    net = pp.create_empty_network()
+    pp.set_user_pf_options(net, calculate_voltage_angles=True)
+    pp.create_buses(net, 4, 110)
+    pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
+
+    pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+    pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
+                                          'hv', 0, 10, -10, 0, 1, 5, True, max_loading_percent=100)
+    pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+
+    pp.create_load(net, 3, 110)
+
+    nminus1_cases = {"line": {"index": net.line.index.values}}
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+                                        distributed_slack=True)
+
+    assert net.trafo.shift_degree.values[0] == 150
+    assert net.trafo.tap_pos.values[0] == 5
+    assert net.trafo.tap_phase_shifter.values[0]
+
+    assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
+    if len(net.trafo) > 0:
+        assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
+
+    for var in ("loading_percent", "max_loading_percent", "min_loading_percent"):
+        assert np.allclose(res["line"][var], net.res_line[var].values, atol=1e-6, rtol=0)
+    for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
+        assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
+
+    pp.runpp(net)
+    bus_res = net.res_bus.copy()
+    _convert_trafo_phase_shifter(net)
+    pp.runpp(net)
+    assert_frame_equal(bus_res, net.res_bus)
+
+
+def test_cause_element_index():
+    net = pp.networks.case14()
+    for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
+        net.trafo[c] = 0
+    net.gen["slack_weight"] = 1
+    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    nminus1_cases = {"line": {"index": np.array([4, 2, 1, 5, 7, 8])},
+                     "trafo": {"index": np.array([2, 3, 1, 0, 4])}}
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    cause_res_copy_line = net.res_line.copy()
+    cause_res_copy_trafo = net.res_trafo.copy()
+
+    check_cause_index(net, nminus1_cases)
+
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    columns = ["loading_percent", "max_loading_percent", "min_loading_percent", "causes_overloading", "cause_element",
+               "cause_index"]
+    assert_frame_equal(net.res_line[columns], cause_res_copy_line[columns], rtol=0, atol=1e-6, check_dtype=False)
+    assert_frame_equal(net.res_trafo[columns], cause_res_copy_trafo[columns], rtol=0, atol=1e-6, check_dtype=False)
+
+    check_cause_index(net, nminus1_cases)
+
+
+def check_cause_index(net, nminus1_cases):
+    """
+    This is a not so efficient but very easy to understand auxiliary function to test the "cause element" feature
+    that is otherwise complicated to test properly.
+    """
+    net_copy = net.deepcopy()
+    elements_to_check = [e for e in ("line", "trafo") if len(net[e]) > 0]
+    for check_element in elements_to_check:
+        result_table = net_copy[f"res_{check_element}"]
+        # here we iterate over the "to check" elements
+        for check_element_index in net[check_element].index.values:
+            element_max_loading = 0
+            element_cause_index = -1
+            cause_element = None
+            # here we run the n-1 calculation
+            for nminus1_element, nminus1_element_index in nminus1_cases.items():
+                for nminus1_idx in nminus1_element_index["index"]:
+                    net[nminus1_element].at[nminus1_idx, 'in_service'] = False
+                    run_for_from_bus_loading(net)
+                    net[nminus1_element].at[nminus1_idx, 'in_service'] = True
+                    if net[f"res_{check_element}"].at[check_element_index, 'loading_percent'] > element_max_loading:
+                        element_max_loading = net[f"res_{check_element}"].at[check_element_index, 'loading_percent']
+                        element_cause_index = nminus1_idx
+                        cause_element = nminus1_element
+
+            assert result_table.at[check_element_index, 'cause_index'] == element_cause_index
+            assert result_table.at[check_element_index, 'cause_element'] == cause_element
+            assert np.isclose(result_table.at[check_element_index, 'max_loading_percent'], element_max_loading,
+                              rtol=0, atol=1e-6)
 
 
 def run_for_from_bus_loading(net, **kwargs):

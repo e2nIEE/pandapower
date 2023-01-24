@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal
 import pytest
 
 import pandapower as pp
@@ -291,7 +292,7 @@ def test_convert_format_for_pp_objects(net_in):
     c2.u_lower = 0.99
     c2.u_upper = 1.1
     # needed to trigger conversion
-    net_in.version = "2.1.0"
+    net_in.format_version = "2.1.0"
 
     net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
     assert 'controller' in net_in.controller.columns
@@ -379,6 +380,7 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, str)
     pp.to_json(net_select, filename)
     net_select = pp.from_json(filename)
+    assert net.trafo.equals(net_select.trafo)
     assert_net_equal(net, net_select)
 
 
@@ -480,12 +482,67 @@ def test_json_generalized():
         assert pp.nets_equal(out, general_in)
 
 
+def test_json_simple_index_type():
+    s1 = pd.Series([4, 5, 6])
+    s2 = pd.Series([4, 5, 6], index=[1, 2, 3])
+    s3 = pd.Series([4, 5, 6], index=[1, 2, "3"])
+    s4 = pd.Series([4, 5, 6], index=["1", "2", "3"])
+    df1 = pd.DataFrame(s1)
+    df2 = pd.DataFrame(s2)
+    df3 = pd.DataFrame(s3)
+    df4 = pd.DataFrame(s4)
+    df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
+    df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
+    input =  {key: val for key, val in zip("abcdefghijkl", [
+        s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
+    json_str = pp.to_json(input)
+    output = pp.from_json_string(json_str, convert=False)
+    for key in list("abcd"):
+        assert_series_equal(input[key], output[key], check_dtype=False)
+    for key in list("efghijkl"):
+        assert_frame_equal(input[key], output[key], check_dtype=False)
+
+
 def test_json_index_names():
     net_in = networks.mv_oberrhein()
     net_in.bus.index.name = "bus_index"
-    net_out = pp.from_json_string(pp.to_json(net_in, store_index_names=True))
+    net_in.line.columns.name = "line_column"
+    net_in["test_series"] = pd.Series([8], index=pd.Index([2], name="idx_name"))
+    json_str = pp.to_json(net_in)
+    net_out = pp.from_json_string(json_str)
     assert net_out.bus.index.name == "bus_index"
+    assert net_out.line.columns.name == "line_column"
+    assert net_out.test_series.index.name == "idx_name"
     assert pp.nets_equal(net_out, net_in)
+
+
+def test_json_multiindex_and_index_names():
+
+    # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
+    idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
+    col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
+    idx1 = pd.MultiIndex.from_tuples(idx_tuples)
+    idx2 = pd.MultiIndex.from_tuples(idx_tuples, names=[5, 6])
+    idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
+    col1 = pd.MultiIndex.from_tuples(col_tuples)
+    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8]) # ["7", "8"] is not possible since
+    # orient="columns" loses info whether index/column is an iteger or a string
+    col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
+
+    for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
+        s_mi = pd.Series(range(4), index=idx)
+        df_mi = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx)
+        df_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), columns=col)
+        df_mi_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx, columns=col)
+
+        input =  {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
+        json_str = pp.to_json(input)
+        output = pp.from_json_string(json_str, convert=False)
+        assert_series_equal(input["a"], output["a"], check_dtype=False)
+        assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
+        assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
+        assert_frame_equal(input["d"], output["d"], check_dtype=False, check_column_type=False,
+                           check_index_type=False)
 
 
 def test_json_dict_of_stuff():

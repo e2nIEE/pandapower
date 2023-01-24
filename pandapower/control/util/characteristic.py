@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from builtins import zip
@@ -31,23 +31,23 @@ class Characteristic(JSONSerializableClass):
 
     # You can give points by lists of x/y-values
     >>> c = Characteristic(net, x_values=[0.95, 1.05],y_values=[10, 20])
-    >>> c.target(x=1.0)
+    >>> c(x=1.0)
     15.0
 
     # or pass a list of points (x,y)
     >>> c = Characteristic.from_points(net,points=[(0.95, 10), (1.05, 20)])
-    >>> c.target(x=1.0)
+    >>> c(x=1.0)
     15.0
 
     # or in a simple case from a gradient, its zero crossing and the maximal values for y
     >>> c = Characteristic.from_gradient(net,zero_crossing=-85,gradient=100,y_min=10,y_max=20)
-    >>> c.target(x=1.0)
+    >>> c(x=1.0)
     15.0
 
     # Values are constant beyond the first and last defined points
-    >>> c.target(x=42)
+    >>> c(x=42)
     20.0
-    >>> c.target(x=-42)
+    >>> c(x=-42)
     10.0
 
     # Create a curve with many points and ask for the difference between the y-value being measured
@@ -64,22 +64,22 @@ class Characteristic(JSONSerializableClass):
     False
     """
 
-    def __init__(self, net, x_values, y_values):
+    def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__()
         self.x_vals = x_values
         self.y_vals = y_values
         self.index = super().add_to_net(net, "characteristic")
 
     @classmethod
-    def from_points(cls, net, points):
+    def from_points(cls, net, points, **kwargs):
         unzipped = list(zip(*points))
-        return cls(net, unzipped[0], unzipped[1])
+        return cls(net, unzipped[0], unzipped[1], **kwargs)
 
     @classmethod
-    def from_gradient(cls, net, zero_crossing, gradient, y_min, y_max):
+    def from_gradient(cls, net, zero_crossing, gradient, y_min, y_max, **kwargs):
         x_left = (y_min - zero_crossing) / float(gradient)
         x_right = (y_max - zero_crossing) / float(gradient)
-        return cls(net, [x_left, x_right], [y_min, y_max])
+        return cls(net, [x_left, x_right], [y_min, y_max], **kwargs)
 
     def diff(self, x, measured):
         """
@@ -87,16 +87,7 @@ class Characteristic(JSONSerializableClass):
         :param actual: The actual y-value being measured.
         :return: The difference between actual and expected value.
         """
-        return measured - interp(x, self.x_vals, self.y_vals)
-
-    def target(self, x):
-        """
-        Note: Deprecated. Use the __call__ interface instead.
-        :param x: An x-value
-        :return: The corresponding target value of this characteristics
-        """
-        # return interp(x, self.x_vals, self.y_vals)
-        raise DeprecationWarning("target method is deprecated. Use the __call__ interface instead.")
+        return measured - self(x)
 
     def satisfies(self, x, measured, epsilon):
         """
@@ -118,15 +109,33 @@ class Characteristic(JSONSerializableClass):
         """
         return interp(x, self.x_vals, self.y_vals)
 
-
     def __repr__(self):
         return self.__class__.__name__
 
 
 class SplineCharacteristic(Characteristic):
     json_excludes = ["self", "__class__", "_interpolator"]
-    def __init__(self, net, x_values, y_values):
-        super().__init__(net, x_values=x_values, y_values=y_values)
+
+    def __init__(self, net, x_values, y_values, kind="quadratic", fill_value="extrapolate", **kwargs):
+        """
+        SplineCharacteristic interpolates the y-value(s) for the given x-value(s) according to a non-linear function.
+        Internally the interpolator object interp1d from scipy.interpolate is used.
+        By default, the function is quadratic, but the user can specify other methods (refer to the documentation of
+        interp1d). The fill_value can be specified as "extrapolate" so that even x-values outside of the specified
+        range can be used and yield y-values outside the specified y range. Alternatively, the behavior of
+        Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
+        refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
+
+        Parameters
+        ----------
+        net
+        x_values
+        y_values
+        fill_value
+        """
+        super().__init__(net, x_values=x_values, y_values=y_values, **kwargs)
+        self.fill_value = fill_value
+        self.kind = kind
 
     @property
     def interpolator(self):
@@ -143,7 +152,8 @@ class SplineCharacteristic(Characteristic):
     @interpolator.getter
     def interpolator(self):
         if not hasattr(self, '_interpolator'):
-            self._interpolator = interp1d(self.x_vals, self.y_vals, kind='quadratic', fill_value='extrapolate')
+            self._interpolator = interp1d(self.x_vals, self.y_vals, kind=self.kind, bounds_error=False,
+                                          fill_value=self.fill_value)
         return self._interpolator
 
     def __call__(self, x):

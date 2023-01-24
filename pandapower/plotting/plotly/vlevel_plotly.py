@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,24 +30,23 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     tutorial
 
     INPUT:
-        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
-        plotted as an example
+        **net** - The pandapower format network.
 
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
         **use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata
-            of the lines (True) or on net.bus_geodata of the connected buses (False)
+        of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
-            in the form: voltage : color
+        in the form: voltage : color
 
         **on_map** (bool, False) - enables using mapbox plot in plotly If provided geodata are not
-            real geo-coordinates in lon/lat form, on_map will be set to False.
+        real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be
-            transformed to lat-long. For each projection a string can be found at
-            http://spatialreference.org/ref/epsg/
+        transformed to lat-long. For each projection a string can be found at
+        http://spatialreference.org/ref/epsg/
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
 
@@ -60,7 +59,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-            network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
 

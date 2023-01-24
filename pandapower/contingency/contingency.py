@@ -72,7 +72,9 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         if element == "bus":
             continue
         contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool)})
+            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
+             "cause_element": np.empty_like(net[element].index.values, dtype=np.object),
+             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
     result_variables = {**{"bus": ["vm_pu"]},
                         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
     if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
@@ -144,6 +146,11 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
+    trafo_flag = False
+    if np.any(net.trafo.tap_phase_shifter):
+        trafo_flag = True
+        tap_phase_shifter, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
         slack_backup = net.gen.slack.copy()
@@ -158,6 +165,11 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     else:
         lightsim_grid_model = init_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+
+    if trafo_flag:
+        net.trafo.tap_phase_shifter = tap_phase_shifter
+        net.trafo.tap_pos = tap_pos
+        net.trafo.shift_degree = shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
@@ -211,6 +223,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
             kamps_element_cause = kamps_all[n_lines_cases:n_lines_cases + n_trafos_cases, :]
             max_i_ka_limit = max_i_ka_limit_all[n_lines:n_lines + n_trafos]
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
+        cause_index = np.nanargmax(kamps_element, axis=0)
+        cause_element = np.where(cause_index < n_lines_cases, "line", "trafo")
         max_i_ka = np.nanmax(kamps_element, axis=0)
         net[f"res_{element}"]["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
         min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0,
@@ -223,6 +237,30 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
             net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "causes_overloading"] = causes_overloading
+        cause_mask = cause_element == "line"
+        if "line" in map_index:
+            cause_index[cause_mask] = np.sort(map_index["line"])[cause_index[cause_mask]]
+        if "trafo" in map_index:
+            cause_index[~cause_mask] = np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]
+        net[f"res_{element}"]["cause_index"] = cause_index
+        net[f"res_{element}"]["cause_element"] = cause_element
+
+
+def _convert_trafo_phase_shifter(net):
+    tap_phase_shifter = net.trafo.tap_phase_shifter.values.copy()
+    # vn_hv_kv = net.trafo.vn_hv_kv.values.copy()
+    shift_degree = net.trafo.shift_degree.values.copy()
+
+    tap_pos = net.trafo.tap_pos.values
+    tap_neutral = net.trafo.tap_neutral.values
+    tap_diff = tap_pos - tap_neutral
+    tap_step_degree = net.trafo.tap_step_degree.values.copy()
+
+    net.trafo.loc[tap_phase_shifter, 'shift_degree'] += tap_diff[tap_phase_shifter] * tap_step_degree[tap_phase_shifter]
+    net.trafo["tap_pos"] = 0
+    net.trafo["tap_phase_shifter"] = False
+
+    return tap_phase_shifter, tap_pos, shift_degree
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None, cause_index=None):
@@ -234,10 +272,16 @@ def _update_contingency_results(net, contingency_results, result_variables, nmin
                     s = 'max_loading_percent_nminus1' \
                         if 'max_loading_percent_nminus1' in net[element].columns \
                         else 'max_loading_percent'
+                    # this part with cause_mask and max_mask is not very efficient nor orderly
                     loading_limit = net[element].loc[contingency_results[element]["index"], s].values
-                    if np.any(val > loading_limit):
+                    cause_mask = val > loading_limit
+                    if np.any(cause_mask):
                         contingency_results[cause_element]["causes_overloading"][
                             contingency_results[cause_element]["index"] == cause_index] = True
+                    max_mask = val > contingency_results[element].get("max_loading_percent", np.full_like(val, -1))
+                    if np.any(max_mask):
+                        contingency_results[element]["cause_index"][max_mask] = cause_index
+                        contingency_results[element]["cause_element"][max_mask] = cause_element
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
                     func(val,
@@ -410,6 +454,8 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
             elif "max" in var:
                 mask = val[index] > limit['max_limit_nminus1'] + tol
                 _log_violation(element, var, val[index], limit["index"], mask)
+            elif "cause" in var:
+                continue
             else:
                 mask_max = val[index] > limit['max_limit'] + tol
                 _log_violation(element, var, val[index], limit["index"], mask_max)

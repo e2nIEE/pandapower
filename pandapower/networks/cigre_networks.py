@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -130,7 +130,9 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     net_cigre_hv.bus_geodata = read_json(
         """{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,
         "12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,
-        "9":8.0,"10":12.0,"11":8.0,"12":4.5}}""")
+        "9":8.0,"10":12.0,"11":8.0,"12":4.5},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}""")
     # Match bus.index
     net_cigre_hv.bus_geodata = net_cigre_hv.bus_geodata.loc[net_cigre_hv.bus.index]
     return net_cigre_hv
@@ -285,8 +287,11 @@ def create_cigre_network_mv(with_der=False):
     # Bus geo data
     net_cigre_mv.bus_geodata = read_json(
         """{"x":{"0":7.0,"1":4.0,"2":4.0,"3":4.0,"4":2.5,"5":1.0,"6":1.0,"7":8.0,"8":8.0,"9":6.0,
-        "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},"y":{"0":16,"1":15,"2":13,"3":11,"4":9,
-        "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5}}""")
+        "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},
+        "y":{"0":16,"1":15,"2":13,"3":11,"4":9,
+        "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN}}""")
     # Match bus.index
     net_cigre_mv.bus_geodata = net_cigre_mv.bus_geodata.loc[net_cigre_mv.bus.index]
     return net_cigre_mv
@@ -522,7 +527,12 @@ def create_cigre_network_lv():
         "10":10.0,"11":11.0,"12":5.0,"13":6.0,"14":7.0,"15":8.0,"16":9.0,"17":8.0,"18":11.0,
         "19":12.0,"20":1.0,"21":2.0,"22":3.0,"23":1.0,"24":2.0,"25":3.0,"26":4.0,"27":5.0,"28":6.0,
         "29":7.0,"30":8.0,"31":9.0,"32":10.0,"33":5.0,"34":6.0,"35":7.0,"36":7.0,"37":6.0,"38":7.0,
-        "39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0}}""")
+        "39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN,"15":NaN,"16":NaN,"17":NaN,
+        "18":NaN,"19":NaN,"20":NaN,"21":NaN,"22":NaN,"23":NaN,"24":NaN,"25":NaN,"26":NaN,
+        "27":NaN,"28":NaN,"29":NaN,"30":NaN,"31":NaN,"32":NaN,"33":NaN,"34":NaN,"35":NaN,
+        "36":NaN,"37":NaN,"38":NaN,"39":NaN,"40":NaN,"41":NaN,"42":NaN,"43":NaN}}""")
     # Match bus.index
     net_cigre_lv.bus_geodata = net_cigre_lv.bus_geodata.loc[net_cigre_lv.bus.index]
     return net_cigre_lv
