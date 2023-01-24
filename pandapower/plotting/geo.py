@@ -224,9 +224,9 @@ def dump_to_geojson(net, nodes=False, branches=False):
     :param net: The pandapower network
     :type net: pandapowerNet|pandapipesNet
     :param nodes: if True return contains all bus data, can be a list of bus ids that should be contained
-    :type nodes: bool | list, default True
+    :type nodes: bool | list, default False
     :param branches: if True return contains all line data, can be a list of line ids that should be contained
-    :type branches: bool | list, default True
+    :type branches: bool | list, default False
     :return: geojson
     :return type: geojson.FeatureCollection
     """
@@ -319,7 +319,7 @@ def dump_to_geojson(net, nodes=False, branches=False):
                     coords.append(net.pipe_geodata.loc[uid].coords)
                 coords.append([float(to_coords.x), float(to_coords.y)])
 
-            geom = geojson.LineString(row.coords if is_pandapower else coords)
+            geom = geojson.LineString(row.coords.tolist() if is_pandapower else coords)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
     # find and set crs if available
     crs_node = None
