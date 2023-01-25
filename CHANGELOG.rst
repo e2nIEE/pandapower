@@ -7,6 +7,7 @@ Change Log
 - [FIXED] documentation of powerfactory converter
 - [CHANGED] cim2pp converter documentation fixes
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
+- [ADDED] documentation of DeprecationWarning process
 
 [2.11.1] - 2023-01-02
 -------------------------------
