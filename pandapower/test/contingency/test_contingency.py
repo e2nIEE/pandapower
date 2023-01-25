@@ -49,7 +49,7 @@ def test_contingency_timeseries(get_net):
 
     contingency_functions = [pp.contingency.run_contingency]
     if lightsim2grid_installed:
-        contingency_functions.append(pp.contingency.run_contingency_ls2g)
+        contingency_functions = [*contingency_functions, pp.contingency.run_contingency_ls2g]
 
     for contingency_function in contingency_functions:
         net0 = get_net.deepcopy()

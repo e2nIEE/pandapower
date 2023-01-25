@@ -84,7 +84,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
             continue
         contingency_results[element].update(
             {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
-             "cause_element": np.empty_like(net[element].index.values, dtype=np.object),
+             "cause_element": np.empty_like(net[element].index.values, dtype=object),
              "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
     result_variables = {**{"bus": ["vm_pu"]},
                         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
