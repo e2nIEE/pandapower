@@ -14,7 +14,13 @@ import pandapower.control
 import pandapower.timeseries
 import pandapower.contingency
 import pytest
-from pandapower.contingency.contingency import _convert_trafo_phase_shifter, lightsim2grid_installed
+from pandapower.contingency.contingency import _convert_trafo_phase_shifter
+
+try:
+    import lightsim2grid
+    lightsim2grid_installed = True
+except ImportError:
+    lightsim2grid_installed = False
 
 try:
     import pandaplan.core.pplog as logging
