@@ -14,7 +14,7 @@ import pandapower.control
 import pandapower.timeseries
 import pandapower.contingency
 import pytest
-from pandapower.contingency.contingency import _convert_trafo_phase_shifter
+from pandapower.contingency.contingency import _convert_trafo_phase_shifter, lightsim2grid_installed
 
 try:
     import pandaplan.core.pplog as logging
@@ -47,7 +47,11 @@ def test_contingency_timeseries(get_net):
     nminus1_cases = {element: {"index": get_net[element].index.values}
                      for element in ("line", "trafo") if len(get_net[element]) > 0}
 
-    for contingency_function in (pp.contingency.run_contingency, pp.contingency.run_contingency_ls2g):
+    contingency_functions = [pp.contingency.run_contingency]
+    if lightsim2grid_installed:
+        contingency_functions.append(pp.contingency.run_contingency_ls2g)
+
+    for contingency_function in contingency_functions:
         net0 = get_net.deepcopy()
         setup_timeseries(net0)
         ow = net0.output_writer.object.at[0]
@@ -87,6 +91,7 @@ def test_contingency_timeseries(get_net):
                                    ow.output[f"res_{element}.{var}"].iloc[0, :].values, atol=1e-6, rtol=0), var
 
 
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_with_lightsim2grid(get_net, get_case):
     net = get_net
     case = get_case
@@ -119,6 +124,7 @@ def test_with_lightsim2grid(get_net, get_case):
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_distributed_slack():
     net = pp.networks.case9()
     net.gen["slack_weight"] = 1
@@ -148,6 +154,7 @@ def test_lightsim2grid_distributed_slack():
         assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
 
 
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_phase_shifters():
     net = pp.create_empty_network()
     pp.set_user_pf_options(net, calculate_voltage_angles=True)
@@ -196,21 +203,23 @@ def test_cause_element_index():
     nminus1_cases = {"line": {"index": np.array([4, 2, 1, 5, 7, 8])},
                      "trafo": {"index": np.array([2, 3, 1, 0, 4])}}
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    _ = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     cause_res_copy_line = net.res_line.copy()
     cause_res_copy_trafo = net.res_trafo.copy()
 
     check_cause_index(net, nminus1_cases)
 
-    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    if lightsim2grid_installed:
+        pp.contingency.run_contingency_ls2g(net, nminus1_cases,
+                                            contingency_evaluation_function=run_for_from_bus_loading)
 
-    columns = ["loading_percent", "max_loading_percent", "min_loading_percent", "causes_overloading", "cause_element",
-               "cause_index"]
-    assert_frame_equal(net.res_line[columns], cause_res_copy_line[columns], rtol=0, atol=1e-6, check_dtype=False)
-    assert_frame_equal(net.res_trafo[columns], cause_res_copy_trafo[columns], rtol=0, atol=1e-6, check_dtype=False)
+        columns = ["loading_percent", "max_loading_percent", "min_loading_percent", "causes_overloading",
+                   "cause_element", "cause_index"]
+        assert_frame_equal(net.res_line[columns], cause_res_copy_line[columns], rtol=0, atol=1e-6, check_dtype=False)
+        assert_frame_equal(net.res_trafo[columns], cause_res_copy_trafo[columns], rtol=0, atol=1e-6, check_dtype=False)
 
-    check_cause_index(net, nminus1_cases)
+        check_cause_index(net, nminus1_cases)
 
 
 def check_cause_index(net, nminus1_cases):
