@@ -7,6 +7,7 @@ Change Log
 - [FIXED] documentation of powerfactory converter
 - [CHANGED] cim2pp converter documentation fixes
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
+- [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
 
 [2.11.1] - 2023-01-02
 -------------------------------
