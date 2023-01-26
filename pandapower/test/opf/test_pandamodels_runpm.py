@@ -698,7 +698,7 @@ def test_runpm_qflex_and_multi_qflex():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_runpm_ploss():
+def test_runpm_ploss_loading():
     net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.load['controllable'] = False
     net.sgen['controllable'] = True
@@ -720,6 +720,7 @@ def test_runpm_ploss():
     net_org = deepcopy(net)
     pp.runpm_ploss(net)
 
+    ### test loss reduction with Q-optimierung
     assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
 
     net.line.drop(columns=["pm_param/target_branch"], inplace=True)
@@ -727,6 +728,12 @@ def test_runpm_ploss():
     pp.runpm_ploss(net)
 
     assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
+
+    ### test loading reduction with Q-optimierung
+    net = deepcopy(net_org)
+    pp.runpm_loading(net)
+    assert (net.res_line.loading_percent.values - \
+            net_org.res_line.loading_percent.values).sum() < 0
 
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
@@ -769,6 +776,6 @@ if __name__ == '__main__':
         pytest.main(['-x', __file__])
     else:
         # test_storage_opt()
-        test_runpm_ploss()
+        test_runpm_ploss_loading()
         # test_runpm_qflex_and_multi_qflex()
 
