@@ -285,7 +285,7 @@ def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
     v_m = net_zpbn._ppc["bus"][df.bus_ppc.values, 7]
     delta = net_zpbn._ppc["bus"][df.bus_ppc.values, 8] * np.pi / 180
     v_cpx = v_m * np.exp(1j * delta)
-    df.power = np.multiply(np.mat(v_cpx).T, np.conj(Ybus_eq * np.mat(v_cpx).T))
+    df.power = np.multiply(np.mat(v_cpx).T, np.conj(Ybus_eq * np.mat(v_cpx).T)) * net_zpbn.sn_mva
     df.dropna(axis=0, how="any", inplace=True)
 
     return df
@@ -535,13 +535,13 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
     #     net.res_bus.q_mvar[target_buses].values
     # print(q_errors)
     for idx, lb in enumerate(target_buses):
-        if abs(vm_errors[idx] > 1e-6) and abs(vm_errors[idx]) > 1e-6:
+        if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
             hb = pp.create_bus(net, net.bus.vn_kv[lb]*(1-vm_errors[idx]),
                                name="phase_shifter_adapter_"+str(lb))
             elm_dict = pp.get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:
-                    name = net[e].name[i]
+                    name = str(net[e].name[i])
                     if "eq_" not in name and "_integrated_" not in name and \
                         "_separate_" not in name:
                         if e in ["impedance", "line"]:

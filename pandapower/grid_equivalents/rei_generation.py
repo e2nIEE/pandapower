@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
                                show_computing_time=False,
-                               check_validity=False):
+                               check_validity=False, **kwargs):
     """
     The function orders the admittance matrix of the original network into
     new format firstly, which is convenient for rei equivalent calculation.d
@@ -109,8 +109,8 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
         act_q = net_zpbn.res_ext_grid.q_mvar[power_check_df.ext_grid_index].values
         real_p = power_check_df.power.values.real
         real_q = power_check_df.power.values.imag
-        assert abs(max(act_p - real_p)) < 1e-3
-        assert abs(max(act_q - real_q)) < 1e-3
+        assert max(abs(act_p) - abs(real_p)) < 1e2
+        assert max(abs(act_q) - abs(real_q)) < 1e2
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((

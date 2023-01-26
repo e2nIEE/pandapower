@@ -190,7 +190,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         # --- calculate equivalent Ybus according to gaussian elimination
         Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups,
                                              eq_type, show_computing_time,
-                                             check_validity=False)
+                                             **kwargs)
 
         # --- calculate equivalent impedance and shunts
         shunt_params, impedance_params = \
