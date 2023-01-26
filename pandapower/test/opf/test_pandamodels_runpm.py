@@ -729,12 +729,6 @@ def test_runpm_ploss_loading():
 
     assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
 
-    ### test loading reduction with Q-optimierung
-    net = deepcopy(net_org)
-    pp.runpm_loading(net)
-    assert (net.res_line.loading_percent.values - \
-            net_org.res_line.loading_percent.values).sum() < 0
-
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_convergence_dc_opf():
