@@ -14,7 +14,7 @@ from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
 from pandapower.grid_equivalents.ward_generation import \
     _calculate_ward_and_impedance_parameters, \
     _calculate_xward_and_impedance_parameters, \
-    create_passive_external_net_for_ward_addmittance, \
+    create_passive_external_net_for_ward_admittance, \
     _replace_external_area_by_wards, _replace_external_area_by_xwards
 
 try:
@@ -170,7 +170,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     # --- switch from ward injection to ward addmittance if requested
     if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
-        create_passive_external_net_for_ward_addmittance(
+        create_passive_external_net_for_ward_admittance(
             net, all_external_buses, boundary_buses, runpp_fct=runpp_fct)
 
     # --- rei calculations

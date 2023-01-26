@@ -10,6 +10,9 @@ from pandapower.control import ConstControl
 from pandapower import pp_dir
 from pandapower.timeseries import DFData
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load
+from pandapower.grid_equivalents.ward_generation import \
+    create_passive_external_net_for_ward_admittance
+from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles
 
 try:
     from misc.groups import Group
@@ -554,7 +557,8 @@ def test_motor():
 
     for eq in ["rei", "ward", "xward"]:   
         net_eq = pp.grid_equivalents.get_equivalent(net, eq, [4, 8], [0], 
-                                                    retain_original_internal_indices=True)
+                                                    retain_original_internal_indices=True,
+                                                    show_computing_time=True)
     
         assert max(net_eq.res_bus.vm_pu[[0,3,4,8]].values - net.res_bus.vm_pu[[0,3,4,8]].values) < 1e-8
         assert net_eq.motor.bus.values.tolist() == [3, 4]
@@ -593,7 +597,7 @@ def test_sgen_bswitch():
     net.sgen.name = ["aa", "bb", "cc", "dd"]
     pp.runpp(net)
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
-                                                    retain_original_internal_indices=True)
+                                                retain_original_internal_indices=True)
     
     assert net_eq.sgen.name[0] == 'aa//cc-sgen_separate_rei_1'
     assert net_eq.sgen.p_mw[0] == 173
@@ -613,14 +617,26 @@ def test_sgen_bswitch():
     assert net_eq.sgen["bool"][0] == False
     assert net_eq.sgen["bool"][1] == True
     assert net_eq.sgen["voltLvl"].values.tolist() == [1, 1]
+
+
+def test_ward_admittance():
+    net = pp.networks.case9()
+    pp.runpp(net)
+    res_bus = net.res_bus.copy()
+    create_passive_external_net_for_ward_admittance(net, [1, 2, 5, 6, 7], 
+                                                    [4,8], True,
+                                                    _runpp_except_voltage_angles)
+    assert len(net.shunt)==3
+    assert np.allclose(net.res_bus.vm_pu.values, res_bus.vm_pu.values)
+    
         
 if __name__ == "__main__":
-    if 1:
+    if 0:
         pytest.main(['-x', __file__])
     else:
         # test_cost_consideration()
         # test_basic_usecases()
-        test_case9_with_slack_generator_in_external_net()
+        # test_case9_with_slack_generator_in_external_net()
         # test_adopt_columns_to_separated_eq_elms()
         # test_equivalent_groups()
         # test_shifter_degree()
@@ -630,6 +646,8 @@ if __name__ == "__main__":
         # test_controller()
         # test_motor()
         # test_sgen_bswitch()
+        test_ward_admittance()
+
     pass
 
     
