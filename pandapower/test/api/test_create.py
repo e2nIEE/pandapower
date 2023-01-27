@@ -612,6 +612,36 @@ def test_create_lines_raise_except():
         )
 
 
+def test_create_lines_optional_columns():
+    #
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    assert "max_loading_percent" not in net.line.columns
+
+    v = None
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
+    assert "max_loading_percent" not in net.line.columns
+
+    v = np.nan
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    # np.nan is not None:
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
+    assert "max_loading_percent" not in net.line.columns
+
+
 def test_create_line_alpha_temperature():
     net = pp.create_empty_network()
     b = pp.create_buses(net, 5, 110)
