@@ -590,7 +590,20 @@ def test_create_lines_raise_except():
             net,
             [b1, b1],
             [b2, b2],
-            index=[0, 0],
+            index=[0, 1],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+        )
+
+    with pytest.raises(UserWarning, match="Passed indexes"):
+        pp.create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            index=[2, 2],
             length_km=[10.0, 5.0],
             x_ohm_per_km=[1.0, 1.0],
             r_ohm_per_km=[0.2, 0.2],

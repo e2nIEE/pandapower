@@ -4259,7 +4259,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         return arange(bid, bid + number, 1)
     u, c = np.unique(index, return_counts=True)
     if np.any(c>1):
-        raise UserWarning("passed indexes %s exist multiple times" % (u[c>1]))
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
     contained = isin(net[table].index.values, index)
     if np_any(contained):
         if name is None:
