@@ -15,7 +15,7 @@ import pandapower.networks as nw
 import pandapower.control
 import pandapower.timeseries
 from copy import deepcopy
-from pandapower.converter.powermodels.to_pm import init_ne_line
+from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
@@ -514,7 +514,7 @@ def test_ots_opt():
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 @pytest.mark.xfail(reason="not complited yet")
-def test_timeseries_powermodels():
+def test_timeseries_pandamodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
     profiles['load1'] = np.random.random(n_timesteps) * 2e1
@@ -698,7 +698,7 @@ def test_runpm_qflex_and_multi_qflex():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_runpm_ploss():
+def test_runpm_ploss_loading():
     net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.load['controllable'] = False
     net.sgen['controllable'] = True
@@ -720,6 +720,7 @@ def test_runpm_ploss():
     net_org = deepcopy(net)
     pp.runpm_ploss(net)
 
+    ### test loss reduction with Q-optimierung
     assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
 
     net.line.drop(columns=["pm_param/target_branch"], inplace=True)
@@ -769,6 +770,6 @@ if __name__ == '__main__':
         pytest.main(['-x', __file__])
     else:
         # test_storage_opt()
-        test_runpm_ploss()
+        test_runpm_ploss_loading()
         # test_runpm_qflex_and_multi_qflex()
 
