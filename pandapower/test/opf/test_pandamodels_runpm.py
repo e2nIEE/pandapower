@@ -34,9 +34,6 @@ try:
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
 
-print("*/************************************************", julia_installed)
-
-julia_installed = True
 
 
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
