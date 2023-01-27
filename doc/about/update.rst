@@ -21,7 +21,7 @@ used in transmission systems. The most significant changes are:
 
 These changes are not backwards compatible, which is why a major release was necessary. In the following you can find a description for how to update from pandapower 1.x to 2.x.
 
-Of course there are also many new features in addition to these changes, such as :ref:`an Interface to PowerModels.jl <powermodels>`.
+Of course there are also many new features in addition to these changes, such as :ref:`an Interface to PowerModels.jl <pandamodels>`.
 
 How to update saved networks
 ==============================
