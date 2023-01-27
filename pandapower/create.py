@@ -4301,22 +4301,23 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     try:
-        set_value = not (isnan(variable) or variable is None)
+        set_value = not (variable is None or isnan(variable))  # if None, condition is known before execution of isnan()
     except TypeError:
         set_value = True
+    column_exists = column in net[element].columns
     if set_value:
-        if column not in net[element].columns:
+        if not column_exists:
             net[element].loc[:, column] = pd.Series(
                 data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
-    elif default_for_nan and column in net[element].columns:
+    elif default_for_nan and column_exists:
         net[element].at[index, column] = default_val
-    if dtype is not None:
+    # only execute if the column was actually set:
+    if column_exists and dtyp is not None:
         try:
             net[element][column] = net[element][column].astype(dtyp)
         except:
             pass
-    return net
 
 
 def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
