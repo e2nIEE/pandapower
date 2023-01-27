@@ -1943,6 +1943,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "alpha" in net.line.columns and "alpha" in lineparam:
         v["alpha"] = lineparam["alpha"]
 
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
     _set_entries(net, "line", index, **v, **kwargs)
 
     if geodata is not None:
@@ -1955,12 +1961,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
                                  "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
     _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
-    for column in tdpf_columns:
-        _create_column_and_set_value(net, index, kwargs.get(column), column, "line", float64)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -2073,8 +2075,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
                     "mc_joule_per_m_k")
-    for column in tdpf_columns:
-        _add_series_to_entries(entries, index, column, kwargs.get(column), float64)
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2188,8 +2191,14 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
     }
-    v.update(kwargs)
-    _set_entries(net, "line", index, **v)
+
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
+    _set_entries(net, "line", index, **v, **kwargs)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2214,12 +2223,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
-    for column in tdpf_columns:
-        _create_column_and_set_value(net, index, kwargs.get(column), column, "line", float64)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -2341,8 +2346,9 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
                     "mc_joule_per_m_k")
-    for column in tdpf_columns:
-        _add_series_to_entries(entries, index, column, kwargs.get(column), float64)
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
