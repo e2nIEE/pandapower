@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64, intersect1d
+    all as np_all, float64, intersect1d, unique as uni
 
 from pandapower import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
@@ -4257,6 +4257,9 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
+    u, c = uni(index, return_counts=True)
+    if np.any(c>1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
     contained = isin(net[table].index.values, index)
     if np_any(contained):
         if name is None:
