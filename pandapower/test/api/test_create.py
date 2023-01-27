@@ -590,13 +590,56 @@ def test_create_lines_raise_except():
             net,
             [b1, b1],
             [b2, b2],
-            index=[0, 0],
+            index=[0, 1],
             length_km=[10.0, 5.0],
             x_ohm_per_km=[1.0, 1.0],
             r_ohm_per_km=[0.2, 0.2],
             c_nf_per_km=[0, 0],
             max_i_ka=[100, 100],
         )
+
+    with pytest.raises(UserWarning, match="Passed indexes"):
+        pp.create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            index=[2, 2],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+        )
+
+
+def test_create_lines_optional_columns():
+    #
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    assert "max_loading_percent" not in net.line.columns
+
+    v = None
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
+    assert "max_loading_percent" not in net.line.columns
+
+    v = np.nan
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    # np.nan is not None:
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
+    assert "max_loading_percent" not in net.line.columns
 
 
 def test_create_line_alpha_temperature():
@@ -629,7 +672,7 @@ def test_create_transformers_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(
+    index = pp.create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -642,6 +685,21 @@ def test_create_transformers_from_parameters():
         i0_percent=0.3,
         foo=2,
     )
+    with pytest.raises(UserWarning):
+        pp.create_transformers_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            vn_hv_kv=[15.0, 15.0],
+            vn_lv_kv=[0.45, 0.45],
+            sn_mva=[0.5, 0.7],
+            vk_percent=[1.0, 1.0],
+            vkr_percent=[0.3, 0.3],
+            pfe_kw=0.2,
+            i0_percent=0.3,
+            foo=2,
+            index=index
+        )
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
