@@ -4257,7 +4257,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
-    u, c = np.unique(index, return_counts=True)
+    u, c = uni(index, return_counts=True)
     if np.any(c>1):
         raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
     contained = isin(net[table].index.values, index)
