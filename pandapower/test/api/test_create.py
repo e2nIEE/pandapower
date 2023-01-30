@@ -666,6 +666,13 @@ def test_create_line_alpha_temperature():
     assert net.line.loc[l2, "temperature_degree_celsius"] == 80
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
 
+    # make sure optional columns are not created if None or np.nan:
+    pp.create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    assert "wind_speed_m_per_s" not in net.line.columns
+
 
 def test_create_transformers_from_parameters():
     # standard
