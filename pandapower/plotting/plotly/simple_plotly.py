@@ -72,9 +72,10 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
 
 
 def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=1,
-                  bus_size=10, ext_grid_size=20.0, bus_color="blue", line_color='grey',
-                  trafo_color='green', trafo3w_color='green', ext_grid_color="yellow",
+                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
+                  bus_color="blue", line_color='grey', trafo_color='green',
+                  trafo3w_color='green', ext_grid_color="yellow",
                   filename='temp-plot.html', auto_open=True, showlegend=True,
                   additional_traces=None):
     """
@@ -178,8 +179,8 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
             # for weighted_marker_traces "meta" should include information for the "scale legend"
             if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
                 sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
-                traces.extend([sc_trace])
-                shift += 1
+                traces.extend(sc_trace)
+                shift += len(weighted_trace["meta"]["scale_marker_size"])
 
         traces.extend(additional_traces)
 
@@ -238,13 +239,13 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     trans_trace3w = []
     ext_grid_trace = []
     # ----- Trafos ------
-    if 'trafo' in net:
+    if 'trafo' in net and len(net.trafo):
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
                                          use_line_geodata=use_branch_geodata)
     # ----- 3W Trafos ------
-    if 'trafo3w' in net:
+    if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
@@ -252,7 +253,7 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                           use_line_geodata=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
-    if 'ext_grid' in net:
+    if 'ext_grid' in net and len(net.ext_grid):
         marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
