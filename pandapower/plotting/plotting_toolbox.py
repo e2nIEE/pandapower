@@ -152,7 +152,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     """
     have_geo = np.isin(from_nodes, node_geodata.index.values) \
         & np.isin(to_nodes, node_geodata.index.values)
-    elements_with_geo = element_indices[have_geo]
+    elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
               in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,

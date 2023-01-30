@@ -219,8 +219,8 @@ The filename can not contain special characters, such as "/".
 The User interface has additional options that can be defined using CheckBoxes:
  * Export 'PV' bus as Slack: defines whether 'PV' power injections are to be defined as Slack in pandapower
  * Verify conversion: defines whether the network should be verified after the conversion. If the option is set, the
-pandapower network will be verified by executing a load flow calculation and comparing the results to values in
-PowerFactory. This happens after the .json file has been saved to the hard drive.
+   pandapower network will be verified by executing a load flow calculation and comparing the results to values in
+   PowerFactory. This happens after the .json file has been saved to the hard drive.
  * Logger in debug mode: can be used in case exporter stops at error. In this case more logging messages are shown.
  * Export Controller: feature is not yet implemented with the user-defined tool
 
