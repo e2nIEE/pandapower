@@ -903,10 +903,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
 
     # additional info for the create_scale_trace function:
 
-    if scale_marker_size is None:
-        scale_marker_size = [None]
-    elif not isinstance(scale_marker_size, Iterable):
-        scale_marker_size = list(scale_marker_size)
+    if not isinstance(scale_marker_size, Iterable):
+        scale_marker_size = [scale_marker_size]
 
     marker_trace["meta"] = dict(marker_scaling=marker_scaling,
                                 column_to_plot=column_to_plot,
