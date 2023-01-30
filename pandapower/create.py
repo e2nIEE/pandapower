@@ -1886,6 +1886,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
         **tdpf (bool)** - whether the line is considered in the TDPF calculation
 
         **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
@@ -2008,6 +2012,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             **parallel** (list of integer, 1) - number of parallel line systems
 
             **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
             **tdpf (bool)** - whether the line is considered in the TDPF calculation
 
@@ -2146,6 +2154,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         in the middle represent the bending points of the line
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
         **tdpf (bool)** - whether the line is considered in the TDPF calculation
 
@@ -2291,6 +2303,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         in the middle represent the bending points of the line
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
         **tdpf (bool)** - whether the line is considered in the TDPF calculation
 
