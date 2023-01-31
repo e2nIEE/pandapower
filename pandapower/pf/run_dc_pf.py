@@ -36,7 +36,7 @@ def _run_dc_pf(ppci, recycle=False):
         ref_gens = ppci["internal"]['ref_gens']
         B, Bf = ppci["internal"]['Bbus'], ppci["internal"]['Bf']
         # check if transformer phase shift has changed and update phase shift injections:
-        if np.array_equal(ppci['internal']['branch'][:, SHIFT], branch[:, SHIFT]):
+        if np.array_equal(ppci['internal']['shift'], branch[:, SHIFT]):
             Pbusinj, Pfinj = ppci["internal"]['Pbusinj'], ppci["internal"]['Pfinj']
         else:
             Cft = ppci['internal']['Cft']

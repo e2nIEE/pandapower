@@ -319,8 +319,7 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
-    assert np.allclose(vm_pu.values.astype(np.float64), ow.output[_v_var(run_function)].values.astype(np.float64),
-                       rtol=0, atol=1e-6)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
     assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
 
 
