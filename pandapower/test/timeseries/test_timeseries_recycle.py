@@ -291,8 +291,8 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
-    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
-    assert np.allclose(ll, ow.output["res_line.loading_percent"])
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
 
 
 def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
@@ -319,8 +319,8 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
-    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
-    assert np.allclose(ll, ow.output["res_line.loading_percent"])
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
 
 
 def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
@@ -347,8 +347,8 @@ def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
-    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
-    assert np.allclose(ll, ow.output["res_line.loading_percent"])
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
 
 
 def test_const_pq_out_of_service(simple_test_net, run_function):
