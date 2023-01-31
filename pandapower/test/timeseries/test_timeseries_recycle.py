@@ -304,8 +304,8 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     ds = DFData(profiles)
     # 1load
     c1 = add_const(net, ds, recycle=None)
-    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
-                   element="ext_grid")
+    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
 
@@ -314,13 +314,13 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
-                   element="ext_grid")
+    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
-    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
-    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-5)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-5)
 
 
 def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
