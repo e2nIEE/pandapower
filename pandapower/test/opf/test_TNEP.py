@@ -1,6 +1,6 @@
 import pytest
 import pandapower.networks as nw
-from pandapower.converter.powermodels.to_pm import init_ne_line
+from pandapower.converter.pandamodels.to_pm import init_ne_line
 import pandas as pd
 import numpy as np
 import pandapower as pp
