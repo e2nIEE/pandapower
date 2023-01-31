@@ -298,7 +298,7 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
 def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq", "gen", "trafo"}
     net = simple_test_net
-    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 0, 10, True
+    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 0, 5, True
     profiles, _ = create_data_source(n_timesteps)
     profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
     ds = DFData(profiles)
