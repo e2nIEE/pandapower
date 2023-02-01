@@ -206,8 +206,11 @@ def test_cause_element_index():
         net.trafo[c] = 0
     net.gen["slack_weight"] = 1
     pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
-    nminus1_cases = {"line": {"index": np.array([4, 2, 1, 5, 7, 8])},
-                     "trafo": {"index": np.array([2, 3, 1, 0, 4])}}
+
+    _randomize_indices(net)
+
+    nminus1_cases = {"line": {"index": net.line.iloc[[4, 2, 1, 5, 7, 8]].index.values},
+                     "trafo": {"index": net.trafo.iloc[[2, 3, 1, 0, 4]].index.values}}
 
     _ = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
@@ -291,6 +294,16 @@ def setup_timeseries(net):
         ow.log_variable("res_trafo", "min_loading_percent")
 
 
+def _randomize_indices(net):
+    rng = np.random.default_rng()
+    for element in ("line", "trafo", "trafo3w"):
+        if len(net[element]) == 0:
+            continue
+        new_index = net[element].index.values + rng.integers(1, 10)
+        rng.shuffle(new_index)
+        pp.reindex_elements(net, element, new_index)
+
+
 @pytest.fixture(params=["case9", "case14", "case118"])
 def get_net(request):
     # pandapower and lightsim2grid behave differently when the grid becomes isolated from the ext_grid:
@@ -321,13 +334,7 @@ def get_net(request):
         for col in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
             net.trafo[col].fillna(0, inplace=True)
 
-    rng = np.random.default_rng()
-    for element in ("line", "trafo", "trafo3w"):
-        if len(net[element]) == 0:
-            continue
-        new_index = net[element].index.values.copy()
-        rng.shuffle(new_index)
-        pp.reindex_elements(net, element, new_index)
+    _randomize_indices(net)
 
     pp.create_continuous_bus_index(net)
 
