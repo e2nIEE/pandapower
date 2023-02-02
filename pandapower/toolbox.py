@@ -306,7 +306,7 @@ def compare_arrays(x, y):
         # (x != x) is like np.isnan(x) - but works also for strings
         return np.equal(x, y) | ((x != x) & (y != y))
     else:
-        raise ValueError("x and y needs to have the same shape.")
+        raise ValueError("x and y need to have the same shape.")
 
 
 # --- Information
