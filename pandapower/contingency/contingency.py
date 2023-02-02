@@ -220,6 +220,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
                                   net.trafo["max_loading_percent_nminus1"]
                                   if "max_loading_percent_nminus1" in net.trafo.columns
                                   else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
+    voltage_all = np.r_[net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
+                        net.trafo.vn_hv_kv if n_trafos > 0 else []]
+    flows_all_mva = np.nan_to_num(kamps_all * voltage_all * np.sqrt(3))
+    flows_limit_all = np.nan_to_num(max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3))
 
     big_number = 1e6
     for element in ("line", "trafo"):
@@ -228,10 +232,12 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         if element == "line":
             kamps_element = kamps_all[:, 0:n_lines]
             kamps_element_cause = kamps_all[0:n_lines_cases, :]
+            flows_element_mva = flows_all_mva[0:n_lines_cases, :]
             max_i_ka_limit = max_i_ka_limit_all[0:n_lines]
         else:
             kamps_element = kamps_all[:, n_lines:n_lines + n_trafos]
             kamps_element_cause = kamps_all[n_lines_cases:n_lines_cases + n_trafos_cases, :]
+            flows_element_mva = flows_all_mva[n_lines_cases:n_lines_cases + n_trafos_cases, :]
             max_i_ka_limit = max_i_ka_limit_all[n_lines:n_lines + n_trafos]
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
         cause_index = np.nanargmax(kamps_element, axis=0)
@@ -255,6 +261,13 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
             cause_index[~cause_mask] = net.trafo.index.values[np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]]
         net[f"res_{element}"]["cause_index"] = cause_index
         net[f"res_{element}"]["cause_element"] = cause_element
+
+        congestion_mva = flows_element_mva - flows_limit_all
+        congestion_mva = np.where(congestion_mva < 0, 0, congestion_mva)
+        congestion_caused = congestion_mva.sum(axis=1)
+        if element in nminus1_cases:
+            # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
+            net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "congestion_caused_mva"] = congestion_caused
 
 
 def _convert_trafo_phase_shifter(net):

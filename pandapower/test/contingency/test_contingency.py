@@ -200,6 +200,43 @@ def test_lightsim2grid_phase_shifters():
     assert_frame_equal(bus_res, net.res_bus)
 
 
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
+def test_cause_congestion():
+    net = pp.networks.case14()
+    for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
+        net.trafo[c] = 0
+    net.trafo.sn_mva /= 200
+    net.trafo.vk_percent /= 200
+    net.line.max_i_ka /= 100
+    net.gen["slack_weight"] = 1
+    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+
+    _randomize_indices(net)
+
+    nminus1_cases = {"line": {"index": net.line.iloc[[4, 2, 1, 5, 7, 8]].index.values},
+                     "trafo": {"index": net.trafo.iloc[[2, 1, 0, 4]].index.values}}
+    # trafo with iloc index 3 causes 2 disconnected grid areas, which is handled differently by
+    # lightsim2grid and pandapower, so the results do not match for the contingency defined by net.trafo.iloc[3]
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases,
+                                        contingency_evaluation_function=run_for_from_bus_loading)
+    res = {"trafo": net.res_trafo.copy(), "line": net.res_line.copy()}
+    for element, val in nminus1_cases.items():
+        for i in val["index"]:
+            net[element].at[i, "in_service"] = False
+            run_for_from_bus_loading(net)
+            net[element].at[i, 'in_service'] = True
+            idx_overloaded_tr = net.res_trafo.loc[net.res_trafo.loading_percent > net.trafo.max_loading_percent].index
+            congestion_tr = (net.res_trafo.loc[idx_overloaded_tr, 'loading_percent'].values - net.trafo.loc[idx_overloaded_tr, 'max_loading_percent'].values) * net.trafo.loc[idx_overloaded_tr, 'sn_mva'].values / 100
+            idx_overloaded_ln = net.res_line.loc[net.res_line.loading_percent > net.line.max_loading_percent].index
+            congestion_ln = (net.res_line.loc[idx_overloaded_ln, 'loading_percent'].values - net.line.loc[idx_overloaded_ln, 'max_loading_percent'].values) * net.line.loc[idx_overloaded_ln, 'max_i_ka'].values * net.bus.loc[net.line.loc[idx_overloaded_ln, 'from_bus'].values, 'vn_kv'].values * np.sqrt(3) / 100
+            if res[element].at[i, "congestion_caused_mva"] == 0:
+                assert len(congestion_tr) == 0  # just to be sure...
+                assert len(congestion_ln) == 0
+            else:
+                assert np.allclose(res[element].at[i, "congestion_caused_mva"], congestion_tr.sum() + congestion_ln.sum(), rtol=0, atol=1e-6)
+
+
 def test_cause_element_index():
     net = pp.networks.case14()
     for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
