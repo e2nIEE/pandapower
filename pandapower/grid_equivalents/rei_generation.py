@@ -289,7 +289,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 value_types = net[elm][c][elm_org.bus.isin(all_external_buses)].apply(type).unique()
                 if len(value_types) > 1:
                     other_cols_mixed |= {c}
-                elif value_types[0] in (np.float, np.int):
+                elif value_types[0] in (float, int):
                     other_cols_number |= {c}
                 elif value_types[0] == bool:
                     other_cols_bool |= {c}
