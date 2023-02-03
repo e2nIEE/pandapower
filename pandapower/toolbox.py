@@ -1793,7 +1793,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
-                p2[table] = net[table].loc[buses.intersection(net[table].index)]
+                p2[table] = net[table].loc[pd.Index(buses).intersection(net[table].index)]
             else:
                 p2[table] = net[table].loc[p2[table[4:]].index.intersection(net[table].index)]
     if "bus_geodata" in net:
