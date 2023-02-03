@@ -11,6 +11,7 @@ Change Log
 - [FIXED] documentation of powerfactory converter
 - [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
 - [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
+- [ADDED] documentation of DeprecationWarning process
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
 - [CHANGED] remove support for Python 3.7 and add Python 3.11
 
