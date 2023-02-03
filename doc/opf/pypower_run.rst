@@ -6,7 +6,7 @@ Optimization with PYPOWER
 
     The optimization with pypower functionality does not have the best convergence properties.
     Therefore, even if the network configuration is appropriate as an optimization problem,
-    e.g. easily checked by :ref:`pandapower.opf_task<pandapower.opf_task>`, :ref:`pandapower.runopp<pandapower.runopp>` may not converge.
+    e.g. easily checked by :py:meth:`pandapower.opf_task`, :py:meth:`pandapower.runopp` may not converge.
 
 
 You can run an Optimal Power Flow using the PYPOWER OPF
