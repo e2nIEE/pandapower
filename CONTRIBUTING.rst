@@ -73,11 +73,11 @@ Contribute from your develop branch
 #. Add and commit your changes: ::
 
     git add --all
-    git commit -m"commit message"
+    git commit -m "commit message"
 
    If there is an open issue that the commit belongs to, reference the issue in the commit message, for example for issue 3: ::
 
-    git commit -m"commit message #3"
+    git commit -m "commit message #3"
 
 #. Push your changes to your fork: ::
 
@@ -85,10 +85,10 @@ Contribute from your develop branch
 
 #. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
 
-#. If you want to amend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
+#. If you want to amend the pull request (for example because tests are failing in github actions, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
 
     git add --all
-    git commit -m"I have updated the pull request after discussions #3"
+    git commit -m "I have updated the pull request after discussions #3"
     git push
 
    The pull request will be automatically updated.
@@ -113,11 +113,11 @@ Contribute from a feature branch
 #. Add and commit your change: ::
 
     git add --all
-    git commit -m"commit message"
+    git commit -m "commit message"
 
    If there is an open issue that the commit belongs to, reference the issue in the commit message, for example for issue 3: ::
 
-    git commit -m"commit message #3"
+    git commit -m "commit message #3"
 
 #. Push your changes to your fork: ::
 
@@ -127,10 +127,10 @@ Contribute from a feature branch
 
 #. Put in a Pull request to the official repository (see https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
-#. If you want to amend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch. Since the remote tracking branch has been set up, this is as easy as: ::
+#. If you want to amend the pull request (for example because tests are failing in github actions, or because the community/maintainers have asked for modifications), simply push more commits to the branch. Since the remote tracking branch has been set up, this is as easy as: ::
 
     git add --all
-    git commit -m"I have updated the pull request after discussions #3"
+    git commit -m "I have updated the pull request after discussions #3"
     git push
 
 #. If the pull request was merged and you don't expect further development on this feature, you can delete the feature branch to keep your repository clean.
@@ -148,7 +148,7 @@ If you make changes to pandapower that you plan to submit, first make sure that 
     import pandapower.test
     pandapower.test.run_all_tests()
 
-When you submit a pull request, Travis CI will run the same tests with Python versions 2.7, 3.4, 3.5 and 3.6. In most cases, if tests pass for you locally, they will also pass on Travis. But it can also happen that the tests pass for you locally, but still fail on Travis, because the new code is not compatible with all Python versions.
+When you submit a pull request, github actions will run the same tests with actual, by pandapower supported Python versions. In most cases, if tests pass for you locally, they will also pass on github actions. But it can also happen that the tests pass for you locally, but still fail on github actions, because the new code is not compatible with all Python versions.
 In this case you will have to update your pull request until the tests pass in all Python versions. Pull requests that lead to failing tests will not be accepted.
 
 
