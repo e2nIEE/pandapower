@@ -279,7 +279,7 @@ if __name__ == '__main__':
                                                 marker_scaling=100)
     markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
                                                 patch_type="circle-open", sizemode="diameter",
-                                                marker_scaling=100, scale_marker_size=0.5)
+                                                marker_scaling=100, scale_marker_size=[0.2, 0.4])
 
     fig = simple_plotly(net, bus_size=1, aspectratio="original", additional_traces=[markers_sgen,
                                                                                     markers_load])

@@ -963,7 +963,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
                                        color=scale_info.get("scale_marker_color"),
                                        symbol=marker["symbol"],
                                        sizemode=marker["sizemode"]),
-                           text=[f"scale: {scale_size / scale_info['marker_scaling']} {unit}", ""],
+                           text=[f"{scale_size / scale_info['marker_scaling']} {unit}", ""],
                            textposition="top center",
                            showlegend=False,
                            textfont=dict(family="Helvetica",
