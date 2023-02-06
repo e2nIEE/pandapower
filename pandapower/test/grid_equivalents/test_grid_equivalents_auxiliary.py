@@ -84,8 +84,9 @@ def test_check_network():
 
 def test_check_validity():
     net = pp.networks.case9()
+    pp.replace_gen_by_sgen(net)
     pp.runpp(net)
-    pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0], 
+    pp.grid_equivalents.get_equivalent(net, "rei", [8, 4], [0], 
                                        retain_original_internal_indices=True,
                                        check_validity=True)
 
@@ -97,5 +98,6 @@ if __name__ == "__main__":
         # test_drop_internal_branch_elements()
         # test_drop_measurement()
         # test_check_validity()
-        test_trafo_phase_shifter()
+        # test_trafo_phase_shifter()
+        test_check_validity()
     pass

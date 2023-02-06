@@ -105,13 +105,12 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     # --- the validity of the equivalent Ybus will be checked
     if check_validity:
         power_check_df = check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups)
-        logger.debug(power_check_df)
-        act_p = net_zpbn.res_ext_grid.p_mw[power_check_df.ext_grid_index].values
-        act_q = net_zpbn.res_ext_grid.q_mvar[power_check_df.ext_grid_index].values
+        act_p = net_zpbn.res_bus.p_mw[power_check_df.bus_pd].values
+        act_q = net_zpbn.res_bus.q_mvar[power_check_df.bus_pd].values
         real_p = power_check_df.power.values.real
         real_q = power_check_df.power.values.imag
-        assert max(abs(act_p) - abs(real_p)) < 1e2
-        assert max(abs(act_q) - abs(real_q)) < 1e2
+        assert max(act_p + real_p) < 1e-3
+        assert max(act_q + real_q) < 1e-3
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((

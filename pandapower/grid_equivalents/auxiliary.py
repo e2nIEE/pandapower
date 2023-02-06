@@ -265,26 +265,24 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
     """
     This Funktion proves the validity of the equivalent Ybus. If teh eqv. Ybus (Ybus_eq)
-    is calculated correctly, the new_power and the origial power flow results should be equal
+    is calculated correctly, the new_power and the origial power flow results should be equal.
+    This function is currently only available for the grid equivalent without generators (net.gen).
     """
     logger.debug("validiting the calculated Ybus_eq")
 
-    ibt_buses = []
-    for key in ["i", "b", "t"]:
-        ibt_buses += bus_lookups["bus_lookup_ppc"][key+"_area_buses"]
-    df = pd.DataFrame(columns=["bus_ppc", "bus_pd", "ext_grid_index", "power"])
-    df.bus_ppc = ibt_buses
-
+    df = pd.DataFrame(columns=["bus_ppc", "bus_pd", "ext_grid_index", "power"])   
+    df.bus_ppc = bus_lookups["bus_lookup_ppc"]["b_area_buses"] + \
+        bus_lookups["bus_lookup_ppc"]["t_area_buses"]
+    df.bus_pd = bus_lookups["bus_lookup_pd"]["b_area_buses"] + \
+        bus_lookups["bus_lookup_pd"]["t_area_buses"]
     for idx in df.index:
-        df.bus_pd[idx] = list(
-            net_zpbn._pd2ppc_lookups["bus"]).index(df.bus_ppc[idx])
         if df.bus_pd[idx] in net_zpbn.ext_grid.bus.values:
-            df.ext_grid_index[idx] = net_zpbn.ext_grid.index[net_zpbn.ext_grid.bus == df.bus_pd[
-                idx]][0]
+            df.ext_grid_index[idx] = net_zpbn.ext_grid.index[
+                net_zpbn.ext_grid.bus == df.bus_pd[idx]][0]
 
-    v_m = net_zpbn._ppc["bus"][df.bus_ppc.values, 7]
-    delta = net_zpbn._ppc["bus"][df.bus_ppc.values, 8] * np.pi / 180
-    v_cpx = v_m * np.exp(1j * delta)
+    vm = net_zpbn.res_bus.vm_pu[df.bus_pd.values].values
+    delta = net_zpbn.res_bus.va_degree[df.bus_pd.values].values * np.pi / 180
+    v_cpx = vm * np.exp(1j * delta)
     df.power = np.multiply(np.mat(v_cpx).T, np.conj(Ybus_eq * np.mat(v_cpx).T)) * net_zpbn.sn_mva
     df.dropna(axis=0, how="any", inplace=True)
 
