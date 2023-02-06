@@ -43,8 +43,7 @@ Case 14
 ---------------------------
 
 Case 24_ieee_rts
-
----------------------------
+----------------
 
 .. autofunction:: pandapower.networks.case24_ieee_rts
 
