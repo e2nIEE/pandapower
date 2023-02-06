@@ -354,23 +354,18 @@ def drop_measurements_and_controller(net, buses, skip_controller=False):
     Also, the related controller parameter will be removed. """
     # --- dropping measurements
     if len(net.measurement):
-        elms = set(net.measurement.element_type.values)
-        for elm in elms:
-            if elm == "bus":
-                elm_idx = buses
-            elif elm == "line":
-                elm_idx = net.line.index[(net.line.from_bus.isin(buses)) &
-                                         (net.line.from_bus.isin(buses))]
-            elif elm == "trafo":
-                elm_idx = net.trafo.index[(net.trafo.hv_bus.isin(buses)) &
-                                          (net.trafo.lv_bus.isin(buses))]
-            elif elm == "trafo3w":
-                elm_idx = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
-                                            (net.trafo3w.mv_bus.isin(buses)) &
-                                            (net.trafo3w.lv_bus.isin(buses))]
-            target_idx = net.measurement.index[(net.measurement.element_type == elm) &
-                                               (net.measurement.element.isin(elm_idx))]
-            net.measurement.drop(target_idx, inplace=True)
+        pp.drop_measurements_at_elements(net, "bus", idx=buses)
+        lines = net.line.index[(net.line.from_bus.isin(buses)) &
+                               (net.line.from_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "line", idx=lines)
+        trafos = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
+                                    (net.trafo3w.mv_bus.isin(buses)) &
+                                    (net.trafo3w.lv_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "trafo", idx=trafos)
+        trafo3ws = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
+                                    (net.trafo3w.mv_bus.isin(buses)) &
+                                    (net.trafo3w.lv_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "trafo3w", idx=trafo3ws)
 
     # --- dropping controller
     """

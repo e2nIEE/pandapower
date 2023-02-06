@@ -96,8 +96,8 @@ if __name__ == "__main__":
         pytest.main(['-x', __file__])
     else:
         # test_drop_internal_branch_elements()
-        # test_drop_measurement()
+        test_drop_measurement()
         # test_check_validity()
         # test_trafo_phase_shifter()
-        test_check_validity()
+        # test_check_validity()
     pass
