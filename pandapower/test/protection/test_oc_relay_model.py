@@ -8,7 +8,6 @@ import pandapower as pp
 import pandapower.networks as pn
 import pytest
 import numpy as np
-import pandas as pd
 import logging as log
 import pandapower
 import pandapower.shortcircuit as sc
@@ -29,7 +28,7 @@ from pandapower.protection.utility_functions import *
 def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_current_factor=1.25,
                           safety_factor=1,inverse_overload_factor=1.2, pickup_current_manual=None):
     
-    net=oc_relay_net(open_loop=True)
+    net_dtoc=dtoc_relay_net(open_loop=True)
     
     # sanity chech of user defined input oc parameters
     assert type(net)==pandapower.auxiliary.pandapowerNet, 'net should be pandapower network'
@@ -48,8 +47,9 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
                                 'I_gg[kA]':[2.72257],
                                 't_g[s]':[1.4],'t_gg[s]':[0.07]})
     
+
     # get relay settings for DTOC relay based on imput parameters
-    relay_settings_DTOC = oc.oc_parameters(net,relay_type='DTOC', time_settings=[0.07,0.5, 0.3],
+    relay_settings_DTOC = oc.oc_parameters(net_dtoc,relay_type='DTOC', time_settings=[0.07,0.5, 0.3],
                            sc_fraction=sc_fraction, overload_factor=overload_factor,
                            ct_current_factor=ct_current_factor,
                               safety_factor=safety_factor,inverse_overload_factor=inverse_overload_factor)
@@ -58,6 +58,8 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
     'DTOC parameters should be of given format and vale with the given format'
     
     
+    net_idmt=idmt_relay_net(open_loop=True)
+
     # IDMT parameter settings
     settings_IDMT=pd.DataFrame({'switch_id': [0],'line_id':[0],
                                 'bus_id': [0],'relay_type':['IDMT'],
@@ -66,13 +68,15 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
                                 'k':[0.14],'t_grade[s]':[2.0], 'alpha':0.02})
     
     # get relay settings for DTOC relay based on imput parameters
-    relay_settings_IDMT = oc.oc_parameters(net,relay_type='IDMT',curve_type='standard_inverse', time_settings=[1, 0.5],
+    relay_settings_IDMT = oc.oc_parameters(net_idmt,relay_type='IDMT',curve_type='standard_inverse', time_settings=[1, 0.5],
                            sc_fraction=sc_fraction, overload_factor=overload_factor,
                            ct_current_factor=ct_current_factor,safety_factor=safety_factor,inverse_overload_factor=inverse_overload_factor)
     # Test IDMT parameter settings 
     assert_frame_equal(relay_settings_IDMT.iloc[[0]], settings_IDMT, check_dtype=False),
     'IDMT parameters should be of given format and vale with the given format'
 
+
+    net_idtoc=idtoc_relay_net(open_loop=True)
 
     # Test IDTOC parameter settings
     settings_IDTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
@@ -83,7 +87,7 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
                                 'k':[0.14],'t_grade[s]':[2.0], 'alpha':0.02})
     
     # get relay settings for DTOC relay based on imput parameters
-    relay_settings_IDTOC = oc.oc_parameters(net,relay_type='IDTOC',curve_type='standard_inverse', time_settings=[0.07, 0.5, 0.3, 1, 0.5],
+    relay_settings_IDTOC = oc.oc_parameters( net_idtoc,relay_type='IDTOC',curve_type='standard_inverse', time_settings=[0.07, 0.5, 0.3, 1, 0.5],
                            sc_fraction=sc_fraction, overload_factor=overload_factor,ct_current_factor=ct_current_factor,
                               safety_factor=safety_factor,inverse_overload_factor=inverse_overload_factor)
     
@@ -95,7 +99,7 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
 def test_oc_parameters_manual(pickup_current_manual=pd.DataFrame({'switch_id': [0,1,2,3,4,5],'I_gg':[1.2,1.3,1.3,1.4,1.4,1.25], 'I_g':[0.7,0.7,0.5,0.4,0.4,0.4]})):
     
   
-    net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
     
     # DTOC parameter settings
     settings_DTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
@@ -115,7 +119,7 @@ def test_oc_parameters_manual(pickup_current_manual=pd.DataFrame({'switch_id': [
     # This function test the measurement function at relay location    
 def test_oc_get_measurement_at_relay_location(sc_line_id=3, sc_location=0.3,  settings = pd.DataFrame({'switch_id':[3]})):
     
-    net=net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
     
     # create sc for given line and location
     net_sc = create_sc_bus(net, sc_line_id, sc_location)
@@ -127,7 +131,7 @@ def test_oc_get_measurement_at_relay_location(sc_line_id=3, sc_location=0.3,  se
     
 def test_time_grading_manual(time_settings= pd.DataFrame({'switch_id': [0,1,2,3,4,5],'t_g':[0.5,0.8,1.1,1.4,1.7,2],
                                                                          't_gg': [0.05,0.06,0.07,0.07,0.05,0.05]})):
-    net=net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
                              
     assert len(net.switch[net.switch.closed == True])==len(time_settings),'Number of active switches in the network should be equal to the number of relay in relay trip times'
     
@@ -141,7 +145,7 @@ def test_time_grading_manual(time_settings= pd.DataFrame({'switch_id': [0,1,2,3,
 
 def test_time_grading_automated(time_setting_DTOC=[0.07,0.5,0.3]):
     
-    net=net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
     
     times_DTOC=oc.time_grading(net,time_setting_DTOC)
     tripping_time_DTOC= pd.DataFrame({'switch_id': [0,1,2,3,4,5],
@@ -153,7 +157,7 @@ def test_time_grading_automated(time_setting_DTOC=[0.07,0.5,0.3]):
 
 def test_oc_get_trip_decision(i_ka1=2.808, i_ka2=0.808,i_ka3=0):
     
-    net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
 
     settings_DTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
                                 'bus_id': [0],'relay_type':['DTOC'],
@@ -207,7 +211,7 @@ def test_plot_tripped_grid(mock_show,sc_line_id =0,sc_location =0.4,
                             'I_g[kA]':[0.5415],
                             'I_gg[kA]':[2.72257],
                             't_g[s]':[1.4],'t_gg[s]':[0.07]}) ):
-    net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
     # generate trip decisions
     trip_decisions,net_sc = oc.run_fault_scenario_oc(net,sc_line_id,sc_location,relay_settings=settings_DTOC)
 
@@ -227,7 +231,7 @@ def test_plot_create_I_t_plot(mock_show, sc_line_id=0 ,sc_location =0.4,
                             'I_g[kA]':[0.5415],
                             'I_gg[kA]':[2.72257],
                             't_g[s]':[1.4],'t_gg[s]':[0.07]}) ):
-    net=oc_relay_net(open_loop=True)
+    net=dtoc_relay_net(open_loop=True)
     # generate trip decisions
     trip_decisions,net_sc =oc.run_fault_scenario_oc(net,sc_line_id,sc_location,relay_settings=settings_DTOC)
 

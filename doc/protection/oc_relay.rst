@@ -26,7 +26,7 @@ EXAMPLE- DTOC Relay:
 
     import pandapower.protection.oc_relay_model as oc_protection
     import pandapower.protection.example_grids as nw
-    net = nw.oc_relay_net()
+    net = nw.dtoc_relay_net()
     relay_settings=oc_protection.oc_parameters(net,time_settings= [0.07, 0.5, 0.3], relay_type='DTOC')
     trip_decisions,net_sc= oc_protection.run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings)             
 
@@ -36,7 +36,7 @@ EXAMPLE- IDMT Relay:
 
     import pandapower.protection.oc_relay_model as oc_protection
     import pandapower.protection.example_grids as nw
-    net = nw.oc_relay_net()
+    net = nw.idmt_relay_net()
     relay_settings=oc_protection.oc_parameters(net,time_settings= [1,0.5], relay_type='IDMT', curve_type='standard_inverse')
     trip_decisions,net_sc= oc_protection.run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings)         
 
@@ -46,7 +46,7 @@ EXAMPLE- IDTOC Relay:
 
     import pandapower.protection.oc_relay_model as oc_protection
     import pandapower.protection.example_grids as nw
-    net = nw.oc_relay_net()
+    net = nw.idtoc_relay_net()
     relay_settings=oc_protection.oc_parameters(net,time_settings= [0.07, 0.5, 0.3,1, 0.5], relay_type='IDTOC',curve_type='standard_inverse' )
     trip_decisions,net_sc= oc_protection.run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings)        
 

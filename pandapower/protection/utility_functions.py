@@ -543,7 +543,7 @@ def create_I_t_plot(trip_decisions,switch_id):
     for counter, switch_id in enumerate(switch_id):
         
         lst_I=[trip_decisions[switch_id]['Ig'],trip_decisions[switch_id]['Igg']]
-        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['t_gg']]
+        lst_t=[trip_decisions[switch_id]['tg'],trip_decisions[switch_id]['tgg']]
         fault_current=trip_decisions[switch_id]['Fault Current [kA]']
         
 
@@ -735,13 +735,10 @@ def get_vi_angle(net,switch_id,powerflow_results=False):
 
 
 def bus_path_multiple_ext_bus(net):
-    
-    """ Return the longest bus path from all the ext buses in the network"""
     from pandapower.topology.create_graph import create_nxgraph 
     import networkx as nx
-    G = create_nxgraph(net)
-    bus_path=[]
-
+    G = create_nxgraph(net) 
+    bus_path = []
     for line_id in net.line.index:
              
         #line_id=62
@@ -750,24 +747,35 @@ def bus_path_multiple_ext_bus(net):
         max_bus_path=[]
         
         if net.trafo.empty:
-            for ext_bus in net.ext_grid.bus:
+            #for ext_bus in net.ext_grid.bus:
+            for ext_bus in set(net.ext_grid.bus):
                 from_bus_path = nx.shortest_path(G, source=ext_bus, target=from_bus)
-    
                 to_bus_path=nx.shortest_path(G, source=ext_bus, target=to_bus)
                 
-                max_bus_path.append( max([from_bus_path , to_bus_path]))
-            else:
+                if len(from_bus_path) == len(to_bus_path):
+                    from_bus_path.append(to_bus_path[-1])
+                    max_bus_path.append(from_bus_path)
+                    
+                elif len(from_bus_path) != len(to_bus_path):
+                    if len(from_bus_path) > 1 and len(to_bus_path) > 1:
+                        minlen = min(len(from_bus_path), len(to_bus_path))
+                        if from_bus_path[minlen-1] != to_bus_path[minlen-1]:
+                            if len(from_bus_path) < len(to_bus_path):
+                                from_bus_path.append(to_bus_path[-1])
+                                max_bus_path.append(from_bus_path)
+                            else:
+                                to_bus_path.append(from_bus_path[-1])
+                                max_bus_path.append(to_bus_path)
+                        else:
+                            max_bus_path.append(max([from_bus_path , to_bus_path]))
+                    else:
+                        max_bus_path.append(max([from_bus_path , to_bus_path]))
              
-             for ext_bus in set(net.trafo.lv_bus):
-                 from_bus_path = nx.shortest_path(G, source=ext_bus, target=from_bus)
-     
-                 to_bus_path=nx.shortest_path(G, source=ext_bus, target=to_bus)
-                 
-                 max_bus_path.append( max([from_bus_path , to_bus_path]))
-                        
             bus_path.append(sorted(max_bus_path, key=len)[0])
-
+        
     return bus_path
+
+
 
   # get the line path from the given bus path
 def get_line_path(net, bus_path):

@@ -12,8 +12,10 @@ import warnings
 from math import isnan,nan
 import warnings
 warnings.filterwarnings('ignore') 
-from pandapower.protection.utility_functions import *
+#from pandapower.protection.utility_functions import *
 from pandapower.plotting import simple_plot
+from pandapower.protection.utility_functions import *
+
 
 # set the oc parameters
 def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_factor=1.2, ct_current_factor=1.25,
@@ -22,7 +24,11 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
     The main function is to create relay settings with oc parameters.
     
        INPUT:
-           **net** (pandapowerNet) - Pandapower network with switch type as "CB_non_directional" in net.switch.type
+           **net** (pandapowerNet) - Pandapower network and net.switch.type need to be specified as
+           
+           - 'CB_DTOC'    (for using Definite Time Over Current Relay)
+           - 'CB_IDMT'    (Inverse Definite Minimum Time over current relay)
+           - 'CB_IDTOC'  (Inverse Definite Minimum Time over current relay
            
            **relay_type** (string)- oc relay type need to be specifiied either as 
            
@@ -96,7 +102,7 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
 
     oc_relay_settings= pd.DataFrame(columns = ["switch_id","line_id","bus_id","relay_type", "curve_type","I_g[kA]","I_gg[kA]","I_s[kA]", "t_g[s]","t_gg[s]", "tms[s]",'t_grade[s]' "alpha","k"])
     for switch_id in net.switch.index:
-        if (net.switch.closed.at[switch_id]) & (net.switch.type.at[switch_id] == "CB_non_directional") & (net.switch.et.at[switch_id] == "l"):
+        if (net.switch.closed.at[switch_id])  & (net.switch.et.at[switch_id] == "l"):
 
             net = copy.deepcopy(net)
             # get the line index and bus index from the line
@@ -105,7 +111,7 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
             net_sc = create_sc_bus(net, line_idx, sc_fraction)
             sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
 
-            if relay_type=='DTOC': # Definite Time Over Current relay
+            if (net.switch.type.at[switch_id] == "CB_DTOC") and  relay_type=='DTOC': # Definite Time Over Current relay
             
                 if pickup_current_manual is None:
                     I_g = net_sc.line.max_i_ka.at[line_idx] * overload_factor * ct_current_factor
@@ -120,7 +126,9 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
                 curve_type="Definite time curve"
                 t_grade=tms=alpha=k=I_s=float("NaN")
 
-            if relay_type=='IDMT': #according to  IEC 60255-3/BS142 
+            if  (net.switch.type.at[switch_id] == "CB_IDMT") and relay_type=='IDMT':
+                
+                # Inverse over current relay according to  IEC 60255-3/BS142 
                 if pickup_current_manual is None:
                     I_s=net_sc.line.max_i_ka.at[line_idx]*inverse_overload_factor
                 else:
@@ -139,8 +147,9 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
                 if kwargs['curve_type']=='long_inverse':
                      k=120;
                      alpha=1
+                     
                 curve_type=kwargs['curve_type']
-                
+
                 time_grading(net,time_settings)
              
                 df_protection_settings =time_grading(net,time_settings)
@@ -150,7 +159,7 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
                 I_g=I_gg=t_g=t_gg=float("NaN")
                 
                 
-            if relay_type=='IDTOC': # Inverse Definite Time relay
+            if  (net.switch.type.at[switch_id] == "CB_IDTOC") and relay_type=='IDTOC' : # Inverse Definite Time relay
             
                 if pickup_current_manual is None:
                     I_g = net_sc.line.max_i_ka.at[line_idx] * overload_factor * ct_current_factor
@@ -194,7 +203,7 @@ def oc_parameters(net,relay_type, time_settings,sc_fraction=0.95, overload_facto
                      k=120;
                      alpha=1
                 curve_type=kwargs['curve_type']
-                
+    
             settings = pd.DataFrame([{"switch_id": switch_id, "line_id": line_idx, "bus_id": bus_idx,"relay_type":relay_type, "curve_type":curve_type,"I_g[kA]": I_g, "I_gg[kA]": I_gg, "I_s[kA]":I_s, "t_g[s]": t_g, "t_gg[s]": t_gg,  "tms[s]":tms, "t_grade[s]":t_grade, "alpha":alpha,"k":k}])
             
             oc_relay_settings = pd.concat([oc_relay_settings,settings],ignore_index=True)
@@ -298,7 +307,7 @@ def oc_get_trip_decision(net, settings, i_ka):
 
 
     trip_decision = {"Switch ID": switch_id,'Switch type':relay_type, 'Trip type':trip_type, 'Trip': trip, "Fault Current [kA]": i_ka,
-                 "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg, "Is":I_s, 'tg':t_g, 't_gg':t_gg, 't_s':t}
+                 "Trip time [s]": trip_time, "Ig": max_ig, "Igg": max_igg, "Is":I_s, 'tg':t_g, 'tgg':t_gg, 't_s':t}
     # filter out the nan values if any from trip decisions
     filter(lambda k: not isnan( trip_decision[k]),  trip_decision)
     return trip_decision
@@ -433,7 +442,7 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,relay_settings):
     The main function is to create fault scenarios in the network at the defined location to get the tripping decisions.
     
        INPUT:
-           **net** (pandapowerNet) - Pandapower network with switch type as 'CB_non_directional' in net.switch.type
+           **net** (pandapowerNet) - Pandapower network
            
            **sc_line_id** (int, index)- Index of the line to create the short circuit
            
@@ -479,3 +488,4 @@ def run_fault_scenario_oc(net, sc_line_id, sc_location,relay_settings):
     print(df_decisions)
     
     return trip_decisions, net_sc  
+
