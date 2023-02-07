@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64, intersect1d
+    all as np_all, float64, intersect1d, unique as uni
 
 from pandapower import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
@@ -1886,6 +1886,32 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -1921,6 +1947,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "alpha" in net.line.columns and "alpha" in lineparam:
         v["alpha"] = lineparam["alpha"]
 
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
     _set_entries(net, "line", index, **v, **kwargs)
 
     if geodata is not None:
@@ -1931,6 +1963,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _create_column_and_set_value(net, index, alpha, "alpha", "line")
     _create_column_and_set_value(net, index, temperature_degree_celsius,
                                  "temperature_degree_celsius", "line")
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -1977,6 +2013,32 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+            **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+            **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+            **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+            **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+            **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+            **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+            **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+            **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+            **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
         OUTPUT:
             **index** (list of int) - The unique ID of the created line
 
@@ -2014,6 +2076,16 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2083,6 +2155,32 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -2105,8 +2203,14 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
     }
-    v.update(kwargs)
-    _set_entries(net, "line", index, **v)
+
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
+    _set_entries(net, "line", index, **v, **kwargs)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2128,6 +2232,11 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     _create_column_and_set_value(net, index, temperature_degree_celsius,
                                  "temperature_degree_celsius", "line")
     _create_column_and_set_value(net, index, endtemp_degree, "endtemp_degree", "line")
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -2195,6 +2304,32 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -2220,6 +2355,16 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     _add_series_to_entries(entries, index, "g0_us_per_km", g0_us_per_km)
     _add_series_to_entries(entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_series_to_entries(entries, index, "alpha", alpha)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2846,19 +2991,19 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
@@ -3033,19 +3178,19 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
@@ -4257,6 +4402,9 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
+    u, c = uni(index, return_counts=True)
+    if np.any(c>1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
     contained = isin(net[table].index.values, index)
     if np_any(contained):
         if name is None:
@@ -4301,22 +4449,23 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     try:
-        set_value = not (isnan(variable) or variable is None)
+        set_value = not (variable is None or isnan(variable))  # if None, condition is known before execution of isnan()
     except TypeError:
         set_value = True
+    column_exists = column in net[element].columns
     if set_value:
-        if column not in net[element].columns:
+        if not column_exists:
             net[element].loc[:, column] = pd.Series(
                 data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
-    elif default_for_nan and column in net[element].columns:
+    elif default_for_nan and column_exists:
         net[element].at[index, column] = default_val
-    if dtype is not None:
+    # only execute if the column was actually set:
+    if column_exists and dtyp is not None:
         try:
             net[element][column] = net[element][column].astype(dtyp)
         except:
             pass
-    return net
 
 
 def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
