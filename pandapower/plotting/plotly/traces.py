@@ -789,7 +789,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                  sizemode="area", color="red", patch_type="circle",
                                  marker_scaling=1., trace_name="", infofunc=None,
                                  node_element="bus", show_scale_legend=True,
-                                 scale_marker_size=None):
+                                 scale_marker_size=None, scale_marker_color=None,
+                                 scale_legend_unit=None):
     """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
 
     Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
@@ -835,9 +836,16 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         **show_scale_legend** (bool, default True): display a marker legend at the top right of the
          plot
 
-        **scale_marker_size** (float, default None): adjust the size of the scale, gets multiplied
-        with `marker_scaling`. Default size is the average size of the respective weighted markers
-        rounded to 5
+        **scale_marker_size** (float / list of floats, default None): adjust the size of the scale,
+        gets multiplied with `marker_scaling`. Default size is the average size of the respective
+        weighted markers rounded to 5. A list of values will result in several scale marker legends.
+
+        **scale_marker_color** (str, default None): specify the color of the scale legend marker.
+        If None, `color` will be used.
+
+        **scale_legend_unit** (str, default None): specifies the unit shown in the scale legend
+        marker's string. It does not trigger any unit conversions! If None, the last part of
+        `column_to_plot` will be used (all upper case).
 
     OUTPUT:
         **marker_trace** (dict): dict for the plotly trace
@@ -894,10 +902,17 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                   sizemode=sizemode)
 
     # additional info for the create_scale_trace function:
+
+    if not isinstance(scale_marker_size, Iterable):
+        scale_marker_size = [scale_marker_size]
+
     marker_trace["meta"] = dict(marker_scaling=marker_scaling,
                                 column_to_plot=column_to_plot,
+                                scale_legend_unit=scale_legend_unit or
+                                                  column_to_plot.split("_")[1].upper(),
                                 show_scale_legend=show_scale_legend,
-                                scale_marker_size=scale_marker_size)
+                                scale_marker_size=scale_marker_size,
+                                scale_marker_color=scale_marker_color or color)
 
     return marker_trace
 
@@ -920,43 +935,43 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
     """
     marker = weighted_trace["marker"]
     scale_info = weighted_trace["meta"]
+    unit = scale_info["scale_legend_unit"]  # p_mw...q_mvar ..
+
     # scale trace
     x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
     x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
-
     x_pos = x_max + (x_max - x_min) * 0.2
     x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
-    y_pos = y_max - ((y_max - y_min) * (0.2 * down_shift))
 
-    # p_mw...q_mvar ..
-    unit = scale_info["column_to_plot"].split("_")[1].upper()
+    scale_traces = []
+    for idx, sze in enumerate(scale_info["scale_marker_size"]):
+        y_pos = y_max - ((y_max - y_min) * (0.2 * (down_shift + idx)))
 
-    # default is the average rounded to 5
-    if not scale_info["scale_marker_size"]:
-        scale_size = math.ceil(marker["size"].mean() / 5) * 5
+        # default is the average rounded to 5
+        if not sze:
+            scale_size = math.ceil(marker["size"].mean() / 5) * 5
+        else:
+            scale_size = sze * scale_info['marker_scaling']
 
-    else:
-        scale_size = scale_info["scale_marker_size"] * scale_info['marker_scaling']
+        # second (dummy) position is needed for correct marker sizing
+        scale_trace = dict(type="scatter",
+                           x=[x_pos, x_pos2],
+                           y=[y_pos, y_pos],
+                           mode="markers+text",
+                           hoverinfo="skip",
+                           marker=dict(size=[scale_size, 0],
+                                       color=scale_info.get("scale_marker_color"),
+                                       symbol=marker["symbol"],
+                                       sizemode=marker["sizemode"]),
+                           text=[f"{scale_size / scale_info['marker_scaling']} {unit}", ""],
+                           textposition="top center",
+                           showlegend=False,
+                           textfont=dict(family="Helvetica",
+                                         size=14,
+                                         color="DarkSlateGrey"))
+        scale_traces.append(scale_trace)
 
-    # second (dummy) position is needed for correct marker sizing
-    scale_trace = dict(type="scatter",
-                        x=[x_pos, x_pos2],
-                        y=[y_pos, y_pos],
-                        mode="markers+text",
-                        hoverinfo="skip",
-                        marker=dict(size=[scale_size, 0],
-                                    color=marker['color'],
-                                    symbol=marker["symbol"],
-                                    sizemode=marker["sizemode"]),
-                        text=[f"scale: {scale_size / scale_info['marker_scaling']} {unit}", ""],
-                        textposition="top center",
-                        showlegend=False,
-                        textfont=dict(
-                                        family="Helvetica",
-                                        size=14,
-                                        color="DarkSlateGrey"))
-
-    return scale_trace
+    return scale_traces
 
 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
@@ -1045,6 +1060,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
+                     legend={'itemsizing': 'constant'},
                      ),
                 )
     a = kwargs.get('annotation')
