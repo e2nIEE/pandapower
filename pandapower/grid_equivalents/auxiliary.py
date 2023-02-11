@@ -463,7 +463,7 @@ def _check_network(net):
 
     # --- check controller names
     if len(net.controller):
-       for i in net.controller:
+       for i in net.controller.index:
            elm = net.controller.object[i].__dict__["element"]
            if len(net[elm]) != len(set(net[elm].name.values)):
                raise ValueError("if controllers are used, please give a name for every "

@@ -643,10 +643,10 @@ if __name__ == "__main__":
         # test_retain_original_internal_indices()
         # test_switch_sgens()
         # test_characteristic()
-        # test_controller()
+        test_controller()
         # test_motor()
         # test_sgen_bswitch()
-        test_ward_admittance()
+        # test_ward_admittance()
 
     pass
 
