@@ -152,7 +152,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     # --- ensure unique boundary bus names
     _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
-    # --- check and create reference buses
+    # --- create reference buses
     add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
                                 calc_volt_angles=calculate_voltage_angles,
                                 allow_net_change_for_convergence=allow_net_change_for_convergence,

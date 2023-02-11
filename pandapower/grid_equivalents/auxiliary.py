@@ -446,30 +446,22 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
 
 def _check_network(net):
     """
-    checks the given network. If the network does not meet conditions,
-    the program will report an error.
+    This function will perfoms some checks and modifications on the given grid model.
     """
     # --- check invative elements
     if net.res_bus.vm_pu.isnull().any():
         logger.info("There are some inactive buses. It is suggested to remove "
                     "them using 'pandapower.drop_inactive_elements()' "
                     "before starting the grid equivalent calculation.")
-    # --- check dcline
+
+    # --- check dclines
     if "dcline" in net and len(net.dcline.query("in_service")) > 0:
         _add_dcline_gens(net)
         dcline_index = net.dcline.index.values
         net.dcline.loc[dcline_index, 'in_service'] = False
         logger.info(f"replaced dcline {dcline_index} by gen elements")
-    # --- condition 1: shift_degree of transformers must be 0.
-    # if not np.allclose(net.trafo.shift_degree.values, 0) & \
-    #         np.allclose(net.trafo3w.shift_mv_degree.values, 0) & \
-    #         np.allclose(net.trafo3w.shift_lv_degree.values, 0):
-    #     net["phase_shifter_actived"] = True
-    # else:
-    #     net["phase_shifter_actived"] = False
-        # raise ValueError("the parameter 'shift_degree' of some transformers is not zero. "
-        #                   "Currently, the get_equivalent function can not reduce "
-        #                   "a network with non-zero shift_degree accurately.")
+
+    # --- check controller names
     if len(net.controller):
        for i in net.controller:
            elm = net.controller.object[i].__dict__["element"]
