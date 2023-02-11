@@ -351,7 +351,7 @@ def build_ppc_and_Ybus(net):
 
 def drop_measurements_and_controller(net, buses, skip_controller=False):
     """This function drops the measurements of the given buses.
-    Also, the related controller parameter will be removed. """
+    Also, the related controller parameters will be removed. """
     # --- dropping measurements
     if len(net.measurement):
         pp.drop_measurements_at_elements(net, "bus", idx=buses)
@@ -368,16 +368,7 @@ def drop_measurements_and_controller(net, buses, skip_controller=False):
         pp.drop_measurements_at_elements(net, "trafo3w", idx=trafo3ws)
 
     # --- dropping controller
-    """
-    test at present, only sgen and load are considered.
-    """
-    if len(net.controller) and not skip_controller:
-        for i in net.controller.index:
-            elm = net.controller.object[i].__dict__["element"]
-            if len(net[elm]) != len(set(net[elm].name.values)):
-                raise ValueError("if controllers are used, please give a name for every "
-                                 "element ("+elm+"), and make sure the name is unique.")
-        net.controller.drop(net.controller.index, inplace=True)
+    pp.drop_controllers_at_buses(net, buses)
 
 
 def match_controller_and_new_elements(net, net_org):
@@ -480,7 +471,7 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
             net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"], inplace=True)
 
 
-def check_network(net):
+def _check_network(net):
     """
     checks the given network. If the network does not meet conditions,
     the program will report an error.
@@ -506,6 +497,12 @@ def check_network(net):
         # raise ValueError("the parameter 'shift_degree' of some transformers is not zero. "
         #                   "Currently, the get_equivalent function can not reduce "
         #                   "a network with non-zero shift_degree accurately.")
+    if len(net.controller):
+       for i in net.controller:
+           elm = net.controller.object[i].__dict__["element"]
+           if len(net[elm]) != len(set(net[elm].name.values)):
+               raise ValueError("if controllers are used, please give a name for every "
+                                 "element ("+elm+"), and make sure the name is unique.")
 
 
 def get_boundary_vp(net_eq, bus_lookups):

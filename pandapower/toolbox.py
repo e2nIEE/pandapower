@@ -1406,6 +1406,33 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     net.measurement.drop(to_drop, inplace=True)
 
 
+def drop_controllers_at_elements(net, element_type, idx=None):
+    """
+    Drop all the controllers for the given elements (idx).
+    """
+    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
+    to_drop = []
+    for i in net.controller.index:
+        elm = net.controller.object[i].__dict__["element"]
+        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
+        if element_type == elm:
+            if set(elm_idx) - set(idx) == set():
+                to_drop.append(i)
+            else:
+                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
+                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
+    net.controller.drop(to_drop, inplace=True)
+
+
+def drop_controllers_at_buses(net, buses):
+    """
+    Drop all the controllers for the elements connected to the given buses.
+    """
+    elms = get_connected_elements_dict(net, buses)
+    for elm in elms.keys():
+        drop_controllers_at_elements(net, elm, elms[elm])
+
+
 def drop_duplicated_measurements(net, buses=None, keep="first"):
     """
     Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.

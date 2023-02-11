@@ -1,9 +1,14 @@
 import pytest
+import os
 import pandapower as pp
 import pandapower.grid_equivalents
 import pandapower.networks
+import pandas as pd
+from pandapower import pp_dir
+from pandapower.timeseries import DFData
+from pandapower.control import ConstControl
 from pandapower.grid_equivalents.auxiliary import drop_measurements_and_controller, \
-    check_network, get_boundary_vp, adaptation_phase_shifter
+    _check_network, get_boundary_vp, adaptation_phase_shifter
 
 
 def test_drop_internal_branch_elements():
@@ -44,7 +49,8 @@ def test_trafo_phase_shifter():
     assert len(net.trafo) == 3
 
 
-def test_drop_measurement():
+def test_drop_measurements_and_controllers():
+    # create measurements
     net = pp.networks.case9()
     pp.runpp(net)
     pp.create_bus(net, net.bus.vn_kv.values[0])
@@ -60,15 +66,45 @@ def test_drop_measurement():
     net.measurement.loc[4] = ["mb", "p", "trafo", 0, 89.3, 0.01, "hv"]
     net.measurement.loc[5] = ["mb", "i", "trafo3w", 0, 23.56, 0.01, "mv"]
     assert len(net.measurement) == 6
+    
+    # create controllers
+    json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
+    time_series = pd.read_json(json_path)
+    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist())
+    gen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.gen.index.tolist())
+    for t in range(96):
+        load_ts.loc[t] = net.load.p_mw.values * time_series.at[t, "residential"]
+        gen_ts.loc[t] = net.gen.p_mw.values * time_series.at[t, "pv"]
+
+    ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.tolist(), 
+                 profile_name=net.load.index.tolist(), data_source=DFData(load_ts))
+    ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.tolist(), 
+                 profile_name=net.gen.index.tolist(), data_source=DFData(gen_ts))
+    for i in net.gen.index:
+        ConstControl(net, element="gen", variable="p_mw", element_index=i, 
+                     profile_name=net.gen.index[i], data_source=DFData(gen_ts))
+    for i in net.load.index:
+        ConstControl(net, element="load", variable="p_mw", element_index=i, 
+                     profile_name=net.load.index[i], data_source=DFData(load_ts))
+
+    assert net.controller.object[0].__dict__["element_index"] == [0, 1, 2]
+    assert net.controller.object[1].__dict__["element_index"] == [0, 1]
+    assert net.controller.object[2].__dict__["element_index"] == 0
+    assert net.controller.object[3].__dict__["element_index"] == 1
+
     drop_measurements_and_controller(net, buses)
     assert len(net.measurement) == 2
+    assert len(net.controller) == 3
+    assert net.controller.index.tolist() == [0, 4, 6]
+    assert net.controller.object[0].__dict__["element_index"] == [0, 2]
+    assert net.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
 
 
 def test_check_network():
     net = pp.networks.case9()
     net.bus.in_service[5] = False
     pp.runpp(net)
-    check_network(net)
+    _check_network(net)
     
     net.bus.in_service[5] = True
     pp.runpp(net)
@@ -78,7 +114,7 @@ def test_check_network():
                      vm_from_pu=1.01, vm_to_pu=1.02)
     pp.create_dcline(net, from_bus=8, to_bus=10, p_mw=1e4, loss_percent=1.2, loss_mw=25, \
                      vm_from_pu=1.01, vm_to_pu=1.02)
-    check_network(net)
+    _check_network(net)
     assert len(net.gen) == 6
 
 
@@ -96,7 +132,7 @@ if __name__ == "__main__":
         pytest.main(['-x', __file__])
     else:
         # test_drop_internal_branch_elements()
-        test_drop_measurement()
+        test_drop_measurements_and_controllers()
         # test_check_validity()
         # test_trafo_phase_shifter()
         # test_check_validity()
