@@ -7,7 +7,7 @@ import pandas as pd
 from pandapower import pp_dir
 from pandapower.timeseries import DFData
 from pandapower.control import ConstControl
-from pandapower.grid_equivalents.auxiliary import drop_measurements_and_controller, \
+from pandapower.grid_equivalents.auxiliary import drop_measurements_and_controllers, \
     _check_network, get_boundary_vp, adaptation_phase_shifter
 
 
@@ -92,7 +92,7 @@ def test_drop_measurements_and_controllers():
     assert net.controller.object[2].__dict__["element_index"] == 0
     assert net.controller.object[3].__dict__["element_index"] == 1
 
-    drop_measurements_and_controller(net, buses)
+    drop_measurements_and_controllers(net, buses)
     assert len(net.measurement) == 2
     assert len(net.controller) == 3
     assert net.controller.index.tolist() == [0, 4, 6]

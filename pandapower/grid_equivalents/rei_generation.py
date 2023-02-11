@@ -2,7 +2,7 @@ from pandas.api.types import is_bool_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     drop_internal_branch_elements, \
-    build_ppc_and_Ybus, drop_measurements_and_controller, \
+    build_ppc_and_Ybus, drop_measurements_and_controllers, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
         replace_motor_by_load
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
@@ -497,16 +497,16 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 
 
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
-                                    all_external_buses,
-                                    show_computing_time=False,
-                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
+                                    all_external_buses, show_computing_time=False,
+                                    calc_volt_angles=True, 
+                                    runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controller(net_internal, all_external_buses, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses, True)
         drop_and_edit_cost_functions(net_internal,
                                      all_external_buses+boundary_buses,
                                      True, True)
@@ -517,7 +517,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_external.group.drop(net_external.group.index, inplace=True)
     drop_and_edit_cost_functions(net_external, all_internal_buses,
                                  True, True)
-    drop_measurements_and_controller(net_external, all_internal_buses)
+    drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     pp.drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)

@@ -322,7 +322,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controller(net, buses, skip_controller=False):
+def drop_measurements_and_controllers(net, buses, skip_controller=False):
     """This function drops the measurements of the given buses.
     Also, the related controller parameters will be removed. """
     # --- dropping measurements
