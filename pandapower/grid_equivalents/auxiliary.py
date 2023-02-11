@@ -262,33 +262,6 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
     return Z, S, v, limits
 
 
-def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
-    """
-    This Funktion proves the validity of the equivalent Ybus. If teh eqv. Ybus (Ybus_eq)
-    is calculated correctly, the new_power and the origial power flow results should be equal.
-    This function is currently only available for the grid equivalent without generators (net.gen).
-    """
-    logger.debug("validiting the calculated Ybus_eq")
-
-    df = pd.DataFrame(columns=["bus_ppc", "bus_pd", "ext_grid_index", "power"])   
-    df.bus_ppc = bus_lookups["bus_lookup_ppc"]["b_area_buses"] + \
-        bus_lookups["bus_lookup_ppc"]["t_area_buses"]
-    df.bus_pd = bus_lookups["bus_lookup_pd"]["b_area_buses"] + \
-        bus_lookups["bus_lookup_pd"]["t_area_buses"]
-    for idx in df.index:
-        if df.bus_pd[idx] in net_zpbn.ext_grid.bus.values:
-            df.ext_grid_index[idx] = net_zpbn.ext_grid.index[
-                net_zpbn.ext_grid.bus == df.bus_pd[idx]][0]
-
-    vm = net_zpbn.res_bus.vm_pu[df.bus_pd.values].values
-    delta = net_zpbn.res_bus.va_degree[df.bus_pd.values].values * np.pi / 180
-    v_cpx = vm * np.exp(1j * delta)
-    df.power = np.multiply(np.mat(v_cpx).T, np.conj(Ybus_eq * np.mat(v_cpx).T)) * net_zpbn.sn_mva
-    df.dropna(axis=0, how="any", inplace=True)
-
-    return df
-
-
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
     """ This function ad a unique name to each bounary bus. The original 
         boundary bus names are retained.

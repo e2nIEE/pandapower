@@ -1,7 +1,7 @@
 from pandas.api.types import is_bool_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
-    check_validity_of_Ybus_eq, drop_internal_branch_elements, \
+    drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controller, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
         replace_motor_by_load
@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
-                               show_computing_time=False,
-                               check_validity=False, **kwargs):
+                               show_computing_time=False, **kwargs):
     """
     The function orders the admittance matrix of the original network into
     new format firstly, which is convenient for rei equivalent calculation.d
@@ -102,15 +101,6 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     Ybus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] +
                                                      nb_dict["nb_t"]):] = Ybus_eq_boundary
 
-    # --- the validity of the equivalent Ybus will be checked
-    if check_validity:
-        power_check_df = check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups)
-        act_p = net_zpbn.res_bus.p_mw[power_check_df.bus_pd].values
-        act_q = net_zpbn.res_bus.q_mvar[power_check_df.bus_pd].values
-        real_p = power_check_df.power.values.real
-        real_q = power_check_df.power.values.imag
-        assert max(act_p + real_p) < 1e-3
-        assert max(act_q + real_q) < 1e-3
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((

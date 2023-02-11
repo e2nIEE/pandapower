@@ -118,15 +118,6 @@ def test_check_network():
     assert len(net.gen) == 6
 
 
-def test_check_validity():
-    net = pp.networks.case9()
-    pp.replace_gen_by_sgen(net)
-    pp.runpp(net)
-    pp.grid_equivalents.get_equivalent(net, "rei", [8, 4], [0], 
-                                       retain_original_internal_indices=True,
-                                       check_validity=True)
-
-
 if __name__ == "__main__":
     if 0:
         pytest.main(['-x', __file__])
