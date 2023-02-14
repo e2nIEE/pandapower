@@ -16,14 +16,14 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import numbers
-from pandapower.__init__ import __version__
+from pandapower._version import __version__
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability
+from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
-from pandapower.std_types import change_std_type
 
 
 try:

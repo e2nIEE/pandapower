@@ -10,7 +10,7 @@ import pandas as pd
 import pandas.testing as pdt
 from packaging.version import Version
 
-from pandapower.__init__ import __version__
+from pandapower._version import __version__
 import pandapower as pp
 import pandapower.networks as nw
 
