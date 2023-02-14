@@ -1620,14 +1620,10 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
-def drop_from_group(net, index, element_type, element_index):
+def drop_from_group(**kwargs):
     msg = "The name of the function drop_from_group() is deprecated with pp.version >= 2.12. " + \
         "Use detach_from_group() instead."
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_group(net, index, element_type, element_index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_group(net, index, element_type, element_index):
@@ -1650,14 +1646,10 @@ def detach_from_group(net, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_groups(net, index, element_type, element_index):
+def drop_from_groups(**kwargs):
     msg = "The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. " + \
         "Use detach_from_groups() instead."
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_groups(net, index, element_type, element_index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_groups(net, index, element_type, element_index):

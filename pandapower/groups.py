@@ -9,10 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import uuid
-import warnings
-from packaging.version import Version
 
-from pandapower.__init__ import __version__
 from pandapower.auxiliary import ensure_iterability
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence
@@ -32,14 +29,10 @@ logger = logging.getLogger(__name__)
 # ====================================
 
 
-def append_to_group(net, index, element_types, elements, reference_columns=None):
+def append_to_group(**kwargs):
     msg = "The name of the function append_to_group() is deprecated with pp.version >= 2.12. " + \
         "Use attach_to_group() instead."
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
+    raise DeprecationWarning(msg)
 
 
 def attach_to_group(net, index, element_types, elements, reference_columns=None):
