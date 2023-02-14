@@ -12,7 +12,7 @@ import uuid
 import warnings
 from packaging.version import Version
 
-from pandapower.__init__ import __version__
+from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence
