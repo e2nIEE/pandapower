@@ -87,7 +87,7 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     logger.info('activating project')
 
     prj.Activate()
-    trafo_name, trafo_desc = check_network(app)
+    trafo_name, trafo_desc = _check_network(app)
 
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics=flag_graphics)
@@ -146,7 +146,7 @@ def import_project(path_src, app, name="Import" , import_folder="", template=Non
     return prj
 
 
-def check_network(app):
+def _check_network(app):
     """
     Used in VNS Hessen to make configs and run additional checks on the networks that are
     imported from .dgs
