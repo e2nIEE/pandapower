@@ -1652,7 +1652,7 @@ def drop_from_groups(**kwargs):
     raise DeprecationWarning(msg)
 
 
-def detach_from_groups(net, index, element_type, element_index):
+def detach_from_groups(net, element_type, element_index, index=None):
     """Detaches elements from one or multiple groups, defined by 'index'.
     No errors are raised if elements are passed to be dropped from groups which alread don't have
     these elements as members.
