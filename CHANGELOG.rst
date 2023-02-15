@@ -3,14 +3,18 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
+- [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
+- [CHANGED] cim2pp converter documentation fixes
+- [CHANGED] make legend item size constant in `simple_plotly`
 - [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
 - [FIXED] documentation of powerfactory converter
-- [CHANGED] cim2pp converter documentation fixes
-- [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
 - [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
+- [ADDED] documentation of DeprecationWarning process
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
 - [CHANGED] remove support for Python 3.7 and add Python 3.11
+- [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 
 [2.11.1] - 2023-01-02
 -------------------------------
