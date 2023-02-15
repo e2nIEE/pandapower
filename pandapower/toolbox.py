@@ -1650,17 +1650,17 @@ def detach_from_group(net, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_groups(net, index, element_type, element_index):
+def drop_from_groups(net, element_type, element_index, index=None):
     msg = "The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. " + \
         "Use detach_from_groups() instead."
     if Version(__version__) < Version('2.13'):
         warnings.warn(msg, category=DeprecationWarning)
     else:
         raise DeprecationWarning(msg)
-    return detach_from_groups(net, index, element_type, element_index)
+    return detach_from_groups(net, element_type, element_index, index=index)
 
 
-def detach_from_groups(net, index, element_type, element_index):
+def detach_from_groups(net, element_type, element_index, index=None):
     """Detaches elements from one or multiple groups, defined by 'index'.
     No errors are raised if elements are passed to be dropped from groups which alread don't have
     these elements as members.
