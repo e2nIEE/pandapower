@@ -246,6 +246,37 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
 
 def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_iterations=20, threading=0, validate_input=False):
+    """
+        Runs powerflow using power-grid-model library
+
+        INPUT:
+            **net** - The pandapower format network
+
+        OPTIONAL:
+            **symmetric** (bool, True) -
+
+            - True: three-phase symmetric calculation, even for asymmetric loads/generations
+            - False: three-phase asymmetric calculation
+
+            **algorithm** (str, "nr") - Algorithms available in power-grid-model. Check power-grid-model documentation for detailed information on the algorithms.
+
+            - "nr" - Newton Raphson algorithm
+            - "ic" - Iterative current algorithm
+            - "lc" - Linear current approximation algorithm
+            - "lin" - Linear approximation algorithm
+
+            **error_tolerance** (double, 1e-8) - error tolerance for voltage in p.u.
+
+            **max_iterations** (int, 20) - Maximum number of iterations for algorithms. No effect on linear approximation algorithms.
+
+            **threading** (0, int) - only applicable for batch calculation
+
+            - threading < 0 sequential
+            - threading = 0 parallel, use number of hardware threads
+            - threading > 0 specify number of parallel threads
+
+            **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
+    """
     if not symmetric:
         raise(NotImplementedError, "Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
     algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "ic": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
