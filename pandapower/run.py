@@ -6,6 +6,10 @@
 
 import inspect
 
+from power_grid_model_io.converters import PandaPowerConverter
+from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+from power_grid_model.validation import assert_valid_input_data
+
 from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
     _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
     _init_rundcpp_options, _init_runopp_options, _internal_stored
@@ -239,6 +243,22 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         _check_bus_index_and_print_warning_if_high(net)
         _check_gen_index_and_print_warning_if_high(net)
         _powerflow(net, **kwargs)
+
+
+def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_iterations=20, threading=0, validate_input=False):
+    if not symmetric:
+        raise(NotImplementedError, "Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "ic": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
+    # output_component_types_map = {"bus": "node", "line": "line", "trafo": "transformer", "trafo_3w": "three_winding_transformer", "load": "sym_load", "asymmetric_load": "sym_load"}
+    pgm_converter = PandaPowerConverter()
+    pgm_input_data, _ = pgm_converter.load_input_data(net)
+    if validate_input:
+        assert_valid_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
+    pgm = PowerGridModel(input_data=pgm_input_data)
+    output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm], threading=threading)
+    converted_output_data = pgm_converter.convert(output_data)
+    for table in converted_output_data.keys():
+        net[table] = converted_output_data[table]
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
