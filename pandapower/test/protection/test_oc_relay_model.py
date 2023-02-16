@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from pandas.testing import assert_frame_equal
 from pandapower.protection import oc_relay_model as oc
 from pandapower.protection.example_grids import *
-from pandapower.protection.utility_functions import *
+from pandapower.protection.utility_functions import plot_tripped_grid, create_I_t_plot,create_sc_bus
 
     # This function test the automated configuration of oc parameters function
 def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_current_factor=1.25,
@@ -31,7 +31,7 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
     net_dtoc=dtoc_relay_net(open_loop=True)
     
     # sanity chech of user defined input oc parameters
-    assert type(net)==pandapower.auxiliary.pandapowerNet, 'net should be pandapower network'
+    assert type(net_dtoc)==pandapower.auxiliary.pandapowerNet, 'net should be pandapower network'
     assert 0<sc_fraction<1 , 'sc fraction should be between 0 and 1'
     assert 1<=overload_factor , 'overload should be between greater than or equal to 1'
     assert 1<=inverse_overload_factor, 'inverse overload should be between greater than or equal to 1'
@@ -43,8 +43,8 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
     settings_DTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
                                 'bus_id': [0],'relay_type':['DTOC'],
                                 'curve_type':['Definite time curve'],
-                                'I_g[kA]':[0.5415],
-                                'I_gg[kA]':[2.72257],
+                                'I_g[kA]':[0.213],
+                                'I_gg[kA]':[2.630155810722129],
                                 't_g[s]':[1.4],'t_gg[s]':[0.07]})
     
 
@@ -64,13 +64,14 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
     settings_IDMT=pd.DataFrame({'switch_id': [0],'line_id':[0],
                                 'bus_id': [0],'relay_type':['IDMT'],
                                 'curve_type':['standard_inverse'],
-                                'I_s[kA]':[0.4332],'tms[s]':[1],
+                                'I_s[kA]':[0.1704],'tms[s]':[1],
                                 'k':[0.14],'t_grade[s]':[2.0], 'alpha':0.02})
     
-    # get relay settings for DTOC relay based on imput parameters
-    relay_settings_IDMT = oc.oc_parameters(net_idmt,relay_type='IDMT',curve_type='standard_inverse', time_settings=[1, 0.5],
+    # get relay settings for IDMT relay based on imput parameters
+    relay_settings_IDMT = oc.oc_parameters(net_idmt,relay_type='IDMT', time_settings=[1, 0.5],
                            sc_fraction=sc_fraction, overload_factor=overload_factor,
-                           ct_current_factor=ct_current_factor,safety_factor=safety_factor,inverse_overload_factor=inverse_overload_factor)
+                           ct_current_factor=ct_current_factor,safety_factor=safety_factor,
+                           inverse_overload_factor=inverse_overload_factor,curve_type='standard_inverse')
     # Test IDMT parameter settings 
     assert_frame_equal(relay_settings_IDMT.iloc[[0]], settings_IDMT, check_dtype=False),
     'IDMT parameters should be of given format and vale with the given format'
@@ -81,8 +82,8 @@ def test_oc_parameters_automated(sc_fraction=0.95, overload_factor=1.2, ct_curre
     # Test IDTOC parameter settings
     settings_IDTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
                                 'bus_id': [0],'relay_type':['IDTOC'],
-                                'curve_type':['standard_inverse'],'I_g[kA]':[0.5415],
-                                  'I_gg[kA]':[2.72257],'I_s[kA]':[0.4332],
+                                'curve_type':['standard_inverse'],'I_g[kA]':[0.213],
+                                  'I_gg[kA]':[2.63016],'I_s[kA]':[0.1704],
                                   't_g[s]':[1.4],'t_gg[s]':[0.07],'tms[s]':[1],
                                 'k':[0.14],'t_grade[s]':[2.0], 'alpha':0.02})
     
@@ -126,7 +127,7 @@ def test_oc_get_measurement_at_relay_location(sc_line_id=3, sc_location=0.3,  se
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     i_ka= oc.oc_get_measurement_at_relay_location(net_sc,settings=settings.iloc[0])
     
-    assert np.isclose(i_ka, 2.598311976761866, rtol=0.001), 'I_ka at the given location should be within 0.001 kA relative tolerence with calculated value'
+    assert np.isclose(i_ka, 2.410070123674386, rtol=0.001), 'I_ka at the given location should be within 0.001 kA relative tolerence with calculated value'
 
     
 def test_time_grading_manual(time_settings= pd.DataFrame({'switch_id': [0,1,2,3,4,5],'t_g':[0.5,0.8,1.1,1.4,1.7,2],

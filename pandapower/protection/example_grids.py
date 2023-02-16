@@ -25,7 +25,7 @@ def three_radial_bus_net():
         net.line["endtemp_degree"] = 250
         
         pp.create_switches(net, buses =  [0,1,2,3,4,5,2,7,8,9,10,9,12,13,14], elements =
-                           [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], et = 'l', type ="IDTOC")
+                           [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], et = 'l', type ="CB_IDTOC")
 
 
         # Define load
@@ -64,8 +64,6 @@ def dtoc_relay_net(open_loop=True):
                            [6,6], et = 'l', type ="CB_DTOC",closed=True)
         
         
-    pp.create_switches(net, buses =  [0,1,2,3,4,5], elements =
-                       [0,1,2,3,4,5], et = 'l', type ="CB_DTOC")
     #define load
     pp.create_loads(net, buses=[3,6], p_mw=[5,2], q_mvar=[1,1], const_z_percent=0, const_i_percent=0, sn_mva=None,
                      name=None, scaling=1., index=[0,1])
@@ -88,7 +86,7 @@ def idmt_relay_net(open_loop=True):
     net.line["endtemp_degree"] = 250
     
     pp.create_switches(net, buses =  [0,1,2,3,4,5], elements =
-                       [0,1,2,3,4,5], et = 'l', type ="IDMT")
+                       [0,1,2,3,4,5], et = 'l', type ="CB_IDMT")
     # Define switches
     if open_loop:
         
@@ -98,9 +96,6 @@ def idmt_relay_net(open_loop=True):
         pp.create_switches(net, buses =  [3,6], elements =
                            [6,6], et = 'l', type ="CB_IDMT",closed=True)
         
-        
-    pp.create_switches(net, buses =  [0,1,2,3,4,5], elements =
-                       [0,1,2,3,4,5], et = 'l', type ="CB_IDMT")
     #define load
     
     pp.create_loads(net, buses=[3,6], p_mw=[5,2], q_mvar=[1,1], const_z_percent=0, const_i_percent=0, sn_mva=None,
@@ -123,7 +118,7 @@ def idtoc_relay_net(open_loop=True):
     net.line["endtemp_degree"] = 250
     
     pp.create_switches(net, buses =  [0,1,2,3,4,5], elements =
-                       [0,1,2,3,4,5], et = 'l', type ="IDTOC")
+                       [0,1,2,3,4,5], et = 'l', type ="CB_IDTOC")
     # Define switches
     
     if open_loop:
@@ -133,10 +128,6 @@ def idtoc_relay_net(open_loop=True):
     else:
         pp.create_switches(net, buses =  [3,6], elements =
                            [6,6], et = 'l', type ="CB_IDTOC",closed=True)
-        
-        
-    pp.create_switches(net, buses =  [0,1,2,3,4,5], elements =
-                       [0,1,2,3,4,5], et = 'l', type ="CB_IDTOC")
     #define load
     pp.create_loads(net, buses=[3,6], p_mw=[5,2], q_mvar=[1,1], const_z_percent=0, const_i_percent=0, sn_mva=None,
                      name=None, scaling=1., index=[0,1])

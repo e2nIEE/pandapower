@@ -12,9 +12,10 @@ import warnings
 from math import isnan,nan
 import warnings
 warnings.filterwarnings('ignore') 
-#from pandapower.protection.utility_functions import *
 from pandapower.plotting import simple_plot
-from pandapower.protection.utility_functions import *
+from pandapower.protection.utility_functions import create_sc_bus,bus_path_multiple_ext_bus,get_line_path,get_line_idx,get_bus_idx,\
+                                                    parallel_lines,plot_tripped_grid, create_I_t_plot
+
 
 
 # set the oc parameters
