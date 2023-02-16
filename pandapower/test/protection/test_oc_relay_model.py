@@ -218,7 +218,7 @@ def test_plot_tripped_grid(mock_show,sc_line_id =0,sc_location =0.4,
 
     
     # test the tripped grid
-    oc.plot_tripped_grid(net_sc, trip_decisions,sc_location, plot_annotations=(True))
+    plot_tripped_grid(net_sc, trip_decisions,sc_location, plot_annotations=(True))
     plt.close('all')
     
     
@@ -237,7 +237,7 @@ def test_plot_create_I_t_plot(mock_show, sc_line_id=0 ,sc_location =0.4,
     trip_decisions,net_sc =oc.run_fault_scenario_oc(net,sc_line_id,sc_location,relay_settings=settings_DTOC)
 
     # test the IT plot function working or not
-    oc.create_I_t_plot(trip_decisions,switch_id=[0])
+    create_I_t_plot(trip_decisions,switch_id=[0])
 
     plt.close('all')
 
