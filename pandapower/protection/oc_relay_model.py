@@ -341,7 +341,7 @@ def time_grading(net,time_settings):
         for line_length in range(0,len(sorted_line_path[-1])) :
             
             distance_counter=len(sorted_line_path[-1])- line_length
-            t_g=time_settings[1] + (line_length)* time_settings[2]
+            t_g=time_settings[1] + (line_length-1)* time_settings[2]
             line_length_time[ distance_counter]=t_g
         
         
