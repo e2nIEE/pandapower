@@ -265,7 +265,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_ite
             - "lc" - Linear current approximation algorithm
             - "lin" - Linear approximation algorithm
 
-            **error_tolerance** (double, 1e-8) - error tolerance for voltage in p.u.
+            **error_tolerance** (float, 1e-8) - error tolerance for voltage in p.u.
 
             **max_iterations** (int, 20) - Maximum number of iterations for algorithms. No effect on linear approximation algorithms.
 
@@ -287,6 +287,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_ite
         assert_valid_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
     pgm = PowerGridModel(input_data=pgm_input_data)
     output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm], threading=threading)
+    net["converged"] = True
     converted_output_data = pgm_converter.convert(output_data)
     for table in converted_output_data.keys():
         net[table] = converted_output_data[table]
