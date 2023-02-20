@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [CHANGED] changed default optimization method from OptAlgorithm to "Newton-CG"
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] cim2pp converter documentation fixes
