@@ -336,6 +336,10 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
                           recycle=recycle, check_connectivity=check_connectivity,
                           switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses, **kwargs)
 
+    if isinstance(recycle, dict) and _internal_stored(net, ac=False):
+        _recycled_powerflow(net, recycle=recycle, **kwargs)
+        return
+
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
