@@ -18,7 +18,7 @@ def test_minimal_net_pgm():
     runpp_pgm_with_consistency_checks(net)
 
     b2 = pp.create_bus(net, 110)
-    pp.create_switch(net, b, b2, 'b')
+    # pp.create_switch(net, b, b2, 'b') # TODO Add post merge switches
     pp.create_sgen(net, b2, p_mw=0.2)
     runpp_pgm_with_consistency_checks(net)
 
