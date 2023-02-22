@@ -257,19 +257,13 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             **algorithm** (str, "nr") - Algorithms available in power-grid-model. Check power-grid-model documentation for detailed information on the algorithms.
 
             - "nr" - Newton Raphson algorithm
-            - "ic" - Iterative current algorithm
+            - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
             - "lc" - Linear current approximation algorithm
             - "lin" - Linear approximation algorithm
 
-            **error_tolerance** (float, 1e-8) - error tolerance for voltage in p.u.
+            **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
 
             **max_iterations** (int, 20) - Maximum number of iterations for algorithms. No effect on linear approximation algorithms.
-
-            **threading** (0, int) - only applicable for batch calculation
-
-            - threading < 0 sequential
-            - threading = 0 parallel, use number of hardware threads
-            - threading > 0 specify number of parallel threads
 
             **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
     """
