@@ -6,10 +6,6 @@
 
 import inspect
 
-from power_grid_model_io.converters import PandaPowerConverter
-from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
-from power_grid_model.validation import assert_valid_input_data
-
 from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
     _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
     _init_rundcpp_options, _init_runopp_options, _internal_stored
@@ -245,7 +241,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         _powerflow(net, **kwargs)
 
 
-def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_iterations=20, threading=0, validate_input=False):
+def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, max_iterations=20, validate_input=False):
     """
         Runs powerflow using power-grid-model library
 
@@ -277,18 +273,34 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance=1e-8, max_ite
 
             **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
     """
+    try:
+        from power_grid_model_io.converters import PandaPowerConverter
+        from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+        from power_grid_model.validation import validate_input_data, errors_to_string
+        from power_grid_model.validation.errors import ValidationError
+    except ImportError:
+        print(f"Failed to import {ImportError.__class__.__name__}. Try using `pip install {Exception.__class__.__name__}` to install the package")
+
     if not symmetric:
-        raise(NotImplementedError, "Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
-    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "ic": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
-    # output_component_types_map = {"bus": "node", "line": "line", "trafo": "transformer", "trafo_3w": "three_winding_transformer", "load": "sym_load", "asymmetric_load": "sym_load"}
+        raise NotImplementedError("Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+
     pgm_converter = PandaPowerConverter()
     pgm_input_data, _ = pgm_converter.load_input_data(net)
     if validate_input:
-        assert_valid_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
+        error_list = validate_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
+        if any(isinstance(item, ValidationError) for item in error_list):
+            lookup_dict = {pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}" for table_with_name, indices_series in pgm_converter.idx_lookup.items() for pgm_idx, pp_idx in indices_series.items()}
+            errors_to_string(errors=error_list, details=True, id_lookup=lookup_dict)
+
+    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "bfsw": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
     pgm = PowerGridModel(input_data=pgm_input_data)
-    output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm], threading=threading)
-    net["converged"] = True
-    converted_output_data = pgm_converter.convert(output_data)
+    try:
+        output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance_u_pu, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm])
+        net["converged"] = True
+    except RuntimeError:
+        net["converged"] = False
+
+    converted_output_data = pgm_converter.convert(data=output_data)
     for table in converted_output_data.keys():
         net[table] = converted_output_data[table]
 
