@@ -3,9 +3,9 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
-- [CHANGED] changed default optimization method from OptAlgorithm to "Newton-CG"
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
+- [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
 - [CHANGED] cim2pp converter documentation fixes
 - [CHANGED] make legend item size constant in `simple_plotly`
 - [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
