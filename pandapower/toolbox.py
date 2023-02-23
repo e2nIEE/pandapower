@@ -9,6 +9,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 import warnings
+import uuid
 
 import networkx as nx
 import numpy as np
@@ -1130,9 +1131,12 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
 
     # --- adapt line_geodata index
     if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
-        net["line_geodata"]["index"] = net["line_geodata"].index
-        net["line_geodata"].loc[old_indices, "index"] = get_indices(old_indices, lookup)
-        net["line_geodata"].set_index("index", inplace=True)
+        idx_name = net.line_geodata.index.name
+        place_holder = uuid.uuid5()
+        net["line_geodata"][place_holder] = net["line_geodata"].index
+        net["line_geodata"].loc[old_indices, place_holder] = get_indices(old_indices, lookup)
+        net["line_geodata"].set_index(place_holder, inplace=True)
+        net["line_geodata"].index.name = idx_name
 
     # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
