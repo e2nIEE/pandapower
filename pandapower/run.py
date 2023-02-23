@@ -273,7 +273,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         from power_grid_model.validation import validate_input_data, errors_to_string
         from power_grid_model.validation.errors import ValidationError
     except ImportError:
-        raise ImportError(f"Import failed. Try using `pip install power-grid-model power-grid-model-io` to install the packages")
+        raise ImportError("Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")
 
     if not symmetric:
         raise NotImplementedError("Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
