@@ -269,7 +269,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
     """
     try:
         from power_grid_model_io.converters import PandaPowerConverter
-        from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+        from power_grid_model import PowerGridError, PowerGridModel, CalculationType, CalculationMethod
         from power_grid_model.validation import validate_input_data, errors_to_string
         from power_grid_model.validation.errors import ValidationError
     except ImportError:
@@ -298,8 +298,10 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
                                                max_iterations=max_iterations,
                                                calculation_method=algorithm_map[algorithm])
         net["converged"] = True
-    except RuntimeError:
+    except PowerGridError as ex:
+        logger.error(str(ex))
         net["converged"] = False
+        return
 
     converted_output_data = pgm_converter.convert(data=output_data)
     for table in converted_output_data.keys():
