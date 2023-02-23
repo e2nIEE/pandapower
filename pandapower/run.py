@@ -281,17 +281,21 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
 
     pgm_converter = PandaPowerConverter()
-    pgm_input_data, _ = pgm_converter.load_input_data(net)
+    pgm_input_data, _extra_info = pgm_converter.load_input_data(net)
+
     if validate_input:
         error_list = validate_input_data(
             pgm_input_data,
             calculation_type=CalculationType.power_flow,
             symmetric=symmetric
         )
-        if any(isinstance(item, ValidationError) for item in error_list):
-            lookup_dict = {pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}" for table_with_name, indices_series
-                           in pgm_converter.idx_lookup.items() for pgm_idx, pp_idx in indices_series.items()}
-            errors_to_string(errors=error_list, details=True, id_lookup=lookup_dict)
+        if error_list:
+            lookup_dict = {
+                pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}"
+                for table_with_name, indices_series in pgm_converter.idx_lookup.items()
+                for pgm_idx, pp_idx in indices_series.items()
+            }
+            logger.error(errors_to_string(errors=error_list, details=True, id_lookup=lookup_dict))
 
     algorithm_map = {
         "nr": CalculationMethod.newton_raphson,
