@@ -1,5 +1,5 @@
+from unittest.mock import patch, MagicMock
 
-from unittest.mock import patch
 import pytest
 
 import pandapower as pp
@@ -34,18 +34,26 @@ def test_runpp_pgm__non_convergence():
     pp.create_ext_grid(net, b1, vm_pu=1)
     b2 = pp.create_bus(net, 50)
     pp.create_line(net, b1, b2, 1, std_type="NAYY 4x50 SE")
-    with pytest.raises(RuntimeError, match="Conflicting voltage"):
-        pp.runpp_pgm(net)
+    pp.runpp_pgm(net)
+    ## TODO: Check error message
+    assert net["converged"] is False
 
 
-@patch("power_grid_model.validation.errors_to_string")
-def test_runpp_pgm__validation_fail(mock_errors_to_string):
+@patch("pandapower.run.logger")
+def test_runpp_pgm__validation_fail(mock_logger: MagicMock):
     net = pp.create_empty_network()
     pp.create_bus(net, -110, index=123)
     pp.runpp_pgm(net, validate_input=True)
-    expected_lookup = {0: 'Table: bus Index: 123'}
-    mock_errors_to_string.assert_called_once()
-    assert mock_errors_to_string.call_args.kwargs["id_lookup"] == expected_lookup
+
+    err = mock_logger.error.call_args_list[0].args[0]
+    assert "validation error" in err
+    assert "bus-123" in err
+
+    dbg = mock_logger.debug.call_args_list[0].args[0]
+    assert "validation error" in dbg
+    assert "bus-123" in dbg
+
+    assert False
 
 
 if __name__ == "__main__":

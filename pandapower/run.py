@@ -308,14 +308,12 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         # If there were validation errors, convert the errors to a human readable test and log each error for
         # each element in the input data.
         if validation_errors:
-            lookup_dict = {
-                pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}"
-                for table_with_name, indices_series in pgm_converter.idx_lookup.items()
-                for pgm_idx, pp_idx in indices_series.items()
-            }
-            logger.error(
-                errors_to_string(errors=validation_errors, name="the input data", details=True, id_lookup=lookup_dict)
-            )
+            for i, error in enumerate(validation_errors, start=1):
+                pp_obj = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
+                pp_obj = (f"{obj['table']}-{obj['index']}" for obj in pp_obj)
+                pp_obj = ", ".join(pp_obj)
+                logger.error(f"{i}. Power Grid Model validation error: Check {pp_obj}")
+                logger.debug(f"{i}. Native Power Grid Model error: {error}")
 
     # 4. Create a PowerGridModel and calculate the powerflow
     try:
@@ -330,7 +328,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
 
     # Stop execution if a power PowerGridError was raised and log the error
     except PowerGridError as ex:
-        logger.error(str(ex))
+        logger.critical(str(ex))
         net["converged"] = False
         return
 
