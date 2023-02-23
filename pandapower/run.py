@@ -273,23 +273,30 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         from power_grid_model.validation import validate_input_data, errors_to_string
         from power_grid_model.validation.errors import ValidationError
     except ImportError:
-        raise ImportError("Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")
+        raise ImportError(
+            "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")
 
     if not symmetric:
-        raise NotImplementedError("Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+        raise NotImplementedError(
+            "Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
 
     pgm_converter = PandaPowerConverter()
     pgm_input_data, _ = pgm_converter.load_input_data(net)
     if validate_input:
-        error_list = validate_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
+        error_list = validate_input_data(pgm_input_data, calculation_type=CalculationType.power_flow,
+                                         symmetric=symmetric)
         if any(isinstance(item, ValidationError) for item in error_list):
-            lookup_dict = {pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}" for table_with_name, indices_series in pgm_converter.idx_lookup.items() for pgm_idx, pp_idx in indices_series.items()}
+            lookup_dict = {pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}" for table_with_name, indices_series
+                           in pgm_converter.idx_lookup.items() for pgm_idx, pp_idx in indices_series.items()}
             errors_to_string(errors=error_list, details=True, id_lookup=lookup_dict)
 
-    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "bfsw": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
+    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear,
+                     "bfsw": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
     pgm = PowerGridModel(input_data=pgm_input_data)
     try:
-        output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance_u_pu, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm])
+        output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance_u_pu,
+                                               max_iterations=max_iterations,
+                                               calculation_method=algorithm_map[algorithm])
         net["converged"] = True
     except RuntimeError:
         net["converged"] = False
