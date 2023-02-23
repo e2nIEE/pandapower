@@ -268,10 +268,10 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
     """
     try:
-        from power_grid_model_io.converters import PandaPowerConverter
-        from power_grid_model import PowerGridError, PowerGridModel, CalculationType, CalculationMethod
+        from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+        from power_grid_model.errors import PowerGridError
         from power_grid_model.validation import validate_input_data, errors_to_string
-        from power_grid_model.validation.errors import ValidationError
+        from power_grid_model_io.converters import PandaPowerConverter
     except ImportError:
         raise ImportError(
             "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")

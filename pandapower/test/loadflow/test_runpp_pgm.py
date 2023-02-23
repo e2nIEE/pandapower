@@ -6,7 +6,6 @@ import pandapower as pp
 from pandapower.test.consistency_checks import runpp_pgm_with_consistency_checks
 
 
-
 def test_minimal_net_pgm():
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pp.create_empty_network()
@@ -22,10 +21,12 @@ def test_minimal_net_pgm():
     pp.create_sgen(net, b2, p_mw=0.2)
     runpp_pgm_with_consistency_checks(net)
 
+
 def test_runpp_pgm__asym():
     net = pp.create_empty_network()
-    with pytest.raises(NotImplementedError, match="Asymmetric  power flow by power-grid-model is not implemented yet"):
+    with pytest.raises(NotImplementedError, match="Asymmetric power flow by power-grid-model is not implemented yet"):
         pp.runpp_pgm(net, symmetric=False)
+
 
 def test_runpp_pgm__non_convergence():
     net = pp.create_empty_network()
@@ -36,6 +37,7 @@ def test_runpp_pgm__non_convergence():
     with pytest.raises(RuntimeError, match="Conflicting voltage"):
         pp.runpp_pgm(net)
 
+
 @patch("power_grid_model.validation.errors_to_string")
 def test_runpp_pgm__validation_fail(mock_errors_to_string):
     net = pp.create_empty_network()
@@ -44,6 +46,7 @@ def test_runpp_pgm__validation_fail(mock_errors_to_string):
     expected_lookup = {0: 'Table: bus Index: 123'}
     mock_errors_to_string.assert_called_once()
     assert mock_errors_to_string.call_args.kwargs["id_lookup"] == expected_lookup
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

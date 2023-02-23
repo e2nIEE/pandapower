@@ -27,7 +27,7 @@ def rundcpp_with_consistency_checks(net, **kwargs):
     return True
 
 def runpp_pgm_with_consistency_checks(net):
-    pp.runpp_pgm(net, error_tolerance=1e-11)
+    pp.runpp_pgm(net, error_tolerance_u_pu=1e-11)
     consistency_checks(net)
     return True
 
