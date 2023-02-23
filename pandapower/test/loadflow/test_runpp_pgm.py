@@ -22,6 +22,13 @@ def test_minimal_net_pgm():
     runpp_pgm_with_consistency_checks(net)
 
 
+def test_runpp_pgm__invalid_algorithm():
+    net = pp.create_empty_network()
+    with pytest.raises(KeyError, match="Invalid algorithm 'foo'; choose from: 'nr' (newton_raphson), 'lin' (linear), "
+                                       "'bfsw' (iterative_current), 'lc' (linear_current)"):
+        pp.runpp_pgm(net, algorithm="foo")
+
+
 def test_runpp_pgm__asym():
     net = pp.create_empty_network()
     with pytest.raises(NotImplementedError, match="Asymmetric power flow by power-grid-model is not implemented yet"):

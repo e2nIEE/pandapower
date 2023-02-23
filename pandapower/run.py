@@ -288,8 +288,8 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         "lc": CalculationMethod.linear_current
     }
     if algorithm not in algorithm_map:
-        algorithms = ", ".join(f"{key} ({algo.name})" for key, algo in algorithm_map)
-        raise KeyError(f"Invalid algorithm'{algorithm}'; choose from: " + algorithms)
+        algorithms = ", ".join(f"'{key}' ({algo.name})" for key, algo in algorithm_map.items())
+        raise KeyError(f"Invalid algorithm '{algorithm}'; choose from: " + algorithms)
     calculation_method = algorithm_map[algorithm]
 
     # 2. Convert the pandapower data to the power grid model format. Ignoring the 'extra info', which is a
