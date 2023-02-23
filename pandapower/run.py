@@ -278,7 +278,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
 
     if not symmetric:
         raise NotImplementedError(
-            "Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+            "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
 
     pgm_converter = PandaPowerConverter()
     pgm_input_data, _ = pgm_converter.load_input_data(net)
