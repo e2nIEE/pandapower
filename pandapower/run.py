@@ -274,11 +274,13 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         from power_grid_model_io.converters import PandaPowerConverter
     except ImportError:
         raise ImportError(
-            "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")
+            "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages."
+        )
 
     if not symmetric:
         raise NotImplementedError(
-            "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+            "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead."
+        )
 
     # 1. Determine the Power Grid Model calculation type corresponding to the algorithm:
     algorithm_map = {
@@ -300,9 +302,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
     # 3. If required, validate the input data
     if validate_input:
         validation_errors = validate_input_data(
-            pgm_input_data,
-            calculation_type=CalculationType.power_flow,
-            symmetric=symmetric
+            pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric
         )
 
         # If there were validation errors, convert the errors to a human readable test and log each error for

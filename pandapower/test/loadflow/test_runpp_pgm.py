@@ -17,15 +17,18 @@ def test_minimal_net_pgm():
     runpp_pgm_with_consistency_checks(net)
 
     b2 = pp.create_bus(net, 110)
-    pp.create_switch(net, b, b2, 'b')
+    pp.create_switch(net, b, b2, "b")
     pp.create_sgen(net, b2, p_mw=0.2)
     runpp_pgm_with_consistency_checks(net)
 
 
 def test_runpp_pgm__invalid_algorithm():
     net = pp.create_empty_network()
-    with pytest.raises(KeyError, match="Invalid algorithm 'foo'; choose from: 'nr' (newton_raphson), 'lin' (linear), "
-                                       "'bfsw' (iterative_current), 'lc' (linear_current)"):
+    with pytest.raises(
+        KeyError,
+        match="Invalid algorithm 'foo'; choose from: 'nr' (newton_raphson), 'lin' (linear), "
+        "'bfsw' (iterative_current), 'lc' (linear_current)",
+    ):
         pp.runpp_pgm(net, algorithm="foo")
 
 
