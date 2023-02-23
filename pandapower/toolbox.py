@@ -1132,7 +1132,7 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     # --- adapt line_geodata index
     if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
         idx_name = net.line_geodata.index.name
-        place_holder = uuid.uuid5()
+        place_holder = uuid.uuid4()
         net["line_geodata"][place_holder] = net["line_geodata"].index
         net["line_geodata"].loc[old_indices, place_holder] = get_indices(old_indices, lookup)
         net["line_geodata"].set_index(place_holder, inplace=True)
