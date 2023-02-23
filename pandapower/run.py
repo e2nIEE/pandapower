@@ -268,32 +268,74 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
     """
     try:
-        from power_grid_model_io.converters import PandaPowerConverter
         from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+        from power_grid_model.errors import PowerGridError
         from power_grid_model.validation import validate_input_data, errors_to_string
-        from power_grid_model.validation.errors import ValidationError
+        from power_grid_model_io.converters import PandaPowerConverter
     except ImportError:
-        raise ImportError(f"Import failed. Try using `pip install power-grid-model power-grid-model-io` to install the packages")
+        raise ImportError(
+            "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages.")
 
     if not symmetric:
-        raise NotImplementedError("Asymmetric  power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
+        raise NotImplementedError(
+            "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead.")
 
+    # 1. Determine the Power Grid Model calculation type corresponding to the algorithm:
+    algorithm_map = {
+        "nr": CalculationMethod.newton_raphson,
+        "lin": CalculationMethod.linear,
+        "bfsw": CalculationMethod.iterative_current,
+        "lc": CalculationMethod.linear_current
+    }
+    if algorithm not in algorithm_map:
+        algorithms = ", ".join(f"{key} ({algo.name})" for key, algo in algorithm_map)
+        raise KeyError(f"Invalid algorithm'{algorithm}'; choose from: " + algorithms)
+    calculation_method = algorithm_map[algorithm]
+
+    # 2. Convert the pandapower data to the power grid model format. Ignoring the 'extra info', which is a
+    #    dictionary representation of the internal state of the PandaPowerConverter.
     pgm_converter = PandaPowerConverter()
-    pgm_input_data, _ = pgm_converter.load_input_data(net)
+    pgm_input_data, _extra_info = pgm_converter.load_input_data(net)
+
+    # 3. If required, validate the input data
     if validate_input:
-        error_list = validate_input_data(pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric)
-        if any(isinstance(item, ValidationError) for item in error_list):
-            lookup_dict = {pgm_idx: f"Table: {table_with_name[0]} Index: {pp_idx}" for table_with_name, indices_series in pgm_converter.idx_lookup.items() for pgm_idx, pp_idx in indices_series.items()}
-            errors_to_string(errors=error_list, details=True, id_lookup=lookup_dict)
+        validation_errors = validate_input_data(
+            pgm_input_data,
+            calculation_type=CalculationType.power_flow,
+            symmetric=symmetric
+        )
 
-    algorithm_map = {"nr": CalculationMethod.newton_raphson, "lin": CalculationMethod.linear, "bfsw": CalculationMethod.iterative_current, "lc": CalculationMethod.linear_current}
-    pgm = PowerGridModel(input_data=pgm_input_data)
+        # If there were validation errors, convert the errors to a human readable test and log each error for
+        # each element in the input data.
+        if validation_errors:
+            for i, error in enumerate(validation_errors, start=1):
+                pp_obj = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
+                pp_obj = (f"{obj['table']}-{obj['index']}" for obj in pp_obj)
+                pp_obj = ", ".join(pp_obj)
+                logger.error(f"{i}. Power Grid Model validation error: Check {pp_obj}")
+                logger.debug(f"{i}. Native Power Grid Model error: {error}")
+
+    # 4. Create a PowerGridModel and calculate the powerflow
     try:
-        output_data = pgm.calculate_power_flow(symmetric=symmetric, error_tolerance=error_tolerance_u_pu, max_iterations=max_iterations, calculation_method=algorithm_map[algorithm])
+        pgm = PowerGridModel(input_data=pgm_input_data)
+        output_data = pgm.calculate_power_flow(
+            symmetric=symmetric,
+            error_tolerance=error_tolerance_u_pu,
+            max_iterations=max_iterations,
+            calculation_method=calculation_method
+        )
         net["converged"] = True
-    except RuntimeError:
-        net["converged"] = False
 
+    # Stop execution if a power PowerGridError was raised and log the error
+    except PowerGridError as ex:
+        logger.critical(f"Internal {type(ex).__name__} occurred!")
+        logger.debug(str(ex))
+        if not validate_input:
+            logger.info("Use validate_input=True to validate your input data.")
+        net["converged"] = False
+        return
+
+    # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
     converted_output_data = pgm_converter.convert(data=output_data)
     for table in converted_output_data.keys():
         net[table] = converted_output_data[table]
