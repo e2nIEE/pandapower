@@ -270,7 +270,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
     try:
         from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
         from power_grid_model.errors import PowerGridError
-        from power_grid_model.validation import validate_input_data, errors_to_string
+        from power_grid_model.validation import validate_input_data
         from power_grid_model_io.converters import PandaPowerConverter
     except ImportError:
         raise ImportError(
