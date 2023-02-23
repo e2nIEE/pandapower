@@ -28,15 +28,19 @@ def test_runpp_pgm__asym():
         pp.runpp_pgm(net, symmetric=False)
 
 
-def test_runpp_pgm__non_convergence():
+@patch("pandapower.run.logger")
+def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 110)
     pp.create_ext_grid(net, b1, vm_pu=1)
     b2 = pp.create_bus(net, 50)
     pp.create_line(net, b1, b2, 1, std_type="NAYY 4x50 SE")
     pp.runpp_pgm(net)
-    ## TODO: Check error message
+
     assert net["converged"] is False
+    mock_logger.critical.assert_called_once_with("Internal PowerGridError occurred!")
+    mock_logger.debug.assert_called_once()
+    mock_logger.info.assert_called_once_with("Use validate_input=True to validate your input data.")
 
 
 @patch("pandapower.run.logger")
@@ -45,15 +49,8 @@ def test_runpp_pgm__validation_fail(mock_logger: MagicMock):
     pp.create_bus(net, -110, index=123)
     pp.runpp_pgm(net, validate_input=True)
 
-    err = mock_logger.error.call_args_list[0].args[0]
-    assert "validation error" in err
-    assert "bus-123" in err
-
-    dbg = mock_logger.debug.call_args_list[0].args[0]
-    assert "validation error" in dbg
-    assert "bus-123" in dbg
-
-    assert False
+    mock_logger.error.assert_called_once_with("1. Power Grid Model validation error: Check bus-123")
+    mock_logger.debug.assert_called_once()
 
 
 if __name__ == "__main__":

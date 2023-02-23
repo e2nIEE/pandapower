@@ -328,7 +328,10 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
 
     # Stop execution if a power PowerGridError was raised and log the error
     except PowerGridError as ex:
-        logger.critical(str(ex))
+        logger.critical(f"Internal {type(ex).__name__} occurred!")
+        logger.debug(str(ex))
+        if not validate_input:
+            logger.info("Use validate_input=True to validate your input data.")
         net["converged"] = False
         return
 
