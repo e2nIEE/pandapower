@@ -9,6 +9,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
 import warnings
+from packaging.version import Version
 import uuid
 
 import networkx as nx
@@ -16,13 +17,14 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import numbers
+from pandapower._version import __version__
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability
+from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
-from pandapower.std_types import change_std_type
 
 
 try:
@@ -1299,7 +1301,7 @@ def drop_buses(net, buses, drop_elements=True):
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
-    drop_from_groups(net, "bus", buses)
+    detach_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
@@ -1333,7 +1335,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 drop_trafos(net, eid, table=element)
             else:
                 n_el = net[element].shape[0]
-                drop_from_groups(net, element, eid)
+                detach_from_groups(net, element, eid)
                 net[element].drop(eid, inplace=True)
                 # res_element
                 res_element = "res_" + element
@@ -1361,7 +1363,7 @@ def drop_trafos(net, trafos, table="trafo"):
     et = "t" if table == 'trafo' else "t3"
     # remove any affected trafo or trafo3w switches
     i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
-    drop_from_groups(net, "switch", i)
+    detach_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
     num_switches = len(i)
 
@@ -1369,7 +1371,7 @@ def drop_trafos(net, trafos, table="trafo"):
     drop_measurements_at_elements(net, table, idx=trafos)
 
     # drop the trafos
-    drop_from_groups(net, table, trafos)
+    detach_from_groups(net, table, trafos)
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
@@ -1383,14 +1385,14 @@ def drop_lines(net, lines):
     """
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
-    drop_from_groups(net, "switch", i)
+    detach_from_groups(net, "switch", i)
     net["switch"].drop(i, inplace=True)
 
     # drop measurements
     drop_measurements_at_elements(net, "line", idx=lines)
 
     # drop lines and geodata
-    drop_from_groups(net, "line", lines)
+    detach_from_groups(net, "line", lines)
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
@@ -1555,7 +1557,7 @@ def drop_elements_simple(net, element, idx):
     Drop elements and result entries from pandapower net.
     """
     idx = ensure_iterability(idx)
-    drop_from_groups(net, element, idx)
+    detach_from_groups(net, element, idx)
     net[element].drop(idx, inplace=True)
 
     # res_element
@@ -1623,10 +1625,20 @@ def drop_inactive_elements(net, respect_switches=True):
 
 
 def drop_from_group(net, index, element_type, element_index):
-    """Drops elements from the group of given index.
+    msg = "The name of the function drop_from_group() is deprecated with pp.version >= 2.12. " + \
+        "Use detach_from_group() instead."
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return detach_from_group(net, index, element_type, element_index)
+
+
+def detach_from_group(net, index, element_type, element_index):
+    """Detaches elements from the group with the given group index 'index'.
     No errors are raised if elements are passed to be drop from groups which alread don't have these
     elements as members.
-    A reverse function is available -> pp.group.append_to_group().
+    A reverse function is available -> pp.group.attach_to_group().
 
     Parameters
     ----------
@@ -1639,14 +1651,24 @@ def drop_from_group(net, index, element_type, element_index):
     element_index : int or list of integers
         indices of the elements which should be dropped from the group
     """
-    drop_from_groups(net, element_type, element_index, index=index)
+    detach_from_groups(net, element_type, element_index, index=index)
 
 
 def drop_from_groups(net, element_type, element_index, index=None):
-    """Drops elements from one or multple groups, defined by 'index'.
-    No errors are raised if elements are passed to be drop from groups which alread don't have these
-    elements as members.
-    A reverse function is available -> pp.group.append_to_group().
+    msg = "The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. " + \
+        "Use detach_from_groups() instead."
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return detach_from_groups(net, element_type, element_index, index=index)
+
+
+def detach_from_groups(net, element_type, element_index, index=None):
+    """Detaches elements from one or multiple groups, defined by 'index'.
+    No errors are raised if elements are passed to be dropped from groups which alread don't have
+    these elements as members.
+    A reverse function is available -> pp.group.attach_to_group().
 
     Parameters
     ----------
