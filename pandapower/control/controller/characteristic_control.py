@@ -5,7 +5,7 @@
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.toolbox_elm_selection import _detect_read_write_flag, read_from_net, write_to_net
 
 
 class CharacteristicControl(Controller):

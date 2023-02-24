@@ -179,6 +179,45 @@ def test_remove_not_existing_group_members():
         assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
 
 
+def test_check_unique_group_rows():
+    net = pp.create_empty_network()
+    empty_group = deepcopy(net.group)
+
+    # test with duplicated rows
+    net.group = pd.concat([empty_group, pd.DataFrame([
+        ["Gr1",  "gen", [1, 2]],
+        ["Gr1", "sgen", [3, 4]],
+        ["Gr1",  "gen", [2, 5]],
+    ], index=[0, 0, 0], columns=["name", "element_type", "element"])])
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
+
+    # test with different reference_columns
+    net.group.iat[0, 3] = "hallo"
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
+
+    # test with duplicated group name and index
+    net.group = pd.concat([empty_group, pd.DataFrame([
+        ["Gr1",  "gen", [1, 2]],
+        ["Gr1", "sgen", [3, 4]],
+        ["Gr2",  "gen", [2, 5]],
+        ["Gr3", "line", [0, 1]]
+    ], index=[0, 0, 1, 0], columns=["name", "element_type", "element"])])
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "UserWarning expected"
+    except UserWarning:
+        pass
+    pp.check_unique_group_rows(net, raise_=False, log_level="debug")
+
+
 def test_drop_element():
     net = nw.case24_ieee_rts()
     gr1 = pp.create_group_from_dict(net, {
@@ -450,6 +489,7 @@ if __name__ == "__main__":
         # test_compare_group_elements()
         # test_ensure_lists_in_group_element_column()
         # test_remove_not_existing_group_members()
+        test_check_unique_group_rows()
         # test_drop_element()
         # test_drop_and_return()
         # test_set_out_of_service()
@@ -459,5 +499,5 @@ if __name__ == "__main__":
         # test_group_io()
         # test_count_group_elements()
         # test_isin()
-        test_elements_connected_to_group()
+        # test_elements_connected_to_group()
         pass

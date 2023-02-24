@@ -12,9 +12,13 @@ from pandapower.powerflow import *
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.run import *
 from pandapower.opf import *
-from pandapower.toolbox import *
-from pandapower.diagnostic import *
+from pandapower.toolbox_general_issues import *
+from pandapower.toolbox_info import *
+from pandapower.toolbox_elm_selection import *
+from pandapower.toolbox_data_modification import *
 from pandapower.groups import *
+from pandapower.toolbox_grid_modification import *
+from pandapower.diagnostic import *
 from pandapower.runpm import *
 from pandapower.pf.runpp_3ph import runpp_3ph
 

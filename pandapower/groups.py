@@ -13,11 +13,12 @@ import warnings
 from packaging.version import Version
 
 from pandapower._version import __version__
-from pandapower.auxiliary import ensure_iterability
+from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence
-from pandapower.toolbox import pp_elements, group_element_index, group_row, \
-    element_bus_tuples, branch_element_bus_dict, get_connected_elements_dict
+from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
+    branch_element_bus_dict
+from pandapower.toolbox_elm_selection import get_connected_elements_dict
 
 try:
     import pandaplan.core.pplog as logging
@@ -26,6 +27,51 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+"""
+Notes
+-----
+Using different reference_columns for the same group and element_type is not supported.
+See check_unique_group_rows()
+"""
+
+
+# ====================================
+# CREATE AND DELETE GROUPS
+# ====================================
+
+# pandapower.create.create_group
+
+
+# pandapower.create.create_group_from_dict
+
+
+def drop_group(net, index):
+    """Drops the group of given index.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group which should be dropped
+    """
+    net.group.drop(index, inplace=True)
+
+
+def drop_group_and_elements(net, index):
+    """
+    Drops all elements of the group and in net.group the group itself.
+    """
+    # functions like drop_trafos, drop_lines, drop_buses are not considered since all elements
+    # should be included in elements_dict
+    for et in net.group.loc[[index], "element_type"].tolist():
+        idx = group_element_index(net, index, et)
+        net[et].drop(idx.intersection(net[et].index), inplace=True)
+        res_et = "res_" + et
+        if res_et in net.keys() and net[res_et].shape[0]:
+            net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
+    net.group.drop(index, inplace=True)
+
 
 # ====================================
 # ADAPT GROUP MEMBERS
@@ -33,8 +79,8 @@ logger = logging.getLogger(__name__)
 
 
 def append_to_group(net, index, element_types, elements, reference_columns=None):
-    msg = "The name of the function append_to_group() is deprecated with pp.version >= 2.12. " + \
-        "Use attach_to_group() instead."
+    msg = ("The name of the function append_to_group() is deprecated with pp.version >= 2.12. "
+           "Use attach_to_group() instead.")
     if Version(__version__) < Version('2.13'):
         warnings.warn(msg, category=DeprecationWarning)
     else:
@@ -56,10 +102,9 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None)
     elements : list of list of indices
         defines, together with 'element_types', which net elements belong to the group
     reference_columns : string or list of strings, optional
-        If given, the elements_dict should
-        not refer to DataFrames index but to another column. It is highly relevant that the
-        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
-        by default None
+        If given, the elements_dict should not refer to DataFrames index but to another column.
+        It is highly relevant that the reference_column exists in all DataFrames of the grouped
+        elements and have the same dtype, by default None
     """
     if index not in net.group.index:
         raise ValueError(
@@ -109,6 +154,87 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None)
         net.group.sort_index(inplace=True)
 
 
+def drop_from_group(net, index, element_type, element_index):
+    msg = ("The name of the function drop_from_group() is deprecated with pp.version >= 2.12. "
+           "Use detach_from_group() instead.")
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return detach_from_group(net, index, element_type, element_index)
+
+
+def detach_from_group(net, index, element_type, element_index):
+    """Detaches elements from the group with the given group index 'index'.
+    No errors are raised if elements are passed to be drop from groups which alread don't have these
+    elements as members.
+    A reverse function is available -> pp.group.attach_to_group().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group from which the element should be dropped
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    """
+    detach_from_groups(net, element_type, element_index, index=index)
+
+
+def drop_from_groups(net, element_type, element_index, index=None):
+    msg = ("The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. "
+           "Use detach_from_groups() instead.")
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return detach_from_groups(net, element_type, element_index, index=index)
+
+
+def detach_from_groups(net, element_type, element_index, index=None):
+    """Detaches elements from one or multiple groups, defined by 'index'.
+    No errors are raised if elements are passed to be dropped from groups which alread don't have
+    these elements as members.
+    A reverse function is available -> pp.group.attach_to_group().
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_type : str
+        The element type of which elements should be dropped from the group(s), e.g. "bus"
+    element_index : int or list of integers
+        indices of the elements which should be dropped from the group
+    index : int or list of integers, optional
+        Indices of the group(s) from which the element should be dropped. If None, the elements are
+        dropped from all groups, by default None
+    """
+    if index is None:
+        index = net.group.index
+    element_index = pd.Index(ensure_iterability(element_index), dtype=int)
+
+    to_check = np.isin(net.group.index.values, index)
+    to_check &= net.group.element_type.values == element_type
+    keep = np.ones(net.group.shape[0], dtype=bool)
+
+    for i in np.arange(len(to_check), dtype=int)[to_check]:
+        rc = net.group.reference_column.iat[i]
+        if rc is None or pd.isnull(rc):
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(
+                element_index).tolist()
+        else:
+            net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(pd.Index(
+                net[element_type][rc].loc[element_index.intersection(
+                    net[element_type].index)])).tolist()
+
+        if not len(net.group.element.iat[i]):
+            keep[i] = False
+    net.group = net.group.loc[keep]
+
+
 # =================================================
 # ACCESS GROUP DATA AND EVALUATE MEMBERSHIP
 # =================================================
@@ -139,6 +265,75 @@ def group_name(net, index):
     if len(set(names)) != 1 and not pd.isnull(names).all():
         raise ValueError(f"group {index} has different values in net.group.name.loc[index]")
     return names.values[0]
+
+
+def group_element_index(net, index, element_type):
+    """Returns the indices of the elements of the group in the element table net[element_type]. This
+    function considers net.group.reference_column.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        Index of the group
+    element_type : str
+        name of the element table to which the returned indices of the elements of the group belong
+        to
+
+    Returns
+    -------
+    pd.Index
+        indices of the elements of the group in the element table net[element_type]
+    """
+    if element_type not in net.group.loc[[index], "element_type"].values:
+        return pd.Index([], dtype=int)
+
+    row = group_row(net, index, element_type)
+    element = row.at["element"]
+    reference_column = row.at["reference_column"]
+
+    if reference_column is None or pd.isnull(reference_column):
+        return pd.Index(element, dtype=int)
+
+    return net[element_type].index[net[element_type][reference_column].isin(element)]
+
+
+def group_row(net, index, element_type):
+    """Returns the row which consists the data of the requested group index and element type.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        index of the group
+    element_type : str
+        element type (defines which row of the data of the group should be returned)
+
+    Returns
+    -------
+    pandas.Series
+        data of net.group, defined by the index of the group and the element type
+
+    Raises
+    ------
+    KeyError
+        Now row exist for the requested group and element type
+    ValueError
+        Multiple rows exist for the requested group and element type
+    """
+    group_df = net.group.loc[[index]].set_index("element_type")
+    try:
+        row = group_df.loc[element_type]
+    except KeyError:
+        raise KeyError(f"Group {index} has no {element_type}s.")
+    if isinstance(row, pd.Series):
+        return row
+    elif isinstance(row, pd.DataFrame):
+        raise ValueError(f"Multiple {element_type} rows for group {index}")
+    else:
+        raise ValueError(f"Returning row {element_type} for group {index} failed.")
 
 
 def isin_group(net, element_type, element_index, index=None, drop_empty_lines=True):
@@ -261,7 +456,8 @@ def compare_group_elements(net, index1, index2):
             if len(pd.Index(gr1.element.at[et]).symmetric_difference(gr2.element.at[et])):
                 return False
         else:
-            if len(group_element_index(net, index1, et).symmetric_difference(group_element_index(net, index2, et))):
+            if len(group_element_index(net, index1, et).symmetric_difference(group_element_index(
+                    net, index2, et))):
                 return False
     return True
 
@@ -271,6 +467,16 @@ def compare_group_elements(net, index1, index2):
 
 
 def check_unique_group_names(net, raise_=False):
+    msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
+           "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return check_unique_group_rows(net, raise_=raise_)
+
+
+def check_unique_group_rows(net, raise_=True, log_level="warning"):
     """Checks whether all groups have unique names. raise_ decides whether duplicated names lead
     to error or log message.
 
@@ -280,18 +486,24 @@ def check_unique_group_names(net, raise_=False):
         pandapower net
     raise_ : bool, optional
         decides whether duplicated names lead to error or log message., by default False
+    log_level : str, optional
+        the level for logs, relevant if raise_ is False
+
+    Notes
+    -----
+    Using different reference_columns for the same group and element_type is not supported.
     """
     df = net.group[["name", "element_type"]].reset_index()
     if df.duplicated().any():
-        raise ValueError("There are multiple groups with same index, name and element_type.")
+        raise ValueError("There are multiple group rows with same index, name and element_type.")
     single_name_per_index = [len(names) == 1 for names in net.group.reset_index().groupby("index")[
         "name"].agg(set)]
     if not all(single_name_per_index):
-        warn = "There are multiple groups with same index and name."
+        warn = "Groups with different names have the same index."
         if raise_:
             raise UserWarning(warn)
         else:
-            logger.warning(warn)
+            log_to_level(warn, logger, log_level)
 
 
 def remove_not_existing_group_members(net, verbose=True):

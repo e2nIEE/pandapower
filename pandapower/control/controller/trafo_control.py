@@ -5,8 +5,7 @@
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import read_from_net, write_to_net, _detect_read_write_flag
-import numbers
+from pandapower.toolbox_elm_selection import read_from_net, write_to_net, _detect_read_write_flag
 
 try:
     import pandaplan.core.pplog as logging

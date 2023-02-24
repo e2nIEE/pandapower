@@ -33,7 +33,9 @@ General Issues
 
 .. autofunction:: pandapower.compare_arrays
 
-.. autofunction:: pandapower.ensure_iterability
+.. autofunction:: pandapower.nets_equal
+
+#.. autofunction:: pandapower.ensure_iterability
 
 ====================================
 Result Information
@@ -49,12 +51,30 @@ Result Information
 
 .. autofunction:: pandapower.violated_buses
 
-.. autofunction:: pandapower.nets_equal
-
 .. autofunction:: pandapower.clear_result_tables
 
 ====================================
-Simulation Setup and Preparation
+Item/Element Selection
+====================================
+
+.. autofunction:: pandapower.get_element_index
+
+.. autofunction:: pandapower.get_element_indices
+
+.. autofunction:: pandapower.next_bus
+
+.. autofunction:: pandapower.get_connected_elements
+
+.. autofunction:: pandapower.get_connected_buses
+
+.. autofunction:: pandapower.get_connected_buses_at_element
+
+.. autofunction:: pandapower.get_connected_switches
+
+.. autofunction:: pandapower.get_connected_elements_dict
+
+====================================
+Data Modification
 ====================================
 
 .. autofunction:: pandapower.add_column_from_node_to_elements
@@ -78,7 +98,7 @@ Simulation Setup and Preparation
 .. autofunction:: pandapower.set_data_type_of_columns_to_default
 
 ====================================
-Topology Modification
+Electric Grid Modification
 ====================================
 
 .. autofunction:: pandapower.close_switch_at_line_with_two_open_switches
@@ -146,24 +166,3 @@ Topology Modification
 .. autofunction:: pandapower.replace_ward_by_internal_elements
 
 .. autofunction:: pandapower.replace_xward_by_internal_elements
-
-
-====================================
-Item/Element Selection
-====================================
-
-.. autofunction:: pandapower.get_element_index
-
-.. autofunction:: pandapower.get_element_indices
-
-.. autofunction:: pandapower.next_bus
-
-.. autofunction:: pandapower.get_connected_elements
-
-.. autofunction:: pandapower.get_connected_buses
-
-.. autofunction:: pandapower.get_connected_buses_at_element
-
-.. autofunction:: pandapower.get_connected_switches
-
-.. autofunction:: pandapower.get_connected_elements_dict

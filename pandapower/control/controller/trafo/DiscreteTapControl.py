@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 from pandapower.control.controller.trafo_control import TrafoController
-from pandapower.toolbox import read_from_net, write_to_net
+from pandapower.toolbox_elm_selection import read_from_net, write_to_net
 
 class DiscreteTapControl(TrafoController):
     """
