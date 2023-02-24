@@ -1,8 +1,8 @@
 from pandas.api.types import is_bool_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
-    check_validity_of_Ybus_eq, drop_internal_branch_elements, \
-    build_ppc_and_Ybus, drop_measurements_and_controller, \
+    drop_internal_branch_elements, \
+    build_ppc_and_Ybus, drop_measurements_and_controllers, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
         replace_motor_by_load
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
-                               show_computing_time=False,
-                               check_validity=False):
+                               show_computing_time=False, **kwargs):
     """
     The function orders the admittance matrix of the original network into
     new format firstly, which is convenient for rei equivalent calculation.d
@@ -102,16 +101,6 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     Ybus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] +
                                                      nb_dict["nb_t"]):] = Ybus_eq_boundary
 
-    # --- the validity of the equivalent Ybus will be checked
-    if check_validity:
-        power_check_df = check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups)
-        logger.debug(power_check_df)
-        act_p = net_zpbn.res_ext_grid.p_mw[power_check_df.ext_grid_index].values
-        act_q = net_zpbn.res_ext_grid.q_mvar[power_check_df.ext_grid_index].values
-        real_p = power_check_df.power.values.real
-        real_q = power_check_df.power.values.imag
-        assert abs(max(act_p - real_p)) < 1e-3
-        assert abs(max(act_q - real_q)) < 1e-3
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((
@@ -508,16 +497,16 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 
 
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
-                                    all_external_buses,
-                                    show_computing_time=False,
-                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
+                                    all_external_buses, show_computing_time=False,
+                                    calc_volt_angles=True, 
+                                    runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controller(net_internal, all_external_buses, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses, True)
         drop_and_edit_cost_functions(net_internal,
                                      all_external_buses+boundary_buses,
                                      True, True)
@@ -528,7 +517,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_external.group.drop(net_external.group.index, inplace=True)
     drop_and_edit_cost_functions(net_external, all_internal_buses,
                                  True, True)
-    drop_measurements_and_controller(net_external, all_internal_buses)
+    drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     pp.drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
