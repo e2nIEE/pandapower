@@ -266,11 +266,7 @@ def compare_group_elements(net, index1, index2):
 def check_unique_group_names(net, raise_=False):
     msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
            "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return check_unique_group_rows(net, raise_=raise_)
+    raise DeprecationWarning(msg)
 
 
 def check_unique_group_rows(net, raise_=True, log_level="warning"):
