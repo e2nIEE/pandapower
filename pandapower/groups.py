@@ -13,7 +13,7 @@ import warnings
 from packaging.version import Version
 
 from pandapower._version import __version__
-from pandapower.auxiliary import ensure_iterability
+from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence
 from pandapower.toolbox import pp_elements, group_element_index, group_row, \
@@ -271,6 +271,16 @@ def compare_group_elements(net, index1, index2):
 
 
 def check_unique_group_names(net, raise_=False):
+    msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
+           "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
+    if Version(__version__) < Version('2.13'):
+        warnings.warn(msg, category=DeprecationWarning)
+    else:
+        raise DeprecationWarning(msg)
+    return check_unique_group_rows(net, raise_=raise_)
+
+
+def check_unique_group_rows(net, raise_=True, log_level="warning"):
     """Checks whether all groups have unique names. raise_ decides whether duplicated names lead
     to error or log message.
 
@@ -280,6 +290,12 @@ def check_unique_group_names(net, raise_=False):
         pandapower net
     raise_ : bool, optional
         decides whether duplicated names lead to error or log message., by default False
+    log_level : str, optional
+        the level for logs, relevant if raise_ is False
+
+    Notes
+    -----
+    Using different reference_columns for the same group and element_type is not supported.
     """
     df = net.group[["name", "element_type"]].reset_index()
     if df.duplicated().any():
@@ -291,7 +307,7 @@ def check_unique_group_names(net, raise_=False):
         if raise_:
             raise UserWarning(warn)
         else:
-            logger.warning(warn)
+            log_to_level(warn, logger, log_level)
 
 
 def remove_not_existing_group_members(net, verbose=True):

@@ -26,11 +26,11 @@ Create and delete groups
 Adapt group members
 ====================================
 
-.. autofunction:: pandapower.append_to_group
+.. autofunction:: pandapower.attach_to_group
 
-.. autofunction:: pandapower.drop_from_group
+.. autofunction:: pandapower.detach_from_group
 
-.. autofunction:: pandapower.drop_from_groups
+.. autofunction:: pandapower.detach_from_groups
 
 =================================================
 Access group data and evaluate membership
@@ -58,7 +58,7 @@ Compare groups
 Fix group data
 =================================================
 
-.. autofunction:: pandapower.check_unique_group_names
+.. autofunction:: pandapower.check_unique_group_rows
 
 .. autofunction:: pandapower.remove_not_existing_group_members
 
