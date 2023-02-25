@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, PKSS_F, QKSS_F, PKSS_T, QKSS_T, \
-    VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T
+    VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T, IKSS_ANGLE_F, IKSS_ANGLE_T
 from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
@@ -41,8 +41,9 @@ def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
         else:
             case = calc_options["case"]
             branch_results_cols = [IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T]
-            branch_results_cols_add = [PKSS_F, QKSS_F, PKSS_T, QKSS_T, VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F,
-                                       VKSS_ANGLE_T]  # added new calculation values
+            # added new calculation values:
+            branch_results_cols_add = [IKSS_ANGLE_F, IKSS_ANGLE_T, PKSS_F, QKSS_F, PKSS_T, QKSS_T,
+                                       VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T]
             if case == "max":
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.maximum(np.nan_to_num(ppci["branch"][:, branch_results_cols]),
@@ -121,6 +122,10 @@ def _get_line_results(net, ppc):
         f, t = branch_lookup["line"]
         minmax = np.max if case == "max" else np.min
         net.res_line_sc["ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+        net.res_line_sc["ikss_from_ka"] = ppc["branch"][f:t, IKSS_F].real
+        net.res_line_sc["ikss_from_degree"] = ppc["branch"][f:t, IKSS_ANGLE_F].real
+        net.res_line_sc["ikss_to_ka"] = ppc["branch"][f:t, IKSS_T].real
+        net.res_line_sc["ikss_to_degree"] = ppc["branch"][f:t, IKSS_ANGLE_T].real
 
         # adding columns for new calculated VPQ
         net.res_line_sc["p_from_mw"] = ppc["branch"][f:t, PKSS_F].real
@@ -210,7 +215,9 @@ def _get_trafo_results(net, ppc):
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
         net.res_trafo_sc["ikss_hv_ka"] = ppc["branch"][f:t, IKSS_F].real
+        net.res_trafo_sc["ikss_hv_degree"] = ppc["branch"][f:t, IKSS_ANGLE_F].real
         net.res_trafo_sc["ikss_lv_ka"] = ppc["branch"][f:t, IKSS_T].real
+        net.res_trafo_sc["ikss_lv_degree"] = ppc["branch"][f:t, IKSS_ANGLE_T].real
 
         # adding columns for new calculated VPQ
         net.res_trafo_sc["p_hv_mw"] = ppc["branch"][f:t, PKSS_F].real

@@ -33,7 +33,7 @@ def calc_sc(net, bus=None,
             fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
-            inverse_y=True):
+            inverse_y=True, use_pre_fault_voltage=False):
 
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
@@ -97,6 +97,8 @@ def calc_sc(net, bus=None,
 
         **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization, factorization version is in experiment which should be faster and memory efficienter
 
+        **use_pre_fault_voltage** (bool, False) whether to consider the pre-fault grid state (superposition method, "Type C")
+
 
     OUTPUT:
 
@@ -125,6 +127,15 @@ def calc_sc(net, bus=None,
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
 
+    if use_pre_fault_voltage:
+        V0 = net._ppc["internal"]["V"]
+        init_vm_pu = np.abs(V0)
+        init_va_degree = np.angle(V0, deg=True)
+        trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
+    else:
+        init_vm_pu = init_va_degree = "flat"
+        trafo_model = "pi"
+
     # Convert bus to numpy array
     if bus is None:
         bus = net.bus.index.values
@@ -133,15 +144,14 @@ def calc_sc(net, bus=None,
 
     kappa = ith or ip
     net["_options"] = {}
-    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                      check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
-                      init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
-                      recycle=None)
-    _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
-                    topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
-                    x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    branch_results=branch_results, return_all_currents=return_all_currents,
-                    inverse_y=inverse_y)
+    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model=trafo_model,
+                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
+                     init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False,
+                     recycle=None)
+    _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
+                    r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
+                    branch_results=branch_results, kappa_method=kappa_method, return_all_currents=return_all_currents,
+                    inverse_y=inverse_y, use_pre_fault_voltage=use_pre_fault_voltage)
     init_results(net, "sc")
 
     if fault in ("2ph", "3ph"):

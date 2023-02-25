@@ -6,9 +6,14 @@
 
 import numpy as np
 import pytest
+from scipy.linalg import inv
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
+from pandapower.pf.makeYbus_numba import makeYbus
+from pandapower.pypower.idx_bus_sc import IKSS1, PHI_IKSS1_DEGREE, C_MAX, SKSS
+from pandapower.pypower.idx_bus import BS, GS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 
 
 def three_bus_example():
@@ -77,6 +82,44 @@ def net_transformer_simple():
                                           vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
                                           tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5)
+    return net
+
+
+def net_transformer_simple_2():
+    net = pp.create_empty_network(sn_mva=2)
+    b1 = pp.create_bus(net, vn_kv=10.)
+    b1a = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=.4)
+    b3 = pp.create_bus(net, vn_kv=.4)
+    b4 = pp.create_bus(net, vn_kv=.4)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    pp.create_transformers_from_parameters(net, [b1, b1a], [b2, b3], vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
+                                           vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
+                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
+                                           tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5)
+    pp.create_line_from_parameters(net, b1, b1a, 1, 0.099, 0.156, 125, 0.457)
+    pp.create_line_from_parameters(net, b3, b4, 1, 0.099, 0.156, 125, 0.457)
+    return net
+
+
+def net_transformer_simple_3():
+    net = pp.create_empty_network(sn_mva=2)
+    pp.create_buses(net, 2, 30)
+    pp.create_buses(net, 3, 10)
+    pp.create_buses(net, 2, 0.4)
+
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    # 30/10
+    pp.create_transformers_from_parameters(net, [0, 1], [2, 3], sn_mva=10, vn_hv_kv=30., vn_lv_kv=10,
+                                           vk_percent=6., vkr_percent=0.5, i0_percent=0.1, pfe_kw=10,
+                                           shift_degree=0.0, tap_side="hv", tap_neutral=0, tap_min=-2,
+                                           tap_max=2, tap_pos=0, tap_step_percent=2.5, parallel=1)
+    # 10/0.4
+    pp.create_transformer_from_parameters(net, 4, 5, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
+                                          vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0,
+                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
+                                          tap_step_percent=2.5, parallel=1)
+    pp.create_lines_from_parameters(net, [0, 3, 5], [1, 4, 6], 1, 0.099, 0.156, 400, 0.457)
     return net
 
 
@@ -253,15 +296,321 @@ def test_branch_all_currents_trafo_simple():
     assert np.isclose(net.res_bus_sc.ikss_ka, 5.773503, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.skss_mw, 100, atol=1e-6, rtol=0)
 
-    net.trafo.vn_hv_kv = 11
-    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=1)
+
+def test_branch_all_currents_trafo_simple_other_voltage():
+    net = net_transformer_simple()
+    net.sn_mva=1
+    # net.trafo.vn_hv_kv = 11
+    bus_idx = 1
+    pp.create_load(net, 1, 0.5)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=bus_idx)
+
+    pp.runpp(net)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=bus_idx, use_pre_fault_voltage=True)
+
+    ppci = net.ppci
+    bus = ppci["bus"]
+    branch = ppci["branch"]
+    Ybus = ppci["internal"]["Ybus"]
+    Yf = ppci["internal"]["Yf"]
+    Yt = ppci["internal"]["Yt"]
+    Zbus = ppci["internal"]["Zbus"]
+    baseI = ppci["internal"]["baseI"]
+
+    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
+
+    assert np.allclose(Zbus, inv(Ybus.toarray()))
+
+    V_ikss = (ikss1 * baseI * Zbus)[:, bus_idx]
+    Ibus = Ybus * V_ikss
+
+    V_ikss_t = 1.05 - V_ikss
+    Ibus_t = Ybus * V_ikss_t
+
+    Ibus[abs(Ibus) < 1e-10] = np.nan
+
+    assert np.allclose(ikss1 * baseI, Ibus, equal_nan=True)
+
+    Sbus = V_ikss * Ibus.conj()
+    abs(Sbus)
+
+    Sbus = ppci["bus"][:, SKSS]
+
+    Sbus_t = V_ikss_t * Ibus_t.conj()
+    abs(Sbus_t)
+
+    Zbus.real
+
+    tap = ppci["branch"][:, TAP]
+    branch_nonzero = np.flatnonzero(tap!=1)
+    ppci["branch"][branch_nonzero, BR_R] *= tap[branch_nonzero]
+    ppci["branch"][branch_nonzero, BR_X] *= tap[branch_nonzero]
+    Ybus, Yf, Yt = makeYbus(net.sn_mva, ppci["bus"], ppci["branch"])
+    Zbus = inv(Ybus.toarray())
+    V_ikss = (ikss1 * baseI * Zbus)  # making it a complex calculation
+    V_ikss = V_ikss[:, bus_idx]
+    V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0)] - V_ikss  # numpy indexing issue
+
+    # Z_line = 0.02407386 + 0.28788144j
+    Z_line = 0.02648124 + 0.31666959j
+    U_0 = ikss1[bus_idx] * baseI[bus_idx] * Z_line
+    U_0_ref = 1.086619 * np.exp(np.deg2rad(0.055088)*1j)
+    Z_line_ref = U_0_ref / (ikss1[bus_idx] * baseI[bus_idx])
+    U_0_try = ikss1[bus_idx] * baseI[bus_idx] * Z_line_ref
+    Z_line_ref / Z_line
+
+
+def add_aux_trafo(net, trafo_idx):
+    hv_bus = net.trafo.at[trafo_idx, 'hv_bus']
+    aux_bus = pp.create_bus(net, net.trafo.at[trafo_idx, 'vn_hv_kv'])
+    net.trafo.at[trafo_idx, 'hv_bus'] = aux_bus
+    pp.create_transformer_from_parameters(net, hv_bus, aux_bus, net.trafo.at[trafo_idx, 'sn_mva'],
+                                          net.bus.at[hv_bus, 'vn_kv'], net.bus.at[aux_bus, 'vn_kv'],
+                                          1e-6, 1e-5, 0, 0)
+
+
+
+
+def test_branch_all_currents_trafo_simple_other_voltage2():
+    net = net_transformer_simple_2()
+    net.trafo.vn_hv_kv.at[1] = 11
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, use_pre_fault_voltage=False)
+
+
+def test_branch_all_currents_trafo_simple_other_voltage3():
+    net = net_transformer_simple_3()
+    net.trafo.vn_hv_kv.at[1] = 31
+    net.trafo.vn_hv_kv.at[2] = 11
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0, atol=1e-6)
+
+    res_line_sc = np.array([[0.013691, 0.013691, -60.827605, 0.013691, 119.172395, 0.4132998, 0.7358034, -0.413244,
+                             -0.735716, 1.186326, -0.150470, 1.186180, -0.150091],
+                            [0.042441, 0.042441, -60.827605, 0.042441, 119.172395, 0.412972, 0.732456, -0.4124366,
+                             -0.7316133, 1.143870, -0.242663, 1.142514, -0.239117],
+                            [1.167123, 1.167123, -60.827605, 1.167123, 119.172395, 0.404566, 0.637498, 0, 0, 0.933749,
+                             -3.227445, 0.000000, 0.000000]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.186326,
+                              - 0.150470, 1.186326, - 0.150470],
+                             [0.013691, - 60.827605, 0.042441, 119.172395, 0.413244, 0.735716, - 0.412972, - 0.732456,
+                              1.186180, - 0.150091, 1.143870, - 0.242663],
+                             [0.042441, - 60.827605, 1.167123, 119.172395, 0.412437, 0.731613, - 0.404566, - 0.637498,
+                              1.142514, - 0.239117, 0.933749, - 3.227445]])
+    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+
+    net.trafo.vn_hv_kv.at[1] = 29
+    net.trafo.vn_hv_kv.at[2] = 9
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0, atol=1e-6)
+
+    res_line_sc = np.array([[0.017769, 0.017769, -60.975224, 0.017769, 119.024776, 0.408286, 0.728168, -0.4081925,
+                             -0.7280205, 0.904182, - 0.254709, 0.903993, - 0.254055],
+                            [0.051529, 0.051529, -60.975224, 0.051529, 119.024776, 0.407791, 0.723216, -0.4070021,
+                             -0.7219731, 0.930252, - 0.392031, 0.928605, - 0.386736],
+                            [1.159408, 1.159408, -60.975224, 1.159408, 119.024776, 0.399235, 0.629098, 0, 0, 0.927576,
+                             - 3.375064, 0, 0]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.904182,
+                              - 0.254709, 0.904182, - 0.254709],
+                             [0.017769, - 60.975224, 0.051529, 119.024776, 0.408192, 0.728021, - 0.407791, - 0.723216,
+                              0.903993, - 0.254055, 0.930252, - 0.392031],
+                             [0.051529, - 60.975224, 1.159408, 119.024776, 0.407002, 0.721973, - 0.399235, - 0.629098,
+                              0.928605, - 0.386736, 0.927576, - 3.375064]])
+    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+
+    net.trafo.vn_hv_kv.at[1] = 31
+    net.trafo.vn_hv_kv.at[2] = 11
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4)
+    assert np.allclose(net.res_bus_sc.loc[4].values,
+                       [3.490484425, 60.45696064, 0.26224866, 1.80047754], rtol=0, atol=3e-6)
+    res_line_sc = np.array([[1.125963, 1.125963, -81.712857, 1.125963, 98.287143, 5.838649, 28.341696, -5.462115,
+                             -27.748369, 0.494590, - 3.353461, 0.483378, - 2.848843],
+                            [3.490484, 3.490484, -81.712857, 3.490484, 98.287143, 3.618494, 5.701869, 0, 0, 0.111701,
+                             - 24.112697, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=3e-6)
+    res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0.494590, -3.353461, 0.494590, -3.353461],
+                             [1.125963, - 81.712857, 3.490484, 98.287143, 5.462115, 27.748369, -3.618494, -5.701869,
+                              0.483378, -2.848843, 0.111701, -24.112697],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=2e-6)
+
+    net.trafo.vn_hv_kv.at[1] = 30
+    net.trafo.vn_hv_kv.at[2] = 10
+    net.trafo.vn_lv_kv.at[1] = 9
+    net.trafo.vn_lv_kv.at[2] = 0.42
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
+    res_line_sc = np.array([[0.014531, 0.014531, - 61.122864, 0.014531, 118.877136, 0.404535, 0.728398, - 0.404473,
+                             - 0.728299, 1.103480, - 0.169658, 1.103325, - 0.169187],
+                            [0.048437, 0.048437, - 61.122864, 0.048437, 118.877136, 0.404185, 0.724860, - 0.403488,
+                             - 0.723762, 0.989244, - 0.267095, 0.987697, - 0.261989],
+                            [1.153265, 1.153265, - 61.122864, 1.153265, 118.877136, 0.395016, 0.622450, 0, 0, 0.922662,
+                             - 3.522703, 0, 0]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1.103480, - 0.169658, 1.103480, - 0.169658],
+                             [0.014531, - 61.122864, 0.048437, 118.877136, 0.404473, 0.728299, - 0.404185, - 0.72486,
+                              1.103325, - 0.169187, 0.989244, - 0.267095],
+                             [0.048437, - 61.122864, 1.153265, 118.877136, 0.403488, 0.723762, - 0.395016, - 0.62245,
+                              0.987697, - 0.261989, 0.922662, - 3.522703]])
+    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+
+
+def test_branch_all_currents_trafo_simple_other_voltage4():
+    net = net_transformer_simple_3()
+    # net.trafo.vn_hv_kv.at[1] = 31
+    net.trafo.vn_hv_kv.at[2] = 11
+    pp.create_bus(net, 10)
+    pp.create_bus(net, 0.4)
+    pp.create_lines_from_parameters(net, [2, 8], [7, 6], 1, 0.099, 0.156, 400, 0.457)
+    pp.create_transformer_from_parameters(net, 7, 8, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
+                                          vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0,
+                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
+                                          tap_step_percent=2.5, parallel=1)
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+
+    pp.create_switch(net, 6, 4, "l", False)
+
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [], rtol=0, atol=1e-6)
+
+    res_line_sc = np.array([])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_trafo_sc = np.array([])
+    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+
+
+def test_trafo_impedance():
+    net = pp.create_empty_network(sn_mva=0.16)
+    pp.create_bus(net, 20)
+    pp.create_buses(net, 2, 0.4)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=346.4102, rx_max=0.1)
+    v_lv = 410
+    pp.create_transformer_from_parameters(net, 0, 1, 0.4, 20, v_lv / 1e3, 1.15, 4, 0, 0)
+    pp.create_line_from_parameters(net, 1, 2, 0.004, 0.208, 0.068, 0, 1, parallel=2)
+    # pp.create_load(net, 2, 0.1)
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., bus=2, branch_results=True)
+
+
+    # trafo:
+    z_tlv = 4 / 100 * v_lv ** 2 / (400 * 1e3)
+    r_tlv = 4600 * v_lv ** 2 / ((400 * 1e3) ** 2)
+    x_tlv = np.sqrt(z_tlv**2 - r_tlv**2)
+    z_tlv = r_tlv + 1j*x_tlv
+    x_t = x_tlv * 400*1e3 / (v_lv ** 2)
+    k_t = 0.95 * 1.05 / (1+0.6 * x_t)
+    z_tk = k_t * z_tlv
+
+    # line:
+    z_l = 0.416 * 1e-3 + 1j * 0.136 * 1e-3  # Ohm
+
+    # assert np.allclose(net.res_bus_sc.rk_ohm * 1e3, 5.18, rtol=0, atol=1e-6)
+    # assert np.allclose(net.res_bus_sc.xk_ohm * 1e3, 16.37, rtol=0, atol=1e-6)
+    assert np.allclose(net._ppc['branch'][:, BR_R].real, [0.416*1e-3, z_tk.real], rtol=0, atol=1e-6)
+    assert np.allclose(net._ppc['branch'][:, BR_X].real, [0.136*1e-3, z_tk.imag], rtol=0, atol=1e-6)
+
+    ppci = net.ppci
+    tap = ppci["branch"][:, TAP].real
+    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
+
+    v_1 = ikss1[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
+    np.abs(v_1)
+    np.angle(v_1, deg=True)
+
+    v_0 = v_1 + ikss1[2] * z_tk / 0.41 * np.sqrt(3)
+    np.abs(v_0)
+    np.angle(v_0, deg=True)
+
+
+def test_one_line():
+    net = pp.create_empty_network(sn_mva=1)
+    b1 = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=10.)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    pp.create_line_from_parameters(net, b1, b2, 1, 0.099, 0.156, 400, 0.457)
+    pp.create_load(net, b2, 20)
+    pp.runpp(net)
+
+    bus_idx = 1
+    sc.calc_sc(net, case='max', branch_results=True, bus=bus_idx, use_pre_fault_voltage=True)
+
+    ppci = net.ppci
+    bus = ppci["bus"]
+    branch = ppci["branch"]
+    Ybus = ppci["internal"]["Ybus"]
+    Yf = ppci["internal"]["Yf"]
+    Yt = ppci["internal"]["Yt"]
+    Zbus = ppci["internal"]["Zbus"]
+    baseI = ppci["internal"]["baseI"]
+
+    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
+
+    assert np.allclose(Zbus, inv(Ybus.toarray()))
+
+    V_ikss = (ikss1 * baseI * Zbus)[:, bus_idx]
+    Ibus = Ybus * V_ikss
+
+    V_ikss_t = 1.1 - V_ikss
+    Ibus_t = Ybus * V_ikss_t
+
+    Ibus[abs(Ibus) < 1e-10] = np.nan
+
+    assert np.allclose(ikss1 * baseI, Ibus, equal_nan=True)
+
+    Sbus = V_ikss * Ibus.conj()
+    abs(Sbus)
+
+    Sbus_t = V_ikss_t * Ibus_t.conj()
+    abs(Sbus_t)
+
+    Zbus.real
+
+    Z_line = 0.00099+0.00156j
+    U_0 = ikss1[bus_idx] * baseI[bus_idx] * Z_line
+
+    Yf @ np.array([U_0, 0])
+
+    pp.runpp(net)
+    ppci = net._ppc
+    ppci["bus"][0, GS] = 100
+    ppci["bus"][0, BS] = 100
+    ppci["bus"][1, GS] = 14.27472390373151
+    ppci["bus"][1, BS] = 85.57762474778227
+    Ybus, Yf, Yt = makeYbus(ppci["baseMVA"], ppci["bus"], ppci["branch"])
+    # Ybus = net._ppc["internal"]["Ybus"]
+    # Yf = net._ppc["internal"]["Yf"]
+    # Yt = net._ppc["internal"]["Yt"]
+
+    Zbus = inv(Ybus.toarray())
+    V_ikss_corr = (ikss1 * baseI * Zbus)[:, 1]
+
+
+
+
+
+
+
+
+
 
 
 def test_branch_all_currents_trafo():
     net = net_transformer()
     sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., branch_results=True, return_all_currents=True)
-
-    # todo ist impedanz gleich mit und ohne V?
 
     assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0,0)] - 0.) <1e-5)
     assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0,1)] - 0.) <1e-5)

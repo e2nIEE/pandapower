@@ -29,5 +29,7 @@ VKSS_MAGN_F    = start + 16
 VKSS_MAGN_T    = start + 17
 VKSS_ANGLE_F = start + 18
 VKSS_ANGLE_T = start + 19
+IKSS_ANGLE_F = start + 20
+IKSS_ANGLE_T = start + 21
 
-branch_cols_sc = 20
+branch_cols_sc = 22

@@ -15,11 +15,15 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 from copy import deepcopy
+from scipy.sparse import csr_matrix as sparse
 
 import pandapower as pp
+import pandapower.topology as top
 from pandapower.shortcircuit import calc_sc
 from pandapower.create import _get_index_with_check
 from pandapower.topology import create_nxgraph
+from pandapower.pypower.idx_bus import BUS_I
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 
 __all__ = ["detect_power_station_unit", "calc_sc_on_line"]
 
@@ -150,3 +154,79 @@ def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
 
     # Return the new net and the aux bus
     return aux_net, aux_bus
+
+
+def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
+    branch = ppci["branch"]
+    tap = ppci["branch"][:, TAP]
+    tap_branch_idx = np.flatnonzero(tap != 1)
+
+    if len(tap_branch_idx) == 0:
+        return
+
+    Zbus = ppci["internal"]["Zbus"]
+    bus = ppci["bus"]
+
+    f = (branch[:, F_BUS]).real.astype(int)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(int)  ## list of "to" buses
+    nl = len(branch)
+    nb = len(bus)
+
+    mg = nx.MultiGraph()
+    mg.add_nodes_from(bus[:, BUS_I].astype(np.int64).tolist())
+    mg.add_edges_from(branch[:, [F_BUS, T_BUS]].real.astype(np.int64).tolist())
+
+    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
+    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+
+    for bh, bl, t in zip(hv_buses, lv_buses, tap[tap_branch_idx]):
+        c = top.connected_component(mg, bh, notravbuses={bl})
+        c = [cc for cc in c if cc != bl]
+
+        if not np.intersect1d(c, bus_idx):
+            for b in c:
+                V0[b] = (Zbus[:, b] / Zbus[b, b] * V0[b] * t)[b]
+        else:
+            c = top.connected_component(mg, bl, notravbuses={bh})
+            c = [cc for cc in c if cc != bh]
+            if not np.intersect1d(c, bus_idx):
+                for b in c:
+                    V0[b] = (Zbus[:, b] / Zbus[b, b] * V0[b] / t)[b]
+
+        # V0[c] = (Zbus[:, c] / Zbus[c, c] * V0[c] * tap[tap_branch_idx])[c]
+
+    ## build connection matrix Cft = Cf - Ct for line and from - to buses
+    # i = np.r_[range(nl), range(nl)]  ## double set of row indices
+    ## connection matrix
+    # Cft = sparse((np.r_[np.ones(nl), -np.ones(nl)], (i, np.r_[f, t])), (nl, nb))
+
+
+def adjacency(ppci):
+    branch = ppci["branch"]
+    bus = ppci["bus"]
+    tap = ppci["branch"][:, TAP].real
+    tap_branch_idx = np.flatnonzero(tap != 1)
+    all_vertices = bus[:, BUS_I]
+    num_vertices = len(bus)
+    f = (branch[:, F_BUS]).real.astype(int)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(int)  ## list of "to" buses
+
+    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
+    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+
+    matrix = np.zeros((num_vertices, num_vertices))
+    matrix[f, t] = -1
+    matrix[t, f] = -1
+    matrix[np.diag_indices(num_vertices)] = -matrix.sum(axis=1)
+
+    # matrix[hv_buses, lv_buses] = 1 / tap[tap_branch_idx]
+    # matrix[lv_buses, hv_buses] = 1 / tap[tap_branch_idx]
+    # matrix[hv_buses, hv_buses] = 1 / np.square(tap[tap_branch_idx])
+    #
+    # init = np.ones(num_vertices)
+    # init[4] = 1.1
+    # fake_i = matrix.dot(init)
+    # print(fake_i)
+    # np.flatnonzero(fake_i)
+
+    return matrix
