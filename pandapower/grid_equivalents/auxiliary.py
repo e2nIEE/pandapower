@@ -262,35 +262,6 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
     return Z, S, v, limits
 
 
-def check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups):
-    """
-    This Funktion proves the validity of the equivalent Ybus. If teh eqv. Ybus (Ybus_eq)
-    is calculated correctly, the new_power and the origial power flow results should be equal
-    """
-    logger.debug("validiting the calculated Ybus_eq")
-
-    ibt_buses = []
-    for key in ["i", "b", "t"]:
-        ibt_buses += bus_lookups["bus_lookup_ppc"][key+"_area_buses"]
-    df = pd.DataFrame(columns=["bus_ppc", "bus_pd", "ext_grid_index", "power"])
-    df.bus_ppc = ibt_buses
-
-    for idx in df.index:
-        df.bus_pd[idx] = list(
-            net_zpbn._pd2ppc_lookups["bus"]).index(df.bus_ppc[idx])
-        if df.bus_pd[idx] in net_zpbn.ext_grid.bus.values:
-            df.ext_grid_index[idx] = net_zpbn.ext_grid.index[net_zpbn.ext_grid.bus == df.bus_pd[
-                idx]][0]
-
-    v_m = net_zpbn._ppc["bus"][df.bus_ppc.values, 7]
-    delta = net_zpbn._ppc["bus"][df.bus_ppc.values, 8] * np.pi / 180
-    v_cpx = v_m * np.exp(1j * delta)
-    df.power = np.multiply(np.mat(v_cpx).T, np.conj(Ybus_eq * np.mat(v_cpx).T))
-    df.dropna(axis=0, how="any", inplace=True)
-
-    return df
-
-
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
     """ This function ad a unique name to each bounary bus. The original 
         boundary bus names are retained.
@@ -351,40 +322,26 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controller(net, buses, skip_controller=False):
+def drop_measurements_and_controllers(net, buses, skip_controller=False):
     """This function drops the measurements of the given buses.
-    Also, the related controller parameter will be removed. """
+    Also, the related controller parameters will be removed. """
     # --- dropping measurements
     if len(net.measurement):
-        elms = set(net.measurement.element_type.values)
-        for elm in elms:
-            if elm == "bus":
-                elm_idx = buses
-            elif elm == "line":
-                elm_idx = net.line.index[(net.line.from_bus.isin(buses)) &
-                                         (net.line.from_bus.isin(buses))]
-            elif elm == "trafo":
-                elm_idx = net.trafo.index[(net.trafo.hv_bus.isin(buses)) &
-                                          (net.trafo.lv_bus.isin(buses))]
-            elif elm == "trafo3w":
-                elm_idx = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
-                                            (net.trafo3w.mv_bus.isin(buses)) &
-                                            (net.trafo3w.lv_bus.isin(buses))]
-            target_idx = net.measurement.index[(net.measurement.element_type == elm) &
-                                               (net.measurement.element.isin(elm_idx))]
-            net.measurement.drop(target_idx, inplace=True)
+        pp.drop_measurements_at_elements(net, "bus", idx=buses)
+        lines = net.line.index[(net.line.from_bus.isin(buses)) &
+                               (net.line.from_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "line", idx=lines)
+        trafos = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
+                                    (net.trafo3w.mv_bus.isin(buses)) &
+                                    (net.trafo3w.lv_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "trafo", idx=trafos)
+        trafo3ws = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
+                                    (net.trafo3w.mv_bus.isin(buses)) &
+                                    (net.trafo3w.lv_bus.isin(buses))]
+        pp.drop_measurements_at_elements(net, "trafo3w", idx=trafo3ws)
 
     # --- dropping controller
-    """
-    test at present, only sgen and load are considered.
-    """
-    if len(net.controller) and not skip_controller:
-        for i in net.controller.index:
-            elm = net.controller.object[i].__dict__["element"]
-            if len(net[elm]) != len(set(net[elm].name.values)):
-                raise ValueError("if controllers are used, please give a name for every "
-                                 "element ("+elm+"), and make sure the name is unique.")
-        net.controller.drop(net.controller.index, inplace=True)
+    pp.drop_controllers_at_buses(net, buses)
 
 
 def match_controller_and_new_elements(net, net_org):
@@ -487,32 +444,30 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
             net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"], inplace=True)
 
 
-def check_network(net):
+def _check_network(net):
     """
-    checks the given network. If the network does not meet conditions,
-    the program will report an error.
+    This function will perfoms some checks and modifications on the given grid model.
     """
     # --- check invative elements
     if net.res_bus.vm_pu.isnull().any():
         logger.info("There are some inactive buses. It is suggested to remove "
                     "them using 'pandapower.drop_inactive_elements()' "
                     "before starting the grid equivalent calculation.")
-    # --- check dcline
+
+    # --- check dclines
     if "dcline" in net and len(net.dcline.query("in_service")) > 0:
         _add_dcline_gens(net)
         dcline_index = net.dcline.index.values
         net.dcline.loc[dcline_index, 'in_service'] = False
         logger.info(f"replaced dcline {dcline_index} by gen elements")
-    # --- condition 1: shift_degree of transformers must be 0.
-    # if not np.allclose(net.trafo.shift_degree.values, 0) & \
-    #         np.allclose(net.trafo3w.shift_mv_degree.values, 0) & \
-    #         np.allclose(net.trafo3w.shift_lv_degree.values, 0):
-    #     net["phase_shifter_actived"] = True
-    # else:
-    #     net["phase_shifter_actived"] = False
-        # raise ValueError("the parameter 'shift_degree' of some transformers is not zero. "
-        #                   "Currently, the get_equivalent function can not reduce "
-        #                   "a network with non-zero shift_degree accurately.")
+
+    # --- check controller names
+    if len(net.controller):
+       for i in net.controller.index:
+           elm = net.controller.object[i].__dict__["element"]
+           if len(net[elm]) != len(set(net[elm].name.values)):
+               raise ValueError("if controllers are used, please give a name for every "
+                                 "element ("+elm+"), and make sure the name is unique.")
 
 
 def get_boundary_vp(net_eq, bus_lookups):
@@ -535,13 +490,13 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
     #     net.res_bus.q_mvar[target_buses].values
     # print(q_errors)
     for idx, lb in enumerate(target_buses):
-        if abs(vm_errors[idx] > 1e-6) and abs(vm_errors[idx]) > 1e-6:
+        if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
             hb = pp.create_bus(net, net.bus.vn_kv[lb]*(1-vm_errors[idx]),
                                name="phase_shifter_adapter_"+str(lb))
             elm_dict = pp.get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:
-                    name = net[e].name[i]
+                    name = str(net[e].name[i])
                     if "eq_" not in name and "_integrated_" not in name and \
                         "_separate_" not in name:
                         if e in ["impedance", "line"]:

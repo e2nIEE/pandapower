@@ -6,7 +6,7 @@ import pytest
 import pandapower as pp
 from pandapower import nets_equal
 from pandapower.test import add_grid_connection
-from pandapower.test.consistency_checks import runpp_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_with_consistency_checks, rundcpp_with_consistency_checks
 
 
 @pytest.fixture
@@ -143,6 +143,80 @@ def test_result_index_unsorted():
     pp.runpp(net)
 
     assert nets_equal(net, net_recycle, atol=1e-12)
+
+
+def test_recycle_dc(recycle_net):
+    net = recycle_net
+    pl = 1.2
+    ql = 0.
+    net["load"].at[0, "q_mvar"] = ql
+    rundcpp_with_consistency_checks(net, recycle=dict(trafo=False, gen=False, bus_pq=True))
+    assert np.allclose(net.res_load.at[0, "p_mw"], pl)
+    pl = 0.8
+    ql = 0.55
+    net.load.at[0, "p_mw"] = pl
+    net["load"].at[0, "q_mvar"] = ql
+    rundcpp_with_consistency_checks(net, recycle=dict(bus_pq=True, trafo=False, gen=False))
+    assert np.allclose(net.res_load.p_mw.iloc[0], pl)
+
+
+def test_recycle_dc_trafo_shift(recycle_net):
+    net = recycle_net
+    pp.set_user_pf_options(net, calculate_voltage_angles=True)
+    b4 = pp.create_bus(net, vn_kv=20.)
+    pp.create_transformer(net, 3, b4, std_type="0.4 MVA 10/0.4 kV")
+    net["trafo"].at[0, "tap_pos"] = 0
+    net["trafo"].at[0, "tap_step_percent"] = 1
+    #net["trafo"].at[0, "tap_phase_shifter"] = True
+    net["trafo"].at[0, "tap_step_degree"] = 30
+    net2 = net.deepcopy()
+    pl = 1.2
+    ql = 0.
+    net["load"].at[0, "q_mvar"] = ql
+    rundcpp_with_consistency_checks(net, recycle=dict(bus_pq=True, trafo=True, gen=False))
+    assert np.allclose(net.res_load.at[0, "p_mw"], pl)
+    pl = 0.8
+    ql = 0.55
+    net.load.at[0, "p_mw"] = pl
+    net.load.at[0, "q_mvar"] = ql
+    net.trafo.at[0, "tap_pos"] = 3
+    # here: because tap_step_percent is not the same, recycle will not be triggered
+    rundcpp_with_consistency_checks(net, recycle=dict(bus_pq=True, trafo=True, gen=False))
+    assert np.allclose(net.res_load.p_mw.iloc[0], pl)
+    net2.load.at[0, "p_mw"] = pl
+    net2.load.at[0, "q_mvar"] = ql
+    net2.trafo.at[0, "tap_pos"] = 3
+    pp.rundcpp(net2)
+    assert np.allclose(net.res_bus.va_degree, net2.res_bus.va_degree, rtol=0, atol=1e-9, equal_nan=True)
+
+
+def test_recycle_dc_trafo_ideal(recycle_net):
+    net = recycle_net
+    pp.set_user_pf_options(net, calculate_voltage_angles=True)
+    v = net.bus.vn_kv.at[3]
+    b4 = pp.create_bus(net, vn_kv=v)
+    pp.create_transformer_from_parameters(net, 3, b4, 10, v, v, 0.5, 12, 10, 0.1, 0,
+                                          tap_side='hv', tap_neutral=0, tap_max=10, tap_min=-10,
+                                          tap_step_percent=0, tap_step_degree=30, tap_pos=0, tap_phase_shifter=True)
+    net2 = net.deepcopy()
+    pl = 1.2
+    ql = 0.
+    net["load"].at[0, "q_mvar"] = ql
+    rundcpp_with_consistency_checks(net, recycle=dict(bus_pq=True, trafo=True, gen=False))
+    assert np.allclose(net.res_load.at[0, "p_mw"], pl)
+    pl = 0.8
+    ql = 0.55
+    net.load.at[0, "p_mw"] = pl
+    net.load.at[0, "q_mvar"] = ql
+    net.trafo.at[0, "tap_pos"] = 3
+    # here: ideal phase shifter, so tap is the same and shift is different
+    rundcpp_with_consistency_checks(net, recycle=dict(bus_pq=True, trafo=True, gen=False))
+    assert np.allclose(net.res_load.p_mw.iloc[0], pl)
+    net2.load.at[0, "p_mw"] = pl
+    net2.load.at[0, "q_mvar"] = ql
+    net2.trafo.at[0, "tap_pos"] = 3
+    pp.rundcpp(net2)
+    assert np.allclose(net.res_bus.va_degree, net2.res_bus.va_degree, rtol=0, atol=1e-9, equal_nan=True)
 
 
 if __name__ == "__main__":
