@@ -458,11 +458,8 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
 
     # --- determine buses connected to boundary buses via bus-bus-switch
     boundary_buses_inclusive_bswitch = set()
-    mg_sw = top.create_nxgraph(net, include_trafos=False,
-                               include_trafo3ws=False,
-                               respect_switches=True,
-                               include_lines=False,
-                               include_impedances=False)
+    mg_sw = top.create_nxgraph(net, respect_switches=True, include_lines=False, include_impedances=False,
+                               include_tcsc=False, include_trafos=False, include_trafo3ws=False)
     for bbus in boundary_buses:
         boundary_buses_inclusive_bswitch |= set(top.connected_component(mg_sw, bbus))
     if len(boundary_buses_inclusive_bswitch) > len(boundary_buses):

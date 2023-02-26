@@ -8,6 +8,8 @@ import pytest
 import numpy as np
 import pandapower as pp
 
+import matplotlib.pyplot as plt
+
 import pandapower.networks
 from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu, calc_tcsc_p_pu
 from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
@@ -134,31 +136,125 @@ def test_tcsc_simple():
 
 
 def test_tcsc_simple2():
-    net = pp.create_empty_network(sn_mva=100)
+    baseMVA = 100  # MVA
+    baseV = 110  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.1
+    xc = -5
+
+    net = pp.create_empty_network(sn_mva=baseMVA)
     pp.create_buses(net, 3, 110)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
-    pp.create_impedance(net, 1, 2, 0.001, 0.001, 1)
+    pp.create_impedance(net, 1, 2, 0.005, 0.01, 1)
     # pp.create_line_from_parameters(net, 1, 2, 100, 0.0487, 0.13823, 160, 0.664)
-    pp.create_load(net, 2, 100, 25)
+    pp.create_load(net, 2, 10, 1)
+
+    pp.runpp(net)
+    V = net._ppc["internal"]["V"]
+    pp.set_user_pf_options(net, init_vm_pu=np.abs(V), init_va_degree=np.angle(V, deg=True))
 
     net.impedance['controllable'] = True
-    net.impedance['set_p_to_mw'] = -20
-    net.impedance["thyristor_firing_angle_degree"] = 141.95177933
-    net.impedance["tcsc_x_l_ohm"] = 10
-    net.impedance["tcsc_x_cvar_ohm"] = -100
+    net.impedance['set_p_to_mw'] = -2
+    net.impedance["thyristor_firing_angle_degree"] = 150
+    net.impedance["tcsc_x_l_ohm"] = 100
+    net.impedance["tcsc_x_cvar_ohm"] = -500
 
-    pp.runpp(net, max_iteration=200)
+    pp.runpp(net, max_iteration=10)
 
     net.impedance.controllable = False
-    y = calc_y_svc_pu(np.deg2rad(116.09807835), 1, -10)
+    y = calc_y_svc_pu(np.deg2rad(120), xl / baseZ, xc / baseZ)
+    (1 / y) * baseZ
 #    net.impedance.rft_pu
     net.impedance.xft_pu = -1/y
     net.impedance.xtf_pu = -1/y
     pp.runpp(net)
 
+    plot_z(baseZ, 0.1, -5)
+
+
+def test_tcsc_simple8():
+    baseMVA = 100  # MVA
+    baseV = 110  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    # plot_z(baseZ, xl, xc)
+
+    # (0)-------------(1)-----------------(3)->
+    #                  |--(TCSC)--(2)------|
+
+    net = pp.create_empty_network(sn_mva=baseMVA)
+    pp.create_buses(net, 4, baseV)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
+
+
+    # pp.create_switch(net, 1, 2, 'b', closed=False)
+    x = 140
+    y = calc_y_svc_pu(np.deg2rad(x), xl / baseZ, xc / baseZ)
+    # pp.create_impedance(net, 1, 2, 0, 1/y, baseMVA)
+
+    pp.create_load(net, 3, 100, 40)
+
+    # pp.runpp(net)
+
+    # V = net._ppc["internal"]["V"]
+    # pp.set_user_pf_options(net, init_vm_pu=np.abs(V)*.9999, init_va_degree=np.angle(V, deg=True))
+
+    # pp.create_tcsc(net, 1, 2, xl, xc, -20, 130, "Test", controllable=False, min_angle_degree=95, max_angle_degree=145)
+    pp.create_tcsc(net, 1, 2, xl, xc, 5, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+    # net.tcsc.at[0, "thyristor_firing_angle"] = x
+
+    pp.runpp(net)
+
+    Ybus = net._ppc["internal"]["Ybus"].toarray()
+    Ybus.round(2)
+    Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(x), np.array([xl/baseZ]), np.array([xc/baseZ]), np.array([1]), np.array([2]))
+    (Ybus + Ybus_tcsc).round(2)
+    J = net._ppc["internal"]["J"].toarray()
+    J[:6, :6].round(1)
+
+    # todo:
+    #  test by creating an equivalent net.impedance element and check results, compare J
+    #  test for pv, pq buses
+    #  test with distributed slack
+    #  test with multiple tcsc in the grid, with mix of "controllable" True / False
+    #  test results by comparing impedance result to formula; p, q, i by comparing to line results; vm, va by comparing to bus results
+    #  test with some other grids, e.g. the grid from the source
+
+
+def plot_z(baseZ, xl, xc):
+    x = np.arange(90, 181)
+    y = calc_y_svc_pu(np.deg2rad(x), xl / baseZ, xc / baseZ)
+    z = (1 / y) * baseZ
+    plt.plot(x, z)
+
+
+def makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
+    Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
+    Y_TCSC = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    print("Y_TCSC", np.round(Y_TCSC, 3))
+    Y_TCSC_c = -1j * Y_TCSC
+    for y_tcsc_pu_i, i, j in zip(Y_TCSC_c, tcsc_fb, tcsc_tb):
+        Ybus_tcsc[i, i] += y_tcsc_pu_i
+        Ybus_tcsc[i, j] += -y_tcsc_pu_i
+        Ybus_tcsc[j, i] += -y_tcsc_pu_i
+        Ybus_tcsc[j, j] += y_tcsc_pu_i
+    return Ybus_tcsc
+
+
 
 def test_tcsc_simple3():
+    baseMVA = 100  # MVA
+    baseV = 110  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+
     net = pp.create_empty_network()
     pp.create_buses(net, 3, 110)
     pp.create_ext_grid(net, 0)

@@ -21,11 +21,13 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV, SVC, SET_VM_PU, SVC_THYRISTOR_FIRING_ANGLE, BS, SVC_X_L, SVC_X_CVAR
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, TCSC, TCSC_SET_P_MW, TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_L, \
-    TCSC_X_CVAR, T_BUS
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
+from pandapower.pypower.idx_tcsc import F_BUS_TCSC, T_BUS_TCSC, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
+    TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, \
+    TCSC_MAX_FIRING_ANGLE, TCSC_PF, TCSC_QF, TCSC_PT, TCSC_QT, TCSC_IF, TCSC_IT, TCSC_X_PU
 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
@@ -65,6 +67,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     bus = ppci['bus']
     gen = ppci['gen']
     branch = ppci['branch']
+    tcsc = ppci['tcsc']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
     tdpf = options.get('tdpf', False)
 
@@ -121,28 +124,24 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         svc_x_cvar_pu = bus[svc_buses, SVC_X_CVAR]
         Sbus_backup = Sbus.copy()
 
-    tcsc_branches = flatnonzero(nan_to_num(branch[:, TCSC]))
-    tcsc_fb = branch[tcsc_branches, [F_BUS]].real.astype(int)
-    tcsc_tb = branch[tcsc_branches, [T_BUS]].real.astype(int)
+    tcsc_branches = flatnonzero(nan_to_num(tcsc[:, TCSC_STATUS]))
+    tcsc_fb = tcsc[tcsc_branches, [F_BUS_TCSC]].real.astype(int)
+    tcsc_tb = tcsc[tcsc_branches, [T_BUS_TCSC]].real.astype(int)
 
-    tcsc_set_p_pu = np.zeros_like(V, dtype=np.float64)
-    tcsc_set_p_pu[tcsc_tb] = branch[tcsc_branches, TCSC_SET_P_MW].real
-    tcsc_set_p_pu[tcsc_fb] = -branch[tcsc_branches, TCSC_SET_P_MW].real
+    tcsc_controllable = tcsc[tcsc_branches, TCSC_CONTROLLABLE].real.astype(bool)
 
-    x_control_tcsc = np.zeros_like(V, dtype=np.float64)
-    x_control_tcsc[tcsc_tb] = branch[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
-    x_control_tcsc[tcsc_fb] = branch[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
-    x_control = r_[x_control, x_control_tcsc]
+    tcsc_set_p_pu = tcsc[tcsc_branches[tcsc_controllable], TCSC_SET_P].real
+
+    tcsc_min_x = tcsc[tcsc_branches[tcsc_controllable], TCSC_MIN_FIRING_ANGLE].real
+    tcsc_max_x = tcsc[tcsc_branches[tcsc_controllable], TCSC_MAX_FIRING_ANGLE].real
+
+    # todo differentiate controllable or not
+    x_control_tcsc = tcsc[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
+    x_control = r_[x_control, x_control_tcsc[tcsc_controllable]]
     x_control_lookup = r_[x_control_lookup, np.ones_like(x_control_tcsc)]
-    #if len(tcsc_branches) > 0:
 
-    tcsc_x_l_pu = np.zeros_like(V, dtype=np.float64)
-    tcsc_x_l_pu[tcsc_tb] = branch[tcsc_branches, TCSC_X_L].real
-    tcsc_x_l_pu[tcsc_fb] = branch[tcsc_branches, TCSC_X_L].real
-
-    tcsc_x_cvar_pu = np.zeros_like(V, dtype=np.float64)
-    tcsc_x_cvar_pu[tcsc_tb] = branch[tcsc_branches, TCSC_X_CVAR].real
-    tcsc_x_cvar_pu[tcsc_fb] = branch[tcsc_branches, TCSC_X_CVAR].real
+    tcsc_x_l_pu = tcsc[tcsc_branches, TCSC_X_L].real
+    tcsc_x_cvar_pu = tcsc[tcsc_branches, TCSC_X_CVAR].real
 
     tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pq)
     tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(int), pq)
@@ -168,9 +167,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
 
-    Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
+    Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
     F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
-                     tcsc_branches, tcsc_set_p_pu, tcsc_fb, tcsc_tb, Ybus_tcsc)
+                     tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc)
 
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
@@ -230,15 +229,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
-    if len(tcsc_branches):
-        #y_tcsc = calc_y_svc_pu(x_control[x_control_lookup == 1], tcsc_x_l_pu, tcsc_x_cvar_pu)
-        #branch[tcsc_branches, BR_X] = -1/y_tcsc
-        Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-
-        #### TODO    
-        #### potintial bug here, because the substitution at Ybus diagonal elemensts eleminate the admitance of the other connected elements (double check this matter later please)
-        #### the solution could be just to add the calculated admitances to the already existed Ybus elements at the diagonal elements and not substituting them instead.
-
     J = None
 
 
@@ -253,12 +243,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
             g, b = calc_g_b(r, x)
 
-        if len(tcsc_branches):
-            #y_tcsc = calc_y_svc_pu(x_control[x_control_lookup==1], tcsc_x_l_pu, tcsc_x_cvar_pu)
-            #branch[tcsc_branches, BR_X] = -1/y_tcsc
-            Ybus_tcsc = makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-            print(i, "x_control", np.rad2deg(x_control))#, "BR_X", 1/y_tcsc, "F", F)
-                    
         # here: if J is "Jacobian for the original system", then it should be based on Ybus
         J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
         # J = create_jacobian_matrix(Ybus+Ybus_tcsc, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
@@ -276,11 +260,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                 J_m_svc = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x_control_lookup,
                                                     svc_x_l_pu, svc_x_cvar_pu)
                 J = J + J_m_svc
-            if len(tcsc_branches):
-                J_m_tcsc = create_J_modification_tcsc(J, branch, pvpq_lookup, pq_lookup, Ybus_tcsc, V, tcsc_fb, tcsc_tb,
-                                                      pvpq, pq, tcsc_branches, x_control, x_control_lookup, tcsc_x_l_pu,
-                                                      tcsc_x_cvar_pu, tcsc_in_pq_f, tcsc_in_pq_t, tcsc_in_pvpq_f,
-                                                      tcsc_in_pvpq_t)
+            if len(tcsc_branches) > 0:
+                J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu,
+                                                      tcsc_fb, tcsc_tb, pvpq, pq, pvpq_lookup, pq_lookup)
                 J = J + J_m_tcsc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -293,7 +275,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Va[pq] = Va[pq] + dx[j3:j4]
             Vm[pq] = Vm[pq] + dx[j5:j6]
         if len(x_control) > 0:
+            # todo: use separate x_control_tcsc, x_control_svc
             x_control = x_control + dx[j6:j6a]
+            x_control_tcsc[tcsc_controllable] = x_control[x_control_lookup == 1]
         if tdpf:
             T = T + dx[j7:][tdpf_lines]
 
@@ -317,8 +301,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
+        if sum(tcsc_controllable) > 0:
+            Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack, svc_buses, svc_set_vm_pu,
-                         tcsc_branches, tcsc_set_p_pu, tcsc_fb, tcsc_tb, Ybus_tcsc)
+                         tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc)
 
         if tdpf:
             i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
@@ -335,39 +321,43 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         bus[svc_buses, BS] += -q_svc * baseMVA * (1 / svc_set_vm_pu) ** 2
         bus[svc_buses, SVC_THYRISTOR_FIRING_ANGLE] = x_control
 
-    print("i", i)
-    print("P", (V * conj(Ybus * V)*baseMVA).real.round(2))
-    print("Q", (V * conj(Ybus * V)*baseMVA).imag.round(2))
-    print("P TCSC", (V * conj(Ybus_tcsc * V)*baseMVA).real.round(3))
-    print("Q TCSC", (V * conj(Ybus_tcsc * V)*baseMVA).imag.round(3))
-    print("P tot", (V * conj((Ybus+Ybus_tcsc) * V)*baseMVA).real.round(3))
-    print("Q tot", (V * conj((Ybus+Ybus_tcsc) * V)*baseMVA).imag.round(3))
+    if len(tcsc_branches) > 0:
+        # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
+        baseI = baseMVA / (bus[tcsc_tb, BASE_KV] * sqrt(3))
+        Ibus_tcsc = Ybus_tcsc * V
+        Sbus_tcsc = V * conj(Ibus_tcsc) * baseMVA
+        tcsc[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE] = x_control_tcsc
+        tcsc[tcsc_branches, TCSC_PF] = Sbus_tcsc[tcsc_fb].real
+        tcsc[tcsc_branches, TCSC_QF] = Sbus_tcsc[tcsc_fb].imag
+        tcsc[tcsc_branches, TCSC_PT] = Sbus_tcsc[tcsc_tb].real
+        tcsc[tcsc_branches, TCSC_QT] = Sbus_tcsc[tcsc_tb].imag
+        tcsc[tcsc_branches, TCSC_IF] = np.abs(Ibus_tcsc[tcsc_fb]) * baseI
+        tcsc[tcsc_branches, TCSC_IT] = np.abs(Ibus_tcsc[tcsc_tb]) * baseI
+        tcsc[tcsc_branches, TCSC_X_PU] = 1 / calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None,
-                 svc_buses=None, svc_set_vm_pu=None, tcsc_branches=None, tcsc_set_p_pu=None, tcsc_fb=None, tcsc_tb=None, Ybus_tcsc=None):
+                 svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None, Ybus_tcsc=None):
     # evalute F(x)
     if dist_slack:
         # we include the slack power (slack * contribution factors) in the mismatch calculation
         mis = V * conj(Ybus * V) - Sbus + slack_weights * slack
         F = r_[mis[ref].real, mis[pv].real, mis[pq].real, mis[pq].imag]
-    elif len(tcsc_branches) > 0:
+    elif tcsc_tb is not None and len(tcsc_tb) > 0:
         # p_tcsc, *_ = calc_tcsc_p_pu(Ybus, V, tcsc_fb, tcsc_tb)
         mis = V * conj((Ybus + Ybus_tcsc) * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
 
-        Sbus_tcsc = V * conj(Ybus_tcsc * V)
-        # todo: compare all 3 values e.g. [.., .., ..] and [0, 20, -20] -> take always full array
-        p_tcsc = Sbus_tcsc.real
-        F_tcsc = p_tcsc - tcsc_set_p_pu
-
-        # Pb_c = r_[Sbus_tcsc[pv].real,Sbus_tcsc[pq].real, Sbus_tcsc[pq].imag]
-        # F = r_[F+Pb_c]
-        F = r_[F, F_tcsc]
-
-        print(p_tcsc)
-        print(F)
+        if sum(tcsc_controllable) > 0:
+            Sbus_tcsc = V * conj(Ybus_tcsc * V)
+            p_tcsc = Sbus_tcsc.real
+            # p_tcsc = np.abs(V)  # for U_set
+            F_tcsc = p_tcsc[tcsc_tb[tcsc_controllable]] - tcsc_set_p_pu
+            F = r_[F, F_tcsc]
+        else:
+            F = r_[F, np.zeros_like(tcsc_tb, dtype=np.float64)]
     else:
         mis = V * conj(Ybus * V) - Sbus
         F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
@@ -384,11 +374,12 @@ def _check_for_convergence(F, tol):
 
 def makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    y_tcsc_pu = -calc_y_svc_pu(x_control[tcsc_tb], tcsc_x_l_pu[tcsc_tb], tcsc_x_cvar_pu[tcsc_tb])
-    for y_tcsc_pu_i, i, j in zip(y_tcsc_pu, tcsc_fb, tcsc_tb):
-        Ybus_tcsc[i, i] += y_tcsc_pu_i * 1j
-        Ybus_tcsc[i, j] += -y_tcsc_pu_i * 1j
-        Ybus_tcsc[j, i] += -y_tcsc_pu_i * 1j
-        Ybus_tcsc[j, j] += y_tcsc_pu_i * 1j
+    Y_TCSC = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    Y_TCSC_c = -1j * Y_TCSC
+    for y_tcsc_pu_i, i, j in zip(Y_TCSC_c, tcsc_fb, tcsc_tb):
+        Ybus_tcsc[i, i] += y_tcsc_pu_i
+        Ybus_tcsc[i, j] += -y_tcsc_pu_i
+        Ybus_tcsc[j, i] += -y_tcsc_pu_i
+        Ybus_tcsc[j, j] += y_tcsc_pu_i
     return csr_matrix(Ybus_tcsc)
 

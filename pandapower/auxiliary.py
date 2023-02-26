@@ -796,7 +796,7 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunts are present, "
                                   "SVC controllable shunts not implemented yet.")
 
-    if len(net.impedance) and "controllable" in net.impedance and np.any(net.impedance.controllable):
+    if len(net.tcsc):
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and TCSC controllable impedances are present, "

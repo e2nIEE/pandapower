@@ -13,13 +13,15 @@ import pandas as pd
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, branch_cols, TCSC, TCSC_SET_P_MW, TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_L, TCSC_X_CVAR
+    BR_R_ASYM, BR_X_ASYM, branch_cols
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
+from pandapower.pypower.idx_tcsc import F_BUS_TCSC, T_BUS_TCSC, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
+    TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
 def _build_branch_ppc(net, ppc):
@@ -68,6 +70,13 @@ def _build_branch_ppc(net, ppc):
         _calc_xward_parameter(net, ppc)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
+
+
+def _build_tcsc_ppc(net, ppc):
+    length = len(net.tcsc)
+    ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
+    if length > 0:
+        _calc_tcsc_parameter(net, ppc)
 
 
 def _initialize_branch_lookup(net):
@@ -577,15 +586,33 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
-    if "controllable" in net.impedance.columns and len(net.impedance.query("controllable")) > 0:
-        tcsc = net.impedance.controllable.values.astype(bool)
-        z_base_ohm = np.square(net.bus.loc[net.impedance.loc[tcsc, 'from_bus'].values, "vn_kv"].values) / net.sn_mva
-        br_idx = np.arange(f, t)[tcsc]
-        branch[f:t, TCSC] = tcsc
-        branch[br_idx, TCSC_SET_P_MW] = net.impedance.set_p_to_mw.loc[tcsc].values / net.sn_mva
-        branch[br_idx, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net.impedance.thyristor_firing_angle_degree.loc[tcsc].values)
-        branch[br_idx, TCSC_X_L] = net.impedance.tcsc_x_l_ohm.loc[tcsc].values / z_base_ohm
-        branch[br_idx, TCSC_X_CVAR] = net.impedance.tcsc_x_cvar_ohm.loc[tcsc].values / z_base_ohm
+
+
+def _calc_tcsc_parameter(net, ppc):
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    f = 0
+    t = len(net.tcsc)
+
+    f_bus = bus_lookup[net.tcsc["from_bus"].values]
+    t_bus = bus_lookup[net.tcsc["to_bus"].values]
+
+    tcsc = ppc["tcsc"]
+    baseV = ppc["bus"][f_bus, BASE_KV]
+    baseZ = baseV ** 2 / baseMVA
+
+    tcsc[f:t, F_BUS_TCSC] = f_bus
+    tcsc[f:t, T_BUS_TCSC] = t_bus
+
+    tcsc[f:t, TCSC_X_L] = net["tcsc"]["x_l_ohm"].values / baseZ
+    tcsc[f:t, TCSC_X_CVAR] = net["tcsc"]["x_cvar_ohm"].values / baseZ
+    tcsc[f:t, TCSC_SET_P] = net["tcsc"]["set_p_to_mw"].values / baseMVA
+    tcsc[f:t, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["thyristor_firing_angle"].values)
+    tcsc[f:t, TCSC_MIN_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["min_angle_degree"].values)
+    tcsc[f:t, TCSC_MAX_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["max_angle_degree"].values)
+
+    tcsc[f:t, TCSC_STATUS] = net["tcsc"]["in_service"].values
+    tcsc[f:t, TCSC_CONTROLLABLE] = net["tcsc"]["controllable"].values.astype(bool) & net["tcsc"]["in_service"].values.astype(bool)
 
 
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):

@@ -10,6 +10,8 @@ from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
 from pandapower.pypower.idx_brch_tdpf import TDPF
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_tcsc import TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_PU, TCSC_PF, TCSC_PT, TCSC_QF, TCSC_QT, \
+    TCSC_IF, TCSC_IT
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
@@ -40,6 +42,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     _get_impedance_results(net, ppc, i_ft, suffix=suffix)
     _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=suffix)
     _get_switch_results(net, i_ft, suffix=suffix)
+    _get_tcsc_results(net, ppc, suffix=suffix)
 
 
 def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses):
@@ -574,6 +577,67 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     res_impedance_df["ql_mvar"].values[:] = ql_mvar
     res_impedance_df["i_from_ka"].values[:] = i_from_ka
     res_impedance_df["i_to_ka"].values[:] = i_to_ka
+
+
+def _get_tcsc_results(net, ppc, suffix=None):
+    if len(net.tcsc) == 0:
+        return
+
+    ac = net["_options"]["ac"]
+
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    f = 0
+    t = len(net.tcsc)
+
+    f_bus = bus_lookup[net.tcsc["from_bus"].values]
+    t_bus = bus_lookup[net.tcsc["to_bus"].values]
+    baseZ = ppc["bus"][f_bus, BASE_KV] ** 2 / baseMVA
+
+    if ac:
+        p_from_mw = ppc["tcsc"][f:t, TCSC_PF].real
+        p_to_mw = ppc["tcsc"][f:t, TCSC_PT].real
+        q_from_mvar = ppc["tcsc"][f:t, TCSC_QF].real
+        q_to_mvar = ppc["tcsc"][f:t, TCSC_QT].real
+        i_from_ka = ppc["tcsc"][f:t, TCSC_IF].real
+        i_to_ka = ppc["tcsc"][f:t, TCSC_IT].real
+        # losses will be 0 because tcsc represents an ideal device but we can add resistance easily in the future
+        pl_mw = p_from_mw + p_to_mw
+        ql_mvar = q_from_mvar + q_to_mvar
+    else:
+        raise NotImplementedError("TCSC not implemented for algorithm != 'ac' - writing zeros to tcsc results. "
+                                  "Results for other elements are as if TCSC elements were open switches.")
+        zeros = np.zeros(t)
+        # this looks like a pyramid
+        p_from_mw = zeros
+        p_to_mw = zeros
+        q_from_mvar = zeros
+        q_to_mvar = zeros
+        ql_mvar = zeros
+        pl_mw = zeros
+        i_from_ka = zeros
+        i_to_ka = zeros
+        # zeros
+
+    # write to impedance
+    # todo for suffix not None
+    res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
+
+    res_tcsc_df["thyristor_firing_angle"].values[:] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
+    res_tcsc_df["x_ohm"].values[:] = ppc["tcsc"][f:t, TCSC_X_PU].real * baseZ
+    res_tcsc_df["p_from_mw"].values[:] = p_from_mw
+    res_tcsc_df["q_from_mvar"].values[:] = q_from_mvar
+    res_tcsc_df["p_to_mw"].values[:] = p_to_mw
+    res_tcsc_df["q_to_mvar"].values[:] = q_to_mvar
+    res_tcsc_df["i_ka"].values[:] = np.fmax(i_from_ka, i_to_ka)
+    # res_tcsc_df["i_from_ka"].values[:] = i_from_ka
+    # res_tcsc_df["i_to_ka"].values[:] = i_to_ka
+    # res_tcsc_df["pl_mw"].values[:] = pl_mw
+    # res_tcsc_df["ql_mvar"].values[:] = ql_mvar
+    res_tcsc_df["vm_from_pu"].values[:] = ppc["bus"][f_bus, VM]
+    res_tcsc_df["va_from_degree"].values[:] = ppc["bus"][f_bus, VA]
+    res_tcsc_df["vm_to_pu"].values[:] = ppc["bus"][t_bus, VM]
+    res_tcsc_df["va_to_degree"].values[:] = ppc["bus"][t_bus, VA]
 
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):

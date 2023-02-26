@@ -5,7 +5,7 @@
 
 import numpy as np
 import pandapower.auxiliary as aux
-from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc, _build_tcsc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
 _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
@@ -15,6 +15,7 @@ from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_tcsc import TCSC_STATUS, F_BUS_TCSC, T_BUS_TCSC
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
@@ -114,6 +115,8 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
 
+    _build_tcsc_ppc(net, ppc)
+
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_ext_grid_sc_impedance(net, ppc)
@@ -180,6 +183,7 @@ def _init_ppc(net, mode="pf", sequence=None):
            "version": 2,
            "bus": np.array([], dtype=float),
            "branch": np.array([], dtype=np.complex128),
+           "tcsc": np.array([], dtype=np.complex128),
            "gen": np.array([], dtype=float),
            "internal": {
                "Ybus": np.array([], dtype=np.complex128),
@@ -260,6 +264,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
+    ppc["tcsc"][:, F_BUS_TCSC] = e2i[np.real(ppc["tcsc"][:, F_BUS_TCSC]).astype(int)].copy()
+    ppc["tcsc"][:, T_BUS_TCSC] = e2i[np.real(ppc["tcsc"][:, T_BUS_TCSC]).astype(int)].copy()
 
     # Note: The "update branch, gen and areas bus numbering" does the same as:
     # ppc['gen'][:, GEN_BUS] = get_indices(ppc['gen'][:, GEN_BUS], bus_lookup_ppc_ppci)
@@ -289,6 +295,11 @@ def _ppc2ppci(ppc, net, ppci=None):
            bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(int)]]).astype(bool)
     ppci["internal"]["branch_is"] = brs
 
+    trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(int) &  # branch status
+           bs[n2i[np.real(ppc["tcsc"][:, F_BUS_TCSC]).astype(int)]] &
+           bs[n2i[np.real(ppc["tcsc"][:, T_BUS_TCSC]).astype(int)]]).astype(bool)
+    ppci["internal"]["tcsc_is"] = trs
+
     if 'areas' in ppc:
         ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(int)]]
         # delete out of service areas
@@ -296,6 +307,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
+    ppci["tcsc"] = ppc["tcsc"][trs]
 
     ppci["gen"] = ppc["gen"][gs]
 

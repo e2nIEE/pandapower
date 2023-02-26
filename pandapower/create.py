@@ -232,6 +232,15 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("xtf_pu", "f8"),
                       ("sn_mva", "f8"),
                       ("in_service", 'bool')],
+        "tcsc": [("name", dtype(object)),
+                 ("from_bus", "u4"),
+                 ("to_bus", "u4"),
+                 ("x_l_ohm", "f8"),
+                 ("x_cvar_ohm", "f8"),
+                 ("set_p_to_mw", "f8"),
+                 ("thyristor_firing_angle", "f8"),
+                 ("controllable", "bool"),
+                 ("in_service", "bool")],
         "dcline": [("name", dtype(object)),
                    ("from_bus", "u4"),
                    ("to_bus", "u4"),
@@ -362,6 +371,17 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                  ("ql_mvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
+        "_empty_res_tcsc": [("thyristor_firing_angle", "f8"),
+                            ("x_ohm", "f8"),
+                            ("p_from_mw", "f8"),
+                            ("q_from_mvar", "f8"),
+                            ("p_to_mw", "f8"),
+                            ("q_to_mvar", "f8"),
+                            ("i_ka", "f8"),
+                            ("vm_from_pu", "f8"),
+                            ("va_from_degree", "f8"),
+                            ("vm_to_pu", "f8"),
+                            ("va_to_degree", "f8")],
         "_empty_res_dcline": [("p_from_mw", "f8"),
                               ("q_from_mvar", "f8"),
                               ("p_to_mw", "f8"),
@@ -3602,6 +3622,40 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
         _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
         _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
+
+    return index
+
+
+def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates a TCSC element
+
+    Parameters
+    ----------
+    net
+    from_bus
+    to_bus
+    x_l_ohm
+    x_cvar_ohm
+    set_p_to_mw
+    kwargs
+
+    Returns
+    -------
+
+    """
+    index = _get_index_with_check(net, "tcsc", index)
+
+    _check_branch_element(net, "TCSC", index, from_bus, to_bus)
+
+    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle",
+               "controllable", "in_service", "min_angle_degree", "max_angle_degree"]
+    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle,
+              controllable, in_service, min_angle_degree, max_angle_degree]
+    entries = dict(zip(columns, values))
+    _set_entries(net, "tcsc", index, **entries, **kwargs)
 
     return index
 
