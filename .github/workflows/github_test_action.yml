@@ -19,60 +19,61 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+        group: [ 1, 2 ]
 
     steps:
-    - uses: actions/checkout@v2
-    #- uses: julia-actions/setup-julia@v1.5
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install .["all"]
-        if ${{ matrix.python-version == '3.7' }}; then python -m pip install pypower; fi
-        if ${{ matrix.python-version != '3.7' }}; then python -m pip install numba; fi
-        if ${{ matrix.python-version == '3.7' }}; then python -m pip install lightsim2grid; fi
-        if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
-    - name: Install Julia
-      if: ${{ matrix.python-version == '3.7' }}
-      run: |
-        ./.install_julia.sh 1.5
-        pip install julia
-        python ./.install_pycall.py
-    - name: List of installed packages
-      run: |
-        pip list
-    - name: Test with pytest
-      if: ${{ matrix.python-version != '3.8' }}
-      run: |
-        pytest
-    - name: Test with pytest and Codecov
-      if: ${{ matrix.python-version == '3.8' }}
-      run: |
-        pip install pytest-cov
-        pytest --cov=./ --cov-report=xml
-    - name: Upload coverage to Codecov
-      if: ${{ matrix.python-version == '3.8' }}
-      uses: codecov/codecov-action@v1
-      with:
-        verbose: true
+      - uses: actions/checkout@v3
+      #- uses: julia-actions/setup-julia@v1.5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pytest-split
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .["all"]
+          if ${{ matrix.python-version == '3.8' }}; then python -m pip install pypower; fi
+          if ${{ matrix.python-version != '3.8' && matrix.python-version != '3.11' }}; then python -m pip install numba; fi
+          if ${{ matrix.python-version == '3.8' }}; then python -m pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
+      - name: Install Julia
+        if: ${{ matrix.python-version == '3.8' }}
+        run: |
+          ./.install_julia.sh 1.5
+          pip install julia
+          python ./.install_pycall.py
+      - name: List of installed packages
+        run: |
+          pip list
+      - name: Test with pytest
+        if: ${{ matrix.python-version != '3.9' }}
+        run: |
+          pytest --splits 2 --group ${{ matrix.group }}
+      - name: Test with pytest and Codecov
+        if: ${{ matrix.python-version == '3.9' }}
+        run: |
+          pip install pytest-cov
+          pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.python-version == '3.9' }}
+        uses: codecov/codecov-action@v1
+        with:
+          verbose: true
 
   relying: # packages that rely on pandapower
 
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -82,9 +83,10 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
+        if ${{ matrix.python-version != '3.11' }}; then python -m pip install numba; fi
     - name: Install pandapipes and simbench
       run: |
-        python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes numba
+        python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
         python -m pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
     - name: List of installed packages
       run: |
@@ -103,12 +105,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8']
+        python-version: ['3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -136,12 +138,12 @@ jobs:
     runs-on: ubuntu-latest
 #    strategy:
 #      matrix:
-#        python-version: ['3.7', '3.8', '3.9', '3.10']
+#        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
     - name: Install dependencies
@@ -163,3 +165,53 @@ jobs:
       run: |
         python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
         python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+
+  tutorial_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9']
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest nbmake pytest-xdist python-igraph numba seaborn
+          ./.install_julia.sh 1.6
+          pip install julia
+          python ./.install_pycall.py
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .["all"]
+      - name: List all installed packages
+        run: |
+          pip list
+      - name: Test with pytest
+        run: |
+          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+  
+  docs_check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.8' ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check docs for Python ${{ matrix.python-version }}
+        uses: e2nIEE/sphinx-action@master
+        with:
+          pre-build-command: "apt-get update -y && apt-get install -y git;
+                              git --version;
+                              python -m pip install --upgrade pip;
+                              python -m pip install git+https://github.com/e2nIEE/pandapower@develop#egg=pandapower;
+                              python -m pip install .;
+                              pip install matplotlib"
+          build-command: "sphinx-build -b html . _build -W"
+          docs-folder: "doc/"

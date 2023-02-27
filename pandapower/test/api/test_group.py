@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-from this import d
 import pytest
 from copy import deepcopy
 import numpy as np
@@ -213,6 +211,9 @@ def test_drop_and_return():
             net2 = deepcopy(net)
             pp.drop_group_and_elements(net2, 0)
 
+            net2b = deepcopy(net)
+            pp.drop_group_and_elements(net2b, 3)
+
             net3 = pp.return_group_as_net(
                 net, 0, keep_everything_else=keep_everything_else, verbose=False)
             if keep_everything_else:
@@ -222,9 +223,12 @@ def test_drop_and_return():
 
             assert net.gen.shape[0] == 10  # unchanged
             assert net2.gen.shape[0] == 8
+            assert net2b.gen.shape[0] == 10  # unchanged
+            assert net2b.trafo.shape[0] == 2
             assert set(net3.gen.index) == {0, 1}
             for elm in pp.pp_elements():
                 assert net2[elm].shape[0] <= net[elm].shape[0]
+                assert net2b[elm].shape[0] <= net[elm].shape[0]
                 assert set(net2[elm].index) | set(net3[elm].index) == set(net[elm].index)
                 assert net3[elm].shape[0] >= 0
 
@@ -333,24 +337,75 @@ def test_isin():
         assert not pp.isin_group(net, "gen", 6)
 
 
+def test_elements_connected_to_group():
+    # test net
+    net = pp.create_empty_network()
+    buses = pp.create_buses(net, 12, 20)
+    pp.create_lines(net, [buses[0]]*6, list(range(1, 7)), length_km=0.5,
+                    std_type="48-AL1/8-ST1A 20.0")
+    pp.create_ext_grid(net, 0)
+    pp.create_loads(net, buses, 0.3)
+    pp.create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
+    pp.create_switches(net, [0]*3, [7, 8, 9], "b", closed=[True, False, True])
+    pp.create_switches(net, [0]*2, [10, 11], "b", closed=[True, False])
+    net.load.in_service.at[0] = False
+    net.line.in_service.at[4] = False
+    net.bus.in_service.loc[[3, 9]] = False
+
+    # create group
+    index = pp.create_group(net, ["bus", "line", "switch"], [[0], [net.line.index[-1]], [6, 7]])
+
+    element_types = ["bus", "ext_grid", "load", "line", "switch"]
+    ets_motor = element_types + ["motor"]
+
+    # test elements_connected_to_group()
+    assert pp.elements_connected_to_group(net, index, ets_motor) == \
+        {"bus": [10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
+         "switch": [0, 1, 2, 3, 4, 5]}
+
+    assert pp.elements_connected_to_group(net, index, ets_motor, include_empty_lists=True) == \
+        {"bus": [10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
+         "switch": [0, 1, 2, 3, 4, 5], "motor": []}
+
+    assert pp.elements_connected_to_group(
+            net, index, element_types, find_buses_only_from_buses=True) == \
+        {"bus": [1, 3, 4, 5, 7, 9, 10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
+         "switch": [0, 1, 2, 3, 4, 5]}
+
+    assert pp.elements_connected_to_group(
+            net, index, element_types, find_buses_only_from_buses=True, respect_switches=False) == \
+        {"bus": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "ext_grid": [0], "load": [0],
+         "line": [0, 1, 2, 3, 4], "switch": [0, 1, 2, 3, 4, 5]}
+
+    assert pp.elements_connected_to_group(
+            net, index, element_types, find_buses_only_from_buses=True, respect_switches=False,
+            respect_in_service=True) == \
+        {"bus": [1, 2, 4, 6, 7, 8, 10, 11], "ext_grid": [0], "line": [0, 1, 2, 3],
+        "switch": [0, 1, 2, 3, 4, 5]}
+
+    assert pp.elements_connected_to_group(net, index, element_types, respect_in_service=True) == \
+        {"bus": [10], "ext_grid": [0], "line": [0, 2, 3], "switch": [0, 1, 2, 3, 4, 5]}
+
+
 if __name__ == "__main__":
     if 0:
         pytest.main(['-x', "test_group.py"])
     else:
-        test_group_create()
-        test_group_element_index()
-        test_groups_equal()
-        test_set_group_reference_column()
-        test_compare_group_elements()
-        test_ensure_lists_in_group_element_column()
-        test_remove_not_existing_group_members()
-        test_drop_element()
-        test_drop_and_return()
-        test_set_out_of_service()
-        test_append_to_group()
-        test_drop_and_compare()
-        test_res_power()
-        test_group_io()
-        test_count_group_elements()
-        test_isin()
+        # test_group_create()
+        # test_group_element_index()
+        # test_groups_equal()
+        # test_set_group_reference_column()
+        # test_compare_group_elements()
+        # test_ensure_lists_in_group_element_column()
+        # test_remove_not_existing_group_members()
+        # test_drop_element()
+        # test_drop_and_return()
+        # test_set_out_of_service()
+        # test_append_to_group()
+        # test_drop_and_compare()
+        # test_res_power()
+        # test_group_io()
+        # test_count_group_elements()
+        # test_isin()
+        test_elements_connected_to_group()
         pass

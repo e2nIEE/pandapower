@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -11,7 +11,8 @@ try:
 except:
     import logging as pplog
 
-from pandapower import ppException, LoadflowNotConverged, OPFNotConverged
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower import ppException, LoadflowNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)
@@ -125,7 +126,7 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     if ('continue_on_divergence') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
         div = kwargs.pop('continue_on_divergence')
         ctrl_variables['continue_on_divergence'] = div
-    if ('check_each_level') in kwargs and (ctrl_var is None or 'continue_on_divergence' not in ctrl_var.keys()):
+    if ('check_each_level') in kwargs and (ctrl_var is None or 'check_each_level' not in ctrl_var.keys()):
         check = kwargs.pop('check_each_level')
         ctrl_variables['check_each_level'] = check
 
@@ -203,6 +204,7 @@ def control_implementation(net, controller_order, ctrl_variables, max_iter,
     run_count=0
     # run each controller step in given controller order
     for levelorder in controller_order:
+        _reset_convergence(levelorder)
         # converged gives status about convergence of a controller. Is initialized as False
         ctrl_converged = False
         # run_count is 0 before entering the loop. Is incremented in each controller loop
@@ -220,6 +222,10 @@ def control_implementation(net, controller_order, ctrl_variables, max_iter,
             check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
     # is required if you only want to check if in the last level everything is converged
     check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
+
+def _reset_convergence(levelorder):
+    for ctrl, net in levelorder:
+        ctrl.level_reset(net)
 
 
 def _control_step(levelorder, run_count):

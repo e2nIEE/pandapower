@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -303,7 +303,7 @@ def _check_voltage_setpoints_at_same_bus(ppc):
     # generator setpoints:
     gen_vm = ppc['gen'][:, VG]
     if _different_values_at_one_bus(gen_bus, gen_vm):
-        raise UserWarning("Generators with different voltage setpoints connected to the same bus")
+        raise UserWarning("Voltage controlling elements, i.e. generators, external grids, or DC lines, at the same bus have different setpoints.")
 
 
 def _check_voltage_angles_at_same_bus(net, ppc):

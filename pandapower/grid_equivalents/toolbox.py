@@ -104,7 +104,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
                     areas[-1] |= ccl.pop(i)
 
     for i, area in enumerate(areas):
-        net.bus.zone.loc[area] = i
+        net.bus.zone.loc[list(area)] = i
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):
@@ -251,6 +251,23 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
             zones_without_connection))
 
     return boundary_buses, boundary_branches
+
+
+def get_connected_switch_buses_groups(net, buses):
+    all_buses = set()
+    bus_dict = []
+    mg_sw = top.create_nxgraph(net, include_trafos=False,
+                               include_trafo3ws=False,
+                               respect_switches=True,
+                               include_lines=False,
+                               include_impedances=False)
+    for bbus in buses:
+        if bbus in all_buses:
+            continue
+        new_bus_set = set(top.connected_component(mg_sw, bbus))
+        all_buses |= new_bus_set
+        bus_dict.append(list(new_bus_set))
+    return all_buses, bus_dict
 
 
 if __name__ == "__main__":

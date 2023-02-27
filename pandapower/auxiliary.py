@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -28,6 +28,7 @@
 
 import copy
 from collections.abc import MutableMapping
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -61,7 +62,20 @@ def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      "requirements: %s requires '%s'." % (fct_name, required_packages))
+                      f"requirements: {fct_name} requires '{required_packages}'. \n"
+                      f"{required_packages} could not be imported.\n"
+                      "To install all pandapower dependencies, "
+                      "pip install pandapower['all'] can be used.")
+
+
+def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
+                                    default_value, category=DeprecationWarning, **kwargs):
+    if old_parameter_name in kwargs:
+        warnings.warn(f"Parameter '%s' has been renamed to '%s'." % (
+            old_parameter_name, new_parameter_name), category=category)
+        if new_parameter == default_value:
+            return kwargs.pop(old_parameter_name)
+    return new_parameter
 
 
 class ADict(dict, MutableMapping):
@@ -1289,7 +1303,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                     only_v_results=False)
 
 
-def _internal_stored(net):
+def _internal_stored(net, ac=True):
     """
 
     The function newtonpf() needs these variables as inputs:
@@ -1309,8 +1323,12 @@ def _internal_stored(net):
     if net["_ppc"] is None:
         return False
 
-    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
-                              "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    if ac:
+        mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
+                                  "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    else:
+        mandatory_pf_variables = ["bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "ref_gens",
+                                  "Bbus", "Bf", "Pbusinj", "Pfinj", "Cft", "shift"]
     for var in mandatory_pf_variables:
         if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
             logger.warning("recycle is set to True, but internal variables are missing")

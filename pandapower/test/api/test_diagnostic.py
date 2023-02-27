@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -1060,17 +1060,19 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
     check_function = 'missing_bus_indices'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.line.from_bus.iloc[0] = 10000
-    net.trafo.lv_bus.iloc[0] = 10001
-    net.trafo3w.mv_bus.iloc[0] = 10002
-    net.switch.bus.iloc[0] = 10003
-    net.switch.element.iloc[0] = 10004
+    net.line.from_bus.iat[0] = 10000
+    net.trafo.lv_bus.iat[0] = 10001
+    net.trafo3w.mv_bus.iat[0] = 10002
+    net.switch.bus.iat[0] = 10003
+    net.switch.element.iat[0] = 10004
     net.ext_grid.bus.iloc[0] = 10005
     check_result = pp.missing_bus_indices(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
+
+
     assert diag_results[check_function] == {'ext_grid': [(0, 'bus', 10005)],
                                             'line': [(0, 'from_bus', 10000)],
                                             'switch': [(0, 'bus', 10003), (0, 'element', 10004)],
@@ -1080,6 +1082,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
+
         try:
             eval(report_methods[check_function])
             report_check = True

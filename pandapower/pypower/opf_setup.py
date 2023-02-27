@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -140,7 +140,7 @@ def opf_setup(ppc, ppopt):
         q1    = array([])    ## index of 1st Qg column in Ay
 
         ## power mismatch constraints
-        B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
+        B, Bf, Pbusinj, Pfinj, _ = makeBdc(bus, branch)
         neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], arange(ng))), (nb, ng))   ## Pbus w.r.t. Pg
         Amis = hstack([B, neg_Cg], 'csr')
         bmis = -(bus[:, PD] + bus[:, GS]) / baseMVA - Pbusinj

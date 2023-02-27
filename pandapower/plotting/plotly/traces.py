@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -97,10 +97,10 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for each trace element. Indices should correspond
-            to the pandapower element indices
+        to the pandapower element indices
 
         **trace_name** (String, "buses") - name of the trace which will appear in the legend
 
@@ -153,19 +153,19 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for bus elements. Indices should correspond to
-            the pandapower element indices
+        the pandapower element indices
 
         **trace_name** (String, "buses") - name of the trace which will appear in the legend
 
         **color** (String, "blue") - color of buses in the trace
 
         **cmap** (String, None) - name of a colormap which exists within plotly
-            (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
-            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
-            discrete colormap can be used
+        (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
+        Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
+        discrete colormap can be used. Append "_r" for inversion.
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -224,7 +224,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+                - much more patch types at https://plot.ly/python/reference/#scatter-marker
 
         **infofunc** (pd.Series, None) - hoverinfo for node elements. Indices should correspond to
                                          the node element indices
@@ -373,7 +373,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
 
         **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
-            the pandapower element indices
+        the pandapower element indices
 
         **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
@@ -385,6 +385,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
         colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
         Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        To revert the color map, append "_r" to the name.
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -438,7 +439,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     were introduced to make it usable in other packages, e.g. for pipe networks.
 
    INPUT:
-       **net** (pandapowerNet) - The  network
+       **net** (pandapowerNet) - The network
 
    OPTIONAL:
        **branches** (list, None) - The branches for which the collections are created.
@@ -684,15 +685,15 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         **width** (int, 5) - line width
 
         **infofunc** (pd.Series, None) - hoverinfo for trafo elements. Indices should correspond
-            to the pandapower element indices
+        to the pandapower element indices
 
         **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
         **color** (String, "green") - color of lines in the trace
 
         **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu,
-            Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
-            Blackbody, Earth, Electric, Viridis)
+        Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
+        Blackbody, Earth, Electric, Viridis)
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -784,6 +785,195 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
     return trafo_traces
 
 
+def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_plot="p_mw",
+                                 sizemode="area", color="red", patch_type="circle",
+                                 marker_scaling=1., trace_name="", infofunc=None,
+                                 node_element="bus", show_scale_legend=True,
+                                 scale_marker_size=None, scale_marker_color=None,
+                                 scale_legend_unit=None):
+    """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
+
+    Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
+    If present in the respective pandapower-net table, the "in_service" and "scaling" column will be
+    taken into account as factors to calculate the markers' weights.
+    Negative values might lead to unexpected results, especially when pos. and neg. values are
+    mixed in one column! All values are treated as absolute values.
+    If value = 0, no marker will be created.
+
+    INPUT:
+        **net** (pandapowerNet) - the pandapower net of the plot
+
+    OPTIONAL:
+        **elm_type** (str, default "load") - the element table in the net that holds the values
+        to plot
+
+        **elm_ids** (list, default None) - the element IDs of the elm_type table for which markers
+        will be created. If None, all IDs in net[elm_type] that are not 0 or NaN in the
+        `column_to_plot` will be used.
+
+        **column_to_plot** (str, default "p_mw") - the column in the net[elm_type] table that
+        will be plotted. The suffix (everything behind the last '_' in the column name) will be
+        used as the unit in the infofunction.
+
+        **sizemode** (str, default "area") - whether the markers' "area" or "diameter"  will be
+        proportional to the represented value
+
+        **color** (str, default "red") - color for the markers
+
+        **patch_type** (str, default "circle") - plotly marker style that will be used (other
+        options are triangle-up, triangle-down and many more; for non-filled markers, append "-open"
+        cf. https://plotly.com/python/marker-style/)
+
+        **marker_scaling** (float, default 1.) - factor to scale the size of all markers
+
+        **trace_name** (str, default ""): trace name for the legend. If empty, elm_type will be used.
+
+        **infofunc** (pd.Series, default None): hover-infofuction to overwrite the internal infofunction
+
+        **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
+        pandapower networks, "junction" for pandapipes networks
+
+        **show_scale_legend** (bool, default True): display a marker legend at the top right of the
+         plot
+
+        **scale_marker_size** (float / list of floats, default None): adjust the size of the scale,
+        gets multiplied with `marker_scaling`. Default size is the average size of the respective
+        weighted markers rounded to 5. A list of values will result in several scale marker legends.
+
+        **scale_marker_color** (str, default None): specify the color of the scale legend marker.
+        If None, `color` will be used.
+
+        **scale_legend_unit** (str, default None): specifies the unit shown in the scale legend
+        marker's string. It does not trigger any unit conversions! If None, the last part of
+        `column_to_plot` will be used (all upper case).
+
+    OUTPUT:
+        **marker_trace** (dict): dict for the plotly trace
+
+    """
+    # filter for relevant elements:
+    elm_ids = net[elm_type].loc[~net[elm_type][column_to_plot].isna()].index.tolist() \
+        if elm_ids is None else list(elm_ids)
+
+    # apply the scaling and in_service column, if available
+    elms_df = net[elm_type].loc[elm_ids]
+    scaling = elms_df.scaling if "scaling" in elms_df.columns else 1
+    in_service = elms_df.in_service if "in_service" in elms_df.columns else 1
+    elms_df["values_scaled"] = elms_df[column_to_plot] * in_service * scaling
+
+    # get sum per bus, if not a bus table already:
+    if elm_type not in [node_element, "res_"+node_element]:
+        values_by_bus = elms_df.groupby("bus").sum().values_scaled
+    else:
+        values_by_bus = elms_df.values_scaled
+    values_by_bus = values_by_bus.loc[values_by_bus != 0]
+
+    if any(values_by_bus < 0):
+        logger.warning("A marker trace cannot be created for negative values!\n"
+                       "They will be considered as absolute values. Items with negative values:\n"
+                       + str(values_by_bus.loc[values_by_bus < 0]))
+
+    # add geodata:
+    node_geodata = node_element + "_geodata"
+    x_list = net[node_geodata].loc[values_by_bus.index, 'x'].tolist()
+    y_list = net[node_geodata].loc[values_by_bus.index, 'y'].tolist()
+
+    # set up hover info:
+    unit = column_to_plot.split("_")[-1]
+    unit = unit.upper()
+    trace_name = trace_name if len(trace_name) else elm_type
+    if infofunc is None:
+        infofunc = values_by_bus.apply(lambda x: f"{trace_name} {x:.2f} {unit}")
+    if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
+            len(infofunc) == len(values_by_bus.index):
+        infofunc = pd.Series(index=values_by_bus.index, data=infofunc)
+
+    # set up the marker trace:
+    marker_trace = dict(type='scatter',
+                        text=infofunc,
+                        mode='markers',
+                        hoverinfo='text',
+                        name=trace_name,
+                        x=x_list,
+                        y=y_list)
+    marker_trace["marker"] = dict(color=color,
+                                  size=values_by_bus.abs() * marker_scaling,
+                                  symbol=patch_type,
+                                  sizemode=sizemode)
+
+    # additional info for the create_scale_trace function:
+
+    if not isinstance(scale_marker_size, Iterable):
+        scale_marker_size = [scale_marker_size]
+
+    marker_trace["meta"] = dict(marker_scaling=marker_scaling,
+                                column_to_plot=column_to_plot,
+                                scale_legend_unit=scale_legend_unit or
+                                                  column_to_plot.split("_")[1].upper(),
+                                show_scale_legend=show_scale_legend,
+                                scale_marker_size=scale_marker_size,
+                                scale_marker_color=scale_marker_color or color)
+
+    return marker_trace
+
+
+def create_scale_trace(net, weighted_trace, down_shift=0):
+    """Create a scale (marker size legend) for a weighted_marker_trace.
+
+    Will be used with pandapipes.plotting.plotly.simple_plotly, when "additional_trace" contains
+    a trace created by :func:`create_weighted_marker_trace` with :code:`show_scale_legend=True`.
+    The default reference marker is of average size of all weighted markers, rounded to the next 5,
+    and comes with a string with the respective reference value and unit.
+
+    INPUT:
+        **net** (pandapowerNet) - the pandapower net of the plot
+
+        **weighted_trace** (dict) - weighted plotly trace
+
+        **down_shift** (int) - shift to align different scales below each other (prop. to y-offset)
+
+    """
+    marker = weighted_trace["marker"]
+    scale_info = weighted_trace["meta"]
+    unit = scale_info["scale_legend_unit"]  # p_mw...q_mvar ..
+
+    # scale trace
+    x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
+    x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
+    x_pos = x_max + (x_max - x_min) * 0.2
+    x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
+
+    scale_traces = []
+    for idx, sze in enumerate(scale_info["scale_marker_size"]):
+        y_pos = y_max - ((y_max - y_min) * (0.2 * (down_shift + idx)))
+
+        # default is the average rounded to 5
+        if not sze:
+            scale_size = math.ceil(marker["size"].mean() / 5) * 5
+        else:
+            scale_size = sze * scale_info['marker_scaling']
+
+        # second (dummy) position is needed for correct marker sizing
+        scale_trace = dict(type="scatter",
+                           x=[x_pos, x_pos2],
+                           y=[y_pos, y_pos],
+                           mode="markers+text",
+                           hoverinfo="skip",
+                           marker=dict(size=[scale_size, 0],
+                                       color=scale_info.get("scale_marker_color"),
+                                       symbol=marker["symbol"],
+                                       sizemode=marker["sizemode"]),
+                           text=[f"{scale_size / scale_info['marker_scaling']} {unit}", ""],
+                           textposition="top center",
+                           showlegend=False,
+                           textfont=dict(family="Helvetica",
+                                         size=14,
+                                         color="DarkSlateGrey"))
+        scale_traces.append(scale_trace)
+
+    return scale_traces
+
+
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
                 aspectratio='auto', filename='temp-plot.html', auto_open=True, **kwargs):
     """
@@ -811,7 +1001,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-            network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **filename** (str, "temp-plot.html") - plots to a html file called filename
 
@@ -837,8 +1027,10 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         # change traces for mapbox
         # change trace_type to scattermapbox and rename x to lat and y to lon
         for trace in traces:
-            trace['lat'] = trace.pop('y')
-            trace['lon'] = trace.pop('x')
+            if 'x' in trace.keys():
+                trace['lon'] = trace.pop('x')
+            if 'y' in trace.keys():
+                trace['lat'] = trace.pop('y')
             trace['type'] = 'scattermapbox'
             if "line" in trace and isinstance(trace["line"], Line):
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
@@ -868,6 +1060,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
+                     legend={'itemsizing': 'constant'},
                      ),
                 )
     a = kwargs.get('annotation')
@@ -891,7 +1084,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,
                                        pitch=0,
-                                       zoom=11)
+                                       zoom=kwargs.pop('zoomlevel', 11))
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
@@ -902,8 +1095,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             xs = []
             ys = []
             for trace in traces:
-                xs += trace['x']
-                ys += trace['y']
+                xs += trace.get('x') or trace['lon']
+                ys += trace.get('y') or trace['lat']
             x_dropna = pd.Series(xs).dropna()
             y_dropna = pd.Series(ys).dropna()
             xrange = x_dropna.max() - x_dropna.min()

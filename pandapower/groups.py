@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,8 @@ import uuid
 from pandapower.auxiliary import ensure_iterability
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence
-from pandapower.toolbox import pp_elements, group_element_index, group_row
+from pandapower.toolbox import pp_elements, group_element_index, group_row, \
+    element_bus_tuples, branch_element_bus_dict, get_connected_elements_dict
 
 try:
     import pandaplan.core.pplog as logging
@@ -271,8 +272,9 @@ def check_unique_group_names(net, raise_=False):
     df = net.group[["name", "element_type"]].reset_index()
     if df.duplicated().any():
         raise ValueError("There are multiple groups with same index, name and element_type.")
-    del df["element_type"]
-    if df.duplicated().any():
+    single_name_per_index = [len(names) == 1 for names in net.group.reset_index().groupby("index")[
+        "name"].agg(set)]
+    if not all(single_name_per_index):
         warn = "There are multiple groups with same index and name."
         if raise_:
             raise UserWarning(warn)
@@ -633,6 +635,128 @@ def return_group_as_net(net, index, keep_everything_else=False, verbose=True, **
             idx = group_element_index(net, index, et)
             group_net[et] = net[et].loc[idx]
     return group_net
+
+
+def elements_connected_to_group(net, index, element_types, find_buses_only_from_buses=False,
+                                respect_switches=True, respect_in_service=False,
+                                include_empty_lists=False):
+    """Returns a dict of indices of elements that are connected to the group.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        the net of the group
+    index : int
+        index of the group
+    element_types : iterable of element types
+        element types of which connected elements are searched
+    find_buses_only_from_buses : bool, optional
+        if True, connected buses are not searched considering bus elements and branch elements of
+        the group but only considering the buses of the group as done by
+        pandapower.toolbox.get_connected_buses(). In that case it is ignored whether branch
+        elements between the buses of the groups and the connected buses are in the group or not
+    respect_switches : bool, optional
+        True -> open switches will be respected,
+        False -> open switches will be ignored,
+        by default True
+    respect_in_service : bool, optional
+        True -> in_service status of connected lines will be respected,
+        False -> in_service status will be ignored,
+        by default False
+    include_empty_lists : bool, optional
+        if True, the output doesn't have values of empty lists but may lack of element types as
+        keys, by default False
+
+    Returns
+    -------
+    dict[str, pd.Index]
+        elements that are connected to the group
+    """
+    def element_type_for_switch_et(element_type):
+        return element_type[0] if element_type != "trafo3w" else "t3"
+
+    # bus->bus (for find_buses_only_from_buses) and bus->other elements connections
+    group_buses = group_element_index(net, index, "bus")
+    if respect_in_service:
+        group_buses = net.bus.loc[group_buses].index[net.bus.in_service.loc[group_buses]]
+    connected = get_connected_elements_dict(
+        net, group_buses, element_types=element_types, respect_switches=respect_switches,
+        respect_in_service=respect_in_service, include_empty_lists=include_empty_lists)
+
+    # switch -> branch connections
+    group_sw = group_element_index(net, index, "bus")
+    sw_bra_types = ["line", "trafo", "trafo3w"]
+    for et in sw_bra_types:
+        if et not in element_types:
+            continue
+        elms = net.switch.element.loc[group_sw].loc[net.switch.et.loc[group_sw] == element_type_for_switch_et(et)]
+        if respect_in_service:
+            elms = net[et].loc[elms].index[net[et].in_service.loc[elms]]
+        connected[et] = set(connected[et]) | set(elms)
+
+    # branch -> switch connections
+    if "switch" in element_types:
+        conn_sw = set(connected.get("switch", set()))
+        for branch_type in sw_bra_types:
+            if net[branch_type].shape[0]:
+                group_branches = group_element_index(net, index, branch_type)
+                if respect_in_service:
+                    group_branches = group_branches.intersection(
+                        net[branch_type].index[net[branch_type].in_service])
+                conn_sw |= set(net.switch.index[
+                    (net.switch.et == element_type_for_switch_et(branch_type)) &
+                    net.switch.element.isin(group_branches)])
+        connected["switch"] = conn_sw
+
+    if not find_buses_only_from_buses:
+        bed = branch_element_bus_dict(include_switch=True)
+        bed["switch"].append("element")
+        branch_types = list(bed.keys())
+        conn_buses = set()
+        bed.update({tpl[0]: [tpl[1]] for tpl in element_bus_tuples(branch_elements=False)})
+
+        for row in net.group.loc[index].itertuples():
+            et = row.element_type
+            if et == "bus":
+                continue
+            for bus_col in bed[et]:
+                if et == "switch" and bus_col == "element":
+                    bed_buses = net[et][bus_col].loc[net.switch.index[
+                        net.switch.et == "b"].intersection(row.element)]
+                else:
+                    bed_buses = net[et][bus_col].loc[row.element]
+                if respect_in_service and "in_service" in net[et].columns:
+                    bed_buses = bed_buses.loc[net[et].in_service.loc[row.element]]
+                if respect_switches:
+                    if et == "switch":
+                        bed_buses = bed_buses.loc[net.switch.closed.loc[bed_buses.index]]
+                    elif et in branch_types:
+                        closed = np.ones(bed_buses.shape[0], dtype=bool)
+                        switches = net.switch[["bus", "closed"]].loc[
+                            (net.switch.et == element_type_for_switch_et(et)) &
+                            net.switch.element.isin(row.element)]
+                        if switches.shape[0]:
+                            if switches.bus.duplicated().any():
+                                raise ValueError(
+                                    f"There are multiple {et} switches connecting the same "
+                                    "element and bus. respect_switches is not possible due to "
+                                    "multiple possible values.")
+                            switches = switches.set_index("bus").closed
+                            in_sw = bed_buses.isin(switches.index).values
+                            closed[in_sw] = switches.loc[bed_buses.loc[in_sw]]
+                            bed_buses = bed_buses.loc[closed]
+                conn_buses |= set(bed_buses.values)
+        if respect_in_service:
+            conn_buses = pd.Index(conn_buses)
+            conn_buses = conn_buses[net.bus.in_service.loc[conn_buses].values]
+        connected["bus"] = conn_buses
+
+    connected = {et: sorted(pd.Index(conn).difference(group_element_index(net, index, et))) for et,
+                 conn in connected.items()}
+    if include_empty_lists:
+        return connected
+    else:
+        return {key: val for key, val in connected.items() if len(val)}
 
 
 if __name__ == "__main__":
