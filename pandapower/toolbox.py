@@ -17,7 +17,8 @@ import pandas as pd
 import pandas.testing as pdt
 import numbers
 from pandapower._version import __version__
-from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes, ensure_iterability, \
+    log_to_level
 from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -312,16 +313,6 @@ def compare_arrays(x, y):
 
 
 # --- Information
-def log_to_level(msg, passed_logger, level):
-    if level == "error":
-        passed_logger.error(msg)
-    elif level == "warning":
-        passed_logger.warning(msg)
-    elif level == "info":
-        passed_logger.info(msg)
-    elif level == "debug":
-        passed_logger.debug(msg)
-
 
 def lf_info(net, numv=1, numi=2):  # pragma: no cover
     """
