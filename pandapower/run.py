@@ -254,7 +254,8 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             - True: three-phase symmetric calculation, even for asymmetric loads/generations
             - False: three-phase asymmetric calculation
 
-            **algorithm** (str, "nr") - Algorithms available in power-grid-model. Check power-grid-model documentation for detailed information on the algorithms.
+            **algorithm** (str, "nr") - Algorithms available in power-grid-model.
+            Check power-grid-model documentation for detailed information on the algorithms.
 
             - "nr" - Newton Raphson algorithm
             - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
@@ -263,9 +264,11 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
 
             **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
 
-            **max_iterations** (int, 20) - Maximum number of iterations for algorithms. No effect on linear approximation algorithms.
+            **max_iterations** (int, 20) - Maximum number of iterations for algorithms.
+            No effect on linear approximation algorithms.
 
-            **validate_input** (bool, False) - Validate input data to be used for power-flow conversion in power-grid-model. It is recommeneded to use pandapower.diagnostic tool prior.
+            **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
+            It is recommeneded to use pandapower.diagnostic tool prior.
     """
     try:
         from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
@@ -336,7 +339,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         return
 
     # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
-    converted_output_data = pgm_converter.convert(data=output_data)
+    converted_output_data = pgm_converter.convert(data=output_data, data_type="sym_output")
     for table in converted_output_data.keys():
         net[table] = converted_output_data[table]
 
