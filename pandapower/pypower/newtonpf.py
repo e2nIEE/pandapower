@@ -119,10 +119,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc_set_vm_pu = bus[svc_buses, SET_VM_PU]
     x_control_svc = bus[svc_buses, SVC_THYRISTOR_FIRING_ANGLE]
     svc_controllable = np.ones_like(x_control_svc, dtype=bool)
-    if len(svc_buses) > 0:
-        svc_x_l_pu = bus[svc_buses, SVC_X_L]
-        svc_x_cvar_pu = bus[svc_buses, SVC_X_CVAR]
-        Sbus_backup = Sbus.copy()
+    svc_x_l_pu = bus[svc_buses, SVC_X_L]
+    svc_x_cvar_pu = bus[svc_buses, SVC_X_CVAR]
+    Sbus_backup = Sbus.copy()  # todo: make work without this
 
     tcsc_branches = flatnonzero(nan_to_num(tcsc[:, TCSC_STATUS]))
     tcsc_fb = tcsc[tcsc_branches, [F_BUS_TCSC]].real.astype(int)
@@ -256,17 +255,20 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             J = create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
                               pq_lookup, tau, tdpf_delay_s, Vm, Va, r_theta_pu, J, r, x, g)
 
-        if num_facts_total > 0:
-            K_J = vstack([eye(J.shape[0], format="csr"), csr_matrix((num_facts_controllable, J.shape[0]))], format="csr")
+        if num_facts_controllable > 0:
+            K_J = vstack([eye(J.shape[0], format="csr"),
+                          csr_matrix((num_facts_controllable, J.shape[0]))], format="csr")
             J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
-            if len(svc_buses):
-                J_m_svc = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x_control_lookup,
-                                                    svc_x_l_pu, svc_x_cvar_pu)
-                J = J + J_m_svc
-            if len(tcsc_branches) > 0:
-                J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, tcsc_controllable, tcsc_x_l_pu, tcsc_x_cvar_pu,
-                                                      tcsc_fb, tcsc_tb, pvpq, pq, pvpq_lookup, pq_lookup)
-                J = J + J_m_tcsc[:J.shape[0], :J.shape[1]]
+        if len(svc_buses):
+            # todo: fix this
+            J_m_svc = create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control_svc, svc_controllable,
+                                                svc_x_l_pu, svc_x_cvar_pu)
+            J = J + J_m_svc
+        if len(tcsc_branches) > 0:
+            J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, tcsc_controllable,
+                                                  tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb,
+                                                  pvpq, pq, pvpq_lookup, pq_lookup)
+            J = J + J_m_tcsc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
