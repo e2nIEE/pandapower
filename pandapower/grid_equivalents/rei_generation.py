@@ -269,10 +269,10 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
-            other_cols_number = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_numeric_dtype)])
-            other_cols -= other_cols_number
             other_cols_bool = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_bool_dtype)])
             other_cols -= other_cols_bool
+            other_cols_number = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_numeric_dtype)])
+            other_cols -= other_cols_number
             other_cols_str = set()
             other_cols_none = set()
             other_cols_mixed = set()
@@ -501,7 +501,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
-                                    calc_volt_angles=True, 
+                                    calc_volt_angles=True,
                                     runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
