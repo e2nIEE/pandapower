@@ -390,6 +390,17 @@ def ensure_iterability(var, len_=None):
     return var
 
 
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+
+
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
