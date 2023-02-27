@@ -1045,8 +1045,9 @@ def _replace_group_member_element_type(
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
         isin = old_elements.isin(gr_et.at[gr_index, "element"])
-        attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
-                        reference_columns=gr_et.at[gr_index, "reference_column"])
+        if any(isin):
+            attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
+                            reference_columns=gr_et.at[gr_index, "reference_column"])
     if detach_from_gr:
         detach_from_groups(net, old_element_type, old_elements)  # sometimes done afterwarts when
         # dropping the old elements
