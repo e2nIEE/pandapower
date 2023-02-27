@@ -3,12 +3,12 @@ from pathlib import Path
 from copy import deepcopy
 import numpy as np
 import pandas as pd
-import pandapower as pp
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
 from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
+import pandapower as pp
 import uuid
 
 try:
@@ -263,7 +263,7 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 
 
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
-    """ This function ad a unique name to each bounary bus. The original 
+    """ This function ad a unique name to each bounary bus. The original
         boundary bus names are retained.
     """
     assert "name_equivalent" not in net.bus.columns.tolist()
@@ -348,7 +348,7 @@ def match_controller_and_new_elements(net, net_org):
     """
     This function makes the original controllers and the
     new created sgen to match
-    
+
     test at present: controllers in the external area are removed.
     """
     if len(net.controller):
@@ -364,17 +364,17 @@ def match_controller_and_new_elements(net, net_org):
             var = net.controller.object[idx].__dict__["variable"]
             elm_idxs = net.controller.object[idx].__dict__["element_index"]
             org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
-            
+
             new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
             if len(new_elm_idxs) == 0:
                 tobe_removed.append(idx)
             else:
                 profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
-                
+
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller.drop(tobe_removed, inplace=True)    
+        net.controller.drop(tobe_removed, inplace=True)
     # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
@@ -536,7 +536,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
 
 
 def replace_motor_by_load(net, all_external_buses):
-    """ 
+    """
     replace the 'external' motors by loads. The name is modified.
     e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
     """
@@ -553,7 +553,7 @@ def replace_motor_by_load(net, all_external_buses):
         net.res_load.loc[li] = p, q
     net.motor.drop(motors, inplace=True)
     net.res_motor.drop(motors, inplace=True)
-  
+
 
 if __name__ == "__main__":
     pass

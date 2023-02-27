@@ -5,8 +5,7 @@ from copy import deepcopy
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
-    match_cost_functions_and_eq_net, _check_network, adaptation_phase_shifter, \
-    get_boundary_vp, _runpp_except_voltage_angles
+    match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
