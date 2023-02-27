@@ -503,7 +503,9 @@ def test_trafo_impedance():
     pp.create_line_from_parameters(net, 1, 2, 0.004, 0.208, 0.068, 0, 1, parallel=2)
     # pp.create_load(net, 2, 0.1)
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., bus=2, branch_results=True)
+    pp.runpp(net)
+
+    sc.calc_sc(net, case='max', lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
 
 
     # trafo:
@@ -531,16 +533,22 @@ def test_trafo_impedance():
     np.abs(v_1)
     np.angle(v_1, deg=True)
 
-    v_0 = v_1 + ikss1[2] * z_tk / 0.41 * np.sqrt(3)
+    v_0 = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3) * 0.4/0.41
     np.abs(v_0)
     np.angle(v_0, deg=True)
 
+    v_0_ref = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3)
+
     Yf = ppci["internal"]["Yf"]
     Yt = ppci["internal"]["Yt"]
-    V_diff = np.ones_like(net.bus.index.values, dtype=np.float64)
-    V_diff[net.trafo.at[0, 'hv_bus']] = tap[1]
-    i_f = Yf.dot(V_diff) #* ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(int)]
-    i_t = Yt.dot(V_diff) #* ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(int)]
+    V_diff = np.ones_like(net.bus.index.values, dtype=np.complex128)
+    V_diff[0] = v_0
+    V_diff[1] = v_1
+    V_diff[2] = 0
+    i_f = Yf.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(int)]
+    i_t = Yt.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(int)]
+    abs(i_f)
+    abs(i_t)
 
 
 def test_one_line():
