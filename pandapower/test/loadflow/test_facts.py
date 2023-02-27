@@ -206,9 +206,10 @@ def test_tcsc_simple8():
     # V = net._ppc["internal"]["V"]
     # pp.set_user_pf_options(net, init_vm_pu=np.abs(V)*.9999, init_va_degree=np.angle(V, deg=True))
 
-    # pp.create_tcsc(net, 1, 2, xl, xc, -20, 130, "Test", controllable=False, min_angle_degree=95, max_angle_degree=145)
+    # pp.create_tcsc(net, 1, 2, xl, xc, -20, 154.933536, "Test", controllable=False, min_angle_degree=90, max_angle_degree=180)
     pp.create_tcsc(net, 1, 2, xl, xc, 5, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
     # net.tcsc.at[0, "thyristor_firing_angle"] = x
+    # pp.create_impedance(net, 1, 2, 0, 8.263537 / baseZ, baseMVA)
 
     pp.runpp(net)
 

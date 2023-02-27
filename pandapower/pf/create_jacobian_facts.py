@@ -64,7 +64,7 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, x
     return J_m
 
 
-def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup):
+def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_controllable, tcsc_x_l_pu, tcsc_x_cvar_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup):
     Y_TCSC = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
     Vm = np.abs(V)
     # S_tcsc_pu = V * (Ybus_tcsc.conj() @ V.conj())
@@ -98,9 +98,9 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_x_l_pu, tcsc_x_cvar
     #                     [S_Fki.real / Vm[f], S_Fki.real / Vm[t]]]).reshape(2, 2)
     J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
     J_C_P_u[pvpq_lookup[f], pq_lookup[f]] = S_Fik.real / Vm[f]
-    J_C_P_u[pvpq_lookup[f], pq_lookup[t]] = S_Fik.real / Vm[f]
+    J_C_P_u[pvpq_lookup[f], pq_lookup[t]] = S_Fik.real / Vm[t]
     J_C_P_u[pvpq_lookup[t], pq_lookup[f]] = S_Fki.real / Vm[f]
-    J_C_P_u[pvpq_lookup[t], pq_lookup[t]] = S_Fki.real / Vm[f]
+    J_C_P_u[pvpq_lookup[t], pq_lookup[t]] = S_Fki.real / Vm[t]
 
     J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)), dtype=np.float64)
     J_C_Q_d[pq_lookup[f], pvpq_lookup[f]] = S_Fik.real
@@ -112,9 +112,9 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_x_l_pu, tcsc_x_cvar
 
     J_C_Q_u = np.zeros(shape=(len(pq), len(pq)), dtype=np.float64)
     J_C_Q_u[pq_lookup[f], pq_lookup[f]] = (2 * S_Fii.imag + S_Fik.imag) / Vm[f]
-    J_C_Q_u[pq_lookup[f], pq_lookup[t]] = S_Fik.imag / Vm[f]
-    J_C_Q_u[pq_lookup[t], pq_lookup[f]] = S_Fki.imag / Vm[t]
-    J_C_Q_u[pq_lookup[t], pq_lookup[t]] = (2 * S_Fkk.imag + S_Fki.imag) / Vm[f]
+    J_C_Q_u[pq_lookup[f], pq_lookup[t]] = S_Fik.imag / Vm[t]
+    J_C_Q_u[pq_lookup[t], pq_lookup[f]] = S_Fki.imag / Vm[f]
+    J_C_Q_u[pq_lookup[t], pq_lookup[t]] = (2 * S_Fkk.imag + S_Fki.imag) / Vm[t]
     # J_C_Q_u = np.array([[(2 * S_Fii.imag + S_Fik.imag) / Vm[f], S_Fik.imag / Vm[f]],
     #                     [S_Fki.imag / Vm[t], (2 * S_Fkk.imag + S_Fki.imag) / Vm[f]]]).reshape(2, 2)
 
@@ -139,7 +139,8 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_x_l_pu, tcsc_x_cvar
     J_C_C_u[np.arange(len(x_control)), pq_lookup[f]] = S_Fik.real / Vm[f]
     J_C_C_u[np.arange(len(x_control)), pq_lookup[t]] = S_Fik.real / Vm[t]
 
-    J_C_C_c = np.array([-S_Fi_dx.real]).reshape(len(x_control), len(x_control))
+    J_C_C_c = np.zeros(shape=(len(x_control), len(x_control)), dtype=np.float64)
+    J_C_C_c[np.r_[:len(x_control)], np.r_[:len(x_control)]] = -S_Fi_dx.real  # .flatten()?
 
     # alternative mode of operation: for Vm at to bus (mismatch and setpoint also must be adjusted):
     # J_C_C_d = np.zeros(shape=(len(x_control), len(pvpq)), dtype=np.float64)
@@ -147,9 +148,17 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, tcsc_x_l_pu, tcsc_x_cvar
     # J_C_C_u[np.arange(len(x_control)), pq_lookup[t]] = 1
     # J_C_C_c = np.zeros((len(x_control), len(x_control)), dtype=np.float64)
 
-    J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u, J_C_P_c]),
-                     np.hstack([J_C_Q_d, J_C_Q_u, J_C_Q_c]),
-                     np.hstack([J_C_C_d, J_C_C_u, J_C_C_c])])
+    if np.all(tcsc_controllable):
+        J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u, J_C_P_c]),
+                         np.hstack([J_C_Q_d, J_C_Q_u, J_C_Q_c]),
+                         np.hstack([J_C_C_d, J_C_C_u, J_C_C_c])])
+    elif np.any(tcsc_controllable):
+        J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u, J_C_P_c[:, tcsc_controllable]]),
+                         np.hstack([J_C_Q_d, J_C_Q_u, J_C_Q_c[:, tcsc_controllable]]),
+                         np.hstack([J_C_C_d[tcsc_controllable, :], J_C_C_u[tcsc_controllable, :], J_C_C_c[tcsc_controllable, tcsc_controllable]])])
+    else:
+        J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u]),
+                         np.hstack([J_C_Q_d, J_C_Q_u])])
 
     J_m = csr_matrix(J_m)
 
