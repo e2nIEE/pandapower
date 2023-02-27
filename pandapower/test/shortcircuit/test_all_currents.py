@@ -535,6 +535,13 @@ def test_trafo_impedance():
     np.abs(v_0)
     np.angle(v_0, deg=True)
 
+    Yf = ppci["internal"]["Yf"]
+    Yt = ppci["internal"]["Yt"]
+    V_diff = np.ones_like(net.bus.index.values, dtype=np.float64)
+    V_diff[net.trafo.at[0, 'hv_bus']] = tap[1]
+    i_f = Yf.dot(V_diff) #* ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(int)]
+    i_t = Yt.dot(V_diff) #* ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(int)]
+
 
 def test_one_line():
     net = pp.create_empty_network(sn_mva=1)
