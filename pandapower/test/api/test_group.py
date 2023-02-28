@@ -428,6 +428,19 @@ def test_isin():
         assert not pp.isin_group(net, "gen", 6)
 
 
+def test_element_associated_groups():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+        assert pp.element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
+            {0: [0], 1: [0], 2: [], 3: []}
+        assert pp.element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
+            pp.element_associated_groups(net, "gen", net.gen.index, return_empties=False) == \
+            {0: [0], 1: [0]}
+        assert pp.element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
+        assert pp.element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
+        assert pp.element_associated_groups(net, "trafo", 0) == [3]
+        break
+
+
 def test_elements_connected_to_group():
     # test net
     net = pp.create_empty_network()
@@ -499,5 +512,6 @@ if __name__ == "__main__":
         # test_group_io()
         # test_count_group_elements()
         # test_isin()
+        # test_element_associated_groups()
         # test_elements_connected_to_group()
         pass

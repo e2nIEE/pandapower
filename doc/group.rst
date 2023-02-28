@@ -28,6 +28,8 @@ Adapt group members
 
 .. autofunction:: pandapower.attach_to_group
 
+.. autofunction:: pandapower.attach_to_groups
+
 .. autofunction:: pandapower.detach_from_group
 
 .. autofunction:: pandapower.detach_from_groups
@@ -41,6 +43,8 @@ Access group data and evaluate membership
 .. autofunction:: pandapower.group_element_index
 
 .. autofunction:: pandapower.group_row
+
+.. autofunction:: pandapower.element_associated_groups
 
 .. autofunction:: pandapower.isin_group
 

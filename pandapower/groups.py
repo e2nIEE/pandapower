@@ -88,6 +88,33 @@ def append_to_group(net, index, element_types, elements, reference_columns=None)
     return attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
 
 
+def attach_to_groups(net, index, element_types, elements, reference_columns=None):
+    """Appends the groups by the elements given.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : list[int]
+        index of the considered group
+    element_types : str or list of strings
+        defines, together with 'elements', which net elements belong to the group
+    elements : list of list of indices
+        defines, together with 'element_types', which net elements belong to the group
+    reference_columns : string or list of strings, optional
+        If given, the elements_dict should not refer to DataFrames index but to another column.
+        It is highly relevant that the reference_column exists in all DataFrames of the grouped
+        elements and have the same dtype, by default None
+
+    See Also
+    --------
+    attach_to_group
+    """
+    for idx in index:
+        attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
+
+
+
 def attach_to_group(net, index, element_types, elements, reference_columns=None):
     """Appends the group by the elements given.
 
@@ -336,6 +363,13 @@ def group_row(net, index, element_type):
         raise ValueError(f"Returning row {element_type} for group {index} failed.")
 
 
+def _single_element_index(element_index):
+    if not hasattr(element_index, "__iter__"):
+        return [element_index], True
+    else:
+        return list(element_index), False
+
+
 def isin_group(net, element_type, element_index, index=None, drop_empty_lines=True):
     """Returns whether elements are in group(s).
 
@@ -344,7 +378,7 @@ def isin_group(net, element_type, element_index, index=None, drop_empty_lines=Tr
     net : pandapowerNet
         pandapower net
     element_type : str
-        element type of the elements to be found in the groups
+        element type of the elements to be found in the groups, e.g. "gen" or "load"
     element_index : int or list of integers
         indices of the element table which should be found in the groups
     index : int or list of integers, optional
@@ -360,12 +394,7 @@ def isin_group(net, element_type, element_index, index=None, drop_empty_lines=Tr
     """
     if isinstance(element_index, str):
         raise ValueError("element_index must be an integer or a list of integers.")
-    if not hasattr(element_index, "__iter__"):
-        single_group = True
-        element_index = [element_index]
-    else:
-        element_index = list(element_index)
-        single_group = False
+    element_index, single_element = _single_element_index(element_index)
     if index is None:
         index = list(set(net.group.index))
     else:
@@ -379,10 +408,50 @@ def isin_group(net, element_type, element_index, index=None, drop_empty_lines=Tr
 
     isin = np.isin(element_index, member_idx)
 
-    if single_group:
+    if single_element:
         return isin[0]
     else:
         return isin
+
+
+def element_associated_groups(net, element_type, element_index, return_empties=True,
+                              drop_empty_lines=True):
+    """Returns to which groups given elements belong to.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_type : str
+        element type of the elements to be found in the groups, e.g. "gen" or "load"
+    element_index : str
+        indices of the element table which should be found in the groups
+    return_empties : bool, optional
+        whether entries with an empty list of assiciated groups should be returned, by default True
+    drop_empty_lines : bool, optional
+        This parameter decides whether empty entries should be removed (the complete row in
+        net.group), by default True
+
+    Returns
+    -------
+    dict[int, list[int]]
+        for each element index a list of associated group indices is returned as a dict
+    """
+    element_index, single_element = _single_element_index(element_index)
+    index = list(set(net.group.index))
+    ensure_lists_in_group_element_column(net, drop_empty_lines=drop_empty_lines)
+    gr_et = net.group.loc[net.group.element_type == element_type]
+    associated = pd.Series(dict.fromkeys(element_index, list()))
+    for idx in gr_et.index:
+        ass = pd.Index(element_index).intersection(pd.Index(gr_et.element.at[idx]))
+        associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
+    if not return_empties:
+        associated = associated.loc[associated.apply(len).astype(bool)]
+    associated = associated.to_dict()
+    if single_element:
+        return associated[index[0]]
+    else:
+        return associated
 
 
 def count_group_elements(net, index):

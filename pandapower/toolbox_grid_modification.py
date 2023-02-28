@@ -21,8 +21,8 @@ from pandapower.toolbox_elm_selection import get_connected_elements, next_bus, \
     get_connected_elements_dict
 from pandapower.toolbox_info import clear_result_tables
 from pandapower.toolbox_data_modification import reindex_elements
-from pandapower.groups import detach_from_groups, attach_to_group, isin_group, \
-    check_unique_group_names
+from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
+    check_unique_group_names, element_associated_groups
 
 try:
     import pandaplan.core.pplog as logging
@@ -1601,6 +1601,8 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
     else:
         wards = ensure_iterability(wards)
 
+    ass = element_associated_groups(net, "ward", wards)
+
     # --- create loads and shunts
     new_load_idx = []
     new_shunt_idx = []
@@ -1611,6 +1613,8 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
                                  in_service=ward.in_service, name=ward.name)
         new_load_idx.append(load_idx)
         new_shunt_idx.append(shunt_idx)
+
+        attach_to_groups(net, ass[ward.Index], ["load", "shunt"], [[load_idx], [shunt_idx]])
 
     # --- result data
     if net.res_ward.shape[0]:
@@ -1631,10 +1635,6 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
             wards].values * sign_in_service * sign_not_isolated
         to_add_shunt.vm_pu = net.res_ward.vm_pu.loc[wards].values
         net.res_shunt = pd.concat([net.res_shunt, to_add_shunt])
-
-    if any(isin_group(net, "ward", wards)):
-        log_to_level("Switching the group membership of replaced wards is not yet implemented.",
-                     logger, log_level)
 
     # --- drop replaced wards
     drop_elements_simple(net, "ward", wards)
@@ -1661,30 +1661,30 @@ def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
     else:
         xwards = ensure_iterability(xwards)
 
+    ass = element_associated_groups(net, "xward", xwards)
+
     # --- create buses, loads, shunts, gens and impedances
     for xward in net.xward.loc[xwards].itertuples():
         bus_v = net.bus.vn_kv[xward.bus]
         bus_idx = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
                              name=xward.name)
-        create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
-                    in_service=xward.in_service, name=xward.name)
-        create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
-                     in_service=xward.in_service, name=xward.name)
-        create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
-                   name=xward.name)
-        create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2),
-                         xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service,
-                         name=xward.name)
+        new_load = create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
+            in_service=xward.in_service, name=xward.name)
+        new_shunt = create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
+            in_service=xward.in_service, name=xward.name)
+        new_gen = create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
+            name=xward.name)
+        new_imp = create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2),
+            xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
+
+        attach_to_groups(net, ass[xward.Index], ["load", "shunt", "gen", "impedance"], [
+            [new_load], [new_shunt], [new_gen], [new_imp]])
 
     # --- result data
     if net.res_xward.shape[0]:
         log_to_level("Implementations to move xward results to new internal elements are missing.",
                      logger, log_level)
         net.res_xward.drop(xwards, inplace=True)
-
-    if any(isin_group(net, "xward", xwards)):
-        log_to_level("Switching the group membership of replaced xwards is not yet implemented.",
-                     logger, log_level)
 
     # --- drop replaced wards
     drop_elements_simple(net, "xward", xwards)
