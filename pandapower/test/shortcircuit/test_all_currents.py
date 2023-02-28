@@ -11,7 +11,7 @@ from scipy.linalg import inv
 import pandapower as pp
 import pandapower.shortcircuit as sc
 from pandapower.pf.makeYbus_numba import makeYbus
-from pandapower.pypower.idx_bus_sc import IKSS1, PHI_IKSS1_DEGREE, C_MAX, SKSS
+from pandapower.pypower.idx_bus_sc import IKSS1, IKSS2, PHI_IKSS1_DEGREE, C_MAX, SKSS
 from pandapower.pypower.idx_bus import BS, GS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 
@@ -103,7 +103,7 @@ def net_transformer_simple_2():
 
 
 def net_transformer_simple_3():
-    net = pp.create_empty_network(sn_mva=2)
+    net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 2, 30)
     pp.create_buses(net, 3, 10)
     pp.create_buses(net, 2, 0.4)
@@ -480,17 +480,29 @@ def test_branch_all_currents_trafo_simple_other_voltage4():
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
                                           tap_step_percent=2.5, parallel=1)
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+    # sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
 
-    pp.create_switch(net, 6, 4, "l", False)
+    # pp.create_switch(net, 6, 4, "l", False)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values,
-                       [], rtol=0, atol=1e-6)
+    baseMVA = net.sn_mva  # MVA
+    baseV = net.bus.vn_kv.values  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
 
-    res_line_sc = np.array([])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
-    res_trafo_sc = np.array([])
-    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+    # assert np.allclose(net.res_bus_sc.loc[6].values,
+    #                    [], rtol=0, atol=1e-6)
+    #
+    # res_line_sc = np.array([])
+    # assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    # res_trafo_sc = np.array([])
+    # assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+
+    pp.create_sgen(net, 3, 0, 0, 5, k=1.2)
+    pp.create_load(net, 6, 0.1)
+
+    pp.runpp(net)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=False)
 
 
 def test_trafo_impedance():

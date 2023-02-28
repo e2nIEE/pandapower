@@ -97,7 +97,7 @@ def _calc_ikss(net, ppci, bus_idx):
     elif fault == "2ph":
         ppci["bus"][bus_idx, IKSS1] = np.abs(c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / 2 * ppci["baseMVA"])
 
-    _current_source_current(net, ppci)  # todo: add sgen contribution to type C
+    _current_source_current(net, ppci)
 
     ikss = ppci["bus"][bus_idx, IKSS1] + ppci["bus"][bus_idx, IKSS2]
     if fault == "3ph":
@@ -143,8 +143,13 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
 
 
 def _current_source_current(net, ppci):
+    case = net._options["case"]
     ppci["bus"][:, IKCV] = 0
     ppci["bus"][:, IKSS2] = 0
+    # sgen current source contribution only for Type A and case "max":
+    if case != "max" or net._options["use_pre_fault_voltage"]:
+        return
+
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     fault = net._options["fault"]
     # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
@@ -320,7 +325,7 @@ def _calc_branch_currents(net, ppci, bus_idx):
     ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
-    current_sources = any(ppci["bus"][:, IKCV]) > 0
+    current_sources = any(~np.isnan(ppci["bus"][:, IKCV])) and np.any(ppci["bus"][:, IKCV] != 0)
     if current_sources:
         current = np.tile(-ppci["bus"][:, IKCV], (n_sc_bus, 1))
         for ix, b in enumerate(bus_idx):
@@ -492,7 +497,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     ikss1_all_t[np.abs(ikss1_all_t) < 1e-10] = 0.
 
     # add current source branch current if there is one
-    current_sources = any(ppci["bus"][:, IKCV]) > 0
+    current_sources = any(~np.isnan(ppci["bus"][:, IKCV])) and np.any(ppci["bus"][:, IKCV] != 0)
     if current_sources:
         ikcv = ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)
         ikss2 = ppci["bus"][:, IKSS2] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS2_DEGREE]))
