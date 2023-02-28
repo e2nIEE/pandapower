@@ -275,8 +275,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
-        time_end-time_start), 2))
+    logger.info("%s equivalent finished in %.2f seconds:" % (eq_type, time_end-time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
