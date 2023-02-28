@@ -52,7 +52,7 @@ def _calc_ikss(net, ppci, bus_idx):
     # todo: explain the background better
     # todo: make work for several buses
     if net._options.get("use_pre_fault_voltage", False):
-        V0 = ppci["bus"][:, VM] * np.exp(np.deg2rad(ppci["bus"][:, VA]) * 1j).reshape(-1, 1)
+        V0 = ppci["bus"][:, [VM]] * np.exp(np.deg2rad(ppci["bus"][:, [VA]]) * 1j)
     else:
         # V0 = ppci["bus"][:, [C_MAX if case == "max" else C_MIN]]
         V0 = np.full((len(ppci["bus"]), 1), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN][0], dtype=np.complex128)
