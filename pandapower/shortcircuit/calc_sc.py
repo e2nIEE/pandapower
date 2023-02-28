@@ -128,8 +128,7 @@ def calc_sc(net, bus=None,
                        "especially for transformers")
 
     if use_pre_fault_voltage:
-        init_vm_pu = net.res_bus.vm_pu.values
-        init_va_degree = net.res_bus.vm_pu.values
+        init_vm_pu = init_va_degree = "results"
         trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
     else:
         init_vm_pu = init_va_degree = "flat"

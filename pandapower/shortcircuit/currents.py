@@ -9,7 +9,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pf.makeYbus_numba import makeYbus
-from pandapower.pypower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 from pandapower.pypower.idx_gen import GEN_BUS, MBASE
 from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, \
@@ -52,8 +52,7 @@ def _calc_ikss(net, ppci, bus_idx):
     # todo: explain the background better
     # todo: make work for several buses
     if net._options.get("use_pre_fault_voltage", False):
-        V0 = net._options["init_vm_pu"] * np.exp(np.deg2rad(net._options["init_va_degree"]) * 1j)
-        V0 = V0.reshape(-1, 1)
+        V0 = ppci["bus"][:, VM] * np.exp(np.deg2rad(ppci["bus"][:, VA]) * 1j).reshape(-1, 1)
     else:
         # V0 = ppci["bus"][:, [C_MAX if case == "max" else C_MIN]]
         V0 = np.full((len(ppci["bus"]), 1), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN][0], dtype=np.complex128)

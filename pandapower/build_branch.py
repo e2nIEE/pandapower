@@ -708,10 +708,10 @@ def _switch_branches(net, ppc):
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
+                        if mode == "sc":
+                            ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
+                            ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
                 ppc["bus"][buses, col] = init_values
-            if mode == "sc":
-                ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
-                ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
 
 
