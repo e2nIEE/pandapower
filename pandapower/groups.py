@@ -15,7 +15,7 @@ from packaging.version import Version
 from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
-    _check_elements_existence
+    _check_elements_existence, create_group
 from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
     branch_element_bus_dict
 from pandapower.toolbox_elm_selection import get_connected_elements_dict
@@ -111,11 +111,11 @@ def attach_to_groups(net, index, element_types, elements, reference_columns=None
     attach_to_group
     """
     for idx in index:
-        attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
+        attach_to_group(net, idx, element_types, elements, reference_columns=reference_columns)
 
 
-
-def attach_to_group(net, index, element_types, elements, reference_columns=None):
+def attach_to_group(net, index, element_types, elements, reference_columns=None,
+                    take_existing_reference_columns=True):
     """Appends the group by the elements given.
 
     Parameters
@@ -131,7 +131,11 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None)
     reference_columns : string or list of strings, optional
         If given, the elements_dict should not refer to DataFrames index but to another column.
         It is highly relevant that the reference_column exists in all DataFrames of the grouped
-        elements and have the same dtype, by default None
+        elements and have the same dtype, by default False
+    take_existing_reference_columns : bool, optional
+        Determines the behavior if the given reference_columns does not match the reference_column
+        existing in net.group. If True, the existing reference_column is taken for both. If False,
+        an error is raised.
     """
     if index not in net.group.index:
         raise ValueError(
@@ -152,12 +156,23 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None)
 
         # --- element entry of existing is appended
         if no_row == 1:
-            if net.group.reference_column.loc[group_et].at[index] != rc:
-                raise UserWarning(
-                    f"The reference column of existing group {index} for element "
-                    f"type '{et}' and of the elements to append differ. Use "
-                    "set_reference_column() to change the reference column of net.group before, or"
-                    "pass appropriate data to append_to_group().")
+
+            # handle different reference_column
+            existing_rc = net.group.reference_column.loc[group_et].at[index]
+            if existing_rc != rc:
+                if take_existing_reference_columns:
+                    temp_gr = create_group(net, [et], [elm], reference_columns=rc)
+                    set_group_reference_column(net, temp_gr, existing_rc, element_type=et)
+                    elm = net.group.element.at[temp_gr]
+                    net.group.drop(temp_gr, inplace=True)
+                else:
+                    raise UserWarning(
+                        f"The reference column of existing group {index} for element "
+                        f"type '{et}' and of the elements to append differ. Use "
+                        "set_group_reference_column() to change the reference column of net.group "
+                        "before, or pass appropriate data to append_to_group().")
+
+            # append
             prev_elm = net.group.element.loc[group_et].at[index]
             prev_elm = [prev_elm] if isinstance(prev_elm, str) or not hasattr(
                 prev_elm, "__iter__") else list(prev_elm)
@@ -443,7 +458,7 @@ def element_associated_groups(net, element_type, element_index, return_empties=T
     gr_et = net.group.loc[net.group.element_type == element_type]
     associated = pd.Series(dict.fromkeys(element_index, list()))
     for idx in gr_et.index:
-        ass = pd.Index(element_index).intersection(pd.Index(gr_et.element.at[idx]))
+        ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
         associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
     if not return_empties:
         associated = associated.loc[associated.apply(len).astype(bool)]

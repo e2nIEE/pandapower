@@ -438,7 +438,6 @@ def test_element_associated_groups():
         assert pp.element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
         assert pp.element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
         assert pp.element_associated_groups(net, "trafo", 0) == [3]
-        break
 
 
 def test_elements_connected_to_group():
