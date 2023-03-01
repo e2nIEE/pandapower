@@ -1666,19 +1666,19 @@ def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
     # --- create buses, loads, shunts, gens and impedances
     for xward in net.xward.loc[xwards].itertuples():
         bus_v = net.bus.vn_kv[xward.bus]
-        bus_idx = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
+        new_bus = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
                              name=xward.name)
         new_load = create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
             in_service=xward.in_service, name=xward.name)
         new_shunt = create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
             in_service=xward.in_service, name=xward.name)
-        new_gen = create_gen(net, bus_idx, 0, xward.vm_pu, in_service=xward.in_service,
+        new_gen = create_gen(net, new_bus, 0, xward.vm_pu, in_service=xward.in_service,
             name=xward.name)
-        new_imp = create_impedance(net, xward.bus, bus_idx, xward.r_ohm / (bus_v ** 2),
+        new_imp = create_impedance(net, xward.bus, new_bus, xward.r_ohm / (bus_v ** 2),
             xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
 
-        attach_to_groups(net, ass[xward.Index], ["load", "shunt", "gen", "impedance"], [
-            [new_load], [new_shunt], [new_gen], [new_imp]])
+        attach_to_groups(net, ass[xward.Index], ["bus", "load", "shunt", "gen", "impedance"], [
+            [new_bus], [new_load], [new_shunt], [new_gen], [new_imp]])
 
     # --- result data
     if net.res_xward.shape[0]:

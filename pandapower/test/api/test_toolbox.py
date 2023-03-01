@@ -1321,6 +1321,7 @@ def test_replace_ward_by_internal_elements():
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
     pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2")
     pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False)
+    pp.create_group_from_dict(net, {"ward": [0]}, name="test group")
     pp.runpp(net)
     net_org = copy.deepcopy(net)
     pp.replace_ward_by_internal_elements(net)
@@ -1332,6 +1333,16 @@ def test_replace_ward_by_internal_elements():
     assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
     assert np.allclose(res_load_created, net.res_load)
     assert np.allclose(res_shunt_created, net.res_shunt)
+
+    new_ets = pd.Index(["load", "shunt"])
+    assert pp.count_group_elements(net_org, 0).to_dict() == {"ward": 1}
+    assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+        net_org, return_empties=True)
+    assert set(elm_change.loc[new_ets]) == {3}
+    assert elm_change.at["ward"] == -3
+    assert set(elm_change.loc[elm_change.index.difference(new_ets).difference(pd.Index([
+        "ward"]))]) == {0}
 
     net = nw.example_simple()
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
@@ -1355,12 +1366,23 @@ def test_replace_xward_by_internal_elements():
     pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
     pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2")
     pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")
+    pp.create_group_from_dict(net, {"xward": [0]}, name="test group")
     pp.runpp(net)
     net_org = copy.deepcopy(net)
     pp.replace_xward_by_internal_elements(net)
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+    new_ets = pd.Index(["load", "shunt", "gen", "impedance", "bus"])
+    assert pp.count_group_elements(net_org, 0).to_dict() == {"xward": 1}
+    assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+        net_org, return_empties=True)
+    assert set(elm_change.loc[new_ets]) == {3}
+    assert elm_change.at["xward"] == -3
+    assert set(elm_change.loc[elm_change.index.difference(new_ets).difference(pd.Index([
+        "xward"]))]) == {0}
 
     net = nw.example_simple()
     pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
@@ -1593,4 +1615,5 @@ def test_get_false_links():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_replace_xward_by_internal_elements()
