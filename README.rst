@@ -17,7 +17,7 @@
    :target: http://pandapower.readthedocs.io/
    :alt: docs
 
-.. image:: https://codecov.io/gh/e2nIEE/pandapower/branch/master/graph/badge.svg
+.. image:: https://app.codecov.io/github/e2nIEE/pandapower/branch/master/graph/badge.svg
    :target: https://app.codecov.io/github/e2nIEE/pandapower?branch=master
    :alt: codecov
     
