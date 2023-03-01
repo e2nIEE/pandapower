@@ -7,7 +7,7 @@ Change Log
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
 - [CHANGED] cim2pp converter documentation fixes
-- [CHANGED] make legend item size constant in `simple_plotly`
+- [CHANGED] make legend item size constant in :code:`simple_plotly`
 - [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
 - [FIXED] documentation of powerfactory converter
 - [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
@@ -15,7 +15,7 @@ Change Log
 - [CHANGED] renamed functions: drop_from_group() -> detach_from_group(), append_to_group() -> attach_to_group(), check_unique_group_names() -> check_unique_group_rows()
 - [CHANGED] attach_to_group(): enable handling of different reference_column passed than existing
 - [ADDED] toolbox function 'count_elements'
-- [ADDED] new group function 'element_associated_groups'
+- [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`
 - [CHANGED] __repr__ (used by print(net)) now considers groups appropriately
 - [ADDED] documentation of DeprecationWarning process
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
