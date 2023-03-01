@@ -23,6 +23,8 @@ General Issues
 
 .. autofunction:: pandapower.branch_element_bus_dict
 
+.. autofunction:: pandapower.count_elements
+
 .. autofunction:: pandapower.signing_system_value
 
 .. autofunction:: pandapower.pq_from_cosphi

@@ -478,6 +478,15 @@ def count_group_elements(net, index):
         pandapower net
     index : int
         index of the considered group
+
+    Returns
+    -------
+    pd.Series
+        number of elements per element type existing in the group
+
+    See also
+    --------
+    count_elements
     """
     return pd.Series({
         et: len(elm) if hasattr(elm, "__iter__") and not isinstance(elm, str) else 1 for

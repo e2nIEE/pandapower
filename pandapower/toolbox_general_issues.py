@@ -87,6 +87,44 @@ def branch_element_bus_dict(include_switch=False, sort=False):
     return bebd
 
 
+def count_elements(net, return_empties=False, **kwargs):
+    """Counts how much elements of which element type exist in the pandapower net
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    return_empties : bool, optional
+        whether element types should be listed if no element exist, by default False
+
+    Other Parameters
+    ----------------
+    kwargs : dict[str,bool], optional
+        arguments (passed to pp_elements()) to narrow considered element types.
+        If nothing is passed, an empty dict is passed to pp_elements(), by default None
+
+    Returns
+    -------
+    pd.Series
+        number of elements per element type existing in the net
+
+    See also
+    --------
+    count_group_elements
+
+    Examples
+    --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as nw
+    >>> pp.count_elements(nw.case9(), bus_elements=False)
+    bus     9
+    line    9
+    dtype: int32
+    """
+    return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
+        bool(net[et].shape[0])}, dtype=int)
+
+
 def signing_system_value(elm):
     """
     Returns a 1 for all bus elements using the consumver viewpoint and a -1 for all bus elements

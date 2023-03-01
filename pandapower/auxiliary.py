@@ -252,33 +252,43 @@ class pandapowerNet(ADict):
 
         for key in self:
             if isinstance(self[key], list):
-                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([], dtype=np.int64))
+                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
+                                         dtype=np.int64))
 
     def deepcopy(self):
         return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
-        r = "This pandapower network includes the following parameter tables:"
+        # see also: pp.count_elements()
+
+        def plural_s(number):
+            if number < 2:
+                return ""
+            else:
+                return "s"
+
         par = []
         res = []
-        for tb in list(self.keys()):
-            if not tb.startswith("_") and isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
-                if 'res_' in tb:
-                    res.append(tb)
+        for et in list(self.keys()):
+            if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
+                n_rows = self[et].shape[0]
+                if 'res_' in et:
+                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                elif et == 'group':
+                    n_groups = len(set(self[et].index))
+                    par.append('   - %s (%i %s, %i %s)' % (
+                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
                 else:
-                    par.append(tb)
-        for tb in par:
-            length = len(self[tb])
-            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if res:
-            r += "\n and the following results tables:"
-            for tb in res:
-                length = len(self[tb])
-                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if "res_cost" in self.keys():
-            r += "\n and the following result values:"
-            r += "\n   - %s" % "res_cost"
-        return r
+                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+        res_cost = [" and the following result values:",
+                    "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        if not len(par) + len(res):
+            return "This pandapower network is empty"
+        if len(res):
+            res = [" and the following results tables:"] + res
+        lines = ["This pandapower network includes the following parameter tables:"] + \
+            par + res + res_cost
+        return "\n".join(lines)
 
 
 def _preserve_dtypes(df, dtypes):

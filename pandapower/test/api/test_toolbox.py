@@ -52,6 +52,21 @@ def test_branch_element_bus_dict():
     assert "bus" in bebd["switch"]
 
 
+def test_count_elements():
+    case9_counts = {"bus": 9, "line": 9, "ext_grid": 1, "gen": 2, "load": 3}
+    net = nw.case9()
+    received = pp.count_elements(net)
+    assert isinstance(received, pd.Series)
+    assert received.to_dict() == case9_counts
+    assert pp.count_elements(net, bus=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus"]}
+    assert pp.count_elements(net, bus=False, branch_elements=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus", "line"]}
+    received = pp.count_elements(net, return_empties=True)
+    assert len(received.index) == len(pp.pp_elements())
+    assert set(received.index) == pp.pp_elements()
+
+
 def test_signing_system_value():
     assert pp.signing_system_value("sgen") == -1
     assert pp.signing_system_value("load") == 1
@@ -1578,5 +1593,4 @@ def test_get_false_links():
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-x"])
-    test_replace_ward_by_internal_elements()
+    pytest.main([__file__, "-x"])
