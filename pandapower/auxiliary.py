@@ -33,6 +33,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import scipy as sp
+import numbers
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS

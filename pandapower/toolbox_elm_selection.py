@@ -7,7 +7,6 @@ import gc
 
 import numpy as np
 import pandas as pd
-import numbers
 
 from pandapower.toolbox_general_issues import pp_elements, branch_element_bus_dict
 
