@@ -12,6 +12,7 @@ import numpy as np
 import operator
 import time
 import uuid
+import re
 from functools import reduce
 try:
     import pandaplan.core.pplog as logging
@@ -260,7 +261,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr,
                                      sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
-            vm_pu = v[key+"_vm_total"][v.ext_bus == int(busstr)].values.real
+            vm_pu = v[key+"_vm_total"][v.ext_bus == int(re.findall('\d+', busstr)[0])].values.real
             elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
                                     sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
@@ -298,7 +299,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                 elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
             net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
-                elm_org.bus.isin(all_external_buses)].values.sum() > 0
+                elm_org.bus.isin(all_external_buses)].values.sum(axis=0) > 0
             all_str_values = list(zip(*elm_org[list(other_cols_str)]\
                                       [elm_org.bus.isin(all_external_buses)].values[::-1]))
             for asv, colid in zip(all_str_values, other_cols_str):
@@ -307,6 +308,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 else:
                     net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
             net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+            for ocm in other_cols_mixed:
+                net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
             net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
         else:
             if elm == "gen" and bus in net.ext_grid.bus.values and \
@@ -338,6 +341,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                         else:
                             net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
                     net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+                    for ocm in other_cols_mixed:
+                        net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
                     net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number |
