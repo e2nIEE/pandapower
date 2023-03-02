@@ -789,6 +789,47 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
+def _inner_branches(net, buses, task, branch_elements=None):
+    """
+    Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
+    and 'to_bus').
+    """
+    branch_dict = branch_element_bus_dict(include_switch=True)
+    if branch_elements is not None:
+        branch_dict = {key: branch_dict[key] for key in branch_elements}
+
+    inner_branches = dict()
+    for elm, bus_types in branch_dict.items():
+        inner = pd.Series(True, index=net[elm].index)
+        for bus_type in bus_types:
+            inner &= net[elm][bus_type].isin(buses)
+        if elm == "switch":
+            inner &= net[elm]["element"].isin(buses)
+            inner &= net[elm]["et"] == "b"  # bus-bus-switches
+
+        if any(inner):
+            if task == "drop":
+                if elm == "line":
+                    drop_lines(net, net[elm].index[inner])
+                elif "trafo" in elm:
+                    drop_trafos(net, net[elm].index[inner])
+                else:
+                    net[elm].drop(net[elm].index[inner], inplace=True)
+            elif task == "get":
+                inner_branches[elm] = net[elm].index[inner]
+            else:
+                raise NotImplementedError("task '%s' is unknown." % str(task))
+    return inner_branches
+
+
+def get_inner_branches(net, buses, branch_elements=None):
+    """
+    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
+    'from_bus' and 'to_bus').
+    """
+    return _inner_branches(net, buses, "get", branch_elements=branch_elements)
+
+
 def drop_inner_branches(net, buses, branch_elements=None):
     """
     Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and

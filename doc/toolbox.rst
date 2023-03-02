@@ -9,10 +9,6 @@ interesting to other users as well and do not fit into one of the specialized pa
 contribution. To improve overview functions are loosely grouped by functionality, please adhere to this notion when
 adding your own functions and feel free to open new groups as needed.
 
-.. note::
-    If you implement a function that might be useful for others, it is mandatory to add a short docstring to make browsing
-    the toolbox practical. Ideally further comments if appropriate and a reference of authorship should be added as well.
-
 ====================================
 General Issues
 ====================================
@@ -37,7 +33,13 @@ General Issues
 
 .. autofunction:: pandapower.nets_equal
 
-#.. autofunction:: pandapower.ensure_iterability
+.. function from other files than toolbox_general_issues.py:
+
+.. autofunction:: pandapower.ensure_iterability
+
+.. autofunction:: pandapower.read_from_net
+
+.. autofunction:: pandapower.write_to_net
 
 ====================================
 Result Information
@@ -73,7 +75,13 @@ Item/Element Selection
 
 .. autofunction:: pandapower.get_connected_switches
 
-.. autofunction:: pandapower.get_connected_elements_dict
+.. autofunction:: pandapower.false_elm_links
+
+.. autofunction:: pandapower.false_elm_links_loop
+
+.. function from other files than toolbox_elm_selection.py:
+
+.. autofunction:: pandapower.get_inner_branches
 
 ====================================
 Data Modification
@@ -99,7 +107,9 @@ Data Modification
 
 .. autofunction:: pandapower.get_connecting_branches
 
-.. autofunction:: pandapower.get_inner_branches
+.. function from other files than toolbox_data_modification.py:
+
+.. autofunction:: pandapower.convert_format
 
 ====================================
 Electric Grid Modification

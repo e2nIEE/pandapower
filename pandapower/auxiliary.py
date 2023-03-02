@@ -392,7 +392,20 @@ def _get_values(source, selection, lookup):
 
 def ensure_iterability(var, len_=None):
     """
-    Ensures iterability of a variable (and optional length).
+    Ensures iterability of a variable (and also the length if given).
+
+    Examples
+    --------
+    >>> ensure_iterability([1, 2])
+    [1, 2]
+    >>> ensure_iterability(1)
+    [1]
+    >>> ensure_iterability("Hi")
+    ["Hi"]
+    >>> ensure_iterability([1, 2], len_=2)
+    [1, 2]
+    >>> ensure_iterability([1, 2], len_=3)
+    ValueError("Length of variable differs from 3.")
     """
     if hasattr(var, "__iter__") and not isinstance(var, str):
         if isinstance(len_, int) and len(var) != len_:
@@ -412,6 +425,140 @@ def log_to_level(msg, passed_logger, level):
         passed_logger.info(msg)
     elif level == "debug":
         passed_logger.debug(msg)
+
+
+def read_from_net(net, element, index, variable, flag='auto'):
+    """
+    Reads values from the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to read based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net; can also be a results table
+    index : int or array_like
+        index of the element table where values are read from
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    values
+        the values of the variable for the element table according to the index
+    """
+    if flag == "single_index":
+        return _read_from_single_index(net, element, variable, index)
+    elif flag == "all_index":
+        return _read_from_all_index(net, element, variable)
+    elif flag == "loc":
+        return _read_with_loc(net, element, variable, index)
+    elif flag == "object":
+        return _read_from_object_attribute(net, element, variable, index)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        return read_from_net(net, element, index, auto_variable, auto_flag)
+    else:
+        raise NotImplementedError("read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def write_to_net(net, element, index, variable, values, flag='auto'):
+    """
+    Writes values to the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to write based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net
+    index : int or array_like
+        index of the element table where values are written to
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    None
+    """
+    # write functions faster, depending on type of element_index
+    if flag == "single_index":
+        _write_to_single_index(net, element, index, variable, values)
+    elif flag == "all_index":
+        _write_to_all_index(net, element, variable, values)
+    elif flag == "loc":
+        _write_with_loc(net, element, index, variable, values)
+    elif flag == "object":
+        _write_to_object_attribute(net, element, index, variable, values)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        write_to_net(net, element, index, auto_variable, values, auto_flag)
+    else:
+        raise NotImplementedError("write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def _detect_read_write_flag(net, element, index, variable):
+    if variable.startswith('object'):
+        # write to object attribute
+        return "object", variable.split(".")[1]
+    elif isinstance(index, numbers.Number):
+        # use .at if element_index is integer for speedup
+        return "single_index", variable
+    # commenting this out for now, see issue 609
+    # elif net[element].index.equals(Index(index)):
+    #     # use : indexer if all elements are in index
+    #     return "all_index", variable
+    else:
+        # use common .loc
+        return "loc", variable
+
+
+# read functions:
+def _read_from_single_index(net, element, variable, index):
+    return net[element].at[index, variable]
+
+
+def _read_from_all_index(net, element, variable):
+    return net[element].loc[:, variable].values
+
+
+def _read_with_loc(net, element, variable, index):
+    return net[element].loc[index, variable].values
+
+
+def _read_from_object_attribute(net, element, variable, index):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        values = np.array(shape=index.shape)
+        for i, idx in enumerate(index):
+            values[i] = getattr(net[element]["object"].at[idx], variable)
+    else:
+        values = getattr(net[element]["object"].at[index], variable)
+    return values
+
+
+# write functions:
+def _write_to_single_index(net, element, index, variable, values):
+    net[element].at[index, variable] = values
+
+
+def _write_to_all_index(net, element, variable, values):
+    net[element].loc[:, variable] = values
+
+
+def _write_with_loc(net, element, index, variable, values):
+    net[element].loc[index, variable] = values
+
+
+def _write_to_object_attribute(net, element, index, variable, values):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        for idx, val in zip(index, values):
+            setattr(net[element]["object"].at[idx], variable, val)
+    else:
+        setattr(net[element]["object"].at[index], variable, values)
 
 
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):

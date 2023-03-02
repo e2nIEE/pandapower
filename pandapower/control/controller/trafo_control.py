@@ -4,8 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from pandapower.auxiliary import read_from_net, write_to_net, _detect_read_write_flag
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox_elm_selection import read_from_net, write_to_net, _detect_read_write_flag
 
 try:
     import pandaplan.core.pplog as logging

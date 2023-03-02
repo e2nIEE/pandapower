@@ -3,8 +3,8 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox_elm_selection import _detect_read_write_flag, write_to_net
 
 try:
     import pandaplan.core.pplog as logging

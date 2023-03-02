@@ -501,47 +501,6 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     return {key: val for key, val in found.items() if len(val)}
 
 
-def _inner_branches(net, buses, task, branch_elements=None):
-    """
-    Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
-    and 'to_bus').
-    """
-    branch_dict = branch_element_bus_dict(include_switch=True)
-    if branch_elements is not None:
-        branch_dict = {key: branch_dict[key] for key in branch_elements}
-
-    inner_branches = dict()
-    for elm, bus_types in branch_dict.items():
-        inner = pd.Series(True, index=net[elm].index)
-        for bus_type in bus_types:
-            inner &= net[elm][bus_type].isin(buses)
-        if elm == "switch":
-            inner &= net[elm]["element"].isin(buses)
-            inner &= net[elm]["et"] == "b"  # bus-bus-switches
-
-        if any(inner):
-            if task == "drop":
-                if elm == "line":
-                    drop_lines(net, net[elm].index[inner])
-                elif "trafo" in elm:
-                    drop_trafos(net, net[elm].index[inner])
-                else:
-                    net[elm].drop(net[elm].index[inner], inplace=True)
-            elif task == "get":
-                inner_branches[elm] = net[elm].index[inner]
-            else:
-                raise NotImplementedError("task '%s' is unknown." % str(task))
-    return inner_branches
-
-
-def get_inner_branches(net, buses, branch_elements=None):
-    """
-    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
-    'from_bus' and 'to_bus').
-    """
-    return _inner_branches(net, buses, "get", branch_elements=branch_elements)
-
-
 def get_gc_objects_dict():
     """
     This function is based on the code in mem_top module
@@ -564,15 +523,10 @@ def false_elm_links(net, elm, col, target_elm):
     Returns which indices have links to elements of other element tables which does not exist in the
     net.
 
-    EXAMPLE 1:
-        elm = "line"
-        col = "to_bus"
-        target_elm = "bus"
-
-    EXAMPLE 2:
-        elm = "poly_cost"
-        col = "element"
-        target_elm = net["poly_cost"]["et"]
+    Examples
+    --------
+    >>> false_elm_links(net, "line", "to_bus", "bus")  # exemplary input 1
+    >>> false_elm_links(net, "poly_cost", "element", net["poly_cost"]["et"])  # exemplary input 2
     """
     if isinstance(target_elm, str):
         return net[elm][col].index[~net[elm][col].isin(net[target_elm].index)]
@@ -612,137 +566,3 @@ def false_elm_links_loop(net, elms=None):
             if len(fl):
                 false_links[elm] = fl
     return false_links
-
-
-def read_from_net(net, element, index, variable, flag='auto'):
-    """
-    Reads values from the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to read based on flag
-
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net; can also be a results table
-    index : int or array_like
-        index of the element table where values are read from
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
-
-    Returns
-    -------
-    values
-        the values of the variable for the element table according to the index
-    """
-    if flag == "single_index":
-        return _read_from_single_index(net, element, variable, index)
-    elif flag == "all_index":
-        return _read_from_all_index(net, element, variable)
-    elif flag == "loc":
-        return _read_with_loc(net, element, variable, index)
-    elif flag == "object":
-        return _read_from_object_attribute(net, element, variable, index)
-    elif flag == "auto":
-        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
-        return read_from_net(net, element, index, auto_variable, auto_flag)
-    else:
-        raise NotImplementedError("read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
-
-
-def write_to_net(net, element, index, variable, values, flag='auto'):
-    """
-    Writes values to the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to write based on flag
-
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net
-    index : int or array_like
-        index of the element table where values are written to
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
-
-    Returns
-    -------
-    None
-    """
-    # write functions faster, depending on type of element_index
-    if flag == "single_index":
-        _write_to_single_index(net, element, index, variable, values)
-    elif flag == "all_index":
-        _write_to_all_index(net, element, variable, values)
-    elif flag == "loc":
-        _write_with_loc(net, element, index, variable, values)
-    elif flag == "object":
-        _write_to_object_attribute(net, element, index, variable, values)
-    elif flag == "auto":
-        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
-        write_to_net(net, element, index, auto_variable, values, auto_flag)
-    else:
-        raise NotImplementedError("write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
-
-
-def _detect_read_write_flag(net, element, index, variable):
-    if variable.startswith('object'):
-        # write to object attribute
-        return "object", variable.split(".")[1]
-    elif isinstance(index, numbers.Number):
-        # use .at if element_index is integer for speedup
-        return "single_index", variable
-    # commenting this out for now, see issue 609
-    # elif net[element].index.equals(Index(index)):
-    #     # use : indexer if all elements are in index
-    #     return "all_index", variable
-    else:
-        # use common .loc
-        return "loc", variable
-
-
-# read functions:
-def _read_from_single_index(net, element, variable, index):
-    return net[element].at[index, variable]
-
-
-def _read_from_all_index(net, element, variable):
-    return net[element].loc[:, variable].values
-
-
-def _read_with_loc(net, element, variable, index):
-    return net[element].loc[index, variable].values
-
-
-def _read_from_object_attribute(net, element, variable, index):
-    if hasattr(index, '__iter__') and len(index) > 1:
-        values = np.array(shape=index.shape)
-        for i, idx in enumerate(index):
-            values[i] = getattr(net[element]["object"].at[idx], variable)
-    else:
-        values = getattr(net[element]["object"].at[index], variable)
-    return values
-
-
-# write functions:
-def _write_to_single_index(net, element, index, variable, values):
-    net[element].at[index, variable] = values
-
-
-def _write_to_all_index(net, element, variable, values):
-    net[element].loc[:, variable] = values
-
-
-def _write_with_loc(net, element, index, variable, values):
-    net[element].loc[index, variable] = values
-
-
-def _write_to_object_attribute(net, element, index, variable, values):
-    if hasattr(index, '__iter__') and len(index) > 1:
-        for idx, val in zip(index, values):
-            setattr(net[element]["object"].at[idx], variable, val)
-    else:
-        setattr(net[element]["object"].at[index], variable, values)
