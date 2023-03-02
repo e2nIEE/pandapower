@@ -1614,5 +1614,15 @@ def test_get_false_links():
     assert {elm: set(idx) for elm, idx in determined.items()} == expected
 
 
+def test_res_power_columns():
+    assert pp.res_power_columns("gen") == ["p_mw", "q_mvar"]
+    assert pp.res_power_columns("line") == pp.res_power_columns("line", side="from") == \
+        pp.res_power_columns("line", side=0) == ["p_from_mw", "q_from_mvar"]
+    assert pp.res_power_columns("line", side="all") == [
+        "p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    assert pp.res_power_columns("trafo3w", side="all") == [
+        "p_hv_mw", "q_hv_mvar", "p_mv_mw", "q_mv_mvar", "p_lv_mw", "q_lv_mvar"]
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-x"])

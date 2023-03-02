@@ -87,6 +87,55 @@ def branch_element_bus_dict(include_switch=False, sort=False):
     return bebd
 
 
+def res_power_columns(element_type, side=0):
+    """Returns columns names of result tables for active and reactive power
+
+    Parameters
+    ----------
+    element_type : str
+        name of element table, e.g. "gen"
+    side : typing.Union[int, str], optional
+        Defines for branch elements which branch side is considered, by default 0
+
+    Returns
+    -------
+    list[str]
+        columns names of result tables for active and reactive power
+
+    Examples
+    --------
+    >>> res_power_columns("gen")
+    ["p_mw", "q_mvar"]
+    >>> res_power_columns("line", "from")
+    ["p_from_mw", "q_from_mvar"]
+    >>> res_power_columns("line", 0)
+    ["p_from_mw", "q_from_mvar"]
+    >>> res_power_columns("line", "all")
+    ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    """
+    if element_type in pp_elements(branch_elements=False, other_elements=False):
+        return ["p_mw", "q_mvar"]
+    elif element_type in pp_elements(bus=False, bus_elements=False, other_elements=False):
+        if isinstance(side, int):
+            if element_type == "trafo":
+                side_options = {0: "hv", 1: "lv"}
+            elif element_type == "trafo3w":
+                side_options = {0: "hv", 1: "mv", 2: "lv"}
+            else:
+                side_options = {0: "from", 1: "to"}
+            side = side_options[side]
+        if side != "all":
+            return [f"p_{side}_mw", f"q_{side}_mvar"]
+        else:
+            cols = res_power_columns(element_type, side=0) + \
+                res_power_columns(element_type, side=1)
+            if element_type == "trafo3w":
+                cols += res_power_columns(element_type, side=2)
+            return cols
+    else:
+        raise ValueError(f'{element_type=} cannot be considered by res_power_columns().')
+
+
 def count_elements(net, return_empties=False, **kwargs):
     """Counts how much elements of which element type exist in the pandapower net
 
@@ -125,18 +174,19 @@ def count_elements(net, return_empties=False, **kwargs):
         bool(net[et].shape[0])}, dtype=int)
 
 
-def signing_system_value(elm):
+def signing_system_value(element_type):
     """
     Returns a 1 for all bus elements using the consumver viewpoint and a -1 for all bus elements
     using the generator viewpoint.
     """
-    generator_viewpoint_elms = ["ext_grid", "gen", "sgen"]
-    if elm in generator_viewpoint_elms:
+    generator_viewpoint_ets = ["ext_grid", "gen", "sgen"]
+    if element_type in generator_viewpoint_ets:
         return -1
-    elif elm in pp_elements(bus=False, branch_elements=False, other_elements=False):
+    elif element_type in pp_elements(bus=False, other_elements=False):
         return 1
     else:
-        raise ValueError("This function is defined for bus elements, not for '%s'." % str(elm))
+        raise ValueError("This function is defined for bus and branch elements, not for "
+                         f"'{element_type}'.")
 
 
 def pq_from_cosphi(s, cosphi, qmode, pmode):

@@ -393,6 +393,16 @@ def test_res_power():
             net.res_sgen.p_mw.loc[[2, 3]].sum()
         assert np.isclose(pp.group_res_p_mw(net, 3), p_val)
 
+        # compare per_bus and sum
+        for gr_idx in net.group.index:
+            per_bus_out = pp.group_res_power_per_bus(net, gr_idx)
+            assert np.isclose(per_bus_out.sum().at["p_mw"], pp.group_res_p_mw(net, gr_idx))
+            assert np.isclose(per_bus_out.sum().at["q_mvar"], pp.group_res_q_mvar(net, gr_idx))
+            if gr_idx == 3:
+                assert isinstance(per_bus_out, pd.DataFrame)
+                assert per_bus_out.columns.tolist() == ["p_mw", "q_mvar"]
+                assert per_bus_out.index.tolist() == [0, 1, 2, 8, 10, 11, 23]
+
 
 def test_group_io():
     net = nw.case24_ieee_rts()
@@ -501,13 +511,13 @@ if __name__ == "__main__":
         # test_compare_group_elements()
         # test_ensure_lists_in_group_element_column()
         # test_remove_not_existing_group_members()
-        test_check_unique_group_rows()
+        # test_check_unique_group_rows()
         # test_drop_element()
         # test_drop_and_return()
         # test_set_out_of_service()
         # test_attach_to_group()
         # test_detach_and_compare()
-        # test_res_power()
+        test_res_power()
         # test_group_io()
         # test_count_group_elements()
         # test_isin()

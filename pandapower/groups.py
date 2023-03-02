@@ -17,7 +17,7 @@ from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence, create_group
 from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
-    branch_element_bus_dict
+    branch_element_bus_dict, signing_system_value, res_power_columns
 from pandapower.toolbox_elm_selection import get_connected_elements_dict
 
 try:
@@ -811,6 +811,51 @@ def _sum_powers(net, index, formula_character, unit):
         logger.warning("The resulting power may be wrong since the result tables of these "
                         f"elements have no requested power column: {no_power_column_found}.")
     return power
+
+
+def group_res_power_per_bus(net, index):
+    """Returns active and reactive power consumptions of given group per bus
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    index : int
+        _description_
+
+    Returns
+    -------
+    pd.DataFrame
+        power consumption of the group per bus (index=bus, columns=["p_mw", "q_mvar"])
+    """
+    pq_sums = pd.DataFrame(columns=["p_mw", "q_mvar"])
+    bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
+    bra_ebd = branch_element_bus_dict()
+    missing_res_idx = list()
+
+    for et in net.group.loc[[index], "element_type"].tolist():
+        if et in ["switch", "measurement", "bus", "bus_geodata", "line_geodata"]:
+            continue
+        gr_elm_idx = group_element_index(net, index, et)
+        sides = [0] if et not in bra_ets else [0, 1] if et != "trafo3w" else [0, 1, 2]
+        for side in sides:
+            bus_col = "bus" if et not in bra_ets else bra_ebd[et][side]
+            idx = net[f'res_{et}'].index.intersection(gr_elm_idx)
+            if len(idx) != len(gr_elm_idx):
+                missing_res_idx.append(et)
+            cols = res_power_columns(et, side=side)
+            pq_sum = pd.concat([net[et][bus_col].loc[idx], net[f'res_{et}'][cols].loc[idx]],
+                               axis=1).groupby(bus_col).sum() * signing_system_value(et)
+            pq_sum.index.name = "bus"  # needs to be set for branch elements
+            if len(pq_sums.columns.difference(pq_sum.columns)):
+                cols_repl = {old: "p_mw" if "p" in old else "q_mvar" for old in pq_sum.columns}
+                pq_sum.rename(columns=cols_repl, inplace=True)
+            pq_sums = pq_sums.add(pq_sum, fill_value=0)
+
+    if len(missing_res_idx):
+        logger.warning("The resulting power may be wrong since the result tables of these "
+                        f"elements lack of indices: {missing_res_idx}.")
+    return pq_sums
 
 
 def group_res_p_mw(net, index):
