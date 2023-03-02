@@ -14,7 +14,7 @@ Change Log
 - [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
 - [CHANGED] renamed functions: drop_from_group() -> detach_from_group(), append_to_group() -> attach_to_group(), check_unique_group_names() -> check_unique_group_rows()
 - [CHANGED] attach_to_group(): enable handling of different reference_column passed than existing
-- [ADDED] toolbox function 'count_elements'
+- [ADDED] toolbox function :code:`count_elements`, :code:`drop_elements`
 - [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`
 - [CHANGED] __repr__ (used by print(net)) now considers groups appropriately
 - [ADDED] documentation of DeprecationWarning process

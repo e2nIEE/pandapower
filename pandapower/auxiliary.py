@@ -259,14 +259,11 @@ class pandapowerNet(ADict):
         return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
-        # see also: pp.count_elements()
-
-        def plural_s(number):
-            if number < 2:
-                return ""
-            else:
-                return "s"
-
+        """
+        See Also
+        --------
+        count_elements
+        """
         par = []
         res = []
         for et in list(self.keys()):
@@ -290,6 +287,12 @@ class pandapowerNet(ADict):
             par + res + res_cost
         return "\n".join(lines)
 
+
+def plural_s(number):
+    if number > 1:
+        return ""
+    else:
+        return "s"
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):

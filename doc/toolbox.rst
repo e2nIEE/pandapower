@@ -95,57 +95,69 @@ Data Modification
 
 .. autofunction:: pandapower.set_scaling_by_type
 
-#.. autofunction:: pandapower.convert_format
-
 .. autofunction:: pandapower.set_data_type_of_columns_to_default
-
-====================================
-Electric Grid Modification
-====================================
-
-.. autofunction:: pandapower.close_switch_at_line_with_two_open_switches
-
-.. autofunction:: pandapower.fuse_buses
-
-.. autofunction:: pandapower.drop_buses
-
-.. autofunction:: pandapower.drop_switches_at_buses
-
-.. autofunction:: pandapower.drop_elements_at_buses
-
-.. autofunction:: pandapower.drop_trafos
-
-.. autofunction:: pandapower.drop_lines
-
-.. autofunction:: pandapower.drop_measurements_at_elements
-
-.. autofunction:: pandapower.drop_duplicated_measurements
 
 .. autofunction:: pandapower.get_connecting_branches
 
 .. autofunction:: pandapower.get_inner_branches
 
-.. autofunction:: pandapower.drop_inner_branches
-
-.. autofunction:: pandapower.set_element_status
-
-.. autofunction:: pandapower.set_isolated_areas_out_of_service
-
-.. autofunction:: pandapower.drop_elements_simple
-
-.. autofunction:: pandapower.drop_out_of_service_elements
-
-.. autofunction:: pandapower.drop_inactive_elements
+====================================
+Electric Grid Modification
+====================================
 
 .. autofunction:: pandapower.select_subnet
 
 .. autofunction:: pandapower.merge_nets
+
+.. autofunction:: pandapower.set_element_status
+
+.. autofunction:: pandapower.set_isolated_areas_out_of_service
 
 .. autofunction:: pandapower.repl_to_line
 
 .. autofunction:: pandapower.merge_parallel_line
 
 .. autofunction:: pandapower.merge_same_bus_generation_plants
+
+.. autofunction:: pandapower.close_switch_at_line_with_two_open_switches
+
+.. autofunction:: pandapower.fuse_buses
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dropping Elements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: pandapower.drop_elements
+
+.. autofunction:: pandapower.drop_elements_simple
+
+.. autofunction:: pandapower.drop_buses
+
+.. autofunction:: pandapower.drop_trafos
+
+.. autofunction:: pandapower.drop_lines
+
+.. autofunction:: pandapower.drop_elements_at_buses
+
+.. autofunction:: pandapower.drop_switches_at_buses
+
+.. autofunction:: pandapower.drop_measurements_at_elements
+
+.. autofunction:: pandapower.drop_controllers_at_elements
+
+.. autofunction:: pandapower.drop_controllers_at_buses
+
+.. autofunction:: pandapower.drop_duplicated_measurements
+
+.. autofunction:: pandapower.drop_inner_branches
+
+.. autofunction:: pandapower.drop_out_of_service_elements
+
+.. autofunction:: pandapower.drop_inactive_elements
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Replacing Elements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: pandapower.create_replacement_switch_for_branch
 

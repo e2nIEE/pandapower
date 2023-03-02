@@ -9,7 +9,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, log_to_level
+from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
+    log_to_level, plural_s
 from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
@@ -18,7 +19,7 @@ from pandapower.run import runpp
 from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
     branch_element_bus_dict
 from pandapower.toolbox_elm_selection import get_connected_elements, next_bus, \
-    get_connected_elements_dict
+    get_connected_elements_dict, _inner_branches
 from pandapower.toolbox_info import clear_result_tables
 from pandapower.toolbox_data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
@@ -30,411 +31,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def close_switch_at_line_with_two_open_switches(net):
-    """
-    Finds lines that have opened switches at both ends and closes one of them.
-    Function is usually used when optimizing section points to
-    prevent the algorithm from ignoring isolated lines.
-    """
-    closed_switches = set()
-    nl = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
-    for _, switch in nl.groupby("element"):
-        if len(switch.index) > 1:  # find all lines that have open switches at both ends
-            # and close on of them
-            net.switch.at[switch.index[0], "closed"] = True
-            closed_switches.add(switch.index[0])
-    if len(closed_switches) > 0:
-        logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
-            len(closed_switches), closed_switches))
-
-
-def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
-    """
-    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
-    if drop=True (default).
-    """
-    b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
-
-    # --- reroute element connections from b2 to b1
-    for element, value in element_bus_tuples():
-        if net[element].shape[0]:
-            net[element][value].loc[net[element][value].isin(b2)] = b1
-    net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
-                                 net["switch"]["element"].isin(b2))] = b1
-
-    # --- reroute bus measurements from b2 to b1
-    if fuse_bus_measurements and net.measurement.shape[0]:
-        bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-        bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
-        net.measurement.loc[bus_meas, "element"] = b1
-
-    # --- drop b2
-    if drop:
-        # drop_elements=True is not needed because the elements must be connected to new buses now:
-        drop_buses(net, b2, drop_elements=False)
-        # branch elements which connected b1 with b2 are now connecting b1 with b1. these branch
-        # can now be dropped:
-        drop_inner_branches(net, buses=[b1])
-        # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
-        if fuse_bus_measurements and net.measurement.shape[0]:
-            drop_duplicated_measurements(net, buses=[b1])
-
-
-def drop_buses(net, buses, drop_elements=True):
-    """
-    Drops specified buses, their bus_geodata and by default drops all elements connected to
-    them as well.
-    """
-    detach_from_groups(net, "bus", buses)
-    net["bus"].drop(buses, inplace=True)
-    net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    res_buses = net.res_bus.index.intersection(buses)
-    net["res_bus"].drop(res_buses, inplace=True)
-    if drop_elements:
-        drop_elements_at_buses(net, buses)
-        drop_measurements_at_elements(net, "bus", idx=buses)
-
-
-def drop_switches_at_buses(net, buses):
-    i = net["switch"][(net["switch"]["bus"].isin(buses)) |
-                      ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
-    net["switch"].drop(i, inplace=True)
-    logger.info("dropped %d switches" % len(i))
-
-
-def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
-                           drop_measurements=True):
-    """
-    drop elements connected to given buses
-    """
-    for element, column in element_bus_tuples(bus_elements, branch_elements, res_elements=False):
-        if element == "switch":
-            drop_switches_at_buses(net, buses)
-
-        elif any(net[element][column].isin(buses)):
-            eid = net[element][net[element][column].isin(buses)].index
-            if element == 'line':
-                drop_lines(net, eid)
-            elif element == 'trafo' or element == 'trafo3w':
-                drop_trafos(net, eid, table=element)
-            else:
-                n_el = net[element].shape[0]
-                detach_from_groups(net, element, eid)
-                net[element].drop(eid, inplace=True)
-                # res_element
-                res_element = "res_" + element
-                if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
-                    res_eid = net[res_element].index.intersection(eid)
-                    net[res_element].drop(res_eid, inplace=True)
-                if net[element].shape[0] < n_el:
-                    logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
-                # drop costs for the affected elements
-                for cost_elm in ["poly_cost", "pwl_cost"]:
-                    net[cost_elm].drop(net[cost_elm].index[(net[cost_elm].et == element) &
-                                                           (net[cost_elm].element.isin(eid))], inplace=True)
-    if drop_measurements:
-        drop_measurements_at_elements(net, "bus", idx=buses)
-
-
-def drop_trafos(net, trafos, table="trafo"):
-    """
-    Deletes all trafos and in the given list of indices and removes
-    any switches connected to it.
-    """
-    if table not in ('trafo', 'trafo3w'):
-        raise UserWarning("parameter 'table' must be 'trafo' or 'trafo3w'")
-    # drop any switches
-    et = "t" if table == 'trafo' else "t3"
-    # remove any affected trafo or trafo3w switches
-    i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
-    detach_from_groups(net, "switch", i)
-    net["switch"].drop(i, inplace=True)
-    num_switches = len(i)
-
-    # drop measurements
-    drop_measurements_at_elements(net, table, idx=trafos)
-
-    # drop the trafos
-    detach_from_groups(net, table, trafos)
-    net[table].drop(trafos, inplace=True)
-    res_trafos = net["res_" + table].index.intersection(trafos)
-    net["res_" + table].drop(res_trafos, inplace=True)
-    logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
-
-
-def drop_lines(net, lines):
-    """
-    Deletes all lines and their geodata in the given list of indices and removes
-    any switches connected to it.
-    """
-    # drop connected switches
-    i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
-    detach_from_groups(net, "switch", i)
-    net["switch"].drop(i, inplace=True)
-
-    # drop measurements
-    drop_measurements_at_elements(net, "line", idx=lines)
-
-    # drop lines and geodata
-    detach_from_groups(net, "line", lines)
-    net["line"].drop(lines, inplace=True)
-    net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
-    res_lines = net.res_line.index.intersection(lines)
-    net["res_line"].drop(res_lines, inplace=True)
-    logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
-
-
-def drop_measurements_at_elements(net, element_type, idx=None, side=None):
-    """
-    Drop measurements of given element_type and (if given) given elements (idx) and side.
-    """
-    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    bool1 = net.measurement.element_type == element_type
-    bool2 = net.measurement.element.isin(idx)
-    bool3 = net.measurement.side == side if side is not None else [True]*net.measurement.shape[0]
-    to_drop = net.measurement.index[bool1 & bool2 & bool3]
-    net.measurement.drop(to_drop, inplace=True)
-
-
-def drop_controllers_at_elements(net, element_type, idx=None):
-    """
-    Drop all the controllers for the given elements (idx).
-    """
-    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
-    for i in net.controller.index:
-        elm = net.controller.object[i].__dict__["element"]
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
-        if element_type == elm:
-            if set(elm_idx) - set(idx) == set():
-                to_drop.append(i)
-            else:
-                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
-    net.controller.drop(to_drop, inplace=True)
-
-
-def drop_controllers_at_buses(net, buses):
-    """
-    Drop all the controllers for the elements connected to the given buses.
-    """
-    elms = get_connected_elements_dict(net, buses)
-    for elm in elms.keys():
-        drop_controllers_at_elements(net, elm, elms[elm])
-
-
-def drop_duplicated_measurements(net, buses=None, keep="first"):
-    """
-    Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
-    """
-    buses = buses if buses is not None else net.bus.index
-    # only analyze measurements at given buses
-    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
-    analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
-    # drop duplicates
-    if not analyzed_meas.duplicated(subset=[
-            "measurement_type", "element_type", "side", "element"], keep=keep).empty:
-        idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-            "measurement_type", "element_type", "side", "element"], keep=keep)]
-        net.measurement.drop(idx_to_drop, inplace=True)
-
-
-def get_connecting_branches(net, buses1, buses2, branch_elements=None):
-    """
-    Gets/Drops branches that connects any bus of buses1 with any bus of buses2.
-    """
-    branch_dict = branch_element_bus_dict(include_switch=True)
-    if branch_elements is not None:
-        branch_dict = {key: branch_dict[key] for key in branch_elements}
-    if "switch" in branch_dict:
-        branch_dict["switch"].append("element")
-
-    found = {elm: set() for elm in branch_dict.keys()}
-    for elm, bus_types in branch_dict.items():
-        for bus1 in bus_types:
-            for bus2 in bus_types:
-                if bus2 != bus1:
-                    idx = net[elm].index[net[elm][bus1].isin(buses1) & net[elm][bus2].isin(buses2)]
-                    if elm == "switch":
-                        idx = idx.intersection(net[elm].index[net[elm].et == "b"])
-                    found[elm] |= set(idx)
-    return {key: val for key, val in found.items() if len(val)}
-
-
-def _inner_branches(net, buses, task, branch_elements=None):
-    """
-    Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
-    and 'to_bus').
-    """
-    branch_dict = branch_element_bus_dict(include_switch=True)
-    if branch_elements is not None:
-        branch_dict = {key: branch_dict[key] for key in branch_elements}
-
-    inner_branches = dict()
-    for elm, bus_types in branch_dict.items():
-        inner = pd.Series(True, index=net[elm].index)
-        for bus_type in bus_types:
-            inner &= net[elm][bus_type].isin(buses)
-        if elm == "switch":
-            inner &= net[elm]["element"].isin(buses)
-            inner &= net[elm]["et"] == "b"  # bus-bus-switches
-
-        if any(inner):
-            if task == "drop":
-                if elm == "line":
-                    drop_lines(net, net[elm].index[inner])
-                elif "trafo" in elm:
-                    drop_trafos(net, net[elm].index[inner])
-                else:
-                    net[elm].drop(net[elm].index[inner], inplace=True)
-            elif task == "get":
-                inner_branches[elm] = net[elm].index[inner]
-            else:
-                raise NotImplementedError("task '%s' is unknown." % str(task))
-    return inner_branches
-
-
-def get_inner_branches(net, buses, branch_elements=None):
-    """
-    Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
-    'from_bus' and 'to_bus').
-    """
-    return _inner_branches(net, buses, "get", branch_elements=branch_elements)
-
-
-def drop_inner_branches(net, buses, branch_elements=None):
-    """
-    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
-    'to_bus').
-    """
-    _inner_branches(net, buses, "drop", branch_elements=branch_elements)
-
-
-def set_element_status(net, buses, in_service):
-    """
-    Sets buses and all elements connected to them in or out of service.
-    """
-    net.bus.loc[buses, "in_service"] = in_service
-
-    for element in net.keys():
-        if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
-                and "in_service" in net[element].columns:
-            try:
-                idx = get_connected_elements(net, element, buses)
-                net[element].loc[list(idx), 'in_service'] = in_service
-            except:
-                pass
-
-
-def set_isolated_areas_out_of_service(net, respect_switches=True):
-    """
-    Set all isolated buses and all elements connected to isolated buses out of service.
-    """
-    from pandapower.topology import unsupplied_buses
-    closed_switches = set()
-    unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
-    logger.info("set %d of %d unsupplied buses out of service" % (
-        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
-    set_element_status(net, list(unsupplied), False)
-
-    # TODO: remove this loop after unsupplied_buses are fixed
-    for tr3w in net.trafo3w.index.values:
-        tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
-        if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
-            net.trafo3w.at[tr3w, 'in_service'] = False
-        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
-            net.switch.element == tr3w)]
-        if len(open_tr3w_switches) == 3:
-            net.trafo3w.at[tr3w, 'in_service'] = False
-
-    for element, et in zip(["line", "trafo"], ["l", "t"]):
-        oos_elements = net[element].query("not in_service").index
-        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
-            oos_elements)].index
-
-        closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
-        net.switch.loc[oos_switches, "closed"] = True
-
-        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][[
-                "element", "bus"]].values:
-            if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
-                net[element].at[idx, "in_service"] = False
-    if len(closed_switches) > 0:
-        logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
-
-
-def drop_elements_simple(net, element, idx):
-    """
-    Drop elements and result entries from pandapower net.
-    """
-    idx = ensure_iterability(idx)
-    detach_from_groups(net, element, idx)
-    net[element].drop(idx, inplace=True)
-
-    # res_element
-    res_element = "res_" + element
-    if res_element in net.keys() and isinstance(net[res_element], pd.DataFrame):
-        drop_res_idx = net[res_element].index.intersection(idx)
-        net[res_element].drop(drop_res_idx, inplace=True)
-
-    # logging
-    if len(idx) > 0:
-        logger.debug("dropped %d %s elements!" % (len(idx), element))
-
-
-def drop_out_of_service_elements(net):
-    """
-    Drop all elements (including corresponding dataframes such as switches, measurements,
-    result tables, geodata) with "in_service" is False. Buses that are connected to in-service
-    branches are not deleted.
-    """
-
-    # --- drop inactive branches
-    inactive_lines = net.line[~net.line.in_service].index
-    drop_lines(net, inactive_lines)
-
-    inactive_trafos = net.trafo[~net.trafo.in_service].index
-    drop_trafos(net, inactive_trafos, table='trafo')
-
-    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
-    drop_trafos(net, inactive_trafos3w, table='trafo3w')
-
-    other_branch_elms = pp_elements(bus=False, bus_elements=False, branch_elements=True,
-                                    other_elements=False) - {"line", "trafo", "trafo3w", "switch"}
-    for elm in other_branch_elms:
-        drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
-
-    # --- drop inactive buses (safely)
-    # do not delete buses connected to branches
-    do_not_delete = set()
-    for elm, bus_col in element_bus_tuples(bus_elements=False):
-        if elm != "switch":
-            do_not_delete |= set(net[elm][bus_col].values)
-
-    # remove inactive buses (safely)
-    inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
-    drop_buses(net, inactive_buses, drop_elements=True)
-
-    # --- drop inactive elements other than branches and buses
-    for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
-                           other_elements=True):
-        if "in_service" not in net[elm].columns:
-            if elm not in ["measurement", "switch"]:
-                logger.info("Out-of-service elements cannot be dropped since 'in_service' is " +
-                            "not in net[%s].columns" % elm)
-        else:
-            drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
-
-
-def drop_inactive_elements(net, respect_switches=True):
-    """
-    Drops any elements not in service AND any elements connected to inactive
-    buses.
-    """
-    set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
-    drop_out_of_service_elements(net)
 
 
 def _select_cost_df(net, p2, cost_type):
@@ -666,6 +262,59 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         return net
 
 
+def set_element_status(net, buses, in_service):
+    """
+    Sets buses and all elements connected to them in or out of service.
+    """
+    net.bus.loc[buses, "in_service"] = in_service
+
+    for element in net.keys():
+        if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
+                and "in_service" in net[element].columns:
+            try:
+                idx = get_connected_elements(net, element, buses)
+                net[element].loc[list(idx), 'in_service'] = in_service
+            except:
+                pass
+
+
+def set_isolated_areas_out_of_service(net, respect_switches=True):
+    """
+    Set all isolated buses and all elements connected to isolated buses out of service.
+    """
+    from pandapower.topology import unsupplied_buses
+    closed_switches = set()
+    unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
+    logger.info("set %d of %d unsupplied buses out of service" % (
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
+    set_element_status(net, list(unsupplied), False)
+
+    # TODO: remove this loop after unsupplied_buses are fixed
+    for tr3w in net.trafo3w.index.values:
+        tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
+        if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
+            net.trafo3w.at[tr3w, 'in_service'] = False
+        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
+            net.switch.element == tr3w)]
+        if len(open_tr3w_switches) == 3:
+            net.trafo3w.at[tr3w, 'in_service'] = False
+
+    for element, et in zip(["line", "trafo"], ["l", "t"]):
+        oos_elements = net[element].query("not in_service").index
+        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
+            oos_elements)].index
+
+        closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
+        net.switch.loc[oos_switches, "closed"] = True
+
+        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][[
+                "element", "bus"]].values:
+            if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
+                net[element].at[idx, "in_service"] = False
+    if len(closed_switches) > 0:
+        logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
+
+
 def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     """
     creates a power line in parallel to the existing power line based on the values of the new
@@ -881,6 +530,326 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
     return something_merged
 
 
+def close_switch_at_line_with_two_open_switches(net):
+    """
+    Finds lines that have opened switches at both ends and closes one of them.
+    Function is usually used when optimizing section points to
+    prevent the algorithm from ignoring isolated lines.
+    """
+    closed_switches = set()
+    nl = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
+    for _, switch in nl.groupby("element"):
+        if len(switch.index) > 1:  # find all lines that have open switches at both ends
+            # and close on of them
+            net.switch.at[switch.index[0], "closed"] = True
+            closed_switches.add(switch.index[0])
+    if len(closed_switches) > 0:
+        logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
+            len(closed_switches), closed_switches))
+
+
+def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
+    """
+    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
+    if drop=True (default).
+    """
+    b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
+
+    # --- reroute element connections from b2 to b1
+    for element, value in element_bus_tuples():
+        if net[element].shape[0]:
+            net[element][value].loc[net[element][value].isin(b2)] = b1
+    net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
+                                 net["switch"]["element"].isin(b2))] = b1
+
+    # --- reroute bus measurements from b2 to b1
+    if fuse_bus_measurements and net.measurement.shape[0]:
+        bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+        bus_meas = bus_meas.index[bus_meas.element.isin(b2)]
+        net.measurement.loc[bus_meas, "element"] = b1
+
+    # --- drop b2
+    if drop:
+        # drop_elements=True is not needed because the elements must be connected to new buses now:
+        drop_buses(net, b2, drop_elements=False)
+        # branch elements which connected b1 with b2 are now connecting b1 with b1. these branch
+        # can now be dropped:
+        drop_inner_branches(net, buses=[b1])
+        # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
+        if fuse_bus_measurements and net.measurement.shape[0]:
+            drop_duplicated_measurements(net, buses=[b1])
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Dropping Elements
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def drop_elements(net, element_type, element_index, **kwargs):
+    """
+    Drops element, result and group entries, as well as, associated elements from the pandapower
+    net.
+    """
+    if element_type ==  "bus":
+        drop_buses(net, element_index, **kwargs)
+    elif "trafo" in element_type:
+        drop_trafos(net, element_index, table=element_type)
+    elif element_type ==  "line":
+        drop_lines(net, element_index)
+    else:
+        drop_elements_simple(net, element_type, element_index)
+
+
+def drop_elements_simple(net, element_type, element_index):
+    """
+    Drops element, result and group entries from the pandapower net.
+
+    See Also
+    --------
+    drop_elements : providing more generic usage (inter-element connections considered)
+    """
+    if element_type in ["bus", "line", "trafo", "trafo3w"]:
+        logger.warning(f"drop_elements_simple() is not appropriate to drop {element_type}s. "
+                       "It is recommended to use drop_elements() instead.")
+
+    element_index = ensure_iterability(element_index)
+    detach_from_groups(net, element_type, element_index)
+    net[element_type].drop(element_index, inplace=True)
+
+    # res_element
+    res_element_type = "res_" + element_type
+    if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
+        drop_res_idx = net[res_element_type].index.intersection(element_index)
+        net[res_element_type].drop(drop_res_idx, inplace=True)
+
+    # logging
+    if number := len(element_index) > 0:
+        logger.debug("Dropped %i %s%s!" % (number, element_type, plural_s(number)))
+
+
+def drop_buses(net, buses, drop_elements=True):
+    """
+    Drops specified buses, their bus_geodata and by default drops all elements connected to
+    them as well.
+    """
+    detach_from_groups(net, "bus", buses)
+    net["bus"].drop(buses, inplace=True)
+    net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+    res_buses = net.res_bus.index.intersection(buses)
+    net["res_bus"].drop(res_buses, inplace=True)
+    if drop_elements:
+        drop_elements_at_buses(net, buses)
+        drop_measurements_at_elements(net, "bus", idx=buses)
+
+
+def drop_trafos(net, trafos, table="trafo"):
+    """
+    Deletes all trafos and in the given list of indices and removes
+    any switches connected to it.
+    """
+    if table not in ('trafo', 'trafo3w'):
+        raise UserWarning("parameter 'table' must be 'trafo' or 'trafo3w'")
+    # drop any switches
+    et = "t" if table == 'trafo' else "t3"
+    # remove any affected trafo or trafo3w switches
+    i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
+    detach_from_groups(net, "switch", i)
+    net["switch"].drop(i, inplace=True)
+    num_switches = len(i)
+
+    # drop measurements
+    drop_measurements_at_elements(net, table, idx=trafos)
+
+    # drop the trafos
+    detach_from_groups(net, table, trafos)
+    net[table].drop(trafos, inplace=True)
+    res_trafos = net["res_" + table].index.intersection(trafos)
+    net["res_" + table].drop(res_trafos, inplace=True)
+    logger.debug("Dropped %i %s with %i switches" % (
+        len(trafos), table, plural_s(len(trafos)), num_switches))
+
+
+def drop_lines(net, lines):
+    """
+    Deletes all lines and their geodata in the given list of indices and removes
+    any switches connected to it.
+    """
+    # drop connected switches
+    i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
+    detach_from_groups(net, "switch", i)
+    net["switch"].drop(i, inplace=True)
+
+    # drop measurements
+    drop_measurements_at_elements(net, "line", idx=lines)
+
+    # drop lines and geodata
+    detach_from_groups(net, "line", lines)
+    net["line"].drop(lines, inplace=True)
+    net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
+    res_lines = net.res_line.index.intersection(lines)
+    net["res_line"].drop(res_lines, inplace=True)
+    logger.debug("Dropped %i line with %i line switches" % (
+        len(lines), plural_s(len(lines)), len(i)))
+
+
+def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
+                           drop_measurements=True):
+    """
+    drop elements connected to given buses
+    """
+    for element_type, column in element_bus_tuples(bus_elements, branch_elements, res_elements=False):
+        if element_type == "switch":
+            drop_switches_at_buses(net, buses)
+
+        elif any(net[element_type][column].isin(buses)):
+            eid = net[element_type][net[element_type][column].isin(buses)].index
+            if element_type == 'line':
+                drop_lines(net, eid)
+            elif element_type == 'trafo' or element_type == 'trafo3w':
+                drop_trafos(net, eid, table=element_type)
+            else:
+                n_el = net[element_type].shape[0]
+                detach_from_groups(net, element_type, eid)
+                net[element_type].drop(eid, inplace=True)
+                # res_element_type
+                res_element_type = "res_" + element_type
+                if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
+                    res_eid = net[res_element_type].index.intersection(eid)
+                    net[res_element_type].drop(res_eid, inplace=True)
+                if net[element_type].shape[0] < n_el:
+                    logger.debug("Dropped %d %s elements" % (
+                        n_el - net[element_type].shape[0], element_type))
+                # drop costs for the affected elements
+                for cost_elm in ["poly_cost", "pwl_cost"]:
+                    net[cost_elm].drop(net[cost_elm].index[
+                        (net[cost_elm].et == element_type) &
+                        (net[cost_elm].element.isin(eid))], inplace=True)
+    if drop_measurements:
+        drop_measurements_at_elements(net, "bus", idx=buses)
+
+
+def drop_switches_at_buses(net, buses):
+    i = net["switch"][(net["switch"]["bus"].isin(buses)) |
+                      ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
+    net["switch"].drop(i, inplace=True)
+    logger.debug("Dropped %d switches" % len(i))
+
+
+def drop_measurements_at_elements(net, element_type, idx=None, side=None):
+    """
+    Drop measurements of given element_type and (if given) given elements (idx) and side.
+    """
+    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
+    bool1 = net.measurement.element_type == element_type
+    bool2 = net.measurement.element.isin(idx)
+    bool3 = net.measurement.side == side if side is not None else [True]*net.measurement.shape[0]
+    to_drop = net.measurement.index[bool1 & bool2 & bool3]
+    net.measurement.drop(to_drop, inplace=True)
+
+
+def drop_controllers_at_elements(net, element_type, idx=None):
+    """
+    Drop all the controllers for the given elements (idx).
+    """
+    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
+    to_drop = []
+    for i in net.controller.index:
+        elm = net.controller.object[i].__dict__["element"]
+        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
+        if element_type == elm:
+            if set(elm_idx) - set(idx) == set():
+                to_drop.append(i)
+            else:
+                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
+                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
+    net.controller.drop(to_drop, inplace=True)
+
+
+def drop_controllers_at_buses(net, buses):
+    """
+    Drop all the controllers for the elements connected to the given buses.
+    """
+    elms = get_connected_elements_dict(net, buses)
+    for elm in elms.keys():
+        drop_controllers_at_elements(net, elm, elms[elm])
+
+
+def drop_duplicated_measurements(net, buses=None, keep="first"):
+    """
+    Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
+    """
+    buses = buses if buses is not None else net.bus.index
+    # only analyze measurements at given buses
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
+    # drop duplicates
+    if not analyzed_meas.duplicated(subset=[
+            "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+        idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+            "measurement_type", "element_type", "side", "element"], keep=keep)]
+        net.measurement.drop(idx_to_drop, inplace=True)
+
+
+def drop_inner_branches(net, buses, branch_elements=None):
+    """
+    Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
+    'to_bus').
+    """
+    _inner_branches(net, buses, "drop", branch_elements=branch_elements)
+
+
+def drop_out_of_service_elements(net):
+    """
+    Drop all elements (including corresponding dataframes such as switches, measurements,
+    result tables, geodata) with "in_service" is False. Buses that are connected to in-service
+    branches are not deleted.
+    """
+
+    # --- drop inactive branches
+    inactive_lines = net.line[~net.line.in_service].index
+    drop_lines(net, inactive_lines)
+
+    inactive_trafos = net.trafo[~net.trafo.in_service].index
+    drop_trafos(net, inactive_trafos, table='trafo')
+
+    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
+    drop_trafos(net, inactive_trafos3w, table='trafo3w')
+
+    other_branch_elms = pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                                    other_elements=False) - {"line", "trafo", "trafo3w", "switch"}
+    for elm in other_branch_elms:
+        drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
+
+    # --- drop inactive buses (safely)
+    # do not delete buses connected to branches
+    do_not_delete = set()
+    for elm, bus_col in element_bus_tuples(bus_elements=False):
+        if elm != "switch":
+            do_not_delete |= set(net[elm][bus_col].values)
+
+    # remove inactive buses (safely)
+    inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
+    drop_buses(net, inactive_buses, drop_elements=True)
+
+    # --- drop inactive elements other than branches and buses
+    for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
+                           other_elements=True):
+        if "in_service" not in net[elm].columns:
+            if elm not in ["measurement", "switch"]:
+                logger.info("Out-of-service elements cannot be dropped since 'in_service' is " +
+                            "not in net[%s].columns" % elm)
+        else:
+            drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
+
+
+def drop_inactive_elements(net, respect_switches=True):
+    """
+    Drops any elements not in service AND any elements connected to inactive
+    buses.
+    """
+    set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
+    drop_out_of_service_elements(net)
+
+
 def create_replacement_switch_for_branch(net, element, idx):
     """
     Creates a switch parallel to a branch, connecting the same buses as the branch.
@@ -910,6 +879,9 @@ def create_replacement_switch_for_branch(net, element, idx):
                  (switch_name, sid, element, idx))
     return sid
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Replacing Elements
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
                                         zero_impedance=True, in_service_only=True, min_length_km=0,
