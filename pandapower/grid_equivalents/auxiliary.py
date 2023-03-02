@@ -44,6 +44,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     available, ext_grids are created according to the given bus results;
     otherwise, ext_grids are created with vm_pu=1 and va_degreee=0
     """
+    orig_slack_gens = net.gen.index[net.gen.slack]
     buses_to_add_ext_grids = set(boundary_buses) - set(net.ext_grid.bus[net.ext_grid.in_service]) \
                              - set(net.gen.bus[net.gen.in_service & net.gen.slack])
     res_buses = set(
@@ -130,6 +131,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         net.ext_grid.va_degree.loc[add_eg] -= va_ave
         runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
                  max_iteration=100)
+    return orig_slack_gens
 
 
 def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
