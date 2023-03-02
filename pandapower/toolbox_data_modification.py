@@ -218,15 +218,15 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
-def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=None):
+def reindex_elements(net, element_type, new_indices=None, old_indices=None, lookup=None):
     """
-    Changes the index of the DataFrame net[element].
+    Changes the index of the DataFrame net[element_type].
 
     Parameters
     ----------
     net : pp.pandapowerNet
         net with elements to reindex
-    element : str
+    element_type : str
         name of element type to rename, e.g. "gen" or "load"
     new_indices : typing.Union[list[int], pandas.Index[int]], optional
         new indices to set, by default None
@@ -242,8 +242,8 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     Either new_indices or lookup must be given.
     old_indices can be given to limit the indices to be replaced. In case of given new_indices,
     both must have the same length.
-    If element is "group", be careful to give new_indices without passing old_indices because group
-    indices do not need to be unique.
+    If element_type is "group", be careful to give new_indices without passing old_indices because
+    group indices do not need to be unique.
 
     Examples
     --------
@@ -253,10 +253,13 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     >>> idx2 = 7
     >>> # Reindex using 'new_indices':
     >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
+    >>> net.bus.index
+    Int64Index([4], dtype='int64')
     >>> # Reindex using 'lookup':
     >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
+    Int64Index([7], dtype='int64')
     """
-    if not net[element].shape[0]:
+    if not net[element_type].shape[0]:
         return
     if new_indices is None and lookup is None:
         raise ValueError("Either new_indices or lookup must be given.")
@@ -267,46 +270,47 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
         return
 
     if new_indices is not None:
-        old_indices = old_indices if old_indices is not None else net[element].index
+        old_indices = old_indices if old_indices is not None else net[element_type].index
         assert len(new_indices) == len(old_indices)
         lookup = dict(zip(old_indices, new_indices))
     elif old_indices is None:
-        old_indices = net[element].index.intersection(lookup.keys())
+        old_indices = net[element_type].index.intersection(lookup.keys())
 
-    if element == "bus":
+    if element_type == "bus":
         reindex_buses(net, lookup)
         return
 
     # --- reindex
-    new_index = pd.Series(net[element].index, index=net[element].index)
-    if element != "group":
+    new_index = pd.Series(net[element_type].index, index=net[element_type].index)
+    if element_type != "group":
         new_index.loc[old_indices] = get_indices(old_indices, lookup)
     else:
         new_index.loc[old_indices] = get_indices(new_index.loc[old_indices].values, lookup)
-    net[element].set_index(pd.Index(new_index.values), inplace=True)
+    net[element_type].set_index(pd.Index(new_index.values), inplace=True)
 
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=int)[
-                (net.group.element_type == element).values & net.group.reference_column.isnull().values]:
+                (net.group.element_type == element_type).values & \
+                net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
 
     # --- adapt measurement link
-    if element in ["line", "trafo", "trafo3w"]:
-        affected = net.measurement[(net.measurement.element_type == element) &
+    if element_type in ["line", "trafo", "trafo3w"]:
+        affected = net.measurement[(net.measurement.element_type == element_type) &
                                    (net.measurement.element.isin(old_indices))]
         if len(affected):
             net.measurement.loc[affected.index, "element"] = get_indices(affected.element, lookup)
 
     # --- adapt switch link
-    if element in ["line", "trafo"]:
-        affected = net.switch[(net.switch.et == element[0]) &
+    if element_type in ["line", "trafo"]:
+        affected = net.switch[(net.switch.et == element_type[0]) &
                               (net.switch.element.isin(old_indices))]
         if len(affected):
             net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
 
     # --- adapt line_geodata index
-    if element == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
+    if element_type == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
         idx_name = net.line_geodata.index.name
         place_holder = uuid.uuid4()
         net["line_geodata"][place_holder] = net["line_geodata"].index
@@ -316,7 +320,7 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
 
     # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
-        element_in_cost_df = (net[cost_df].et == element) & net[cost_df].element.isin(old_indices)
+        element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
             net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
                 element_in_cost_df], lookup)
@@ -340,27 +344,27 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
       **net** - pandapower network with odered and continuous indices
 
     """
-    elements = pp_elements(res_elements=True)
+    element_types = pp_elements(res_elements=True)
 
     # create continuous bus index
     create_continuous_bus_index(net, start=start)
-    elements -= {"bus", "bus_geodata", "res_bus"}
+    element_types -= {"bus", "bus_geodata", "res_bus"}
 
-    elements |= add_df_to_reindex
+    element_types |= add_df_to_reindex
 
-    # run reindex_elements() for all elements
-    for elm in list(elements):
-        net[elm].sort_index(inplace=True)
-        new_index = list(np.arange(start, len(net[elm]) + start))
+    # run reindex_elements() for all element_types
+    for et in list(element_types):
+        net[et].sort_index(inplace=True)
+        new_index = list(np.arange(start, len(net[et]) + start))
 
-        if elm in net and isinstance(net[elm], pd.DataFrame):
-            if elm in ["bus_geodata", "line_geodata"]:
-                logger.info(elm + " don't need to bo included to 'add_df_to_reindex'. It is " +
-                            "already included by elm=='" + elm.split("_")[0] + "'.")
+        if et in net and isinstance(net[et], pd.DataFrame):
+            if et in ["bus_geodata", "line_geodata"]:
+                logger.info(et + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                            "already included by et=='" + et.split("_")[0] + "'.")
             else:
-                reindex_elements(net, elm, new_index)
+                reindex_elements(net, et, new_index)
         else:
-            logger.debug("No indices could be changed for element '%s'." % elm)
+            logger.debug("No indices could be changed for element '%s'." % et)
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):

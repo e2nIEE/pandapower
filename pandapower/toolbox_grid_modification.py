@@ -891,7 +891,7 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
-def create_replacement_switch_for_branch(net, element, idx):
+def create_replacement_switch_for_branch(net, element_type, element_index):
     """
     Creates a switch parallel to a branch, connecting the same buses as the branch.
     The switch is closed if the branch is in service and open if the branch is out of service.
@@ -899,25 +899,26 @@ def create_replacement_switch_for_branch(net, element, idx):
     if needed.
 
     :param net: pandapower network
-    :param element: element table e. g. 'line', 'impedance'
-    :param idx: index of the branch e. g. 0
+    :param element_type: element_type table e. g. 'line', 'impedance'
+    :param element_index: index of the branch e. g. 0
     :return: None
     """
-    bus_i = net[element].from_bus.at[idx]
-    bus_j = net[element].to_bus.at[idx]
-    in_service = net[element].in_service.at[idx]
-    if element in ['line', 'trafo']:
+    bus_i = net[element_type].from_bus.at[element_index]
+    bus_j = net[element_type].to_bus.at[element_index]
+    in_service = net[element_type].in_service.at[element_index]
+    if element_type in ['line', 'trafo']:
         is_closed = all(
-            net.switch.loc[(net.switch.element == idx) & (net.switch.et == element[0]), 'closed'])
+            net.switch.loc[(net.switch.element == element_index) &
+                           (net.switch.et == element_type[0]), 'closed'])
         is_closed = is_closed and in_service
     else:
         is_closed = in_service
 
-    switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
+    switch_name = 'REPLACEMENT_%s_%d' % (element_type, element_index)
     sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
                         type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
-                 (switch_name, sid, element, idx))
+                 (switch_name, sid, element_type, element_index))
     return sid
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -976,7 +977,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
         for b in branch_zero:
             if in_service_only and ~net[elm].in_service.at[b]:
                 continue
-            create_replacement_switch_for_branch(net, element=elm, idx=b)
+            create_replacement_switch_for_branch(net, elm, b)
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
@@ -1476,18 +1477,18 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     return new_idx
 
 
-def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None, cols_to_keep=None,
-                       add_cols_to_keep=None):
+def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None, new_indices=None,
+                       cols_to_keep=None, add_cols_to_keep=None):
     """
     Replaces e.g. static generators by loads or loads by storages and so forth.
 
     INPUT:
         **net** - pandapower net
 
-        **old_elm** (str) - element type of which elements should be replaced. Should be in [
+        **old_element_type** (str) - element type of which elements should be replaced. Should be in [
             "sgen", "load", "storage"]
 
-        **new_elm** (str) - element type of which elements should be created. Should be in [
+        **new_element_type** (str) - element type of which elements should be created. Should be in [
             "sgen", "load", "storage"]
 
     OPTIONAL:
@@ -1506,11 +1507,12 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
     OUTPUT:
         **new_idx** (list) - list of indices of the new elements
     """
-    if old_elm == new_elm:
-        logger.warning("'old_elm' and 'new_elm' are both '%s'. No replacement is done." % old_elm)
+    if old_element_type == new_element_type:
+        logger.warning(f"'old_element_type' and 'new_element_type' are both '{old_element_type}'. "
+                       "No replacement is done.")
         return old_indices
     if old_indices is None:
-        old_indices = net[old_elm].index
+        old_indices = net[old_element_type].index
     else:
         old_indices = ensure_iterability(old_indices)
     if not len(old_indices):
@@ -1532,30 +1534,30 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
     cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service",
                                              "controllable"})
 
-    existing_cols_to_keep = net[old_elm].loc[old_indices].dropna(axis=1).columns.intersection(
-        cols_to_keep)
-    # add missing columns to net[new_elm] which should be kept
-    missing_cols_to_keep = existing_cols_to_keep.difference(net[new_elm].columns)
+    existing_cols_to_keep = net[old_element_type].loc[old_indices].dropna(
+        axis=1).columns.intersection(cols_to_keep)
+    # add missing columns to net[new_element_type] which should be kept
+    missing_cols_to_keep = existing_cols_to_keep.difference(net[new_element_type].columns)
     for col in missing_cols_to_keep:
-        net[new_elm][col] = np.nan
+        net[new_element_type][col] = np.nan
 
-    # --- create new_elm
+    # --- create new_element_type
     already_considered_cols = set()
     new_idx = []
-    for oelm, index in zip(net[old_elm].loc[old_indices].itertuples(), new_indices):
-        controllable = False if "controllable" not in net[old_elm].columns else oelm.controllable
-        sign = -1 if old_elm in ["sgen"] else 1
+    for oelm, index in zip(net[old_element_type].loc[old_indices].itertuples(), new_indices):
+        controllable = False if "controllable" not in net[old_element_type].columns else oelm.controllable
+        sign = -1 if old_element_type in ["sgen"] else 1
         args = dict()
-        if new_elm == "load":
+        if new_element_type == "load":
             fct = create_load
-        elif new_elm == "sgen":
+        elif new_element_type == "sgen":
             fct = create_sgen
             sign *= -1
-        elif new_elm == "storage":
+        elif new_element_type == "storage":
             fct = create_storage
             already_considered_cols |= {"max_e_mwh"}
-            args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_elm].columns else net[
-                old_elm].max_e_kwh.loc[old_indices]}
+            args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_element_type].columns else net[
+                old_element_type].max_e_kwh.loc[old_indices]}
         idx = fct(net, oelm.bus, p_mw=sign*oelm.p_mw, q_mvar=sign*oelm.q_mvar, name=oelm.name,
                   in_service=oelm.in_service, controllable=controllable, index=index, **args)
         new_idx.append(idx)
@@ -1564,33 +1566,34 @@ def replace_pq_elmtype(net, old_elm, new_elm, old_indices=None, new_indices=None
         for col1, col2 in zip(["max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
                               ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]):
             if col1 in existing_cols_to_keep:
-                net[new_elm].loc[new_idx, col2] = sign * net[old_elm].loc[
+                net[new_element_type].loc[new_idx, col2] = sign * net[old_element_type].loc[
                     old_indices, col1].values
                 already_considered_cols |= {col1}
-    net[new_elm].loc[new_idx, existing_cols_to_keep.difference(already_considered_cols)] = net[
-        old_elm].loc[old_indices, existing_cols_to_keep.difference(already_considered_cols)].values
+    net[new_element_type].loc[new_idx, existing_cols_to_keep.difference(
+        already_considered_cols)] = net[old_element_type].loc[
+            old_indices, existing_cols_to_keep.difference(already_considered_cols)].values
 
-    _replace_group_member_element_type(net, old_indices, old_elm, new_idx, new_elm)
+    _replace_group_member_element_type(net, old_indices, old_element_type, new_idx, new_element_type)
 
     # --- drop replaced old_indices
-    net[old_elm].drop(old_indices, inplace=True)
+    net[old_element_type].drop(old_indices, inplace=True)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
         if net[table].shape[0]:
-            to_change = net[table].index[(net[table].et == old_elm) &
+            to_change = net[table].index[(net[table].et == old_element_type) &
                                          (net[table].element.isin(old_indices))]
             if len(to_change):
-                net[table].et.loc[to_change] = new_elm
+                net[table].et.loc[to_change] = new_element_type
                 net[table].element.loc[to_change] = new_idx
 
     # --- result data
-    if net["res_" + old_elm].shape[0]:
-        in_res = pd.Series(old_indices).isin(net["res_" + old_elm].index).values
-        to_add = net["res_" + old_elm].loc[pd.Index(old_indices)[in_res]]
+    if net["res_" + old_element_type].shape[0]:
+        in_res = pd.Series(old_indices).isin(net["res_" + old_element_type].index).values
+        to_add = net["res_" + old_element_type].loc[pd.Index(old_indices)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
-        net["res_" + new_elm] = pd.concat([net["res_" + new_elm], to_add], sort=True)
-        net["res_" + old_elm].drop(pd.Index(old_indices)[in_res], inplace=True)
+        net["res_" + new_element_type] = pd.concat([net["res_" + new_element_type], to_add], sort=True)
+        net["res_" + old_element_type].drop(pd.Index(old_indices)[in_res], inplace=True)
     return new_idx
 
 

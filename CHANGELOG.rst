@@ -21,6 +21,7 @@ Change Log
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
 - [CHANGED] remove support for Python 3.7 and add Python 3.11
 - [CHANGED] split toolbox.py -> better overview, avoiding circular imports
+- [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 

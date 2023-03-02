@@ -18,14 +18,14 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_element_index(net, element, name, exact_match=True):
+def get_element_index(net, element_type, name, exact_match=True):
     """
     Returns the element(s) identified by a name or regex and its element-table.
 
     INPUT:
       **net** - pandapower network
 
-      **element** - Table to get indices from ("line", "bus", "trafo" etc.)
+      **element_type** - Table to get indices from ("line", "bus", "trafo" etc.)
 
       **name** - Name of the element to match.
 
@@ -35,20 +35,20 @@ def get_element_index(net, element, name, exact_match=True):
           False: returns all indices containing the name
 
     OUTPUT:
-      **index** - The indices of matching element(s).
+      **index** - The index (or indices in case of exact_match=False) of matching element(s).
     """
     if exact_match:
-        idx = net[element][net[element]["name"] == name].index
+        idx = net[element_type][net[element_type]["name"] == name].index
         if len(idx) == 0:
-            raise UserWarning(f"There is no {element} with name {name}")
+            raise UserWarning(f"There is no {element_type} with name {name}")
         if len(idx) > 1:
-            raise UserWarning(f"Duplicate {element} names for {name}")
+            raise UserWarning(f"Duplicate {element_type} names for {name}")
         return idx[0]
     else:
-        return net[element][net[element]["name"].str.contains(name)].index
+        return net[element_type][net[element_type]["name"].str.contains(name)].index
 
 
-def get_element_indices(net, element, name, exact_match=True):
+def get_element_indices(net, element_type, name, exact_match=True):
     """
     Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper
     function of get_element_index()
@@ -56,7 +56,7 @@ def get_element_indices(net, element, name, exact_match=True):
     INPUT:
       **net** - pandapower network
 
-      **element** (str, string iterable) - Element table to get indices from
+      **element_type** (str, string iterable) - Element table to get indices from
       ("line", "bus", "trafo" etc.).
 
       **name** (str) - Name of the element to match.
@@ -74,21 +74,27 @@ def get_element_indices(net, element, name, exact_match=True):
         >>> import pandapower.networks as pn
         >>> import pandapower as pp
         >>> net = pn.example_multivoltage()
-        >>> idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
-        >>> idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
-        >>> idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+        >>> # get indices of only one element type (buses in this example):
+        >>> pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        [32, 33, 34]
+        >>> # get indices of only two element type (first buses, second lines):
+        >>> pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        [Int64Index([32, 33, 34, 35], dtype='int64'), Int64Index([0, 1, 2, 3, 4, 5], dtype='int64')]
+        >>> pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+        [34, 11]
     """
-    if isinstance(element, str) and isinstance(name, str):
-        element = [element]
+    if isinstance(element_type, str) and isinstance(name, str):
+        element_type = [element_type]
         name = [name]
     else:
-        element = element if not isinstance(element, str) else [element] * len(name)
-        name = name if not isinstance(name, str) else [name] * len(element)
-    if len(element) != len(name):
-        raise ValueError("'element' and 'name' must have the same length.")
+        element_type = element_type if not isinstance(element_type, str) else \
+            [element_type] * len(name)
+        name = name if not isinstance(name, str) else [name] * len(element_type)
+    if len(element_type) != len(name):
+        raise ValueError("'element_type' and 'name' must have the same length.")
     idx = []
-    for elm, nam in zip(element, name):
-        idx += [get_element_index(net, elm, nam, exact_match=exact_match)]
+    for et, nam in zip(element_type, name):
+        idx += [get_element_index(net, et, nam, exact_match=exact_match)]
     return idx
 
 
@@ -96,6 +102,22 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     """
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    bus : int
+        index of bus
+    element_id : int
+        index of element
+    et : str, optional
+        which branch element type to consider, by default 'line'
+
+    Returns
+    -------
+    int
+        index of next connected bus
     """
     # todo: what to do with trafo3w?
     if et == 'line' or et == 'l':
@@ -112,14 +134,14 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     return nb[0]
 
 
-def get_connected_elements(net, element, buses, respect_switches=True, respect_in_service=False):
+def get_connected_elements(net, element_type, buses, respect_switches=True, respect_in_service=False):
     """
      Returns elements connected to a given bus.
 
      INPUT:
         **net** (pandapowerNet)
 
-        **element** (string, name of the element table)
+        **element_type** (string, name of the element table)
 
         **buses** (single integer or iterable of ints)
 
@@ -142,47 +164,47 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     if not hasattr(buses, "__iter__"):
         buses = [buses]
 
-    if element in ["line", "l"]:
-        element = "l"
+    if element_type in ["line", "l"]:
+        element_type = "l"
         element_table = net.line
         connected_elements = set(net.line.index[net.line.from_bus.isin(buses) |
                                                 net.line.to_bus.isin(buses)])
 
-    elif element in ["dcline"]:
+    elif element_type in ["dcline"]:
         element_table = net.dcline
         connected_elements = set(net.dcline.index[net.dcline.from_bus.isin(buses) |
                                                   net.dcline.to_bus.isin(buses)])
 
-    elif element in ["trafo"]:
-        element = "t"
+    elif element_type in ["trafo"]:
+        element_type = "t"
         element_table = net.trafo
         connected_elements = set(net["trafo"].index[(net.trafo.hv_bus.isin(buses)) |
                                                     (net.trafo.lv_bus.isin(buses))])
-    elif element in ["trafo3w", "t3w"]:
-        element = "t3w"
+    elif element_type in ["trafo3w", "t3w"]:
+        element_type = "t3w"
         element_table = net.trafo3w
         connected_elements = set(net["trafo3w"].index[(net.trafo3w.hv_bus.isin(buses)) |
                                                       (net.trafo3w.mv_bus.isin(buses)) |
                                                       (net.trafo3w.lv_bus.isin(buses))])
-    elif element == "impedance":
+    elif element_type == "impedance":
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element == "measurement":
-        element_table = net[element]
+    elif element_type == "measurement":
+        element_table = net[element_type]
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
                                                        (net.measurement.element_type == "bus")])
-    elif element in pp_elements(bus=False, branch_elements=False):
-        element_table = net[element]
+    elif element_type in pp_elements(bus=False, branch_elements=False):
+        element_table = net[element_type]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element in ['_equiv_trafo3w']:
+    elif element_type in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
         return {}
     else:
-        raise UserWarning("Unknown element! ", element)
+        raise UserWarning(f"Unknown element type {element_type}!")
 
-    if respect_switches and element in ["l", "t", "t3w"]:
-        open_switches = get_connected_switches(net, buses, consider=element, status="open")
+    if respect_switches and element_type in ["l", "t", "t3w"]:
+        open_switches = get_connected_switches(net, buses, consider=element_type, status="open")
         if open_switches:
             open_and_connected = net.switch.loc[net.switch.index.isin(open_switches) &
                                                 net.switch.element.isin(connected_elements)].index
@@ -315,7 +337,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
     return cb - set(buses)
 
 
-def get_connected_buses_at_element(net, element, et, respect_in_service=False):
+def get_connected_buses_at_element(net, element_index, element_type, respect_in_service=False):
     """
      Returns buses connected to a given line, switch or trafo. In case of a bus switch, two buses
      will be returned, else one.
@@ -323,9 +345,9 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
      INPUT:
         **net** (pandapowerNet)
 
-        **element** (integer)
+        **element_index** (integer)
 
-        **et** (string) - Type of the source element:
+        **element_type** (string) - Type of the source element:
 
             l, line: line
 
@@ -350,23 +372,23 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
     """
 
     cb = set()
-    if et == 'l' or et == 'line':
-        cb.add(net.line.from_bus.at[element])
-        cb.add(net.line.to_bus.at[element])
-    elif et == 's' or et == 'switch':
-        cb.add(net.switch.bus.at[element])
-        if net.switch.et.at[element] == 'b':
-            cb.add(net.switch.element.at[element])
-    elif et == 't' or et == 'trafo':
-        cb.add(net.trafo.hv_bus.at[element])
-        cb.add(net.trafo.lv_bus.at[element])
-    elif et == 't3' or et == 'trafo3w':
-        cb.add(net.trafo3w.hv_bus.at[element])
-        cb.add(net.trafo3w.mv_bus.at[element])
-        cb.add(net.trafo3w.lv_bus.at[element])
-    elif et == 'i' or et == 'impedance':
-        cb.add(net.impedance.from_bus.at[element])
-        cb.add(net.impedance.to_bus.at[element])
+    if element_type == 'l' or element_type == 'line':
+        cb.add(net.line.from_bus.at[element_index])
+        cb.add(net.line.to_bus.at[element_index])
+    elif element_type == 's' or element_type == 'switch':
+        cb.add(net.switch.bus.at[element_index])
+        if net.switch.et.at[element_index] == 'b':
+            cb.add(net.switch.element.at[element_index])
+    elif element_type == 't' or element_type == 'trafo':
+        cb.add(net.trafo.hv_bus.at[element_index])
+        cb.add(net.trafo.lv_bus.at[element_index])
+    elif element_type == 't3' or element_type == 'trafo3w':
+        cb.add(net.trafo3w.hv_bus.at[element_index])
+        cb.add(net.trafo3w.mv_bus.at[element_index])
+        cb.add(net.trafo3w.lv_bus.at[element_index])
+    elif element_type == 'i' or element_type == 'impedance':
+        cb.add(net.impedance.from_bus.at[element_index])
+        cb.add(net.impedance.to_bus.at[element_index])
 
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)
@@ -488,15 +510,15 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {elm: set() for elm in branch_dict.keys()}
-    for elm, bus_types in branch_dict.items():
+    found = {et: set() for et in branch_dict.keys()}
+    for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:
                 if bus2 != bus1:
-                    idx = net[elm].index[net[elm][bus1].isin(buses1) & net[elm][bus2].isin(buses2)]
-                    if elm == "switch":
-                        idx = idx.intersection(net[elm].index[net[elm].et == "b"])
-                    found[elm] |= set(idx)
+                    idx = net[et].index[net[et][bus1].isin(buses1) & net[et][bus2].isin(buses2)]
+                    if et == "switch":
+                        idx = idx.intersection(net[et].index[net[et].et == "b"])
+                    found[et] |= set(idx)
     return {key: val for key, val in found.items() if len(val)}
 
 
@@ -517,7 +539,7 @@ def get_gc_objects_dict():
     return nums_by_types
 
 
-def false_elm_links(net, elm, col, target_elm):
+def false_elm_links(net, element_type, col, target_element_type):
     """
     Returns which indices have links to elements of other element tables which does not exist in the
     net.
@@ -527,11 +549,12 @@ def false_elm_links(net, elm, col, target_elm):
     >>> false_elm_links(net, "line", "to_bus", "bus")  # exemplary input 1
     >>> false_elm_links(net, "poly_cost", "element", net["poly_cost"]["et"])  # exemplary input 2
     """
-    if isinstance(target_elm, str):
-        return net[elm][col].index[~net[elm][col].isin(net[target_elm].index)]
-    else:  # target_elm is an iterable, e.g. a Series such as net["poly_cost"]["et"]
-        df = pd.DataFrame({"element": net[elm][col].values, "et": target_elm,
-                           "indices": net[elm][col].index.values})
+    if isinstance(target_element_type, str):
+        return net[element_type][col].index[~net[element_type][col].isin(net[
+            target_element_type].index)]
+    else:  # target_element_type is an iterable, e.g. a Series such as net["poly_cost"]["et"]
+        df = pd.DataFrame({"element": net[element_type][col].values, "et": target_element_type,
+                           "indices": net[element_type][col].index.values})
         df = df.set_index("et")
         false_links = pd.Index([])
         for et in df.index:
@@ -540,28 +563,31 @@ def false_elm_links(net, elm, col, target_elm):
         return false_links
 
 
-def false_elm_links_loop(net, elms=None):
+def false_elm_links_loop(net, element_types=None):
     """
     Returns a dict of elements which indices have links to elements of other element tables which
     does not exist in the net.
     This function is an outer loop for get_false_links() applications.
     """
     false_links = dict()
-    elms = elms if elms is not None else pp_elements(bus=False, cost_tables=True)
+    element_types = element_types if element_types is not None else pp_elements(
+        bus=False, cost_tables=True)
     bebd = branch_element_bus_dict(include_switch=True)
-    for elm in elms:
-        if net[elm].shape[0]:
+    for element_type in element_types:
+        if net[element_type].shape[0]:
             fl = pd.Index([])
-            # --- define col and target_elm
-            if elm in bebd.keys():
-                for col in bebd[elm]:
-                    fl = fl.union(false_elm_links(net, elm, col, "bus"))
-            elif elm in {"poly_cost", "pwl_cost"}:
-                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["et"]))
-            elif elm == "measurement":
-                fl = fl.union(false_elm_links(net, elm, "element", net[elm]["element_type"]))
+            # --- define col and target_element_type
+            if element_type in bebd.keys():
+                for col in bebd[element_type]:
+                    fl = fl.union(false_elm_links(net, element_type, col, "bus"))
+            elif element_type in {"poly_cost", "pwl_cost"}:
+                fl = fl.union(false_elm_links(net, element_type, "element", net[element_type][
+                    "et"]))
+            elif element_type == "measurement":
+                fl = fl.union(false_elm_links(net, element_type, "element", net[element_type][
+                    "element_type"]))
             else:
-                fl = fl.union(false_elm_links(net, elm, "bus", "bus"))
+                fl = fl.union(false_elm_links(net, element_type, "bus", "bus"))
             if len(fl):
-                false_links[elm] = fl
+                false_links[element_type] = fl
     return false_links

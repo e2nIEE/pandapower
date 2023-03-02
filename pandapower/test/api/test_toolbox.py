@@ -1615,5 +1615,4 @@ def test_get_false_links():
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-x"])
-    test_replace_xward_by_internal_elements()
+    pytest.main([__file__, "-x"])
