@@ -251,11 +251,9 @@ def reindex_elements(net, element, new_indices=None, old_indices=None, lookup=No
     >>> idx0 = pp.create_bus(net, 110)
     >>> idx1 = 4
     >>> idx2 = 7
-
-    Reindex using 'new_indices':
+    >>> # Reindex using 'new_indices':
     >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
-
-    Reindex using 'lookup':
+    >>> # Reindex using 'lookup':
     >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
     """
     if not net[element].shape[0]:

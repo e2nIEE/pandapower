@@ -664,7 +664,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
-    logger.debug("Dropped %i %s with %i switches" % (
+    logger.debug("Dropped %i %s%s with %i switches" % (
         len(trafos), table, plural_s(len(trafos)), num_switches))
 
 
@@ -687,7 +687,7 @@ def drop_lines(net, lines):
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
     net["res_line"].drop(res_lines, inplace=True)
-    logger.debug("Dropped %i line with %i line switches" % (
+    logger.debug("Dropped %i line%s with %i line switches" % (
         len(lines), plural_s(len(lines)), len(i)))
 
 
