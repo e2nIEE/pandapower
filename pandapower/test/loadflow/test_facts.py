@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import pandapower.networks
 from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu, calc_tcsc_p_pu
 from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
+from pandapower.pypower.newtonpf import makeYbus_tcsc
 
 
 def facts_case_study_grid():
@@ -229,25 +230,71 @@ def test_tcsc_simple8():
     #  test with some other grids, e.g. the grid from the source
 
 
+def test_compare_to_impedance():
+    baseMVA = 100  # MVA
+    baseV = 110  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    # plot_z(baseZ, xl, xc)
+
+    # (0)-------------(1)-----------------(3)->
+    #                  |--(TCSC)--(2)------|
+
+    net = pp.create_empty_network(sn_mva=baseMVA)
+    pp.create_buses(net, 4, baseV)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_load(net, 3, 100, 40)
+
+    net_ref = net.deepcopy()
+
+    pp.create_tcsc(net, 1, 2, xl, xc, -20, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+
+    pp.runpp(net)
+
+    pp.create_impedance(net_ref, 1, 2, 0, net.res_tcsc.x_ohm.at[0] / baseZ, baseMVA)
+
+    pp.runpp(net_ref)
+
+    # compare whhen controllable
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, rtol=0, atol=1e-6)
+
+    for col in "p_from_mw", "q_from_mvar", "p_to_mw", 'q_to_mvar':
+        assert np.allclose(net.res_tcsc[col], net_ref.res_impedance[col], rtol=0, atol=1e-6)
+
+    assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0,
+                       atol=5e-5)
+    Ybus = net._ppc["internal"]["Ybus"]
+    Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
+                              xl / baseZ, xc / baseZ, [1], [2])
+    assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+
+    # compare when not controllable
+    net.tcsc.thyristor_firing_angle = net.res_tcsc.thyristor_firing_angle
+    net.tcsc.controllable = False
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, rtol=0, atol=1e-6)
+
+    assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0,
+                       atol=5e-5)
+    Ybus = net._ppc["internal"]["Ybus"]
+    Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
+                              xl / baseZ, xc / baseZ, [1], [2])
+    assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+
+
 def plot_z(baseZ, xl, xc):
     x = np.arange(90, 181)
     y = calc_y_svc_pu(np.deg2rad(x), xl / baseZ, xc / baseZ)
     z = (1 / y) * baseZ
     plt.plot(x, z)
-
-
-def makeYbus_tcsc(Ybus, x_control, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
-    Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    Y_TCSC = calc_y_svc_pu(x_control, tcsc_x_l_pu, tcsc_x_cvar_pu)
-    print("Y_TCSC", np.round(Y_TCSC, 3))
-    Y_TCSC_c = -1j * Y_TCSC
-    for y_tcsc_pu_i, i, j in zip(Y_TCSC_c, tcsc_fb, tcsc_tb):
-        Ybus_tcsc[i, i] += y_tcsc_pu_i
-        Ybus_tcsc[i, j] += -y_tcsc_pu_i
-        Ybus_tcsc[j, i] += -y_tcsc_pu_i
-        Ybus_tcsc[j, j] += y_tcsc_pu_i
-    return Ybus_tcsc
-
 
 
 def test_tcsc_simple3():
