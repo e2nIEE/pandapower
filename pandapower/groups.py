@@ -854,6 +854,8 @@ def group_res_power_per_bus(net, index):
 
     Examples
     --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as nw
     >>> net = nw.create_cigre_network_mv(with_der="all")
     >>> pp.runpp(net)
     >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
@@ -907,9 +909,13 @@ def group_res_p_mw(net, index):
 
     Examples
     --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as nw
     >>> net = nw.create_cigre_network_mv(with_der="all")
     >>> pp.runpp(net)
     >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    >>> net.res_line.pl_mw.loc[[0, 1]].sum() - net.res_sgen.p_mw.loc[[0, 1]].sum()  # expected value
+    0.057938
     >>> pp.group_res_p_mw(net, gr_idx)
     0.057938
     """
@@ -928,9 +934,13 @@ def group_res_q_mvar(net, index):
 
     Examples
     --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as nw
     >>> net = nw.create_cigre_network_mv(with_der="all")
     >>> pp.runpp(net)
     >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    >>> net.res_line.ql_mvar.loc[[0, 1]].sum() - net.res_sgen.q_mvar.loc[[0, 1]].sum()  # expected value
+    0.010114
     >>> pp.group_res_q_mvar(net, gr_idx)
     0.010114
     """
