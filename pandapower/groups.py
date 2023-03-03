@@ -851,6 +851,19 @@ def group_res_power_per_bus(net, index):
     -------
     pd.DataFrame
         power consumption of the group per bus (index=bus, columns=["p_mw", "q_mvar"])
+
+    Examples
+    --------
+    >>> net = nw.create_cigre_network_mv(with_der="all")
+    >>> pp.runpp(net)
+    >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    >>> pp.group_res_power_per_bus(net, gr_idx)
+                 p_mw        q_mvar
+    bus
+    1    2.953004e+00  1.328978e+00
+    2   -3.641532e-14  4.618528e-14
+    3   -2.875066e+00 -1.318864e+00
+    4   -2.000000e-02  0.000000e+00
     """
     pq_sums = pd.DataFrame({'p_mw': float(), 'q_mvar': float()}, index=[])
     bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
@@ -891,6 +904,14 @@ def group_res_p_mw(net, index):
         pandapower net
     index : int
         index of the considered group
+
+    Examples
+    --------
+    >>> net = nw.create_cigre_network_mv(with_der="all")
+    >>> pp.runpp(net)
+    >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    >>> pp.group_res_p_mw(net, gr_idx)
+    0.057938
     """
     return _sum_powers(net, index, "p", "mw")
 
@@ -904,6 +925,14 @@ def group_res_q_mvar(net, index):
         pandapower net
     index : int
         index of the considered group
+
+    Examples
+    --------
+    >>> net = nw.create_cigre_network_mv(with_der="all")
+    >>> pp.runpp(net)
+    >>> gr_idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    >>> pp.group_res_q_mvar(net, gr_idx)
+    0.010114
     """
     return _sum_powers(net, index, "q", "mvar")
 
