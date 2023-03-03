@@ -146,8 +146,10 @@ def _current_source_current(net, ppci):
     ppci["bus"][:, IKCV] = 0
     ppci["bus"][:, IKSS2] = 0
     # sgen current source contribution only for Type A and case "max":
-    if case != "max" or net._options["use_pre_fault_voltage"]:
+    if case != "max":
         return
+
+    type_c = net._options["use_pre_fault_voltage"]
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     fault = net._options["fault"]
@@ -160,7 +162,7 @@ def _current_source_current(net, ppci):
         sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
     if len(sgen) == 0:
         return
-    if any(pd.isnull(sgen.sn_mva)):
+    if any(pd.isnull(sgen.sn_mva)) and not type_c:
         raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
     if "current_angle" in sgen.columns:
         sgen_angle = sgen.current_angle.values
@@ -174,7 +176,12 @@ def _current_source_current(net, ppci):
     if not "k" in sgen:
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
 
-    i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+    if type_c:
+        # todo: take pre-fault voltage and post-fault voltage into consideration
+        i_sgen_pu = (sgen.p_mw.values / net.sn_mva * sgen.k.values)
+    else:
+        i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+
     if sgen_angle is not None and fault == "3ph":
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
     # if case == "min":

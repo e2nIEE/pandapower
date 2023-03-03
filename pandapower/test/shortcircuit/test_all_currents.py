@@ -123,6 +123,22 @@ def net_transformer_simple_3():
     return net
 
 
+def net_transformer_simple_4():
+    net = net_transformer_simple_3()
+
+    pp.create_bus(net, 10)
+    pp.create_bus(net, 0.4)
+    pp.create_lines_from_parameters(net, [2, 8], [7, 6], 1, 0.099, 0.156, 400, 0.457)
+    pp.create_transformer_from_parameters(net, 7, 8, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
+                                          vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0,
+                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
+                                          tap_step_percent=2.5, parallel=1)
+    pp.create_switch(net, 6, 4, "l", closed=True)
+    pp.create_sgen(net, 3, 0, 0, 5, k=1.2)
+    pp.create_load(net, 6, 0.1)
+    return net
+
+
 def net_transformer():
     net = pp.create_empty_network(sn_mva=2)
     b1a = pp.create_bus(net, vn_kv=10.)
@@ -468,41 +484,104 @@ def test_branch_all_currents_trafo_simple_other_voltage3():
     assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
 
 
-def test_branch_all_currents_trafo_simple_other_voltage4():
-    net = net_transformer_simple_3()
+def test_type_c_trafo_simple_other_voltage4():
+    # this tests for 2 different topology configurations: ring and open ring,
+    # with options for different transformer nominal voltages, with load and sgen
+    # topology tests: open switch, out of service bus (important to test internal indexing)
+    net = net_transformer_simple_4()
+
     # net.trafo.vn_hv_kv.at[1] = 31
     net.trafo.vn_hv_kv.at[2] = 11
-    pp.create_bus(net, 10)
-    pp.create_bus(net, 0.4)
-    pp.create_lines_from_parameters(net, [2, 8], [7, 6], 1, 0.099, 0.156, 400, 0.457)
-    pp.create_transformer_from_parameters(net, 7, 8, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
-                                          vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0,
-                                          tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
-                                          tap_step_percent=2.5, parallel=1)
 
-    # sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
-
-    # pp.create_switch(net, 6, 4, "l", False)
+    pp.runpp(net)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
 
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV ** 2 / baseMVA
 
-    # assert np.allclose(net.res_bus_sc.loc[6].values,
-    #                    [], rtol=0, atol=1e-6)
-    #
-    # res_line_sc = np.array([])
-    # assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
-    # res_trafo_sc = np.array([])
-    # assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [2.096122,  1.452236,  0.054549,  0.085178], rtol=0, atol=1e-6)
 
-    pp.create_sgen(net, 3, 0, 0, 5, k=1.2)
-    pp.create_load(net, 6, 0.1)
+    res_line_sc = np.array([[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487,
+                             -0.529717, 0.986152, -0.281725, 0.986032, -0.281941],
+                            [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210,
+                             -0.538872, 0.982660, -0.378583, 0.981499, -0.376180],
+                            [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926,
+                             -3.524072, 0, 0],
+                            [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123,
+                             -0.650913, 0.982060, -0.398116, 0.980654, -0.395135],
+                            [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062,
+                             -3.543027, 0, 0]])
+    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
+    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
+    assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=2e-4)
+
+    res_trafo_sc = np.array([[0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716,
+                              0.986152, -0.281725, 0.982060, -0.398116],
+                             [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369,
+                              0.986032, -0.281941, 0.982660, -0.378583],
+                             [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687,
+                              0.981499, -0.376180, 0.798926, -3.524072],
+                             [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720,
+                              0.980654, -0.395135, 0.878062, -3.543027]])
+    non_i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c not in ["ikss_hv_degree", "ikss_lv_degree"]]
+    i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
+    assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
+
+
+def test_type_c_trafo_simple_other_voltage4_sgen():
+    # this tests for 2 different topology configurations: ring and open ring,
+    # with options for different transformer nominal voltages, with load and sgen
+    # topology tests: open switch, out of service bus (important to test internal indexing)
+    net = net_transformer_simple_4()
+    net.sgen.p_mw = 3
+    net.sgen.q_mvar = 0
+
+    # net.trafo.vn_hv_kv.at[1] = 31
+    net.trafo.vn_hv_kv.at[2] = 11
 
     pp.runpp(net)
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=False)
+
+    baseMVA = net.sn_mva  # MVA
+    baseV = net.bus.vn_kv.values  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+
+    assert np.allclose(net.res_bus_sc.loc[6].values,
+                       [2.096122,  1.452236,  0.054549,  0.085178], rtol=0, atol=1e-6)
+
+    res_line_sc = np.array([[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487,
+                             -0.529717, 0.986152, -0.281725, 0.986032, -0.281941],
+                            [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210,
+                             -0.538872, 0.982660, -0.378583, 0.981499, -0.376180],
+                            [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926,
+                             -3.524072, 0, 0],
+                            [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123,
+                             -0.650913, 0.982060, -0.398116, 0.980654, -0.395135],
+                            [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062,
+                             -3.543027, 0, 0]])
+    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
+    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
+    assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=2e-4)
+
+    res_trafo_sc = np.array([[0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716,
+                              0.986152, -0.281725, 0.982060, -0.398116],
+                             [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369,
+                              0.986032, -0.281941, 0.982660, -0.378583],
+                             [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687,
+                              0.981499, -0.376180, 0.798926, -3.524072],
+                             [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720,
+                              0.980654, -0.395135, 0.878062, -3.543027]])
+    non_i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c not in ["ikss_hv_degree", "ikss_lv_degree"]]
+    i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
+    assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
 
 
 def test_trafo_impedance():
