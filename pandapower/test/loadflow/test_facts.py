@@ -11,7 +11,7 @@ import pandapower as pp
 import matplotlib.pyplot as plt
 
 import pandapower.networks
-from pandapower.pf.create_jacobian_facts import calc_y_svc, calc_y_svc_pu, calc_tcsc_p_pu
+from pandapower.pf.create_jacobian_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
 from pandapower.pypower.newtonpf import makeYbus_tcsc
 
