@@ -16,6 +16,15 @@ from pandapower.pypower.idx_bus import BS, SVC_THYRISTOR_FIRING_ANGLE
 from pandapower.pypower.newtonpf import makeYbus_tcsc
 
 
+def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, rtol=0, atol=1e-6)
+
+    for col in "p_from_mw", "q_from_mvar", "p_to_mw", 'q_to_mvar':
+        assert np.allclose(net.res_tcsc.loc[idx_tcsc, col], net_ref.res_impedance.loc[idx_impedance, col],
+                           rtol=0, atol=1e-6)
+
+
 def facts_case_study_grid():
     net = pp.create_empty_network()
 
@@ -261,13 +270,8 @@ def test_compare_to_impedance():
 
     pp.runpp(net_ref)
 
-    # compare whhen controllable
-    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, rtol=0, atol=1e-6)
-    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, rtol=0, atol=1e-6)
-
-    for col in "p_from_mw", "q_from_mvar", "p_to_mw", 'q_to_mvar':
-        assert np.allclose(net.res_tcsc[col], net_ref.res_impedance[col], rtol=0, atol=1e-6)
-
+    # compare when controllable
+    compare_tcsc_impedance(net, net_ref, 0, 0)
     assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0,
                        atol=5e-5)
     Ybus = net._ppc["internal"]["Ybus"]
@@ -279,14 +283,82 @@ def test_compare_to_impedance():
     net.tcsc.thyristor_firing_angle = net.res_tcsc.thyristor_firing_angle
     net.tcsc.controllable = False
     pp.runpp(net)
-    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, rtol=0, atol=1e-6)
-    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, rtol=0, atol=1e-6)
 
-    assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0,
-                       atol=5e-5)
+    compare_tcsc_impedance(net, net_ref, 0, 0)
+    assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5)
     Ybus = net._ppc["internal"]["Ybus"]
     Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
                               xl / baseZ, xc / baseZ, [1], [2])
+    assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+
+
+def test_tcsc_case_study():
+    net = facts_case_study_grid()
+    baseMVA = net.sn_mva
+    baseV = 230
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    #plot_z(baseZ, xl, xc)
+    f = net.bus.loc[net.bus.name=="B4"].index.values[0]
+    t = net.bus.loc[net.bus.name=="B6"].index.values[0]
+    aux = pp.create_bus(net, 230, "aux")
+    l = net.line.loc[(net.line.from_bus==f) & (net.line.to_bus==t)].index.values[0]
+    net.line.loc[l, "from_bus"] = aux
+
+    net_ref = net.deepcopy()
+
+    pp.create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
+    pp.runpp(net, max_iteration=20)
+
+    pp.create_impedance(net_ref, f, aux, 0, net.res_tcsc.at[0, "x_ohm"] / baseZ, baseMVA)
+    pp.runpp(net_ref)
+
+    compare_tcsc_impedance(net, net_ref, 0, 0)
+    # J does not match:
+    # assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=1e-1)
+    Ybus = net._ppc["internal"]["Ybus"]
+    Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
+                              xl / baseZ, xc / baseZ, [f], [aux])
+    assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+
+
+def test_svc_tcsc_case_study():
+    net = facts_case_study_grid()
+    baseMVA = net.sn_mva
+    baseV = 230
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    #plot_z(baseZ, xl, xc)
+    f = net.bus.loc[net.bus.name=="B4"].index.values[0]
+    t = net.bus.loc[net.bus.name=="B6"].index.values[0]
+    aux = pp.create_bus(net, 230, "aux")
+    l = net.line.loc[(net.line.from_bus==f) & (net.line.to_bus==t)].index.values[0]
+    net.line.loc[l, "from_bus"] = aux
+
+    net_ref = net.deepcopy()
+
+    pp.create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
+
+    pp.create_shunt(net, net.bus.loc[net.bus.name=="B7"].index.values[0], 0)
+    net.shunt["controllable"] = True
+    net.shunt["set_vm_pu"] = 1.
+    net.shunt["thyristor_firing_angle_degree"] = 90.
+    net.shunt["svc_x_l_ohm"] = 1
+    net.shunt["svc_x_cvar_ohm"] = -10
+
+    pp.runpp(net, max_iteration=20)
+
+    pp.create_impedance(net_ref, f, aux, 0, net.res_tcsc.at[0, "x_ohm"] / baseZ, baseMVA)
+    pp.runpp(net_ref)
+
+    compare_tcsc_impedance(net, net_ref, 0, 0)
+    # J does not match:
+    # assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=1e-1)
+    Ybus = net._ppc["internal"]["Ybus"]
+    Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
+                              xl / baseZ, xc / baseZ, [f], [aux])
     assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
 
 

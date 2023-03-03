@@ -375,21 +375,23 @@ def _check_for_convergence(F, tol):
 
 
 def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
-    Ybus_svc = np.zeros(Ybus.shape, dtype=np.complex128)
-    Y_SVC = calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
-    Y_SVC_c = -1j * Y_SVC
-    Ybus_svc[svc_buses, svc_buses] = Y_SVC_c
-    return csr_matrix(Ybus_svc)
+    Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
+    Ybus_svc = csr_matrix((Y_SVC, (svc_buses, svc_buses)), shape=Ybus.shape, dtype=np.complex128)
+    return Ybus_svc
 
 
 def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    Y_TCSC = calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
-    Y_TCSC_c = -1j * Y_TCSC
-    for y_tcsc_pu_i, i, j in zip(Y_TCSC_c, tcsc_fb, tcsc_tb):
-        Ybus_tcsc[i, i] += y_tcsc_pu_i
-        Ybus_tcsc[i, j] += -y_tcsc_pu_i
-        Ybus_tcsc[j, i] += -y_tcsc_pu_i
-        Ybus_tcsc[j, j] += y_tcsc_pu_i
+    Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+
+    # for y_tcsc_pu_i, i, j in zip(Y_TCSC, tcsc_fb, tcsc_tb):
+    #     Ybus_tcsc[i, i] += y_tcsc_pu_i
+    #     Ybus_tcsc[i, j] += -y_tcsc_pu_i
+    #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
+    #     Ybus_tcsc[j, j] += y_tcsc_pu_i
+
+    Ybus_tcsc[tcsc_fb, tcsc_tb] = -Y_TCSC
+    Ybus_tcsc[tcsc_tb, tcsc_fb] = -Y_TCSC
+    Ybus_tcsc[np.diag_indices_from(Ybus_tcsc)] = -Ybus_tcsc.sum(axis=1)
     return csr_matrix(Ybus_tcsc)
 
