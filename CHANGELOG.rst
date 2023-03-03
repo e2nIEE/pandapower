@@ -15,13 +15,14 @@ Change Log
 - [CHANGED] renamed functions: drop_from_group() -> detach_from_group(), append_to_group() -> attach_to_group(), check_unique_group_names() -> check_unique_group_rows()
 - [CHANGED] attach_to_group(): enable handling of different reference_column passed than existing
 - [ADDED] toolbox function :code:`count_elements`, :code:`drop_elements`, :code:`res_power_columns`
-- [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`, :code:`group_res_power_per_bus`
+- [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`, :code:`group_res_power_per_bus`, :code:`group_index`
 - [CHANGED] __repr__ (used by print(net)) now considers groups appropriately
 - [ADDED] documentation of DeprecationWarning process
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
 - [CHANGED] remove support for Python 3.7 and add Python 3.11
 - [CHANGED] split toolbox.py -> better overview, avoiding circular imports
 - [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
+- [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 

@@ -20,14 +20,14 @@ from pandapower.test.toolbox import assert_net_equal
 
 def test_element_bus_tuples():
     ebts = pp.element_bus_tuples()
-    assert isinstance(ebts, set)
+    assert isinstance(ebts, list)
     assert len(ebts) >= 20
     item = next(iter(ebts))
     assert isinstance(item, tuple)
     assert len(item) == 2
-    assert len({"line", "gen"} & {elm for (elm, bus) in ebts}) == 2
-    assert {bus for (elm, bus) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
-                                            'lv_bus'}
+    assert len({"line", "gen"} & {elm for (elm, buses) in ebts}) == 2
+    assert {buses for (elm, buses) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
+                                                'lv_bus'}
     assert len(pp.element_bus_tuples(bus_elements=False, res_elements=True)) > \
            1.5 * len(pp.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
 
@@ -47,7 +47,7 @@ def test_branch_element_bus_dict():
     bebd = pp.branch_element_bus_dict()
     assert isinstance(bebd, dict)
     assert len(bebd) >= 5
-    assert set(bebd["trafo"]) == {"hv_bus", "lv_bus"}
+    assert bebd["trafo"] == ["hv_bus", "lv_bus"]
     bebd = pp.branch_element_bus_dict(include_switch=True)
     assert "bus" in bebd["switch"]
 

@@ -40,6 +40,8 @@ Access group data and evaluate membership
 
 .. autofunction:: pandapower.group_name
 
+.. autofunction:: pandapower.group_index
+
 .. autofunction:: pandapower.group_element_index
 
 .. autofunction:: pandapower.group_row
@@ -83,6 +85,8 @@ Further group functions
 .. autofunction:: pandapower.group_res_p_mw
 
 .. autofunction:: pandapower.group_res_q_mvar
+
+.. autofunction:: pandapower.group_res_power_per_bus
 
 .. autofunction:: pandapower.set_group_reference_column
 

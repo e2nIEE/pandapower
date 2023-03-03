@@ -302,11 +302,35 @@ def group_name(net, index):
         index of the group
     verbose : bool, optional
         Setting to False, accelerate the code but don't check inconsistent names, by default True
+
+    See also
+    --------
+    group_index : recursive function
     """
     names = net.group.name.loc[[index]]
     if len(set(names)) != 1 and not pd.isnull(names).all():
         raise ValueError(f"group {index} has different values in net.group.name.loc[index]")
     return names.values[0]
+
+
+def group_index(net, name):
+    """Returns the index of the group named as given
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    name : str
+        name of the requested group
+
+    See also
+    --------
+    group_name : recursive function
+    """
+    index = net.group.index[net.group.name == name]
+    if len(set(index)) != 1:
+        raise ValueError(f"group {name} has multiple indices: {index}")
+    return index[0]
 
 
 def group_element_index(net, index, element_type):
@@ -828,7 +852,7 @@ def group_res_power_per_bus(net, index):
     pd.DataFrame
         power consumption of the group per bus (index=bus, columns=["p_mw", "q_mvar"])
     """
-    pq_sums = pd.DataFrame(columns=["p_mw", "q_mvar"])
+    pq_sums = pd.DataFrame({'p_mw': float(), 'q_mvar': float()}, index=[])
     bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
     bra_ebd = branch_element_bus_dict()
     missing_res_idx = list()

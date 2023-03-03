@@ -7,7 +7,10 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import networkx as nx
+import warnings
+from packaging.version import Version
 
+from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability, pandapowerNet
 
 try:
@@ -30,23 +33,27 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     Provides the tuples of elements and corresponding columns for buses they are connected to
     :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
     :param branch_elements: whether branch elements e.g. line, trafo, ... are included
-    :return: set of tuples with element names and column names
+    :param res_elements: whether result table names e.g. res_sgen, res_line, ... are included
+    :param return_type: which type the output has
+    :return: list of tuples with element names and column names
     """
-    ebts = set()
+    if Version(__version__) < Version('2.13'):
+        logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
+                     "since pp.version >= 2.12.")
+    ebts = list()
     if bus_elements:
-        ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
-                     ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
-                     ("motor", "bus")])
+        ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+                 ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
+                 ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
+                 ("motor", "bus")]
     if branch_elements:
-        ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
-                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
-                     ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
-                     ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
+        ebts += [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                ("impedance", "to_bus"), ("switch", "bus"), ("trafo", "hv_bus"),
+                ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
+                ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")]
     if res_elements:
         elements_without_res = ["switch", "measurement", "asymmetric_load", "asymmetric_sgen"]
-        ebts.update(
-            [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
+        ebts += [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res]
     return ebts
 
 
@@ -69,21 +76,29 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     return pp_elms
 
 
-def branch_element_bus_dict(include_switch=False, sort=False):
+def branch_element_bus_dict(include_switch=False, sort=None):
     """
     Returns a dict with keys of branch elements and values of bus column names as list.
     """
+    msg = ("The parameter 'sort' is deprecated to function branch_element_bus_dict() with "
+           "pp.version >= 2.12. The default was False but the behaviour was changed to True.")
+    if sort is not None:
+        if Version(__version__) < Version('2.13'):
+            warnings.warn(msg, category=DeprecationWarning)
+        else:
+            raise DeprecationWarning(msg)
+    elif Version(__version__) < Version('2.13'):
+        logger.debug(msg)
+
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
     bebd = dict()
-    for elm, bus in ebts:
-        if elm in bebd.keys():
-            bebd[elm].append(bus)
+    for et, bus in ebts:
+        if et in bebd.keys():
+            bebd[et].append(bus)
         else:
-            bebd[elm] = [bus]
+            bebd[et] = [bus]
     if not include_switch:
         del bebd["switch"]
-    if sort:
-        bebd = {elm: sorted(buses) for elm, buses in bebd.items()}
     return bebd
 
 

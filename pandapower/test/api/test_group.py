@@ -404,6 +404,19 @@ def test_res_power():
                 assert per_bus_out.index.tolist() == [0, 1, 2, 8, 10, 11, 23]
 
 
+def test_res_power_examples():
+    net = nw.create_cigre_network_mv(with_der="all")
+    pp.runpp(net)
+    idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    expected = pd.DataFrame([
+        [ 2.953004,  1.328978],
+        [ 0.      ,  0.      ],
+        [-2.875066, -1.318864],
+        [-0.02    ,  0.      ]
+        ], index=pd.Index([1, 2, 3, 4], name="bus"), columns=["p_mw", "q_mvar"])
+    assert pp.dataframes_equal(pp.group_res_power_per_bus(net, idx), expected, atol=1e-6)
+
+
 def test_group_io():
     net = nw.case24_ieee_rts()
     gr1 = pp.create_group_from_dict(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]},
@@ -517,7 +530,8 @@ if __name__ == "__main__":
         # test_set_out_of_service()
         # test_attach_to_group()
         # test_detach_and_compare()
-        test_res_power()
+        # test_res_power()
+        test_res_power_examples()
         # test_group_io()
         # test_count_group_elements()
         # test_isin()
