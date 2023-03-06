@@ -277,7 +277,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         kwargs.pop(kw)
     patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths,
                                  **kwargs)
-    line_coll = LineCollection(lines, color=line_color, picker=picker, linewidth=linewidths,
+    color = line_color if "color" not in kwargs else kwargs.pop("color", linewidths)
+    line_coll = LineCollection(lines, color=color, picker=picker, linewidth=linewidths,
                                **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
@@ -1139,7 +1140,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 
@@ -1162,12 +1163,13 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "l"]
+    if switches is None:
+        switches = net.switch.index[net.switch.et == "l"] # only line switches
 
     color = kwargs.pop("color", "k")
 
     switch_patches = []
-    for switch in lbs_switches:
+    for switch in switches:
         sb = net.switch.bus.loc[switch]
         line = net.line.loc[net.switch.element.loc[switch]]
         fb = line.from_bus

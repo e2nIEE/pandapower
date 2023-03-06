@@ -59,8 +59,9 @@ def get_controller_order(nets, controller):
         controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
         # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
-    logger.debug("levellist: " + str(level_list))
-    logger.debug("order: " + str(controller_order))
+    if logger.level <= pplog.DEBUG:
+        logger.debug("levellist: " + str(level_list))
+        logger.debug("order: " + str(controller_order)) # Note: creates a long string if many controllers are present
 
     return level_list, controller_order
 
@@ -98,8 +99,7 @@ def ctrl_variables_default(net, **kwargs):
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
     ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
-    ctrl_variables["initial_run"] = check_for_initial_run(
-        ctrl_variables["controller_order"])
+    ctrl_variables["initial_run"] = check_for_initial_run(ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
     ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)
