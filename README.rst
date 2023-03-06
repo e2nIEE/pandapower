@@ -16,13 +16,9 @@
 .. image:: https://readthedocs.org/projects/pandapower/badge/
    :target: http://pandapower.readthedocs.io/
    :alt: docs
-    
-.. image:: https://travis-ci.org/e2nIEE/pandapower.svg?branch=master
-   :target: https://travis-ci.org/e2nIEE/pandapower/branches
-   :alt: travis
 
-.. image:: https://codecov.io/gh/e2nIEE/pandapower/branch/master/graph/badge.svg
-   :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
+.. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
+   :target: https://app.codecov.io/github/e2nIEE/pandapower?branch=master
    :alt: codecov
     
 .. image:: https://api.codacy.com/project/badge/Grade/e2ce960935fd4f96b4be4dff9a0c76e3

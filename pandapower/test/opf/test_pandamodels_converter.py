@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -11,8 +11,8 @@ import pytest
 import pandapower.control
 import pandapower.timeseries
 import pandapower as pp
-from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
-from pandapower.converter.powermodels.to_pm import init_ne_line
+from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
+from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line

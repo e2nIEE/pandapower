@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -62,12 +62,7 @@ def makeBdc(bus, branch, return_csr=True):
     ##      |    | = |          | * |     | + |       |
     ##      | Pt |   | Btf  Btt |   | Vat |   | Ptinj |
     ##
-    stat = branch[:, BR_STATUS]               ## ones at in-service branches
-    b = stat / branch[:, BR_X]                ## series susceptance
-    tap = ones(nl)                            ## default tap ratio = 1
-    i = find(real(branch[:, TAP]))               ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])                   ## assign non-zero tap ratios
-    b = b / tap
+    b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
     f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
@@ -84,8 +79,25 @@ def makeBdc(bus, branch, return_csr=True):
     Bbus = Cft.T * Bf
 
     ## build phase shift injection vectors
-    Pfinj = b * (-branch[:, SHIFT] * pi / 180.)  ## injected at the from bus ...
-    # Ptinj = -Pfinj                            ## and extracted at the to bus
-    Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    Pfinj, Pbusinj = phase_shift_injection(b, branch[:, SHIFT], Cft)
 
-    return Bbus, Bf, Pbusinj, Pfinj
+    return Bbus, Bf, Pbusinj, Pfinj, Cft
+
+
+def phase_shift_injection(b, shift, Cft):
+    ## build phase shift injection vectors
+    Pfinj = b * (-shift * pi / 180.)  ## injected at the from bus ...
+    # Ptinj = -Pfinj                            ## and extracted at the to bus
+    Pbusinj = Cft.T * Pfinj  ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    return Pfinj, Pbusinj
+
+
+def calc_b_from_branch(branch, nl):
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    b = stat / branch[:, BR_X]  ## series susceptance
+    tap = ones(nl)  ## default tap ratio = 1
+    i = find(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    b = b / tap
+    return b
+

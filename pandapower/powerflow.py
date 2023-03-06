@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose
@@ -93,22 +93,17 @@ def _recycled_powerflow(net, **kwargs):
     options["init_va_degree"] = "results"
     algorithm = options["algorithm"]
     ac = options["ac"]
+    recycle = options["recycle"]
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
             "baseMVA": net["_ppc"]["internal"]["baseMVA"],
             "internal": net["_ppc"]["internal"],
             }
-    if not ac:
-        # DC recycle
-        result = _run_dc_pf(ppci)
-        _ppci_to_net(result, net)
-        return
     if algorithm not in ['nr', 'iwamoto_nr'] and ac:
         raise ValueError("recycle is only available with Newton-Raphson power flow. Choose "
                          "algorithm='nr'")
 
-    recycle = options["recycle"]
     ppc = net["_ppc"]
     ppc["success"] = False
     ppc["iterations"] = 0.
@@ -134,6 +129,12 @@ def _recycled_powerflow(net, **kwargs):
     ppci = _ppc2ppci(ppc, net, ppci=ppci)
     ppci["internal"] = net["_ppc"]["internal"]
     net["_ppc"] = ppc
+
+    if not ac:
+        # DC recycle
+        result = _run_dc_pf(ppci, recycle)
+        _ppci_to_net(result, net)
+        return
 
     # run the Newton-Raphson power flow
     result = _run_newton_raphson_pf(ppci, options)
@@ -167,7 +168,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     else:
-        result = _run_dc_pf(ppci)
+        result = _run_dc_pf(ppci, options["recycle"])
 
     return result
 

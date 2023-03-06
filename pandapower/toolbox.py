@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -306,19 +306,19 @@ def compare_arrays(x, y):
         # (x != x) is like np.isnan(x) - but works also for strings
         return np.equal(x, y) | ((x != x) & (y != y))
     else:
-        raise ValueError("x and y needs to have the same shape.")
+        raise ValueError("x and y need to have the same shape.")
 
 
 # --- Information
-def log_to_level(msg, logger, level):
+def log_to_level(msg, passed_logger, level):
     if level == "error":
-        logger.error(msg)
+        passed_logger.error(msg)
     elif level == "warning":
-        logger.warning(msg)
+        passed_logger.warning(msg)
     elif level == "info":
-        logger.info(msg)
+        passed_logger.info(msg)
     elif level == "debug":
-        logger.debug(msg)
+        passed_logger.debug(msg)
 
 
 def lf_info(net, numv=1, numi=2):  # pragma: no cover
@@ -1406,6 +1406,33 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     net.measurement.drop(to_drop, inplace=True)
 
 
+def drop_controllers_at_elements(net, element_type, idx=None):
+    """
+    Drop all the controllers for the given elements (idx).
+    """
+    idx = ensure_iterability(idx) if idx is not None else net[element_type].index
+    to_drop = []
+    for i in net.controller.index:
+        elm = net.controller.object[i].__dict__["element"]
+        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
+        if element_type == elm:
+            if set(elm_idx) - set(idx) == set():
+                to_drop.append(i)
+            else:
+                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
+                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
+    net.controller.drop(to_drop, inplace=True)
+
+
+def drop_controllers_at_buses(net, buses):
+    """
+    Drop all the controllers for the elements connected to the given buses.
+    """
+    elms = get_connected_elements_dict(net, buses)
+    for elm in elms.keys():
+        drop_controllers_at_elements(net, elm, elms[elm])
+
+
 def drop_duplicated_measurements(net, buses=None, keep="first"):
     """
     Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
@@ -1793,7 +1820,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
-                p2[table] = net[table].loc[buses.intersection(net[table].index)]
+                p2[table] = net[table].loc[pd.Index(buses).intersection(net[table].index)]
             else:
                 p2[table] = net[table].loc[p2[table[4:]].index.intersection(net[table].index)]
     if "bus_geodata" in net:
@@ -1852,22 +1879,23 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     UserWarning
         if validate is True and power flow results of the merged net deviate from input nets results
     """
+    old_params = {"retain_original_indices_in_net1", "create_continuous_bus_indices"}
     new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
-    msg_future_changes = f"In a future version merge_nets() will keep element indices and " + \
-        "prioritize net1 standard types. To silence this warning and to use the future " + \
-        f"functionality, explicitely pass at least one of the new parameters {new_params}."
+    msg1 = f"Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
+        "and prioritize net1 standard types by default."
+    msg2 = f"Parameters {old_params} are deprecated."
+    msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
+        f"{new_params}."
 
-    old_params_passed = not len(set(kwargs.keys()).intersection({
-            "retain_original_indices_in_net1", "create_continuous_bus_indices"}))
+    old_params_passed = len(set(kwargs.keys()).intersection(old_params))
     new_params_passed = len(set(kwargs.keys()).intersection(new_params))
 
-    if new_params_passed:
-        return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
+    if old_params_passed:
+        raise FutureWarning(msg1 + msg2 + msg3)
+    elif not new_params_passed:
+        warnings.warn(msg1 + msg3, category=FutureWarning)
+    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
                            **kwargs)
-    else:
-        warnings.warn(msg_future_changes, category=FutureWarning)
-        return _merge_nets_deprecated(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
-                               **kwargs)
 
 
 def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
@@ -1933,90 +1961,6 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         return net, reindex_lookup
     else:
         return net
-
-
-def _merge_nets_deprecated(net1, net2, validate=True, merge_results=True, tol=1e-9,
-                    create_continuous_bus_indices=True,
-                    retain_original_indices_in_net1=False, **kwargs):
-    """
-    Function to concatenate two nets into one data structure. All element tables get new,
-    continuous indizes in order to avoid duplicates.
-
-    Groups are not considered.
-    """
-    net = copy.deepcopy(net1)
-    # net1 = copy.deepcopy(net1)  # commented to save time. net1 will not be changed (only by runpp)
-    net2 = copy.deepcopy(net2)
-    if create_continuous_bus_indices:
-        create_continuou_bus_index(net2, start=net1.bus.index.max() + 1)
-    if validate:
-        runpp(net1, **kwargs)
-        runpp(net2, **kwargs)
-
-    def adapt_element_idx_references(net, element, element_type, offset=0):
-        """
-        used for switch, measurement, poly_cost and pwl_cost
-        """
-        # element_type[0] == "l" for "line", etc.:
-        et = element_type[0] if element == "switch" else element_type
-        et_col = "et" if element in ["switch", "poly_cost", "pwl_cost"] else "element_type"
-        elements = net[element][net[element][et_col] == et]
-        new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
-        if len(new_index):
-            net[element].loc[elements.index, "element"] = new_index
-
-    for element, table in net.items():
-        if element.startswith("_") or element == "dtypes" or (element.startswith("res") and (
-                validate or not merge_results)):
-            continue
-        if isinstance(table, pd.DataFrame) and (len(table) > 0 or len(net2[element]) > 0):
-            if element in ["switch", "measurement"]:
-                adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
-                adapt_element_idx_references(net, element, "line")
-                adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
-                adapt_element_idx_references(net, element, "trafo")
-            if element in ["poly_cost", "pwl_cost"]:
-                net[element]["element"] = [np.nan if row.element not in net1[row.et].index.values \
-                                            else net1[row.et].index.get_loc(row.element) for row in
-                                            net1[element].itertuples()]
-                if net[element]["element"].isnull().any():
-                    # this case could also be checked using get_false_links()
-                    logger.warning(f"Some net1[{element}] does not link to an existing element."
-                                   "These are dropped.")
-                    net[element].drop(net[element].index[net[element].element.isnull()],
-                                       inplace=True)
-                    net[element]["element"] = net[element]["element"].astype(int)
-                for et in ["gen", "sgen",  "ext_grid", "load", "dcline", "storage"]:
-                    adapt_element_idx_references(net2, element, et, offset=len(net1[et]))
-            if element == "line_geodata":
-                ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
-                net.line_geodata.set_index(np.array(ni), inplace=True)
-                ni = [net2.line.index.get_loc(ix) + len(net1.line)
-                      for ix in net2["line_geodata"].index]
-                net2.line_geodata.set_index(np.array(ni), inplace=True)
-            elm_with_critical_index = element in ("bus", "res_bus", "bus_geodata", "line_geodata",
-                                                  "group")
-            ignore_index = not retain_original_indices_in_net1 and not elm_with_critical_index
-            dtypes = net[element].dtypes
-            net[element] = pd.concat([net[element], net2[element]], sort=False,
-                                     ignore_index=ignore_index)
-            if retain_original_indices_in_net1 and not elm_with_critical_index and \
-                len(net1[element]):
-                start = int(net1[element].index.max()) + 1
-                net[element].index = net1[element].index.tolist() + \
-                    list(range(start, len(net2[element]) + start))
-            _preserve_dtypes(net[element], dtypes)
-    # update standard types of net by data of net2
-    for type_ in net.std_types.keys():
-        net.std_types[type_].update(net2.std_types[type_])  # net2.std_types have priority
-    if validate:
-        runpp(net, **kwargs)
-        dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
-        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
-                       net2.res_bus.vm_pu.values))
-        if dev1 > tol or dev2 > tol:
-            raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
-    return net
 
 
 def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):

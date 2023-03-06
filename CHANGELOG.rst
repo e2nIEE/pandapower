@@ -1,7 +1,29 @@
 Change Log
 =============
 
-[upcoming release] - 2022-..-..
+[upcoming release] - 2023-..-..
+-------------------------------
+- [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
+- [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
+- [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
+- [CHANGED] cim2pp converter documentation fixes
+- [CHANGED] make legend item size constant in `simple_plotly`
+- [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
+- [FIXED] documentation of powerfactory converter
+- [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
+- [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
+- [ADDED] documentation of DeprecationWarning process
+- [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
+- [CHANGED] remove support for Python 3.7 and add Python 3.11
+- [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+
+[2.11.1] - 2023-01-02
+-------------------------------
+- [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
+- [FIXED] bugfix in toolbox._merge_nets_deprecated
+- [CHANGED] added tests for pp.control.Characteristic, removed Characteristic.target
+
+[2.11.0] - 2022-12-14
 -------------------------------
 - [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
 - [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
@@ -16,8 +38,8 @@ Change Log
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
-- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
+- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
 
 [2.10.1] - 2022-07-31
 -------------------------------

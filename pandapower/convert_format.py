@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -48,7 +48,22 @@ def convert_format(net, elements_to_deserialize=None):
     correct_dtypes(net, error=False)
     net.format_version = __format_version__
     net.version = __version__
+    _restore_index_names(net)
     return net
+
+
+def _restore_index_names(net):
+    """Restores dataframes index names stored as dictionary. With newer pp to_json() this
+    information is stored to the dataframe its self.
+    """
+    if "index_names" in net.keys():
+        if not isinstance(net["index_names"], dict):
+            raise ValueError("To restore the index names of the dataframes, a dict including this "
+                             f"information is expected, not {type(net['index_names'])}")
+        for key, index_name in net["index_names"].items():
+            if key in net.keys():
+                net[key].index.name = index_name
+        del net["index_names"]
 
 
 def correct_dtypes(net, error):

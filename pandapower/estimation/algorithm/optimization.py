@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from scipy.optimize import minimize
@@ -9,8 +9,8 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.estimator import BaseEstimatorOpt, get_estimator
 
-# DEFAULT_OPT_METHOD = "Newton-CG"
-DEFAULT_OPT_METHOD = "TNC"
+DEFAULT_OPT_METHOD = "Newton-CG"
+# DEFAULT_OPT_METHOD = "TNC"
 # DEFAULT_OPT_METHOD = "SLSQP"
 # DEFAULT_OPT_METHOD = 'L-BFGS-B'
 
