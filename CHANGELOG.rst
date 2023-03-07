@@ -7,15 +7,23 @@ Change Log
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
 - [CHANGED] cim2pp converter documentation fixes
-- [CHANGED] make legend item size constant in `simple_plotly`
+- [CHANGED] make legend item size constant in :code:`simple_plotly`
 - [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
 - [FIXED] documentation of powerfactory converter
 - [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
 - [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
 - [CHANGED] renamed functions: drop_from_group() -> detach_from_group(), append_to_group() -> attach_to_group(), check_unique_group_names() -> check_unique_group_rows()
+- [CHANGED] attach_to_group(): enable handling of different reference_column passed than existing
+- [ADDED] toolbox function :code:`count_elements`, :code:`drop_elements`, :code:`res_power_columns`
+- [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`, :code:`group_res_power_per_bus`, :code:`group_index`
+- [CHANGED] __repr__ (used by print(net)) now considers groups appropriately
 - [ADDED] documentation of DeprecationWarning process
 - [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
 - [CHANGED] remove support for Python 3.7 and add Python 3.11
+- [CHANGED] split toolbox.py -> better overview, avoiding circular imports
+- [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
+- [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
+- [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 
 [2.11.1] - 2023-01-02

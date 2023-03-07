@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.run import runpp
-from pandapower.toolbox import get_connected_elements
+from pandapower.toolbox_elm_selection import get_connected_elements
 from pandapower.diagnostic_reports import diagnostic_report
 
 # separator between log messages
