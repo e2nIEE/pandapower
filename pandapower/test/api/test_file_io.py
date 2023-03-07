@@ -26,7 +26,7 @@ try:
     import cryptography.fernet
     cryptography_INSTALLED = True
 except ImportError:
-    cryptography_INSTALLED = True
+    cryptography_INSTALLED = False
 try:
     import openpyxl
     openpyxl_INSTALLED = True
@@ -69,8 +69,9 @@ def test_pickle(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not xlsxwriter_INSTALLED or openpyxl_INSTALLED, reaseon=("xlsxwriter is mandatory to"
-               " write excel files and openpyxl to read excels, but is not installed."))
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reaseon=("xlsxwriter is "
+                    "mandatory to write excel files and openpyxl to read excels, but is not "
+                    "installed."))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)
@@ -86,7 +87,7 @@ def test_excel(net_in, tmp_path):
 
 
 @pytest.mark.skipif(not xlsxwriter_INSTALLED,
-               reaseon="xlsxwriter is mandatory to write excel files, but is not installed.")
+                    reaseon="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
@@ -149,8 +150,8 @@ def test_json(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not cryptography_INSTALLED,
-               reaseon="cryptography is mandatory to encrypt json files, but is not installed.")
+@pytest.mark.skipif(not cryptography_INSTALLED, reaseon=("cryptography is mandatory to encrypt "
+                    "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename, encryption_key="verysecret")
