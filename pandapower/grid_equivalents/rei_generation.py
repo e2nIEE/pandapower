@@ -1,4 +1,4 @@
-from pandas.api.types import is_bool_dtype
+from pandas.api.types import is_bool_dtype, is_numeric_dtype #, is_integer_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     drop_internal_branch_elements, \
@@ -269,9 +269,11 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         elm_org = net[elm]
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
-                {"name", "bus", "vm_pu", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
-            other_cols_number = set()
-            other_cols_bool = set()
+                {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
+            other_cols_bool = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_bool_dtype)])
+            other_cols -= other_cols_bool
+            other_cols_number = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_numeric_dtype)])
+            other_cols -= other_cols_number
             other_cols_str = set()
             other_cols_none = set()
             other_cols_mixed = set()
@@ -290,11 +292,12 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 other_cols -= {c}
             assert len(other_cols) == 0
         if "integrated" in key:
-            net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
-                elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
             if "voltLvl" in other_cols_number:
                 net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
                     net_zpbn.bus.voltLvl[boundary_buses].max()
+                other_cols_number -= {"voltLvl"}
+            net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
+                elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
             net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
                 elm_org.bus.isin(all_external_buses)].values.sum(axis=0) > 0
             all_str_values = list(zip(*elm_org[list(other_cols_str)]\
@@ -503,7 +506,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
-                                    calc_volt_angles=True, 
+                                    calc_volt_angles=True,
                                     runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()

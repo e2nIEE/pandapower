@@ -5,8 +5,7 @@ from copy import deepcopy
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
-    match_cost_functions_and_eq_net, _check_network, adaptation_phase_shifter, \
-    get_boundary_vp, _runpp_except_voltage_angles
+    match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
@@ -153,10 +152,9 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
     # --- create reference buses
-    add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
-                                calc_volt_angles=calculate_voltage_angles,
-                                allow_net_change_for_convergence=allow_net_change_for_convergence,
-                                runpp_fct=runpp_fct)
+    orig_slack_gens = add_ext_grids_to_boundaries(
+        net, boundary_buses, adapt_va_degree, calc_volt_angles=calculate_voltage_angles,
+        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct)
 
     # --- replace ward and xward elements by internal elements (load, shunt, impedance, gen)
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
@@ -264,6 +262,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, eq_type, show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
+        if len(orig_slack_gens):
+            net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
@@ -276,8 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
-        time_end-time_start), 2))
+    logger.info("%s equivalent finished in %.2f seconds:" % (eq_type, time_end-time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
