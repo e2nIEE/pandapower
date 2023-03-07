@@ -69,7 +69,7 @@ def test_pickle(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reaseon=("xlsxwriter is "
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
                     "mandatory to write excel files and openpyxl to read excels, but is not "
                     "installed."))
 def test_excel(net_in, tmp_path):
@@ -87,7 +87,7 @@ def test_excel(net_in, tmp_path):
 
 
 @pytest.mark.skipif(not xlsxwriter_INSTALLED,
-                    reaseon="xlsxwriter is mandatory to write excel files, but is not installed.")
+                    reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
@@ -150,7 +150,7 @@ def test_json(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not cryptography_INSTALLED, reaseon=("cryptography is mandatory to encrypt "
+@pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
                     "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
