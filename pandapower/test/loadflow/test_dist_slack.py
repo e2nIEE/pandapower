@@ -5,14 +5,13 @@
 
 
 import numpy as np
+import pytest
 import pandapower as pp
 from pandapower import networks
 from pandapower.control import ContinuousTapControl
 from pandapower.pypower.idx_bus import PD, GS, VM
 from pandapower.pypower.idx_brch import PF
-import pytest
 from pandapower.test.toolbox import assert_res_equal
-
 try:
     import numba
 
@@ -63,9 +62,9 @@ def _get_xward_result(net):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
         p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] ** 2 * net["xward"].at[x_id, "pz_mw"]
         internal_results = np.append(internal_results, p_shunt)
-        connected = pp.toolbox.get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
-                                                           connected_branch_elements=False,
-                                                           connected_other_elements=False)
+        connected = pp.get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
+                                                   connected_branch_elements=False,
+                                                   connected_other_elements=False)
         for e, idx in connected.items():
             # first, count the total slack weights per bus, and obtain the variable part of the active power
             total_weight = 0
