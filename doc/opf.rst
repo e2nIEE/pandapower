@@ -12,5 +12,5 @@ can identify problems using the pandapower diagnostic function.
 
     opf/formulation
     opf/pypower_run
-    opf/powermodels
+    opf/pandamodels
     opf/known_problems

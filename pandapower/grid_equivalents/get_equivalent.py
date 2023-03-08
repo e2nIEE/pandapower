@@ -5,8 +5,7 @@ from copy import deepcopy
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
-    match_cost_functions_and_eq_net, check_network, adaptation_phase_shifter, \
-    get_boundary_vp, _runpp_except_voltage_angles
+    match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
@@ -14,7 +13,7 @@ from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
 from pandapower.grid_equivalents.ward_generation import \
     _calculate_ward_and_impedance_parameters, \
     _calculate_xward_and_impedance_parameters, \
-    create_passive_external_net_for_ward_addmittance, \
+    create_passive_external_net_for_ward_admittance, \
     _replace_external_area_by_wards, _replace_external_area_by_xwards
 
 try:
@@ -136,7 +135,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     net = deepcopy(net)
     if not len(boundary_buses):
         raise ValueError("No boundary buses are given.")
-    check_network(net)
+    _check_network(net)
     logger.info(eq_type + " equivalent calculation started")
 
     # --- determine interal buses, external buses, buses connected to boundary buses via
@@ -152,11 +151,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     # --- ensure unique boundary bus names
     _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
-    # --- check and create reference buses
-    add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
-                                calc_volt_angles=calculate_voltage_angles,
-                                allow_net_change_for_convergence=allow_net_change_for_convergence,
-                                runpp_fct=runpp_fct)
+    # --- create reference buses
+    orig_slack_gens = add_ext_grids_to_boundaries(
+        net, boundary_buses, adapt_va_degree, calc_volt_angles=calculate_voltage_angles,
+        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct)
 
     # --- replace ward and xward elements by internal elements (load, shunt, impedance, gen)
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
@@ -170,7 +168,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     # --- switch from ward injection to ward addmittance if requested
     if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
-        create_passive_external_net_for_ward_addmittance(
+        create_passive_external_net_for_ward_admittance(
             net, all_external_buses, boundary_buses, runpp_fct=runpp_fct)
 
     # --- rei calculations
@@ -190,7 +188,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         # --- calculate equivalent Ybus according to gaussian elimination
         Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups,
                                              eq_type, show_computing_time,
-                                             check_validity=False)
+                                             **kwargs)
 
         # --- calculate equivalent impedance and shunts
         shunt_params, impedance_params = \
@@ -264,6 +262,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, eq_type, show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
+        if len(orig_slack_gens):
+            net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
@@ -276,8 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
-        time_end-time_start), 2))
+    logger.info("%s equivalent finished in %.2f seconds:" % (eq_type, time_end-time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
@@ -368,9 +367,7 @@ def merge_internal_net_and_equivalent_external_net(
     # --- merge equivalent external net and internal net
     merged_net = pp.merge_nets(
         net_internal, net_eq, validate=kwargs.pop("validate", False),
-        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"),
-        merge_results=kwargs.pop("merge_results", False),
-        **kwargs)
+        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"), **kwargs)
     try:
         merged_net.gen.max_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.max_p_mw.values
         merged_net.gen.min_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.min_p_mw.values
