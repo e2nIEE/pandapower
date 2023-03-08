@@ -26,8 +26,7 @@ def test_runpp_pgm__invalid_algorithm():
     net = pp.create_empty_network()
     with pytest.raises(
         KeyError,
-        match="Invalid algorithm 'foo'; choose from: 'nr' (newton_raphson), 'lin' (linear), "
-        "'bfsw' (iterative_current), 'lc' (linear_current)",
+        match="Invalid algorithm 'foo'",
     ):
         pp.runpp_pgm(net, algorithm="foo")
 
