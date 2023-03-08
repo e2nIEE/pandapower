@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -24,7 +24,7 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox_general_issues import nets_equal
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 
 

@@ -9,7 +9,7 @@ from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox import pp_elements
+from pandapower.toolbox_general_issues import pp_elements
 
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):
@@ -23,7 +23,7 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     if "ne_branch" in result_pm["solution"].keys():
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
-    
+
     # net["_pm_result"] = result_pm
     success = ppc["success"]
     if success:
@@ -48,18 +48,19 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
     else:
         _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
-        raise OPFNotConverged("PowerModels.jl OPF not converged")   
+        raise OPFNotConverged("PowerModels.jl OPF not converged")
 
 
 def add_storage_results(net, result_pmi):
     if "storage" in result_pmi:
         df = net.res_storage
         df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
-        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index) 
-        controllable_storages = net.storage.index[net.storage.controllable==True]
+        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
+        controllable_storages = net.storage.index[net.storage.controllable]
         df_pm = pd.DataFrame.from_dict(result_pmi["storage"]).T
         df_pm.index = controllable_storages
         df.loc[controllable_storages] = df_pm
+
 
 def add_time_series_data_to_net(net, controller, tp):
     from pandapower.control import ConstControl
@@ -92,12 +93,12 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
         result = {}
         for tp, soli in sol["nw"].items():
             pm_results_to_ppc_results_one_time_step(ppci, soli)
-            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))            
+            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
     else:
         if "bus" not in sol:
             ppci["success"] = False # PowerModels failed
         else:
-            pm_results_to_ppc_results_one_time_step(ppci, sol) 
+            pm_results_to_ppc_results_one_time_step(ppci, sol)
             result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result, multinetwork
 

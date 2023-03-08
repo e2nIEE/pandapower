@@ -18,31 +18,31 @@ def add_storage_opf_settings(net, ppci, pm):
     for idx in net["storage"].index:
         energy = (net["storage"].at[idx, "soc_percent"] * 1e-2 *
                   (net["storage"].at[idx, "max_e_mwh"] -
-                   net["storage"].at[idx, "min_e_mwh"])) / pm["baseMVA"]
-        qs = net["storage"].at[idx, "q_mvar"].item() / pm["baseMVA"]
-        ps = net["storage"].at[idx, "p_mw"].item() / pm["baseMVA"]
+                   net["storage"].at[idx, "min_e_mwh"]))
+        qs = net["storage"].at[idx, "q_mvar"].item()
+        ps = net["storage"].at[idx, "p_mw"].item()
         max_p_mw = ps
         max_q_mvar, min_q_mvar = qs, -qs
         if "max_p_mw" in net["storage"]:
-            max_p_mw = net["storage"].at[idx, "max_p_mw"].item() / pm["baseMVA"]
+            max_p_mw = net["storage"].at[idx, "max_p_mw"].item()
         if "max_q_mvar" in net["storage"]:
-            max_q_mvar = net["storage"].at[idx, "max_q_mvar"].item() / pm["baseMVA"]
+            max_q_mvar = net["storage"].at[idx, "max_q_mvar"].item()
         if "max_q_mvar" in net["storage"]:
-            min_q_mvar = net["storage"].at[idx, "min_q_mvar"].item() / pm["baseMVA"]
+            min_q_mvar = net["storage"].at[idx, "min_q_mvar"].item()
 
         pm_idx = int(idx) + 1
         pm["storage"][str(pm_idx)] = {
             "index": pm_idx,
             "storage_bus": bus_lookup[net["storage"].at[idx, "bus"]].item(),
-			"ps": ps,
-            "qs": qs,            
+			"ps": ps, #* pm["baseMVA"],
+            "qs": qs, #* pm["baseMVA"],            
             "energy": energy,
 			"energy_rating": net["storage"].at[idx, "max_e_mwh"],
 			"charge_rating": max_p_mw,
 			"discharge_rating": max_p_mw,
 			"charge_efficiency": 1.,
 			"discharge_efficiency": 1.0,
-	        "thermal_rating": net["storage"].at[idx, "max_e_mwh"],  # Todo: include in DataFrame?
+	        "thermal_rating": net["storage"].at[idx, "max_e_mwh"], # Todo: include in DataFrame?
             "qmax": max_q_mvar,
             "qmin": min_q_mvar,
             "r": 0.0,
@@ -58,20 +58,18 @@ def read_pm_storage_results(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
     storage_results = dict()
     timesteps = list(net.res_ts_opt.keys())
-    baseMVA = net.sn_mva
     for idx in net.storage.index:
         # read storage results for each storage from power models to a dataframe with rows = timesteps
-        pm_idx = str(int(idx) + 1)
         res_storage = pd.DataFrame(data=None,
                                    index=timesteps,
                                    columns=["p_mw", "q_mvar", "soc_mwh", "soc_percent"],
                                    dtype=float)
         for t in timesteps:
             pm_storage = net.res_ts_opt[str(t)].res_storage
-            res_storage.at[t, "p_mw"] = pm_storage["ps"] * baseMVA
-            res_storage.at[t, "q_mvar"] = pm_storage["qs"] * baseMVA
+            res_storage.at[t, "p_mw"] = pm_storage["ps"]
+            res_storage.at[t, "q_mvar"] = pm_storage["qs"]
             res_storage.at[t, "soc_percent"] = pm_storage["se"] * 1e2
-            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * baseMVA * \
+            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * \
                                            (net["storage"].at[idx, "max_e_mwh"] - net["storage"].at[idx, "min_e_mwh"])
 
         storage_results[idx] = res_storage

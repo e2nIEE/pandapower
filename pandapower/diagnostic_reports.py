@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -91,7 +91,7 @@ class DiagnosticReports:
             logger.info("PASSED: No problematic switches found")
 
     def report_different_voltage_levels_connected(self):
-        from pandapower.toolbox import get_connected_buses_at_element
+        from pandapower.toolbox_elm_selection import get_connected_buses_at_element
 
         if "different_voltage_levels_connected" in self.diag_results:
 

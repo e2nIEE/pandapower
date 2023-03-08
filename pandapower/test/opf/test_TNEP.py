@@ -1,6 +1,6 @@
 import pytest
 import pandapower.networks as nw
-from pandapower.converter.powermodels.to_pm import init_ne_line
+from pandapower.converter.pandamodels.to_pm import init_ne_line
 import pandas as pd
 import numpy as np
 import pandapower as pp
@@ -46,7 +46,7 @@ def define_possible_new_lines(net):
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_tnep_cigre_dc():
     # get the grid
     net = cigre_grid()
@@ -107,7 +107,7 @@ def test_pm_tnep_cigre_only_conversion():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_tnep_cigre_ac_S():
     # get the grid
     net = cigre_grid()
@@ -140,7 +140,7 @@ def test_pm_tnep_cigre_ac_S():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 @pytest.mark.xfail(reason="Not yet implemented in the pm pp interface for TNEP")
 def test_pm_tnep_cigre_ac_I():
     # get the grid

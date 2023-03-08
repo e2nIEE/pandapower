@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 import numpy as np
 
-import pandapower as pp
 from pandapower import io_utils
-from pandapower.auxiliary import _preserve_dtypes
 
 try:
     import psycopg2
