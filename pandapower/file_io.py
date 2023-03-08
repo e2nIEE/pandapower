@@ -11,6 +11,7 @@ from warnings import warn
 
 import numpy
 import pandas as pd
+from packaging.version import Version
 from packaging import version
 import sys
 try:
@@ -26,9 +27,9 @@ except ImportError:
 
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
-from pandapower.convert_format import convert_format
-from pandapower.create import create_empty_network
 from pandapower.std_types import basic_std_types
+from pandapower.create import create_empty_network
+from pandapower.convert_format import convert_format
 import pandapower.io_utils as io_utils
 
 try:
@@ -356,7 +357,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
                          empty_dict_like_object=empty_dict_like_object)
         net_dummy = create_empty_network()
-        if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
+        if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')
         if keep_serialized_elements:

@@ -10,7 +10,7 @@ import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 
-from pandapower import __version__, __format_version__
+from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -982,7 +982,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative for
     overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox_general_issues import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
@@ -1330,7 +1330,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     underexcited behavior (Q absorption, decreases voltage) and
     positive for for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox_general_issues import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 

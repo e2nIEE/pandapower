@@ -12,22 +12,22 @@ from pandas._testing import assert_series_equal
 import pytest
 
 import pandapower as pp
+import pandapower.toolbox_general_issues as tbgi
 import pandapower.networks as nw
-import pandapower.toolbox as tb
 import pandapower.control
 from pandapower.test.toolbox import assert_net_equal
 
 
 def test_element_bus_tuples():
     ebts = pp.element_bus_tuples()
-    assert isinstance(ebts, set)
+    assert isinstance(ebts, list)
     assert len(ebts) >= 20
     item = next(iter(ebts))
     assert isinstance(item, tuple)
     assert len(item) == 2
-    assert len({"line", "gen"} & {elm for (elm, bus) in ebts}) == 2
-    assert {bus for (elm, bus) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
-                                            'lv_bus'}
+    assert len({"line", "gen"} & {elm for (elm, buses) in ebts}) == 2
+    assert {buses for (elm, buses) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
+                                                'lv_bus'}
     assert len(pp.element_bus_tuples(bus_elements=False, res_elements=True)) > \
            1.5 * len(pp.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
 
@@ -47,9 +47,24 @@ def test_branch_element_bus_dict():
     bebd = pp.branch_element_bus_dict()
     assert isinstance(bebd, dict)
     assert len(bebd) >= 5
-    assert set(bebd["trafo"]) == {"hv_bus", "lv_bus"}
+    assert bebd["trafo"] == ["hv_bus", "lv_bus"]
     bebd = pp.branch_element_bus_dict(include_switch=True)
     assert "bus" in bebd["switch"]
+
+
+def test_count_elements():
+    case9_counts = {"bus": 9, "line": 9, "ext_grid": 1, "gen": 2, "load": 3}
+    net = nw.case9()
+    received = pp.count_elements(net)
+    assert isinstance(received, pd.Series)
+    assert received.to_dict() == case9_counts
+    assert pp.count_elements(net, bus=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus"]}
+    assert pp.count_elements(net, bus=False, branch_elements=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus", "line"]}
+    received = pp.count_elements(net, return_empties=True)
+    assert len(received.index) == len(pp.pp_elements())
+    assert set(received.index) == pp.pp_elements()
 
 
 def test_signing_system_value():
@@ -129,42 +144,42 @@ def test_opf_task():
 
 
 def test_nets_equal():
-    tb.logger.setLevel(40)
+    tbgi.logger.setLevel(40)
     original = nw.create_cigre_network_lv()
     net = copy.deepcopy(original)
 
     # should be equal
-    assert tb.nets_equal(original, net)
-    assert tb.nets_equal(net, original)
+    assert pp.nets_equal(original, net)
+    assert pp.nets_equal(net, original)
 
     # detecting additional element
     pp.create_bus(net, vn_kv=.4)
-    assert not tb.nets_equal(original, net)
-    assert not tb.nets_equal(net, original)
+    assert not pp.nets_equal(original, net)
+    assert not pp.nets_equal(net, original)
     net = copy.deepcopy(original)
 
     # detecting removed element
     net["bus"].drop(net.bus.index[0], inplace=True)
-    assert not tb.nets_equal(original, net)
-    assert not tb.nets_equal(net, original)
+    assert not pp.nets_equal(original, net)
+    assert not pp.nets_equal(net, original)
     net = copy.deepcopy(original)
 
     # detecting alternated value
     net["load"]["p_mw"][net["load"].index[0]] += 0.1
-    assert not tb.nets_equal(original, net)
-    assert not tb.nets_equal(net, original)
+    assert not pp.nets_equal(original, net)
+    assert not pp.nets_equal(net, original)
     net = copy.deepcopy(original)
 
     # detecting added column
     net["load"]["new_col"] = 0.1
-    assert not tb.nets_equal(original, net)
-    assert not tb.nets_equal(net, original)
+    assert not pp.nets_equal(original, net)
+    assert not pp.nets_equal(net, original)
     net = copy.deepcopy(original)
 
     # not detecting alternated value if difference is beyond tolerance
     net["load"]["p_mw"][net["load"].index[0]] += 0.0001
-    assert tb.nets_equal(original, net, atol=0.1)
-    assert tb.nets_equal(net, original, atol=0.1)
+    assert pp.nets_equal(original, net, atol=0.1)
+    assert pp.nets_equal(net, original, atol=0.1)
 
     # check controllers
     original.trafo.tap_side.fillna("hv", inplace=True)
@@ -176,11 +191,11 @@ def test_nets_equal():
     c2 = net2.controller.at[0, "object"]
     assert c1 == c2
     assert c1 is not c2
-    assert tb.nets_equal(net1, net2)
+    assert pp.nets_equal(net1, net2)
     c1.vm_set_pu = 1.01
     assert c1 != c2
-    assert tb.nets_equal(net1, net2, exclude_elms=["controller"])
-    assert not tb.nets_equal(net1, net2)
+    assert pp.nets_equal(net1, net2, exclude_elms=["controller"])
+    assert not pp.nets_equal(net1, net2)
 
 
 def test_clear_result_tables():
@@ -292,7 +307,7 @@ def test_continuos_bus_numbering():
     pp.create_ward(net, bus0, 2, 1, 1, 2)
     pp.create_ward(net, bus0, 2, 1, 1, 2)
 
-    tb.create_continuous_bus_index(net)
+    pp.create_continuous_bus_index(net)
 
     buses = net.bus.index
     assert all(buses[i] <= buses[i + 1] for i in range(len(buses) - 1))  # is ordered
@@ -366,7 +381,7 @@ def test_continuous_element_numbering():
     add_virtual_meas_from_loadflow(net)
     assert net.measurement["element"].max() == 540
 
-    tb.create_continuous_elements_index(net)
+    pp.create_continuous_elements_index(net)
     assert net.line.index.max() == net.line.shape[0] - 1
     assert net.trafo.index.max() == net.trafo.shape[0] - 1
     assert net.trafo3w.index.max() == net.trafo3w.shape[0] - 1
@@ -380,12 +395,12 @@ def test_scaling_by_type():
     pp.create_load(net, bus0, p_mw=0., type="Household")
     pp.create_sgen(net, bus0, p_mw=0., type="PV")
 
-    tb.set_scaling_by_type(net, {"Household": 42., "PV": 12})
+    pp.set_scaling_by_type(net, {"Household": 42., "PV": 12})
 
     assert net.load.at[0, "scaling"] == 42
     assert net.sgen.at[0, "scaling"] == 12
 
-    tb.set_scaling_by_type(net, {"Household": 0, "PV": 0})
+    pp.set_scaling_by_type(net, {"Household": 0, "PV": 0})
 
     assert net.load.at[0, "scaling"] == 0
     assert net.sgen.at[0, "scaling"] == 0
@@ -411,7 +426,7 @@ def test_drop_inactive_elements():
         pp.create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
                                                 3, 3, 3, 1, 1, 1, 5, 1)
         # drop them
-        tb.drop_inactive_elements(net)
+        pp.drop_inactive_elements(net)
 
         sum_of_elements = 0
         for element, table in net.items():
@@ -444,7 +459,7 @@ def test_drop_inactive_elements():
                    std_type='149-AL1/24-ST1A 10.0')
     gen0 = pp.create_gen(net, bus=bus1, p_mw=0.001)
 
-    tb.drop_inactive_elements(net)
+    pp.drop_inactive_elements(net)
 
     assert gen0 not in net.gen.index
 
@@ -464,20 +479,20 @@ def test_get_connected_lines_at_bus():
     pp.create_switch(net, bus0, line1, "l", closed=False)
     pp.create_switch(net, bus0, line2, "l")
 
-    lines = tb.get_connected_elements(net, "line", bus0, respect_switches=False,
+    lines = pp.get_connected_elements(net, "line", bus0, respect_switches=False,
                                       respect_in_service=False)
 
     assert set(lines) == {line0, line1, line2, line3}
 
-    lines = tb.get_connected_elements(net, "line", bus0, respect_switches=True,
+    lines = pp.get_connected_elements(net, "line", bus0, respect_switches=True,
                                       respect_in_service=False)
     assert set(lines) == {line0, line2, line3}
 
-    lines = tb.get_connected_elements(net, "line", bus0, respect_switches=True,
+    lines = pp.get_connected_elements(net, "line", bus0, respect_switches=True,
                                       respect_in_service=True)
     assert set(lines) == {line0, line3}
 
-    lines = tb.get_connected_elements(net, "line", bus0, respect_switches=False,
+    lines = pp.get_connected_elements(net, "line", bus0, respect_switches=False,
                                       respect_in_service=True)
     assert set(lines) == {line0, line1, line3}
 
@@ -673,12 +688,12 @@ def test_overloaded_lines():
 
     pp.runpp(net)
     # test the overloaded lines by default value of max_load=100
-    overloaded_lines = tb.overloaded_lines(net, max_load=100)
+    overloaded_lines = pp.overloaded_lines(net, max_load=100)
 
     assert set(overloaded_lines) == {line0, line1}
 
     # test the overloaded lines by a self defined value of max_load=50
-    overloaded_lines = tb.overloaded_lines(net, max_load=50)
+    overloaded_lines = pp.overloaded_lines(net, max_load=50)
 
     assert set(overloaded_lines) == {line0, line1, line2}
 
@@ -693,7 +708,7 @@ def test_violated_buses():
     max_vm_pu = 1.1
 
     # print out the list of violated_bus's index
-    violated_bus = tb.violated_buses(net, min_vm_pu, max_vm_pu)
+    violated_bus = pp.violated_buses(net, min_vm_pu, max_vm_pu)
 
     assert set(violated_bus) == set(net["bus"].index[[16, 35, 36, 40]])
 
@@ -702,7 +717,7 @@ def test_add_zones_to_elements():
     net = nw.create_cigre_network_mv()
 
     # add zones to lines and switchs
-    tb.add_zones_to_elements(net, elements=["line", "switch"])
+    pp.add_zones_to_elements(net, elements=["line", "switch"])
 
     # create 2 arrays which include "zone" in lines and switches
     zone_line = net["line"]["zone"].values
@@ -723,14 +738,14 @@ def test_drop_inner_branches():
     pp.create_transformer3w(net, 2, 3, new_bus, "63/25/38 MVA 110/20/10 kV")
 
     net1 = copy.deepcopy(net)
-    tb.drop_inner_branches(net1, [2, 3], branch_elements=["line"])
+    pp.drop_inner_branches(net1, [2, 3], branch_elements=["line"])
     check_elm_number(net1, net)
-    tb.drop_inner_branches(net1, [0, 1], branch_elements=["line"])
+    pp.drop_inner_branches(net1, [0, 1], branch_elements=["line"])
     check_elm_number(net1, net, ["line"])
     assert all(net.line.index.difference({0}) == net1.line.index)
 
     net2 = copy.deepcopy(net)
-    tb.drop_inner_branches(net2, [2, 3, 4, 5])
+    pp.drop_inner_branches(net2, [2, 3, 4, 5])
     assert all(net.line.index.difference({1}) == net2.line.index)
     assert all(net.trafo.index.difference({0}) == net2.trafo.index)
     assert all(net.switch.index.difference({1, 2, 3}) == net2.switch.index)
@@ -757,7 +772,7 @@ def test_fuse_buses():
 
     # --- drop = True
     net1 = copy.deepcopy(net)
-    tb.fuse_buses(net1, b1, b2, drop=True)
+    pp.fuse_buses(net1, b1, b2, drop=True)
 
     # assertion: elements connected to b2 are given to b1 instead
     assert line1 not in net1.line.index
@@ -772,7 +787,7 @@ def test_fuse_buses():
 
     # --- drop = False
     net2 = copy.deepcopy(net)
-    tb.fuse_buses(net2, b1, b2, drop=False)
+    pp.fuse_buses(net2, b1, b2, drop=False)
 
     # assertion: elements connected to b2 are given to b1 instead
     assert net2["line"]["from_bus"].at[0] == b1
@@ -807,7 +822,7 @@ def test_close_switch_at_line_with_two_open_switches():
     pp.create_switch(net, bus3, line2, et="l", closed=True)  # sw5
     pp.create_switch(net, bus3, line2, et="l", closed=True)  # sw6
 
-    tb.close_switch_at_line_with_two_open_switches(net)
+    pp.close_switch_at_line_with_two_open_switches(net)
 
     # assertion: sw2 closed
     assert net.switch.closed.loc[1]
@@ -885,8 +900,8 @@ def test_create_replacement_switch_for_branch():
     pp.runpp(net)
 
     # look that the switch is created properly
-    tb.create_replacement_switch_for_branch(net, 'line', line0)
-    tb.create_replacement_switch_for_branch(net, 'impedance', impedance0)
+    pp.create_replacement_switch_for_branch(net, 'line', line0)
+    pp.create_replacement_switch_for_branch(net, 'impedance', impedance0)
     net.line.in_service.at[line0] = False
     net.impedance.in_service.at[impedance0] = False
 
@@ -899,8 +914,8 @@ def test_create_replacement_switch_for_branch():
     # look that the switch is created with the correct closed status
     net.line.in_service.at[line1] = False
     net.impedance.in_service.at[impedance1] = False
-    tb.create_replacement_switch_for_branch(net, 'line', line1)
-    tb.create_replacement_switch_for_branch(net, 'impedance', impedance1)
+    pp.create_replacement_switch_for_branch(net, 'line', line1)
+    pp.create_replacement_switch_for_branch(net, 'impedance', impedance1)
 
     assert 'REPLACEMENT_line_1' in net.switch.name.values
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
@@ -935,35 +950,35 @@ def net():
 
 
 def test_for_line_with_zero_length(net):
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_impedance=False)
+    pp.replace_zero_branches_with_switches(net, elements=('line',), zero_impedance=False)
     assert 'REPLACEMENT_line_0' in net.switch.name.values
     assert ~net.line.in_service.at[0]
     assert 'REPLACEMENT_line_2' not in net.switch.name.values
 
 
 def test_drop(net):
-    tb.replace_zero_branches_with_switches(net, elements=('line', 'impedance'), drop_affected=True)
+    pp.replace_zero_branches_with_switches(net, elements=('line', 'impedance'), drop_affected=True)
     assert len(net.line) == 1
     assert len(net.impedance) == 2
 
 
 def test_in_service_only(net):
-    tb.replace_zero_branches_with_switches(net, elements=('line',))
+    pp.replace_zero_branches_with_switches(net, elements=('line',))
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 1
-    tb.replace_zero_branches_with_switches(net, elements=('line',), in_service_only=False)
+    pp.replace_zero_branches_with_switches(net, elements=('line',), in_service_only=False)
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 2
     assert ~net.switch.closed.at[2]
 
 
 def test_line_with_zero_impediance(net):
     # test for line with zero impedance
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=False)
+    pp.replace_zero_branches_with_switches(net, elements=('line',), zero_length=False)
     assert 'REPLACEMENT_line_1' not in net.switch.name.values
     assert 'REPLACEMENT_line_2' in net.switch.name.values
 
 
 def test_impedance(net):
-    tb.replace_zero_branches_with_switches(net, elements=('impedance',), zero_length=False,
+    pp.replace_zero_branches_with_switches(net, elements=('impedance',), zero_length=False,
                                            zero_impedance=True, in_service_only=True)
     assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
@@ -971,7 +986,7 @@ def test_impedance(net):
 
 
 def test_all(net):
-    tb.replace_zero_branches_with_switches(net, elements=('impedance', 'line'), zero_length=True,
+    pp.replace_zero_branches_with_switches(net, elements=('impedance', 'line'), zero_length=True,
                                            zero_impedance=True, in_service_only=True)
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
     assert 'REPLACEMENT_line_0' in net.switch.name.values
@@ -1020,13 +1035,13 @@ def test_next_bus():
     switch2 = pp.create_switch(net, bus=bus2, element=trafo1, et='t')
     switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
 
-    # assert tb.next_bus(net,bus0,trafo0,et='trafo3w')==bus1                         # not implemented in existing toolbox
-    # assert tb.next_bus(net,bus0,trafo0,et='trafo3w',choice_for_trafo3w='lv')==bus2 # not implemented in existing toolbox
-    assert tb.next_bus(net, bus1, switch1, et='switch') == bus5  # Switch with bus2bus connection
-    # assert not tb.next_bus(net,bus2,switch2,et='switch')==bus3  # Switch with bus2trafo connection:- gives trasformer id instead of bus id
-    assert tb.next_bus(net, bus2, trafo1, et='trafo') == bus3
-    # assert tb.next_bus(net,bus3,switch3,et='switch') ==bus4  # Switch with bus2line connection :- gives line id instead of bus id
-    assert tb.next_bus(net, bus3, line1, et='line') == bus4
+    # assert pp.next_bus(net,bus0,trafo0,et='trafo3w')==bus1                         # not implemented in existing toolbox
+    # assert pp.next_bus(net,bus0,trafo0,et='trafo3w',choice_for_trafo3w='lv')==bus2 # not implemented in existing toolbox
+    assert pp.next_bus(net, bus1, switch1, et='switch') == bus5  # Switch with bus2bus connection
+    # assert not pp.next_bus(net,bus2,switch2,et='switch')==bus3  # Switch with bus2trafo connection:- gives trasformer id instead of bus id
+    assert pp.next_bus(net, bus2, trafo1, et='trafo') == bus3
+    # assert pp.next_bus(net,bus3,switch3,et='switch') ==bus4  # Switch with bus2line connection :- gives line id instead of bus id
+    assert pp.next_bus(net, bus3, line1, et='line') == bus4
 
 
 def test_get_connected_buses():
@@ -1051,20 +1066,20 @@ def test_get_connected_buses():
     switch2 = pp.create_switch(net, bus=bus2, element=trafo1, et='t')
     switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
 
-    assert list(tb.get_connected_buses(net, [bus0])) == [bus1, bus2]
-    assert list(tb.get_connected_buses(net, [bus1])) == [bus0, bus2, bus5]
-    assert list(tb.get_connected_buses(net, [bus2])) == [bus0, bus1, bus3]
-    assert list(tb.get_connected_buses(net, [bus3])) == [bus2, bus4]
-    assert list(tb.get_connected_buses(net, [bus4])) == [bus3]
-    assert list(tb.get_connected_buses(net, [bus5])) == [bus1]
-    assert list(tb.get_connected_buses(net, [bus0, bus1])) == [bus2, bus5]
-    assert list(tb.get_connected_buses(net, [bus2, bus3])) == [bus0, bus1, bus4]
+    assert list(pp.get_connected_buses(net, [bus0])) == [bus1, bus2]
+    assert list(pp.get_connected_buses(net, [bus1])) == [bus0, bus2, bus5]
+    assert list(pp.get_connected_buses(net, [bus2])) == [bus0, bus1, bus3]
+    assert list(pp.get_connected_buses(net, [bus3])) == [bus2, bus4]
+    assert list(pp.get_connected_buses(net, [bus4])) == [bus3]
+    assert list(pp.get_connected_buses(net, [bus5])) == [bus1]
+    assert list(pp.get_connected_buses(net, [bus0, bus1])) == [bus2, bus5]
+    assert list(pp.get_connected_buses(net, [bus2, bus3])) == [bus0, bus1, bus4]
 
     net.switch.loc[[switch0b, switch1, switch2, switch3], 'closed'] = False
-    assert list(tb.get_connected_buses(net, [bus0])) == [bus1]
-    assert list(tb.get_connected_buses(net, [bus1])) == [bus0]
-    assert list(tb.get_connected_buses(net, [bus3])) == []
-    assert list(tb.get_connected_buses(net, [bus4])) == []
+    assert list(pp.get_connected_buses(net, [bus0])) == [bus1]
+    assert list(pp.get_connected_buses(net, [bus1])) == [bus0]
+    assert list(pp.get_connected_buses(net, [bus3])) == []
+    assert list(pp.get_connected_buses(net, [bus4])) == []
 
 
 def test_drop_elements_at_buses():
@@ -1099,7 +1114,7 @@ def test_drop_elements_at_buses():
 
     for b in net.bus.index.values:
         net1 = net.deepcopy()
-        cd = tb.get_connected_elements_dict(net1, b, connected_buses=False)
+        cd = pp.get_connected_elements_dict(net1, b, connected_buses=False)
         swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) &
                                     (net1.switch.et == 't3')].index)
         swt = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo', [1000])) &
@@ -1107,7 +1122,7 @@ def test_drop_elements_at_buses():
         swl = set(net1.switch.loc[net1.switch.element.isin(cd.get('line', [1000])) &
                                   (net1.switch.et == 'l')].index)
         sw = swt3w | swt | swl
-        tb.drop_elements_at_buses(net1, [b])
+        pp.drop_elements_at_buses(net1, [b])
         assert b not in net1.switch.bus.values
         assert b not in net1.switch.query("et=='b'").element.values
         assert sw.isdisjoint(set(net1.switch.index))
@@ -1151,6 +1166,7 @@ def test_replace_ext_grid_gen():
         net.ext_grid["uuid"] = "test"
         pp.runpp(net)
         assert list(net.res_ext_grid.index.values) == [0]
+        pp.create_group(net, ["line", "ext_grid"], [[0], [0]])
 
         # replace_ext_grid_by_gen
         if i == 0:
@@ -1163,6 +1179,8 @@ def test_replace_ext_grid_gen():
         assert net.res_gen.p_mw.dropna().shape[0] == 2
         assert np.allclose(net.gen.index.values, [0, 4])
         assert net.gen.uuid.loc[4] == "test"
+        assert net.group.element_type.tolist() == ["line", "gen"]
+        assert net.group.element.iat[1] == [4]
 
         # replace_gen_by_ext_grid
         if i == 0:
@@ -1303,6 +1321,7 @@ def test_replace_ward_by_internal_elements():
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
     pp.create_ward(net, 5, 6, 8, 10, 5, name="ward_2")
     pp.create_ward(net, 6, -1, 9, 11, 6, name="ward_3", in_service=False)
+    pp.create_group_from_dict(net, {"ward": [0]}, name="test group")
     pp.runpp(net)
     net_org = copy.deepcopy(net)
     pp.replace_ward_by_internal_elements(net)
@@ -1314,6 +1333,16 @@ def test_replace_ward_by_internal_elements():
     assert np.allclose(net_org.res_ext_grid.q_mvar, net.res_ext_grid.q_mvar)
     assert np.allclose(res_load_created, net.res_load)
     assert np.allclose(res_shunt_created, net.res_shunt)
+
+    new_ets = pd.Index(["load", "shunt"])
+    assert pp.count_group_elements(net_org, 0).to_dict() == {"ward": 1}
+    assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+        net_org, return_empties=True)
+    assert set(elm_change.loc[new_ets]) == {3}
+    assert elm_change.at["ward"] == -3
+    assert set(elm_change.loc[elm_change.index.difference(new_ets).difference(pd.Index([
+        "ward"]))]) == {0}
 
     net = nw.example_simple()
     pp.create_ward(net, 1, 10, 5, -20, -10, name="ward_1")
@@ -1337,12 +1366,23 @@ def test_replace_xward_by_internal_elements():
     pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
     pp.create_xward(net, 5, 6, 8, 10, 5, 0.009, 0.678, 1.03, name="xward_2")
     pp.create_xward(net, 6, 6, 8, 10, 5, 0.009, 0.678, 1.03, in_service=False, name="xward_3")
+    pp.create_group_from_dict(net, {"xward": [0]}, name="test group")
     pp.runpp(net)
     net_org = copy.deepcopy(net)
     pp.replace_xward_by_internal_elements(net)
     pp.runpp(net)
     assert abs(max(net_org.res_ext_grid.p_mw - net.res_ext_grid.p_mw)) < 1e-10
     assert abs(max(net_org.res_ext_grid.q_mvar - net.res_ext_grid.q_mvar)) < 1e-10
+
+    new_ets = pd.Index(["load", "shunt", "gen", "impedance", "bus"])
+    assert pp.count_group_elements(net_org, 0).to_dict() == {"xward": 1}
+    assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+        net_org, return_empties=True)
+    assert set(elm_change.loc[new_ets]) == {3}
+    assert elm_change.at["xward"] == -3
+    assert set(elm_change.loc[elm_change.index.difference(new_ets).difference(pd.Index([
+        "xward"]))]) == {0}
 
     net = nw.example_simple()
     pp.create_xward(net, 1, 10, 5, -20, -10, 0.1, 0.55, 1.02, name="xward_1")
@@ -1360,7 +1400,7 @@ def test_repl_to_line():
     net = nw.simple_four_bus_system()
     idx = 0
     std_type = "NAYY 4x150 SE"
-    new_idx = tb.repl_to_line(net, idx, std_type, in_service=True)
+    new_idx = pp.repl_to_line(net, idx, std_type, in_service=True)
     pp.runpp(net)
 
     vm1 = net.res_bus.vm_pu.values
@@ -1419,7 +1459,7 @@ def test_repl_to_line_with_switch():
             qloss_repl = (net.res_line.loc[REPL].q_from_mvar - net.res_line.loc[REPL].q_to_mvar)
 
             # get ne line impedances
-            new_idx = tb.repl_to_line(net, testindex, std, in_service=True)
+            new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
             net.line.in_service[REPL] = False
             net.line.in_service[testindex] = True
@@ -1460,7 +1500,7 @@ def test_merge_parallel_line():
     ploss_0 = (net.res_line.loc[5].p_from_mw - net.res_line.loc[5].p_to_mw)
     qloss_0 = (net.res_line.loc[5].q_from_mvar - net.res_line.loc[5].q_to_mvar)
 
-    net = tb.merge_parallel_line(net, 5)
+    net = pp.merge_parallel_line(net, 5)
 
     assert net.line.parallel.at[5] == 1
     pp.runpp(net)
@@ -1483,7 +1523,7 @@ def test_merge_same_bus_generation_plants():
     buses = np.hstack([net[elm].bus.values for elm in gen_elms])
     has_dupls = len(buses) > len(set(buses))
 
-    something_merged = tb.merge_same_bus_generation_plants(net)
+    something_merged = pp.merge_same_bus_generation_plants(net)
 
     assert has_dupls == something_merged
 
@@ -1507,7 +1547,7 @@ def test_merge_same_bus_generation_plants():
                             len(dupl_buses)
 
     # run function
-    something_merged = tb.merge_same_bus_generation_plants(net)
+    something_merged = pp.merge_same_bus_generation_plants(net)
 
     # check results
     assert something_merged
@@ -1570,8 +1610,18 @@ def test_get_false_links():
                 "line": {1, 4},
                 "measurement": {1, 3},
                 "poly_cost": {1, 2}}
-    determined = tb.false_elm_links_loop(net)
+    determined = pp.false_elm_links_loop(net)
     assert {elm: set(idx) for elm, idx in determined.items()} == expected
+
+
+def test_res_power_columns():
+    assert pp.res_power_columns("gen") == ["p_mw", "q_mvar"]
+    assert pp.res_power_columns("line") == pp.res_power_columns("line", side="from") == \
+        pp.res_power_columns("line", side=0) == ["p_from_mw", "q_from_mvar"]
+    assert pp.res_power_columns("line", side="all") == [
+        "p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    assert pp.res_power_columns("trafo3w", side="all") == [
+        "p_hv_mw", "q_hv_mvar", "p_mv_mw", "q_mv_mvar", "p_lv_mw", "q_lv_mvar"]
 
 
 if __name__ == '__main__':
