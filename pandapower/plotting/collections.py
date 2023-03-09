@@ -1171,7 +1171,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         **switches** - patch collection
     """
     
-    if switch_index is not None:
+    if switch_index is None:
         lbs_switches = net.switch.index[net.switch.et == "l"]
     else:
         lbs_switches = switch_index
