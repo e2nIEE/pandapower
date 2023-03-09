@@ -615,11 +615,9 @@ def _add_load_sc_impedances_ppc(net, ppc):
         s_element_pu = s_element_mva / baseMVA
         # S = V * conj(I) -> I = conj(S / V)
         i_element_pu = np.conj(s_element_pu / v)   # this is correct!
-        i_element_ka = -i_element_pu * 100 / (np.sqrt(3) * 110)  # for us to validate
-        print(np.abs(i_element_ka), np.angle(i_element_pu, deg=True))
+        # i_element_ka = -i_element_pu * 100 / (np.sqrt(3) * 110)  # for us to validate
 
-        y_element_pu = np.conj(i_element_pu / v)  # should it be conj???
-        y_element_pu = i_element_pu / v  # should it be conj???
+        y_element_pu = i_element_pu / v
 
         buses, gs, bs = _sum_by_group(element_buses_ppc, y_element_pu.real, y_element_pu.imag)
         # buses, gs, bs = _sum_by_group(element_buses_ppc, s_element_pu.real, s_element_pu.imag)

@@ -693,7 +693,23 @@ def test_sgen_type_c():
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
     pp.create_line_from_parameters(net, 1, 2, 20, 0.099, 0.156, 400, 0.74)
-    pp.create_sgen(net, 1, 10, 3, 20, k=1, kappa=1)
+    pp.create_sgen(net, 1, 10, 3, 20, k=0, kappa=0)
+
+    # first we test the contribution of the shunt impedance component only
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([0.27140996, 51.71054206, 1.86837663, 240.35204316])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+
+    res_line_sc = np.array([[0.26972109, 0.26961292, -89.61895148, 0.26972109, 90.37129854, 0.84933852, 2.34245931,
+                             -0.43517822, -0.68498246, 0.0485064, -19.54879135, 0.01579197, -32.05702438],
+                            [0.27140996, 0.27034668, -89.51406404, 0.27140996, 90.34281512, 0.43756039, 0.68569712, 0,
+                             0, 0.01579197, -32.05702438, 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.5e-6)
+
+    net.sgen.k = 1.
+    net.sgen.kappa = 1.
 
     pp.runpp(net)
     sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
