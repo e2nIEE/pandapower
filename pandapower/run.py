@@ -10,8 +10,8 @@ from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
     _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
     _init_rundcpp_options, _init_runopp_options, _internal_stored
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
+from pandapower.optimal_powerflow import _optimal_powerflow
 
 try:
     import pandaplan.core.pplog as logging
@@ -277,6 +277,10 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           recycle=recycle, check_connectivity=check_connectivity,
                           switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses, **kwargs)
+
+    if isinstance(recycle, dict) and _internal_stored(net, ac=False):
+        _recycled_powerflow(net, recycle=recycle, **kwargs)
+        return
 
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)

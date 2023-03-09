@@ -1,8 +1,8 @@
-from pandas.api.types import is_bool_dtype
+from pandas.api.types import is_bool_dtype, is_numeric_dtype #, is_integer_dtype
 import pandapower as pp
 from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
-    check_validity_of_Ybus_eq, drop_internal_branch_elements, \
-    build_ppc_and_Ybus, drop_measurements_and_controller, \
+    drop_internal_branch_elements, \
+    build_ppc_and_Ybus, drop_measurements_and_controllers, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
         replace_motor_by_load
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
@@ -12,6 +12,7 @@ import numpy as np
 import operator
 import time
 import uuid
+import re
 from functools import reduce
 try:
     import pandaplan.core.pplog as logging
@@ -22,8 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
-                               show_computing_time=False,
-                               check_validity=False):
+                               show_computing_time=False, **kwargs):
     """
     The function orders the admittance matrix of the original network into
     new format firstly, which is convenient for rei equivalent calculation.d
@@ -102,16 +102,6 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     Ybus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] +
                                                      nb_dict["nb_t"]):] = Ybus_eq_boundary
 
-    # --- the validity of the equivalent Ybus will be checked
-    if check_validity:
-        power_check_df = check_validity_of_Ybus_eq(net_zpbn, Ybus_eq, bus_lookups)
-        logger.debug(power_check_df)
-        act_p = net_zpbn.res_ext_grid.p_mw[power_check_df.ext_grid_index].values
-        act_q = net_zpbn.res_ext_grid.q_mvar[power_check_df.ext_grid_index].values
-        real_p = power_check_df.power.values.real
-        real_q = power_check_df.power.values.imag
-        assert abs(max(act_p - real_p)) < 1e-3
-        assert abs(max(act_q - real_q)) < 1e-3
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((
@@ -271,7 +261,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             elm_idx = pp.create_sgen(net_zpbn, i, float(P), float(Q), name=key+"_rei_"+busstr,
                                      sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
-            vm_pu = v[key+"_vm_total"][v.ext_bus == int(busstr)].values.real
+            vm_pu = v[key+"_vm_total"][v.ext_bus == int(re.findall('\d+', busstr)[0])].values.real
             elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
                                     sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
@@ -280,8 +270,10 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
                 {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
-            other_cols_number = set()
-            other_cols_bool = set()
+            other_cols_bool = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_bool_dtype)])
+            other_cols -= other_cols_bool
+            other_cols_number = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_numeric_dtype)])
+            other_cols -= other_cols_number
             other_cols_str = set()
             other_cols_none = set()
             other_cols_mixed = set()
@@ -300,13 +292,14 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 other_cols -= {c}
             assert len(other_cols) == 0
         if "integrated" in key:
-            net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
-                elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
             if "voltLvl" in other_cols_number:
                 net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
                     net_zpbn.bus.voltLvl[boundary_buses].max()
+                other_cols_number -= {"voltLvl"}
+            net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
+                elm_org[list(other_cols_number)][elm_org.bus.isin(all_external_buses)].sum(axis=0)
             net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = elm_org[list(other_cols_bool)][
-                elm_org.bus.isin(all_external_buses)].values.sum() > 0
+                elm_org.bus.isin(all_external_buses)].values.sum(axis=0) > 0
             all_str_values = list(zip(*elm_org[list(other_cols_str)]\
                                       [elm_org.bus.isin(all_external_buses)].values[::-1]))
             for asv, colid in zip(all_str_values, other_cols_str):
@@ -315,6 +308,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 else:
                     net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
             net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+            for ocm in other_cols_mixed:
+                net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
             net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
         else:
             if elm == "gen" and bus in net.ext_grid.bus.values and \
@@ -346,6 +341,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                         else:
                             net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
                     net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+                    for ocm in other_cols_mixed:
+                        net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
                     net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
                 else:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number |
@@ -508,16 +505,16 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 
 
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
-                                    all_external_buses,
-                                    show_computing_time=False,
-                                    calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles):
+                                    all_external_buses, show_computing_time=False,
+                                    calc_volt_angles=True,
+                                    runpp_fct=_runpp_except_voltage_angles):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controller(net_internal, all_external_buses, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses, True)
         drop_and_edit_cost_functions(net_internal,
                                      all_external_buses+boundary_buses,
                                      True, True)
@@ -528,7 +525,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_external.group.drop(net_external.group.index, inplace=True)
     drop_and_edit_cost_functions(net_external, all_internal_buses,
                                  True, True)
-    drop_measurements_and_controller(net_external, all_internal_buses)
+    drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     pp.drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
 #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)

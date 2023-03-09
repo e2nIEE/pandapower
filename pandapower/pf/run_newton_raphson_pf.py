@@ -47,11 +47,11 @@ def _run_newton_raphson_pf(ppci, options):
         if options['distributed_slack']:
             pg_copy = ppci['gen'][:, PG].copy()
             pd_copy = ppci['bus'][:, PD].copy()
-            ppci = _run_dc_pf(ppci)
+            ppci = _run_dc_pf(ppci, options["recycle"])
             ppci['gen'][:, PG] = pg_copy
             ppci['bus'][:, PD] = pd_copy
         else:
-            ppci = _run_dc_pf(ppci)
+            ppci = _run_dc_pf(ppci, options["recycle"])
     if options["enforce_q_lims"]:
         ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
     else:
