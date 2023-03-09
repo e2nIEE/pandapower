@@ -25,6 +25,7 @@ Change Log
 - [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+- [ADDED] feature: protection - implementation of over-current relay
 
 [2.11.1] - 2023-01-02
 -------------------------------
