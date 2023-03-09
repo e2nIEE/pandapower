@@ -15,6 +15,9 @@ from pandapower.pypower.idx_bus_sc import IKSS1, IKSS2, PHI_IKSS1_DEGREE, C_MAX,
 from pandapower.pypower.idx_bus import BS, GS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 
+from pandapower.pypower.idx_bus_sc import *
+from pandapower.pypower.idx_bus import *
+
 
 def three_bus_example():
     net = pp.create_empty_network(sn_mva=56)
@@ -134,7 +137,7 @@ def net_transformer_simple_4():
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0,
                                           tap_step_percent=2.5, parallel=1)
     pp.create_switch(net, 6, 4, "l", closed=True)
-    pp.create_sgen(net, 3, 0, 0, 5, k=1.2)
+    pp.create_sgen(net, 3, 0, 0, 20, k=1.2, kappa=1)
     pp.create_load(net, 6, 0.1)
     return net
 
@@ -538,11 +541,11 @@ def test_type_c_trafo_simple_other_voltage4_sgen():
     # with options for different transformer nominal voltages, with load and sgen
     # topology tests: open switch, out of service bus (important to test internal indexing)
     net = net_transformer_simple_4()
-    net.sgen.p_mw = 3
-    net.sgen.q_mvar = 0
+    net.sgen.p_mw = 15
+    net.sgen.kappa = 0
 
     # net.trafo.vn_hv_kv.at[1] = 31
-    net.trafo.vn_hv_kv.at[2] = 11
+    # net.trafo.vn_hv_kv.at[2] = 11
 
     pp.runpp(net)
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
@@ -582,6 +585,71 @@ def test_type_c_trafo_simple_other_voltage4_sgen():
     i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
     assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
     assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
+
+
+def test_type_c_sgen_trafo4():
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, s_sc_min_mva=80, rx_max=0.4, rx_min=0.4)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
+    pp.create_sgen(net, 1, 30, 0, 50, k=1, kappa=1)
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+
+    assert np.allclose(net.res_bus_sc.values, [0.680859,  129.720994, 3.049814, 152.46668], rtol=0, atol=1e-6)
+
+    res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065,
+                   3.99091307, 0., 0., 0.05161055, -11.80466263, 0., 0.]
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+    net.sgen.at[0, 'kappa'] = 1.2
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+
+    assert np.allclose(net.res_bus_sc.values, [0.6821, 129.95747, 3.049814, 152.46668], rtol=0, atol=1e-6)
+
+    res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065,
+                   3.99091307, 0., 0., 0.05161055, -11.80466263, 0., 0.]
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+
+def test_sgen_type_c():
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
+    pp.create_line_from_parameters(net, 1, 2, 20, 0.099, 0.156, 400, 0.74)
+
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    net.res_bus_sc
+
+    # pp.create_sgen(net, 1, 20, 0, 20, k=1, kappa=1)
+    # # net.sgen.loc[0, 'current_angle_degree'] = -98.808280
+    baseI = net.sn_mva / (np.sqrt(3) * net.bus.vn_kv.values)
+    net1 = net.deepcopy()
+    pp.create_load(net, 1, 10, 3)
+    pp.runpp(net)
+    V = net._ppc["internal"]["V"]
+    Ybus = net._ppc["internal"]["Ybus"]
+    Ibus = Ybus @ V * baseI  # Ibus is injection, so negative is demand!
+    np.abs(-Ibus[1])
+    np.angle(-Ibus[1], deg=True)
+
+    pp.create_shunt(net1, 1, 2.90504768, 9.68349228)
+    pp.runpp(net1)
+    V1 = net1._ppc["internal"]["V"]
+    Ybus1 = net1._ppc["internal"]["Ybus"]
+    Ibus1 = Ybus1 @ V1 * baseI
+    np.abs(-Ibus1[1])
+    np.angle(-Ibus1[1], deg=True)
+
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    Ybus = net.ppci["internal"]["Ybus"]
+    net.res_bus_sc
+    net.ppci["bus"][1, [VM, VA, PD, QD, GS, BS]]
+    Ibus = Ybus @ V
+    np.abs(Ibus[1])
+    np.angle(Ibus[1], deg=True)
 
 
 def test_trafo_impedance():

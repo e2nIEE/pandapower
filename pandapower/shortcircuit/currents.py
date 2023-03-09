@@ -54,15 +54,11 @@ def _calc_ikss(net, ppci, bus_idx):
     if net._options.get("use_pre_fault_voltage", False):
         V0 = ppci["bus"][:, [VM]] * np.exp(np.deg2rad(ppci["bus"][:, [VA]]) * 1j)
     else:
-        # V0 = ppci["bus"][:, [C_MAX if case == "max" else C_MIN]]
         V0 = np.full((len(ppci["bus"]), 1), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN][0], dtype=np.complex128)
-        # change from trafos
-        if net["_options"]["inverse_y"]:
-            pass
-            # adjust_V0_for_trafo_tap(ppci, V0, bus_idx)
-        else:
-            raise NotImplementedError("not implemented for LU")
-            # todo implement with LU
+        if np.any(ppci["branch"][:, TAP] != 1):
+            raise NotImplementedError("Calculation does not support having transformers with rated voltages unequal "
+                                      "to bus voltages. Try using the superposition method by passing "
+                                      "'use_pre_fault_voltage=True'")
 
     z_equiv = ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j  # removed the abs()
     if fault == "3ph":
@@ -144,12 +140,12 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
 def _current_source_current(net, ppci):
     case = net._options["case"]
     ppci["bus"][:, IKCV] = 0
+    ppci["bus"][:, PHI_IKCV_DEGREE] = -90
     ppci["bus"][:, IKSS2] = 0
-    # sgen current source contribution only for Type A and case "max":
-    if case != "max":
-        return
-
     type_c = net._options["use_pre_fault_voltage"]
+    # sgen current source contribution only for Type A and case "max" or type C:
+    if case != "max" and not type_c:
+        return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     fault = net._options["fault"]
@@ -162,10 +158,10 @@ def _current_source_current(net, ppci):
         sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
     if len(sgen) == 0:
         return
-    if any(pd.isnull(sgen.sn_mva)) and not type_c:
+    if any(pd.isnull(sgen.sn_mva)):
         raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
-    if "current_angle" in sgen.columns:
-        sgen_angle = sgen.current_angle.values
+    if "current_angle_degree" in sgen.columns:
+        sgen_angle = np.deg2rad(sgen.current_angle_degree.values)
     else:
         sgen_angle = None
 
@@ -173,12 +169,20 @@ def _current_source_current(net, ppci):
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
 
-    if not "k" in sgen:
+    if "k" not in sgen:
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
+    if type_c and "kappa" not in sgen:
+        raise ValueError("Max. short-circuit current in p.u. must be specified in net.sgen.kappa for the "
+                         "short-circuit calculation with superposition method")
 
     if type_c:
-        # todo: take pre-fault voltage and post-fault voltage into consideration
-        i_sgen_pu = (sgen.p_mw.values / net.sn_mva * sgen.k.values)
+        # voltage difference between pre-fault condition and the voltage from the calculation with
+        # rotating machines only is used to determine the current injection. The parameter kappa here
+        # is used to denote the maximal current contribution of the sgen in the short-circuit case "Type C"
+        i_sgen_n_pu = (sgen.sn_mva.values / net.sn_mva)
+        delta_V = ppci["bus"][sgen_buses_ppc, [VM]] - ppci["bus"][sgen_buses_ppc, VKSS1]
+        i_sgen_pu = np.where(sgen.k.values * delta_V < sgen.kappa.values,
+                             sgen.k.values * i_sgen_n_pu * delta_V, i_sgen_n_pu * sgen.kappa.values)
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
 
@@ -189,7 +193,6 @@ def _current_source_current(net, ppci):
 
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     ppci["bus"][buses, IKCV] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
-    ppci["bus"][:, PHI_IKCV_DEGREE] = -90
     if sgen_angle is not None and fault == "3ph":
         ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 

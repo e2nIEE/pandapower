@@ -68,7 +68,7 @@ def wind_park_grid(case):
         raise NotImplementedError(f"case {case} not implemented")
 
     if len(net.sgen) > 0:
-        net.sgen["current_angle"] = -90
+        net.sgen["current_angle_degree"] = -90
     return net
 
 

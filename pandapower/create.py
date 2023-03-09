@@ -1064,6 +1064,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
+            If the superposition method is used (use_pre_fault_voltage=True), this parameter \
+            is used to pass through the max. current limit of the machine in p.u.
 
         **current_source** (bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1094,6 +1096,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                  default_val=False, default_for_nan=True)
     if rx is not None:
         _create_column_and_set_value(net, index, rx, "rx", "sgen") # rx is always required
+    if np.isfinite(kappa):
+        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
     if generator_type is not None:
         _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
                                      default_val="current_source", default_for_nan=True)
@@ -1103,7 +1107,6 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         _create_column_and_set_value(net, index, lrc_pu, "lrc_pu", "sgen")
     elif generator_type == "async_doubly_fed":
         _create_column_and_set_value(net, index, max_ik_ka, "max_ik_ka", "sgen")
-        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
@@ -1217,6 +1220,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                            default_val=False)
     if rx is not None:
         _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
+    if np.isfinite(kappa):
+        _add_series_to_entries(entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
     if generator_type is not None:
         _add_series_to_entries(entries, index, "generator_type", generator_type, dtyp="str",
                                      default_val="current_source")
@@ -1226,7 +1231,6 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         _add_series_to_entries(entries, index, "lrc_pu", lrc_pu)
     elif generator_type == "async_doubly_fed":
         _add_series_to_entries(entries, index, "max_ik_ka", max_ik_ka)
-        _add_series_to_entries(entries, index, "kappa", kappa)
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
