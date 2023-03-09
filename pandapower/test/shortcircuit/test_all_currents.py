@@ -612,6 +612,71 @@ def test_type_c_sgen_trafo4():
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
 
+def test_load_type_c():
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
+    pp.create_line_from_parameters(net, 1, 2, 20, 0.099, 0.156, 400, 0.74)
+    pp.create_load(net, 1, 10, 3)
+
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([0.31443438,  59.9077952,  66.64954063, 194.98202182])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+
+    res_line_sc = np.array([[0.31393855, 0.31381306, -71.61339493, 0.31393855, 108.37684429, 1.15160782, 3.16677295,
+                             -0.59052299, -0.92129652, 0.05635891, -1.59736465, 0.01829535, -14.28178926],
+                            [0.31443438, 0.31320255, -71.73882892, 0.31443438, 108.11805023, 0.58728173, 0.92032414, 0.,
+                             0., 0.01829535, -14.28178926, 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+    # now try with positive p_mw, negative q_mvar
+    net.load.q_mvar = -2
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([ 0.29176418,  55.58854147,  77.40936019, 208.87369732])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+
+    res_line_sc = np.array([[0.29093901, 0.29082267, -70.14924675, 0.29093901, 109.84097608, 0.9903086, 2.72035994,
+                             -0.50842396, -0.79184572, 0.05224782, -0.1525674, 0.01697628, -12.86251045],
+                            [0.29176418, 0.29062116, -70.31955011, 0.29176418, 109.53732905, 0.50565042, 0.79240043, 0,
+                             0, 0.01697628, -12.86251045, 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+    # now try with negative p_mw, negative q_mvar
+    net.load.p_mw = -5
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([ 0.27677319,  52.73237570,  22.92942615, 234.25805144])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+
+    res_line_sc = np.array([[0.27533477, 0.27522443, -84.57867986, 0.27533477, 95.41156578, 0.88536175, 2.43975772,
+                             -0.45378216, -0.71256769, 0.04949597, -14.52396818, 0.01610403, -27.07850858],
+                            [0.27677319, 0.27568891, -84.53554824, 0.27677319, 95.32133091, 0.4550242, 0.7130645, 0, 0,
+                             0.01610403, -27.07850858, 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.1e-6)
+
+    # now try with zero p_mw and q_mvar, but the load still present
+    net.load.p_mw = 0
+    net.load.q_mvar = 0
+
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([ 0.28905271 ,  55.07193832,  40.36906664, 221.27455269])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+
+    res_line_sc = np.array([[0.28792032, 0.28780504, -79.93483554, 0.28792032, 100.05540903, 0.96823224, 2.66644109,
+                             -0.49629573, -0.77774077, 0.05173395, -9.8916964, 0.01681852, -22.48755131],
+                            [0.28905271, 0.28792032, -79.94459097, 0.28905271, 99.91228819, 0.49629573, 0.77774077, 0,
+                             0, 0.01681852, -22.48755131, 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+
 def test_sgen_type_c():
     net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 3, 110)
