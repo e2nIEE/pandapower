@@ -632,6 +632,16 @@ def test_load_type_c():
                              0., 0.01829535, -14.28178926, 0., 0.]])
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
+    # now test for fault at the load bus
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+    res_bus_sc = np.array([ 0.32128852,  61.21368488,  63.19657030, 190.67254950])
+    assert np.allclose(net.res_bus_sc.loc[1].values, res_bus_sc, rtol=0, atol=1e-5)
+
+    res_line_sc = np.array([[0.32128852, 0.32121795, -72.27006831, 0.32128852, 107.72678791, 0.58777062, 2.35301071,
+                             -0.0000001, -0.0000001, 0.03962911, 3.70473647, 0., 0.],
+                            [0., 0., 0., 0., 0., 0., -0., 0., 0., 0., 0., 0., 0.]])
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
     # now try with positive p_mw, negative q_mvar
     net.load.q_mvar = -2
     pp.runpp(net)
