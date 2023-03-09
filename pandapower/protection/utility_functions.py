@@ -311,7 +311,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
             text_line = r"  line_"+str(line)#+ ",sw_"+str(Switch_index)
             
             #get bus_index from the line (from switch)
-            get_bus_index= pp.get_connected_buses_at_element(net, element=line, et='l', respect_in_service=False)
+            get_bus_index= pp.get_connected_buses_at_element(net, element_index=line, element_type='l', respect_in_service=False)
             
             bus_list=list(get_bus_index)
             
