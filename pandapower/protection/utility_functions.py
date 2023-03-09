@@ -11,8 +11,16 @@ import pandapower.plotting as plot
 import heapq
 from pandapower.topology.create_graph import create_nxgraph 
 import networkx as nx
-import mplcursors
 
+import logging as log
+logger = log.getLogger(__name__)
+
+try:
+    import mplcursors
+    MPLCURSORS_INSTALLED = True
+except ImportError:
+    MPLCURSORS_INSTALLED = False
+    logger.info('could not import mplcursors')
 
 import warnings
 warnings.filterwarnings('ignore') 
@@ -215,8 +223,8 @@ def fuse_bus_switches(net, bus_switches):
 
 # plot the tripped grid of net_sc
 def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_annotations=True):
-    
-    mplcursors.cursor(hover=False)
+    if MPLCURSORS_INSTALLED:
+        mplcursors.cursor(hover=False)
     
     # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
     
@@ -572,10 +580,11 @@ def create_I_t_plot(trip_decisions,switch_id):
     plt.show()
     plt.legend()
     
-    # hover the plott
-    cursor=mplcursors.cursor(hover=True)
-    cursor.connect("add", lambda sel: sel.annotation.set_text(
-    'I:{} kA,t:{} s'.format(round(sel.target[0],2), round(sel.target[1],2))))
+    if MPLCURSORS_INSTALLED:
+        # hover the plott
+        cursor=mplcursors.cursor(hover=True)
+        cursor.connect("add", lambda sel: sel.annotation.set_text(
+        'I:{} kA,t:{} s'.format(round(sel.target[0],2), round(sel.target[1],2))))
     
 
 

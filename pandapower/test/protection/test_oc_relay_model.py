@@ -12,11 +12,13 @@ import logging as log
 import pandapower
 import pandapower.shortcircuit as sc
 logger = log.getLogger(__name__)
+
 try:
-    from plotly import __version__
-    PLOTLY_INSTALLED = True
+    import mplcursors
+    MPLCURSORS_INSTALLED = True
 except ImportError:
-    PLOTLY_INSTALLED = False
+    MPLCURSORS_INSTALLED = False
+    logger.info('could not import mplcursors, plotting test is not possible')
 from unittest.mock import patch 
 import matplotlib.pyplot as plt 
 from pandas.testing import assert_frame_equal
@@ -204,7 +206,7 @@ def test_oc_get_trip_decision(i_ka1=2.808, i_ka2=0.808,i_ka3=0):
 
 @patch("matplotlib.pyplot.show")
 @pytest.mark.slow
-
+@pytest.mark.skipif(not MPLCURSORS_INSTALLED, reason='mplcursors must be installed')
 def test_plot_tripped_grid(mock_show,sc_line_id =0,sc_location =0.4,
                             settings_DTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
                             'bus_id': [0],'relay_type':['DTOC'],
@@ -224,7 +226,7 @@ def test_plot_tripped_grid(mock_show,sc_line_id =0,sc_location =0.4,
     
 @patch("matplotlib.pyplot.show")
 @pytest.mark.slow
-
+@pytest.mark.skipif(not MPLCURSORS_INSTALLED, reason='mplcursors must be installed')
 def test_plot_create_I_t_plot(mock_show, sc_line_id=0 ,sc_location =0.4,
                             settings_DTOC=pd.DataFrame({'switch_id': [0],'line_id':[0],
                             'bus_id': [0],'relay_type':['DTOC'],
