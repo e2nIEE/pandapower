@@ -10,8 +10,8 @@ from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
     _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
     _init_rundcpp_options, _init_runopp_options, _internal_stored
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
+from pandapower.optimal_powerflow import _optimal_powerflow
 
 try:
     import pandaplan.core.pplog as logging
