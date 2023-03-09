@@ -3,11 +3,17 @@
 
 import pandapower as pp
 import copy
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 from math import isinf
+import pandapower.plotting as plot
+import heapq
+from pandapower.topology.create_graph import create_nxgraph 
+import networkx as nx
+import mplcursors
+
+
 import warnings
 warnings.filterwarnings('ignore') 
 
@@ -210,21 +216,16 @@ def fuse_bus_switches(net, bus_switches):
 # plot the tripped grid of net_sc
 def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_annotations=True):
     
-    import pandapower.plotting as plot
-    import heapq
-    import seaborn as sns
-    clrs = sns.color_palette(palette="colorblind", n_colors=10)
-    import mplcursors
-    cursor=mplcursors.cursor(hover=False)
+    mplcursors.cursor(hover=False)
     
     # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
     
     ext_grid_busses = net.ext_grid.bus.values
     fault_location = [max(net.bus.index)]
     
-    lc = plot.create_line_collection(net, lines = net.line.index, zorder=0, color = clrs[0])    
+    lc = plot.create_line_collection(net, lines = net.line.index, zorder=0)    
     
-    bc_extgrid = plot.create_bus_collection(net, buses = ext_grid_busses, zorder=1, color = clrs[0], size = bus_size, patch_type = "rect")
+    bc_extgrid = plot.create_bus_collection(net, buses = ext_grid_busses, zorder=1, size = bus_size, patch_type = "rect")
     
     bc = plot.create_bus_collection(net, buses = set(net.bus.index) - set(ext_grid_busses) - set(fault_location), zorder=2, color = "black", size = bus_size)
     
@@ -533,8 +534,6 @@ def switch_geodatas(net, size, distance_to_bus):
 def create_I_t_plot(trip_decisions,switch_id):
     """function create I-T plot using tripping decsions"""
     
-    import mplcursors
-    #switch_id=[4]
     
     x=[0,0,0,0]
     y=[0,0,0,0]
@@ -559,11 +558,10 @@ def create_I_t_plot(trip_decisions,switch_id):
     
         plt.loglog(X[count][0], X[count][1],label=X[count][2])
         
-        ax=plt.axvline(x =X[count][3],ymin=0, ymax=X[0][1][0],  color = 'r',)
+        plt.axvline(x =X[count][3],ymin=0, ymax=X[0][1][0],  color = 'r',)
         plt.text(X[count][3]+0.01,0.01,'Ikss  '+str(round(fault_current,1))+'kA',rotation=0)
         
         plt.grid(True, which="both", ls="-")
-        font = {'fontname':'Times New Roman'}
         plt.title("I-t-plot")
         plt.xlabel("I [kA]")
         plt.ylabel("t [s]")
@@ -619,7 +617,6 @@ def power_flow_end_points(net):
 
 def bus_path_from_to_bus(net,radial_start_bus, loop_start_bus, end_bus):
     """#function calcuulate the bus path from start and end buses"""
-    import networkx as nx
     loop_path=[]
     radial_path = []
     
@@ -735,8 +732,6 @@ def get_vi_angle(net,switch_id,powerflow_results=False):
 
 
 def bus_path_multiple_ext_bus(net):
-    from pandapower.topology.create_graph import create_nxgraph 
-    import networkx as nx
     G = create_nxgraph(net) 
     bus_path = []
     for line_id in net.line.index:
