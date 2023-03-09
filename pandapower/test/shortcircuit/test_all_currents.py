@@ -693,38 +693,24 @@ def test_sgen_type_c():
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
     pp.create_line_from_parameters(net, 1, 2, 20, 0.099, 0.156, 400, 0.74)
+    pp.create_sgen(net, 1, 10, 3, 20, k=1, kappa=1)
 
     pp.runpp(net)
     sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
-    net.res_bus_sc
 
-    # pp.create_sgen(net, 1, 20, 0, 20, k=1, kappa=1)
-    # # net.sgen.loc[0, 'current_angle_degree'] = -98.808280
-    baseI = net.sn_mva / (np.sqrt(3) * net.bus.vn_kv.values)
-    net1 = net.deepcopy()
-    pp.create_load(net, 1, 10, 3)
-    pp.runpp(net)
-    V = net._ppc["internal"]["V"]
-    Ybus = net._ppc["internal"]["Ybus"]
-    Ibus = Ybus @ V * baseI  # Ibus is injection, so negative is demand!
-    np.abs(-Ibus[1])
-    np.angle(-Ibus[1], deg=True)
+    res_bus_sc = np.array([0.37460791, 71.37239201, 1.86837663, 240.35204316])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
 
-    pp.create_shunt(net1, 1, 2.90504768, 9.68349228)
-    pp.runpp(net1)
-    V1 = net1._ppc["internal"]["V"]
-    Ybus1 = net1._ppc["internal"]["Ybus"]
-    Ibus1 = Ybus1 @ V1 * baseI
-    np.abs(-Ibus1[1])
-    np.angle(-Ibus1[1], deg=True)
-
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
-    Ybus = net.ppci["internal"]["Ybus"]
-    net.res_bus_sc
-    net.ppci["bus"][1, [VM, VA, PD, QD, GS, BS]]
-    Ibus = Ybus @ V
-    np.abs(Ibus[1])
-    np.angle(Ibus[1], deg=True)
+    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
+    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
+    res_line_sc = np.array([[0.26731345, 0.26718739, -89.36194328, 0.26731345, 90.6256479, 1.00620834, 2.56195025,
+                             -0.59943766, -0.93434154, 0.05406945, -20.80440736, 0.02179654, -32.05702438],
+                            [0.37460791, 0.37314034, -89.51406404, 0.37460791, 90.34281512, 0.83356663, 1.30627509, 0,
+                             0, 0.02179654, -32.05702438, 0., 0.]])
+    # assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=1e-1)
+    # assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
+    #
+    # assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
 
 def test_trafo_impedance():
