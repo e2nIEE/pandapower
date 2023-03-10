@@ -183,8 +183,11 @@ def _current_source_current(net, ppci):
         delta_V = ppci["bus"][sgen_buses_ppc, [VM]] - ppci["bus"][sgen_buses_ppc, VKSS1]
         i_sgen_pu = np.where(sgen.k.values * delta_V < sgen.kappa.values,
                              sgen.k.values * i_sgen_n_pu * delta_V, i_sgen_n_pu * sgen.kappa.values)
+        i_sgen_pu = np.abs(i_sgen_pu)
+        extra_angle = ppci["bus"][sgen_buses_ppc, VA]
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+        extra_angle = 0
 
     if sgen_angle is not None and fault == "3ph":
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
@@ -200,14 +203,14 @@ def _current_source_current(net, ppci):
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus)
         if sgen_angle is None and fault == "3ph":
-            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
+            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
         # todo test this
         if sgen_angle is None and fault == "3ph":
-            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True)
+            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSS2] = np.abs(i_kss_2 / baseI)

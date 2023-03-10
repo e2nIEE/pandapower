@@ -717,16 +717,27 @@ def test_sgen_type_c():
     res_bus_sc = np.array([0.37460791, 71.37239201, 1.86837663, 240.35204316])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
 
-    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
-    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
     res_line_sc = np.array([[0.26731345, 0.26718739, -89.36194328, 0.26731345, 90.6256479, 1.00620834, 2.56195025,
                              -0.59943766, -0.93434154, 0.05406945, -20.80440736, 0.02179654, -32.05702438],
                             [0.37460791, 0.37314034, -89.51406404, 0.37460791, 90.34281512, 0.83356663, 1.30627509, 0,
                              0, 0.02179654, -32.05702438, 0., 0.]])
-    # assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=1e-1)
-    # assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
-    #
-    # assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.5e-6)
+
+    net.sgen.p_mw = 5
+    net.sgen.kappa = 1.2
+    pp.runpp(net)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+
+    res_bus_sc = np.array([0.3757975,  71.59903955,  23.71256985, 238.47843258])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+
+    res_line_sc = np.array([[0.26809978, 0.26797339, -84.23219467, 0.26809978, 95.75537616, 1.01346202, 2.57650331,
+                             -0.60429464, -0.93930479, 0.05422812, -15.70428288, 0.02186576, -26.99952079],
+                            [0.3757975, 0.37432527, -84.45656046, 0.3757975, 95.4003187, 0.83886913, 1.31458458, 0, 0,
+                             0.02186576, -26.99952079, 0., 0.]])
+
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.1e-6)
 
 
 def test_trafo_impedance():
