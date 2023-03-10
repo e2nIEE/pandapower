@@ -299,7 +299,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
     # 2. Convert the pandapower data to the power grid model format. Ignoring the 'extra info', which is a
     #    dictionary representation of the internal state of the PandaPowerConverter.
     pgm_converter = PandaPowerConverter()
-    pgm_input_data, _extra_info = pgm_converter.load_input_data(net)
+    pgm_input_data, _extra_info = pgm_converter.load_input_data(net, make_extra_info=False)
 
     # 3. If required, validate the input data
     if validate_input:
