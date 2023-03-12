@@ -23,14 +23,27 @@ from pandapower.timeseries import DFData
 from pandapower.toolbox_general_issues import nets_equal
 
 try:
+    import cryptography.fernet
+    cryptography_INSTALLED = True
+except ImportError:
+    cryptography_INSTALLED = False
+try:
+    import openpyxl
+    openpyxl_INSTALLED = True
+except ImportError:
+    openpyxl_INSTALLED = False
+try:
+    import xlsxwriter
+    xlsxwriter_INSTALLED = True
+except ImportError:
+    xlsxwriter_INSTALLED = False
+try:
     import geopandas as gpd
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
 try:
     import shapely
-
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
@@ -56,6 +69,9 @@ def test_pickle(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
+                    "mandatory to write excel files and openpyxl to read excels, but is not "
+                    "installed."))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)
@@ -70,6 +86,8 @@ def test_excel(net_in, tmp_path):
     assert net_out.user_pf_options == net_in.user_pf_options
 
 
+@pytest.mark.skipif(not xlsxwriter_INSTALLED,
+                    reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
@@ -132,8 +150,9 @@ def test_json(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
+@pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
+                    "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
-    import cryptography.fernet
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename, encryption_key="verysecret")
     with pytest.raises(json.JSONDecodeError):
@@ -417,7 +436,7 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
-@pytest.mark.skipif(GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
+@pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
     net = pp.create_empty_network()
     net.bus_geodata['geometry'] = None
@@ -446,7 +465,7 @@ def test_replace_elements_json_string(net_in):
     json_string = pp.to_json(net_orig)
     net_load = pp.from_json_string(json_string,
                                    replace_elements={r'pandapower.control.controller.const_control':
-                                                         r'pandapower.test.api.input_files.test_control',
+                                                     r'pandapower.test.api.input_files.test_control',
                                                      r'ConstControl': r'TestControl'})
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
