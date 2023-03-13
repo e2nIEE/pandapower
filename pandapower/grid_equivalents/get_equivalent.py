@@ -136,7 +136,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if not len(boundary_buses):
         raise ValueError("No boundary buses are given.")
     _check_network(net)
-    logger.info(eq_type + " equivalent calculation started")
+    logger.info(eq_type + " equivalent calculation started.")
 
     # --- determine interal buses, external buses, buses connected to boundary buses via
     #     bus-bus-switch and update boundary buses by external slack buses
@@ -144,7 +144,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch, boundary_buses = \
         _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_time)
     if not len(all_external_buses):
-        logger.warning("There are no external buses so that no equivalent grid can be calculated")
+        logger.warning("There are no external buses so that no equivalent grid can be calculated.")
         return None
     return_internal &= bool(len(all_internal_buses))
 
@@ -160,10 +160,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
     ext_buses_with_xward = net.xward.bus[net.xward.bus.isin(all_external_buses)]
     if len(ext_buses_with_ward):
-        logger.debug("ward elements of the external network are replaced by internal elements")
+        logger.debug("ward elements of the external network are replaced by internal elements.")
         pp.replace_ward_by_internal_elements(net, wards=ext_buses_with_ward.index)
     if len(ext_buses_with_xward):
-        logger.debug("xward elements of the external network are replaced by internal elements")
+        logger.debug("xward elements of the external network are replaced by internal elements.")
         pp.replace_xward_by_internal_elements(net, xwards=ext_buses_with_xward.index)
 
     # --- switch from ward injection to ward addmittance if requested
@@ -253,7 +253,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                                              runpp_fct=runpp_fct)
         net_eq = net_external
     else:
-        raise NotImplementedError("The eq_type '%s' is unknown." % eq_type)
+        raise NotImplementedError(f"The {eq_type=} is unknown.")
 
     net_eq["bus_lookups"] = bus_lookups
 
@@ -276,7 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("%s equivalent finished in %.2f seconds:" % (eq_type, time_end-time_start))
+    logger.info("%s equivalent finished in %.2f seconds." % (eq_type, time_end-time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
@@ -402,7 +402,7 @@ def merge_internal_net_and_equivalent_external_net(
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("'merge_int_and_eq_net' finished in %s seconds:" %
+        logger.info("'merge_int_and_eq_net' finished in %s seconds." %
                     round((t_end-t_start), 2))
 
     return merged_net
@@ -482,7 +482,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "bus-bus-switches. They could be the nodes on the same bus bar " +
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
-                    "as the boundary. They are: %s:" % boundary_buses_inclusive_bswitch)
+                    "as the boundary. They are: %s." % boundary_buses_inclusive_bswitch)
 
     # --- determine all internal buses
     all_internal_buses = set()
@@ -525,7 +525,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                       boundary_buses)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"determine_bus_groups\" finished in %s seconds:" %
+        logger.info("\"determine_bus_groups\" finished in %s seconds." %
                     round((t_end-t_start), 2))
 
     return sorted(all_internal_buses), sorted(all_external_buses), \
