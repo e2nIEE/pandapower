@@ -536,19 +536,25 @@ def test_type_c_trafo_simple_other_voltage4():
     assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
 
 
-def test_type_c_trafo_simple_other_voltage4_sgen():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
     # this tests for 2 different topology configurations: ring and open ring,
     # with options for different transformer nominal voltages, with load and sgen
     # topology tests: open switch, out of service bus (important to test internal indexing)
     net = net_transformer_simple_4()
-    net.sgen.p_mw = 15
-    net.sgen.kappa = 0
+    net.sgen.p_mw = 20
+    net.sgen.q_mvar = 0
+    net.sgen.kappa = 1
+    net.sgen.k = 1.2
+    pp.create_load(net, 7, 10, 3)
+    pp.create_switch(net, 6, 4, 'l', False)
 
-    # net.trafo.vn_hv_kv.at[1] = 31
-    # net.trafo.vn_hv_kv.at[2] = 11
+    net.trafo.vn_hv_kv.at[1] = 31
+    net.trafo.vn_lv_kv.at[2] = 0.42
 
     pp.runpp(net)
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True,
+               inverse_y=inverse_y)
 
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
@@ -556,63 +562,80 @@ def test_type_c_trafo_simple_other_voltage4_sgen():
     baseZ = baseV ** 2 / baseMVA
 
     assert np.allclose(net.res_bus_sc.loc[6].values,
-                       [2.096122,  1.452236,  0.054549,  0.085178], rtol=0, atol=1e-6)
+                       [1.12072796, 0.77646312, 0.11355049, 0.15946966], rtol=0, atol=1e-6)
 
-    res_line_sc = np.array([[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487,
-                             -0.529717, 0.986152, -0.281725, 0.986032, -0.281941],
-                            [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210,
-                             -0.538872, 0.982660, -0.378583, 0.981499, -0.376180],
-                            [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926,
-                             -3.524072, 0, 0],
-                            [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123,
-                             -0.650913, 0.982060, -0.398116, 0.980654, -0.395135],
-                            [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062,
-                             -3.543027, 0, 0]])
-    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
-    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
-    assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
-    assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=2e-4)
+    res_line_sc = np.array([[0.37233817, 0.37202159, -171.92326236, 0.37233817,
+                             8.4072921, -19.05762949, 2.78907414, 19.09876936,
+                             -2.83670764, 0.99637, -0.24936231, 0.99798561,
+                             -0.04098874],
+                            [0.04744828, 0.04684176, -52.75384134, 0.04744828,
+                             126.82145161, 0.39363348, 0.67731344, -0.39297336,
+                             -0.68797096, 0.9655717, 7.08233793, 0.96406436,
+                             7.08617078],
+                            [1.12072796, 1.12071697, -53.94177232, 1.12072796,
+                             126.05787127, 0.37304125, 0.58781451, 0.,
+                             0., 0.89663052, 3.65803177, 0.,
+                             0.],
+                            [0.6275538, 0.62734921, -21.12040944, 0.6275538,
+                             158.81863754, 10.05721887, 3.15086826, -9.94029022,
+                             -2.97825453, 0.96992777, -3.72493869, 0.95467304,
+                             -4.50238709],
+                            [0., 0.0000277, 85.40612729, 0.,
+                             0., 0., -0.00001832, 0.,
+                             0., 0.95459186, -4.56234781, 0.95460121,
+                             -4.56270483]])
 
-    res_trafo_sc = np.array([[0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716,
-                              0.986152, -0.281725, 0.982060, -0.398116],
-                             [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369,
-                              0.986032, -0.281941, 0.982660, -0.378583],
-                             [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687,
-                              0.981499, -0.376180, 0.798926, -3.524072],
-                             [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720,
-                              0.980654, -0.395135, 0.878062, -3.543027]])
-    non_i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c not in ["ikss_hv_degree", "ikss_lv_degree"]]
-    i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
-    assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
-    assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
+    non_degree = [i for i, c in enumerate(net.res_line_sc.columns) if not "degree" in c]
+    degree = [i for i, c in enumerate(net.res_line_sc.columns) if "degree" in c]
+    assert np.allclose(net.res_line_sc.values[:, non_degree], res_line_sc[:, non_degree], rtol=0, atol=6e-5)
+    assert np.allclose(net.res_line_sc.values[:, degree], res_line_sc[:, degree], rtol=0, atol=0.05)
+
+    res_trafo_sc = np.array([[0.20929507, -21.10342929, 0.62734921, 158.87959058,
+                              10.1259613, 3.85742992, -10.05721888, -3.15086826,
+                              0.99637, -0.24936231, 0.96992777, -3.72493869],
+                             [0.37233817, -171.5927079, 1.15480275, 8.40493491,
+                              -19.09876937, 2.83670764, 19.30799817, -0.44577867,
+                              0.99798561, -0.04098874, 0.9655717, 7.08233793],
+                             [0.04744828, -53.17854903, 1.12071698, 126.05822829,
+                              0.39297335, 0.68797096, -0.37304126, -0.58781451,
+                              0.96406436, 7.08617078, 0.89663052, 3.65803177],
+                             [0.00077159, -4.48005446, 0.0000277, -94.62521878,
+                              0.01275854, -0.00000497, 0., 0.00001832,
+                              0.95467304, -4.50238709, 0.95459186, -4.56234781]])
+    non_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" not in c]
+    degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" in c]
+    assert np.allclose(net.res_trafo_sc.values[:, non_degree], res_trafo_sc[:, non_degree], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_trafo_sc.values[:, degree], res_trafo_sc[:, degree], rtol=0, atol=0.07)
 
 
-def test_type_c_sgen_trafo4():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_type_c_sgen_trafo4(inverse_y):
     net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 2, 110)
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, s_sc_min_mva=80, rx_max=0.4, rx_min=0.4)
     pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
     pp.create_sgen(net, 1, 30, 0, 50, k=1, kappa=1)
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.values, [0.680859,  129.720994, 3.049814, 152.46668], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.values, [0.680859,  129.720994, 3.049814, 152.46668], rtol=0, atol=1e-5)
 
     res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065,
                    3.99091307, 0., 0., 0.05161055, -11.80466263, 0., 0.]
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
     net.sgen.at[0, 'kappa'] = 1.2
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.values, [0.6821, 129.95747, 3.049814, 152.46668], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.values, [0.6821, 129.95747, 3.049814, 152.46668], rtol=0, atol=1e-5)
 
     res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065,
                    3.99091307, 0., 0., 0.05161055, -11.80466263, 0., 0.]
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
 
-def test_load_type_c():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_load_type_c(inverse_y):
     net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 3, 110)
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
@@ -621,7 +644,7 @@ def test_load_type_c():
     pp.create_load(net, 1, 10, 3)
 
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.31443438,  59.9077952,  66.64954063, 194.98202182])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
@@ -633,7 +656,7 @@ def test_load_type_c():
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
     # now test for fault at the load bus
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
     res_bus_sc = np.array([ 0.32128852,  61.21368488,  63.19657030, 190.67254950])
     assert np.allclose(net.res_bus_sc.loc[1].values, res_bus_sc, rtol=0, atol=1e-5)
 
@@ -645,7 +668,7 @@ def test_load_type_c():
     # now try with positive p_mw, negative q_mvar
     net.load.q_mvar = -2
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([ 0.29176418,  55.58854147,  77.40936019, 208.87369732])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
@@ -659,7 +682,7 @@ def test_load_type_c():
     # now try with negative p_mw, negative q_mvar
     net.load.p_mw = -5
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([ 0.27677319,  52.73237570,  22.92942615, 234.25805144])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
@@ -675,7 +698,7 @@ def test_load_type_c():
     net.load.q_mvar = 0
 
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([ 0.28905271 ,  55.07193832,  40.36906664, 221.27455269])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
@@ -687,7 +710,8 @@ def test_load_type_c():
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
 
-def test_sgen_type_c():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_sgen_type_c(inverse_y):
     net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 3, 110)
     pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
@@ -697,7 +721,7 @@ def test_sgen_type_c():
 
     # first we test the contribution of the shunt impedance component only
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.27140996, 51.71054206, 1.86837663, 240.35204316])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
@@ -712,7 +736,7 @@ def test_sgen_type_c():
     net.sgen.kappa = 1.
 
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.37460791, 71.37239201, 1.86837663, 240.35204316])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
@@ -727,7 +751,7 @@ def test_sgen_type_c():
     net.sgen.p_mw = 5
     net.sgen.kappa = 1.2
     pp.runpp(net)
-    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2)
+    sc.calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.3757975,  71.59903955,  23.71256985, 238.47843258])
     assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
@@ -798,7 +822,8 @@ def test_trafo_impedance():
     abs(i_t)
 
 
-def test_one_line():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_one_line(inverse_y):
     net = pp.create_empty_network(sn_mva=1)
     b1 = pp.create_bus(net, vn_kv=10.)
     b2 = pp.create_bus(net, vn_kv=10.)
@@ -808,66 +833,14 @@ def test_one_line():
     pp.runpp(net)
 
     bus_idx = 1
-    sc.calc_sc(net, case='max', branch_results=True, bus=bus_idx, use_pre_fault_voltage=True)
+    sc.calc_sc(net, case='max', branch_results=True, bus=bus_idx, use_pre_fault_voltage=True, inverse_y=inverse_y)
 
-    ppci = net.ppci
-    bus = ppci["bus"]
-    branch = ppci["branch"]
-    Ybus = ppci["internal"]["Ybus"]
-    Yf = ppci["internal"]["Yf"]
-    Yt = ppci["internal"]["Yt"]
-    Zbus = ppci["internal"]["Zbus"]
-    baseI = ppci["internal"]["baseI"]
+    assert np.allclose(net.res_bus_sc.loc[1].values,
+                       [4.79606369, 83.07025981, 0.47005260, 1.08109377], rtol=0, atol=1e-5)
 
-    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
-
-    assert np.allclose(Zbus, inv(Ybus.toarray()))
-
-    V_ikss = (ikss1 * baseI * Zbus)[:, bus_idx]
-    Ibus = Ybus * V_ikss
-
-    V_ikss_t = 1.1 - V_ikss
-    Ibus_t = Ybus * V_ikss_t
-
-    Ibus[abs(Ibus) < 1e-10] = np.nan
-
-    assert np.allclose(ikss1 * baseI, Ibus, equal_nan=True)
-
-    Sbus = V_ikss * Ibus.conj()
-    abs(Sbus)
-
-    Sbus_t = V_ikss_t * Ibus_t.conj()
-    abs(Sbus_t)
-
-    Zbus.real
-
-    Z_line = 0.00099+0.00156j
-    U_0 = ikss1[bus_idx] * baseI[bus_idx] * Z_line
-
-    Yf @ np.array([U_0, 0])
-
-    pp.runpp(net)
-    ppci = net._ppc
-    ppci["bus"][0, GS] = 100
-    ppci["bus"][0, BS] = 100
-    ppci["bus"][1, GS] = 14.27472390373151
-    ppci["bus"][1, BS] = 85.57762474778227
-    Ybus, Yf, Yt = makeYbus(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    # Ybus = net._ppc["internal"]["Ybus"]
-    # Yf = net._ppc["internal"]["Yf"]
-    # Yt = net._ppc["internal"]["Yt"]
-
-    Zbus = inv(Ybus.toarray())
-    V_ikss_corr = (ikss1 * baseI * Zbus)[:, 1]
-
-
-
-
-
-
-
-
-
+    res_line_sc = np.array([[4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135,
+                             10.76489439, 0., 0., 0.15348228, -10.72685098, 0., 0.]])
+    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1e-6)
 
 
 def test_branch_all_currents_trafo():

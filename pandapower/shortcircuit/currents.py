@@ -61,26 +61,28 @@ def _calc_ikss(net, ppci, bus_idx):
                                       "'use_pre_fault_voltage=True'")
 
     z_equiv = ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j  # removed the abs()
+    ikss1 = V0[bus_idx] / z_equiv
     if fault == "3ph":
 
         if net["_options"]["inverse_y"]:
             Zbus = ppci["internal"]["Zbus"]
-            V_ikss = V0 - Zbus[:, bus_idx] / Zbus[bus_idx, bus_idx] * V0[bus_idx]
-            V_ikss[np.abs(V_ikss) < 1e-10] = 0
+            V_ikss = V0 - Zbus[:, bus_idx] * ikss1
         else:
-            raise NotImplementedError("LU not implemented yet for voltage")
-            # todo implement this
-            # ybus_fact = ppci["internal"]["ybus_fact"]
-            # V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
-            # for ix, b in enumerate(bus_idx):
-            #     ikss = np.zeros(n_bus, dtype=np.complex128)
-            #     ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
-            #     V_ikss[:, ix] = ybus_fact(ikss)
+            ybus_fact = ppci["internal"]["ybus_fact"]
+            n_sc_bus = np.shape(bus_idx)[0]
+            n_bus = ppci["bus"].shape[0]
+            V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
+            for ix, b in enumerate(bus_idx):
+                ikss = np.zeros((n_bus, 1), dtype=np.complex128)
+                ikss[b] = ikss1[ix]
+                V_ikss[:, [ix]] = V0 - ybus_fact(ikss)
 
-        ikss1 = -Ybus.dot(V_ikss) / baseI.reshape(-1, 1)
-        ikss1 = ikss1[bus_idx]
+        V_ikss[np.abs(V_ikss) < 1e-10] = 0
+        # ikss1 = -Ybus.dot(V_ikss) / baseI.reshape(-1, 1)
+        # ikss1 = ikss1[bus_idx]
         # ikss1 = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
         # ikss1 = c / z_equiv / baseI[bus_idx]  # should be same as above
+        ikss1 /= baseI[[bus_idx]]
         # added abs here:
         ppci["bus"][bus_idx, IKSS1] = abs(ikss1)
         # added angle calculation in degree:
@@ -208,7 +210,6 @@ def _current_source_current(net, ppci):
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
-        # todo test this
         if sgen_angle is None and fault == "3ph":
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
@@ -527,7 +528,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
             ybus_fact = ppci["internal"]["ybus_fact"]
             V = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
             for ix, b in enumerate(bus_idx):
-                V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
+                V[:, ix] = ybus_fact(current[ix, :] * baseI)
 
         fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
         tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
@@ -536,13 +537,15 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
 
         ikss2_all_f = Yf.dot(V)
         ikss2_all_t = Yt.dot(V)
+        ikss2_all_f[np.abs(ikss2_all_f) < 1e-10] = 0.
+        ikss2_all_t[np.abs(ikss2_all_t) < 1e-10] = 0.
 
         V_ikss += V  # superposition
 
-        ikss_all_f = Yf.dot(V_ikss)
-        ikss_all_t = Yt.dot(V_ikss)
-        # ikss_all_f = ikss1_all_f + ikss2_all_f
-        # ikss_all_t = ikss1_all_t + ikss2_all_t
+        # ikss_all_f = Yf.dot(V_ikss)
+        # ikss_all_t = Yt.dot(V_ikss)
+        ikss_all_f = ikss1_all_f + ikss2_all_f
+        ikss_all_t = ikss1_all_t + ikss2_all_t
 
     else:
 

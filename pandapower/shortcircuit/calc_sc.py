@@ -184,7 +184,9 @@ def _calc_current(net, ppci_orig, bus):
             _calc_zbus(net, this_ppci)
         else:
             # Factorization Ybus once
-            this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"])
+            # scipy.sparse.linalg.factorized converts the input matrix to csc from csr and raises a warning
+            # todo: create Ybus in CSC format instead of CSR format if known that inverse_y is False?
+            this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"].tocsc())
 
         _calc_rx(net, this_ppci, this_ppci_bus)
         _calc_ikss(net, this_ppci, this_ppci_bus)
