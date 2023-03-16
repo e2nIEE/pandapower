@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 import numpy as np
 from scipy.sparse.linalg import factorized
+from numbers import Number
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
@@ -129,7 +130,9 @@ def calc_sc(net, bus=None,
 
     if use_pre_fault_voltage:
         init_vm_pu = init_va_degree = "results"
-        trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
+        trafo_model = net._options["trafo_model"] # trafo model for SC must match the trafo model for PF calculation
+        if not isinstance(bus, Number) and len(net.sgen.query("in_service")) > 0:
+            raise NotImplementedError("Short-circuit with Type C method and sgen is only implemented for a single bus")
     else:
         init_vm_pu = init_va_degree = "flat"
         trafo_model = "pi"

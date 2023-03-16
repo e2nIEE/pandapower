@@ -34,7 +34,4 @@ PHI_IKSS1_DEGREE = start + 22
 PHI_IKSS2_DEGREE = start + 23
 PHI_IKCV_DEGREE  = start + 24
 
-VKSS1  = start + 25
-PHI_VKSS1_DEGREE  = start + 26
-
-bus_cols_sc = 27
+bus_cols_sc = 25

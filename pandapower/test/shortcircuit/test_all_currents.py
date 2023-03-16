@@ -273,7 +273,8 @@ def test_all_currents_with_oos_elements():
 
     sc.calc_sc(net, case="min", branch_results=True, return_all_currents=True)
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
-                       np.array([0.01259673, 0.3989686]), atol=1e-5)
+                       np.array([0, 0.3989686]), atol=1e-5)  # sgen does not contribute in case == "min"
+                       # np.array([0.01259673, 0.3989686]), atol=1e-5)  # <- old
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].values,
                        0, atol=1e-10)
 
@@ -397,12 +398,13 @@ def test_branch_all_currents_trafo_simple_other_voltage2():
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, use_pre_fault_voltage=False)
 
 
-def test_branch_all_currents_trafo_simple_other_voltage3():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net = net_transformer_simple_3()
     net.trafo.vn_hv_kv.at[1] = 31
     net.trafo.vn_hv_kv.at[2] = 11
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values,
                        [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0, atol=1e-6)
@@ -413,19 +415,21 @@ def test_branch_all_currents_trafo_simple_other_voltage3():
                              -0.7316133, 1.143870, -0.242663, 1.142514, -0.239117],
                             [1.167123, 1.167123, -60.827605, 1.167123, 119.172395, 0.404566, 0.637498, 0, 0, 0.933749,
                              -3.227445, 0.000000, 0.000000]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
+    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.186326,
                               - 0.150470, 1.186326, - 0.150470],
                              [0.013691, - 60.827605, 0.042441, 119.172395, 0.413244, 0.735716, - 0.412972, - 0.732456,
                               1.186180, - 0.150091, 1.143870, - 0.242663],
                              [0.042441, - 60.827605, 1.167123, 119.172395, 0.412437, 0.731613, - 0.404566, - 0.637498,
                               1.142514, - 0.239117, 0.933749, - 3.227445]])
-    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
+    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.vn_hv_kv.at[1] = 29
     net.trafo.vn_hv_kv.at[2] = 9
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values,
                        [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0, atol=1e-6)
@@ -436,19 +440,21 @@ def test_branch_all_currents_trafo_simple_other_voltage3():
                              -0.7219731, 0.930252, - 0.392031, 0.928605, - 0.386736],
                             [1.159408, 1.159408, -60.975224, 1.159408, 119.024776, 0.399235, 0.629098, 0, 0, 0.927576,
                              - 3.375064, 0, 0]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
+    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.904182,
                               - 0.254709, 0.904182, - 0.254709],
                              [0.017769, - 60.975224, 0.051529, 119.024776, 0.408192, 0.728021, - 0.407791, - 0.723216,
                               0.903993, - 0.254055, 0.930252, - 0.392031],
                              [0.051529, - 60.975224, 1.159408, 119.024776, 0.407002, 0.721973, - 0.399235, - 0.629098,
                               0.928605, - 0.386736, 0.927576, - 3.375064]])
-    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
+    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.vn_hv_kv.at[1] = 31
     net.trafo.vn_hv_kv.at[2] = 11
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, inverse_y=inverse_y)
     assert np.allclose(net.res_bus_sc.loc[4].values,
                        [3.490484425, 60.45696064, 0.26224866, 1.80047754], rtol=0, atol=3e-6)
     res_line_sc = np.array([[1.125963, 1.125963, -81.712857, 1.125963, 98.287143, 5.838649, 28.341696, -5.462115,
@@ -456,19 +462,21 @@ def test_branch_all_currents_trafo_simple_other_voltage3():
                             [3.490484, 3.490484, -81.712857, 3.490484, 98.287143, 3.618494, 5.701869, 0, 0, 0.111701,
                              - 24.112697, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=3e-6)
+    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
+    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0.494590, -3.353461, 0.494590, -3.353461],
                              [1.125963, - 81.712857, 3.490484, 98.287143, 5.462115, 27.748369, -3.618494, -5.701869,
                               0.483378, -2.848843, 0.111701, -24.112697],
                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=2e-6)
+    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
+    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.vn_hv_kv.at[1] = 30
     net.trafo.vn_hv_kv.at[2] = 10
     net.trafo.vn_lv_kv.at[1] = 9
     net.trafo.vn_lv_kv.at[2] = 0.42
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values,
                        [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
@@ -478,31 +486,33 @@ def test_branch_all_currents_trafo_simple_other_voltage3():
                              - 0.723762, 0.989244, - 0.267095, 0.987697, - 0.261989],
                             [1.153265, 1.153265, - 61.122864, 1.153265, 118.877136, 0.395016, 0.622450, 0, 0, 0.922662,
                              - 3.522703, 0, 0]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
+    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1.103480, - 0.169658, 1.103480, - 0.169658],
                              [0.014531, - 61.122864, 0.048437, 118.877136, 0.404473, 0.728299, - 0.404185, - 0.72486,
                               1.103325, - 0.169187, 0.989244, - 0.267095],
                              [0.048437, - 61.122864, 1.153265, 118.877136, 0.403488, 0.723762, - 0.395016, - 0.62245,
                               0.987697, - 0.261989, 0.922662, - 3.522703]])
-    assert np.allclose(net.res_trafo_sc.values, res_trafo_sc, rtol=0, atol=1e-6)
+    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
+    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
 
-def test_type_c_trafo_simple_other_voltage4():
-    # this tests for 2 different topology configurations: ring and open ring,
-    # with options for different transformer nominal voltages, with load and sgen
-    # topology tests: open switch, out of service bus (important to test internal indexing)
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_type_c_trafo_simple_other_voltage4(inverse_y):
+    # this tests with options for different transformer nominal voltages
     net = net_transformer_simple_4()
+    net.sgen.in_service = False
 
     # net.trafo.vn_hv_kv.at[1] = 31
     net.trafo.vn_hv_kv.at[2] = 11
 
     pp.runpp(net)
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True)
+    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True, inverse_y=inverse_y)
 
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    # baseI = baseMVA / (baseV * np.sqrt(3))
+    # baseZ = baseV ** 2 / baseMVA
 
     assert np.allclose(net.res_bus_sc.loc[6].values,
                        [2.096122,  1.452236,  0.054549,  0.085178], rtol=0, atol=1e-6)
@@ -841,6 +851,40 @@ def test_one_line(inverse_y):
     res_line_sc = np.array([[4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135,
                              10.76489439, 0., 0., 0.15348228, -10.72685098, 0., 0.]])
     assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1e-6)
+
+
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_return_all_currents(inverse_y):
+    net = pp.create_empty_network(sn_mva=1)
+    b1 = pp.create_bus(net, vn_kv=10.)
+    b2 = pp.create_bus(net, vn_kv=10.)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
+    pp.create_line_from_parameters(net, b1, b2, 1, 0.099, 0.156, 400, 0.457)
+    pp.create_load(net, b2, 20)
+    pp.runpp(net)
+
+    bus_idx = [0, 1]
+
+    # first test Type C:
+    sc.calc_sc(net, case='max', branch_results=True, bus=bus_idx, return_all_currents=True, use_pre_fault_voltage=True,
+               inverse_y=inverse_y)
+    res_line_sc = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                            [4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135, 10.76489439,
+                             0, 0, 0.15348228, -10.72685098, 0., 0.]])
+    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1e-6)
+
+    # test Type A:
+    sc.calc_sc(net, case='max', branch_results=True, return_all_currents=True, bus=bus_idx, use_pre_fault_voltage=False,
+               inverse_y=inverse_y)
+    res_line_sc = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                            [5.00936688, 5.00936688, -80.53631328, 5.00936688, 99.46368672, 7.45284566, 11.74387832,
+                             0, 0, 0.16030835, -22.93615278, 0., 0.]])
+    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1.5e-6)
+
+    # several buses not implemented for Type C
+    pp.create_sgen(net, 1, 0)
+    with pytest.raises(NotImplementedError):
+        sc.calc_sc(net, case='max', branch_results=True, bus=bus_idx, use_pre_fault_voltage=True, inverse_y=inverse_y)
 
 
 def test_branch_all_currents_trafo():

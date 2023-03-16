@@ -11,10 +11,7 @@ from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, IT
 from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
-
-BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
-                       "branch_ip_f", "branch_ip_t",
-                       "branch_ith_f", "branch_ith_t")
+from pandapower.results import BRANCH_RESULTS_KEYS
 
 
 def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
@@ -163,7 +160,14 @@ def _get_switch_results(net, ppc):
     _copy_switch_results_from_branches(net, suffix="_sc", current_parameter="ikss_ka")
     if "in_ka" in net.switch.columns:
         net.res_switch_sc["loading_percent"] = net.res_switch_sc["ikss_ka"].values / net.switch["in_ka"].values * 100
-        
+
+
+def _get_branch_result_from_internal(variable, ppc, ppc_index, f, t):
+    if variable in ppc["internal"]:
+        return ppc["internal"][variable].iloc[f:t, :].loc[:, ppc_index].values.real.reshape(-1, 1)
+    else:
+        return np.full(t-f+1 + len(ppc_index), np.nan, dtype=np.float64)
+
 
 def _get_line_all_results(net, ppc, bus):
     case = net._options["case"]
@@ -180,6 +184,25 @@ def _get_line_all_results(net, ppc, bus):
 
         net.res_line_sc["ikss_ka"] = minmax(ppc["internal"]["branch_ikss_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
                                             ppc["internal"]["branch_ikss_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
+
+        net.res_line_sc["ikss_from_ka"] = _get_branch_result_from_internal("branch_ikss_f", ppc, ppc_index, f, t)
+        net.res_line_sc["ikss_from_degree"] = _get_branch_result_from_internal("branch_ikss_angle_f", ppc, ppc_index, f, t)
+
+        net.res_line_sc["ikss_to_ka"] = _get_branch_result_from_internal("branch_ikss_t", ppc, ppc_index, f, t)
+        net.res_line_sc["ikss_to_degree"] = _get_branch_result_from_internal("branch_ikss_angle_t", ppc, ppc_index, f, t)
+
+        net.res_line_sc["p_from_mw"] = _get_branch_result_from_internal("branch_pkss_f", ppc, ppc_index, f, t)
+        net.res_line_sc["q_from_mvar"] = _get_branch_result_from_internal("branch_qkss_f", ppc, ppc_index, f, t)
+
+        net.res_line_sc["p_to_mw"] = _get_branch_result_from_internal("branch_pkss_t", ppc, ppc_index, f, t)
+        net.res_line_sc["q_to_mvar"] = _get_branch_result_from_internal("branch_qkss_t", ppc, ppc_index, f, t)
+
+        net.res_line_sc["vm_from_pu"] = _get_branch_result_from_internal("branch_vkss_f", ppc, ppc_index, f, t)
+        net.res_line_sc["va_from_degree"] = _get_branch_result_from_internal("branch_vkss_angle_f", ppc, ppc_index, f, t)
+
+        net.res_line_sc["vm_to_pu"] = _get_branch_result_from_internal("branch_vkss_t", ppc, ppc_index, f, t)
+        net.res_line_sc["va_to_degree"] = _get_branch_result_from_internal("branch_vkss_angle_t", ppc, ppc_index, f, t)
+
         if net._options["ip"]:
             net.res_line_sc["ip_ka"] = minmax(ppc["internal"]["branch_ip_f"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1),
                                               ppc["internal"]["branch_ip_t"].iloc[f:t,:].loc[:, ppc_index].values.real.reshape(-1, 1))
