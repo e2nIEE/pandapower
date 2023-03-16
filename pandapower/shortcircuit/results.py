@@ -166,7 +166,7 @@ def _get_branch_result_from_internal(variable, ppc, ppc_index, f, t):
     if variable in ppc["internal"]:
         return ppc["internal"][variable].iloc[f:t, :].loc[:, ppc_index].values.real.reshape(-1, 1)
     else:
-        return np.full(t-f+1 + len(ppc_index), np.nan, dtype=np.float64)
+        return np.full((t-f) * len(ppc_index), np.nan, dtype=np.float64)
 
 
 def _get_line_all_results(net, ppc, bus):

@@ -19,7 +19,7 @@ from scipy.sparse import csr_matrix as sparse
 
 import pandapower as pp
 import pandapower.topology as top
-from pandapower.shortcircuit import calc_sc
+import pandapower.shortcircuit as sc
 from pandapower.create import _get_index_with_check
 from pandapower.topology import create_nxgraph
 from pandapower.pypower.idx_bus import BUS_I
@@ -150,7 +150,7 @@ def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
     aux_net, aux_bus = _create_aux_net(net, line_ix, distance_to_bus0)
 
     pp.rundcpp(aux_net)
-    calc_sc(aux_net, bus=aux_bus, **kwargs)
+    sc.calc_sc(aux_net, bus=aux_bus, **kwargs)
 
     # Return the new net and the aux bus
     return aux_net, aux_bus

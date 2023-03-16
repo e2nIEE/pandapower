@@ -50,12 +50,15 @@ def _calc_ikss(net, ppci, bus_idx):
 
     # init V0 for the superposition method
     # todo: explain the background better
-    # todo: make work for several buses
+    n_sc_bus = np.shape(bus_idx)[0]
+    n_bus = ppci["bus"].shape[0]
+
     valid_V = True
     if net._options.get("use_pre_fault_voltage", False):
-        V0 = ppci["bus"][:, [VM]] * np.exp(np.deg2rad(ppci["bus"][:, [VA]]) * 1j)
+        V0 = np.full((n_bus, n_sc_bus), ppci["bus"][:, [VM]] * np.exp(np.deg2rad(ppci["bus"][:, [VA]]) * 1j))
     else:
-        V0 = np.full((len(ppci["bus"]), 1), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN][0], dtype=np.complex128)
+        V0 = np.full((n_bus, n_sc_bus), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN], dtype=np.complex128)
+
         if np.any(ppci["branch"][:, TAP] != 1):
             msg = "Calculation does not support calculation of voltages and branch powers for grids that have" \
                   " transformers with rated voltages unequal to bus voltages. Change the transformer data or" \
@@ -66,23 +69,20 @@ def _calc_ikss(net, ppci, bus_idx):
     ppci["internal"]["valid_V"] = valid_V
 
     z_equiv = ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j  # removed the abs()
-    ikss1 = V0[bus_idx].flatten() / z_equiv
-
-    n_sc_bus = np.shape(bus_idx)[0]
-    n_bus = ppci["bus"].shape[0]
+    ikss1 = V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
 
     if fault == "3ph":
         if net["_options"]["inverse_y"]:
             Zbus = ppci["internal"]["Zbus"]
             # I don't know how to do this without reshape
-            V_ikss = np.tile(V0, (1, n_sc_bus)) - ikss1 * Zbus[:, bus_idx] if valid_V else -(ikss1 * Zbus)[:, bus_idx]
+            V_ikss = V0 - ikss1 * Zbus[:, bus_idx] if valid_V else -ikss1 * Zbus[:, bus_idx]
         else:
             ybus_fact = ppci["internal"]["ybus_fact"]
             V_ikss = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
             for ix, b in enumerate(bus_idx):
                 ikss = np.zeros((n_bus, 1), dtype=np.complex128)
                 ikss[b] = ikss1[ix]
-                V_ikss[:, [ix]] = V0 - ybus_fact(ikss) if valid_V else -ybus_fact(ikss)
+                V_ikss[:, [ix]] = V0[:, [ix]] - ybus_fact(ikss) if valid_V else -ybus_fact(ikss)
 
         V_ikss[np.abs(V_ikss) < 1e-10] = 0
         # ikss1 = -Ybus.dot(V_ikss) / baseI.reshape(-1, 1)
@@ -415,6 +415,15 @@ def _calc_branch_currents(net, ppci, bus_idx):
         ppci["internal"]["br_res_ks_ppci_bus"] = bus_idx
 
 
+def nan_minmax(a, rows, argminmax):
+    # because numpy won't sort complex values by magnitude :(
+    rows_allnan = np.isnan(a[rows, :]).all(axis=1)
+    aa = a[rows, :]
+    minmax_a = np.zeros(a.shape[0], dtype=np.complex128)
+    minmax_a[~rows_allnan] = aa[~rows_allnan, argminmax(np.abs(aa[~rows_allnan, :]), axis=1)]
+    return minmax_a
+
+
 def _calc_branch_currents_complex(net, ppci, bus_idx):
     net["ppci"] = ppci  #todo remove this
     n_sc_bus = np.shape(bus_idx)[0]
@@ -575,8 +584,12 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     minmax_vkss_all_f = V_ikss[fb][rows_fb, argminmax(np.abs(V_ikss[fb]), axis=1)].flatten()
     minmax_vkss_all_t = V_ikss[tb][rows_tb, argminmax(np.abs(V_ikss[tb]), axis=1)].flatten()
 
-    minmax_ikss_all_f = ikss_all_f[rows_fb, argminmax(np.abs(ikss_all_f), axis=1)].flatten()
-    minmax_ikss_all_t = ikss_all_t[rows_tb, argminmax(np.abs(ikss_all_t), axis=1)].flatten()
+    ikss_all_f[abs(ikss_all_f) < 1e-10] = np.nan
+    ikss_all_t[abs(ikss_all_t) < 1e-10] = np.nan
+    # minmax_ikss_all_f = ikss_all_f[rows_fb, argminmax(np.abs(ikss_all_f), axis=1)].flatten()
+    # minmax_ikss_all_t = ikss_all_t[rows_tb, argminmax(np.abs(ikss_all_t), axis=1)].flatten()
+    minmax_ikss_all_f = nan_minmax(ikss_all_f, rows_fb, argminmax)
+    minmax_ikss_all_t = nan_minmax(ikss_all_t, rows_tb, argminmax)
 
     if net._options["return_all_currents"]:
         ppci["internal"]["branch_ikss_f"] = np.nan_to_num(np.abs(ikss_all_f)) / baseI[fb, None]
@@ -631,8 +644,8 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
             ppci["internal"]["branch_ip_f"] = np.nan_to_num(np.abs(ip_all_f)) / baseI[fb, None]
             ppci["internal"]["branch_ip_t"] = np.nan_to_num(np.abs(ip_all_t)) / baseI[tb, None]
         else:
-            # ip_all_f[np.abs(ip_all_f) < 1e-10] = np.nan
-            # ip_all_t[np.abs(ip_all_t) < 1e-10] = np.nan
+            ip_all_f[np.abs(ip_all_f) < 1e-10] = np.nan
+            ip_all_t[np.abs(ip_all_t) < 1e-10] = np.nan
             ppci["branch"][:, IP_F] = minmax(np.abs(ip_all_f), axis=1) / baseI[fb]
             ppci["branch"][:, IP_T] = minmax(np.abs(ip_all_t), axis=1) / baseI[tb]
 
@@ -646,6 +659,8 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
             ppci["internal"]["branch_ith_f"] = np.nan_to_num(ith_all_f) / baseI[fb, None]
             ppci["internal"]["branch_ith_t"] = np.nan_to_num(ith_all_t) / baseI[tb, None]
         else:
+            # ith_all_f[np.abs(ith_all_f) < 1e-10] = np.nan
+            # ith_all_t[np.abs(ith_all_t) < 1e-10] = np.nan
             ppci["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
             ppci["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
 

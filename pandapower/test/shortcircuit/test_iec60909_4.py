@@ -476,6 +476,7 @@ def test_detect_power_station_units():
 def test_sc_on_line():
     net = iec_60909_4()
     calc_sc_on_line(net, 2, 0.3)
+    # todo: actual test missing here!!!
 
 
 def test_vde_232():
