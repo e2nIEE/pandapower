@@ -175,11 +175,11 @@ def test_all_currents_sgen():
 
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True, return_all_currents=True)
     assert np.allclose(net.res_line_sc.ikss_ka.values,
-                       np.array([0.01259673, 0.3989686, 0.39170662, 0., 0., 0.40431286]), atol=1e-5)
+                       np.array([0., 0.3989686, 0.3919381, 0., 0., 0.3919381]), atol=1e-5)
     assert np.allclose(net.res_line_sc.ip_ka.values,
-                       np.array([0.01781447, 0.74438751, 0.72793774, 0., 0., 0.74576565]), atol=1e-5)
+                       np.array([0., 0.74438751, 0.728265, 0., 0., 0.728265]), atol=1e-5)
     assert np.allclose(net.res_line_sc.ith_ka.values,
-                       np.array([0.01265116, 0.40071219, 0.39339323, 0., 0., 0.40605375]), atol=1e-5)
+                       np.array([0., 0.40071219, 0.393626, 0., 0., 0.393626]), atol=1e-5)
 
 
 def test_all_currents_1ph_max():
@@ -256,7 +256,7 @@ def test_with_permuted_index():
                        np.array([0.01259673, 0.49593036, 0.48628848, 0., 0., 0.49888962]), atol=1e-5)
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True, return_all_currents=True)
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(1, 4), (1, 3), (1, 0), (0, 4), (0, 3), (0, 0)]].values,
-                       np.array([0.01259673, 0.3989686, 0.39170662, 0., 0., 0.40431286]), atol=1e-5)
+                       np.array([0., 0.3989686, 0.3919381, 0., 0., 0.3919381]), atol=1e-5)
 
 
 def test_all_currents_with_oos_elements():

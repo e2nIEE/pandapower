@@ -940,7 +940,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
     if sequence==1:
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode, characteristic=net.get(
+        mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
             'characteristic'))
     elif sequence==0:
         if mode != "sc":
@@ -978,7 +979,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characterist
 
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
-    if mode == "sc": # todo type c
+    if mode == "sc":
         kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt

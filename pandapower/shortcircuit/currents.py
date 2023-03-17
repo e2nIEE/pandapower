@@ -646,8 +646,10 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
         else:
             ip_all_f[np.abs(ip_all_f) < 1e-10] = np.nan
             ip_all_t[np.abs(ip_all_t) < 1e-10] = np.nan
-            ppci["branch"][:, IP_F] = minmax(np.abs(ip_all_f), axis=1) / baseI[fb]
-            ppci["branch"][:, IP_T] = minmax(np.abs(ip_all_t), axis=1) / baseI[tb]
+            # ppci["branch"][:, IP_F] = minmax(np.abs(ip_all_f), axis=1) / baseI[fb]
+            # ppci["branch"][:, IP_T] = minmax(np.abs(ip_all_t), axis=1) / baseI[tb]
+            ppci["branch"][:, IP_F] = np.nanmax(np.abs(ip_all_f), axis=1) / baseI[fb]
+            ppci["branch"][:, IP_T] = np.nanmax(np.abs(ip_all_t), axis=1) / baseI[tb]
 
     if net._options["ith"]:
         n = 1
@@ -656,13 +658,15 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
         ith_all_t = np.abs(ikss_all_t * np.sqrt(m + n))
 
         if net._options["return_all_currents"]:
-            ppci["internal"]["branch_ith_f"] = np.nan_to_num(ith_all_f) / baseI[fb, None]
-            ppci["internal"]["branch_ith_t"] = np.nan_to_num(ith_all_t) / baseI[tb, None]
+            ppci["internal"]["branch_ith_f"] = np.nan_to_num(np.abs(ith_all_f)) / baseI[fb, None]
+            ppci["internal"]["branch_ith_t"] = np.nan_to_num(np.abs(ith_all_t)) / baseI[tb, None]
         else:
-            # ith_all_f[np.abs(ith_all_f) < 1e-10] = np.nan
-            # ith_all_t[np.abs(ith_all_t) < 1e-10] = np.nan
-            ppci["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
-            ppci["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+            ith_all_f[np.abs(ith_all_f) < 1e-10] = np.nan
+            ith_all_t[np.abs(ith_all_t) < 1e-10] = np.nan
+            # ppci["branch"][:, ITH_F] = minmax(np.abs(ith_all_f), axis=1) / baseI[fb]
+            # ppci["branch"][:, ITH_T] = minmax(np.abs(ith_all_t), axis=1) / baseI[fb]
+            ppci["branch"][:, ITH_F] = np.nanmax(np.abs(ith_all_f), axis=1) / baseI[fb]
+            ppci["branch"][:, ITH_T] = np.nanmax(np.abs(ith_all_t), axis=1) / baseI[fb]
 
     # Update bus index for branch results
     if net._options["return_all_currents"]:
