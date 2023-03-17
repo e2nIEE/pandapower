@@ -389,15 +389,6 @@ def add_aux_trafo(net, trafo_idx):
                                           1e-6, 1e-5, 0, 0)
 
 
-
-
-def test_branch_all_currents_trafo_simple_other_voltage2():
-    net = net_transformer_simple_2()
-    net.trafo.vn_hv_kv.at[1] = 11
-
-    sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, use_pre_fault_voltage=False)
-
-
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net = net_transformer_simple_3()
@@ -724,7 +715,7 @@ def test_load_type_c(inverse_y):
 def test_sgen_type_c(inverse_y):
     net = pp.create_empty_network(sn_mva=100)
     pp.create_buses(net, 3, 110)
-    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1, s_sc_min_mva=80, rx_min=0.4)
     pp.create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
     pp.create_line_from_parameters(net, 1, 2, 20, 0.099, 0.156, 400, 0.74)
     pp.create_sgen(net, 1, 10, 3, 20, k=0, kappa=0)
@@ -772,6 +763,19 @@ def test_sgen_type_c(inverse_y):
                              0.02186576, -26.99952079, 0., 0.]])
 
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.1e-6)
+
+    pp.runpp(net)
+    sc.calc_sc(net, case="min", use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
+
+    res_bus_sc = np.array([0.33334 ,  63.509772, 152.076986, 240.321483])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=4e-5)
+
+    res_line_sc = np.array([[0.22549428, 0.22549428, -57.7247817, 0.2256038, 122.26232395, 0.73906755, 1.86147343,
+                             -0.44933665, -0.70222018, 0.04661803, 10.62047628, 0.01939536, -0.35204102],
+                            [0.33203396, 0.33203396, -57.80908069, 0.33333986, 122.04779847, 0.66002583, 1.03432079, 0.,
+                             0., 0.01939536, -0.35204102, 0., 0.]])
+
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=4e-6)
 
 
 def test_trafo_impedance():
