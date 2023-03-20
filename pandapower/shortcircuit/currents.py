@@ -8,24 +8,14 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower.pf.makeYbus_numba import makeYbus
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE
+from pandapower.pypower.idx_brch import TAP
 from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, \
     PKSS_F, QKSS_F, PKSS_T, QKSS_T, VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T, IKSS_ANGLE_F, IKSS_ANGLE_T
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, \
     X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G, K_SG, SKSS, \
     PHI_IKSS1_DEGREE, PHI_IKSS2_DEGREE, PHI_IKCV_DEGREE
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
-
-from scipy.linalg import inv
-
-import pandapower as pp
-
-from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-from pandapower.shortcircuit.toolbox import adjust_V0_for_trafo_tap
 
 try:
     import pandaplan.core.pplog as logging
@@ -40,8 +30,6 @@ def _calc_ikss(net, ppci, bus_idx):
     case = net._options["case"]
     c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
     baseI = ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
-
-    Ybus = ppci["internal"]["Ybus"]
 
     # Only for test, should correspondant to PF result
     baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
