@@ -793,6 +793,10 @@ def test_sgen_type_c(inverse_y):
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
 
 
+def test_trafo_3w():
+    pass
+
+
 def test_trafo_impedance():
     net = pp.create_empty_network(sn_mva=0.16)
     pp.create_bus(net, 20)
