@@ -10,13 +10,9 @@ from scipy.linalg import inv
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
-from pandapower.pf.makeYbus_numba import makeYbus
-from pandapower.pypower.idx_bus_sc import IKSS1, IKSS2, PHI_IKSS1_DEGREE, C_MAX, SKSS
-from pandapower.pypower.idx_bus import BS, GS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 
 from pandapower.pypower.idx_bus_sc import *
-from pandapower.pypower.idx_bus import *
 
 
 def three_bus_example():
@@ -315,69 +311,6 @@ def test_branch_all_currents_trafo_simple():
 
     assert np.isclose(net.res_bus_sc.ikss_ka, 5.773503, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.skss_mw, 100, atol=1e-6, rtol=0)
-
-
-def test_branch_all_currents_trafo_simple_other_voltage():
-    net = net_transformer_simple()
-    net.sn_mva=1
-    # net.trafo.vn_hv_kv = 11
-    bus_idx = 1
-    pp.create_load(net, 1, 0.5)
-    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=bus_idx)
-
-    pp.runpp(net)
-    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=bus_idx, use_pre_fault_voltage=True)
-
-    ppci = net.ppci
-    bus = ppci["bus"]
-    branch = ppci["branch"]
-    Ybus = ppci["internal"]["Ybus"]
-    Yf = ppci["internal"]["Yf"]
-    Yt = ppci["internal"]["Yt"]
-    Zbus = ppci["internal"]["Zbus"]
-    baseI = ppci["internal"]["baseI"]
-
-    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
-
-    assert np.allclose(Zbus, inv(Ybus.toarray()))
-
-    V_ikss = (ikss1 * baseI * Zbus)[:, bus_idx]
-    Ibus = Ybus * V_ikss
-
-    V_ikss_t = 1.05 - V_ikss
-    Ibus_t = Ybus * V_ikss_t
-
-    Ibus[abs(Ibus) < 1e-10] = np.nan
-
-    assert np.allclose(ikss1 * baseI, Ibus, equal_nan=True)
-
-    Sbus = V_ikss * Ibus.conj()
-    abs(Sbus)
-
-    Sbus = ppci["bus"][:, SKSS]
-
-    Sbus_t = V_ikss_t * Ibus_t.conj()
-    abs(Sbus_t)
-
-    Zbus.real
-
-    tap = ppci["branch"][:, TAP]
-    branch_nonzero = np.flatnonzero(tap!=1)
-    ppci["branch"][branch_nonzero, BR_R] *= tap[branch_nonzero]
-    ppci["branch"][branch_nonzero, BR_X] *= tap[branch_nonzero]
-    Ybus, Yf, Yt = makeYbus(net.sn_mva, ppci["bus"], ppci["branch"])
-    Zbus = inv(Ybus.toarray())
-    V_ikss = (ikss1 * baseI * Zbus)  # making it a complex calculation
-    V_ikss = V_ikss[:, bus_idx]
-    V_ikss = V_ikss[np.argmax(np.abs(V_ikss), axis=0)] - V_ikss  # numpy indexing issue
-
-    # Z_line = 0.02407386 + 0.28788144j
-    Z_line = 0.02648124 + 0.31666959j
-    U_0 = ikss1[bus_idx] * baseI[bus_idx] * Z_line
-    U_0_ref = 1.086619 * np.exp(np.deg2rad(0.055088)*1j)
-    Z_line_ref = U_0_ref / (ikss1[bus_idx] * baseI[bus_idx])
-    U_0_try = ikss1[bus_idx] * baseI[bus_idx] * Z_line_ref
-    Z_line_ref / Z_line
 
 
 def add_aux_trafo(net, trafo_idx):
