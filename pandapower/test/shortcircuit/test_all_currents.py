@@ -777,6 +777,21 @@ def test_sgen_type_c(inverse_y):
 
     assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=4e-6)
 
+    # test with fault impedance
+    pp.runpp(net)
+    sc.calc_sc(net, case="max", use_pre_fault_voltage=True, branch_results=True, bus=2,
+               inverse_y=inverse_y, r_fault_ohm=10, x_fault_ohm=5)
+
+    res_bus_sc = np.array([0.36193148, 68.95720876, 33.71256985, 243.47843258])
+    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+
+    res_line_sc = np.array([[0.25310399, 0.25289333, -79.00626669, 0.25310399, 100.93191475, 3.76673885, 3.49235098, -3.4021955,
+                             -2.03898166, 0.1066072, -36.17097137, 0.08225171, -48.13325967],
+                            [0.36193148, 0.35610158, -80.79001608, 0.36193148, 97.60508469, 4.69831427, 3.01125907, -3.92983193,
+                             -1.96491597, 0.08225171, -48.13325967, 0.06371612, -55.82986413]])
+
+    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+
 
 def test_trafo_impedance():
     net = pp.create_empty_network(sn_mva=0.16)
