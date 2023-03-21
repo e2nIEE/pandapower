@@ -234,7 +234,7 @@ def gen_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def sgen_patches(node_coords, size, angles, **kwargs):
+def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
     """
     Creation function of patches for static generators.
 
@@ -261,25 +261,47 @@ def sgen_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    for i, node_geo in enumerate(node_coords):
-        mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
-        mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
-        mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
-        # dropped perpendicular foot of triangle1
-        perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), angles[i])
-        perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), angles[i])
-        polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-        polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
-                                    orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
-        polys.append(RegularPolygon(mid_tri2, numVertices=3, radius=r_triangle,
-                                    orientation=np.pi - angles[i], fc=facecolors[i],
-                                    ec=edgecolors[i]))
-        lines.append((node_geo, circ_edge))
-        lines.append((perp_foot1, line_end1))
-        lines.append((perp_foot2, line_end2))
+    if sgen_type == "WT":
+        for i, node_geo in enumerate(node_coords):
+            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
+            mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
+            mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
+            # dropped perpendicular foot of triangle1
+            perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
+            line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), angles[i])
+            perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
+            line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), angles[i])
+            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
+                                        orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(RegularPolygon(mid_tri2, numVertices=3, radius=r_triangle,
+                                        orientation=np.pi - angles[i], fc=facecolors[i],
+                                        ec=edgecolors[i]))
+            lines.append((node_geo, circ_edge))
+            lines.append((perp_foot1, line_end1))
+            lines.append((perp_foot2, line_end2))
+    else:
+        for i, node_geo in enumerate(node_coords):
+            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
+            mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
+            mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
+            # dropped perpendicular foot of triangle1
+            perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
+            line_end1 = perp_foot1 + + _rotate_dim2(np.array([-55.5 * r_triangle, 0]), angles[i])
+            perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
+            line_end2 = perp_foot2 + + _rotate_dim2(np.array([55.5 * r_triangle, 0]), angles[i])
+            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
+                                        orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(RegularPolygon(mid_tri2, numVertices=3, radius=r_triangle,
+                                        orientation=np.pi - angles[i], fc=facecolors[i],
+                                        ec=edgecolors[i]))
+            lines.append((node_geo, circ_edge))
+            lines.append((perp_foot1, line_end1))
+            lines.append((perp_foot2, line_end2))
+
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 
 

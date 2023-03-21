@@ -172,9 +172,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             net, size=switch_size, distance_to_bus=switch_distance,
             use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
-
     if plot_sgens and len(net.sgen):
-        sgc = create_sgen_collection(net, size=sgen_size, orientation=0)
+        sgen_type = net.sgen.type
+        sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=0)
         collections.append(sgc)
     if plot_gens and len(net.gen):
         gc = create_gen_collection(net, size=gen_size)
