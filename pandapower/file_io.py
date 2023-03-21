@@ -11,6 +11,7 @@ from warnings import warn
 
 import numpy
 import pandas as pd
+from packaging.version import Version
 from packaging import version
 import sys
 try:
@@ -26,9 +27,9 @@ except ImportError:
 
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
-from pandapower.convert_format import convert_format
-from pandapower.create import create_empty_network
 from pandapower.std_types import basic_std_types
+from pandapower.create import create_empty_network
+from pandapower.convert_format import convert_format
 import pandapower.io_utils as io_utils
 
 try:
@@ -242,7 +243,7 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, restore_index_names=True):
+              empty_dict_like_object=None):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -274,9 +275,6 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
-        **restore_index_names** (bool, True) - If True, the index names of dataframes in the net
-        are restored using information of a dict "index_names" (if this dict is available).
-
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -301,13 +299,12 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         keep_serialized_elements=keep_serialized_elements,
         add_basic_std_types=add_basic_std_types,
         replace_elements=replace_elements,
-        empty_dict_like_object=empty_dict_like_object,
-        restore_index_names=restore_index_names)
+        empty_dict_like_object=empty_dict_like_object)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
-                     replace_elements=None, empty_dict_like_object=None, restore_index_names=True):
+                     replace_elements=None, empty_dict_like_object=None):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -338,9 +335,6 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
-        **restore_index_names** (bool, True) - If True, the index names of dataframes in the net
-        are restored using information of a dict "index_names" (if this dict is available).
-
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -363,7 +357,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
                          empty_dict_like_object=empty_dict_like_object)
         net_dummy = create_empty_network()
-        if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
+        if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')
         if keep_serialized_elements:
@@ -401,14 +395,6 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
             net.std_types[key] = dict(std_types, **net.std_types[key])
-    if restore_index_names and hasattr(net, "keys") and "index_names" in net.keys():
-        if not isinstance(net["index_names"], dict):
-            raise ValueError("To restore the index names of the dataframes, a dict including this "
-                             f"information is expected, not {type(net['index_names'])}")
-        for key, index_name in net["index_names"].items():
-            if key in net.keys():
-                net[key].index.name = index_name
-        del net["index_names"]
 
     return net
 

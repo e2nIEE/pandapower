@@ -52,12 +52,12 @@ def _runpf_pypower(ppci, options, **kwargs):
 
     if ac:  # AC formulation
         if init_va_degree == "dc":
-            ppci = _run_dc_pf(ppci)
+            ppci = _run_dc_pf(ppci, options["recycle"])
             success = True
 
         ppci, success, bus, gen, branch, it = _ac_runpf(ppci, ppopt, numba, recycle)
     else:  ## DC formulation
-        ppci = _run_dc_pf(ppci)
+        ppci = _run_dc_pf(ppci, options["recycle"])
         success = True
 
     et = perf_counter() - t0

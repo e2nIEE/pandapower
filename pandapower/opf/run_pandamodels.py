@@ -1,6 +1,6 @@
 import os
-from pandapower.converter.powermodels.to_pm import convert_to_pm_structure, dump_pm_json
-from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
+from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
+from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
 
 try:
