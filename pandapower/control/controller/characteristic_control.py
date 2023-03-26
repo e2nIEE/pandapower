@@ -4,8 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import _detect_read_write_flag, read_from_net, write_to_net
 
 
 class CharacteristicControl(Controller):
