@@ -467,7 +467,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     if len(s) > 0:
         vl = _is_elements["shunt"]
         if "controllable" in s:
-            vl &= ~s.controllable.values  # p and q only comes from X_L, X_Cvar and tharistor firing angle
+            vl &= ~s.controllable.values.astype(bool)  # p and q only comes from X_L, X_Cvar and tharistor firing angle
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
         q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
         p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])

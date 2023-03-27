@@ -25,6 +25,14 @@ def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
                            rtol=0, atol=1e-6)
 
 
+def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
+    aux = pp.create_bus(net, net.bus.at[from_bus, "vn_kv"], "aux")
+    net.line.loc[line, side] = aux
+
+    idx = pp.create_tcsc(net, from_bus, aux, xl, xc, set_p_mw, 100, controllable=True)
+    return idx
+
+
 def facts_case_study_grid():
     net = pp.create_empty_network()
 
@@ -321,6 +329,73 @@ def test_tcsc_case_study():
     Ybus_tcsc = makeYbus_tcsc(Ybus, np.deg2rad(net.res_tcsc.thyristor_firing_angle.values),
                               xl / baseZ, xc / baseZ, [f], [aux])
     assert np.allclose((Ybus + Ybus_tcsc).toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+
+
+def test_2_tcsc_elements():
+    net = facts_case_study_grid()
+    baseMVA = net.sn_mva
+    baseV = 230
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    # plot_z(baseZ, xl, xc)
+    f = net.bus.loc[net.bus.name == "B4"].index.values[0]
+    t = net.bus.loc[net.bus.name == "B6"].index.values[0]
+    l = net.line.loc[(net.line.from_bus == f) & (net.line.to_bus == t)].index.values[0]
+    add_tcsc_to_line(net, xl, xc, -100, f, l)
+
+    f = net.bus.loc[net.bus.name == "B5"].index.values[0]
+    t = net.bus.loc[net.bus.name == "B4"].index.values[0]
+    l = net.line.loc[(net.line.from_bus == t) & (net.line.to_bus == f)].index.values[0]
+    add_tcsc_to_line(net, xl, xc, -260, f, l)
+
+    pp.runpp(net, max_iteration=20)
+
+
+def test_multiple_facts():
+    #                  |--(TCSC)--(4)------|
+    # (0)-------------(1)-----------------(3)->
+    #                  |--(TCSC)--(2)------|
+    baseMVA = 100
+    baseV = 110
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+
+    net = pp.create_empty_network(sn_mva=baseMVA)
+    pp.create_buses(net, 5, baseV)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 4, 3, 20, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_load(net, 3, 100, 40)
+
+    pp.create_tcsc(net, 1, 2, xl, xc, -10, 160, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+    pp.create_tcsc(net, 1, 4, xl, xc, -5, 160, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+
+    pp.runpp(net, max_iteration=100)
+
+    net.tcsc.loc[1, "thyristor_firing_angle"] = net.res_tcsc.loc[1, "thyristor_firing_angle"]
+    net.tcsc.loc[1, "controllable"] = False
+    pp.runpp(net, max_iteration=100)
+
+    pp.create_shunt(net, 3, 0, 0)
+    net.shunt["controllable"] = True
+    net.shunt["set_vm_pu"] = 1.
+    net.shunt["thyristor_firing_angle_degree"] = 90.
+    net.shunt["svc_x_l_ohm"] = 1
+    net.shunt["svc_x_cvar_ohm"] = -10
+    pp.runpp(net, max_iteration=100)
+
+    pp.create_shunt(net, 2, 0, 0)
+    net.shunt.loc[1, "controllable"] = False
+    net.shunt.loc[1, "set_vm_pu"] = 1.
+    net.shunt.loc[1, "thyristor_firing_angle_degree"] = 144.
+    net.shunt.loc[1, "svc_x_l_ohm"] = 1
+    net.shunt.loc[1, "svc_x_cvar_ohm"] = -10
+    pp.runpp(net, max_iteration=100)
 
 
 def test_svc_tcsc_case_study():

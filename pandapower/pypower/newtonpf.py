@@ -138,9 +138,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     tcsc_x_l_pu = tcsc[tcsc_branches, TCSC_X_L].real
     tcsc_x_cvar_pu = tcsc[tcsc_branches, TCSC_X_CVAR].real
     num_svc_controllable = len(x_control_svc[svc_controllable])
+    num_svc = len(x_control_svc)
+    num_tcsc = len(x_control_tcsc)
     num_tcsc_controllable = len(x_control_tcsc[tcsc_controllable])
     num_facts_controllable = num_svc_controllable + num_tcsc_controllable
-    num_facts_total = len(x_control_svc) + len(x_control_tcsc)
+    num_facts = num_svc + num_tcsc
 
     tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pq)
     tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(int), pq)
@@ -264,9 +266,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                 svc_x_cvar_pu)
             J = J + J_m_svc
         if len(tcsc_branches) > 0:
-            J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, tcsc_controllable,
-                                                  tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb,
-                                                  pvpq, pq, pvpq_lookup, pq_lookup)
+            J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, tcsc_controllable, tcsc_x_l_pu,
+                                                  tcsc_x_cvar_pu, tcsc_fb, tcsc_tb, pvpq, pq, pvpq_lookup, pq_lookup,
+                                                  num_svc_controllable, num_tcsc, num_tcsc_controllable)
             J = J + J_m_tcsc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -328,17 +330,20 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         bus[svc_buses, SVC_THYRISTOR_FIRING_ANGLE] = x_control_svc
 
     if len(tcsc_branches) > 0:
+        Yf_tcsc, Yt_tcsc = makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb)
         # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
         baseI = baseMVA / (bus[tcsc_tb, BASE_KV] * sqrt(3))
-        Ibus_tcsc = Ybus_tcsc * V
-        Sbus_tcsc = V * conj(Ibus_tcsc) * baseMVA
+        i_tcsc_f = Yf_tcsc.dot(V)
+        i_tcsc_t = Yt_tcsc.dot(V)
+        s_tcsc_f = np.conj(i_tcsc_f) * V[tcsc_fb] * baseMVA
+        s_tcsc_t = np.conj(i_tcsc_t) * V[tcsc_tb] * baseMVA
         tcsc[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE] = x_control_tcsc
-        tcsc[tcsc_branches, TCSC_PF] = Sbus_tcsc[tcsc_fb].real
-        tcsc[tcsc_branches, TCSC_QF] = Sbus_tcsc[tcsc_fb].imag
-        tcsc[tcsc_branches, TCSC_PT] = Sbus_tcsc[tcsc_tb].real
-        tcsc[tcsc_branches, TCSC_QT] = Sbus_tcsc[tcsc_tb].imag
-        tcsc[tcsc_branches, TCSC_IF] = np.abs(Ibus_tcsc[tcsc_fb]) * baseI
-        tcsc[tcsc_branches, TCSC_IT] = np.abs(Ibus_tcsc[tcsc_tb]) * baseI
+        tcsc[tcsc_branches, TCSC_PF] = s_tcsc_f.real
+        tcsc[tcsc_branches, TCSC_QF] = s_tcsc_f.imag
+        tcsc[tcsc_branches, TCSC_PT] = s_tcsc_t.real
+        tcsc[tcsc_branches, TCSC_QT] = s_tcsc_t.imag
+        tcsc[tcsc_branches, TCSC_IF] = np.abs(i_tcsc_f) * baseI
+        tcsc[tcsc_branches, TCSC_IT] = np.abs(i_tcsc_t) * baseI
         tcsc[tcsc_branches, TCSC_X_PU] = 1 / calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
@@ -393,5 +398,25 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
     Ybus_tcsc[tcsc_fb, tcsc_tb] = -Y_TCSC
     Ybus_tcsc[tcsc_tb, tcsc_fb] = -Y_TCSC
     Ybus_tcsc[np.diag_indices_from(Ybus_tcsc)] = -Ybus_tcsc.sum(axis=1)
+
     return csr_matrix(Ybus_tcsc)
+
+
+def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
+    ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
+    ## at each branch's "from" bus, and Yt is the same for the "to" bus end
+    Y = Ybus_tcsc.toarray()
+    nl = len(tcsc_fb)
+    nb = Ybus_tcsc.shape[0]
+    i = np.hstack([range(nl), range(nl)])  ## double set of row indices
+
+    Yft = Y[tcsc_fb, tcsc_tb]
+    Yff = -Yft
+    Ytf = Y[tcsc_tb, tcsc_fb]
+    Ytt = -Ytf
+
+    Yf = csr_matrix((np.hstack([Yff, Yft]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
+    Yt = csr_matrix((np.hstack([Ytf, Ytt]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
+    return Yf, Yt
+
 
