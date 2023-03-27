@@ -1145,7 +1145,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, switch_index=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 
@@ -1160,15 +1160,24 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         **use_line_geodata** (bool, False) - If True, line coordinates are used to identify the
         switch position
+        
+        **switch_index** (list, []) - Possibility to create line switch collections with a subset of switches in net.switch.index.
+        If left empty, all switches are taken into the line switch collection.
+
 
         **kwargs - Key word arguments are passed to the patch function
 
     OUTPUT:
         **switches** - patch collection
     """
+    
+    if switch_index is None:
+        lbs_switches = net.switch.index[net.switch.et == "l"]
+    else:
+        lbs_switches = switch_index
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "l"]
 
     color = kwargs.pop("color", "k")
 

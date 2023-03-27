@@ -1656,20 +1656,27 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
     drop_elements_simple(net, "ward", wards)
 
 
-def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
+def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False,
+                                       log_level="warning"):
     """
     Replaces xward by loads, shunts, impedance and generators
 
-    INPUT:
-        **net** - pandapower net
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    xwards : iterable, optional
+        indices of xwards which should be replaced. If None, all xwards are replaced, by default None
+    set_xward_bus_limits : bool, optional
+        if True, the buses internal in xwards get vm limits from the connected buses
+    log_level : str, optional
+        logging level of the message which element types of net2 got reindexed elements. Options
+        are, for example "debug", "info", "warning", "error", or None, by default "info"
 
-    OPTIONAL:
-        **xwards** (iterable) - indices of xwards which should be replaced
-
-    OUTPUT:
-        No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance
-        and generators
-
+    Returns
+    -------
+    None
+        the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
     """
     # --- determine xwards index
     if xwards is None:
@@ -1678,20 +1685,23 @@ def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
         xwards = ensure_iterability(xwards)
 
     ass = element_associated_groups(net, "xward", xwards)
+    default_vm_lims = [0, 2]
 
     # --- create buses, loads, shunts, gens and impedances
     for xward in net.xward.loc[xwards].itertuples():
-        bus_v = net.bus.vn_kv[xward.bus]
+        vn = net.bus.vn_kv.at[xward.bus]
+        vm_lims = net.bus.loc[xward.bus, ["min_vm_pu", "max_vm_pu"]].tolist() if \
+            set_xward_bus_limits else default_vm_lims
         new_bus = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
-                             name=xward.name)
+                             name=xward.name, min_vm_pu=vm_lims[0], max_vm_pu=vm_lims[1])
         new_load = create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
             in_service=xward.in_service, name=xward.name)
         new_shunt = create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
             in_service=xward.in_service, name=xward.name)
         new_gen = create_gen(net, new_bus, 0, xward.vm_pu, in_service=xward.in_service,
             name=xward.name)
-        new_imp = create_impedance(net, xward.bus, new_bus, xward.r_ohm / (bus_v ** 2),
-            xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
+        new_imp = create_impedance(net, xward.bus, new_bus, xward.r_ohm / (vn ** 2),
+            xward.x_ohm / (vn ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
 
         attach_to_groups(net, ass[xward.Index], ["bus", "load", "shunt", "gen", "impedance"], [
             [new_bus], [new_load], [new_shunt], [new_gen], [new_imp]])
