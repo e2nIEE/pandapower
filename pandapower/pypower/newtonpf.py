@@ -176,9 +176,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-    F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack,
-                     svc_buses=svc_buses, svc_set_vm_pu=svc_set_vm_pu, tcsc_controllable=tcsc_controllable,
-                     tcsc_set_p_pu=tcsc_set_p_pu, tcsc_tb=tcsc_tb, Ybus_tcsc=Ybus_tcsc)
+    F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
+    if any_facts_controllable:
+        mis_facts = _evaluate_Fx_facts(V, svc_buses, svc_set_vm_pu, tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc)
+        F = r_[F, mis_facts]
 
     T_base = 100  # T in p.u. for better convergence
     T = 20 / T_base
@@ -311,9 +312,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if any_tcsc_controllable:
             Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
 
-        F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack,
-                         svc_buses=svc_buses, svc_set_vm_pu=svc_set_vm_pu, tcsc_controllable=tcsc_controllable,
-                         tcsc_set_p_pu=tcsc_set_p_pu, tcsc_tb=tcsc_tb, Ybus_tcsc=Ybus_tcsc)
+        F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
+        if any_facts_controllable:
+            mis_facts = _evaluate_Fx_facts(V, svc_buses, svc_set_vm_pu, tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc)
+            F = r_[F, mis_facts]
 
         if tdpf:
             i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
@@ -353,9 +355,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
 
 
-def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None,
-                 svc_buses=None, svc_set_vm_pu=None,
-                 tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None, Ybus_tcsc=None):
+def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):
     # evalute F(x)
     if dist_slack:
         # we include the slack power (slack * contribution factors) in the mismatch calculation
@@ -363,6 +363,12 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
     else:
         mis = V * conj(Ybus * V) - Sbus
 
+    F = r_[mis[pv].real, mis[pq].real, mis[pq].imag]
+    return F
+
+
+def _evaluate_Fx_facts(V, svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None,
+                       Ybus_tcsc=None):
     mis_facts = np.array([], dtype=np.float64)
 
     if svc_buses is not None and len(svc_buses) > 0:
@@ -374,8 +380,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
             mis_tcsc = Sbus_tcsc[tcsc_tb[tcsc_controllable]].real - tcsc_set_p_pu
             mis_facts = np.r_[mis_facts, mis_tcsc]
 
-    F = r_[mis[pv].real, mis[pq].real, mis[pq].imag, mis_facts]
-    return F
+    return mis_facts
 
 
 def _check_for_convergence(F, tol):
