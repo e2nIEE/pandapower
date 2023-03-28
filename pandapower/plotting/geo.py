@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
-from numpy import array, setdiff1d
+from numpy import array, setdiff1d, nan
 
 from pandapower.auxiliary import soft_dependency_error
 
@@ -51,8 +51,8 @@ def _branch_geometries_from_geodata(branch_geo, epsg=31467):
         shapely_INSTALLED, geopandas_INSTALLED])]
     if len(missing_packages):
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
-    geoms = GeoSeries([LineString(x) for x in branch_geo.coords.values], index=branch_geo.index,
-                      crs=f"epsg:{epsg}")
+    geoms = GeoSeries([LineString(x) for x in branch_geo.coords.values if x is not nan else LineString()], 
+                      index=branch_geo.index, crs=f"epsg:{epsg}")
     return GeoDataFrame(branch_geo, crs=f"epsg:{epsg}", geometry=geoms, index=branch_geo.index)
 
 
