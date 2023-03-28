@@ -17,6 +17,7 @@ from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
+from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -386,46 +387,4 @@ def _evaluate_Fx_facts(V, svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=
 def _check_for_convergence(F, tol):
     # calc infinity norm
     return linalg.norm(F, Inf) < tol
-
-
-def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
-    Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
-    Ybus_svc = csr_matrix((Y_SVC, (svc_buses, svc_buses)), shape=Ybus.shape, dtype=np.complex128)
-    return Ybus_svc
-
-
-def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
-    Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
-    Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
-
-    # for y_tcsc_pu_i, i, j in zip(Y_TCSC, tcsc_fb, tcsc_tb):
-    #     Ybus_tcsc[i, i] += y_tcsc_pu_i
-    #     Ybus_tcsc[i, j] += -y_tcsc_pu_i
-    #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
-    #     Ybus_tcsc[j, j] += y_tcsc_pu_i
-
-    Ybus_tcsc[tcsc_fb, tcsc_tb] = -Y_TCSC
-    Ybus_tcsc[tcsc_tb, tcsc_fb] = -Y_TCSC
-    Ybus_tcsc[np.diag_indices_from(Ybus_tcsc)] = -Ybus_tcsc.sum(axis=1)
-
-    return csr_matrix(Ybus_tcsc)
-
-
-def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
-    ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
-    ## at each branch's "from" bus, and Yt is the same for the "to" bus end
-    Y = Ybus_tcsc.toarray()
-    nl = len(tcsc_fb)
-    nb = Ybus_tcsc.shape[0]
-    i = np.hstack([range(nl), range(nl)])  ## double set of row indices
-
-    Yft = Y[tcsc_fb, tcsc_tb]
-    Yff = -Yft
-    Ytf = Y[tcsc_tb, tcsc_fb]
-    Ytt = -Ytf
-
-    Yf = csr_matrix((np.hstack([Yff, Yft]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
-    Yt = csr_matrix((np.hstack([Ytf, Ytt]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
-    return Yf, Yt
-
 
