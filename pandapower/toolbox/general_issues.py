@@ -443,7 +443,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
         return True
 
 
-def _nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
+def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
                      name_selection, **kwargs):
     """ Returns a lists of keys which are 1) not equal and 2) not checked.
     Used within nets_equal(). """
