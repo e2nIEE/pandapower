@@ -20,7 +20,7 @@ from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
-from pandapower.toolbox_general_issues import nets_equal
+from pandapower.toolbox.general_issues import nets_equal
 
 try:
     import cryptography.fernet

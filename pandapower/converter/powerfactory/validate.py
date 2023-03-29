@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import pandapower as pp
-from pandapower.toolbox_grid_modification import replace_zero_branches_with_switches
+from pandapower.toolbox.grid_modification import replace_zero_branches_with_switches
 from pandapower import diagnostic
 
 try:

@@ -23,7 +23,7 @@ def convert_format(net, elements_to_deserialize=None):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    from pandapower.toolbox_data_modification import set_data_type_of_columns_to_default
+    from pandapower.toolbox.data_modification import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
             Version(net.format_version) > Version(net.version):
         net.format_version = net.version

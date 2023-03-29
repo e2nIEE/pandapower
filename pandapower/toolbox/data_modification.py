@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pandapower.auxiliary import get_indices
 from pandapower.create import create_empty_network
-from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, compare_arrays
+from pandapower.toolbox.general_issues import pp_elements, element_bus_tuples, compare_arrays
 
 try:
     import pandaplan.core.pplog as logging

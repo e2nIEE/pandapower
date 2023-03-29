@@ -23,6 +23,7 @@ Change Log
 - [CHANGED] split toolbox.py -> better overview, avoiding circular imports
 - [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
 - [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
+- [ADDED] import of internal packages such as control or converter
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 - [ADDED] feature: protection - implementation of over-current relay
