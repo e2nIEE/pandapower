@@ -264,38 +264,24 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
 
 
-    if sgen_type == "WT":
+    if sgen_type == "WT": #Special patch for sgen_type "Wind Turbine"
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
             mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             midcirc_bottomedge = node_geo + _rotate_dim2(np.array([0, offset + size - midcirc_size]), angles[i])
+            #Blades end coordinates
+            blade1 = midcirc_bottomedge + 0.0225
+            blade2 = [midcirc_bottomedge[0]-0.028, midcirc_bottomedge[1]+0.01]
+            blade3 = [circ_edge[0]+0.01, circ_edge[1]+0.002]
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-
-            polys.append(Circle(mid_midcirc, midcirc_size, fc=facecolors[i], ec=edgecolors[i]))
-            lines.append((midcirc_bottomedge, circ_edge))
-
-    elif sgen_type == "WTT":
-        for i, node_geo in enumerate(node_coords):
-            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
-            mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
-            mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
-            # dropped perpendicular foot of triangle1
-            perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
-            line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2 * r_triangle, 0]), angles[i])
-            perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
-            line_end2 = perp_foot2 + + _rotate_dim2(np.array([55.5 * r_triangle, 0]), angles[i])
-            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-            polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
-                                        orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
-            polys.append(RegularPolygon(mid_tri2, numVertices=3, radius=r_triangle,
-                                        orientation=np.pi - angles[i], fc=facecolors[i],
-                                        ec=edgecolors[i]))
+            polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i]))
             lines.append((node_geo, circ_edge))
-            lines.append((perp_foot1, line_end1))
-            lines.append((perp_foot2, line_end2))
-    else:
+            lines.append((mid_midcirc, blade1))
+            lines.append((mid_midcirc, blade2))
+            lines.append((mid_midcirc, blade3))
+
+    else: 
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
@@ -305,7 +291,7 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
             perp_foot1 = mid_tri1  + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
             line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2 * r_triangle, 0]), angles[i])
             perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
-            line_end2 = perp_foot2 + + _rotate_dim2(np.array([55.5 * r_triangle, 0]), angles[i])
+            line_end2 = perp_foot2 + + _rotate_dim2(np.array([2 * r_triangle, 0]), angles[i])
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
             polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
                                         orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
