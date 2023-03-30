@@ -429,7 +429,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
         return False
-    not_equal, not_checked_keys = _nets_equal_keys(
+    not_equal, not_checked_keys = nets_equal_keys(
         net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
         **kwargs)
     if len(not_checked_keys) > 0:
