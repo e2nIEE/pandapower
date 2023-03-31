@@ -969,5 +969,22 @@ def test_merge_same_bus_generation_plants():
     assert np.isclose(net.sgen.q_mvar.at[idx_sgen22[0]], 20 + 21)  # correct value sum (q_mvar)
 
 
+def test_set_isolated_areas_out_of_service():
+    net = nw.case9()
+    pp.create_switch(net, 6, 5, "l", False)
+    pp.create_switch(net, 8, 7, "l", False)
+
+    pp.toolbox.set_isolated_areas_out_of_service(net)
+
+    isolated_buses = [7, 1]
+    isolated_lines = [5, 7, 6]
+
+    assert not np.any(net.bus.loc[isolated_buses, 'in_service'])
+    assert np.all(net.bus.loc[np.setdiff1d(net.bus.index, isolated_buses), 'in_service'])
+
+    assert not np.any(net.line.loc[isolated_lines, 'in_service'])
+    assert np.all(net.line.loc[np.setdiff1d(net.line.index, isolated_lines), 'in_service'])
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-x"])

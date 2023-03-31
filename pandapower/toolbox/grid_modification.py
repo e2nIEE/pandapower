@@ -17,7 +17,7 @@ from pandapower.create import create_switch, create_line_from_parameters, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
-    get_connected_elements, get_connected_elements_dict
+    get_connected_elements, get_connected_elements_dict, next_bus
 from pandapower.toolbox.result_info import clear_result_tables
 from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
