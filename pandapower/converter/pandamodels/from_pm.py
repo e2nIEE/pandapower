@@ -9,7 +9,7 @@ from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox.general_issues import pp_elements
+from pandapower.toolbox import pp_elements
 
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):

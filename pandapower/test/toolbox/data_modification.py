@@ -11,6 +11,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
+import pandapower.toolbox
 
 
 def test_add_column_from_node_to_elements():
@@ -26,19 +27,19 @@ def test_add_column_from_node_to_elements():
     def check_subnet_correctness(ntw, elements, branch_bus_el):
         for elm in elements:
             if "bus" in ntw[elm].columns:
-                assert all(pp.compare_arrays(ntw[elm]["subnet"].values,
-                                             np.array(["subnet_%i" % bus for bus in ntw[elm].bus])))
+                assert all(pandapower.toolbox.compare_arrays(ntw[elm]["subnet"].values,
+                                                                        np.array(["subnet_%i" % bus for bus in ntw[elm].bus])))
             elif branch_bus_el[0] in ntw[elm].columns:
-                assert all(pp.compare_arrays(ntw[elm]["subnet"].values, np.array([
+                assert all(pandapower.toolbox.compare_arrays(ntw[elm]["subnet"].values, np.array([
                     "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[0]]])))
             elif branch_bus_el[1] in ntw[elm].columns:
-                assert all(pp.compare_arrays(ntw[elm]["subnet"].values, np.array([
+                assert all(pandapower.toolbox.compare_arrays(ntw[elm]["subnet"].values, np.array([
                     "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[1]]])))
 
-    check_subnet_correctness(net, pp.pp_elements(bus=False) - {"sgen"}, branch_bus)
+    check_subnet_correctness(net, pandapower.toolbox.pp_elements(bus=False) - {"sgen"}, branch_bus)
 
     pp.add_column_from_node_to_elements(net_orig, "subnet", True, branch_bus=branch_bus)
-    check_subnet_correctness(net_orig, pp.pp_elements(bus=False), branch_bus)
+    check_subnet_correctness(net_orig, pandapower.toolbox.pp_elements(bus=False), branch_bus)
 
 
 def test_add_column_from_element_to_elements():
@@ -56,13 +57,13 @@ def test_add_column_from_element_to_elements():
         net.trafo.name.loc[net.switch.element.loc[net.switch.et == "t"]].values)
 
     pp.add_column_from_element_to_elements(net, "name", False)
-    assert all(pp.compare_arrays(net.measurement.name.values, expected_measurement_names))
-    assert all(pp.compare_arrays(net.switch.name.values, orig_switch_names))
+    assert all(pandapower.toolbox.compare_arrays(net.measurement.name.values, expected_measurement_names))
+    assert all(pandapower.toolbox.compare_arrays(net.switch.name.values, orig_switch_names))
 
     del net.measurement["name"]
     pp.add_column_from_element_to_elements(net, "name", True)
-    assert all(pp.compare_arrays(net.measurement.name.values, expected_measurement_names))
-    assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
+    assert all(pandapower.toolbox.compare_arrays(net.measurement.name.values, expected_measurement_names))
+    assert all(pandapower.toolbox.compare_arrays(net.switch.name.values, expected_switch_names))
 
 
 def test_reindex_buses():

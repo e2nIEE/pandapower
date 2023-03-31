@@ -14,6 +14,7 @@ import pandas as pd
 
 import pandapower as pp
 import pandapower.networks as pn
+import pandapower.toolbox
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.pypower.idx_bus import \
@@ -65,7 +66,7 @@ def test_from_ppc_simple_against_target():
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
+    assert pandapower.toolbox.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
 
 def test_validate_from_ppc_simple_against_target():
@@ -128,13 +129,13 @@ def test_to_and_from_ppc():
         # compare loadflow results
         pp.runpp(net)
         pp.runpp(net2)
-        assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+        assert pandapower.toolbox.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
         # compare optimal powerflow results
         if i == 1:
             pp.runopp(net, delta=1e-16)
             pp.runopp(net2, delta=1e-16)
-            assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+            assert pandapower.toolbox.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
 def test_gencost_pwl():

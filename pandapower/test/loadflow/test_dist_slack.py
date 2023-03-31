@@ -11,7 +11,7 @@ from pandapower import networks
 from pandapower.control import ContinuousTapControl
 from pandapower.pypower.idx_bus import PD, GS, VM
 from pandapower.pypower.idx_brch import PF
-from pandapower.test.toolbox import assert_res_equal
+from pandapower.test.helper_functions import assert_res_equal
 try:
     import numba
 

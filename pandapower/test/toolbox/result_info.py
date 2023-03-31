@@ -8,6 +8,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
+import pandapower.toolbox
 
 
 def test_opf_task():
@@ -56,7 +57,7 @@ def test_opf_task():
                                                       0, "max"] - 1e-1
     out3 = pp.opf_task(net, delta_pq=1e-3, keep=True)
     for key in out3["flexibilities"]:
-        assert pp.dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
+        assert pandapower.toolbox.dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
 
     # check costs
     pp.create_poly_cost(net, idx_ext_grid, "ext_grid", 2)
@@ -66,7 +67,7 @@ def test_opf_task():
     out4 = pp.opf_task(net)
     for dict_key in ["flexibilities", "network_constraints"]:
         for key in out4[dict_key]:
-            assert pp.dataframes_equal(out4[dict_key][key], out1[dict_key][key])
+            assert pandapower.toolbox.dataframes_equal(out4[dict_key][key], out1[dict_key][key])
     assert isinstance(out4["flexibilities_without_costs"], dict)
     expected_elm_without_cost = ["gen", "storage"]
     assert sorted(out4["flexibilities_without_costs"].keys()) == expected_elm_without_cost

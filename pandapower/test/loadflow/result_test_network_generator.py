@@ -5,8 +5,8 @@
 
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection, create_test_line
-from pandapower.toolbox.general_issues import nets_equal
+from pandapower.test.helper_functions import add_grid_connection, create_test_line
+from pandapower.toolbox import nets_equal
 
 
 def result_test_network_generator2(net, sn_mva=1, skip_test_impedance=False):
