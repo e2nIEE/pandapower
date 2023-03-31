@@ -9,13 +9,14 @@ from copy import deepcopy
 
 import numpy as np
 import pandapower as pp
+import pandapower.toolbox
 
 
 def assert_net_equal(net1, net2, **kwargs):
     """
     Raises AssertionError if grids are not equal.
     """
-    assert pp.nets_equal(net1, net2, **kwargs)
+    assert pandapower.toolbox.nets_equal(net1, net2, **kwargs)
 
 
 def assert_res_equal(net1, net2, **kwargs):
@@ -27,7 +28,7 @@ def assert_res_equal(net1, net2, **kwargs):
             raise ValueError("'check_only_results' cannot be False in assert_res_equal().")
         kwargs = deepcopy(kwargs)
         del kwargs["check_only_results"]
-    assert pp.nets_equal(net1, net2, check_only_results=True, **kwargs)
+    assert pandapower.toolbox.nets_equal(net1, net2, check_only_results=True, **kwargs)
 
 
 def create_test_network():

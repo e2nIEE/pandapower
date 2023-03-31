@@ -11,6 +11,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
+import pandapower.toolbox
 
 
 def test_drop_inactive_elements():
@@ -86,7 +87,7 @@ def test_merge_indices():
     net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
 
     # check
-    for et in pp.pp_elements(cost_tables=True):
+    for et in pandapower.toolbox.pp_elements(cost_tables=True):
         assert net[et].shape[0] == net1[et].shape[0] + net2[et].shape[0]
     assert net.bus.index.tolist() == net1.bus.index.tolist() + [
         i+29+1 if i < 3 else i+29 if i > 3 else 3 for i in net2.bus.index]
@@ -132,7 +133,7 @@ def test_merge_and_split_nets():
 
     # check that results stay the same after net split
     net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
-    assert pp.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
+    assert pandapower.toolbox.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
 
     net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
@@ -198,15 +199,15 @@ def test_select_subnet():
 
     # Do nothing
     same_net = pp.select_subnet(net, net.bus.index)
-    assert pp.dataframes_equal(net.bus, same_net.bus)
-    assert pp.dataframes_equal(net.switch, same_net.switch)
-    assert pp.dataframes_equal(net.trafo, same_net.trafo)
-    assert pp.dataframes_equal(net.line, same_net.line)
-    assert pp.dataframes_equal(net.load, same_net.load)
-    assert pp.dataframes_equal(net.ext_grid, same_net.ext_grid)
+    assert pandapower.toolbox.dataframes_equal(net.bus, same_net.bus)
+    assert pandapower.toolbox.dataframes_equal(net.switch, same_net.switch)
+    assert pandapower.toolbox.dataframes_equal(net.trafo, same_net.trafo)
+    assert pandapower.toolbox.dataframes_equal(net.line, same_net.line)
+    assert pandapower.toolbox.dataframes_equal(net.load, same_net.load)
+    assert pandapower.toolbox.dataframes_equal(net.ext_grid, same_net.ext_grid)
     same_net2 = pp.select_subnet(net, net.bus.index, include_results=True,
                                  keep_everything_else=True)
-    assert pp.nets_equal(net, same_net2)
+    assert pandapower.toolbox.nets_equal(net, same_net2)
 
     # Remove everything
     empty = pp.select_subnet(net, set())
@@ -262,7 +263,7 @@ def test_add_zones_to_elements():
 def test_drop_inner_branches():
     def check_elm_number(net1, net2, excerpt_elms=None):
         excerpt_elms = set() if excerpt_elms is None else set(excerpt_elms)
-        for elm in set(pp.pp_elements()) - excerpt_elms:
+        for elm in set(pandapower.toolbox.pp_elements()) - excerpt_elms:
             assert net1[elm].shape[0] == net2[elm].shape[0]
 
     net = nw.example_simple()
@@ -546,7 +547,7 @@ def test_impedance_line_replacement():
 
     pp.runpp(net2)
 
-    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})
+    assert pandapower.toolbox.nets_equal(net1, net2, exclude_elms={"line", "impedance"})
     cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar", "pl_mw", "ql_mvar", "i_from_ka",
             "i_to_ka"]
     assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
@@ -556,7 +557,7 @@ def test_impedance_line_replacement():
 
     pp.runpp(net3)
 
-    assert pp.nets_equal(net2, net3, exclude_elms={"line", "impedance"})
+    assert pandapower.toolbox.nets_equal(net2, net3, exclude_elms={"line", "impedance"})
     assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
@@ -636,7 +637,7 @@ def test_replace_gen_sgen():
 
         if i == 0:
             pp.replace_sgen_by_gen(net, 1)
-            assert pp.nets_equal(net, net2)
+            assert pandapower.toolbox.nets_equal(net, net2)
 
 
 def test_replace_pq_elmtype():
@@ -670,7 +671,7 @@ def test_replace_pq_elmtype():
     assert net.sgen.controllable.astype(bool).all()
     assert "min_p_mw" not in net.sgen.columns
     pp.runpp(net)
-    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+    assert pandapower.toolbox.dataframes_equal(net_orig.res_bus, net.res_bus)
 
     # --- test set old_indices and add_cols_to_keep for different element types
     net = copy.deepcopy(net_orig)
@@ -678,20 +679,20 @@ def test_replace_pq_elmtype():
     pp.replace_pq_elmtype(net, "load", "sgen", old_indices=1, add_cols_to_keep=add_cols_to_keep)
     check_elm_shape(net, {"load": 1, "sgen": 1})
     pp.runpp(net)
-    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+    assert pandapower.toolbox.dataframes_equal(net_orig.res_bus, net.res_bus)
     assert net.sgen.max_p_mw.at[0] == - 0.5
     assert net.sgen.min_p_mw.at[0] == - 1.0
 
     pp.replace_pq_elmtype(net, "sgen", "storage", old_indices=0, add_cols_to_keep=add_cols_to_keep)
     check_elm_shape(net, {"load": 1, "storage": 1})
     pp.runpp(net)
-    assert pp.dataframes_equal(net_orig.res_bus, net.res_bus)
+    assert pandapower.toolbox.dataframes_equal(net_orig.res_bus, net.res_bus)
 
     pp.replace_pq_elmtype(net, "storage", "load", add_cols_to_keep=add_cols_to_keep)
     pp.runpp(net)
     check_elm_shape(net, {"storage": 0, "sgen": 0})
     net.poly_cost.element = net.poly_cost.element.astype(net_orig.poly_cost.dtypes["element"])
-    assert pp.nets_equal(net_orig, net, exclude_elms={"sgen", "storage"})
+    assert pandapower.toolbox.nets_equal(net_orig, net, exclude_elms={"sgen", "storage"})
 
 
 def test_get_connected_elements_dict():
@@ -737,7 +738,7 @@ def test_replace_ward_by_internal_elements():
     new_ets = pd.Index(["load", "shunt"])
     assert pp.count_group_elements(net_org, 0).to_dict() == {"ward": 1}
     assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
-    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+    elm_change = pandapower.toolbox.count_elements(net, return_empties=True) - pandapower.toolbox.count_elements(
         net_org, return_empties=True)
     assert set(elm_change.loc[new_ets]) == {3}
     assert elm_change.at["ward"] == -3
@@ -777,7 +778,7 @@ def test_replace_xward_by_internal_elements():
     new_ets = pd.Index(["load", "shunt", "gen", "impedance", "bus"])
     assert pp.count_group_elements(net_org, 0).to_dict() == {"xward": 1}
     assert pp.count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
-    elm_change = pp.count_elements(net, return_empties=True) - pp.count_elements(
+    elm_change = pandapower.toolbox.count_elements(net, return_empties=True) - pandapower.toolbox.count_elements(
         net_org, return_empties=True)
     assert set(elm_change.loc[new_ets]) == {3}
     assert elm_change.at["xward"] == -3

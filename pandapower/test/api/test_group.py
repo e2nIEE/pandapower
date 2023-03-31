@@ -10,6 +10,7 @@ import pandas as pd
 import pandas.testing as pdt
 from packaging.version import Version
 
+import pandapower.toolbox
 from pandapower._version import __version__
 import pandapower as pp
 import pandapower.networks as nw
@@ -31,7 +32,7 @@ def nets_to_test_group():
     idxs = list()
     for reference_column, type_ in zip(reference_columns, types):
         net = nw.case24_ieee_rts()
-        for elm in pp.pp_elements():
+        for elm in pandapower.toolbox.pp_elements():
             net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
         idx0 = pp.create_group_from_dict(net, {
             "gen": typed_list([0, 1], type_),
@@ -268,7 +269,7 @@ def test_drop_and_return():
             assert net2b.gen.shape[0] == 10  # unchanged
             assert net2b.trafo.shape[0] == 2
             assert set(net3.gen.index) == {0, 1}
-            for elm in pp.pp_elements():
+            for elm in pandapower.toolbox.pp_elements():
                 assert net2[elm].shape[0] <= net[elm].shape[0]
                 assert net2b[elm].shape[0] <= net[elm].shape[0]
                 assert set(net2[elm].index) | set(net3[elm].index) == set(net[elm].index)
@@ -414,7 +415,7 @@ def test_res_power_examples():
         [-2.875066, -1.318864],
         [-0.02    ,  0.      ]
         ], index=pd.Index([1, 2, 3, 4], name="bus"), columns=["p_mw", "q_mvar"])
-    assert pp.dataframes_equal(pp.group_res_power_per_bus(net, idx), expected, atol=1e-6)
+    assert pandapower.toolbox.dataframes_equal(pp.group_res_power_per_bus(net, idx), expected, atol=1e-6)
 
 
 def test_group_io():
