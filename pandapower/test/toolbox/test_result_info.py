@@ -128,5 +128,15 @@ def test_clear_result_tables():
         assert not net["res_%s" % elm].shape[0]
 
 
+def test_res_power_columns():
+    assert pandapower.toolbox.res_power_columns("gen") == ["p_mw", "q_mvar"]
+    assert pandapower.toolbox.res_power_columns("line") == pandapower.toolbox.res_power_columns("line", side="from") == \
+           pandapower.toolbox.res_power_columns("line", side=0) == ["p_from_mw", "q_from_mvar"]
+    assert pandapower.toolbox.res_power_columns("line", side="all") == [
+        "p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    assert pandapower.toolbox.res_power_columns("trafo3w", side="all") == [
+        "p_hv_mw", "q_hv_mvar", "p_mv_mw", "q_mv_mvar", "p_lv_mw", "q_lv_mvar"]
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-x"])

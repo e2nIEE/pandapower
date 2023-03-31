@@ -6,7 +6,6 @@
 import copy
 import numpy as np
 import pandas as pd
-from pandas._testing import assert_series_equal
 import pytest
 
 import pandapower as pp

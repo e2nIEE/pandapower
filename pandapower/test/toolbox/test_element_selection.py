@@ -2,15 +2,12 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-import copy
-import numpy as np
 import pandas as pd
-from pandas._testing import assert_series_equal
 import pytest
 
 import pandapower as pp
-import pandapower.networks as nw
+import pandapower.toolbox
+from pandapower import networks as nw
 
 
 def test_get_element_indices():
@@ -170,6 +167,56 @@ def test_get_false_links():
                 "poly_cost": {1, 2}}
     determined = pp.false_elm_links_loop(net)
     assert {elm: set(idx) for elm, idx in determined.items()} == expected
+
+
+def test_element_bus_tuples():
+    ebts = pandapower.toolbox.element_bus_tuples()
+    assert isinstance(ebts, list)
+    assert len(ebts) >= 20
+    item = next(iter(ebts))
+    assert isinstance(item, tuple)
+    assert len(item) == 2
+    assert len({"line", "gen"} & {elm for (elm, buses) in ebts}) == 2
+    assert {buses for (elm, buses) in ebts} == {"bus", "to_bus", "from_bus", 'hv_bus', 'mv_bus',
+                                                'lv_bus'}
+    assert len(pandapower.toolbox.element_bus_tuples(bus_elements=False, res_elements=True)) > \
+           1.5 * len(
+        pandapower.toolbox.element_bus_tuples(bus_elements=False, res_elements=False)) > 0
+
+
+def test_pp_elements():
+    elms = pandapower.toolbox.pp_elements()
+    assert isinstance(elms, set)
+    assert "bus" in elms
+    assert "measurement" in elms
+    assert "sgen" in elms
+    assert len(pandapower.toolbox.pp_elements(bus=False, other_elements=False, bus_elements=True,
+                                                                branch_elements=False)) == \
+           len(pandapower.toolbox.element_bus_tuples(bus_elements=True, branch_elements=False))
+
+
+def test_branch_element_bus_dict():
+    bebd = pandapower.toolbox.branch_element_bus_dict()
+    assert isinstance(bebd, dict)
+    assert len(bebd) >= 5
+    assert bebd["trafo"] == ["hv_bus", "lv_bus"]
+    bebd = pandapower.toolbox.branch_element_bus_dict(include_switch=True)
+    assert "bus" in bebd["switch"]
+
+
+def test_count_elements():
+    case9_counts = {"bus": 9, "line": 9, "ext_grid": 1, "gen": 2, "load": 3}
+    net = nw.case9()
+    received = pandapower.toolbox.count_elements(net)
+    assert isinstance(received, pd.Series)
+    assert received.to_dict() == case9_counts
+    assert pandapower.toolbox.count_elements(net, bus=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus"]}
+    assert pandapower.toolbox.count_elements(net, bus=False, branch_elements=False).to_dict() == {
+        et: num for et, num in case9_counts.items() if et not in ["bus", "line"]}
+    received = pandapower.toolbox.count_elements(net, return_empties=True)
+    assert len(received.index) == len(pandapower.toolbox.pp_elements())
+    assert set(received.index) == pandapower.toolbox.pp_elements()
 
 
 if __name__ == '__main__':
