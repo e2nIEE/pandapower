@@ -226,17 +226,15 @@ def test_continuous_tap_control_vectorized_hv():
     assert np.allclose(net_ref.trafo.tap_pos, net.trafo.tap_pos, atol=1e-2, rtol=0)
 
 
-@pytest.mark.skip(reason="testing trafo tap control must be revised but is needed since trafo3 and "
-                         "side='mv' is not tested yet.")
 def test_continuous_tap_control_side_mv():
     # --- load system and run power flow
     net = pp.create_empty_network()
-    pp.create_buses(net, 2, 20)
+    pp.create_buses(net, 2, 110)
+    pp.create_buses(net, 1, 20)
     pp.create_bus(net, 10)
-    pp.create_buses(net, 1, 110)
     pp.create_ext_grid(net, 0)
     pp.create_line(net, 0, 1, 10, "243-AL1/39-ST1A 110.0")
-    pp.create_transformer3w(net, 3, 2, 1, "63/25/38 MVA 110/20/10 kV")
+    pp.create_transformer3w(net, 1, 2, 3, "63/25/38 MVA 110/20/10 kV")
     pp.create_load(net, 2, 5., 2.)
     pp.create_load(net, 3, 5., 2.)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
@@ -248,13 +246,46 @@ def test_continuous_tap_control_side_mv():
         # something to do for the controllers
 
     net_ref = net.deepcopy()
-    ContinuousTapControl(net_ref, tid=0, side='mv', vm_set_pu=1.02, tol=tol, trafotype="3W")
+    ContinuousTapControl(net, tid=0, side='mv', vm_set_pu=1.02, tol=tol, trafotype="3W")
 
     # --- run control reference
-    pp.runpp(net_ref, run_control=True)
+    pp.runpp(net, run_control=True)
 
     assert not np.allclose(net_ref.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
-    assert not np.allclose(net_ref.trafo3w.tap_pos.values, 0)
+    assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
+    assert np.allclose(net.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
+    assert not np.allclose(net.trafo3w.tap_pos.values, 0)
+
+
+def test_continuous_tap_control_side_hv_reversed_3w():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_buses(net, 1, 20)
+    pp.create_bus(net, 10)
+    pp.create_ext_grid(net, 2)
+    pp.create_line(net, 0, 1, 10, "243-AL1/39-ST1A 110.0")
+    pp.create_transformer3w(net, 1, 2, 3, "63/25/38 MVA 110/20/10 kV")
+    pp.create_load(net, 2, 5., 2.)
+    pp.create_load(net, 3, 5., 2.)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    tol = 1e-4
+
+    # --- run loadflow
+    pp.runpp(net)
+    assert not np.allclose(net.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)  # there should be
+        # something to do for the controllers
+
+    net_ref = net.deepcopy()
+    ContinuousTapControl(net, tid=0, side='hv', vm_set_pu=1.02, tol=tol, trafotype="3W")
+
+    # --- run control reference
+    pp.runpp(net, run_control=True)
+
+    assert not np.allclose(net_ref.res_trafo3w.vm_hv_pu.values, 1.02, atol=tol)
+    assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
+    assert np.allclose(net.res_trafo3w.vm_hv_pu.values, 1.02, atol=tol)
+    assert not np.allclose(net.trafo3w.tap_pos.values, 0)
 
 
 if __name__ == '__main__':

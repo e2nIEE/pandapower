@@ -13,11 +13,11 @@ import logging as log
 logger = log.getLogger(__name__)
 
 
-def _vm_in_desired_area(net, lower_vm, higher_vm, side, idx=None):
+def _vm_in_desired_area(net, lower_vm, higher_vm, side, idx=None, trafo_table="trafo"):
     if idx is None:
-        idx = net.trafo.index
-    return (lower_vm <= net.res_bus.vm_pu.loc[net.trafo.loc[idx, f"{side}_bus"].tolist()]) & (
-        net.res_bus.vm_pu.loc[net.trafo.loc[idx, f"{side}_bus"].tolist()] <= higher_vm)
+        idx = net[trafo_table].index
+    return (lower_vm <= net.res_bus.vm_pu.loc[net[trafo_table].loc[idx, f"{side}_bus"].tolist()]) & (
+        net.res_bus.vm_pu.loc[net[trafo_table].loc[idx, f"{side}_bus"].tolist()] <= higher_vm)
 
 
 def test_discrete_tap_control_lv():
@@ -359,7 +359,36 @@ def test_discrete_tap_control_vectorized_hv():
     assert np.all(net_ref.trafo.tap_pos == net.trafo.tap_pos)
 
 
+def test_continuous_tap_control_side_mv():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_buses(net, 1, 20)
+    pp.create_bus(net, 10)
+    pp.create_ext_grid(net, 0)
+    pp.create_line(net, 0, 1, 10, "243-AL1/39-ST1A 110.0")
+    pp.create_transformer3w(net, 1, 2, 3, "63/25/38 MVA 110/20/10 kV")
+    pp.create_load(net, 2, 5., 2.)
+    pp.create_load(net, 3, 5., 2.)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    tol = 1e-4
+
+    # --- run loadflow
+    pp.runpp(net)
+    assert not any(_vm_in_desired_area(net, 1.01, 1.03, "mv", trafo_table="trafo3w"))  # there should be
+        # something to do for the controllers
+
+    net_ref = net.deepcopy()
+    DiscreteTapControl(net, tid=0, vm_lower_pu=1.01, vm_upper_pu=1.03, side='mv', tol=tol, trafotype="3W")
+
+    # --- run control reference
+    pp.runpp(net, run_control=True)
+
+    assert not any(_vm_in_desired_area(net_ref, 1.01, 1.03, "mv", trafo_table="trafo3w"))
+    assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
+    assert all(_vm_in_desired_area(net, 1.01, 1.03, "mv", trafo_table="trafo3w"))
+    assert not np.allclose(net.trafo3w.tap_pos.values, 0)
+
 
 if __name__ == '__main__':
-    # pytest.main(['-xs', __file__])
-    test_discrete_tap_control_vectorized_hv()
+    pytest.main(['-xs', __file__])
