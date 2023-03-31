@@ -485,6 +485,12 @@ def add_params_to_pm(net, pm):
         if not param_cols:
             continue
         params = [param_col.split("/")[-1] for param_col in param_cols]
+        if "side" in params:
+            params.remove("side")
+            params.insert(len(params), "side")
+            param_cols.remove("pm_param/side")
+            param_cols.insert(len(params), "pm_param/side")
+            
         br_param = list(set(params) - {'side'})
         for param, param_col in zip(params, param_cols):
             pd_idxs = net[elm].index[net[elm][param_col].notna()].tolist()
@@ -516,7 +522,7 @@ def add_params_to_pm(net, pm):
                     if elm == "line":
                         side_bus_t = "from_bus" if side == "to" else "to_bus"
                     if elm == "trafo":
-                        side_bus_t = "hv_bus" if side == "lv" else "lv_bus" 
+                        side_bus_t = "hv_bus" if side == "lv" else "lv_bus"
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
                     
