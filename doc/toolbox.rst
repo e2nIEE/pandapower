@@ -10,24 +10,8 @@ contribution. To improve overview functions are loosely grouped by functionality
 adding your own functions and feel free to open new groups as needed.
 
 ====================================
-General Issues
+Comparison
 ====================================
-
-.. autofunction:: pandapower.toolbox.element_bus_tuples
-
-.. autofunction:: pandapower.toolbox.pp_elements
-
-.. autofunction:: pandapower.toolbox.branch_element_bus_dict
-
-.. autofunction:: pandapower.toolbox.res_power_columns
-
-.. autofunction:: pandapower.toolbox.count_elements
-
-.. autofunction:: pandapower.toolbox.signing_system_value
-
-.. autofunction:: pandapower.toolbox.pq_from_cosphi
-
-.. autofunction:: pandapower.toolbox.cosphi_from_pq
 
 .. autofunction:: pandapower.toolbox.dataframes_equal
 
@@ -35,13 +19,17 @@ General Issues
 
 .. autofunction:: pandapower.toolbox.nets_equal
 
-.. function from other files than toolbox_general_issues.py:
+.. autofunction:: pandapower.toolbox.nets_equal_keys
 
-.. autofunction:: pandapower.toolbox.ensure_iterability
+====================================
+Power Factor
+====================================
 
-.. autofunction:: pandapower.toolbox.read_from_net
+.. autofunction:: pandapower.toolbox.signing_system_value
 
-.. autofunction:: pandapower.toolbox.write_to_net
+.. autofunction:: pandapower.toolbox.pq_from_cosphi
+
+.. autofunction:: pandapower.toolbox.cosphi_from_pq
 
 ====================================
 Result Information
@@ -59,6 +47,8 @@ Result Information
 
 .. autofunction:: pandapower.toolbox.clear_result_tables
 
+.. autofunction:: pandapower.toolbox.res_power_columns
+
 ====================================
 Item/Element Selection
 ====================================
@@ -71,19 +61,31 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.get_connected_elements
 
+.. autofunction:: pandapower.toolbox.get_connected_elements_dict
+
 .. autofunction:: pandapower.toolbox.get_connected_buses
 
 .. autofunction:: pandapower.toolbox.get_connected_buses_at_element
 
 .. autofunction:: pandapower.toolbox.get_connected_switches
 
+.. autofunction:: pandapower.toolbox.get_connected_branches
+
+.. autofunction:: pandapower.toolbox.get_connecting_branches
+
 .. autofunction:: pandapower.toolbox.false_elm_links
 
 .. autofunction:: pandapower.toolbox.false_elm_links_loop
 
-.. function from other files than toolbox_elm_selection.py:
+.. autofunction:: pandapower.toolbox.element_bus_tuples
 
-.. autofunction:: pandapower.toolbox.get_inner_branches
+.. autofunction:: pandapower.toolbox.pp_elements
+
+.. autofunction:: pandapower.toolbox.branch_element_bus_dict
+
+.. autofunction:: pandapower.toolbox.count_elements
+
+.. autofunction:: pandapower.toolbox.get_gc_objects_dict
 
 ====================================
 Data Modification
@@ -107,11 +109,7 @@ Data Modification
 
 .. autofunction:: pandapower.toolbox.set_data_type_of_columns_to_default
 
-.. autofunction:: pandapower.toolbox.get_connecting_branches
-
-.. function from other files than toolbox_data_modification.py:
-
-.. autofunction:: pandapower.toolbox.convert_format
+.. autofunction:: pandapower.toolbox.get_inner_branches
 
 ====================================
 Electric Grid Modification
