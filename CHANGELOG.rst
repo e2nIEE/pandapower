@@ -26,6 +26,7 @@ Change Log
 - [ADDED] import of internal packages such as control or converter
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+- [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
 
 [2.11.1] - 2023-01-02
