@@ -4,11 +4,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import gc
+import warnings
 
 import numpy as np
 import pandas as pd
+from packaging.version import Version
 
-from pandapower.toolbox_general_issues import pp_elements, branch_element_bus_dict
+import pandapower as pp
+
+from pandapower import __version__
 
 try:
     import pandaplan.core.pplog as logging
@@ -591,3 +595,116 @@ def false_elm_links_loop(net, element_types=None):
             if len(fl):
                 false_links[element_type] = fl
     return false_links
+
+
+def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_elements=True,
+                cost_tables=False, res_elements=False):
+    """
+    Returns a set of pandapower elements.
+    """
+    pp_elms = set()
+    if bus:
+        pp_elms |= {"bus"}
+        if res_elements:
+            pp_elms |= {"res_bus"}
+    pp_elms |= set([el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    if other_elements:
+        pp_elms |= {"measurement"}
+    if cost_tables:
+        pp_elms |= {"poly_cost", "pwl_cost"}
+    return pp_elms
+
+
+def branch_element_bus_dict(include_switch=False, sort=None):
+    """
+    Returns a dict with keys of branch elements and values of bus column names as list.
+    """
+    msg = ("The parameter 'sort' is deprecated to function branch_element_bus_dict() with "
+           "pp.version >= 2.12. The default was False but the behaviour was changed to True.")
+    if sort is not None:
+        if Version(__version__) < Version('2.13'):
+            warnings.warn(msg, category=DeprecationWarning)
+        else:
+            raise DeprecationWarning(msg)
+    elif Version(__version__) < Version('2.13'):
+        logger.debug(msg)
+
+    ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
+    bebd = dict()
+    for et, bus in ebts:
+        if et in bebd.keys():
+            bebd[et].append(bus)
+        else:
+            bebd[et] = [bus]
+    if not include_switch:
+        del bebd["switch"]
+    return bebd
+
+
+def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
+    """
+    Utility function
+    Provides the tuples of elements and corresponding columns for buses they are connected to
+    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
+    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
+    :param res_elements: whether result table names e.g. res_sgen, res_line, ... are included
+    :param return_type: which type the output has
+    :return: list of tuples with element names and column names
+    """
+    if Version(__version__) < Version('2.13'):
+        logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
+                     "since pp.version >= 2.12.")
+    ebts = list()
+    if bus_elements:
+        ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+                 ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
+                 ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
+                 ("motor", "bus")]
+    if branch_elements:
+        ebts += [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                ("impedance", "to_bus"), ("switch", "bus"), ("trafo", "hv_bus"),
+                ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
+                ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")]
+    if res_elements:
+        elements_without_res = ["switch", "measurement", "asymmetric_load", "asymmetric_sgen"]
+        ebts += [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res]
+    return ebts
+
+
+def count_elements(net, return_empties=False, **kwargs):
+    """Counts how much elements of which element type exist in the pandapower net
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    return_empties : bool, optional
+        whether element types should be listed if no element exist, by default False
+
+    Other Parameters
+    ----------------
+    kwargs : dict[str,bool], optional
+        arguments (passed to pp_elements()) to narrow considered element types.
+        If nothing is passed, an empty dict is passed to pp_elements(), by default None
+
+    Returns
+    -------
+    pd.Series
+        number of elements per element type existing in the net
+
+    See also
+    --------
+    count_group_elements
+
+    Examples
+    --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as nw
+    >>> pp.count_elements(nw.case9(), bus_elements=False)
+    bus     9
+    line    9
+    dtype: int32
+    """
+    return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
+                      bool(net[et].shape[0])}, dtype=int)

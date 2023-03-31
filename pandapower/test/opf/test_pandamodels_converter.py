@@ -15,7 +15,7 @@ from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
-from pandapower.test.toolbox import add_grid_connection, create_test_line
+from pandapower.test.helper_functions import add_grid_connection, create_test_line
 from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
 

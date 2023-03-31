@@ -16,9 +16,9 @@ from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence, create_group
-from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
-    branch_element_bus_dict, signing_system_value, res_power_columns
-from pandapower.toolbox_elm_selection import get_connected_elements_dict
+from pandapower.toolbox.power_factor import signing_system_value
+from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
+from pandapower.toolbox.result_info import res_power_columns
 
 try:
     import pandaplan.core.pplog as logging
