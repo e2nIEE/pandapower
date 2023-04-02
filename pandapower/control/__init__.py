@@ -1,5 +1,6 @@
 import pandapower.control.basic_controller
 import pandapower.control.controller
+
 # --- Controller ---
 from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.characteristic_control import CharacteristicControl
@@ -16,4 +17,3 @@ from pandapower.control.run_control import ControllerNotConverged
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.control.util.auxiliary import get_controller_index, plot_characteristic, create_trafo_characteristics
 from pandapower.control.util.diagnostic import control_diagnostic, trafo_characteristics_diagnostic
-

@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.helper_functions import create_test_network
 from pandapower.plotting.generic_geodata import create_generic_coordinates, build_igraph_from_pp
 import pandapower as pp
 import pandapower.networks as nw

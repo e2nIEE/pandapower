@@ -9,6 +9,7 @@ from itertools import combinations
 
 import numpy as np
 from pandas import isnull
+
 try:
     import matplotlib.pyplot as plt
     from matplotlib.collections import LineCollection, PatchCollection, Collection
@@ -16,11 +17,17 @@ try:
     from matplotlib.patches import Circle, Rectangle, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
+
+
+    class TextPath:  # so that the test does not fail
+        pass
+
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
+from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
