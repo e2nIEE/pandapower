@@ -169,7 +169,6 @@ def create_sgens(net, dict_net, pv_as_slack, pf_variable_p_gen, is_unbalanced):
 
 
 def create_lines(net, dict_net, flag_graphics, is_unbalanced):
-#%%
     lines_to_create = []
     for n, item in enumerate(dict_net['ElmLne']):
         params = {'name': item.loc_name,
@@ -193,7 +192,7 @@ def create_lines(net, dict_net, flag_graphics, is_unbalanced):
         if flag_graphics == 'no geodata':
             coords = []
         elif flag_graphics == 'GPS':
-            if len(item.GPScoords) > 0:
+            if len(item.GPScoords) > 0 and item.GPScoords[0] != []:
                 coords = get_coords_from_item(item)
             else:
                 coords = get_coords_from_buses(net, params['bus1'], params['bus2'])
@@ -233,10 +232,10 @@ def create_lines(net, dict_net, flag_graphics, is_unbalanced):
 
 def create_switches(net, dict_net):
     switches_to_create = []
-    switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS"}
+    switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS", "fus": "FUSE"}
 
     for items, is_fuse in [[dict_net['ElmCoup'], False],
-                          [dict_net['RelFuse'], True]]:
+                           [dict_net['RelFuse'], True]]:
         for item in items:
             try:
                 bus1, bus2 = get_connection_nodes(net, item, 2)
@@ -253,12 +252,20 @@ def create_switches(net, dict_net):
                                and (bool(item.isclosed) if item.HasAttribute('isclosed') else True)
             in_service = not bool(item.outserv) if item.HasAttribute('outserv') else True
 
+            try:
+                in_ka = np.nan
+                if is_fuse:
+                    in_ka = item.GetAttribute("typ_id").GetAttribute("irat") / 1000.
+            except:
+                pass
+
             switches_to_create.append({"name": item.loc_name,
                       "buses": bus1,
                       "elements": bus2,
                       "et": "b",
                       "closed": switch_is_closed and in_service,
-                      "type": switch_types.get(item.aUsage, 'unknown')})
+                      "type": switch_types.get(item.aUsage, 'unknown'),
+                      "in_ka": in_ka})
 
     switches = pd.DataFrame(switches_to_create)
     pp.create_switches(net, **switches.to_dict(orient='list'))
@@ -913,7 +920,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):
         yield bus2
 
 
-def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_unbalanced, **kwargs):
+def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_unbalanced, line_idx, **kwargs):
     lines_to_create = []
     line_name = line.loc_name
     item_list.sort(key=lambda x: x.index)  # to ensure they are in correct order
@@ -934,19 +941,21 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
 
+        sec_coords = None
         if coords:
             try:
                 scaling_factor = sum(sec_len) / calc_len_coords(coords)
                 sec_coords = get_section_coords(coords, sec_len=item.dline, start_len=item.rellen,
                                                 scale_factor=scaling_factor)
-                lines_to_create[-1]['coords'] = sec_coords
-                net.bus_geodata.loc[bus2, ['x', 'y']] = sec_coords[-1]
-            except ZeroDivisionError:
+                # lines_to_create[-1]['coords'] = sec_coords
+                # net.bus_geodata.loc[bus2, ['x', 'y']] = sec_coords[-1]
+            except:
                 logger.warning("Could not generate geodata for line !!")
 
         lines_to_create.append(create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2,
                                                   name=name, parallel=parallel,
-                                                  is_unbalanced=is_unbalanced, coords=sec_coords))
+                                                  is_unbalanced=is_unbalanced, coords=sec_coords,
+                                                  line_idx=line_idx))
         lines_to_create[-1]["section"] = section_name
         lines_to_create[-1]["pf_loading"] = line_loading
         lines_to_create[-1]["folder_id"] = line.fold_id.loc_name
