@@ -117,7 +117,7 @@ def test_memory_leaks():
     net = pp.networks.example_simple()
 
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net_copy = copy.deepcopy(net)
@@ -126,7 +126,7 @@ def test_memory_leaks():
 
     gc.collect()
 
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
 
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == 1
     assert types_dict2[pandapower.control.ContinuousTapControl] - types_dict1.get(
@@ -136,7 +136,7 @@ def test_memory_leaks():
 def test_memory_leaks_demo():
     net = pp.networks.example_simple()
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -146,13 +146,13 @@ def test_memory_leaks_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == num
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leaks_no_copy():
-    types_dict0 = pp.toolbox.get_gc_objects_dict()
+    types_dict0 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net = pp.create_empty_network()
@@ -160,13 +160,13 @@ def test_memory_leaks_no_copy():
         pp.control.ConstControl(net, 'sgen', 'p_mw', 0)
 
     gc.collect()
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     assert types_dict1[pandapower.control.ConstControl] - types_dict0.get(pandapower.control.ConstControl, 0) == 1
     assert types_dict1[pandapower.auxiliary.pandapowerNet] - types_dict0.get(pandapower.auxiliary.pandapowerNet, 0) <= 1
 
 
 def test_memory_leak_no_copy_demo():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -176,33 +176,33 @@ def test_memory_leak_no_copy_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - \
            types_dict1.get(pandapower.auxiliary.pandapowerNet, 0) >= num-1
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leak_df():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         df = pd.DataFrame()
         MemoryLeakDemoDF(df)
 
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
 
 
 def test_memory_leak_dict():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         d = dict()
         MemoryLeakDemoDict(d)
 
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
 
 

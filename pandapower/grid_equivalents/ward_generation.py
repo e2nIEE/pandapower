@@ -74,7 +74,7 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
     return xward_parameter, impedance_parameter
 
 
-def create_passive_external_net_for_ward_addmittance(
+def create_passive_external_net_for_ward_admittance(
     net, all_external_buses, boundary_buses, calc_volt_angles=True,
     runpp_fct=_runpp_except_voltage_angles):
     """
@@ -94,7 +94,7 @@ def create_passive_external_net_for_ward_addmittance(
     # --- replace power injection in external net by shunts to creat a passiv network
     v_m = net.res_bus.vm_pu[all_external_buses].values
     current_injections = (net.res_bus.p_mw[all_external_buses].values -
-                          1j * net.res_bus.q_mvar[all_external_buses].values) / net.sn_mva
+                          1j * net.res_bus.q_mvar[all_external_buses].values)
     shunt_params = list(current_injections / v_m**2)
     # creats shunts
     for i in range(len(all_external_buses)):
@@ -271,75 +271,3 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     if show_computing_time:
         logger.info("\"replace_external_area_by_xwards\" finished in %s seconds:" % round((
                     t_end-t_start), 2))
-
-
-def get_ppc_buses(net, buses, nogo_buses):
-    """
-    finds the ppc buses of the given buses. The corresponding auxilliary ppc buses will also
-    be considered
-    """
-    Ybus_size = net._ppc["internal"]["Ybus"].shape[0]
-    ppc_branch = net._ppc["branch"]
-    buses_ppc = net._pd2ppc_lookups["bus"][buses].tolist()
-    nogo_buses_ppc = net._pd2ppc_lookups["bus"][nogo_buses].tolist()
-
-    aux_buses = set(list(range(Ybus_size))) - set(buses_ppc) - set(nogo_buses_ppc)
-    if aux_buses:
-        for br_idx in range(ppc_branch.shape[0]):
-            f_bus_ppc = ppc_branch[br_idx, 0].real
-            t_bus_ppc = ppc_branch[br_idx, 1].real
-            if f_bus_ppc in aux_buses:
-                if t_bus_ppc in buses_ppc:
-                    buses_ppc.insert(0, int(f_bus_ppc))
-            elif t_bus_ppc in aux_buses:
-                if f_bus_ppc in buses_ppc:
-                    buses_ppc.insert(0, int(t_bus_ppc))
-    if len(buses_ppc) > Ybus_size:
-        raise ValueError("Ybus and the buses of the internal network have diffent length. " +
-                         "please check the bus result of the internal network. " +
-                         "Some internal or boundary buses are possibly" +
-                         " isolated or out of service")
-    return buses_ppc
-
-
-def _calc_and_add_eq_power(net, eq_type, calc_volt_angles=True,
-                           runpp_fct=_runpp_except_voltage_angles):
-    """calculates the equivalent power injection at boundary buses,
-    and then fills the equivalent power in wards"""
-
-    """aux-bus in internal network are not considered """
-
-    b_buses_pd = net.bus_lookups["bus_lookup_pd"]["b_area_buses"]
-    power_eq = pd.DataFrame(columns=["bus", "power_eq"], dtype=complex)
-    power_eq.bus = b_buses_pd
-
-    if not sum(net.ext_grid.name == "assist_ext_grid"):  # TODO: are these ext_grids needed?
-        if sum(net.res_bus.vm_pu[b_buses_pd].isnull()) != 0:
-            raise ValueError("There is no voltage results of the boundary buses in "
-                             "the internal network, " +
-                             "without which the equivalent power in wards can not " +
-                             "be calculated. please check res_bus")
-        else:
-            for bus in b_buses_pd:
-                pp.create_ext_grid(net, bus, vm_pu=net.res_bus.vm_pu[bus],
-                                   va_degree=net.res_bus.va_degree[bus],
-                                   name="assist_ext_grid")
-
-    runpp_fct(net, calculate_voltage_angles=calc_volt_angles)
-    for i in power_eq.index:
-        power_eq.power_eq[i] = net.res_ext_grid.p_mw[net.ext_grid.bus == power_eq.bus[i]].values + \
-            1j*net.res_ext_grid.q_mvar[net.ext_grid.bus == power_eq.bus[i]].values
-
-    # --- fill equivalent power in wards or xward
-    if eq_type == "ward":
-        for i in power_eq.index:
-            net.ward.ps_mw[net.ward.bus == power_eq.bus[i]] = \
-                np.nan_to_num(-power_eq.power_eq[i].real)
-            net.ward.qs_mvar[net.ward.bus == power_eq.bus[i]] = \
-                np.nan_to_num(-power_eq.power_eq[i].imag)
-    else:
-        for i in power_eq.index:
-            net.xward.ps_mw[net.xward.bus == power_eq.bus[i]] = \
-                np.nan_to_num(-power_eq.power_eq[i].real)
-            net.xward.qs_mvar[net.xward.bus == power_eq.bus[i]] = \
-                np.nan_to_num(-power_eq.power_eq[i].imag)

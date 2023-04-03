@@ -9,6 +9,7 @@ from itertools import combinations
 
 import numpy as np
 from pandas import isnull
+
 try:
     import matplotlib.pyplot as plt
     from matplotlib.collections import LineCollection, PatchCollection, Collection
@@ -16,11 +17,17 @@ try:
     from matplotlib.patches import Circle, Rectangle, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
+
+
+    class TextPath:  # so that the test does not fail
+        pass
+
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
+from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
@@ -1145,7 +1152,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, switch_index=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 
@@ -1160,15 +1167,24 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         **use_line_geodata** (bool, False) - If True, line coordinates are used to identify the
         switch position
+        
+        **switch_index** (list, []) - Possibility to create line switch collections with a subset of switches in net.switch.index.
+        If left empty, all switches are taken into the line switch collection.
+
 
         **kwargs - Key word arguments are passed to the patch function
 
     OUTPUT:
         **switches** - patch collection
     """
+    
+    if switch_index is None:
+        lbs_switches = net.switch.index[net.switch.et == "l"]
+    else:
+        lbs_switches = switch_index
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "l"]
 
     color = kwargs.pop("color", "k")
 
