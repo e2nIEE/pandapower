@@ -81,12 +81,11 @@ def detect_power_station_unit(net, mode="auto",
 
 
 def _create_element_from_exisiting(net, ele_type, ele_ix):
-    net[ele_type] = net[ele_type].append(pd.Series(net[ele_type].loc[ele_ix, :].to_dict(),
-                                         name=_get_index_with_check(net, ele_type, None)))
-    # todo: replace append by concat properly (shortcircuit/test_iec60909_4 fails if append is just replaced by concat)
-    #  this leads to the error:
-    # net[ele_type] = pd.concat([net[ele_type], pd.Series(net[ele_type].loc[ele_ix, :].to_dict(),
-    #                                                     name=_get_index_with_check(net, ele_type, None))], sort=False)
+    ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type,
+                                                                                      None))
+
+    net[ele_type] = pd.concat([net[ele_type], ps.to_frame().T])
+
     return net[ele_type].index.to_numpy()[-1]
 
 
