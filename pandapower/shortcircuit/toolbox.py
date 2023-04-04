@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+from pandapower.auxiliary import _preserve_dtypes
 
 try:
     import pandaplan.core.pplog as logging
@@ -81,10 +81,12 @@ def detect_power_station_unit(net, mode="auto",
 
 
 def _create_element_from_exisiting(net, ele_type, ele_ix):
+    dtypes = net[ele_type].dtypes
     ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type,
                                                                                       None))
 
     net[ele_type] = pd.concat([net[ele_type], ps.to_frame().T])
+    _preserve_dtypes(net[ele_type], dtypes)
 
     return net[ele_type].index.to_numpy()[-1]
 
