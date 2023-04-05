@@ -7,6 +7,8 @@ Tests 3 phase power flow algorithm
 import pandapower as pp
 import numpy as np
 import pytest
+
+import pandapower.toolbox
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
 import os
@@ -527,9 +529,8 @@ def test_3ph_with_impedance():
     pp.replace_line_by_impedance(net_imp, net.line.index, 100)
     pp.runpp_3ph(net)
     pp.runpp_3ph(net_imp)
-    assert pp.dataframes_equal(net.res_bus_3ph, net_imp.res_bus_3ph)
+    assert pandapower.toolbox.dataframes_equal(net.res_bus_3ph, net_imp.res_bus_3ph)
 
 
 if __name__ == "__main__":
-    # pytest.main(["test_runpp_3ph.py"])
-    test_3ph_with_impedance()
+    pytest.main([__file__, "-xs"])

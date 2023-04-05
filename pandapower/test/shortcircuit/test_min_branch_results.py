@@ -33,4 +33,4 @@ def feeder_network():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_ring.py"])
+    pytest.main([__file__, "-xs"])
