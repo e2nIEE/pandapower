@@ -383,4 +383,4 @@ def test_wind_power_station_unit():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

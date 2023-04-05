@@ -1097,4 +1097,4 @@ def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     diag = pp.diagnostic(net, report_style=None)
 
 if __name__ == "__main__":
-    pytest.main(["test_diagnostic.py", "-xs"])
+    pytest.main([__file__, "-xs"])

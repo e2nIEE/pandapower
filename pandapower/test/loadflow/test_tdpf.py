@@ -9,7 +9,7 @@ import pytest
 
 from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
     calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
-from pandapower.test.toolbox import assert_res_equal
+from pandapower.test.helper_functions import assert_res_equal
 
 import pandas as pd
 import pandapower as pp

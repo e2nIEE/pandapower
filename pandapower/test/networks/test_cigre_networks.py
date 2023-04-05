@@ -102,4 +102,4 @@ def test_cigre_lv():
     assert net.converged
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_cigre_networks.py"])
+    pytest.main([__file__, "-xs"])
