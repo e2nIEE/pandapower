@@ -93,4 +93,4 @@ def test_opf_data_check_lim_col():
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', "test_check_opf_data.py"])
+    pytest.main([__file__, "-xs"])

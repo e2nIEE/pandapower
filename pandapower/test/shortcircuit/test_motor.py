@@ -78,4 +78,4 @@ def test_large_motor(motor_net):
                        [14.695869025, 103.16722971, 0.38693418116], rtol=1e-4)
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])
