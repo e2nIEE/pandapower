@@ -316,10 +316,8 @@ def build_ppc_and_Ybus(net):
     ppc, ppci = _pd2ppc(net)
     net["_ppc"] = ppc
     makeYbus, pfsoln = _get_numba_functions(ppci, net["_options"])
-    baseMVA, bus, gen, branch, _, _, _, _, _, V0, ref_gens = _get_pf_variables_from_ppci(
-        ppci)
-    _, Ybus, _, _ = _get_Y_bus(
-        ppci, net["_options"], makeYbus, baseMVA, bus, branch)
+    baseMVA, bus, gen, branch, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    _, Ybus, _, _ = _get_Y_bus(ppci, net["_options"], makeYbus, baseMVA, bus, branch)
 
     net._ppc["internal"]["Ybus"] = Ybus
 

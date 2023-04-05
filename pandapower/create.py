@@ -149,6 +149,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
+        "svc":   [("name", dtype(object)),
+                  ("bus", "u4"),
+                  ("x_l_ohm", "f8"),
+                  ("x_cvar_ohm", "f8"),
+                  ("set_vm_pu", "f8"),
+                  ("thyristor_firing_angle_degree", "f8"),
+                  ("controllable", "bool"),
+                  ("in_service", "bool"),
+                  ("min_angle_degree", "f8"),
+                  ("max_angle_degree", "f8")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -237,7 +247,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("x_l_ohm", "f8"),
                  ("x_cvar_ohm", "f8"),
                  ("set_p_to_mw", "f8"),
-                 ("thyristor_firing_angle", "f8"),
+                 ("thyristor_firing_angle_degree", "f8"),
                  ("controllable", "bool"),
                  ("in_service", "bool")],
         "dcline": [("name", dtype(object)),
@@ -360,6 +370,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
+        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
+                             ("x_ohm", "f8"),
+                             ("q_mvar", "f8"),
+                             ("vm_pu", "f8"),
+                             ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
                               ("loading_percent", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
@@ -370,12 +385,14 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                  ("ql_mvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
-        "_empty_res_tcsc": [("thyristor_firing_angle", "f8"),
+        "_empty_res_tcsc": [("thyristor_firing_angle_degree", "f8"),
                             ("x_ohm", "f8"),
                             ("p_from_mw", "f8"),
                             ("q_from_mvar", "f8"),
                             ("p_to_mw", "f8"),
                             ("q_to_mvar", "f8"),
+                            ("pl_mw", "f8"),
+                            ("ql_mvar", "f8"),
                             ("i_ka", "f8"),
                             ("vm_from_pu", "f8"),
                             ("va_from_degree", "f8"),
@@ -3716,6 +3733,63 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage at the connected bus
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the svc
+
+        **x_l_ohm** (float) - impedance of the reactor component of svc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+
+        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+
+    _check_node_element(net, bus)
+
+    index = _get_index_with_check(net, "svc", index)
+
+    entries = dict(zip(["name", "bus", "x_l_ohm", "x_cvar_ohm", "set_vm_pu", "thyristor_firing_angle_degree",
+                        "controllable", "in_service", "min_angle_degree", "max_angle_degree"],
+                       [name, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                        controllable, in_service, min_angle_degree, max_angle_degree]))
+    _set_entries(net, "svc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
                      name=None, in_service=True, index=None,
                      rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
@@ -3771,33 +3845,65 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     return index
 
 
-def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle,
+def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
                 name=None, controllable=True, in_service=True, index=None,
                 min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
-    Creates a TCSC element
+    Creates a TCSC element - series impedance compensator to control series reactance.
+    The TCSC device allows controlling the active power flow throgh the path it is connected in.
 
-    Parameters
-    ----------
-    net
-    from_bus
-    to_bus
-    x_l_ohm
-    x_cvar_ohm
-    set_p_to_mw
-    kwargs
+    Multiple TCSC elements in net are possible.
+    Unfortunately, TCSC is not implemented for the case when multiple TCSC elements
+    have the same from_bus or the same to_bus.
 
-    Returns
-    -------
+    Note: in the Newton-Raphson power flow calculation, the initial voltage vector is adjusted slightly
+    if the initial voltage at the from bus is the same as at the to_bus to avoid
+    some terms in J (for TCSC) becoming zero.
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **from_bus** (int) - starting bus of the tcsc
+
+        **to_bus** (int) - ending bus of the tcsc
+
+        **x_l_ohm** (float) - impedance of the reactor component of tcsc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of tcsc
+
+        **set_p_to_mw** (float) - set-point for the branch active power at the to_bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of tcsc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling
+            or as a fixed series impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created tcsc
 
     """
     index = _get_index_with_check(net, "tcsc", index)
 
     _check_branch_element(net, "TCSC", index, from_bus, to_bus)
 
-    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle",
+    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle_degree",
                "controllable", "in_service", "min_angle_degree", "max_angle_degree"]
-    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle,
+    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
               controllable, in_service, min_angle_degree, max_angle_degree]
     entries = dict(zip(columns, values))
     _set_entries(net, "tcsc", index, **entries, **kwargs)

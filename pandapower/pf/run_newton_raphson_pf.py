@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, an
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS, SVC
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -88,13 +88,18 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
 
         makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-        if options["tdpf"] or any(internal["bus"][:, SVC]):
+        # todo: this can be dropped if Ybus is returned from Newton and has the latest Ybus status:
+        if options["tdpf"]:
             # needs to be updated to match the new R because of the temperature
             internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
 
-        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
-                      internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens, limited_gens=limited_gens)
+        # todo: here Ybus_svc, Ybus_tcsc must be used (Ybus = Ybus + Ybus_svc + Ybus_tcsc)
+        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"],
+                               internal["svc"], internal["tcsc"],
+                               internal["Ybus"], internal["Yf"], internal["Yt"], internal["V"],
+                               ref, ref_gens, limited_gens=limited_gens)
         return result_pfsoln
+
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
@@ -146,7 +151,7 @@ def _get_Sbus(ppci, recycle=None):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
@@ -161,18 +166,22 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         r_theta_kelvin_per_mw = None
     else:
         V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
+        # due to TPDF, SVC, TCSC, the Ybus matrices can be updated in the newtonpf and stored in ppci["internal"],
+        # so we extract them here for later use:
+        Ybus, Ybus_svc, Ybus_tcsc = (ppci["internal"].get(key) for key in ("Ybus", "Ybus_svc", "Ybus_tcsc"))
+        Ybus = Ybus + Ybus_svc + Ybus_tcsc
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
-                                  "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
+                                  "svc": svc, "tcsc": tcsc, "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref,
+                                  "Sbus": Sbus, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
                                   "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T})
 
     return ppci, success, iterations
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, on, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus_backup_p_q = bus[:, [PD, QD]].copy()
     gen_backup_p = gen[:, PG].copy()
 

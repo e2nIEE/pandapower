@@ -7,10 +7,11 @@
 import numpy as np
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, SVC, SVC_THYRISTOR_FIRING_ANGLE
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
+from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 
 try:
     import pandaplan.core.pplog as logging
@@ -420,25 +421,10 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     b, p, q = np.array([]), np.array([]), np.array([])
     _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    baseMVA = ppc["baseMVA"]
+    baseZ = np.square(ppc["bus"][:, BASE_KV]) / baseMVA
 
     s = net["shunt"]
-
-    svc_buses = np.flatnonzero(np.nan_to_num(ppc["bus"][:, SVC]))
-    if "controllable" in s and len(svc_buses) > 0:
-        ppc2pd_lookup = np.zeros(max(bus_lookup) + 1, dtype=int)
-        ppc2pd_lookup[bus_lookup] = np.arange(len(bus_lookup))
-        bus_index = net.bus.index.values[ppc2pd_lookup[svc_buses]]
-        for b_svc, bi_svc in zip(bus_index, svc_buses):
-            shunt_index = net.shunt.loc[net.shunt.controllable & (net.shunt.bus == b_svc)].index
-            lsi = len(shunt_index)
-            if lsi == 0:
-                raise UserWarning(f"no controllable shunts (SVC) found where at bus {b_svc}")
-            elif lsi > 1:
-                logger.debug(f"found {lsi} controllable shunts (SVC), the value of q_mvar will be divided equally.")
-            net.shunt.loc[net.shunt.bus == b_svc, "q_mvar"] = -ppc["bus"][bi_svc, BS] / lsi
-            net.shunt.loc[net.shunt.bus == b_svc, "thyristor_firing_angle_degree"] = \
-                np.rad2deg(ppc["bus"][bi_svc, SVC_THYRISTOR_FIRING_ANGLE])
-
     if len(s) > 0:
         sidx = bus_lookup[s["bus"].values]
         shunt_is = _is_elements["shunt"]
@@ -487,6 +473,21 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_xward
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
+
+    svc = net["svc"]
+    if len(svc):
+        svcidx = bus_lookup[svc["bus"].values]
+        svc_is = _is_elements["svc"]
+        net["res_svc"].loc[svc_is, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["svc"][svc_is, SVC_THYRISTOR_FIRING_ANGLE])
+        p = np.hstack([p, np.zeros_like(svc["bus"].values)])
+        if ac:
+            net["res_svc"].loc[svc_is, "vm_pu"] = ppc["bus"][svcidx[svc_is], VM]
+            net["res_svc"].loc[svc_is, "va_degree"] = ppc["bus"][svcidx[svc_is], VA]
+            q_svc = ppc["svc"][:, SVC_Q]
+            net["res_svc"].loc[:, "q_mvar"] = q_svc  # write all because of zeros
+            net["res_svc"].loc[svc_is, "x_ohm"] = ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
+            q = np.hstack([q, q_svc])
+        b = np.hstack([b, svc["bus"].values])
 
     if not ac:
         q = np.zeros(len(p))

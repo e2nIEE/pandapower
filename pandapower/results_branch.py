@@ -623,7 +623,7 @@ def _get_tcsc_results(net, ppc, suffix=None):
     # todo for suffix not None
     res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
 
-    res_tcsc_df["thyristor_firing_angle"].values[:] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
+    res_tcsc_df["thyristor_firing_angle_degree"].values[:] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
     res_tcsc_df["x_ohm"].values[:] = ppc["tcsc"][f:t, TCSC_X_PU].real * baseZ
     res_tcsc_df["p_from_mw"].values[:] = p_from_mw
     res_tcsc_df["q_from_mvar"].values[:] = q_from_mvar
@@ -632,8 +632,8 @@ def _get_tcsc_results(net, ppc, suffix=None):
     res_tcsc_df["i_ka"].values[:] = np.fmax(i_from_ka, i_to_ka)
     # res_tcsc_df["i_from_ka"].values[:] = i_from_ka
     # res_tcsc_df["i_to_ka"].values[:] = i_to_ka
-    # res_tcsc_df["pl_mw"].values[:] = pl_mw
-    # res_tcsc_df["ql_mvar"].values[:] = ql_mvar
+    res_tcsc_df["pl_mw"].values[:] = pl_mw
+    res_tcsc_df["ql_mvar"].values[:] = ql_mvar
     res_tcsc_df["vm_from_pu"].values[:] = ppc["bus"][f_bus, VM]
     res_tcsc_df["va_from_degree"].values[:] = ppc["bus"][f_bus, VA]
     res_tcsc_df["vm_to_pu"].values[:] = ppc["bus"][t_bus, VM]

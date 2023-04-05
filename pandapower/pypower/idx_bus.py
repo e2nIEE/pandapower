@@ -86,11 +86,4 @@ CID = 13   # coefficient of constant current load at rated voltage in range [0,1
 CZD = 14   # coefficient of constant impedance load at rated voltage in range [0,1]
 SL_FAC = 15
 
-# SVC
-SVC = 16  # bool: is it an SVC bus?
-SET_VM_PU = 17  # SVC voltage setpoint
-SVC_THYRISTOR_FIRING_ANGLE = 18  # Thyristor firing angle for SVC
-SVC_X_L = 19
-SVC_X_CVAR = 20
-
-bus_cols = 21
+bus_cols = 16

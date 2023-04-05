@@ -17,6 +17,8 @@ from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
+from pandapower.pypower.idx_svc import SVC_Q
+from pandapower.pypower.idx_tcsc import TCSC_QF, TCSC_QT
 from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
 
 try:
@@ -27,7 +29,7 @@ except ImportError:
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -60,7 +62,7 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """
     faster version of pfsoln for a grid with a single slack bus
 
@@ -80,9 +82,12 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, re
     p_loss = branch[:, [PF, PT]].sum()
     q_loss = branch[:, [QF, QT]].sum()
 
+    # consider FACTS devices:
+    q_facts = svc[:, SVC_Q].sum() + tcsc[:, [TCSC_QF, TCSC_QT]].sum()
+
     # slack p = sum of branch losses and p demand at all buses
     gen[:, PG] = p_loss.real + p_bus  # branch p losses + p demand
-    gen[:, QG] = q_loss.real + q_bus  # branch q losses + q demand
+    gen[:, QG] = q_loss.real + q_bus + q_facts  # branch q losses + q demand
 
     return bus, gen, branch
 

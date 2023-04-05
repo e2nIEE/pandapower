@@ -60,8 +60,8 @@ they are typically not present in the input matrix
 """
 
 # define the indices
-F_BUS_TCSC = 0  # f, from bus number
-T_BUS_TCSC = 1  # t, to bus number
+TCSC_F_BUS = 0  # f, from bus number
+TCSC_T_BUS = 1  # t, to bus number
 TCSC_X_L = 2  # (p.u.)
 TCSC_X_CVAR = 3  # (p.u.)
 TCSC_SET_P = 4  # (p.u.)
