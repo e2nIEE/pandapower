@@ -269,10 +269,13 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         elm_org = net[elm]
         if elm_old is None or elm_old != elm:
             other_cols = set(elm_org.columns) - \
-                {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
-            other_cols_bool = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_bool_dtype)])
+                         {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
+            other_cols_bool = set(
+                net[elm][list(other_cols)].columns[net[elm][list(other_cols)].apply(is_bool_dtype)])
             other_cols -= other_cols_bool
-            other_cols_number = set(net[elm][other_cols].columns[net[elm][other_cols].apply(is_numeric_dtype)])
+            other_cols_number = set(
+                net[elm][list(other_cols)].columns[
+                    net[elm][list(other_cols)].apply(is_numeric_dtype)])
             other_cols -= other_cols_number
             other_cols_str = set()
             other_cols_none = set()

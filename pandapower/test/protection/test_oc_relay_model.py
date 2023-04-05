@@ -244,5 +244,4 @@ def test_plot_create_I_t_plot(mock_show, sc_line_id=0 ,sc_location =0.4,
     plt.close('all')
 
 if __name__ == '__main__':
-    pytest.main(["test_oc_relay_model.py"])
-    
+    pytest.main([__file__, "-xs"])

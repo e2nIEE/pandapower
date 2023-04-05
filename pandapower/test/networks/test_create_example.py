@@ -39,4 +39,4 @@ def test_create_realistic():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_create_example.py"])
+    pytest.main([__file__, "-xs"])
