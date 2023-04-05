@@ -633,21 +633,4 @@ def test_ward_admittance():
     
         
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_cost_consideration()
-        # test_basic_usecases()
-        # test_case9_with_slack_generator_in_external_net()
-        # test_adopt_columns_to_separated_eq_elms()
-        # test_equivalent_groups()
-        # test_shifter_degree()
-        # test_retain_original_internal_indices()
-        # test_switch_sgens()
-        # test_characteristic()
-        test_controller()
-        # test_motor()
-        # test_sgen_bswitch()
-        # test_ward_admittance()
-
-    pass
+    pytest.main(['-x', __file__])

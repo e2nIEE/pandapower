@@ -485,4 +485,4 @@ def test_vde_232():
     
 
 if __name__ == '__main__':
-    pytest.main(["test_iec60909_4.py"])
+    pytest.main([__file__, "-xs"])

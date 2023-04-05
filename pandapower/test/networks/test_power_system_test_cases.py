@@ -238,4 +238,4 @@ def test_iceland():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_power_system_test_cases.py", "-xs"])
+    pytest.main([__file__, "-xs"])

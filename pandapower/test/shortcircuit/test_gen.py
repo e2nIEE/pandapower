@@ -185,4 +185,4 @@ def test_max_gen_fault_impedance(one_line_one_generator):
 #     sc.calc_sc(net)
 
 if __name__ == '__main__':
-    pytest.main(['test_gen.py'])
+    pytest.main([__file__, "-xs"])
