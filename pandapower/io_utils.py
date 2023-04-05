@@ -246,7 +246,7 @@ def from_dict_of_dfs(dodfs, net=None):
             net[item] = table
         # set the index to be Int
         try:
-            net[item].set_index(net[item].index.astype(int), inplace=True)
+            net[item].set_index(net[item].index.astype(np.int64), inplace=True)
         except TypeError:
             # TypeError: if not int index (e.g. str)
             pass
