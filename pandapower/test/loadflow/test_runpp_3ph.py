@@ -533,5 +533,4 @@ def test_3ph_with_impedance():
 
 
 if __name__ == "__main__":
-    # pytest.main(["test_runpp_3ph.py"])
-    test_3ph_with_impedance()
+    pytest.main([__file__, "-xs"])

@@ -41,7 +41,4 @@ def test_create_generic_coordinates_igraph_custom_table_index():
         assert np.all(net.test.index == buses)
 
 if __name__ == "__main__":
-    net = nw.mv_oberrhein()
-    g, meshed, roots = build_igraph_from_pp(net, buses=[1,2,3])
-    g.vcount()
-#    pytest.main(["test_generic_coordinates.py"])
+    pytest.main([__file__, "-xs"])

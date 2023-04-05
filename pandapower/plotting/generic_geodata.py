@@ -225,6 +225,6 @@ def fuse_geodata(net):
     geocoords = set(net.bus_geodata.index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus_geodata.loc[area & geocoords].values[0]
+            geo = net.bus_geodata.loc[list(area & geocoords)].values[0]
             for bus in area:
                 net.bus_geodata.loc[bus] = geo

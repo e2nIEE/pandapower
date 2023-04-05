@@ -515,27 +515,4 @@ def test_elements_connected_to_group():
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', "test_group.py"])
-    else:
-        # test_group_create()
-        # test_group_element_index()
-        # test_groups_equal()
-        # test_set_group_reference_column()
-        # test_compare_group_elements()
-        # test_ensure_lists_in_group_element_column()
-        # test_remove_not_existing_group_members()
-        # test_check_unique_group_rows()
-        # test_drop_element()
-        # test_drop_and_return()
-        # test_set_out_of_service()
-        # test_attach_to_group()
-        # test_detach_and_compare()
-        # test_res_power()
-        test_res_power_examples()
-        # test_group_io()
-        # test_count_group_elements()
-        # test_isin()
-        # test_element_associated_groups()
-        # test_elements_connected_to_group()
-        pass
+    pytest.main([__file__, "-xs"])

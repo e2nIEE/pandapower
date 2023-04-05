@@ -67,6 +67,7 @@ def test_pickle(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.p"
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
+    # pickle sems to changes column types
     assert_net_equal(net_in, net_out)
 
 

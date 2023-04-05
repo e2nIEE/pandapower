@@ -270,7 +270,7 @@ def test_case9_with_slack_generator_in_external_net():
         eq_net1.gen.drop(columns=["origin_id"], inplace=True)
         eq_net1b.gen.drop(columns=["origin_id"], inplace=True)
         assert pandapower.toolbox.nets_equal(eq_net1, eq_net1b)
-        assert net.bus.name.loc[boundary_buses | internal_buses | slack_bus].isin(
+        assert net.bus.name.loc[list(boundary_buses | internal_buses | slack_bus)].isin(
             eq_net1.bus.name).all()
         assert eq_net1.gen.slack.sum() == 1
         assert eq_net1.gen.slack.loc[eq_net1.gen.bus.isin(slack_bus)].all()
@@ -287,7 +287,7 @@ def test_case9_with_slack_generator_in_external_net():
         # UC2: return_internal=False
         eq_net2 = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
                                      return_internal=False)
-        assert net.bus.name.loc[boundary_buses | slack_bus].isin(eq_net2.bus.name).all()
+        assert net.bus.name.loc[list(boundary_buses | slack_bus)].isin(eq_net2.bus.name).all()
         assert eq_net2.gen.slack.all()
         if eq_type == "rei":
             check_elements_amount(eq_net2, {"bus": 4, "load": 1, "gen": 1, "shunt": 4,
@@ -302,7 +302,7 @@ def test_case9_with_slack_generator_in_external_net():
         ib_net = pp.select_subnet(net, internal_buses | boundary_buses, include_results=True)
         be_net = pp.select_subnet(net, boundary_buses | external_buses, include_results=True)
         eq_net3 = pp.grid_equivalents.get_equivalent(be_net, eq_type, boundary_buses, internal_buses=[])
-        assert not net.bus.name.loc[external_buses].isin(eq_net3.bus.name).all()
+        assert not net.bus.name.loc[list(external_buses)].isin(eq_net3.bus.name).all()
         if eq_type == "rei":
             assert eq_net3.gen.slack.all()
             """vorher war assert not eq_net3.gen.slack.all()
@@ -633,23 +633,4 @@ def test_ward_admittance():
     
         
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_cost_consideration()
-        # test_basic_usecases()
-        # test_case9_with_slack_generator_in_external_net()
-        # test_adopt_columns_to_separated_eq_elms()
-        # test_equivalent_groups()
-        # test_shifter_degree()
-        # test_retain_original_internal_indices()
-        # test_switch_sgens()
-        # test_characteristic()
-        test_controller()
-        # test_motor()
-        # test_sgen_bswitch()
-        # test_ward_admittance()
-
-    pass
-
-    
+    pytest.main(['-x', __file__])
