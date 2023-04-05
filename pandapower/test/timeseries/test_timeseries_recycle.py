@@ -16,6 +16,11 @@ n_timesteps = 5
 time_steps = range(0, n_timesteps)
 
 
+@pytest.fixture(params=[pp.runpp, pp.rundcpp])
+def run_function(request):
+    return request.param
+
+
 def add_const(net, ds, recycle, element="load", variable="p_mw", element_index=None, profile_name=None):
     if element_index is None or profile_name is None:
         element_index = [0, 1, 2]
@@ -99,11 +104,22 @@ def test_batch_output_reader(simple_test_net):
     assert np.allclose(t3_loading_percent_normal, ld3_trafo)
 
 
-def _run_recycle(net):
+def _v_var(run, full=True):
+    # for runpp, vm_pu is important, and for rundcpp va_degree is important
+    var = "vm_pu" if run.__name__ == "runpp" else "va_degree"
+    if full:
+        return f"res_bus.{var}"
+    else:
+        return var
+
+
+def _run_recycle(net, run):
     # default log variables are res_bus.vm_pu, res_line.loading_percent
-    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
-    run_timeseries(net, time_steps, verbose=False)
-    vm_pu = copy.deepcopy(ow.output["res_bus.vm_pu"])
+    log_variables = [("res_bus", "vm_pu") if run.__name__ == "runpp" else ("res_bus", "va_degree"),
+                     ("res_line", "loading_percent")]
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=log_variables)
+    run_timeseries(net, time_steps, verbose=False, run=run)
+    vm_pu = copy.deepcopy(ow.output[_v_var(run)])
     ll = copy.deepcopy(ow.output["res_line.loading_percent"])
     net.controller.drop(index=net.controller.index, inplace=True)
     net.output_writer.drop(index=net.output_writer.index, inplace=True)
@@ -111,31 +127,33 @@ def _run_recycle(net):
     return vm_pu, ll
 
 
-def _run_normal(net, time_steps=time_steps):
-    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
+def _run_normal(net, run, time_steps=time_steps):
+    log_variables = [("res_bus", "vm_pu") if run.__name__ == "runpp" else ("res_bus", "va_degree"),
+                     ("res_line", "loading_percent")]
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=log_variables)
     ow.log_variable("res_bus", "va_degree")
-    run_timeseries(net, time_steps, recycle=False, verbose=False)
+    run_timeseries(net, time_steps, recycle=False, verbose=False, run=run)
     return ow
 
 
-def test_const_pq(simple_test_net):
+def test_const_pq(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq"} and fast output read
     net = simple_test_net
 
     _, ds = create_data_source(n_timesteps)
     # 1load
     c = add_const(net, ds, recycle=None)
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    ow = _run_normal(net)
-    assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
 
 
-def test_const_gen(simple_test_net):
+def test_const_gen(simple_test_net, run_function):
     # allows to use recycle = {"gen"} and fast output read
     net = simple_test_net
     pp.create_gen(net, 1, p_mw=2.)
@@ -146,18 +164,18 @@ def test_const_gen(simple_test_net):
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
 
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
-    ow = _run_normal(net)
-    assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
 
 
-def test_const_ext_grid(simple_test_net):
+def test_const_ext_grid(simple_test_net, run_function):
     # allows to use recycle = {"gen"} and fast output read
     net = simple_test_net
     profiles, _ = create_data_source(n_timesteps)
@@ -166,24 +184,24 @@ def test_const_ext_grid(simple_test_net):
     ds = DFData(profiles)
     # 1load
     c1 = add_const(net, ds, recycle=None)
-    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
+    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
 
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
-    ow = _run_normal(net)
-    assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
+    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
-    assert np.allclose(ow.output["res_bus.vm_pu"].values[:, 0], profiles["ext_grid"])
+    assert np.allclose(ow.output[_v_var(run_function)].values[:, 0], profiles["ext_grid"])
     assert np.allclose(vm_pu.values[:, 0], profiles["ext_grid"])
 
 
-def test_trafo_tap(simple_test_net):
+def test_trafo_tap(simple_test_net, run_function=pp.runpp):
     # allows to use recycle = {"trafo"} but not fast output read
     net = simple_test_net
     _, ds = create_data_source(n_timesteps)
@@ -192,18 +210,40 @@ def test_trafo_tap(simple_test_net):
     c1 = add_const(net, ds, recycle=None)
     c2 = ContinuousTapControl(net, 0, .99, tol=1e-9)
 
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = ContinuousTapControl(net, 0, .99, recycle=False, tol=1e-9)
-    ow = _run_normal(net)
-    assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
 
 
-def test_const_pq_gen_trafo_tap(simple_test_net):
+def test_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
+    # allows to use recycle = {"trafo"} but not fast output read
+    net = simple_test_net
+    _, ds = create_data_source(n_timesteps)
+
+    # 1load
+    c1 = add_const(net, ds, recycle=None)
+    c2 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+
+    vm_pu, ll = _run_recycle(net, run_function)
+    del c1, c2
+
+    # calculate the same results without recycle
+    c = add_const(net, ds, recycle=False)
+    c2 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
+    assert np.allclose(ll, ow.output["res_line.loading_percent"])
+
+
+def test_const_pq_gen_trafo_tap(simple_test_net, run_function=pp.runpp):
     # allows to use recycle = {"bus_pq", "gen", "trafo"}
     net = simple_test_net
     profiles, _ = create_data_source(n_timesteps)
@@ -215,7 +255,7 @@ def test_const_pq_gen_trafo_tap(simple_test_net):
                    element="ext_grid")
     c3 = ContinuousTapControl(net, 0, 1.01, tol=1e-9)
 
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2, c3
 
     # calculate the same results without recycle
@@ -223,12 +263,95 @@ def test_const_pq_gen_trafo_tap(simple_test_net):
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
                    element="ext_grid")
     c3 = ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-9)
-    ow = _run_normal(net)
-    assert np.allclose(vm_pu, ow.output["res_bus.vm_pu"])
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
 
 
-def test_const_pq_out_of_service(simple_test_net):
+def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
+    # allows to use recycle = {"bus_pq", "gen", "trafo"}
+    net = simple_test_net
+    profiles, _ = create_data_source(n_timesteps)
+    profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
+    ds = DFData(profiles)
+    # 1load
+    c1 = add_const(net, ds, recycle=None)
+    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable="vm_pu", element_index=0,
+                   element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+
+    vm_pu, ll = _run_recycle(net, run_function)
+    del c1, c2, c3
+
+    # calculate the same results without recycle
+    c = add_const(net, ds, recycle=False)
+    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
+                   element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
+
+
+def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
+    # allows to use recycle = {"bus_pq", "gen", "trafo"}
+    net = simple_test_net
+    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 0, 5, True
+    profiles, _ = create_data_source(n_timesteps)
+    profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
+    ds = DFData(profiles)
+    # 1load
+    c1 = add_const(net, ds, recycle=None)
+    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+
+    vm_pu, ll = _run_recycle(net, run_function)
+    del c1, c2, c3
+
+    # calculate the same results without recycle
+    c = add_const(net, ds, recycle=False)
+    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+                   element_index=0, element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
+
+
+def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
+    # allows to use recycle = {"bus_pq", "gen", "trafo"}
+    net = simple_test_net
+    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 1, 10, False
+    profiles, _ = create_data_source(n_timesteps)
+    profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
+    ds = DFData(profiles)
+    # 1load
+    c1 = add_const(net, ds, recycle=None)
+    c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
+                   element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+
+    vm_pu, ll = _run_recycle(net, run_function)
+    del c1, c2, c3
+
+    # calculate the same results without recycle
+    c = add_const(net, ds, recycle=False)
+    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
+                   element="ext_grid")
+    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+                   element_index=0, element="trafo")
+    ow = _run_normal(net, run_function)
+    assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
+    assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
+
+
+def test_const_pq_out_of_service(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq"} and fast output read
     net = simple_test_net
     for i in range(3):
@@ -239,14 +362,14 @@ def test_const_pq_out_of_service(simple_test_net):
     _, ds = create_data_source(n_timesteps)
     # 1load
     c = add_const(net, ds, recycle=None)
-    vm_pu, ll = _run_recycle(net)
+    vm_pu, ll = _run_recycle(net, run_function)
     del c
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    ow = _run_normal(net)
+    ow = _run_normal(net, run_function)
     in_service = net.bus.loc[net.bus.in_service].index
-    assert np.allclose(vm_pu.loc[:, in_service], ow.output["res_bus.vm_pu"].loc[:, in_service])
+    assert np.allclose(vm_pu.loc[:, in_service], ow.output[_v_var(run_function)].loc[:, in_service])
     in_service = net.line.loc[net.line.in_service].index
     assert np.allclose(ll.loc[:, in_service], ow.output["res_line.loading_percent"].loc[:, in_service])
 

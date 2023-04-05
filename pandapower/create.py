@@ -10,7 +10,7 @@ import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 
-from pandapower import __version__, __format_version__
+from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -659,7 +659,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
-        net.bus_geodata = pd.concat([net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat(
+            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
         net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
@@ -4331,7 +4332,7 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
                        [ name ,  element_types,  elements,  reference_columns]))

@@ -47,4 +47,4 @@ def test_simple_plotly_3w():
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])
