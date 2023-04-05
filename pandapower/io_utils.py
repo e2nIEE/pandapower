@@ -186,7 +186,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].shape[0] == 0:  # skip empty dataframes
                 continue
             if pd_dict[k].index[0].isdigit():
-                pd_dict[k].set_index(pd_dict[k].index.astype(int), inplace=True)
+                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
         else:
             raise UserWarning("The network is an old version or corrupt. "
                               "Try to use the old load function")
@@ -502,12 +502,12 @@ class FromSerializableRegistry():
 
         if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:
-                df.set_index(df.index.astype(int), inplace=True)
+                df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting index to int")
         if self.d.get("orient", False) == "columns":
             try:
-                df.columns = df.columns.astype(int)
+                df.columns = df.columns.astype(numpy.int64)
             except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting columns to int")
 
@@ -618,9 +618,9 @@ class FromSerializableRegistry():
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
-                df.set_index(df['id'].values.astype(int), inplace=True)
+                df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             else:
-                df.set_index(df.index.values.astype(int), inplace=True)
+                df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)

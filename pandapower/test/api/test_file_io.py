@@ -68,7 +68,7 @@ def test_pickle(net_in, tmp_path):
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
     # pickle sems to changes column types
-    assert_net_equal(net_in, net_out, check_index_type=False, check_column_type=False)
+    assert_net_equal(net_in, net_out)
 
 
 @pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
