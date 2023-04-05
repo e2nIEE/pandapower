@@ -16,12 +16,10 @@ from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.run import runpp
-from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
-    branch_element_bus_dict
-from pandapower.toolbox_elm_selection import get_connected_elements, next_bus, \
-    get_connected_elements_dict
-from pandapower.toolbox_info import clear_result_tables
-from pandapower.toolbox_data_modification import reindex_elements
+from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
+    get_connected_elements, get_connected_elements_dict, next_bus
+from pandapower.toolbox.result_info import clear_result_tables
+from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_names, element_associated_groups
 

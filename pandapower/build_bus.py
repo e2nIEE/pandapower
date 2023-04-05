@@ -462,13 +462,16 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    # Divide base kv by 3 for 3 phase calculation
+    mode = net._options["mode"]
+    base_multiplier = 1/3 if mode == "pf_3ph" else 1
     # get in service elements
     _is_elements = net["_is_elements"]
 
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"]
-        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
+        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
         q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
         p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
@@ -476,15 +479,15 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     w = net["ward"]
     if len(w) > 0:
         vl = _is_elements["ward"]
-        q = np.hstack([q, w["qz_mvar"].values * vl])
-        p = np.hstack([p, w["pz_mw"].values * vl])
+        q = np.hstack([q, w["qz_mvar"].values * base_multiplier * vl])
+        p = np.hstack([p, w["pz_mw"].values * base_multiplier * vl])
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
     if len(xw) > 0:
         vl = _is_elements["xward"]
-        q = np.hstack([q, xw["qz_mvar"].values * vl])
-        p = np.hstack([p, xw["pz_mw"].values * vl])
+        q = np.hstack([q, xw["qz_mvar"].values * base_multiplier * vl])
+        p = np.hstack([p, xw["pz_mw"].values * base_multiplier * vl])
         b = np.hstack([b, xw["bus"].values])
 
     loss_location = net._options["trafo3w_losses"].lower()
@@ -500,7 +503,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         vn_hv_trafo = trafo3w["vn_hv_kv"].values
         vn_hv_bus = ppc["bus"][bus_lookup[trafo3w.hv_bus.values], BASE_KV]
-        v_ratio = (vn_hv_bus / vn_hv_trafo) ** 2
+        v_ratio = (vn_hv_bus / vn_hv_trafo) ** 2 * base_multiplier
 
         q = np.hstack([q, q_mvar * v_ratio])
         p = np.hstack([p, pfe_mw * v_ratio])

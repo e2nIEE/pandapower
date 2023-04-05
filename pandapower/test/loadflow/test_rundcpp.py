@@ -14,7 +14,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
 
 
 def test_rundcpp_init():

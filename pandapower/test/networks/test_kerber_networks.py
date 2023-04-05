@@ -158,5 +158,4 @@ def test_create_kerber_vorstadtnetz_kabel_2():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
-#    test_create_kerber_vorstadtnetz_kabel_2()
+    pytest.main([__file__, "-xs"])
