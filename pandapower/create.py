@@ -659,7 +659,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
-        net.bus_geodata = pd.concat([net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat(
+            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
         net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
@@ -4331,7 +4332,7 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
                        [ name ,  element_types,  elements,  reference_columns]))
