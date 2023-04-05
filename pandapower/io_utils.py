@@ -317,7 +317,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int
                 try:
-                    df_index = pd.Index(df_dict['index'], dtype=int)
+                    df_index = pd.Index(df_dict['index'], dtype=numpy.int64)
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
