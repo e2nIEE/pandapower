@@ -169,7 +169,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, OUTER_DIAMETER_M] = line.get("conductor_outer_diameter_m", default=np.nan)
         branch[f:t, MC_JOULE_PER_M_K] = line.get("mc_joule_per_m_k", default=np.nan)
 
-    if mode == "sc":
+    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False):
         # temperature correction
         if net["_options"]["case"] == "min":
             branch[f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
@@ -293,15 +293,19 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
                                     sequence=sequence, characteristic=net.get("characteristic"))
 
     if mode == "sc":
-        y = 0  # why for sc are we assigning y directly as 0?
+        if net._options.get("use_pre_fault_voltage", False):
+            y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+        else:
+            y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
             # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
-            kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
-            r *= kt
-            x *= kt
+            if not net._options.get("use_pre_fault_voltage", False):
+                kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+                r *= kt
+                x *= kt
     else:
         y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
 
@@ -392,7 +396,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
     vnl = copy.copy(get_trafo_values(trafo_df, "vn_lv_kv").astype(float))
     trafo_shift = get_trafo_values(trafo_df, "shift_degree").astype(float) if calculate_voltage_angles else \
         np.zeros(len(vnh))
-    if mode == "sc":
+    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False): # todo type c?
         return vnh, vnl, trafo_shift
 
     tap_pos = get_trafo_values(trafo_df, "tap_pos")
@@ -704,10 +708,10 @@ def _switch_branches(net, ppc):
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
+                        if mode == "sc":
+                            ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
+                            ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
                 ppc["bus"][buses, col] = init_values
-            if mode == "sc":
-                ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
-                ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
 
 
@@ -936,7 +940,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
     if sequence==1:
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode, characteristic=net.get(
+        mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
             'characteristic'))
     elif sequence==0:
         if mode != "sc":

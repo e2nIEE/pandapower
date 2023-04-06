@@ -20,4 +20,16 @@ IB_T      = start + 9
 K_T       = start + 10
 K_ST       = start + 11
 
-branch_cols_sc = 12
+
+PKSS_F    = start + 12
+QKSS_F    = start + 13
+PKSS_T    = start + 14
+QKSS_T    = start + 15
+VKSS_MAGN_F    = start + 16
+VKSS_MAGN_T    = start + 17
+VKSS_ANGLE_F = start + 18
+VKSS_ANGLE_T = start + 19
+IKSS_ANGLE_F = start + 20
+IKSS_ANGLE_T = start + 21
+
+branch_cols_sc = 22
