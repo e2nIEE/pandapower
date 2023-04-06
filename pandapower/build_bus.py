@@ -631,6 +631,39 @@ def _add_motor_impedances_ppc(net, ppc):
     ppc["bus"][buses, BS] += bs
 
 
+def _add_load_sc_impedances_ppc(net, ppc):
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    for element_type, sign in (("sgen", -1), ("load", 1)):
+
+        element = net[element_type][net._is_elements[element_type]]
+
+        if element.empty:
+            continue
+
+        element_buses_ppc = bus_lookup[element.bus.values]
+
+        vm_pu = ppc["bus"][element_buses_ppc, VM]
+        va_degree = ppc["bus"][element_buses_ppc, VA]
+        v = vm_pu * np.exp(1j * np.deg2rad(va_degree))  # this is correct!
+        # print(np.abs(v), np.angle(v, deg=True))
+
+        s_element_mva = sign * (element.p_mw.values + 1j * element.q_mvar.values) * element.scaling.values
+        s_element_pu = s_element_mva / baseMVA
+        # S = V * conj(I) -> I = conj(S / V)
+        i_element_pu = np.conj(s_element_pu / v)   # this is correct!
+        # i_element_ka = -i_element_pu * 100 / (np.sqrt(3) * 110)  # for us to validate
+
+        y_element_pu = i_element_pu / v  # p.u.
+        # y_element_s = y_element_pu * baseMVA / v_base**2
+
+        buses, gs, bs = _sum_by_group(element_buses_ppc, y_element_pu.real, y_element_pu.imag)
+        # buses, gs, bs = _sum_by_group(element_buses_ppc, s_element_pu.real, s_element_pu.imag)
+        ppc["bus"][buses, GS] += gs * baseMVA  # power in p.u. is equal to admittance in p.u.
+        ppc["bus"][buses, BS] += bs * baseMVA
+
+
 def _add_c_to_ppc(net, ppc):
     ppc["bus"][:, C_MAX] = 1.1
     ppc["bus"][:, C_MIN] = 1.

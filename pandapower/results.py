@@ -13,6 +13,15 @@ from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, 
     _get_bus_results_3ph
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
+BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
+                       "branch_ikss_angle_f", "branch_ikss_angle_t",
+                       "branch_pkss_f", "branch_pkss_t",
+                       "branch_qkss_f", "branch_qkss_t",
+                       "branch_vkss_f", "branch_vkss_t",
+                       "branch_vkss_angle_f", "branch_vkss_angle_t",
+                       "branch_ip_f", "branch_ip_t",
+                       "branch_ith_f", "branch_ith_t")
+
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
@@ -206,9 +215,7 @@ def _ppci_internal_to_ppc(result, ppc):
     for key, value in result["internal"].items():
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
-        if key in ["branch_ikss_f", "branch_ikss_t",
-                   "branch_ip_f", "branch_ip_t",
-                   "branch_ith_f", "branch_ith_t"]:
+        if key in BRANCH_RESULTS_KEYS:
 
             # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]

@@ -67,6 +67,8 @@ def wind_park_grid(case):
     else:
         raise NotImplementedError(f"case {case} not implemented")
 
+    if len(net.sgen) > 0:
+        net.sgen["current_angle_degree"] = -90
     return net
 
 
@@ -158,19 +160,22 @@ def test_max_3ph_branch_big_sgen():
 def test_min_3ph_branch_results_small_sgen():
     net = three_bus_example()
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
-    assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([ 0.43248784,  0.41156533,  0.40431286]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.01259673,  0.40431286]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.74576565]))
-    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.40605375]))
+    assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([0.419891,  0.398969,  0.391938]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.391938,  0.391938]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.744387, 0.728265]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.400712, 0.393625]), atol=1e-6, rtol=0)
 
 
 def test_min_3ph_branch_results_big_sgen():
     net = big_sgen_three_bus_example()
+    # net.sn_mva = 110 * np.sqrt(3)
+    # bacause in case "min" sgen is ignored, it does't matter if sgen is big or small -
+    # the results here are the same as in the test test_min_3ph_branch_results_small_sgen
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
-    assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([1.67956442, 1.65864191, 1.62941387]))
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.36974055, 1.62941387]))
-    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.69687302,   2.47832011]))
-    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.37133258,  1.63642978]))
+    assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([0.419891,  0.398969,  0.391938]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.391938,  0.391938]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.744387, 0.728265]), atol=1e-6, rtol=0)
+    assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.400712, 0.393625]), atol=1e-6, rtol=0)
 
 
 def test_max_1ph_branch_small_sgen():
@@ -237,8 +242,10 @@ def test_min_1ph_branch_small_sgen():
     i_bus_only_sgen = i_bus_with_sgen - i_bus_without_sgen
 
     # Check coherence between bus result and branch results
-    assert np.isclose(i_line_with_gen.ikss_ka.at[0], i_bus_only_sgen.ikss_ka.at[0], atol=1e-4)
-    assert np.isclose(i_line_with_gen.ikss_ka.at[1], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
+    # in case 'min' sgen does not contribute so this check does not apply:
+    # assert np.isclose(i_line_with_gen.ikss_ka.at[0], i_bus_only_sgen.ikss_ka.at[0], atol=1e-4)
+    assert np.isclose(0, i_bus_only_sgen.ikss_ka.at[0], atol=1e-6)
+    assert np.isclose(i_line_with_gen.ikss_ka.at[1], i_bus_with_sgen.ikss_ka.at[2], atol=1e-6)
 
 
 def test_min_1ph_branch_big_sgen():

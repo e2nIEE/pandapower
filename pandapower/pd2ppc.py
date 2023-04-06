@@ -5,9 +5,11 @@
 
 import numpy as np
 import pandapower.auxiliary as aux
-from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc, _build_tcsc_ppc
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, \
+    _build_branch_ppc, _build_tcsc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
-_calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, _build_svc_ppc
+    _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, \
+    _build_svc_ppc, _add_load_sc_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -124,8 +126,9 @@ def _pd2ppc(net, sequence=None):
         _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
+        if net._options.get("use_pre_fault_voltage", False):
+            _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
 
-        # TODO Roman: Implementation wind generation units IEC 60909-2016
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)

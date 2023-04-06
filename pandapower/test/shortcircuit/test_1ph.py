@@ -162,34 +162,34 @@ def test_iec60909_example_4_bus_selection():
                                             "ikss_ka"], 34.89135137)
 
 
-def test_iec60909_example_4_bus_selection_br_res():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_iec60909_example_4_bus_selection_br_res(inverse_y):
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
-    for inv_y in (False, True):
-        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
-                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
-                   branch_results=True)
-        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
-                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
-                   branch_results=True, return_all_currents=True)
-        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
-                                            "ikss_ka"], 35.53066312)
-        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
-                                            "ikss_ka"], 34.89135137)
+    sc.calc_sc(net, fault="1ph", inverse_y=inverse_y,
+               bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+               branch_results=True)
+    sc.calc_sc(net, fault="1ph", inverse_y=inverse_y,
+               bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+               branch_results=True, return_all_currents=True)
+    assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
+                                        "ikss_ka"], 35.53066312)
+    assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
+                                        "ikss_ka"], 34.89135137)
 
 
-def test_1ph_with_switches():
-    for inv_y in (False, True):
-        net = pp.create_empty_network(sn_mva=67)
-        vc = "Yy"
-        l1, l2, _ = add_network(net, vc)
-        sc.calc_sc(net, fault="1ph", case="max", inverse_y=inv_y)
-        pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
-                       std_type="unsymmetric_line_type", parallel=2.)
-        pp.add_zero_impedance_parameters(net)
-        pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
-        sc.calc_sc(net, fault="1ph", case="max")
-        check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_1ph_with_switches(inverse_y):
+    net = pp.create_empty_network(sn_mva=67)
+    vc = "Yy"
+    l1, l2, _ = add_network(net, vc)
+    sc.calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+    pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
+                   std_type="unsymmetric_line_type", parallel=2.)
+    pp.add_zero_impedance_parameters(net)
+    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
+    sc.calc_sc(net, fault="1ph", case="max")
+    check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
 
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
