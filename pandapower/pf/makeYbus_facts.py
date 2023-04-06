@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from pandapower.pf.create_jacobian_facts import calc_y_svc_pu
-
 
 def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
     Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
@@ -44,3 +42,17 @@ def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
     Yt = csr_matrix((np.hstack([Ytf, Ytt]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
     return Yf, Yt
 
+
+def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
+    x_control = np.deg2rad(x_control)
+    z_base_ohm = np.square(v_base_kv) / baseMVA
+    svc_x_l_pu = svc_x_l_pu / z_base_ohm
+    svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
+    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
+    y_svc /= z_base_ohm
+    return y_svc
+
+
+def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
+    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
+    return y_svc

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 
 import pandapower.networks
-from pandapower.pf.create_jacobian_facts import calc_y_svc_pu
+from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 
 
 def plot_z(baseZ, xl, xc):

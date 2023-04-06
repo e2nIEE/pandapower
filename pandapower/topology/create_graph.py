@@ -13,7 +13,7 @@ from pandapower.build_branch import _calc_impedance_parameters_from_dataframe, \
     _trafo_df_from_trafo3w
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
-from pandapower.pf.create_jacobian_facts import calc_y_svc_pu
+from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:

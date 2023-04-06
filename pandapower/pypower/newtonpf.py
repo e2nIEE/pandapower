@@ -17,7 +17,7 @@ from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
-from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc
+from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -35,7 +35,7 @@ from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SV
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, calc_y_svc_pu, create_J_modification_tcsc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, create_J_modification_tcsc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
