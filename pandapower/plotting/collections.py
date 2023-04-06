@@ -1181,7 +1181,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-        
+
     if switches is None:
         switches = net.switch.index[net.switch.et == "l"] # only line switches
 
