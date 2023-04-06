@@ -582,7 +582,8 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
 
 
 def _get_tcsc_results(net, ppc, suffix=None):
-    if len(net.tcsc) == 0:
+    tcsc = net.get("tcsc")  # todo: it used to be "if len(net.tcsc) == 0:"  <- change back when pandamodels bug is fixed
+    if tcsc is None or len(tcsc) == 0:
         return
 
     ac = net["_options"]["ac"]
