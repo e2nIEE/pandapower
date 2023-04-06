@@ -97,7 +97,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     :param ppci: generated ppci
     :return: ppc with added columns
     """
-    meas = net.measurement.copy(deep=False)
+    meas = net.measurement.copy(deep=True)
     if meas.empty:
         raise Exception("No measurements are available in pandapower Network! Abort estimation!")
 

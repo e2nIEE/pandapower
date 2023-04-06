@@ -18,8 +18,6 @@ from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.estimation.results import eppci2pp
 
 
-@pytest.mark.xfail(reason="""Fails with python 3.11 and pandas 2.0. Results seem to be shifted array([0.1000239 , 0.10002408, 0.10002403, 0.09872506, 0.09757201,
-       0.1003617 , 0.09858902, 0.0996429 , 0.09578735])""")
 def test_case9_compare_classical_wls_opt_wls():
     net = nw.case9()
     pp.runpp(net)
