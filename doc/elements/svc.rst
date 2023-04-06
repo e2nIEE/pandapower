@@ -34,6 +34,9 @@ of the valid range in the test cases). Even though we include the values of min_
 the create function, they are not considered during the power flow calculation. For future work, the functionality
 similar to "enforce_q_lims" should be implemented.
 
+We demonstrate the use-case of this device in the
+pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/FACTS.ipynb>`_.
+
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`

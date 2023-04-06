@@ -22,6 +22,9 @@ be advised to read the documentation for the SVC elements:
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
+We demonstrate the use-case of this device in the
+pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/FACTS.ipynb>`_.
+
 Create Function
 =====================
 
