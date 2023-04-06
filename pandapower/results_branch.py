@@ -482,12 +482,12 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
         pl_mw = phv_mw + pmv_mw + plv_mw
         ql_mvar = q_hv_mvar + q_mv_mvar + q_lv_mvar
     else:
-        zeros = np.zeros_like(phv_mw)
-        q_hv_mvar = zeros
-        q_mv_mvar = zeros
-        q_lv_mvar = zeros
-        pl_mw = zeros
-        ql_mvar = zeros
+        zeros_ = np.zeros_like(phv_mw)
+        q_hv_mvar = zeros_
+        q_mv_mvar = zeros_
+        q_lv_mvar = zeros_
+        pl_mw = zeros_
+        ql_mvar = zeros_
 
     i_h = i_ft[:, 0][f:hv]
     i_m = i_ft[:, 1][hv:mv]
@@ -557,13 +557,13 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
         ql_mvar = q_from_mvar + q_to_mvar
         pl_mw = pf_mw + pt_mw
     else:
-        zeros = np.zeros_like(p_from_mw)
+        zeros_ = np.zeros_like(p_from_mw)
         # this looks like a pyramid
-        q_from_mvar = zeros
-        q_to_mvar = zeros
-        ql_mvar = zeros
-        pl_mw = zeros
-        # zeros
+        q_from_mvar = zeros_
+        q_to_mvar = zeros_
+        ql_mvar = zeros_
+        pl_mw = zeros_
+        # zeros_
 
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
@@ -609,17 +609,17 @@ def _get_tcsc_results(net, ppc, suffix=None):
     else:
         raise NotImplementedError("TCSC not implemented for algorithm != 'ac' - writing zeros to tcsc results. "
                                   "Results for other elements are as if TCSC elements were open switches.")
-        zeros = np.zeros(t)
+        zeros_ = np.zeros(t)
         # this looks like a pyramid
-        p_from_mw = zeros
-        p_to_mw = zeros
-        q_from_mvar = zeros
-        q_to_mvar = zeros
-        ql_mvar = zeros
-        pl_mw = zeros
-        i_from_ka = zeros
-        i_to_ka = zeros
-        # zeros
+        p_from_mw = zeros_
+        p_to_mw = zeros_
+        q_from_mvar = zeros_
+        q_to_mvar = zeros_
+        ql_mvar = zeros_
+        pl_mw = zeros_
+        i_from_ka = zeros_
+        i_to_ka = zeros_
+        # zeros_
 
     # write to impedance
     # todo for suffix not None

@@ -4,7 +4,20 @@
 Thyristor-Controlled Series Capacitor (TCSC)
 =============
 
-We implement the FACTS devices based on the PhD Thesis of Ara Panosyan, PhD.
+We implement the FACTS devices based on the following source:
+
+    A. Panosyan, "Modeling of advanced power transmission system controllers",
+    Ph.D. dissertation, Gottfried Wilhelm Leibniz Universität Hannover, 2010.
+
+Thyristor-Controlled Series Capacitor (TCSC) device is a series element that controles the power flowing through its
+path by regulating its impedance.
+The TCSC device is very similar to the Static Var Compensator (SVC) - in fact, it is its series counterpart.
+Indeed, a TCSC device consists of a parallel circuit of a fixed capacitor and a reactor controlled by a pair of
+antiparallel thyristors. In contrast to SVC, a TCSC device is connected in series in the power system. For more context,
+be advised to read the documentation for the SVC elements:
+
+.. seealso::
+    :ref:`Static Var Compensator (SVC) <svc>`
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`

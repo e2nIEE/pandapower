@@ -4,7 +4,36 @@
 Static Var Compensator (SVC)
 =============
 
-We implement the FACTS devices based on the PhD Thesis of Ara Panosyan, PhD.
+We implement the FACTS devices based on the following source:
+
+    A. Panosyan, "Modeling of advanced power transmission system controllers",
+    Ph.D. dissertation, Gottfried Wilhelm Leibniz Universität Hannover, 2010.
+
+The element SVC is a shunt-connected thyristor-based power electronic device. It regulates the voltage magnitude at the
+connected bus by adjusting the shunt impedance value. The shunt impedance only has the reactance component
+(no resistive part). The impedance can be capacitive or inductive, because the device consists of a fixed capacitor in
+a parallel circuit to the reactor that is regulated by a pair of antiparallel thyristors.
+The thyristor firing angle regulates the total impedance of the element.
+
+The active range of the device is presented in the figure below:
+
+.. image:: svc_range.png
+	:width: 12em
+	:alt: alternate Text
+	:align: center
+
+It can be seen that the device has a resonance region
+between the inductive (positive) and the capacitive (negative) impedance characteristics.
+In real application, the operation of the device in the resonance region is prohibited by defining the inadmissible
+range for the thyristor firing angle around the resonance point. We did not implement this in our software - this
+should be considered for future work.
+
+The device operates in the value range of the thyristor firing angle between 90° and 180°. Any results for the
+thyristor firing angle outside of this range are invalid (we have not observed a converged result with values outside
+of the valid range in the test cases). Even though we include the values of min_angle_degree and max_angle_degree in
+the create function, they are not considered during the power flow calculation. For future work, the functionality
+similar to "enforce_q_lims" should be implemented.
+
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
