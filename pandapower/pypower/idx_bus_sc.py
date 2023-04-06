@@ -30,4 +30,8 @@ GS_P        = start + 19
 BS_P        = start + 20
 SKSS        = start + 21
 
-bus_cols_sc = 22
+PHI_IKSS1_DEGREE = start + 22
+PHI_IKSS2_DEGREE = start + 23
+PHI_IKCV_DEGREE  = start + 24
+
+bus_cols_sc = 25
