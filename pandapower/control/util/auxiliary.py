@@ -49,8 +49,8 @@ def get_controller_index_by_type(net, ctrl_type, idx=[]):
     Returns controller indices of a given type as list.
     """
     idx = idx if len(idx) else net.controller.index
-    return [i for i in idx if isinstance(net.controller.object.at[i], ctrl_type)]
-
+    is_of_type = net.controller.object.apply(lambda x: isinstance(x, ctrl_type))
+    return list(net.controller.index.values[net.controller.index.isin(idx) & is_of_type])
 
 def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False):
     """
@@ -131,8 +131,8 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         for df_key in df_keys:
             idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
         # query of parameters in controller object attributes
-        idx = [i for i in idx if _controller_attributes_query(
-            net.controller.object.loc[i], attributes_dict)]
+        matches = net.controller.object.apply(lambda ctrl: _controller_attributes_query(ctrl, attributes_dict))
+        idx = list(net.controller.index.values[net.controller.index.isin(idx) & matches])
     return idx
 
 
