@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[2.12.0] - 2023-04-06
 -------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
