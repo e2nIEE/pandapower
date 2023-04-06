@@ -10,7 +10,7 @@ import pytest
 import pandapower as pp
 from pandapower.convert_format import convert_format
 from pandapower.networks import simple_four_bus_system
-from pandapower.test.toolbox import add_grid_connection
+from pandapower.test.helper_functions import add_grid_connection
 
 try:
     import pandaplan.core.pplog as logging

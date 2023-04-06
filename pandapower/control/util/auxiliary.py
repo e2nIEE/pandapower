@@ -7,8 +7,7 @@ import sys
 import numpy as np
 from pandas import Index, Series
 
-from pandapower.auxiliary import soft_dependency_error
-from pandapower.toolbox import ensure_iterability
+from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 from .characteristic import SplineCharacteristic
 
 try:

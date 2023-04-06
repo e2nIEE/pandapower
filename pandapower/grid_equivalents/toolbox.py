@@ -4,6 +4,7 @@ import operator
 import numpy as np
 import pandas as pd
 import pandapower as pp
+import pandapower.toolbox
 import pandapower.topology as top
 from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
 
@@ -166,10 +167,10 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 
     if "all" in set(net.bus.zone.values):
         raise ValueError("'all' is not a proper zone name.")  # all is used later for other purpose
-    branch_elms = pp.pp_elements(bus=False, bus_elements=False, branch_elements=True,
-                                 other_elements=False, res_elements=False)
-    branch_tuples = pp.element_bus_tuples(bus_elements=False, branch_elements=True,
-                                          res_elements=False) | {("switch", "element")}
+    branch_elms = pandapower.toolbox.pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                                                                   other_elements=False, res_elements=False)
+    branch_tuples = pandapower.toolbox.element_bus_tuples(bus_elements=False, branch_elements=True,
+                                                                            res_elements=False) + [("switch", "element")]
     branch_dict = {branch_elm: [] for branch_elm in branch_elms}
     for elm, bus in branch_tuples:
         branch_dict[elm] += [bus]

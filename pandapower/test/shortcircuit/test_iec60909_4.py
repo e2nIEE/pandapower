@@ -466,11 +466,11 @@ def test_detect_power_station_units():
     net.gen.power_station_trafo[:] = None
 
     detect_power_station_unit(net)
-    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+    assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
     net.gen.power_station_trafo[:] = None
 
     detect_power_station_unit(net, mode="trafo")
-    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+    assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
 
 
 def test_sc_on_line():
@@ -485,4 +485,4 @@ def test_vde_232():
     
 
 if __name__ == '__main__':
-    pytest.main(["test_iec60909_4.py"])
+    pytest.main([__file__, "-xs"])

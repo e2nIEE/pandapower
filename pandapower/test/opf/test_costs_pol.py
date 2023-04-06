@@ -127,4 +127,4 @@ def test_cost_pol_q():
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.setLevel("DEBUG")
-    pytest.main(["test_costs_pol.py", "-xs"])
+    pytest.main([__file__, "-xs"])

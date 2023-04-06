@@ -1583,4 +1583,4 @@ def test_create_gens_raise_except():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_create.py"])
+    pytest.main([__file__, "-xs"])
