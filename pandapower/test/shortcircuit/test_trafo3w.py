@@ -43,4 +43,4 @@ def test_trafo3w_min(trafo3w_net):
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.10674893166, 0.57473904595, 1.6208335668])
 
 if __name__ == '__main__':
-    pytest.main(['test_trafo3w.py'])
+    pytest.main([__file__, "-xs"])

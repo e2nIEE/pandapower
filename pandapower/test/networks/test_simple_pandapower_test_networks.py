@@ -56,4 +56,4 @@ def test_simple_mv_open_ring_net():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_simple_pandapower_test_networks.py"])
+    pytest.main([__file__, "-xs"])
