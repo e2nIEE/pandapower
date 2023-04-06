@@ -23,11 +23,14 @@ Change Log
 - [CHANGED] split toolbox.py -> better overview, avoiding circular imports
 - [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
 - [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
+- [ADDED] import of internal packages such as control or converter
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 - [ADDED] calculate branch results for current magnitude and angle, voltage magnitude and angle, active and reactive power for short circuit calculation
 - [ADDED] implement the superposition method ("Type C") for the short circuit calculation - consider pre-fault voltages
+- [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
+- [FIXED] Shunt admittance modelling for 3 phase calculations
 
 [2.11.1] - 2023-01-02
 -------------------------------

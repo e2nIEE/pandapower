@@ -60,5 +60,4 @@ def test_check_it(net):
     
 
 if __name__ == "__main__":
-    pytest.main(["test_runpp_3ph_n_line.py"])
-    
+    pytest.main([__file__, "-xs"])

@@ -8,7 +8,7 @@ import os
 import pytest
 
 import pandapower.plotting
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.helper_functions import create_test_network
 
 
 def test_html(tmp_path):
@@ -18,4 +18,4 @@ def test_html(tmp_path):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_html.py"])
+    pytest.main([__file__, "-xs"])

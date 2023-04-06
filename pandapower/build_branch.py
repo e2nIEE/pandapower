@@ -138,8 +138,8 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     line = net[elm]
-    from_bus = bus_lookup[line["from_bus"].values]
-    to_bus = bus_lookup[line["to_bus"].values]
+    from_bus = bus_lookup[line["from_bus"].values.astype(np.int64)]
+    to_bus = bus_lookup[line["to_bus"].values.astype(np.int64)]
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]

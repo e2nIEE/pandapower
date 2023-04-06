@@ -47,4 +47,4 @@ def test_mv_oberrhein():
                     assert len(net.bus) == len(net0.bus) + len(net1.bus)
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_mv_oberrhein.py"])
+    pytest.main([__file__, "-xs"])

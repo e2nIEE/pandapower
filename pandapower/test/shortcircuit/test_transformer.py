@@ -23,7 +23,8 @@ def net_transformer():
                                           vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2,
                                           tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
-    pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)  # adding a shunt shouldn't change the result
+    # adding a shunt shouldn't change the result:
+    pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)
     return net
 
 
@@ -105,4 +106,4 @@ def test_min_10_trafo_2ph(net_transformer):
 #    assert (abs(net.res_bus_sc.ith_ka.at[2] - 11.182525915) <1e-5)
 
 if __name__ == '__main__':
-    pytest.main(["test_transformer.py"])
+    pytest.main([__file__, "-xs"])

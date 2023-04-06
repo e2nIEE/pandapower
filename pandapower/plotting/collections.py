@@ -9,6 +9,7 @@ from itertools import combinations
 
 import numpy as np
 from pandas import isnull
+
 try:
     import matplotlib.pyplot as plt
     from matplotlib.collections import LineCollection, PatchCollection, Collection
@@ -16,11 +17,17 @@ try:
     from matplotlib.patches import Circle, Rectangle, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
+
+
+    class TextPath:  # so that the test does not fail
+        pass
+
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches,\
+from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
@@ -283,7 +290,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
         kwargs.pop(kw)
     patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths,
                                  **kwargs)
-    line_coll = LineCollection(lines, color=line_color, picker=picker, linewidth=linewidths,
+    color = line_color if "color" not in kwargs else kwargs.pop("color", linewidths)
+    line_coll = LineCollection(lines, color=color, picker=picker, linewidth=linewidths,
                                **kwargs)
     patch_coll.info = infos_pc
     line_coll.info = infos_lc
@@ -1145,7 +1153,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, switch_index=None, **kwargs):
+def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 
@@ -1170,19 +1178,17 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
     OUTPUT:
         **switches** - patch collection
     """
-    
-    if switch_index is None:
-        lbs_switches = net.switch.index[net.switch.et == "l"]
-    else:
-        lbs_switches = switch_index
 
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
+    if switches is None:
+        switches = net.switch.index[net.switch.et == "l"] # only line switches
+
     color = kwargs.pop("color", "k")
 
     switch_patches = []
-    for switch in lbs_switches:
+    for switch in switches:
         sb = net.switch.bus.loc[switch]
         line = net.line.loc[net.switch.element.loc[switch]]
         fb = line.from_bus
@@ -1313,7 +1319,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
 
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
-                     axes_visible=(False, False), copy_collections=True, draw=True):
+                     axes_visible=(False, False), copy_collections=True, draw=True, aspect=('equal', 'datalim'),
+                     autoscale=(True, True, True)):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -1356,8 +1363,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         # removes bounding box of the plot also
         ax.axis("off")
     if set_aspect:
-        ax.set_aspect('equal', 'datalim')
-    ax.autoscale_view(True, True, True)
+        ax.set_aspect(aspect[0], aspect[1])
+    ax.autoscale_view(autoscale[0], autoscale[1], autoscale[2])
     ax.margins(.02)
     if draw:
         plt.draw()

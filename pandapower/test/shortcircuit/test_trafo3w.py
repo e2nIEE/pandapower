@@ -54,4 +54,4 @@ def test_trafo3w_min(trafo3w_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['test_trafo3w.py'])
+    pytest.main([__file__, "-xs"])

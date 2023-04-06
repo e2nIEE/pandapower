@@ -565,7 +565,7 @@ def _write_to_object_attribute(net, element, index, variable, values):
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
+        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
         # set buses in ppc out of service
         ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 

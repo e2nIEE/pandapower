@@ -659,7 +659,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
-        net.bus_geodata = pd.concat([net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat(
+            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
         net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
@@ -982,7 +983,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative for
     overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox_general_issues import pq_from_cosphi
+    from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
@@ -1334,7 +1335,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     underexcited behavior (Q absorption, decreases voltage) and
     positive for for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox_general_issues import pq_from_cosphi
+    from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
@@ -4335,7 +4336,7 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
                        [ name ,  element_types,  elements,  reference_columns]))
