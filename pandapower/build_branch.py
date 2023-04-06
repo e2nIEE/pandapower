@@ -596,10 +596,14 @@ def _calc_impedance_parameter(net, ppc):
 
 
 def _calc_tcsc_parameter(net, ppc):
-    baseMVA = ppc["baseMVA"]
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f = 0
     t = len(net.tcsc)
+
+    if t == 0:
+        return
+
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     f_bus = bus_lookup[net.tcsc["from_bus"].values]
     t_bus = bus_lookup[net.tcsc["to_bus"].values]

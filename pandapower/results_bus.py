@@ -474,7 +474,8 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
 
-    svc = net["svc"]
+    # svc = net["svc"]  # todo: uncomment this after PandaModels net also has this key
+    svc = net.get("svc", np.array([]))
     if len(svc):
         svcidx = bus_lookup[svc["bus"].values]
         svc_is = _is_elements["svc"]
