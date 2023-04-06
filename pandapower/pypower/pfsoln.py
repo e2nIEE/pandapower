@@ -12,7 +12,7 @@
 """
 
 from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find, \
-    setdiff1d, intersect1d, r_, isin, arange
+    setdiff1d, intersect1d, r_, isin, arange, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
@@ -22,7 +22,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, 
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)

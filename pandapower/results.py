@@ -141,7 +141,7 @@ def get_relevant_elements(mode="pf"):
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch"]
+                "switch", "tcsc", "svc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
@@ -181,11 +181,15 @@ def _ppci_bus_to_ppc(result, ppc):
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus
 
+    ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
+
 
 def _ppci_branch_to_ppc(result, ppc):
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
+
+    ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
 
 
 def _ppci_gen_to_ppc(result, ppc):

@@ -6,12 +6,19 @@
 
 import numpy as np
 from numpy import complex128
-import pandas as pd
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
+from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
+
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _set_buses_out_of_service(ppc):
@@ -414,6 +421,8 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     b, p, q = np.array([]), np.array([]), np.array([])
     _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    baseMVA = ppc["baseMVA"]
+    baseZ = np.square(ppc["bus"][:, BASE_KV]) / baseMVA
 
     s = net["shunt"]
     if len(s) > 0:
@@ -464,6 +473,22 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_xward
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
+
+    # svc = net["svc"]  # todo: uncomment this after PandaModels net also has this key
+    svc = net.get("svc", np.array([]))
+    if len(svc):
+        svcidx = bus_lookup[svc["bus"].values]
+        svc_is = _is_elements["svc"]
+        net["res_svc"].loc[svc_is, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["svc"][svc_is, SVC_THYRISTOR_FIRING_ANGLE])
+        p = np.hstack([p, np.zeros_like(svc["bus"].values)])
+        if ac:
+            net["res_svc"].loc[svc_is, "vm_pu"] = ppc["bus"][svcidx[svc_is], VM]
+            net["res_svc"].loc[svc_is, "va_degree"] = ppc["bus"][svcidx[svc_is], VA]
+            q_svc = ppc["svc"][:, SVC_Q]
+            net["res_svc"].loc[:, "q_mvar"] = q_svc  # write all because of zeros
+            net["res_svc"].loc[svc_is, "x_ohm"] = ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
+            q = np.hstack([q, q_svc])
+        b = np.hstack([b, svc["bus"].values])
 
     if not ac:
         q = np.zeros(len(p))
