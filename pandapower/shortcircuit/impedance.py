@@ -29,6 +29,7 @@ def _calc_rx(net, ppci, bus_idx):
         fault_impedance = (r_fault + x_fault * 1j) / base_r
     else:
         fault_impedance = 0 + 0j
+    net._options["fault_impedance"] = fault_impedance
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
