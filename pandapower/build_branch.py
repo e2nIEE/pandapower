@@ -20,6 +20,8 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
+from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
+    TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
 def _build_branch_ppc(net, ppc):
@@ -68,6 +70,16 @@ def _build_branch_ppc(net, ppc):
         _calc_xward_parameter(net, ppc)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
+
+
+def _build_tcsc_ppc(net, ppc, mode):
+    length = len(net.tcsc)
+    ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
+    if mode != "pf":
+        return
+
+    if length > 0:
+        _calc_tcsc_parameter(net, ppc)
 
 
 def _initialize_branch_lookup(net):
@@ -581,6 +593,37 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
+
+
+def _calc_tcsc_parameter(net, ppc):
+    f = 0
+    t = len(net.tcsc)
+
+    if t == 0:
+        return
+
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    f_bus = bus_lookup[net.tcsc["from_bus"].values]
+    t_bus = bus_lookup[net.tcsc["to_bus"].values]
+
+    tcsc = ppc["tcsc"]
+    baseV = ppc["bus"][f_bus, BASE_KV]
+    baseZ = baseV ** 2 / baseMVA
+
+    tcsc[f:t, TCSC_F_BUS] = f_bus
+    tcsc[f:t, TCSC_T_BUS] = t_bus
+
+    tcsc[f:t, TCSC_X_L] = net["tcsc"]["x_l_ohm"].values / baseZ
+    tcsc[f:t, TCSC_X_CVAR] = net["tcsc"]["x_cvar_ohm"].values / baseZ
+    tcsc[f:t, TCSC_SET_P] = net["tcsc"]["set_p_to_mw"].values / baseMVA
+    tcsc[f:t, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["thyristor_firing_angle_degree"].values)
+    tcsc[f:t, TCSC_MIN_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["min_angle_degree"].values)
+    tcsc[f:t, TCSC_MAX_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["max_angle_degree"].values)
+
+    tcsc[f:t, TCSC_STATUS] = net["tcsc"]["in_service"].values
+    tcsc[f:t, TCSC_CONTROLLABLE] = net["tcsc"]["controllable"].values.astype(bool) & net["tcsc"]["in_service"].values.astype(bool)
 
 
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):

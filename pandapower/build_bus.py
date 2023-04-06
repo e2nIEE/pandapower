@@ -14,6 +14,8 @@ from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
+    SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 
 try:
     from numba import jit
@@ -514,6 +516,39 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
+
+
+def _build_svc_ppc(net, ppc, mode):
+    length = len(net.svc)
+    ppc["svc"] = np.zeros(shape=(length, svc_cols), dtype=np.float64)
+
+    if mode != "pf":
+        return
+
+    if length > 0:
+        baseMVA = ppc["baseMVA"]
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        f = 0
+        t = length
+
+        bus = bus_lookup[net.svc["bus"].values]
+
+        svc = ppc["svc"]
+        baseV = ppc["bus"][bus, BASE_KV]
+        baseZ = baseV ** 2 / baseMVA
+
+        svc[f:t, SVC_BUS] = bus
+
+        svc[f:t, SVC_X_L] = net["svc"]["x_l_ohm"].values / baseZ
+        svc[f:t, SVC_X_CVAR] = net["svc"]["x_cvar_ohm"].values / baseZ
+        svc[f:t, SVC_SET_VM_PU] = net["svc"]["set_vm_pu"].values
+        svc[f:t, SVC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["svc"]["thyristor_firing_angle_degree"].values)
+        svc[f:t, SVC_MIN_FIRING_ANGLE] = np.deg2rad(net["svc"]["min_angle_degree"].values)
+        svc[f:t, SVC_MAX_FIRING_ANGLE] = np.deg2rad(net["svc"]["max_angle_degree"].values)
+
+        svc[f:t, SVC_STATUS] = net["svc"]["in_service"].values
+        svc[f:t, SVC_CONTROLLABLE] = net["svc"]["controllable"].values.astype(bool) & net["svc"][
+            "in_service"].values.astype(bool)
 
 
 # Short circuit relevant routines

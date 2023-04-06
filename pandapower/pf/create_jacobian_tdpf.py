@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
 import numpy as np
 from scipy.sparse import csr_matrix as sparse, eye, vstack, hstack
-from pandapower.pypower.idx_bus import BUS_I, BASE_KV
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, BR_STATUS
-from pandapower.pypower.idx_brch_tdpf import TDPF
+from pandapower.pypower.idx_bus import BASE_KV
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 
 SIGMA = 5.670374419e-8
 # ALPHA = 4.03e-3
