@@ -28,6 +28,7 @@ Change Log
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
 - [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
+- [FIXED] Shunt admittance modelling for 3 phase calculations
 
 [2.11.1] - 2023-01-02
 -------------------------------
