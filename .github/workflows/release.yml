@@ -88,10 +88,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest python-igraph pytest-split numba seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
-          if ( '${{ matrix.python-version }}'  == '3.8' ) {python -m pip install pypower}
-          if ( ( '${{ matrix.python-version }}'  != '3.8' ) && ( '${{ matrix.python-version }}' != '3.11' ) ) {python -m pip install numba}
-          if ( '${{ matrix.python-version }}'  == '3.8' ) {python -m pip install lightsim2grid}
-          if ( '${{ matrix.python-version }}'  == '3.10' ) {python -m pip install lightsim2grid}
+          if ( '${{ matrix.python-version }}'  -eq '3.8' ) {python -m pip install pypower}
+          if ( ( '${{ matrix.python-version }}'  -ne '3.8' ) && ( '${{ matrix.python-version }}' -ne '3.11' ) ) {python -m pip install numba}
+          if ( '${{ matrix.python-version }}'  -eq '3.8' ) {python -m pip install lightsim2grid}
+          if ( '${{ matrix.python-version }}'  -eq '3.10' ) {python -m pip install lightsim2grid}
       - name: Install Julia
         if: ( ${{ matrix.python-version }}  == '3.8' )
         run: |
