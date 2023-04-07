@@ -87,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest python-igraph pytest-split numba seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
+          python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
           if ( '${{ matrix.python-version }}'  -eq '3.8' ) {python -m pip install pypower}
           if ( '${{ matrix.python-version }}'  -ne '3.8' -and '${{ matrix.python-version }}' -ne '3.11' ) 
           {
