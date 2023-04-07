@@ -86,12 +86,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          echo "starting run"
           python -m pip install --upgrade pip
+          echo "done 1"
           python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
+          echo "done 2"
           if ( '${{ matrix.python-version }}'  -eq '3.8' )
           {
             python -m pip install pypower
           }
+          echo "done 3"
           if ( '${{ matrix.python-version }}'  -ne '3.8' -and '${{ matrix.python-version }}' -ne '3.11' ) 
           {
             echo '${{ matrix.python-version }}'
@@ -99,14 +103,17 @@ jobs:
             echo '${{ matrix.python-version }}'  -ne '3.8' -and '${{ matrix.python-version }}' -ne '3.11' 
             python -m pip install numba
           }
+          echo "done 4"
           if ( '${{ matrix.python-version }}'  -eq '3.8' )
           {
             python -m pip install lightsim2grid
           }
+          echo "done 5"
           if ( '${{ matrix.python-version }}'  -eq '3.10' )
           {
             python -m pip install lightsim2grid
           }
+          echo "done 6"
       - name: Install Julia
         if: ( ${{ matrix.python-version }}  == '3.8' )
         run: |
