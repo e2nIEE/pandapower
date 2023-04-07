@@ -91,10 +91,7 @@ jobs:
           echo "done 1"
           python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
           echo "done 2"
-          if ( '${{ matrix.python-version }}'  -eq '3.8' )
-          {
-            python -m pip install pypower
-          }
+          if ( '${{ matrix.python-version }}'  -eq '3.8' ) { python -m pip install pypower } fi
           echo "done 3"
           if ( '${{ matrix.python-version }}'  -ne '3.8' -and '${{ matrix.python-version }}' -ne '3.11' ) 
           {
