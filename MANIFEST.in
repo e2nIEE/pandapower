@@ -1,4 +1,4 @@
-include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst .travis.yml .github/**/*.yml install_julia.sh
+include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst .travis.yml .github/**/*.yml .install_julia.sh
 include pandapower/converter/powerfactory/power_factory_files/*
 include pandapower/test/api/input_files/*
 
