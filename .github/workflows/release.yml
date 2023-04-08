@@ -43,7 +43,7 @@ jobs:
 
       # Upload to TestPyPI
       - name: Build and Upload to TestPyPI
-        if: ${{ inputs.upload_server == 'testpypi'}}
+        if: inputs.upload_server == 'testpypi'
         run: |
           python3 setup.py sdist --formats=zip
           twine check dist/* --strict 
@@ -55,7 +55,7 @@ jobs:
 
       # Upload to PyPI
       - name: Build and Upload to PyPI
-        if: ${{ inputs.upload_server == 'pypi' }}
+        if: inputs.upload_server == 'pypi'
         run: |
           python3 setup.py sdist --formats=zip
           twine check dist/* --strict 
