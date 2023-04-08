@@ -91,6 +91,14 @@ jobs:
           echo "done 1"
           python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
           echo "done 2"
+      - name: Install pandapower from TestPyPI
+        if: ${{ inputs.upload_server }} == 'testpypi'
+        run: |
+          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower
+      - name: Install pandapower from PyPI
+        if: ${{ inputs.upload_server }} == 'pypi'
+        run: |
+          pip install pandapower
       - name: Install specific dependencies (Windows)
         if: matrix.os  == 'windows-latest'
         run: |
@@ -106,31 +114,20 @@ jobs:
             python -m pip install numba
           }
           echo "done 4"
-          if ( '${{ matrix.python-version }}'  -eq '3.8' ) { python -m pip install lightsim2grid }
+          if ( '${{ matrix.python-version }}'  -eq '3.8' -or '${{ matrix.python-version }}'  -eq '3.10' ) { python -m pip install lightsim2grid }
           echo "done 5"
-          if ( '${{ matrix.python-version }}'  -eq '3.10' ) { python -m pip install lightsim2grid }
-          echo "done 6"
       - name: Install specific dependencies (Ubuntu)
         if: matrix.os  == 'ubuntu-latest'
         run: |
           if ${{ matrix.python-version == '3.8' }}; then python -m pip install pypower; fi
           if ${{ matrix.python-version != '3.8' && matrix.python-version != '3.11' }}; then python -m pip install numba; fi
-          if ${{ matrix.python-version == '3.8' }}; then python -m pip install lightsim2grid; fi
-          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
       - name: Install Julia
         if: ${{ matrix.python-version }}  == '3.8'
         run: |
           ./.install_julia.sh 1.5
           pip install julia
           python ./.install_pycall.py
-      - name: Install pandapower from TestPyPI
-        if: ${{ inputs.upload_server }} == 'testpypi'
-        run: |
-          pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower
-      - name: Install pandapower from PyPI
-        if: ${{ inputs.upload_server }} == 'pypi'
-        run: |
-          pip install pandapower
       - name: List all installed packages
         run: |
           pip list
