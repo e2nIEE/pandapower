@@ -92,7 +92,7 @@ jobs:
           python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
           echo "done 2"
       - name: Install specific dependencies (Windows)
-        if: ${{ matrix.os }}  == 'windows-latest'
+        if: matrix.os  == 'windows-latest'
         run: |
           echo ${{ matrix.os }} 
           echo ${{ matrix.os }}  == 'windows-latest'
@@ -111,7 +111,7 @@ jobs:
           if ( '${{ matrix.python-version }}'  -eq '3.10' ) { python -m pip install lightsim2grid }
           echo "done 6"
       - name: Install specific dependencies (Ubuntu)
-        if: ${{ matrix.os }}  == 'ubuntu-latest'
+        if: matrix.os  == 'ubuntu-latest'
         run: |
           if ${{ matrix.python-version == '3.8' }}; then python -m pip install pypower; fi
           if ${{ matrix.python-version != '3.8' && matrix.python-version != '3.11' }}; then python -m pip install numba; fi
