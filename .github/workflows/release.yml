@@ -94,6 +94,8 @@ jobs:
       - name: Install specific dependencies (Windows)
         if: ${{ matrix.os }}  == 'windows-latest'
         run: |
+          echo ${{ matrix.os }} 
+          echo ${{ matrix.os }}  == 'windows-latest'
           if ( '${{ matrix.python-version }}'  -eq '3.8' ) { python -m pip install pypower }
           echo "done 3"
           if ( '${{ matrix.python-version }}'  -ne '3.8' -and '${{ matrix.python-version }}' -ne '3.11' ) 
@@ -122,11 +124,11 @@ jobs:
           pip install julia
           python ./.install_pycall.py
       - name: Install pandapower from TestPyPI
-        if: ${{ inputs.upload_server == 'testpypi'}}
+        if: ${{ inputs.upload_server }} == 'testpypi'
         run: |
           pip install --no-cache-dir -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple pandapower
       - name: Install pandapower from PyPI
-        if: ${{ (inputs.upload_server == 'pypi')}}
+        if: ${{ inputs.upload_server }} == 'pypi'
         run: |
           pip install pandapower
       - name: List all installed packages
