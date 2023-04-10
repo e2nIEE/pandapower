@@ -11,7 +11,7 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower.build_bus import _build_bus_ppc
+from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
@@ -22,7 +22,7 @@ from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, \
     _calc_nominal_ratio_from_dataframe, \
     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter, \
-    _calc_impedance_parameters_from_dataframe
+    _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
@@ -41,6 +41,8 @@ def _pd2ppc_zero(net, k_st, sequence=0):
 
     _build_bus_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
+    _build_svc_ppc(net, ppc, "sc")   # needed for shape reasons
+    _build_tcsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)

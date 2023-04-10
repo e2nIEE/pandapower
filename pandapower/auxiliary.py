@@ -39,6 +39,7 @@ from packaging import version
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
@@ -631,13 +632,17 @@ def _check_connectivity(ppc):
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
+    notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
+    bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(int)
+    bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(int)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, slacks])
-    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, np.ones(len(slacks)) * nobus])
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + len(slacks)),
                                        (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
@@ -719,7 +724,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
     elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
+                "ward", "xward", "shunt", "ext_grid", "storage", "svc"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
@@ -837,7 +842,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
                     x_fault_ohm, kappa, ip, ith, branch_results,
                     kappa_method, return_all_currents,
-                    inverse_y):
+                    inverse_y, use_pre_fault_voltage):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -855,7 +860,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "branch_results": branch_results,
         "kappa_method": kappa_method,
         "return_all_currents": return_all_currents,
-        "inverse_y": inverse_y
+        "inverse_y": inverse_y,
+        "use_pre_fault_voltage": use_pre_fault_voltage
     }
     _add_options(net, options)
 
@@ -975,6 +981,24 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
+
+    if len(net.shunt) and "controllable" in net.shunt and np.any(net.shunt.controllable):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunts are present, "
+                                  "SVC controllable shunts not implemented yet.")
+
+    if len(net.tcsc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and TCSC controllable impedances are present, "
+                                  "TCSC controllable impedances not implemented.")
+
+    if len(net.svc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunt elements are present, "
+                                  "SVC controllable shunt elements not implemented.")
 
     return True
 
@@ -1287,16 +1311,19 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
+    with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
+                 len(net.tcsc.query("in_service & controllable")) > 0
     if max_iteration == "auto":
-        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
+        # tdpf is an option rather than algorithm; svc need more iterations to converge
+        max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "
                          "'init_va_degree'.")
 
     init_from_results = init == "results" or \
-        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
-        (isinstance(init_va_degree, str) and init_va_degree == "results")
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -1322,7 +1349,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
-                               false_slack_weight_elms) + "'.")
+                false_slack_weight_elms) + "'.")
         if algorithm != 'nr':
             raise NotImplementedError(
                 'Distributed slack is only implemented for Newton Raphson algorithm.')

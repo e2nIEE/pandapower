@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[2.12.0] - 2023-04-06
 -------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
@@ -26,9 +26,12 @@ Change Log
 - [ADDED] import of internal packages such as control or converter
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+- [ADDED] calculate branch results for current magnitude and angle, voltage magnitude and angle, active and reactive power for short circuit calculation
+- [ADDED] implement the superposition method ("Type C") for the short circuit calculation - consider pre-fault voltages
 - [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
 - [FIXED] Shunt admittance modelling for 3 phase calculations
+- [ADDED] FACTS devices Shunt Var Compensator (SVC) and Thyristor-Controlled Series Capacitor (TCSC) as new pandapower elements net.svc and net.tcsc
 
 [2.11.1] - 2023-01-02
 -------------------------------

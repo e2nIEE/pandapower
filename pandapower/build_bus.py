@@ -14,6 +14,8 @@ from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
+    SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 
 try:
     from numba import jit
@@ -516,6 +518,39 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, BS] = -vq
 
 
+def _build_svc_ppc(net, ppc, mode):
+    length = len(net.svc)
+    ppc["svc"] = np.zeros(shape=(length, svc_cols), dtype=np.float64)
+
+    if mode != "pf":
+        return
+
+    if length > 0:
+        baseMVA = ppc["baseMVA"]
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        f = 0
+        t = length
+
+        bus = bus_lookup[net.svc["bus"].values]
+
+        svc = ppc["svc"]
+        baseV = ppc["bus"][bus, BASE_KV]
+        baseZ = baseV ** 2 / baseMVA
+
+        svc[f:t, SVC_BUS] = bus
+
+        svc[f:t, SVC_X_L] = net["svc"]["x_l_ohm"].values / baseZ
+        svc[f:t, SVC_X_CVAR] = net["svc"]["x_cvar_ohm"].values / baseZ
+        svc[f:t, SVC_SET_VM_PU] = net["svc"]["set_vm_pu"].values
+        svc[f:t, SVC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["svc"]["thyristor_firing_angle_degree"].values)
+        svc[f:t, SVC_MIN_FIRING_ANGLE] = np.deg2rad(net["svc"]["min_angle_degree"].values)
+        svc[f:t, SVC_MAX_FIRING_ANGLE] = np.deg2rad(net["svc"]["max_angle_degree"].values)
+
+        svc[f:t, SVC_STATUS] = net["svc"]["in_service"].values
+        svc[f:t, SVC_CONTROLLABLE] = net["svc"]["controllable"].values.astype(bool) & net["svc"][
+            "in_service"].values.astype(bool)
+
+
 # Short circuit relevant routines
 def _add_ext_grid_sc_impedance(net, ppc):
     mode = net._options["mode"]
@@ -594,6 +629,39 @@ def _add_motor_impedances_ppc(net, ppc):
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor_pu.real, y_motor_pu.imag)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
+
+
+def _add_load_sc_impedances_ppc(net, ppc):
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    for element_type, sign in (("sgen", -1), ("load", 1)):
+
+        element = net[element_type][net._is_elements[element_type]]
+
+        if element.empty:
+            continue
+
+        element_buses_ppc = bus_lookup[element.bus.values]
+
+        vm_pu = ppc["bus"][element_buses_ppc, VM]
+        va_degree = ppc["bus"][element_buses_ppc, VA]
+        v = vm_pu * np.exp(1j * np.deg2rad(va_degree))  # this is correct!
+        # print(np.abs(v), np.angle(v, deg=True))
+
+        s_element_mva = sign * (element.p_mw.values + 1j * element.q_mvar.values) * element.scaling.values
+        s_element_pu = s_element_mva / baseMVA
+        # S = V * conj(I) -> I = conj(S / V)
+        i_element_pu = np.conj(s_element_pu / v)   # this is correct!
+        # i_element_ka = -i_element_pu * 100 / (np.sqrt(3) * 110)  # for us to validate
+
+        y_element_pu = i_element_pu / v  # p.u.
+        # y_element_s = y_element_pu * baseMVA / v_base**2
+
+        buses, gs, bs = _sum_by_group(element_buses_ppc, y_element_pu.real, y_element_pu.imag)
+        # buses, gs, bs = _sum_by_group(element_buses_ppc, s_element_pu.real, s_element_pu.imag)
+        ppc["bus"][buses, GS] += gs * baseMVA  # power in p.u. is equal to admittance in p.u.
+        ppc["bus"][buses, BS] += bs * baseMVA
 
 
 def _add_c_to_ppc(net, ppc):
