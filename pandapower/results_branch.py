@@ -63,7 +63,7 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
 
 
 def _get_branch_flows(ppc):
-    br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
+    br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(np.int64)
     vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
     s_ft = np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
                    ppc["branch"][:, (QF, QT)].real ** 2)
@@ -72,8 +72,8 @@ def _get_branch_flows(ppc):
 
 
 def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
-    br_from_idx = ppc1["branch"][:, F_BUS].real.astype(int)
-    br_to_idx = ppc1["branch"][:, T_BUS].real.astype(int)
+    br_from_idx = ppc1["branch"][:, F_BUS].real.astype(np.int64)
+    br_to_idx = ppc1["branch"][:, T_BUS].real.astype(np.int64)
     V012_f = np.array([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
                         np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
     V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
@@ -118,8 +118,8 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
     i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
-    from_bus = ppc["branch"][f:t, F_BUS].real.astype(int)
-    to_bus = ppc["branch"][f:t, T_BUS].real.astype(int)
+    from_bus = ppc["branch"][f:t, F_BUS].real.astype(np.int64)
+    to_bus = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
 
     # write to line
     res_line_df = net["res_line"] if suffix is None else net["res_line%s" % suffix]
@@ -281,8 +281,8 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
 
     loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
 
-    hv_buses = ppc["branch"][f:t, F_BUS].real.astype(int)
-    lv_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
+    hv_buses = ppc["branch"][f:t, F_BUS].real.astype(np.int64)
+    lv_buses = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
 
     # write results to trafo dataframe
     res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s" % suffix]
@@ -507,10 +507,10 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     loading_percent = ld_trafo
 
-    hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(int)
-    aux_buses = ppc["branch"][f:hv, T_BUS].real.astype(int)
-    mv_buses = ppc["branch"][hv:mv, T_BUS].real.astype(int)
-    lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(int)
+    hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(np.int64)
+    aux_buses = ppc["branch"][f:hv, T_BUS].real.astype(np.int64)
+    mv_buses = ppc["branch"][hv:mv, T_BUS].real.astype(np.int64)
+    lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(np.int64)
 
     # write results to trafo3w dataframe
     res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s" % suffix]

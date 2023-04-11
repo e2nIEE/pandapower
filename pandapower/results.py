@@ -75,7 +75,7 @@ def _remove_costs(net):
 def _get_aranged_lookup(net):
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
-    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=np.int64)
     bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
 
     return bus_lookup_aranged
