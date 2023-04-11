@@ -361,7 +361,7 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
         q = np.zeros(len(p))
 
     # sum pq results from every element to be written to net['bus'] later on
-    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
+    b_pp, vp, vq = _sum_by_group(b.astype(np.int64), p, q)
     b_ppc = bus_lookup_aranged[b_pp]
     bus_pq[b_ppc, 0] = vp
     bus_pq[b_ppc, 1] = vq
@@ -404,7 +404,7 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
             b = np.hstack([b, bus_el])
 
     # sum pq results from every element to be written to net['bus'] later on
-    b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(b.astype(int), pA, qA, pB, qB, pC, qC)
+    b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
     b_ppc = bus_lookup_aranged[b_pp]
     bus_pq[b_ppc, 0] = vp_A
     bus_pq[b_ppc, 1] = vq_A
@@ -492,7 +492,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
 
     if not ac:
         q = np.zeros(len(p))
-    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
+    b_pp, vp, vq = _sum_by_group(b.astype(np.int64), p, q)
     b_ppc = bus_lookup_aranged[b_pp]
 
     bus_pq[b_ppc, 0] += vp
