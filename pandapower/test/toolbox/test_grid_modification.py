@@ -187,9 +187,9 @@ def test_merge_with_groups():
     # check that net2 groups link to the same elements as later in net.group (checking by element index)
     assert list(pp.group_element_index(net, 0, "bus")) == [0, 2]
     assert list(pp.group_element_index(net, 5, "bus")) == [net1.bus.shape[0]+1]
-    assert list(pp.group_element_index(net, 5, "load")) == list(np.array([0, 3], dtype=int) + \
+    assert list(pp.group_element_index(net, 5, "load")) == list(np.array([0, 3], dtype=np.int64) + \
         net1.load.shape[0])
-    assert list(pp.group_element_index(net, 4, "line")) == list(np.array([1, 3], dtype=int) + \
+    assert list(pp.group_element_index(net, 4, "line")) == list(np.array([1, 3], dtype=np.int64) + \
         net1.line.shape[0])
 
 

@@ -161,11 +161,11 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     bus[:, VM] = Vm
     gen[:, PG] = Pg * baseMVA
     gen[:, QG] = Qg * baseMVA
-    gen[:, VG] = Vm[ gen[:, GEN_BUS].astype(int) ]
+    gen[:, VG] = Vm[ gen[:, GEN_BUS].astype(np.int64) ]
 
     ## compute branch flows
-    Sf = V[ branch[:, F_BUS].astype(int) ] * conj(Yf * V)  ## cplx pwr at "from" bus, p["u"].
-    St = V[ branch[:, T_BUS].astype(int) ] * conj(Yt * V)  ## cplx pwr at "to" bus, p["u"].
+    Sf = V[ branch[:, F_BUS].astype(np.int64) ] * conj(Yf * V)  ## cplx pwr at "from" bus, p["u"].
+    St = V[ branch[:, T_BUS].astype(np.int64) ] * conj(Yt * V)  ## cplx pwr at "to" bus, p["u"].
     branch[:, PF] = Sf.real * baseMVA
     branch[:, QF] = Sf.imag * baseMVA
     branch[:, PT] = St.real * baseMVA

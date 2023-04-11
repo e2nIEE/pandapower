@@ -78,7 +78,7 @@ def _get_elements(params, net, element, phase, typ):
             params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
                                                (elm[active, q_mvar]/3) * vl * sign])
             params['b'+typ] = np.hstack([params['b'+typ],
-                                         elm[active, bus].astype(int)])
+                                         elm[active, bus].astype(np.int64)])
 
         elif element.startswith('asymmetric'):
             vl = elm[active, scaling].ravel()
@@ -96,7 +96,7 @@ def _get_elements(params, net, element, phase, typ):
             params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
                                                elm[active, q[phase]] * vl * sign])
             params['b'+typ] = np.hstack([params['b'+typ],
-                                         elm[active, bus].astype(int)])
+                                         elm[active, bus].astype(np.int64)])
     return params
 
 
@@ -122,8 +122,8 @@ def _load_mapping(net, ppci1):
             params['q'+phase+typ] = np.array([])  # q values from loads/sgens
             params['P'+phase+typ] = np.array([])  # Aggregated Active Power
             params['Q'+phase+typ] = np.array([])  # Aggregated reactive Power
-            params['b'+phase+typ] = np.array([], dtype=int)  # bus map for phases
-            params['b'+typ] = np.array([], dtype=int)  # aggregated bus map(s_abc)
+            params['b'+phase+typ] = np.array([], dtype=np.int64)  # bus map for phases
+            params['b'+typ] = np.array([], dtype=np.int64)  # aggregated bus map(s_abc)
             for element in load_elements:
                 _get_elements(params, net, element, phase, typ)
             # Mapping constant power loads to buses
@@ -553,7 +553,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
+    eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
 
     ppci0["gen"][eg_idx_ppc, PG] = s_012_res[0, eg_bus_idx_ppc].real
     ppci1["gen"][eg_idx_ppc, PG] = s_012_res[1, eg_bus_idx_ppc].real

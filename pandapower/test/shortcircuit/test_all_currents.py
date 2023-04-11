@@ -782,8 +782,8 @@ def test_trafo_impedance():
     V_diff[0] = v_0
     V_diff[1] = v_1
     V_diff[2] = 0
-    i_f = Yf.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(int)]
-    i_t = Yt.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(int)]
+    i_f = Yf.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(np.int64)]
+    i_t = Yt.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(np.int64)]
     abs(i_f)
     abs(i_t)
 

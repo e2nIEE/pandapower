@@ -59,7 +59,7 @@ def _map_costs_to_gen(net, cost):
                   for et, element in zip(cost.et.values, cost.element.values)])
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]
-    gens = gens[cost_is].astype(int)
+    gens = gens[cost_is].astype(np.int64)
     signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
     return gens, cost, signs
 

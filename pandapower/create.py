@@ -691,7 +691,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         # works with a 2-tuple or a matching array
         net.bus_geodata = pd.concat([
             net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
                          index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata

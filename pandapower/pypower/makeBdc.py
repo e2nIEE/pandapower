@@ -65,8 +65,8 @@ def makeBdc(bus, branch, return_csr=True):
     b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(np.int64)                           ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(np.int64)                           ## list of "to" buses
     i = r_[range(nl), range(nl)]                   ## double set of row indices
     ## connection matrix
     Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl, nb))

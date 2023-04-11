@@ -30,11 +30,11 @@ def _create_J_with_numba(Ybus, V, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref,
     Jx = empty(len(dVm_x) * 4, dtype=float64)
     # row pointer, dimension = pvpq.shape[0] + pq.shape[0] + 1
     if dist_slack:
-        Jp = zeros(refpvpq.shape[0] + pq.shape[0] + 1, dtype=int32)
+        Jp = zeros(refpvpq.shape[0] + pq.shape[0] + 1, dtype=np.int6432)
     else:
-        Jp = zeros(pvpq.shape[0] + pq.shape[0] + 1, dtype=int32)
+        Jp = zeros(pvpq.shape[0] + pq.shape[0] + 1, dtype=np.int6432)
     # indices, same with the preallocated space (see Jx)
-    Jj = empty(len(dVm_x) * 4, dtype=int32)
+    Jj = empty(len(dVm_x) * 4, dtype=np.int6432)
 
     # fill Jx, Jj and Jp
     createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp, slack_weights)

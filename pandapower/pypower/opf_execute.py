@@ -103,7 +103,7 @@ def opf_execute(om, ppopt):
     if success:
         if not dc:
             ## copy bus voltages back to gen matrix
-            results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(int), VM]
+            results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(np.int64), VM]
 
             ## gen PQ capability curve multipliers
             if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0): # pragma: no cover

@@ -371,9 +371,9 @@ def get_indices(selection, lookup, fused_indices=True):
     :return:
     """
     if fused_indices:
-        return np.array([lookup[k] for k in selection], dtype="int")
+        return np.array([lookup[k] for k in selection], dtype=np.int64)
     else:
-        return np.array([lookup["before_fuse"][k] for k in selection], dtype="int")
+        return np.array([lookup["before_fuse"][k] for k in selection], dtype=np.int64)
 
 
 def _get_values(source, selection, lookup):
@@ -590,9 +590,9 @@ def _check_connectivity_opf(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(np.int64)
 
     adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch),
                                        (bus_from, bus_to)),
@@ -629,13 +629,13 @@ def _check_connectivity(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
     tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
     notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
-    bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(int)
-    bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(int)
+    bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
+    bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
@@ -665,8 +665,8 @@ def _subnetworks(ppc):
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     # Note BUS_TYPE is never REF when the generator is out of service.
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
 
@@ -911,12 +911,12 @@ def _clean_up(net, res=True):
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
-    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
-                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(np.int64),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF,
-                                                         :1].real.astype(int))
+                                                         :1].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, 1] = NONE
 
 

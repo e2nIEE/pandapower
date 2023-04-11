@@ -175,8 +175,8 @@ def dump_pm_json(pm, buffer_file=None):
 def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
-    pm_lookup = np.ones(max(net[element].index) + 1, dtype=int) * -1 if len(net[element].index) \
-        else np.array([], dtype=int)
+    pm_lookup = np.ones(max(net[element].index) + 1, dtype=np.int64) * -1 if len(net[element].index) \
+        else np.array([], dtype=np.int64)
     for idx in net[element].index:
         if "controllable" in net[element] and net[element].at[idx, "controllable"]:
             continue
@@ -351,10 +351,10 @@ def ppc_to_pm(net, ppci):
     gen_df = pd.DataFrame(index=gen_idxs_pm)
     gen_df["pg"] = ppci["gen"][:, PG]
     gen_df["qg"] = ppci["gen"][:, QG]
-    gen_df["gen_bus"] = (ppci["gen"][:, GEN_BUS] + 1).astype(int)
+    gen_df["gen_bus"] = (ppci["gen"][:, GEN_BUS] + 1).astype(np.int64)
     gen_df["vg"] = ppci["gen"][:, VG]
     gen_df["qmax"] = ppci["gen"][:, QMAX]
-    gen_df["gen_status"] = ppci["gen"][:, GEN_STATUS].astype(int)
+    gen_df["gen_status"] = ppci["gen"][:, GEN_STATUS].astype(np.int64)
     gen_df["qmin"] = ppci["gen"][:, QMIN]
     gen_df["pmin"] = ppci["gen"][:, PMIN]
     gen_df["pmax"] = ppci["gen"][:, PMAX]
@@ -365,7 +365,7 @@ def ppc_to_pm(net, ppci):
         ppci["gencost"] = ppci["gencost"][:ppci["gen"].shape[0], :]
     gen_df["startup"] = 0.0
     gen_df["shutdown"] = 0.0
-    model_type = ppci["gencost"][:, MODEL].astype(int)
+    model_type = ppci["gencost"][:, MODEL].astype(np.int64)
     gen_df["model"] = model_type
     # calc ncost and cost
     ncost = np.array([0] * len(ppci["gen"]))
@@ -477,7 +477,7 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     # set in service, but only in ne line dataframe
     net["ne_line"].loc[new_line_index, "in_service"] = True
     # init res_ne_line to save built status afterwards
-    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
+    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=np.int64)
 
 
 def add_params_to_pm(net, pm):
@@ -614,5 +614,3 @@ def allow_multi_ext_grids(net, pm, ext_grids=None):
     for b in target_pm_buses:
         pm["bus"][str(b)]["bus_type"] = 3
     return pm
-    
-   

@@ -14,7 +14,7 @@ def sub2ind(shape, I, J, row_major=False):
     else:
         ind = (J % shape[1]) * shape[0] + (I % shape[0])
 
-    return ind.astype(int)
+    return ind.astype(np.int64)
 
 
 def feval(func, *args, **kw_args):

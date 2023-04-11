@@ -52,8 +52,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = real(branch[:, F_BUS]).astype(int)  ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)  ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(np.int64)  ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(np.int64)  ## list of "to" buses
     ## connection matrix for line & from buses
     Cf = csr_matrix((ones(nl), (range(nl), f)), (nl, nb))
     ## connection matrix for line & to buses

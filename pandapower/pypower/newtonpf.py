@@ -86,8 +86,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc_max_x = svc[svc_idx[svc_controllable], SVC_MAX_FIRING_ANGLE].real
 
     tcsc_branches = flatnonzero(nan_to_num(tcsc[:, TCSC_STATUS]))
-    tcsc_fb = tcsc[tcsc_branches, [TCSC_F_BUS]].real.astype(int)
-    tcsc_tb = tcsc[tcsc_branches, [TCSC_T_BUS]].real.astype(int)
+    tcsc_fb = tcsc[tcsc_branches, [TCSC_F_BUS]].real.astype(np.int64)
+    tcsc_tb = tcsc[tcsc_branches, [TCSC_T_BUS]].real.astype(np.int64)
 
     tcsc_controllable = tcsc[tcsc_branches, TCSC_CONTROLLABLE].real.astype(bool)
 
@@ -112,10 +112,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     any_tcsc_controllable = num_tcsc_controllable > 0
     num_facts = num_svc + num_tcsc
     #
-    # tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pq)
-    # tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(int), pq)
-    # tcsc_in_pvpq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(int), pvpq)
-    # tcsc_in_pvpq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(int), pvpq)
+    # tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(np.int64), pq)
+    # tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(np.int64), pq)
+    # tcsc_in_pvpq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(np.int64), pvpq)
+    # tcsc_in_pvpq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(np.int64), pvpq)
     # # else:
     # #   tcsc_fb = tcsc_tb = tcsc_i = tcsc_j = None
 
@@ -160,14 +160,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     #   shows for a given row from Ybus, which row in J it becomes
     #   e.g. the first row in J is a PV bus. If the first PV bus in Ybus is in the row 2, the index of the row in Jbus must be 0.
     #   pvpq_lookup will then have a 0 at the index 2
-    pvpq_lookup = zeros(max((Ybus + Ybus_svc + Ybus_tcsc).indices) + 1, dtype=int)
+    pvpq_lookup = zeros(max((Ybus + Ybus_svc + Ybus_tcsc).indices) + 1, dtype=np.int64)
     if dist_slack:
         # slack bus is relevant for the function createJ_ds
         pvpq_lookup[refpvpq] = arange(len(refpvpq))
     else:
         pvpq_lookup[pvpq] = arange(len(pvpq))
 
-    pq_lookup = zeros(max(refpvpq) + 1, dtype=int)
+    pq_lookup = zeros(max(refpvpq) + 1, dtype=np.int64)
     pq_lookup[pq] = arange(len(pq))
 
     # get jacobian function
@@ -202,7 +202,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     r_theta_pu = 0
     if tdpf:
         if len(pq) > 0:
-            pq_lookup = zeros(max(refpvpq) + 1, dtype=int)  # for TDPF
+            pq_lookup = zeros(max(refpvpq) + 1, dtype=np.int64)  # for TDPF
             pq_lookup[pq] = arange(len(pq))
         else:
             pq_lookup = array([])
@@ -216,7 +216,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         alpha_pu = branch[tdpf_lines, ALPHA].real * T_base
 
         i_max_a = branch[tdpf_lines, RATE_I_KA].real * 1e3
-        v_base_kv = bus[branch[tdpf_lines, F_BUS].real.astype(int), BASE_KV]
+        v_base_kv = bus[branch[tdpf_lines, F_BUS].real.astype(np.int64), BASE_KV]
         z_base_ohm = square(v_base_kv) / baseMVA
         r_ref_pu = branch[tdpf_lines, BR_R_REF_OHM_PER_KM].real * branch[tdpf_lines, BR_LENGTH_KM].real / z_base_ohm
         i_base_a = baseMVA / (v_base_kv * sqrt(3)) * 1e3

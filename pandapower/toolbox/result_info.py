@@ -236,7 +236,7 @@ def _determine_costs_dict(net, opf_task_overview):
         #                "index"] for idx in idxs}
 
         for cost_df in cost_dfs:
-            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
+            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(np.int64))
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
