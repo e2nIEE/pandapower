@@ -34,8 +34,8 @@ class DFData(DataSource):
         self.df = df
         if multi:
             # casting column and index to int for multi- columns accessing
-            self.df.index = self.df.index.astype(int)
-            self.df.columns = self.df.columns.astype(int)
+            self.df.index = self.df.index.astype(np.int64)
+            self.df.columns = self.df.columns.astype(np.int64)
 
     def __repr__(self):
         s = "%s with %d rows and %d columns" % (

@@ -245,11 +245,11 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
-    ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
+    ppc_former_order = (ppc['bus'][:, BUS_I]).astype(np.int64)
     aranged_buses = np.arange(len(ppc["bus"]))
 
     # lookup ppc former order -> consecutive order
-    e2i = np.zeros(len(ppc["bus"]), dtype=int)
+    e2i = np.zeros(len(ppc["bus"]), dtype=np.int64)
     e2i[ppc_former_order] = aranged_buses
 
     # save consecutive indices in ppc and ppci
@@ -267,12 +267,12 @@ def _ppc2ppci(ppc, net, ppci=None):
     bt = ppc["bus"][:, BUS_TYPE]
 
     # update branch, gen and areas bus numbering
-    ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)].copy()
-    ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(int)].copy()
-    ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
-    ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
-    ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(int)].copy()
-    ppc["tcsc"][:, TCSC_T_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(int)].copy()
+    ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
+    ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
+    ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
+    ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
+    ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
+    ppc["tcsc"][:, TCSC_T_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)].copy()
 
     # Note: The "update branch, gen and areas bus numbering" does the same as:
     # ppc['gen'][:, GEN_BUS] = get_indices(ppc['gen'][:, GEN_BUS], bus_lookup_ppc_ppci)
@@ -282,7 +282,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     if 'areas' in ppc:
         ppc["areas"][:, PRICE_REF_BUS] = \
-            e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
+            e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(np.int64)].copy()
 
     # initialize gen lookups
     for element, (f, t) in net._gen_order.items():
@@ -290,29 +290,29 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # determine which buses, branches, gens are connected and
     # in-service
-    n2i = ppc["bus"][:, BUS_I].astype(int)
+    n2i = ppc["bus"][:, BUS_I].astype(np.int64)
     bs = (bt != NONE)  # bus status
 
     gs = ((ppc["gen"][:, GEN_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)]])
+          bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)]])
     ppci["internal"]["gen_is"] = gs
 
     svcs = ((ppc["svc"][:, SVC_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(int)]])
+          bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
     ppci["internal"]["svc_is"] = svcs
 
-    brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(int) &  # branch status
-           bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(int)]] &
-           bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(int)]]).astype(bool)
+    brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
+           bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
+           bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_is"] = brs
 
-    trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(int) &  # branch status
-           bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(int)]] &
-           bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(int)]]).astype(bool)
+    trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(np.int64) &  # branch status
+           bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
+           bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["tcsc_is"] = trs
 
     if 'areas' in ppc:
-        ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(int)]]
+        ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
         # delete out of service areas
         ppci["areas"] = ppc["areas"][ar]
 
@@ -337,7 +337,7 @@ def _ppc2ppci(ppc, net, ppci=None):
         slack_gens = np.array(net.gen.index)[net._is_elements["gen"]
                                              & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
-    ppci["internal"]["ref_gens"] = ref_gens.astype(int)
+    ppci["internal"]["ref_gens"] = ref_gens.astype(np.int64)
     return ppci
 
 
@@ -361,7 +361,7 @@ def _build_gen_lookups(net, element, f, t):
 
 def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
-    lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
+    lookup = -np.ones(max(pandapower_index) + 1, dtype=np.int64)
 
     # update lookup
     lookup[pandapower_index] = ppc_index

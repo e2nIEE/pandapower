@@ -218,26 +218,26 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             # save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
-            mx = r_[mx, mn].astype(int)
+            mx = r_[mx, mn].astype(np.int64)
 
             # convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  # set Qg to binding
-            #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+            #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(np.int64), BUS_TYPE] == REF):
             #                raise ValueError('Sorry, pandapower cannot enforce Q '
             #                                 'limits for slack buses in systems '
             #                                 'with multiple slacks.')
 
-            changed_gens = gen[mx, GEN_BUS].astype(int)
+            changed_gens = gen[mx, GEN_BUS].astype(np.int64)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  # & set bus type to PQ
 
             # update bus index lists of each type of bus
             ref, pv, pq = bustypes(bus, gen)
 
-            limited = r_[limited, mx].astype(int)
+            limited = r_[limited, mx].astype(np.int64)
 
             for i in range(len(limited)):  # [one at a time, since they may be at same bus]
                 gen[limited[i], GEN_STATUS] = 0  # temporarily turn off gen,
-                bi = gen[limited[i], GEN_BUS].astype(int)  # adjust load accordingly,
+                bi = gen[limited[i], GEN_BUS].astype(np.int64)  # adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]])
         else:
             break  # no more generator Q limits violated

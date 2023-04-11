@@ -23,7 +23,7 @@ def _get_pf_variables_from_ppci(ppci):
 
     ## generator info
     on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
+    gbus = gen[on, GEN_BUS].astype(np.int64)  ## what buses are they at?
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start

@@ -356,7 +356,7 @@ def get_baseR(net, ppc, buses):
 
 def init_par(tab, calc_branch_impedances=False):
     n = tab.shape[0]
-    indices = np.zeros((n, 3), dtype=int)
+    indices = np.zeros((n, 3), dtype=np.int64)
     indices[:, INDEX] = tab.index
     if calc_branch_impedances:
         parameters = np.zeros((n, 4), dtype=float)

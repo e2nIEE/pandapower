@@ -181,8 +181,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         else:
             Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
     else: # pragma: no cover
-        f = branch[il, F_BUS].astype(int)    ## list of "from" buses
-        t = branch[il, T_BUS].astype(int)    ## list of "to" buses
+        f = branch[il, F_BUS].astype(np.int64)    ## list of "from" buses
+        t = branch[il, T_BUS].astype(np.int64)    ## list of "to" buses
         ## connection matrix for line & from buses
         Cf = sparse((ones(nl2), (arange(nl2), f)), (nl2, nb))
         ## connection matrix for line & to buses

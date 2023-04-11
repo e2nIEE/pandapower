@@ -68,8 +68,8 @@ def _powerflow(net, **kwargs):
                       "'%s'!") % algorithm)
 
     # clear lookups
-    net._pd2ppc_lookups = {"bus": array([], dtype=int), "ext_grid": array([], dtype=int),
-                           "gen": array([], dtype=int), "branch": array([], dtype=int)}
+    net._pd2ppc_lookups = {"bus": array([], dtype=np.int64), "ext_grid": array([], dtype=np.int64),
+                           "gen": array([], dtype=np.int64), "branch": array([], dtype=np.int64)}
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)

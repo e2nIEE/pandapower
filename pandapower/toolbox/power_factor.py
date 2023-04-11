@@ -173,8 +173,8 @@ def _cosphi_from_pq_bulk(p, q, len_=None):
         logger.warning("A cosphi from p=0 is undefined.")
     cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
     s = (p ** 2 + q ** 2) ** 0.5
-    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-    qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(int)]
+    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(np.int64)]
+    qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(np.int64)]
     return cosphi, s, qmode, pmode
 
 

@@ -122,7 +122,7 @@ def opf_setup(ppc, ppopt):
         stdout.write(errstr)
 
     ## set up initial variables and bounds
-    gbus = gen[:, GEN_BUS].astype(int)
+    gbus = gen[:, GEN_BUS].astype(np.int64)
     Va   = bus[:, VA] * (pi / 180.0)
     Vm   = bus[:, VM].copy()
     Vm[gbus] = gen[:, VG]   ## buses with gens, init Vm from gen data

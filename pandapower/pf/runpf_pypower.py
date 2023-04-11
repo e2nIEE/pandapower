@@ -182,27 +182,27 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
                     ## save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
-            mx = r_[mx, mn].astype(int)
+            mx = r_[mx, mn].astype(np.int64)
 
             ## convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  ## set Qg to binding
             for i in mx:  ## [one at a time, since they may be at same bus]
                 gen[i, GEN_STATUS] = 0  ## temporarily turn off gen,
-                bi = gen[i, GEN_BUS].astype(int)  ## adjust load accordingly,
+                bi = gen[i, GEN_BUS].astype(np.int64)  ## adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[i, [PG, QG]])
 
-            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(np.int64), BUS_TYPE] == REF):
                 raise ValueError('Sorry, pandapower cannot enforce Q '
                                  'limits for slack buses in systems '
                                  'with multiple slacks.')
 
-            changed_gens = gen[mx, GEN_BUS].astype(int)
+            changed_gens = gen[mx, GEN_BUS].astype(np.int64)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
             ref, pv, pq = bustypes(bus, gen)
 
-            limited = r_[limited, mx].astype(int)
+            limited = r_[limited, mx].astype(np.int64)
         else:
             break  ## no more generator Q limits violated
 
@@ -210,7 +210,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         ## restore injections from limited gens [those at Q limits]
         gen[limited, QG] = fixedQg[limited]  ## restore Qg value,
         for i in limited:  ## [one at a time, since they may be at same bus]
-            bi = gen[i, GEN_BUS].astype(int)  ## re-adjust load,
+            bi = gen[i, GEN_BUS].astype(np.int64)  ## re-adjust load,
             bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[i, [PG, QG]]
             gen[i, GEN_STATUS] = 1  ## and turn gen back on
 

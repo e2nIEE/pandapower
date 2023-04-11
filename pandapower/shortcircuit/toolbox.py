@@ -168,8 +168,8 @@ def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
     Zbus = ppci["internal"]["Zbus"]
     bus = ppci["bus"]
 
-    f = (branch[:, F_BUS]).real.astype(int)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(int)  ## list of "to" buses
+    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
     nl = len(branch)
     nb = len(bus)
 
@@ -209,8 +209,8 @@ def adjacency(ppci):
     tap_branch_idx = np.flatnonzero(tap != 1)
     all_vertices = bus[:, BUS_I]
     num_vertices = len(bus)
-    f = (branch[:, F_BUS]).real.astype(int)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(int)  ## list of "to" buses
+    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
 
     hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
     lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)

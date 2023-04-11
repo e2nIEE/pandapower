@@ -105,9 +105,9 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
         else:
             ## compute branch power flows
             ## complex power injected at "from" bus (p.u.)
-            Sf = V[ branch[il, F_BUS].astype(int) ] * conj(Yf * V)
+            Sf = V[ branch[il, F_BUS].astype(np.int64) ] * conj(Yf * V)
             ## complex power injected at "to" bus (p.u.)
-            St = V[ branch[il, T_BUS].astype(int) ] * conj(Yt * V)
+            St = V[ branch[il, T_BUS].astype(np.int64) ] * conj(Yt * V)
             if ppopt['OPF_FLOW_LIM'] == 1:   ## active power limit, P (Pan Wei)
                 h = r_[ Sf.real**2 - flow_max,   ## branch P limits (from bus)
                         St.real**2 - flow_max ]  ## branch P limits (to bus)

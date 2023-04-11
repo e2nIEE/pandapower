@@ -707,4 +707,4 @@ def count_elements(net, return_empties=False, **kwargs):
     dtype: int32
     """
     return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
-                      bool(net[et].shape[0])}, dtype=int)
+                      bool(net[et].shape[0])}, dtype=np.int64)
