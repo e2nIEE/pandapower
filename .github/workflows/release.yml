@@ -80,17 +80,16 @@ jobs:
         os:  [ ubuntu-latest, windows-latest ]
         group: [ 1, 2 ]
     steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          echo "starting run"
           python -m pip install --upgrade pip
-          echo "done 1"
           python -m pip install pytest python-igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
-          echo "done 2"
       - name: Install pandapower from TestPyPI
         if: inputs.upload_server == 'testpypi'
         run: |
