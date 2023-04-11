@@ -31,7 +31,7 @@ Change Log
 - [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
 - [FIXED] Shunt admittance modelling for 3 phase calculations
-- [ADDED] bulk creation function create_storages
+- [ADDED] bulk creation function create_storages and create_wards
 - [ADDED] FACTS devices Shunt Var Compensator (SVC) and Thyristor-Controlled Series Capacitor (TCSC) as new pandapower elements net.svc and net.tcsc
 
 [2.11.1] - 2023-01-02

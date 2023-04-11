@@ -1476,7 +1476,7 @@ def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_perce
                     name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
                     min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
-    Adds a storage to the network.
+    Adds storages to the network.
 
     In order to simulate a storage system it is possible to use sgens or loads to model the
     discharging or charging state. The power of a storage can be positive or negative, so the use
@@ -4078,6 +4078,41 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     entries = dict(zip(["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "name", "in_service"],
                        [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name, in_service]))
     _set_entries(net, "ward", index, **entries, **kwargs)
+
+    return index
+
+
+def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None,
+                 **kwargs):
+    """
+    Creates ward equivalents.
+
+    A ward equivalent is a combination of an impedance load and a PQ load.
+
+    INPUT:
+        **net** (pandapowernet) - The pandapower net within the element should be created
+
+        **buses** (list of int) -  bus of the ward equivalent
+
+        **ps_mw** (list of float) - active power of the PQ load
+
+        **qs_mvar** (list of float) - reactive power of the PQ load
+
+        **pz_mw** (list of float) - active power of the impedance load in MW at 1.pu voltage
+
+        **qz_mvar** (list of float) - reactive power of the impedance load in MVar at 1.pu voltage
+
+    OUTPUT:
+        ward id
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
+              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+
+    _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
     return index
 
