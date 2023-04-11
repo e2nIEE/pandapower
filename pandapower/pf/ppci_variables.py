@@ -6,7 +6,7 @@
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
-from numpy import flatnonzero as find, pi, exp
+from numpy import flatnonzero as find, pi, exp, int64
 
 def _get_pf_variables_from_ppci(ppci):
     ## default arguments
@@ -23,7 +23,7 @@ def _get_pf_variables_from_ppci(ppci):
 
     ## generator info
     on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(np.int64)  ## what buses are they at?
+    gbus = gen[on, GEN_BUS].astype(int64)  ## what buses are they at?
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
