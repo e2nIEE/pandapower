@@ -85,7 +85,7 @@ case $(uname) in
     echo "$BASEURL/linux/$ARCH/$JULIANAME-$SUFFIX.tar.gz"
     curl -L "$BASEURL/linux/$ARCH/$JULIANAME-$SUFFIX.tar.gz" | tar -xz
     sudo ln -s $PWD/julia-*/bin/julia /usr/local/bin/julia
-    julia -e 'import Pkg; Pkg.add("PowerModels"); Pkg.add("Ipopt"); Pkg.add("PyCall");'
+    julia -e 'import Pkg; Pkg.add("PowerModels"); Pkg.add("Ipopt"); Pkg.add(PackageSpec(name="PyCall", rev="master"));'
     julia -e 'import Pkg; Pkg.add("JSON"); Pkg.add("JuMP"); Pkg.add("Cbc"); Pkg.add("Juniper");'
     ;;
   Darwin)
