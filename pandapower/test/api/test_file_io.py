@@ -9,27 +9,42 @@ import os
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal
 import pytest
 
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
+import pandapower.toolbox
 import pandapower.topology as topology
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
+from pandapower.test.helper_functions import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
 from pandapower.toolbox import nets_equal
 
 try:
+    import cryptography.fernet
+    cryptography_INSTALLED = True
+except ImportError:
+    cryptography_INSTALLED = False
+try:
+    import openpyxl
+    openpyxl_INSTALLED = True
+except ImportError:
+    openpyxl_INSTALLED = False
+try:
+    import xlsxwriter
+    xlsxwriter_INSTALLED = True
+except ImportError:
+    xlsxwriter_INSTALLED = False
+try:
     import geopandas as gpd
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
 try:
     import shapely
-
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
@@ -52,9 +67,13 @@ def test_pickle(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.p"
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
+    # pickle sems to changes column types
     assert_net_equal(net_in, net_out)
 
 
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
+                    "mandatory to write excel files and openpyxl to read excels, but is not "
+                    "installed."))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)
@@ -69,6 +88,8 @@ def test_excel(net_in, tmp_path):
     assert net_out.user_pf_options == net_in.user_pf_options
 
 
+@pytest.mark.skipif(not xlsxwriter_INSTALLED,
+                    reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
@@ -131,8 +152,9 @@ def test_json(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
+@pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
+                    "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
-    import cryptography.fernet
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename, encryption_key="verysecret")
     with pytest.raises(json.JSONDecodeError):
@@ -224,8 +246,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
-    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
+    assert pandapower.toolbox.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert pandapower.toolbox.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
@@ -416,7 +438,7 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
-@pytest.mark.skipif(GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
+@pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
     net = pp.create_empty_network()
     net.bus_geodata['geometry'] = None
@@ -445,7 +467,7 @@ def test_replace_elements_json_string(net_in):
     json_string = pp.to_json(net_orig)
     net_load = pp.from_json_string(json_string,
                                    replace_elements={r'pandapower.control.controller.const_control':
-                                                         r'pandapower.test.api.input_files.test_control',
+                                                     r'pandapower.test.api.input_files.test_control',
                                                      r'ConstControl': r'TestControl'})
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
@@ -478,15 +500,70 @@ def test_json_generalized():
         out = pp.from_json_string(pp.to_json(general_in),
                                   empty_dict_like_object=pp.pandapowerNet({}))
         assert sorted(list(out.keys())) == ["df1", "df2"]
-        assert pp.nets_equal(out, general_in)
+        assert pandapower.toolbox.nets_equal(out, general_in)
+
+
+def test_json_simple_index_type():
+    s1 = pd.Series([4, 5, 6])
+    s2 = pd.Series([4, 5, 6], index=[1, 2, 3])
+    s3 = pd.Series([4, 5, 6], index=[1, 2, "3"])
+    s4 = pd.Series([4, 5, 6], index=["1", "2", "3"])
+    df1 = pd.DataFrame(s1)
+    df2 = pd.DataFrame(s2)
+    df3 = pd.DataFrame(s3)
+    df4 = pd.DataFrame(s4)
+    df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
+    df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
+    input =  {key: val for key, val in zip("abcdefghijkl", [
+        s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
+    json_str = pp.to_json(input)
+    output = pp.from_json_string(json_str, convert=False)
+    for key in list("abcd"):
+        assert_series_equal(input[key], output[key], check_dtype=False)
+    for key in list("efghijkl"):
+        assert_frame_equal(input[key], output[key], check_dtype=False)
 
 
 def test_json_index_names():
     net_in = networks.mv_oberrhein()
     net_in.bus.index.name = "bus_index"
-    net_out = pp.from_json_string(pp.to_json(net_in, store_index_names=True))
+    net_in.line.columns.name = "line_column"
+    net_in["test_series"] = pd.Series([8], index=pd.Index([2], name="idx_name"))
+    json_str = pp.to_json(net_in)
+    net_out = pp.from_json_string(json_str)
     assert net_out.bus.index.name == "bus_index"
-    assert pp.nets_equal(net_out, net_in)
+    assert net_out.line.columns.name == "line_column"
+    assert net_out.test_series.index.name == "idx_name"
+    assert pandapower.toolbox.nets_equal(net_out, net_in)
+
+
+def test_json_multiindex_and_index_names():
+
+    # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
+    idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
+    col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
+    idx1 = pd.MultiIndex.from_tuples(idx_tuples)
+    idx2 = pd.MultiIndex.from_tuples(idx_tuples, names=[5, 6])
+    idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
+    col1 = pd.MultiIndex.from_tuples(col_tuples)
+    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8]) # ["7", "8"] is not possible since
+    # orient="columns" loses info whether index/column is an iteger or a string
+    col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
+
+    for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
+        s_mi = pd.Series(range(4), index=idx)
+        df_mi = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx)
+        df_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), columns=col)
+        df_mi_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx, columns=col)
+
+        input =  {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
+        json_str = pp.to_json(input)
+        output = pp.from_json_string(json_str, convert=False)
+        assert_series_equal(input["a"], output["a"], check_dtype=False)
+        assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
+        assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
+        assert_frame_equal(input["d"], output["d"], check_dtype=False, check_column_type=False,
+                           check_index_type=False)
 
 
 def test_json_dict_of_stuff():
@@ -500,7 +577,7 @@ def test_json_dict_of_stuff():
     assert d.keys() == dd.keys()
     assert_net_equal(net1, dd["net1"])
     assert_net_equal(net2, dd["net2"])
-    pp.dataframes_equal(df, dd["df"])
+    pandapower.toolbox.dataframes_equal(df, dd["df"])
     assert text == dd["text"]
 
 
@@ -514,7 +591,7 @@ def test_json_list_of_stuff():
 
     assert_net_equal(net1, loaded_list[0])
     assert_net_equal(net2, loaded_list[1])
-    pp.dataframes_equal(df, loaded_list[2])
+    pandapower.toolbox.dataframes_equal(df, loaded_list[2])
     assert text == loaded_list[3]
 
 

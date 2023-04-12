@@ -20,6 +20,8 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
+from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
+    TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
 def _build_branch_ppc(net, ppc):
@@ -70,6 +72,16 @@ def _build_branch_ppc(net, ppc):
         _calc_switch_parameter(net, ppc)
 
 
+def _build_tcsc_ppc(net, ppc, mode):
+    length = len(net.tcsc)
+    ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
+    if mode != "pf":
+        return
+
+    if length > 0:
+        _calc_tcsc_parameter(net, ppc)
+
+
 def _initialize_branch_lookup(net):
     start = 0
     end = 0
@@ -93,9 +105,9 @@ def _calc_trafo3w_parameter(net, ppc):
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
     r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
@@ -138,8 +150,8 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     line = net[elm]
-    from_bus = bus_lookup[line["from_bus"].values]
-    to_bus = bus_lookup[line["to_bus"].values]
+    from_bus = bus_lookup[line["from_bus"].values.astype(np.int64)]
+    to_bus = bus_lookup[line["to_bus"].values.astype(np.int64)]
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]
@@ -169,7 +181,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, OUTER_DIAMETER_M] = line.get("conductor_outer_diameter_m", default=np.nan)
         branch[f:t, MC_JOULE_PER_M_K] = line.get("mc_joule_per_m_k", default=np.nan)
 
-    if mode == "sc":
+    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False):
         # temperature correction
         if net["_options"]["case"] == "min":
             branch[f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
@@ -293,15 +305,19 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
                                     sequence=sequence, characteristic=net.get("characteristic"))
 
     if mode == "sc":
-        y = 0  # why for sc are we assigning y directly as 0?
+        if net._options.get("use_pre_fault_voltage", False):
+            y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+        else:
+            y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
             # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
-            kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
-            r *= kt
-            x *= kt
+            if not net._options.get("use_pre_fault_voltage", False):
+                kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+                r *= kt
+                x *= kt
     else:
         y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
 
@@ -392,7 +408,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
     vnl = copy.copy(get_trafo_values(trafo_df, "vn_lv_kv").astype(float))
     trafo_shift = get_trafo_values(trafo_df, "shift_degree").astype(float) if calculate_voltage_angles else \
         np.zeros(len(vnh))
-    if mode == "sc":
+    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False): # todo type c?
         return vnh, vnl, trafo_shift
 
     tap_pos = get_trafo_values(trafo_df, "tap_pos")
@@ -579,6 +595,37 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
 
+def _calc_tcsc_parameter(net, ppc):
+    f = 0
+    t = len(net.tcsc)
+
+    if t == 0:
+        return
+
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    f_bus = bus_lookup[net.tcsc["from_bus"].values]
+    t_bus = bus_lookup[net.tcsc["to_bus"].values]
+
+    tcsc = ppc["tcsc"]
+    baseV = ppc["bus"][f_bus, BASE_KV]
+    baseZ = baseV ** 2 / baseMVA
+
+    tcsc[f:t, TCSC_F_BUS] = f_bus
+    tcsc[f:t, TCSC_T_BUS] = t_bus
+
+    tcsc[f:t, TCSC_X_L] = net["tcsc"]["x_l_ohm"].values / baseZ
+    tcsc[f:t, TCSC_X_CVAR] = net["tcsc"]["x_cvar_ohm"].values / baseZ
+    tcsc[f:t, TCSC_SET_P] = net["tcsc"]["set_p_to_mw"].values / baseMVA
+    tcsc[f:t, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["thyristor_firing_angle_degree"].values)
+    tcsc[f:t, TCSC_MIN_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["min_angle_degree"].values)
+    tcsc[f:t, TCSC_MAX_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["max_angle_degree"].values)
+
+    tcsc[f:t, TCSC_STATUS] = net["tcsc"]["in_service"].values
+    tcsc[f:t, TCSC_CONTROLLABLE] = net["tcsc"]["controllable"].values.astype(bool) & net["tcsc"]["in_service"].values.astype(bool)
+
+
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     impedance = net.impedance
     suffix = "0" if zero_sequence else ""
@@ -660,8 +707,8 @@ def _switch_branches(net, ppc):
         switch_buses = net["switch"]["bus"].values[switch_mask]
         switch_info = np.array(list(map(mapfunc, switch_buses, switch_element)))
         sw_sides = switch_info[:, 0]
-        sw_bus_index = bus_lookup[switch_info[:, 1].astype(int)]
-        sw_branch_index = switch_info[:, 2].astype(int)
+        sw_bus_index = bus_lookup[switch_info[:, 1].astype(np.int64)]
+        sw_branch_index = switch_info[:, 2].astype(np.int64)
         if neglect_open_switch_branches:
             # deactivate switches which have an open switch instead of creating aux buses
             ppc["branch"][sw_branch_index, BR_STATUS] = 0
@@ -689,25 +736,25 @@ def _switch_branches(net, ppc):
                     init_values = res_column.loc[switch_element].values[mask]
                 else:
                     if element == "line":
-                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
+                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(np.int64)
                         init_values = ppc["bus"][opposite_buses, col]
                     else:
                         opposite_side = T_BUS if side == F_BUS else F_BUS
                         opposite_buses = ppc["branch"][sw_branch_index[mask],
-                                                       opposite_side].real.astype(int)
+                                                       opposite_side].real.astype(np.int64)
                         if col == VM:
                             taps = ppc["branch"][sw_branch_index[mask], TAP].real
                             init_values = ppc["bus"][opposite_buses, col] * taps
                         else:
                             if calculate_voltage_angles:
-                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(int)
+                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(np.int64)
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
+                        if mode == "sc":
+                            ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
+                            ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
                 ppc["bus"][buses, col] = init_values
-            if mode == "sc":
-                ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
-                ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
 
 
@@ -762,7 +809,7 @@ def _branches_with_oos_buses(net, ppc):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
+            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
             ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
@@ -774,7 +821,7 @@ def _branches_with_oos_buses(net, ppc):
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
             # 2: position of the line a switch is connected to
-            # ls_info = np.array(ls_info, dtype=int)
+            # ls_info = np.array(ls_info, dtype=np.int64)
 
             # build new buses
             new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)
@@ -936,7 +983,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
     if sequence==1:
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode, characteristic=net.get(
+        mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
             'characteristic'))
     elif sequence==0:
         if mode != "sc":

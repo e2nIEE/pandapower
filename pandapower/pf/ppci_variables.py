@@ -6,7 +6,7 @@
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
-from numpy import flatnonzero as find, pi, exp
+from numpy import flatnonzero as find, pi, exp, int64
 
 def _get_pf_variables_from_ppci(ppci):
     ## default arguments
@@ -15,15 +15,15 @@ def _get_pf_variables_from_ppci(ppci):
     # ppopt = ppoption(ppopt)
 
     # get data for calc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
+    baseMVA, bus, gen, branch, svc, tcsc = \
+        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"], ppci["svc"], ppci["tcsc"]
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
 
     ## generator info
     on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
+    gbus = gen[on, GEN_BUS].astype(int64)  ## what buses are they at?
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
@@ -31,7 +31,8 @@ def _get_pf_variables_from_ppci(ppci):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0, ref_gens
+    return baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, on, gbus, V0, ref_gens
+
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch

@@ -5,9 +5,11 @@
 
 import numpy as np
 import pandapower.auxiliary as aux
-from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _build_branch_ppc
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, \
+    _build_branch_ppc, _build_tcsc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
-_calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc
+    _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, \
+    _build_svc_ppc, _add_load_sc_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -15,6 +17,8 @@ from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
+from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
@@ -114,13 +118,17 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
 
+    _build_tcsc_ppc(net, ppc, mode)
+    _build_svc_ppc(net, ppc, mode)
+
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
+        if net._options.get("use_pre_fault_voltage", False):
+            _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
 
-        # TODO Roman: Implementation wind generation units IEC 60909-2016
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
@@ -180,6 +188,8 @@ def _init_ppc(net, mode="pf", sequence=None):
            "version": 2,
            "bus": np.array([], dtype=float),
            "branch": np.array([], dtype=np.complex128),
+           "tcsc": np.array([], dtype=np.complex128),
+           "svc": np.array([], dtype=np.complex128),
            "gen": np.array([], dtype=float),
            "internal": {
                "Ybus": np.array([], dtype=np.complex128),
@@ -235,11 +245,11 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
-    ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
+    ppc_former_order = (ppc['bus'][:, BUS_I]).astype(np.int64)
     aranged_buses = np.arange(len(ppc["bus"]))
 
     # lookup ppc former order -> consecutive order
-    e2i = np.zeros(len(ppc["bus"]), dtype=int)
+    e2i = np.zeros(len(ppc["bus"]), dtype=np.int64)
     e2i[ppc_former_order] = aranged_buses
 
     # save consecutive indices in ppc and ppci
@@ -257,9 +267,12 @@ def _ppc2ppci(ppc, net, ppci=None):
     bt = ppc["bus"][:, BUS_TYPE]
 
     # update branch, gen and areas bus numbering
-    ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)].copy()
-    ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
-    ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
+    ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
+    ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
+    ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
+    ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
+    ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
+    ppc["tcsc"][:, TCSC_T_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)].copy()
 
     # Note: The "update branch, gen and areas bus numbering" does the same as:
     # ppc['gen'][:, GEN_BUS] = get_indices(ppc['gen'][:, GEN_BUS], bus_lookup_ppc_ppci)
@@ -269,7 +282,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     if 'areas' in ppc:
         ppc["areas"][:, PRICE_REF_BUS] = \
-            e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
+            e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(np.int64)].copy()
 
     # initialize gen lookups
     for element, (f, t) in net._gen_order.items():
@@ -277,27 +290,38 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # determine which buses, branches, gens are connected and
     # in-service
-    n2i = ppc["bus"][:, BUS_I].astype(int)
+    n2i = ppc["bus"][:, BUS_I].astype(np.int64)
     bs = (bt != NONE)  # bus status
 
     gs = ((ppc["gen"][:, GEN_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)]])
+          bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)]])
     ppci["internal"]["gen_is"] = gs
 
-    brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(int) &  # branch status
-           bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(int)]] &
-           bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(int)]]).astype(bool)
+    svcs = ((ppc["svc"][:, SVC_STATUS] > 0) &  # gen status
+          bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
+    ppci["internal"]["svc_is"] = svcs
+
+    brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
+           bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
+           bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_is"] = brs
 
+    trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(np.int64) &  # branch status
+           bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
+           bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
+    ppci["internal"]["tcsc_is"] = trs
+
     if 'areas' in ppc:
-        ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(int)]]
+        ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
         # delete out of service areas
         ppci["areas"] = ppc["areas"][ar]
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
+    ppci["tcsc"] = ppc["tcsc"][trs]
 
     ppci["gen"] = ppc["gen"][gs]
+    ppci["svc"] = ppc["svc"][svcs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
@@ -313,7 +337,7 @@ def _ppc2ppci(ppc, net, ppci=None):
         slack_gens = np.array(net.gen.index)[net._is_elements["gen"]
                                              & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
-    ppci["internal"]["ref_gens"] = ref_gens.astype(int)
+    ppci["internal"]["ref_gens"] = ref_gens.astype(np.int64)
     return ppci
 
 
@@ -337,7 +361,7 @@ def _build_gen_lookups(net, element, f, t):
 
 def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
-    lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
+    lookup = -np.ones(max(pandapower_index) + 1, dtype=np.int64)
 
     # update lookup
     lookup[pandapower_index] = ppc_index

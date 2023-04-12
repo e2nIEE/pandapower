@@ -8,6 +8,10 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
+from packaging.version import Version
+
+import pandapower.toolbox
+from pandapower._version import __version__
 import pandapower as pp
 import pandapower.networks as nw
 
@@ -28,7 +32,7 @@ def nets_to_test_group():
     idxs = list()
     for reference_column, type_ in zip(reference_columns, types):
         net = nw.case24_ieee_rts()
-        for elm in pp.pp_elements():
+        for elm in pandapower.toolbox.pp_elements():
             net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
         idx0 = pp.create_group_from_dict(net, {
             "gen": typed_list([0, 1], type_),
@@ -74,9 +78,9 @@ def test_group_element_index():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
         # ! group_element_index()
-        assert (pp.group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=int)).all()
-        assert (pp.group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=int)).all()
-        assert (pp.group_element_index(net, 0, "dcline") == pd.Index([], dtype=int)).all()
+        assert (pp.group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=np.int64)).all()
+        assert (pp.group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=np.int64)).all()
+        assert (pp.group_element_index(net, 0, "dcline") == pd.Index([], dtype=np.int64)).all()
 
 
 def test_groups_equal():
@@ -176,6 +180,45 @@ def test_remove_not_existing_group_members():
         assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
 
 
+def test_check_unique_group_rows():
+    net = pp.create_empty_network()
+    empty_group = deepcopy(net.group)
+
+    # test with duplicated rows
+    net.group = pd.concat([empty_group, pd.DataFrame([
+        ["Gr1",  "gen", [1, 2]],
+        ["Gr1", "sgen", [3, 4]],
+        ["Gr1",  "gen", [2, 5]],
+    ], index=[0, 0, 0], columns=["name", "element_type", "element"])])
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
+
+    # test with different reference_columns
+    net.group.iat[0, 3] = "hallo"
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
+
+    # test with duplicated group name and index
+    net.group = pd.concat([empty_group, pd.DataFrame([
+        ["Gr1",  "gen", [1, 2]],
+        ["Gr1", "sgen", [3, 4]],
+        ["Gr2",  "gen", [2, 5]],
+        ["Gr3", "line", [0, 1]]
+    ], index=[0, 0, 1, 0], columns=["name", "element_type", "element"])])
+    try:
+        pp.check_unique_group_rows(net)
+        assert False, "UserWarning expected"
+    except UserWarning:
+        pass
+    pp.check_unique_group_rows(net, raise_=False, log_level="debug")
+
+
 def test_drop_element():
     net = nw.case24_ieee_rts()
     gr1 = pp.create_group_from_dict(net, {
@@ -226,7 +269,7 @@ def test_drop_and_return():
             assert net2b.gen.shape[0] == 10  # unchanged
             assert net2b.trafo.shape[0] == 2
             assert set(net3.gen.index) == {0, 1}
-            for elm in pp.pp_elements():
+            for elm in pandapower.toolbox.pp_elements():
                 assert net2[elm].shape[0] <= net[elm].shape[0]
                 assert net2b[elm].shape[0] <= net[elm].shape[0]
                 assert set(net2[elm].index) | set(net3[elm].index) == set(net[elm].index)
@@ -245,6 +288,7 @@ def test_set_out_of_service():
 
 
 def test_append_to_group():
+    assert Version(__version__) < Version('2.13')
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
         # ! group_element_lists() and ! append_to_group()
@@ -268,10 +312,35 @@ def test_append_to_group():
         assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
 
 
-def test_drop_and_compare():
+def test_attach_to_group():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
-        # ! drop_from_group() & ! compare_elements_dict()
+        # ! group_element_lists() and ! attach_to_group()
+        et0, elm0, rc0 = pp.group_element_lists(net, 0)
+        assert len(et0) == len(elm0) == len(rc0)
+        pp.attach_to_group(net, idxs[1], et0, elm0, rc0)
+        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
+
+        try:
+            # no xward in net
+            pp.attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
+                               reference_columns=rc)
+            assert False
+        except UserWarning:
+            pass
+
+        pp.attach_to_group(net, idxs[1], ["trafo", "line"],
+                           [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
+        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
+            "gen", "sgen", "trafo", "line"}
+        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
+
+
+def test_drop_and_compare():
+    assert Version(__version__) < Version('2.13')
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        # drop_from_group() & compare_group_elements()
 
         # copy group 3
         et3, elm3, rc3 = pp.group_element_lists(net, 3)
@@ -291,16 +360,62 @@ def test_drop_and_compare():
         assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
+def test_detach_and_compare():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+
+        # detach_from_group() & compare_group_elements()
+
+        # copy group 3
+        et3, elm3, rc3 = pp.group_element_lists(net, 3)
+        copy_idx = pp.create_group(net, et3, elm3, reference_columns=rc3, name="copy of group 3")
+
+        # drop elements which are not in group 3
+        pp.detach_from_group(net, 3, "xward", [1, 17])
+        pp.detach_from_group(net, 3, "line", 2)
+
+        # check that group3 is still the same as the copy
+        assert pp.compare_group_elements(net, 3, copy_idx)
+
+        # drop some members
+        pp.detach_from_group(net, 3, "trafo", 1)
+        assert pp.group_element_lists(net, 3)[0] == ["trafo"]
+        assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
+        assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
+
+
 def test_res_power():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
         et0, elm0, rc0 = pp.group_element_lists(net, 0)
-        pp.append_to_group(net, 3, et0, elm0, reference_columns=rc0)
+        pp.attach_to_group(net, 3, et0, elm0, reference_columns=rc0)
 
         # ! res_p_mw() and res_q_mvar()
         pp.runpp(net)
         p_val = net.res_trafo.pl_mw.loc[[0, 1, 2]].sum() - net.res_gen.p_mw.loc[[0, 1]].sum() - \
             net.res_sgen.p_mw.loc[[2, 3]].sum()
         assert np.isclose(pp.group_res_p_mw(net, 3), p_val)
+
+        # compare per_bus and sum
+        for gr_idx in net.group.index:
+            per_bus_out = pp.group_res_power_per_bus(net, gr_idx)
+            assert np.isclose(per_bus_out.sum().at["p_mw"], pp.group_res_p_mw(net, gr_idx))
+            assert np.isclose(per_bus_out.sum().at["q_mvar"], pp.group_res_q_mvar(net, gr_idx))
+            if gr_idx == 3:
+                assert isinstance(per_bus_out, pd.DataFrame)
+                assert per_bus_out.columns.tolist() == ["p_mw", "q_mvar"]
+                assert per_bus_out.index.tolist() == [0, 1, 2, 8, 10, 11, 23]
+
+
+def test_res_power_examples():
+    net = nw.create_cigre_network_mv(with_der="all")
+    pp.runpp(net)
+    idx = pp.create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
+    expected = pd.DataFrame([
+        [ 2.953004,  1.328978],
+        [ 0.      ,  0.      ],
+        [-2.875066, -1.318864],
+        [-0.02    ,  0.      ]
+        ], index=pd.Index([1, 2, 3, 4], name="bus"), columns=["p_mw", "q_mvar"])
+    assert pandapower.toolbox.dataframes_equal(pp.group_res_power_per_bus(net, idx), expected, atol=1e-6)
 
 
 def test_group_io():
@@ -322,10 +437,10 @@ def test_count_group_elements():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
         pdt.assert_series_equal(
             pp.count_group_elements(net, idxs[0]),
-            pd.Series({"gen": 2, "sgen": 2}, dtype=int))
+            pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
         pdt.assert_series_equal(
             pp.count_group_elements(net, idxs[1]),
-            pd.Series({"trafo": 3}, dtype=int))
+            pd.Series({"trafo": 3}, dtype=np.int64))
 
 
 def test_isin():
@@ -335,6 +450,18 @@ def test_isin():
         assert pp.isin_group(net, "gen", 0)
         assert not pp.isin_group(net, "gen", 0, index=idxs[1])
         assert not pp.isin_group(net, "gen", 6)
+
+
+def test_element_associated_groups():
+    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+        assert pp.element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
+            {0: [0], 1: [0], 2: [], 3: []}
+        assert pp.element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
+            pp.element_associated_groups(net, "gen", net.gen.index, return_empties=False) == \
+            {0: [0], 1: [0]}
+        assert pp.element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
+        assert pp.element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
+        assert pp.element_associated_groups(net, "trafo", 0) == [3]
 
 
 def test_elements_connected_to_group():
@@ -388,24 +515,4 @@ def test_elements_connected_to_group():
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', "test_group.py"])
-    else:
-        # test_group_create()
-        # test_group_element_index()
-        # test_groups_equal()
-        # test_set_group_reference_column()
-        # test_compare_group_elements()
-        # test_ensure_lists_in_group_element_column()
-        # test_remove_not_existing_group_members()
-        # test_drop_element()
-        # test_drop_and_return()
-        # test_set_out_of_service()
-        # test_append_to_group()
-        # test_drop_and_compare()
-        # test_res_power()
-        # test_group_io()
-        # test_count_group_elements()
-        # test_isin()
-        test_elements_connected_to_group()
-        pass
+    pytest.main([__file__, "-xs"])

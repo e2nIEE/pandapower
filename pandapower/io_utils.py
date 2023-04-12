@@ -12,6 +12,7 @@ import pickle
 import sys
 import types
 import weakref
+from ast import literal_eval
 from functools import partial
 from inspect import isclass, _findclass
 from warnings import warn
@@ -85,7 +86,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.INFO)
 
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
@@ -185,7 +186,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].shape[0] == 0:  # skip empty dataframes
                 continue
             if pd_dict[k].index[0].isdigit():
-                pd_dict[k].set_index(pd_dict[k].index.astype(int), inplace=True)
+                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
         else:
             raise UserWarning("The network is an old version or corrupt. "
                               "Try to use the old load function")
@@ -245,7 +246,7 @@ def from_dict_of_dfs(dodfs, net=None):
             net[item] = table
         # set the index to be Int
         try:
-            net[item].set_index(net[item].index.astype(int), inplace=True)
+            net[item].set_index(net[item].index.astype(np.int64), inplace=True)
         except TypeError:
             # TypeError: if not int index (e.g. str)
             pass
@@ -316,7 +317,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int
                 try:
-                    df_index = pd.Index(df_dict['index'], dtype=int)
+                    df_index = pd.Index(df_dict['index'], dtype=numpy.int64)
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
@@ -468,15 +469,74 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
-        return pd.read_json(self.obj, precise_float=True, **self.d)
+        is_multiindex = self.d.pop('is_multiindex', False)
+        index_name = self.d.pop('index_name', None)
+        index_names = self.d.pop('index_names', None)
+        ser = pd.read_json(self.obj, precise_float=True, **self.d)
+
+        # restore index name and Multiindex
+        if index_name is not None:
+            ser.index.name = index_name
+        if is_multiindex:
+            try:
+                ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(
+                    literal_eval).tolist())
+            except:
+                logger.warning("Converting index to multiindex failed.")
+            else:
+                if index_names is not None:
+                    ser.index.names = index_names
+
+        return ser
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
     def DataFrame(self):
+        is_multiindex = self.d.pop('is_multiindex', False)
+        is_multicolumn = self.d.pop('is_multicolumn', False)
+        index_name = self.d.pop('index_name', None)
+        index_names = self.d.pop('index_names', None)
+        column_name = self.d.pop('column_name', None)
+        column_names = self.d.pop('column_names', None)
+
         df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
-        try:
-            df.set_index(df.index.astype(int), inplace=True)
-        except (ValueError, TypeError, AttributeError):
-            logger.debug("failed setting int64 index")
+
+        if not df.shape[0] or self.d.get("orient", False) == "columns":
+            try:
+                df.set_index(df.index.astype(numpy.int64), inplace=True)
+            except (ValueError, TypeError, AttributeError):
+                logger.debug("failed setting index to int")
+        if self.d.get("orient", False) == "columns":
+            try:
+                df.columns = df.columns.astype(numpy.int64)
+            except (ValueError, TypeError, AttributeError):
+                logger.debug("failed setting columns to int")
+
+        # restore index name and Multiindex
+        if index_name is not None:
+            df.index.name = index_name
+        if column_name is not None:
+            df.columns.name = column_name
+        if is_multiindex:
+            try:
+                df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(
+                    literal_eval).tolist())
+                # slower alternative code:
+                # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
+            except:
+                logger.warning("Converting index to multiindex failed.")
+            else:
+                if index_names is not None:
+                    df.index.names = index_names
+        if is_multicolumn:
+            try:
+                df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(
+                    literal_eval).tolist())
+            except:
+                logger.warning("Converting columns to multiindex failed.")
+            else:
+                if column_names is not None:
+                    df.columns.names = column_names
+
         # recreate jsoned objects
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
@@ -558,9 +618,9 @@ class FromSerializableRegistry():
         def GeoDataFrame(self):
             df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
             if "id" in df:
-                df.set_index(df['id'].values.astype(int), inplace=True)
+                df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             else:
-                df.set_index(df.index.values.astype(int), inplace=True)
+                df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
@@ -582,10 +642,11 @@ class PPJSONDecoder(json.JSONDecoder):
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
+        registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
                                                empty_dict_like_object=empty_dict_like_object,
-                                               registry_class=FromSerializableRegistry)}
+                                               registry_class=registry_class)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
@@ -848,12 +909,29 @@ def json_pandapowernet(obj):
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
-    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "columns"
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) and not isinstance(
+        obj.columns, pd.MultiIndex) else "columns"
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
     d['orient'] = orient
     if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
         d['dtype'] = obj.dtypes.astype('str').to_dict()
+
+    # store index name (to covert by pandas with orient "split" or "columns" (and totally not with
+    # Multiindex))
+    if obj.index.name is not None:
+        d['index_name'] = obj.index.name
+    if obj.columns.name is not None:
+        d['column_name'] = obj.columns.name
+    if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
+        d['index_names'] = obj.index.names
+    if isinstance(obj.columns, pd.MultiIndex) and set(obj.columns.names) != {None}:
+        d['column_names'] = obj.columns.names
+
+    # store info that index is of type Multiindex originally
+    d['is_multiindex'] = isinstance(obj.index, pd.MultiIndex)
+    d['is_multicolumn'] = isinstance(obj.columns, pd.MultiIndex)
+
     return d
 
 
@@ -870,9 +948,21 @@ if GEOPANDAS_INSTALLED:
 @to_serializable.register(pd.Series)
 def json_series(obj):
     logger.debug('Series')
-    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable,
+    orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "index"
+    d = with_signature(obj, obj.to_json(orient=orient, default_handler=to_serializable,
                                         double_precision=15))
-    d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
+    d.update({'dtype': str(obj.dtypes), 'orient': orient, 'typ': 'series'})
+
+    # store index name (to covert by pandas with orient "split" or "columns" (and totally not with
+    # Multiindex))
+    if obj.index.name is not None:
+        d['index_name'] = obj.index.name
+    if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
+        d['index_names'] = obj.index.names
+
+    # store info that index is of type Multiindex originally
+    d['is_multiindex'] = isinstance(obj.index, pd.MultiIndex)
+
     return d
 
 

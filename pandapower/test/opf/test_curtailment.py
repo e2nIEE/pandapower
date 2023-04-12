@@ -66,5 +66,4 @@ def test_minimize_active_power_curtailment():
 
 
 if __name__ == "__main__":
-    # pytest.main([__file__, "-xs"])
-    test_minimize_active_power_curtailment()
+    pytest.main([__file__, "-xs"])

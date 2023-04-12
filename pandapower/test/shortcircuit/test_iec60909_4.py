@@ -418,7 +418,7 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     net = iec_60909_4()
     net.trafo["power_station_unit"] = False
     ps_trafo = net.gen.power_station_trafo.values
-    ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(int)
+    ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(np.int64)
     net.trafo.loc[ps_trafo, "power_station_unit"] = True
     net.gen.power_station_trafo.values[:] = np.nan
 
@@ -466,16 +466,17 @@ def test_detect_power_station_units():
     net.gen.power_station_trafo[:] = None
 
     detect_power_station_unit(net)
-    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+    assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
     net.gen.power_station_trafo[:] = None
 
     detect_power_station_unit(net, mode="trafo")
-    assert np.all(net.gen.power_station_trafo.values[[0,1]] == np.array([0,1]))
+    assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
 
 
 def test_sc_on_line():
     net = iec_60909_4()
     calc_sc_on_line(net, 2, 0.3)
+    # todo: actual test missing here!!!
 
 
 def test_vde_232():
@@ -485,4 +486,4 @@ def test_vde_232():
     
 
 if __name__ == '__main__':
-    pytest.main(["test_iec60909_4.py"])
+    pytest.main([__file__, "-xs"])

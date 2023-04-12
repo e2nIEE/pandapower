@@ -33,11 +33,13 @@ import warnings
 import numpy as np
 import pandas as pd
 import scipy as sp
+import numbers
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
@@ -252,34 +254,47 @@ class pandapowerNet(ADict):
 
         for key in self:
             if isinstance(self[key], list):
-                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([], dtype=np.int64))
+                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
+                                         dtype=np.int64))
 
     def deepcopy(self):
         return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
-        r = "This pandapower network includes the following parameter tables:"
+        """
+        See Also
+        --------
+        count_elements
+        """
         par = []
         res = []
-        for tb in list(self.keys()):
-            if not tb.startswith("_") and isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
-                if 'res_' in tb:
-                    res.append(tb)
+        for et in list(self.keys()):
+            if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
+                n_rows = self[et].shape[0]
+                if 'res_' in et:
+                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                elif et == 'group':
+                    n_groups = len(set(self[et].index))
+                    par.append('   - %s (%i %s, %i %s)' % (
+                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
                 else:
-                    par.append(tb)
-        for tb in par:
-            length = len(self[tb])
-            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if res:
-            r += "\n and the following results tables:"
-            for tb in res:
-                length = len(self[tb])
-                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if "res_cost" in self.keys():
-            r += "\n and the following result values:"
-            r += "\n   - %s" % "res_cost"
-        return r
+                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+        res_cost = [" and the following result values:",
+                    "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        if not len(par) + len(res):
+            return "This pandapower network is empty"
+        if len(res):
+            res = [" and the following results tables:"] + res
+        lines = ["This pandapower network includes the following parameter tables:"] + \
+            par + res + res_cost
+        return "\n".join(lines)
 
+
+def plural_s(number):
+    if number > 1:
+        return ""
+    else:
+        return "s"
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
@@ -356,9 +371,9 @@ def get_indices(selection, lookup, fused_indices=True):
     :return:
     """
     if fused_indices:
-        return np.array([lookup[k] for k in selection], dtype="int")
+        return np.array([lookup[k] for k in selection], dtype=np.int64)
     else:
-        return np.array([lookup["before_fuse"][k] for k in selection], dtype="int")
+        return np.array([lookup["before_fuse"][k] for k in selection], dtype=np.int64)
 
 
 def _get_values(source, selection, lookup):
@@ -379,7 +394,20 @@ def _get_values(source, selection, lookup):
 
 def ensure_iterability(var, len_=None):
     """
-    Ensures iterability of a variable (and optional length).
+    Ensures iterability of a variable (and also the length if given).
+
+    Examples
+    --------
+    >>> ensure_iterability([1, 2])
+    [1, 2]
+    >>> ensure_iterability(1)
+    [1]
+    >>> ensure_iterability("Hi")
+    ["Hi"]
+    >>> ensure_iterability([1, 2], len_=2)
+    [1, 2]
+    >>> ensure_iterability([1, 2], len_=3)
+    ValueError("Length of variable differs from 3.")
     """
     if hasattr(var, "__iter__") and not isinstance(var, str):
         if isinstance(len_, int) and len(var) != len_:
@@ -390,10 +418,155 @@ def ensure_iterability(var, len_=None):
     return var
 
 
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+
+
+def read_from_net(net, element, index, variable, flag='auto'):
+    """
+    Reads values from the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to read based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net; can also be a results table
+    index : int or array_like
+        index of the element table where values are read from
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    values
+        the values of the variable for the element table according to the index
+    """
+    if flag == "single_index":
+        return _read_from_single_index(net, element, variable, index)
+    elif flag == "all_index":
+        return _read_from_all_index(net, element, variable)
+    elif flag == "loc":
+        return _read_with_loc(net, element, variable, index)
+    elif flag == "object":
+        return _read_from_object_attribute(net, element, variable, index)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        return read_from_net(net, element, index, auto_variable, auto_flag)
+    else:
+        raise NotImplementedError("read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def write_to_net(net, element, index, variable, values, flag='auto'):
+    """
+    Writes values to the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to write based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net
+    index : int or array_like
+        index of the element table where values are written to
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    None
+    """
+    # write functions faster, depending on type of element_index
+    if flag == "single_index":
+        _write_to_single_index(net, element, index, variable, values)
+    elif flag == "all_index":
+        _write_to_all_index(net, element, variable, values)
+    elif flag == "loc":
+        _write_with_loc(net, element, index, variable, values)
+    elif flag == "object":
+        _write_to_object_attribute(net, element, index, variable, values)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        write_to_net(net, element, index, auto_variable, values, auto_flag)
+    else:
+        raise NotImplementedError("write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def _detect_read_write_flag(net, element, index, variable):
+    if variable.startswith('object'):
+        # write to object attribute
+        return "object", variable.split(".")[1]
+    elif isinstance(index, numbers.Number):
+        # use .at if element_index is integer for speedup
+        return "single_index", variable
+    # commenting this out for now, see issue 609
+    # elif net[element].index.equals(Index(index)):
+    #     # use : indexer if all elements are in index
+    #     return "all_index", variable
+    else:
+        # use common .loc
+        return "loc", variable
+
+
+# read functions:
+def _read_from_single_index(net, element, variable, index):
+    return net[element].at[index, variable]
+
+
+def _read_from_all_index(net, element, variable):
+    return net[element].loc[:, variable].values
+
+
+def _read_with_loc(net, element, variable, index):
+    return net[element].loc[index, variable].values
+
+
+def _read_from_object_attribute(net, element, variable, index):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        values = np.array(shape=index.shape)
+        for i, idx in enumerate(index):
+            values[i] = getattr(net[element]["object"].at[idx], variable)
+    else:
+        values = getattr(net[element]["object"].at[index], variable)
+    return values
+
+
+# write functions:
+def _write_to_single_index(net, element, index, variable, values):
+    net[element].at[index, variable] = values
+
+
+def _write_to_all_index(net, element, variable, values):
+    net[element].loc[:, variable] = values
+
+
+def _write_with_loc(net, element, index, variable, values):
+    net[element].loc[index, variable] = values
+
+
+def _write_to_object_attribute(net, element, index, variable, values):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        for idx, val in zip(index, values):
+            setattr(net[element]["object"].at[idx], variable, val)
+    else:
+        setattr(net[element]["object"].at[index], variable, values)
+
+
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
+        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
         # set buses in ppc out of service
         ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 
@@ -417,9 +590,9 @@ def _check_connectivity_opf(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(np.int64)
 
     adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch),
                                        (bus_from, bus_to)),
@@ -456,16 +629,20 @@ def _check_connectivity(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
+    notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
+    bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
+    bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, slacks])
-    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, np.ones(len(slacks)) * nobus])
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + len(slacks)),
                                        (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
@@ -488,8 +665,8 @@ def _subnetworks(ppc):
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     # Note BUS_TYPE is never REF when the generator is out of service.
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
 
@@ -547,7 +724,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
     elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
+                "ward", "xward", "shunt", "ext_grid", "storage", "svc"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
@@ -665,7 +842,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
                     x_fault_ohm, kappa, ip, ith, branch_results,
                     kappa_method, return_all_currents,
-                    inverse_y):
+                    inverse_y, use_pre_fault_voltage):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -683,7 +860,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "branch_results": branch_results,
         "kappa_method": kappa_method,
         "return_all_currents": return_all_currents,
-        "inverse_y": inverse_y
+        "inverse_y": inverse_y,
+        "use_pre_fault_voltage": use_pre_fault_voltage
     }
     _add_options(net, options)
 
@@ -733,12 +911,12 @@ def _clean_up(net, res=True):
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
-    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
-                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(np.int64),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF,
-                                                         :1].real.astype(int))
+                                                         :1].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, 1] = NONE
 
 
@@ -803,6 +981,24 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
+
+    if len(net.shunt) and "controllable" in net.shunt and np.any(net.shunt.controllable):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunts are present, "
+                                  "SVC controllable shunts not implemented yet.")
+
+    if len(net.tcsc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and TCSC controllable impedances are present, "
+                                  "TCSC controllable impedances not implemented.")
+
+    if len(net.svc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunt elements are present, "
+                                  "SVC controllable shunt elements not implemented.")
 
     return True
 
@@ -1115,16 +1311,19 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
+    with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
+                 len(net.tcsc.query("in_service & controllable")) > 0
     if max_iteration == "auto":
-        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
+        # tdpf is an option rather than algorithm; svc need more iterations to converge
+        max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "
                          "'init_va_degree'.")
 
     init_from_results = init == "results" or \
-        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
-        (isinstance(init_va_degree, str) and init_va_degree == "results")
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
@@ -1150,7 +1349,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
-                               false_slack_weight_elms) + "'.")
+                false_slack_weight_elms) + "'.")
         if algorithm != 'nr':
             raise NotImplementedError(
                 'Distributed slack is only implemented for Newton Raphson algorithm.')
@@ -1289,7 +1488,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                     only_v_results=False)
 
 
-def _internal_stored(net):
+def _internal_stored(net, ac=True):
     """
 
     The function newtonpf() needs these variables as inputs:
@@ -1309,8 +1508,12 @@ def _internal_stored(net):
     if net["_ppc"] is None:
         return False
 
-    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
-                              "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    if ac:
+        mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
+                                  "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    else:
+        mandatory_pf_variables = ["bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "ref_gens",
+                                  "Bbus", "Bf", "Pbusinj", "Pfinj", "Cft", "shift"]
     for var in mandatory_pf_variables:
         if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
             logger.warning("recycle is set to True, but internal variables are missing")

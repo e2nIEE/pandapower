@@ -8,9 +8,9 @@ from operator import itemgetter
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
-    all as np_all, float64, intersect1d
+    all as np_all, float64, intersect1d, unique as uni
 
-from pandapower import __version__, __format_version__
+from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -149,6 +149,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
+        "svc":   [("name", dtype(object)),
+                  ("bus", "u4"),
+                  ("x_l_ohm", "f8"),
+                  ("x_cvar_ohm", "f8"),
+                  ("set_vm_pu", "f8"),
+                  ("thyristor_firing_angle_degree", "f8"),
+                  ("controllable", "bool"),
+                  ("in_service", "bool"),
+                  ("min_angle_degree", "f8"),
+                  ("max_angle_degree", "f8")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -231,6 +241,15 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("xtf_pu", "f8"),
                       ("sn_mva", "f8"),
                       ("in_service", 'bool')],
+        "tcsc": [("name", dtype(object)),
+                 ("from_bus", "u4"),
+                 ("to_bus", "u4"),
+                 ("x_l_ohm", "f8"),
+                 ("x_cvar_ohm", "f8"),
+                 ("set_p_to_mw", "f8"),
+                 ("thyristor_firing_angle_degree", "f8"),
+                 ("controllable", "bool"),
+                 ("in_service", "bool")],
         "dcline": [("name", dtype(object)),
                    ("from_bus", "u4"),
                    ("to_bus", "u4"),
@@ -351,6 +370,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
+        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
+                             ("x_ohm", "f8"),
+                             ("q_mvar", "f8"),
+                             ("vm_pu", "f8"),
+                             ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
                               ("loading_percent", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
@@ -361,6 +385,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                  ("ql_mvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
+        "_empty_res_tcsc": [("thyristor_firing_angle_degree", "f8"),
+                            ("x_ohm", "f8"),
+                            ("p_from_mw", "f8"),
+                            ("q_from_mvar", "f8"),
+                            ("p_to_mw", "f8"),
+                            ("q_to_mvar", "f8"),
+                            ("pl_mw", "f8"),
+                            ("ql_mvar", "f8"),
+                            ("i_ka", "f8"),
+                            ("vm_from_pu", "f8"),
+                            ("va_from_degree", "f8"),
+                            ("vm_to_pu", "f8"),
+                            ("va_to_degree", "f8")],
         "_empty_res_dcline": [("p_from_mw", "f8"),
                               ("q_from_mvar", "f8"),
                               ("p_to_mw", "f8"),
@@ -654,12 +691,13 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         # works with a 2-tuple or a matching array
         net.bus_geodata = pd.concat([
             net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
                          index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
-        net.bus_geodata = pd.concat([net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
+        net.bus_geodata = pd.concat(
+            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
         net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
@@ -1064,6 +1102,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
+            If the superposition method is used (use_pre_fault_voltage=True), this parameter \
+            is used to pass through the max. current limit of the machine in p.u.
 
         **current_source** (bool, True) - Model this sgen as a current source during short-\
             circuit calculations; useful in some cases, for example the simulation of full-\
@@ -1094,6 +1134,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                  default_val=False, default_for_nan=True)
     if rx is not None:
         _create_column_and_set_value(net, index, rx, "rx", "sgen") # rx is always required
+    if np.isfinite(kappa):
+        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
     if generator_type is not None:
         _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
                                      default_val="current_source", default_for_nan=True)
@@ -1103,7 +1145,6 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         _create_column_and_set_value(net, index, lrc_pu, "lrc_pu", "sgen")
     elif generator_type == "async_doubly_fed":
         _create_column_and_set_value(net, index, max_ik_ka, "max_ik_ka", "sgen")
-        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
@@ -1217,6 +1258,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                            default_val=False)
     if rx is not None:
         _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
+    if np.isfinite(kappa):
+        _add_series_to_entries(entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
     if generator_type is not None:
         _add_series_to_entries(entries, index, "generator_type", generator_type, dtyp="str",
                                      default_val="current_source")
@@ -1226,7 +1269,6 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         _add_series_to_entries(entries, index, "lrc_pu", lrc_pu)
     elif generator_type == "async_doubly_fed":
         _add_series_to_entries(entries, index, "max_ik_ka", max_ik_ka)
-        _add_series_to_entries(entries, index, "kappa", kappa)
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
@@ -1430,6 +1472,101 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
+def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
+                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
+                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+    """
+    Adds storages to the network.
+
+    In order to simulate a storage system it is possible to use sgens or loads to model the
+    discharging or charging state. The power of a storage can be positive or negative, so the use
+    of either a sgen or a load is (per definition of the elements) not correct.
+    To overcome this issue, a storage element can be created.
+
+    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    default power flow calculations, the state of charge (SOC) is not updated during any power flow
+    calculation.
+    The implementation of energy content related parameters in the storage element allows to create
+    customized, time dependend simulations by running several power flow calculations and updating
+    variables manually.
+
+    INPUT:
+        **net** - The net within this storage should be created
+
+        **buses** (list of int) - The bus ids to which the generators are connected
+
+        **p_mw** (list of float) - The momentary active power of the storage \
+            (positive for charging, negative for discharging)
+
+        **max_e_mwh** (list of float) - The maximum energy content of the storage \
+            (maximum charge level)
+
+    OPTIONAL:
+        **q_mvar** (list of float, default 0) - The reactive power of the storage
+
+        **sn_mva** (list of float, default NaN) - Nominal power of the storage
+
+        **soc_percent** (list of float, NaN) - The state of charge of the storage
+
+        **min_e_mwh** (list of float, 0) - The minimum energy content of the storage \
+            (minimum charge level)
+
+        **name** (list of string, default None) - The name for this storage
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (list of float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
+
+        **type** (list of string, None) -  type variable to classify the storage
+
+        **in_service** (list of boolean, default True) - True for in_service or False for out of service
+
+        **max_p_mw** (list of float, NaN) - Maximum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_p_mw** (list of float, NaN) - Minimum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **max_q_mvar** (list of float, NaN) - Maximum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_q_mvar** (list of float, NaN) - Minimum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **controllable** (list of bool, NaN) - Whether this storage is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created storage
+
+    EXAMPLE:
+        create_storage(net, 1, p_mw = -30, max_e_mwh = 60, soc_percent = 1.0, min_e_mwh = 5)
+
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
+              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
+    defaults_to_fill = [("controllable", False)]
+
+    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
+
+    return index
+
+
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
@@ -1447,12 +1584,12 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **bus** (int) - The bus id to which the generator is connected
 
-    OPTIONAL:
         **p_mw** (float, default 0) - The active power of the generator (positive for generation!)
 
+    OPTIONAL:
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
-        **sn_mva** (float, None) - Nominal power of the generator
+        **sn_mva** (float, NaN) - Nominal power of the generator
 
         **name** (string, None) - The name for this generator
 
@@ -1575,13 +1712,12 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **buses** (list of int) - The bus ids to which the generators are connected
 
+        **p_mw** (list of float) - The active power of the generator (positive for generation!)
+
     OPTIONAL:
-        **p_mw** (list of float, default 0) - The active power of the generator (positive for \
-            generation!)
+        **vm_pu** (list of float, default 1) - The voltage set point of the generator.
 
-        **vm_pu** (list of float, default 0) - The voltage set point of the generator.
-
-        **sn_mva** (list of float, None) - Nominal power of the generator
+        **sn_mva** (list of float, NaN) - Nominal power of the generator
 
         **name** (list of string, None) - The name for this generator
 
@@ -1886,6 +2022,32 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -1921,6 +2083,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "alpha" in net.line.columns and "alpha" in lineparam:
         v["alpha"] = lineparam["alpha"]
 
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
     _set_entries(net, "line", index, **v, **kwargs)
 
     if geodata is not None:
@@ -1931,6 +2099,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _create_column_and_set_value(net, index, alpha, "alpha", "line")
     _create_column_and_set_value(net, index, temperature_degree_celsius,
                                  "temperature_degree_celsius", "line")
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -1977,6 +2149,32 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+            **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+            **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+            **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+            **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+            **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+            **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+            **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+            **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+            **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
         OUTPUT:
             **index** (list of int) - The unique ID of the created line
 
@@ -2014,6 +2212,16 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2083,6 +2291,32 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -2105,8 +2339,14 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
         "g_us_per_km": g_us_per_km
     }
-    v.update(kwargs)
-    _set_entries(net, "line", index, **v)
+
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
+    _set_entries(net, "line", index, **v, **kwargs)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2128,6 +2368,11 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     _create_column_and_set_value(net, index, temperature_degree_celsius,
                                  "temperature_degree_celsius", "line")
     _create_column_and_set_value(net, index, endtemp_degree, "endtemp_degree", "line")
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    for column, value in tdpf_parameters.items():
+        _create_column_and_set_value(net, index, value, column, "line", float64)
 
     return index
 
@@ -2195,6 +2440,32 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+
     OUTPUT:
         **index** (int) - The unique ID of the created line
 
@@ -2220,6 +2491,16 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     _add_series_to_entries(entries, index, "g0_us_per_km", g0_us_per_km)
     _add_series_to_entries(entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_series_to_entries(entries, index, "alpha", alpha)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_series_to_entries(entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2846,19 +3127,19 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
@@ -3033,19 +3314,19 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
 
     if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
+        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
     if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
     if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
     if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
     if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
     if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
     if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo", "Int64")
+        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
@@ -3551,6 +3832,63 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage at the connected bus
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the svc
+
+        **x_l_ohm** (float) - impedance of the reactor component of svc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+
+        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+
+    _check_node_element(net, bus)
+
+    index = _get_index_with_check(net, "svc", index)
+
+    entries = dict(zip(["name", "bus", "x_l_ohm", "x_cvar_ohm", "set_vm_pu", "thyristor_firing_angle_degree",
+                        "controllable", "in_service", "min_angle_degree", "max_angle_degree"],
+                       [name, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                        controllable, in_service, min_angle_degree, max_angle_degree]))
+    _set_entries(net, "svc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
                      name=None, in_service=True, index=None,
                      rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
@@ -3602,6 +3940,72 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
         _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
         _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
+
+    return index
+
+
+def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates a TCSC element - series impedance compensator to control series reactance.
+    The TCSC device allows controlling the active power flow throgh the path it is connected in.
+
+    Multiple TCSC elements in net are possible.
+    Unfortunately, TCSC is not implemented for the case when multiple TCSC elements
+    have the same from_bus or the same to_bus.
+
+    Note: in the Newton-Raphson power flow calculation, the initial voltage vector is adjusted slightly
+    if the initial voltage at the from bus is the same as at the to_bus to avoid
+    some terms in J (for TCSC) becoming zero.
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **from_bus** (int) - starting bus of the tcsc
+
+        **to_bus** (int) - ending bus of the tcsc
+
+        **x_l_ohm** (float) - impedance of the reactor component of tcsc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of tcsc
+
+        **set_p_to_mw** (float) - set-point for the branch active power at the to_bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of tcsc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling
+            or as a fixed series impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created tcsc
+
+    """
+    index = _get_index_with_check(net, "tcsc", index)
+
+    _check_branch_element(net, "TCSC", index, from_bus, to_bus)
+
+    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle_degree",
+               "controllable", "in_service", "min_angle_degree", "max_angle_degree"]
+    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
+              controllable, in_service, min_angle_degree, max_angle_degree]
+    entries = dict(zip(columns, values))
+    _set_entries(net, "tcsc", index, **entries, **kwargs)
 
     return index
 
@@ -3674,6 +4078,41 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     entries = dict(zip(["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "name", "in_service"],
                        [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name, in_service]))
     _set_entries(net, "ward", index, **entries, **kwargs)
+
+    return index
+
+
+def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None,
+                 **kwargs):
+    """
+    Creates ward equivalents.
+
+    A ward equivalent is a combination of an impedance load and a PQ load.
+
+    INPUT:
+        **net** (pandapowernet) - The pandapower net within the element should be created
+
+        **buses** (list of int) -  bus of the ward equivalent
+
+        **ps_mw** (list of float) - active power of the PQ load
+
+        **qs_mvar** (list of float) - reactive power of the PQ load
+
+        **pz_mw** (list of float) - active power of the impedance load in MW at 1.pu voltage
+
+        **qz_mvar** (list of float) - reactive power of the impedance load in MVar at 1.pu voltage
+
+    OUTPUT:
+        ward id
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
+              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+
+    _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
     return index
 
@@ -4186,7 +4625,7 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=int)
+    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
                        [ name ,  element_types,  elements,  reference_columns]))
@@ -4257,6 +4696,9 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
+    u, c = uni(index, return_counts=True)
+    if np.any(c>1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
     contained = isin(net[table].index.values, index)
     if np_any(contained):
         if name is None:
@@ -4301,22 +4743,23 @@ def _create_column_and_set_value(net, index, variable, column, element, dtyp=flo
     # (e.g. "gen") table
     # create this column and write the value of variable to the index of this element
     try:
-        set_value = not (isnan(variable) or variable is None)
+        set_value = not (variable is None or isnan(variable))  # if None, condition is known before execution of isnan()
     except TypeError:
         set_value = True
+    column_exists = column in net[element].columns
     if set_value:
-        if column not in net[element].columns:
+        if not column_exists:
             net[element].loc[:, column] = pd.Series(
                 data=default_val, index=net[element].index, dtype=dtyp)
         net[element].at[index, column] = variable
-    elif default_for_nan and column in net[element].columns:
+    elif default_for_nan and column_exists:
         net[element].at[index, column] = default_val
-    if dtype is not None:
+    # only execute if the column was actually set:
+    if column_exists and dtyp is not None:
         try:
             net[element][column] = net[element][column].astype(dtyp)
         except:
             pass
-    return net
 
 
 def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
