@@ -12,7 +12,7 @@
 """
 
 from numpy import conj, zeros, complex128, abs, float64, sqrt, real, isin, arange
-from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_
+from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_, int64
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
@@ -37,7 +37,7 @@ def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens,
     """
     # generator info
     on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
+    gbus = gen[on, GEN_BUS].astype(int64)  # what buses are they at?
 
     # xward: add ref buses that are not at the generators
     xbus = setdiff1d(ref, gbus)
@@ -52,7 +52,7 @@ def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens,
 
     if limited_gens is not None and len(limited_gens) > 0:
         on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
-        gbus = gen[on, GEN_BUS].astype(int)
+        gbus = gen[on, GEN_BUS].astype(int64)
 
     _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens)
 
@@ -93,8 +93,8 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt,
 
 
 def _update_branch_flows(Yf, Yt, V, baseMVA, branch):
-    f_bus = real(branch[:, F_BUS]).astype(int)
-    t_bus = real(branch[:, T_BUS]).astype(int)
+    f_bus = real(branch[:, F_BUS]).astype(int64)
+    t_bus = real(branch[:, T_BUS]).astype(int64)
     # complex power at "from" bus
     Sf = calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0], f_bus)
     # complex power injected at "to" bus

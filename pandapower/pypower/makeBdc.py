@@ -10,7 +10,7 @@
 
 """Builds the B matrices and phase shift injections for DC power flow.
 """
-from numpy import ones, r_, pi, flatnonzero as find, real
+from numpy import ones, r_, pi, flatnonzero as find, real, int64
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
 
@@ -65,8 +65,8 @@ def makeBdc(bus, branch, return_csr=True):
     b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int64)                           ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int64)                           ## list of "to" buses
     i = r_[range(nl), range(nl)]                   ## double set of row indices
     ## connection matrix
     Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl, nb))
@@ -100,4 +100,3 @@ def calc_b_from_branch(branch, nl):
     tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
     b = b / tap
     return b
-

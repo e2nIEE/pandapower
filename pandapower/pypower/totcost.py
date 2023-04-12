@@ -36,7 +36,7 @@ def totcost(gencost, Pg):
 
             for i in ipwl:
                 ncost = gencost[i, NCOST]
-                for k in arange(ncost - 1,dtype=int):
+                for k in arange(ncost - 1,dtype=np.int64):
                     p1, p2 = p[i, k], p[i, k+1]
                     c1, c2 = c[i, k], c[i, k+1]
                     m = (c2 - c1) / (p2 - p1)

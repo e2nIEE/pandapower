@@ -87,7 +87,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
     ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm, bus_is_pv,
               bus_in_service)
     # finally create and fill bus lookup
-    bus_lookup = -np.ones(max_bus_idx + 1, dtype=int)
+    bus_lookup = -np.ones(max_bus_idx + 1, dtype=np.int64)
     fill_bus_lookup(ar, bus_lookup, bus_index)
     return bus_lookup
 
@@ -115,7 +115,7 @@ def create_consecutive_bus_lookup(net, bus_index):
     # bus_lookup as dict:
     # bus_lookup = dict(zip(bus_index, consec_buses))
     # bus lookup as mask from pandapower -> pypower
-    bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
+    bus_lookup = -np.ones(max(bus_index) + 1, dtype=np.int64)
     bus_lookup[bus_index] = consec_buses
     return bus_lookup
 
@@ -381,7 +381,7 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     # init values
-    b, p, q = np.array([], dtype=int), np.array([]), np.array([])
+    b, p, q = np.array([], dtype=np.int64), np.array([]), np.array([])
 
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
@@ -460,7 +460,7 @@ def _get_motor_pq(net):
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
-    b, p, q = np.array([], dtype=int), np.array([]), np.array([])
+    b, p, q = np.array([], dtype=np.int64), np.array([]), np.array([])
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # Divide base kv by 3 for 3 phase calculation
     mode = net._options["mode"]

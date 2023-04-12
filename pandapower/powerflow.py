@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array, allclose
+from numpy import nan_to_num, array, allclose, int64
 
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -68,8 +68,8 @@ def _powerflow(net, **kwargs):
                       "'%s'!") % algorithm)
 
     # clear lookups
-    net._pd2ppc_lookups = {"bus": array([], dtype=int), "ext_grid": array([], dtype=int),
-                           "gen": array([], dtype=int), "branch": array([], dtype=int)}
+    net._pd2ppc_lookups = {"bus": array([], dtype=int64), "ext_grid": array([], dtype=int64),
+                           "gen": array([], dtype=int64), "branch": array([], dtype=int64)}
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)

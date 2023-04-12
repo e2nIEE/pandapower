@@ -90,7 +90,7 @@ def _run_dc_pf(ppci, recycle=False):
     ##      newPg = oldPg + newPinj - oldPinj
 
     ## ext_grid (ref_gens) buses
-    refgenbus=gen[ref_gens, GEN_BUS].astype(int)
+    refgenbus=gen[ref_gens, GEN_BUS].astype(np.int64)
     ## number of ext_grids (ref_gens) at those buses
     ext_grids_bus=bincount(refgenbus)
     gen[ref_gens, PG] = real(gen[ref_gens, PG] + (B[refgenbus, :] * Va - Pbus[refgenbus]) * baseMVA / ext_grids_bus[refgenbus])

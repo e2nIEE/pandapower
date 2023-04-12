@@ -691,7 +691,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         # works with a 2-tuple or a matching array
         net.bus_geodata = pd.concat([
             net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
                          index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
@@ -1472,6 +1472,101 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
+def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
+                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
+                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+    """
+    Adds storages to the network.
+
+    In order to simulate a storage system it is possible to use sgens or loads to model the
+    discharging or charging state. The power of a storage can be positive or negative, so the use
+    of either a sgen or a load is (per definition of the elements) not correct.
+    To overcome this issue, a storage element can be created.
+
+    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    default power flow calculations, the state of charge (SOC) is not updated during any power flow
+    calculation.
+    The implementation of energy content related parameters in the storage element allows to create
+    customized, time dependend simulations by running several power flow calculations and updating
+    variables manually.
+
+    INPUT:
+        **net** - The net within this storage should be created
+
+        **buses** (list of int) - The bus ids to which the generators are connected
+
+        **p_mw** (list of float) - The momentary active power of the storage \
+            (positive for charging, negative for discharging)
+
+        **max_e_mwh** (list of float) - The maximum energy content of the storage \
+            (maximum charge level)
+
+    OPTIONAL:
+        **q_mvar** (list of float, default 0) - The reactive power of the storage
+
+        **sn_mva** (list of float, default NaN) - Nominal power of the storage
+
+        **soc_percent** (list of float, NaN) - The state of charge of the storage
+
+        **min_e_mwh** (list of float, 0) - The minimum energy content of the storage \
+            (minimum charge level)
+
+        **name** (list of string, default None) - The name for this storage
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (list of float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
+
+        **type** (list of string, None) -  type variable to classify the storage
+
+        **in_service** (list of boolean, default True) - True for in_service or False for out of service
+
+        **max_p_mw** (list of float, NaN) - Maximum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_p_mw** (list of float, NaN) - Minimum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **max_q_mvar** (list of float, NaN) - Maximum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_q_mvar** (list of float, NaN) - Minimum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **controllable** (list of bool, NaN) - Whether this storage is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created storage
+
+    EXAMPLE:
+        create_storage(net, 1, p_mw = -30, max_e_mwh = 60, soc_percent = 1.0, min_e_mwh = 5)
+
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
+              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
+    defaults_to_fill = [("controllable", False)]
+
+    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
+
+    return index
+
+
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
@@ -1489,12 +1584,12 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **bus** (int) - The bus id to which the generator is connected
 
-    OPTIONAL:
         **p_mw** (float, default 0) - The active power of the generator (positive for generation!)
 
+    OPTIONAL:
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
-        **sn_mva** (float, None) - Nominal power of the generator
+        **sn_mva** (float, NaN) - Nominal power of the generator
 
         **name** (string, None) - The name for this generator
 
@@ -1617,13 +1712,12 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **buses** (list of int) - The bus ids to which the generators are connected
 
+        **p_mw** (list of float) - The active power of the generator (positive for generation!)
+
     OPTIONAL:
-        **p_mw** (list of float, default 0) - The active power of the generator (positive for \
-            generation!)
+        **vm_pu** (list of float, default 1) - The voltage set point of the generator.
 
-        **vm_pu** (list of float, default 0) - The voltage set point of the generator.
-
-        **sn_mva** (list of float, None) - Nominal power of the generator
+        **sn_mva** (list of float, NaN) - Nominal power of the generator
 
         **name** (list of string, None) - The name for this generator
 
@@ -3984,6 +4078,41 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     entries = dict(zip(["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "name", "in_service"],
                        [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name, in_service]))
     _set_entries(net, "ward", index, **entries, **kwargs)
+
+    return index
+
+
+def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None,
+                 **kwargs):
+    """
+    Creates ward equivalents.
+
+    A ward equivalent is a combination of an impedance load and a PQ load.
+
+    INPUT:
+        **net** (pandapowernet) - The pandapower net within the element should be created
+
+        **buses** (list of int) -  bus of the ward equivalent
+
+        **ps_mw** (list of float) - active power of the PQ load
+
+        **qs_mvar** (list of float) - reactive power of the PQ load
+
+        **pz_mw** (list of float) - active power of the impedance load in MW at 1.pu voltage
+
+        **qz_mvar** (list of float) - reactive power of the impedance load in MVar at 1.pu voltage
+
+    OUTPUT:
+        ward id
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
+              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+
+    _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
     return index
 

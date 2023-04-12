@@ -105,9 +105,9 @@ def _calc_trafo3w_parameter(net, ppc):
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
     r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
@@ -707,8 +707,8 @@ def _switch_branches(net, ppc):
         switch_buses = net["switch"]["bus"].values[switch_mask]
         switch_info = np.array(list(map(mapfunc, switch_buses, switch_element)))
         sw_sides = switch_info[:, 0]
-        sw_bus_index = bus_lookup[switch_info[:, 1].astype(int)]
-        sw_branch_index = switch_info[:, 2].astype(int)
+        sw_bus_index = bus_lookup[switch_info[:, 1].astype(np.int64)]
+        sw_branch_index = switch_info[:, 2].astype(np.int64)
         if neglect_open_switch_branches:
             # deactivate switches which have an open switch instead of creating aux buses
             ppc["branch"][sw_branch_index, BR_STATUS] = 0
@@ -736,18 +736,18 @@ def _switch_branches(net, ppc):
                     init_values = res_column.loc[switch_element].values[mask]
                 else:
                     if element == "line":
-                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
+                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(np.int64)
                         init_values = ppc["bus"][opposite_buses, col]
                     else:
                         opposite_side = T_BUS if side == F_BUS else F_BUS
                         opposite_buses = ppc["branch"][sw_branch_index[mask],
-                                                       opposite_side].real.astype(int)
+                                                       opposite_side].real.astype(np.int64)
                         if col == VM:
                             taps = ppc["branch"][sw_branch_index[mask], TAP].real
                             init_values = ppc["bus"][opposite_buses, col] * taps
                         else:
                             if calculate_voltage_angles:
-                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(int)
+                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(np.int64)
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
@@ -809,7 +809,7 @@ def _branches_with_oos_buses(net, ppc):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
+            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
             ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
@@ -821,7 +821,7 @@ def _branches_with_oos_buses(net, ppc):
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
             # 2: position of the line a switch is connected to
-            # ls_info = np.array(ls_info, dtype=int)
+            # ls_info = np.array(ls_info, dtype=np.int64)
 
             # build new buses
             new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)
