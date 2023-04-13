@@ -3713,7 +3713,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     return index
 
 
-def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=nan, step=1, max_step=1, name=None,
+def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
                  in_service=True, index=None, **kwargs):
     """
     Creates a shunt element
@@ -3762,7 +3762,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=nan, step=1, max_step=1, name=
     return index
 
 
-def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=nan, step=1, max_step=1, name=None,
+def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
                  in_service=True, index=None, **kwargs):
     """
     Creates a number of shunt elements
