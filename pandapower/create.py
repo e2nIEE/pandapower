@@ -683,8 +683,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
-    _add_to_entries_if_not_nan(entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(entries, index, "max_vm_pu", max_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
     if geodata is not None:
@@ -782,7 +782,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtyp=bool_,
+    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_,
                           default_val=False)
 
     return index
@@ -863,11 +863,11 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
                "const_z_percent": const_z_percent, "const_i_percent": const_i_percent,
                "scaling": scaling, "in_service": in_service, "name": name, "type": type}
 
-    _add_to_entries_if_not_nan(entries, index, "min_p_mw", min_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "controllable", controllable, dtyp=bool_,
+    _add_to_entries_if_not_nan(net, "load", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
@@ -1131,13 +1131,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtyp=bool_,
+    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
     _set_value_if_not_nan(net, index, rx, "rx", "sgen") # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
-                          dtyp="str", default_val="current_source")
+                          dtype="str", default_val="current_source")
     if generator_type == "current_source" or generator_type is None:
         _set_value_if_not_nan(net, index, k, "k", "sgen")
     elif generator_type == "async":
@@ -1249,25 +1249,28 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                "in_service": in_service, "name": name, "type": type,
                'current_source': current_source}
 
-    _add_to_entries_if_not_nan(entries, index, "min_p_mw", min_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "controllable", controllable, dtyp=bool_,
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=False)
-    _add_to_entries_if_not_nan(entries, index, "rx", rx)  # rx is always required
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_to_entries_if_not_nan(entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
-    _add_to_entries_if_not_nan(entries, index, "generator_type", generator_type, dtyp="str",
-                               default_val="current_source")
-    if any(entries["generator_type"] == "current_source"):
-        _add_to_entries_if_not_nan(entries, index, "k", k)
-    if any(entries["generator_type"] == "async"):
-        _add_to_entries_if_not_nan(entries, index, "lrc_pu", lrc_pu)
-    if any(entries["generator_type"] == "async_doubly_fed"):
-        _add_to_entries_if_not_nan(entries, index, "max_ik_ka", max_ik_ka)
-    else:
-        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
+                               dtype="str", default_val="current_source")
+    gen_types = ['current_source', 'async', 'async_doubly_fed']
+    gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
+                               keys=gen_types)
+    if gen_type_match["current_source"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
+    if gen_type_match["async"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "lrc_pu", lrc_pu)
+    if gen_type_match["async_doubly_fed"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_ik_ka", max_ik_ka)
+    if not gen_type_match.any(axis=1).all():
+        raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
     defaults_to_fill = [("controllable", False)]
@@ -1464,7 +1467,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
     _set_value_if_not_nan(net, index, controllable, "controllable", "storage",
-                          dtyp=bool_, default_val=False)
+                          dtype=bool_, default_val=False)
 
     return index
 
@@ -1551,11 +1554,11 @@ def create_storages(
               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
 
-    _add_to_entries_if_not_nan(entries, index, "min_p_mw", min_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "controllable", controllable, dtyp=bool_,
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
@@ -1660,7 +1663,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
     # OPF limits
     _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
-                          dtyp=bool_, default_val=True)
+                          dtype=bool_, default_val=True)
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "gen")
@@ -1678,7 +1681,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     _set_value_if_not_nan(net, index, rdss_ohm, "rdss_ohm", "gen")
     _set_value_if_not_nan(net, index, pg_percent, "pg_percent", "gen")
     _set_value_if_not_nan(net, index, power_station_trafo,
-                          "power_station_trafo", "gen", dtyp="Int64")
+                          "power_station_trafo", "gen", dtype="Int64")
 
     return index
 
@@ -1782,19 +1785,20 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
                "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
                "slack": slack}
 
-    _add_to_entries_if_not_nan(entries, index, "min_p_mw", min_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(entries, index, "max_vm_pu", max_vm_pu)
-    _add_to_entries_if_not_nan(entries, index, "vn_kv", vn_kv)
-    _add_to_entries_if_not_nan(entries, index, "cos_phi", cos_phi)
-    _add_to_entries_if_not_nan(entries, index, "xdss_pu", xdss_pu)
-    _add_to_entries_if_not_nan(entries, index, "rdss_ohm", rdss_ohm)
-    _add_to_entries_if_not_nan(entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(entries, index, "power_station_trafo", power_station_trafo, dtyp="Int64")
-    _add_to_entries_if_not_nan(entries, index, "controllable", controllable, dtyp=bool_,
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_vm_pu", max_vm_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "vn_kv", vn_kv)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "cos_phi", cos_phi)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
+                               power_station_trafo, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=True)
     defaults_to_fill = [("controllable", True)]
 
@@ -1956,7 +1960,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtyp=bool_, default_val=True)
+                          dtype=bool_, default_val=True)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
@@ -2213,17 +2217,18 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
-    _add_to_entries_if_not_nan(entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
+                               max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2494,23 +2499,25 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
                "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
                "name": name, "df": df, "parallel": parallel, "in_service": in_service}
 
-    _add_to_entries_if_not_nan(entries, index, "max_loading_percent", max_loading_percent)
-    _add_to_entries_if_not_nan(entries, index, "r0_ohm_per_km", r0_ohm_per_km)
-    _add_to_entries_if_not_nan(entries, index, "x0_ohm_per_km", x0_ohm_per_km)
-    _add_to_entries_if_not_nan(entries, index, "c0_nf_per_km", c0_nf_per_km)
-    _add_to_entries_if_not_nan(entries, index, "g0_us_per_km", g0_us_per_km)
-    _add_to_entries_if_not_nan(entries, index, "temperature_degree_celsius", temperature_degree_celsius)
-    _add_to_entries_if_not_nan(entries, index, "alpha", alpha)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
+                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "x0_ohm_per_km", x0_ohm_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "c0_nf_per_km", c0_nf_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "g0_us_per_km", g0_us_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius",
+                               temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2644,13 +2651,13 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, tap_dependent_impedance, "tap_dependent_impedance",
-                          "trafo", bool_, False, True)
+                          "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, vk_percent_characteristic,
                           "vk_percent_characteristic", "trafo", "Int64")
     _set_value_if_not_nan(net, index, vkr_percent_characteristic,
                           "vkr_percent_characteristic", "trafo", "Int64")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", bool_, False, True)
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
@@ -2801,7 +2808,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
-        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent,
+        "tap_step_degree": tap_step_degree,
         "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
     if ("tap_neutral" in v) and (tap_pos is nan):
@@ -2815,7 +2823,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     _set_entries(net, "trafo", index, **v)
 
     _set_value_if_not_nan(net, index, tap_dependent_impedance,
-                          "tap_dependent_impedance", "trafo", bool_, False, True)
+                          "tap_dependent_impedance", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, vk_percent_characteristic,
                           "vk_percent_characteristic", "trafo", "Int64")
     _set_value_if_not_nan(net, index, vkr_percent_characteristic,
@@ -2828,10 +2836,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         _set_value_if_not_nan(net, index, mag0_percent, "mag0_percent", "trafo")
         _set_value_if_not_nan(net, index, mag0_rx, "mag0_rx", "trafo")
         _set_value_if_not_nan(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
-        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtyp=str)
+        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtype=str)
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", bool_, False, True)
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -2973,23 +2981,23 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
                "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
-    _add_to_entries_if_not_nan(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
-                               dtype=bool_, default_val=False)
-    _add_to_entries_if_not_nan(entries, index, "vk_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap_dependent_impedance",
+                               tap_dependent_impedance, dtype=bool_, default_val=False)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk_percent_characteristic",
                                vk_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vkr_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr_percent_characteristic",
                                vkr_percent_characteristic, "Int64")
 
-    _add_to_entries_if_not_nan(entries, index, "vk0_percent", vk0_percent)
-    _add_to_entries_if_not_nan(entries, index, "vkr0_percent", vkr0_percent)
-    _add_to_entries_if_not_nan(entries, index, "mag0_percent", mag0_percent)
-    _add_to_entries_if_not_nan(entries, index, "mag0_rx", mag0_rx)
-    _add_to_entries_if_not_nan(entries, index, "si0_hv_partial", si0_hv_partial)
-    _add_to_entries_if_not_nan(entries, index, "max_loading_percent", max_loading_percent)
-    _add_to_entries_if_not_nan(entries, index, "vector_group", vector_group, dtyp=str)
-    _add_to_entries_if_not_nan(entries, index, "oltc", oltc, bool_, False)
-    _add_to_entries_if_not_nan(entries, index, "pt_percent", pt_percent)
-    _add_to_entries_if_not_nan(entries, index, "xn_ohm", xn_ohm)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk0_percent", vk0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr0_percent", vkr0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_percent", mag0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_rx", mag0_rx)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "si0_hv_partial", si0_hv_partial)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group, dtype=str)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
 
     defaults_to_fill = [("tap_dependent_impedance", False)]
     _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -3124,7 +3132,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, tap_dependent_impedance,
-                          "tap_dependent_impedance", "trafo3w", bool_, False, True)
+                          "tap_dependent_impedance", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, vk_hv_percent_characteristic,
                           "vk_hv_percent_characteristic", "trafo3w", "Int64")
     _set_value_if_not_nan(net, index, vkr_hv_percent_characteristic,
@@ -3311,7 +3319,7 @@ def create_transformer3w_from_parameters(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, tap_dependent_impedance,
-                          "tap_dependent_impedance", "trafo3w", bool_, False, True)
+                          "tap_dependent_impedance", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, vk_hv_percent_characteristic,
                           "vk_hv_percent_characteristic", "trafo3w", "Int64")
     _set_value_if_not_nan(net, index, vkr_hv_percent_characteristic,
@@ -3505,20 +3513,21 @@ def create_transformers3w_from_parameters(
                "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
                "vector_group": vector_group}
 
-    _add_to_entries_if_not_nan(entries, index, "max_loading_percent", max_loading_percent)
-    _add_to_entries_if_not_nan(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
-                               dtype=bool_, default_val=False)
-    _add_to_entries_if_not_nan(entries, index, "vk_hv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent",
+                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_dependent_impedance",
+                               tap_dependent_impedance, dtype=bool_, default_val=False)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_hv_percent_characteristic",
                                vk_hv_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vkr_hv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_hv_percent_characteristic",
                                vkr_hv_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vk_mv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_mv_percent_characteristic",
                                vk_mv_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vkr_mv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_mv_percent_characteristic",
                                vkr_mv_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vk_lv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_lv_percent_characteristic",
                                vk_lv_percent_characteristic, "Int64")
-    _add_to_entries_if_not_nan(entries, index, "vkr_lv_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_lv_percent_characteristic",
                                vkr_lv_percent_characteristic, "Int64")
     defaults_to_fill = [("tap_dependent_impedance", False)]
 
@@ -4744,9 +4753,11 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
                           % (element_name, node_name, plural, node_not_exist))
 
 
-def _not_nan(value, all=True):
-    if hasattr(value, "__iter__"):
-        if all:
+def _not_nan(value, all_=True):
+    if isinstance(value, str):
+        return True
+    elif hasattr(value, "__iter__"):
+        if all_:
             return not all(isnan(value))
         else:
             return not any(isnan(value))
@@ -4756,14 +4767,15 @@ def _not_nan(value, all=True):
         except TypeError:
             return True
 
+
 def try_astype(df, column, dtyp):
     try:
-        df[column] = [column].astype(dtyp)
+        df[column] = df[column].astype(dtyp)
     except TypeError:
         pass
 
 
-def _set_value_if_not_nan(net, index, value, column, element_type, dtyp=float64, default_val=nan):
+def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64, default_val=nan):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
     If the value is not nan and the column does not exist already, the column is created and filled
@@ -4797,14 +4809,14 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtyp=float64,
             net[element_type].loc[:, column] = pd.Series(
                 data=default_val, index=net[element_type].index)
         net[element_type].at[index, column] = value
-        try_astype(net[element_type], column, dtyp)
+        try_astype(net[element_type], column, dtype)
     elif column_exists:
         if _not_nan(default_val):
             net[element_type].at[index, column] = default_val
-        try_astype(net[element_type], column, dtyp)
+        try_astype(net[element_type], column, dtype)
 
 
-def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, dtyp=float64,
+def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, dtype=float64,
                                default_val=nan):
     """
 
@@ -4817,10 +4829,10 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
             entries[column] = entries[column].fillna(default_val)
-        try_astype(entries, column, dtyp)
+        try_astype(entries, column, dtype)
     elif column_exists:
         entries[column] = pd.Series(data=default_val, index=index)
-        try_astype(entries, column, dtyp)
+        try_astype(entries, column, dtype)
 
 
 def _add_multiple_branch_geodata(net, table, geodata, index):
