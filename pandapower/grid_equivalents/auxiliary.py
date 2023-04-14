@@ -3,12 +3,14 @@ from pathlib import Path
 from copy import deepcopy
 import numpy as np
 import pandas as pd
-import pandapower as pp
+
+import pandapower.toolbox
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
 from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
+import pandapower as pp
 import uuid
 
 try:
@@ -44,6 +46,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     available, ext_grids are created according to the given bus results;
     otherwise, ext_grids are created with vm_pu=1 and va_degreee=0
     """
+    orig_slack_gens = net.gen.index[net.gen.slack]
     buses_to_add_ext_grids = set(boundary_buses) - set(net.ext_grid.bus[net.ext_grid.in_service]) \
                              - set(net.gen.bus[net.gen.in_service & net.gen.slack])
     res_buses = set(
@@ -130,6 +133,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         net.ext_grid.va_degree.loc[add_eg] -= va_ave
         runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
                  max_iteration=100)
+    return orig_slack_gens
 
 
 def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
@@ -137,7 +141,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
     This function drops all branch elements which have 'internal_buses' connected at all sides of
     the branch element (e.g. for lines at 'from_bus' and 'to_bus').
     """
-    bebd = pp.branch_element_bus_dict()
+    bebd = pandapower.toolbox.branch_element_bus_dict()
     if branch_elements is not None:
         bebd = {elm: bus_types for elm,
                 bus_types in bebd.items() if elm in branch_elements}
@@ -263,7 +267,7 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 
 
 def _ensure_unique_boundary_bus_names(net, boundary_buses):
-    """ This function ad a unique name to each bounary bus. The original 
+    """ This function ad a unique name to each bounary bus. The original
         boundary bus names are retained.
     """
     assert "name_equivalent" not in net.bus.columns.tolist()
@@ -314,10 +318,8 @@ def build_ppc_and_Ybus(net):
     ppc, ppci = _pd2ppc(net)
     net["_ppc"] = ppc
     makeYbus, pfsoln = _get_numba_functions(ppci, net["_options"])
-    baseMVA, bus, gen, branch, _, _, _, _, _, V0, ref_gens = _get_pf_variables_from_ppci(
-        ppci)
-    _, Ybus, _, _ = _get_Y_bus(
-        ppci, net["_options"], makeYbus, baseMVA, bus, branch)
+    baseMVA, bus, gen, branch, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    _, Ybus, _, _ = _get_Y_bus(ppci, net["_options"], makeYbus, baseMVA, bus, branch)
 
     net._ppc["internal"]["Ybus"] = Ybus
 
@@ -348,7 +350,7 @@ def match_controller_and_new_elements(net, net_org):
     """
     This function makes the original controllers and the
     new created sgen to match
-    
+
     test at present: controllers in the external area are removed.
     """
     if len(net.controller):
@@ -364,17 +366,17 @@ def match_controller_and_new_elements(net, net_org):
             var = net.controller.object[idx].__dict__["variable"]
             elm_idxs = net.controller.object[idx].__dict__["element_index"]
             org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
-            
+
             new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
             if len(new_elm_idxs) == 0:
                 tobe_removed.append(idx)
             else:
                 profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
-                
+
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller.drop(tobe_removed, inplace=True)    
+        net.controller.drop(tobe_removed, inplace=True)
     # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
@@ -382,7 +384,7 @@ def ensure_origin_id(net, no_start=0, elms=None):
     Ensures completely filled column 'origin_id' in every pp element.
     """
     if elms is None:
-        elms = pp.pp_elements()
+        elms = pandapower.toolbox.pp_elements()
 
     for elm in elms:
         if "origin_id" not in net[elm].columns:
@@ -536,7 +538,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
 
 
 def replace_motor_by_load(net, all_external_buses):
-    """ 
+    """
     replace the 'external' motors by loads. The name is modified.
     e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
     """
@@ -553,7 +555,7 @@ def replace_motor_by_load(net, all_external_buses):
         net.res_load.loc[li] = p, q
     net.motor.drop(motors, inplace=True)
     net.res_motor.drop(motors, inplace=True)
-  
+
 
 if __name__ == "__main__":
     pass

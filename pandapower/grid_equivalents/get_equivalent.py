@@ -5,8 +5,7 @@ from copy import deepcopy
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
-    match_cost_functions_and_eq_net, _check_network, adaptation_phase_shifter, \
-    get_boundary_vp, _runpp_except_voltage_angles
+    match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
@@ -137,7 +136,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if not len(boundary_buses):
         raise ValueError("No boundary buses are given.")
     _check_network(net)
-    logger.info(eq_type + " equivalent calculation started")
+    logger.info(eq_type + " equivalent calculation started.")
 
     # --- determine interal buses, external buses, buses connected to boundary buses via
     #     bus-bus-switch and update boundary buses by external slack buses
@@ -145,7 +144,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch, boundary_buses = \
         _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_time)
     if not len(all_external_buses):
-        logger.warning("There are no external buses so that no equivalent grid can be calculated")
+        logger.warning("There are no external buses so that no equivalent grid can be calculated.")
         return None
     return_internal &= bool(len(all_internal_buses))
 
@@ -153,19 +152,18 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     _ensure_unique_boundary_bus_names(net, boundary_buses_inclusive_bswitch)
 
     # --- create reference buses
-    add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree,
-                                calc_volt_angles=calculate_voltage_angles,
-                                allow_net_change_for_convergence=allow_net_change_for_convergence,
-                                runpp_fct=runpp_fct)
+    orig_slack_gens = add_ext_grids_to_boundaries(
+        net, boundary_buses, adapt_va_degree, calc_volt_angles=calculate_voltage_angles,
+        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct)
 
     # --- replace ward and xward elements by internal elements (load, shunt, impedance, gen)
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
     ext_buses_with_xward = net.xward.bus[net.xward.bus.isin(all_external_buses)]
     if len(ext_buses_with_ward):
-        logger.debug("ward elements of the external network are replaced by internal elements")
+        logger.debug("ward elements of the external network are replaced by internal elements.")
         pp.replace_ward_by_internal_elements(net, wards=ext_buses_with_ward.index)
     if len(ext_buses_with_xward):
-        logger.debug("xward elements of the external network are replaced by internal elements")
+        logger.debug("xward elements of the external network are replaced by internal elements.")
         pp.replace_xward_by_internal_elements(net, xwards=ext_buses_with_xward.index)
 
     # --- switch from ward injection to ward addmittance if requested
@@ -255,7 +253,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                                              runpp_fct=runpp_fct)
         net_eq = net_external
     else:
-        raise NotImplementedError("The eq_type '%s' is unknown." % eq_type)
+        raise NotImplementedError(f"The {eq_type=} is unknown.")
 
     net_eq["bus_lookups"] = bus_lookups
 
@@ -264,6 +262,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, eq_type, show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
+        if len(orig_slack_gens):
+            net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:
@@ -276,8 +276,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("\""+eq_type+"\" equivalent finished in %s seconds:" % round((
-        time_end-time_start), 2))
+    logger.info("%s equivalent finished in %.2f seconds." % (eq_type, time_end-time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
@@ -403,7 +402,7 @@ def merge_internal_net_and_equivalent_external_net(
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("'merge_int_and_eq_net' finished in %s seconds:" %
+        logger.info("'merge_int_and_eq_net' finished in %s seconds." %
                     round((t_end-t_start), 2))
 
     return merged_net
@@ -471,11 +470,8 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
 
     # --- determine buses connected to boundary buses via bus-bus-switch
     boundary_buses_inclusive_bswitch = set()
-    mg_sw = top.create_nxgraph(net, include_trafos=False,
-                               include_trafo3ws=False,
-                               respect_switches=True,
-                               include_lines=False,
-                               include_impedances=False)
+    mg_sw = top.create_nxgraph(net, respect_switches=True, include_lines=False, include_impedances=False,
+                               include_tcsc=False, include_trafos=False, include_trafo3ws=False)
     for bbus in boundary_buses:
         boundary_buses_inclusive_bswitch |= set(top.connected_component(mg_sw, bbus))
     if len(boundary_buses_inclusive_bswitch) > len(boundary_buses):
@@ -483,7 +479,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                     "bus-bus-switches. They could be the nodes on the same bus bar " +
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
-                    "as the boundary. They are: %s:" % boundary_buses_inclusive_bswitch)
+                    "as the boundary. They are: %s." % boundary_buses_inclusive_bswitch)
 
     # --- determine all internal buses
     all_internal_buses = set()
@@ -526,7 +522,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses,
                       boundary_buses)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"determine_bus_groups\" finished in %s seconds:" %
+        logger.info("\"determine_bus_groups\" finished in %s seconds." %
                     round((t_end-t_start), 2))
 
     return sorted(all_internal_buses), sorted(all_external_buses), \

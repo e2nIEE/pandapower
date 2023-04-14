@@ -13,7 +13,8 @@
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
+from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, \
+    flatnonzero as find, int64
 from scipy.sparse import hstack, csr_matrix as sparse
 from pandapower.pypower.idx_brch import RATE_A
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
@@ -122,7 +123,7 @@ def opf_setup(ppc, ppopt):
         stdout.write(errstr)
 
     ## set up initial variables and bounds
-    gbus = gen[:, GEN_BUS].astype(int)
+    gbus = gen[:, GEN_BUS].astype(int64)
     Va   = bus[:, VA] * (pi / 180.0)
     Vm   = bus[:, VM].copy()
     Vm[gbus] = gen[:, VG]   ## buses with gens, init Vm from gen data

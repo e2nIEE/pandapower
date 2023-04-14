@@ -37,4 +37,4 @@ def test_dickert_lv_networks():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_dickert_lv_networks.py"])
+    pytest.main([__file__, "-xs"])
