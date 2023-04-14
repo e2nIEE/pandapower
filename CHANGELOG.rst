@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2023-..-..
+-------------------------------
+- [FIXED] recorrection of shunt values in CIGRE HV
+
 [2.12.0] - 2023-04-06
 -------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
