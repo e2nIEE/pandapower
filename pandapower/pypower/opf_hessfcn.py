@@ -10,8 +10,8 @@
 
 """Evaluates Hessian of Lagrangian for AC OPF.
 """
-
-from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
+import numpy as np
+from numpy import flatnonzero as find
 from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 
 from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
@@ -83,7 +83,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
 
     ## set default constrained lines
     if il is None:
-        il = arange(nl)            ## all lines have limits by default
+        il = np.arange(nl)            ## all lines have limits by default
     nl2 = len(il)           ## number of constrained lines
 
     ## grab Pg & Qg
@@ -97,17 +97,17 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     ## reconstruct V
     Va = x[vv["i1"]["Va"]:vv["iN"]["Va"]]
     Vm = x[vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    V = Vm * exp(1j * Va)
+    V = Vm * np.exp(1j * Va)
     nxtra = nxyz - 2 * nb
-    pcost = gencost[arange(ng), :]
+    pcost = gencost[np.arange(ng), :]
     if gencost.shape[0] > ng:
-        qcost = gencost[arange(ng, 2 * ng), :]
+        qcost = gencost[np.arange(ng, 2 * ng), :]
     else:
-        qcost = array([])
+        qcost = np.array([])
 
     ## ----- evaluate d2f -----
-    d2f_dPg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Pg
-    d2f_dQg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Qg
+    d2f_dPg2 = np.zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Pg
+    d2f_dQg2 = np.zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Qg
     ipolp = find(pcost[:, MODEL] == POLYNOMIAL)
     if len(ipolp):
         d2f_dPg2[ipolp] = \
@@ -116,11 +116,11 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         ipolq = find(qcost[:, MODEL] == POLYNOMIAL)
         d2f_dQg2[ipolq] = \
                 baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
-    i = r_[arange(vv["i1"]["Pg"], vv["iN"]["Pg"]),
-           arange(vv["i1"]["Qg"], vv["iN"]["Qg"])]
+    i = np.r_[np.arange(vv["i1"]["Pg"], vv["iN"]["Pg"]),
+           np.arange(vv["i1"]["Qg"], vv["iN"]["Qg"])]
 #    d2f = sparse((vstack([d2f_dPg2, d2f_dQg2]).toarray().flatten(),
 #                  (i, i)), shape=(nxyz, nxyz))
-    d2f = sparse((r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
+    d2f = sparse((np.r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
     ## generalized cost
     if issparse(N) and N.nnz > 0: # pragma: no cover
@@ -129,16 +129,16 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         iLT = find(r < -kk)               ## below dead zone
         iEQ = find((r == 0) & (kk == 0))  ## dead zone doesn't exist
         iGT = find(r > kk)                ## above dead zone
-        iND = r_[iLT, iEQ, iGT]           ## rows that are Not in the Dead region
+        iND = np.r_[iLT, iEQ, iGT]           ## rows that are Not in the Dead region
         iL = find(dd == 1)                ## rows using linear function
         iQ = find(dd == 2)                ## rows using quadratic function
-        LL = sparse((ones(len(iL)), (iL, iL)), (nw, nw))
-        QQ = sparse((ones(len(iQ)), (iQ, iQ)), (nw, nw))
-        kbar = sparse((r_[ones(len(iLT)), zeros(len(iEQ)), -ones(len(iGT))],
+        LL = sparse((np.ones(len(iL)), (iL, iL)), (nw, nw))
+        QQ = sparse((np.ones(len(iQ)), (iQ, iQ)), (nw, nw))
+        kbar = sparse((np.r_[np.ones(len(iLT)), np.zeros(len(iEQ)), -np.ones(len(iGT))],
                        (iND, iND)), (nw, nw)) * kk
         rr = r + kbar                  ## apply non-dead zone shift
         M = sparse((mm[iND], (iND, iND)), (nw, nw))  ## dead zone or scale
-        diagrr = sparse((rr, (arange(nw), arange(nw))), (nw, nw))
+        diagrr = sparse((rr, (np.arange(nw), np. arange(nw))), (nw, nw))
 
         ## linear rows multiplied by rr(i), quadratic rows by rr(i)^2
         w = M * (LL + QQ * diagrr) * rr
@@ -146,7 +146,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         AA = N.T * M * (LL + 2 * QQ * diagrr)
 
         d2f = d2f + AA * H * AA.T + 2 * N.T * M * QQ * \
-                sparse((HwC, (arange(nw), arange(nw))), (nw, nw)) * N
+                sparse((HwC, (np.arange(nw), np.arange(nw))), (nw, nw)) * N
     d2f = d2f * cost_mult
 
     ##----- evaluate Hessian of power balance constraints -----
@@ -179,14 +179,14 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
             Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
             Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
         else:
-            Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
+            Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(np.zeros((nb,nb)))
     else: # pragma: no cover
         f = branch[il, F_BUS].astype(np.int64)    ## list of "from" buses
         t = branch[il, T_BUS].astype(np.int64)    ## list of "to" buses
         ## connection matrix for line & from buses
-        Cf = sparse((ones(nl2), (arange(nl2), f)), (nl2, nb))
+        Cf = sparse((np.ones(nl2), (np.arange(nl2), f)), (nl2, nb))
         ## connection matrix for line & to buses
-        Ct = sparse((ones(nl2), (arange(nl2), t)), (nl2, nb))
+        Ct = sparse((np.ones(nl2), (np.arange(nl2), t)), (nl2, nb))
         dSf_dVa, dSf_dVm, dSt_dVa, dSt_dVm, Sf, St = \
                 dSbr_dV(branch[il,:], Yf, Yt, V)
         if ppopt['OPF_FLOW_LIM'] == 1:     ## real power
