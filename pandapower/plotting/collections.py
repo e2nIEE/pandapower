@@ -43,7 +43,7 @@ if not MATPLOTLIB_INSTALLED:
     logger.warning("matplotlib could not be imported. "
                    "It is required for many plotting functions. \nThus, this might lead to errors "
                    "with some plotting functions. To install all pandapower dependencies, "
-                   "pip install pandapower['all'] can be used.")
+                   'pip install pandapower["all"] can be used.')
 
 
 class CustomTextPath(TextPath):
