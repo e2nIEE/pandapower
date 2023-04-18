@@ -24,11 +24,9 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
     This function converts a pandapower net to a pypower case file.
 
     INPUT:
-
         **net** - The pandapower net.
 
     OPTIONAL:
-
         **calculate_voltage_angles** (bool, False) - consider voltage angles in loadflow calculation
 
         If True, voltage angles of ext_grids and transformer shifts are considered in the
@@ -77,18 +75,13 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         net.bus[["min_vm_pu", "max_vm_pu"]], take_slack_vm_limits can be set to False.
 
     OUTPUT:
-
         **ppc** - The Pypower casefile for usage with pypower
 
     EXAMPLE:
-
-        import pandapower.converter as pc
-
-        import pandapower.networks as pn
-
-        net = pn.case9()
-
-        ppc = pc.to_ppc(net)
+        >>> import pandapower.converter as pc
+        >>> import pandapower.networks as pn
+        >>> net = pn.case9()
+        >>> ppc = pc.to_ppc(net)
 
     """
     if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and
