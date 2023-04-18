@@ -4,8 +4,7 @@
 
 """Computes total cost for generators at given output level.
 """
-import numpy as np
-from numpy import flatnonzero as find
+from numpy import zeros, arange, int64, flatnonzero as find
 
 from pandapower.pypower.polycost import polycost
 from pandapower.pypower.idx_cost import PW_LINEAR, POLYNOMIAL, COST, NCOST, MODEL
@@ -24,7 +23,7 @@ def totcost(gencost, Pg):
     Autonoma de Manizales)
     """
     ng, m = gencost.shape
-    totalcost = np.zeros(ng)
+    totalcost = zeros(ng)
 
     if len(gencost) > 0:
         ipwl = find(gencost[:, MODEL] == PW_LINEAR)
@@ -35,7 +34,7 @@ def totcost(gencost, Pg):
 
             for i in ipwl:
                 ncost = gencost[i, NCOST]
-                for k in np.arange(ncost - 1, dtype=np.int64):
+                for k in arange(ncost - 1, dtype=int64):
                     p1, p2 = p[i, k], p[i, k+1]
                     c1, c2 = c[i, k], c[i, k+1]
                     m = (c2 - c1) / (p2 - p1)

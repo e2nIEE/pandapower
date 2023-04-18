@@ -5,7 +5,7 @@
 """Evaluates nonlinear constraints and their Jacobian for OPF.
 """
 
-import numpy as np
+from numpy import zeros, ones, conj, exp, r_, Inf, arange, int64
 from scipy.sparse import lil_matrix, vstack, hstack, csr_matrix as sparse
 
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
@@ -64,7 +64,7 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
 
     ## set default constrained lines
     if il is None:
-        il = np.arange(nl)         ## all lines have limits by default
+        il = arange(nl)         ## all lines have limits by default
     nl2 = len(il)              ## number of constrained lines
 
     ## grab Pg & Qg
@@ -82,52 +82,52 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
     ## reconstruct V
     Va = x[vv["i1"]["Va"]:vv["iN"]["Va"]]
     Vm = x[vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    V = Vm * np.exp(1j * Va)
+    V = Vm * exp(1j * Va)
 
     ## evaluate power flow equations
-    mis = V * np.conj(Ybus * V) - Sbus
+    mis = V * conj(Ybus * V) - Sbus
 
     ##----- evaluate constraint function values -----
     ## first, the equality constraints (power flow)
-    g = np.r_[ mis.real,            ## active power mismatch for all buses
+    g = r_[ mis.real,            ## active power mismatch for all buses
             mis.imag ]           ## reactive power mismatch for all buses
 
     ## then, the inequality constraints (branch flow limits)
     if nl2 > 0:
         flow_max = (branch[il, RATE_A] / baseMVA)**2
-        flow_max[flow_max == 0] = np.Inf
+        flow_max[flow_max == 0] = Inf
         if ppopt['OPF_FLOW_LIM'] == 2:       ## current magnitude limit, |I|
             If = Yf * V
             It = Yt * V
-            h = np.r_[ If * np.conj(If) - flow_max,     ## branch I limits (from bus)
-                    It * np.conj(It) - flow_max ].real    ## branch I limits (to bus)
+            h = r_[ If * conj(If) - flow_max,     ## branch I limits (from bus)
+                    It * conj(It) - flow_max ].real    ## branch I limits (to bus)
         else:
             ## compute branch power flows
             ## complex power injected at "from" bus (p.u.)
-            Sf = V[ branch[il, F_BUS].astype(np.int64) ] * np.conj(Yf * V)
+            Sf = V[ branch[il, F_BUS].astype(int64) ] * conj(Yf * V)
             ## complex power injected at "to" bus (p.u.)
-            St = V[ branch[il, T_BUS].astype(np.int64) ] * np.conj(Yt * V)
+            St = V[ branch[il, T_BUS].astype(int64) ] * conj(Yt * V)
             if ppopt['OPF_FLOW_LIM'] == 1:   ## active power limit, P (Pan Wei)
-                h = np.r_[ Sf.real**2 - flow_max,   ## branch P limits (from bus)
+                h = r_[ Sf.real**2 - flow_max,   ## branch P limits (from bus)
                         St.real**2 - flow_max ]  ## branch P limits (to bus)
             else:                ## apparent power limit, |S|
-                h = np.r_[ Sf * np.conj(Sf) - flow_max, ## branch S limits (from bus)
-                        St * np.conj(St) - flow_max ].real  ## branch S limits (to bus)
+                h = r_[ Sf * conj(Sf) - flow_max, ## branch S limits (from bus)
+                        St * conj(St) - flow_max ].real  ## branch S limits (to bus)
     else:
-        h = np.zeros((0,1))
+        h = zeros((0,1))
 
     ##----- evaluate partials of constraints -----
     ## index ranges
-    iVa = np.arange(vv["i1"]["Va"], vv["iN"]["Va"])
-    iVm = np.arange(vv["i1"]["Vm"], vv["iN"]["Vm"])
-    iPg = np.arange(vv["i1"]["Pg"], vv["iN"]["Pg"])
-    iQg = np.arange(vv["i1"]["Qg"], vv["iN"]["Qg"])
-    iVaVmPgQg = np.r_[iVa, iVm, iPg, iQg].T
+    iVa = arange(vv["i1"]["Va"], vv["iN"]["Va"])
+    iVm = arange(vv["i1"]["Vm"], vv["iN"]["Vm"])
+    iPg = arange(vv["i1"]["Pg"], vv["iN"]["Pg"])
+    iQg = arange(vv["i1"]["Qg"], vv["iN"]["Qg"])
+    iVaVmPgQg = r_[iVa, iVm, iPg, iQg].T
 
     ## compute partials of injected bus powers
     dSbus_dVm, dSbus_dVa = dSbus_dV(Ybus, V)           ## w.r.t. V
     ## Pbus w.r.t. Pg, Qbus w.r.t. Qg
-    neg_Cg = sparse((-np.ones(ng), (gen[:, GEN_BUS], range(ng))), (nb, ng))
+    neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], range(ng))), (nb, ng))
 
     ## construct Jacobian of equality constraints (power flow) and transpose it
     dg = lil_matrix((2 * nb, nxyz))
@@ -163,7 +163,7 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
         ## construct Jacobian of inequality constraints (branch limits)
         ## and transpose it.
         dh = lil_matrix((2 * nl2, nxyz))
-        dh[:, np.r_[iVa, iVm].T] = vstack([
+        dh[:, r_[iVa, iVm].T] = vstack([
                 hstack([df_dVa, df_dVm]),    ## "from" flow limit
                 hstack([dt_dVa, dt_dVm])     ## "to" flow limit
             ], "csr")
