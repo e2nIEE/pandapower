@@ -16,8 +16,9 @@ class Characteristic(JSONSerializableClass):
     This class represents a characteristics curve. The curve is described as a
     piecewise linear function.
 
-    |   **pts** - Expects two (or more) points of the function (i.e. kneepoints)
-    |   **eps** - Optional: An epsilon to compare the difference to.
+    **pts** - Expects two (or more) points of the function (i.e. kneepoints)
+
+    **eps** - Optional: An epsilon to compare the difference to.
 
     The class has an implementation of the __call__ method, which allows using it interchangeably with other interpolator objects,
     e.g. scipy.interpolate.interp1d, scipy.interpolate.CubicSpline, scipy.interpolate.PPoly, etc.
@@ -63,7 +64,6 @@ class Characteristic(JSONSerializableClass):
     >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
     False
     """
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__()
         self.x_vals = x_values
@@ -171,4 +171,3 @@ class SplineCharacteristic(Characteristic):
             The interpolated y-value.
         """
         return self.interpolator(x)
-
