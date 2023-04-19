@@ -558,7 +558,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "max_i_ka"] == 200
 
 
-def test_create_lines_raise_except():
+def test_create_lines_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -803,7 +803,7 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[1]] == 4
 
 
-def test_create_transformers_raise_except():
+def test_create_transformers_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -993,7 +993,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
 
-def test_create_transformers3w_raise_except():
+def test_create_transformers3w_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
@@ -1173,7 +1173,7 @@ def test_create_switches():
     assert net.switch.test_kwargs.at[2] == "aaa"
 
 
-def test_create_switches_raise_except():
+def test_create_switches_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1317,7 +1317,7 @@ def test_create_loads():
     )
 
 
-def test_create_loads_raise_except():
+def test_create_loads_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1505,7 +1505,7 @@ def test_create_sgens():
     assert all(net.sgen.test_kwargs == "dummy_string")
 
 
-def test_create_sgens_raise_except():
+def test_create_sgens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1610,7 +1610,7 @@ def test_create_gens():
     assert all(net.gen.test_kwargs == "dummy_string")
 
 
-def test_create_gens_raise_except():
+def test_create_gens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)

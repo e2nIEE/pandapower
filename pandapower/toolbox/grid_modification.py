@@ -320,14 +320,18 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     impedance of the new line and the already existing line is equal to the impedance of the
     replaced line. Or for electrical engineers:
 
-    Z0 = impedance of the existing line
-    Z1 = impedance of the replaced line
-    Z2 = impedance of the created line
+        Z0 = impedance of the existing line
 
-        --- Z2 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+        Z1 = impedance of the replaced line
 
+        Z2 = impedance of the created line
+
+    sketch:
+    ::
+
+            --- Z2 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
 
     Parameters
     ----------
@@ -396,23 +400,29 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 def merge_parallel_line(net, idx):
     """
     Changes the impedances of the parallel line so that it equals a single line.
-    Args:
-        net: pandapower net
-        idx: idx of the line to merge
 
-    Returns:
-        net
+        Z0 = impedance of the existing parallel lines
 
-    Z0 = impedance of the existing parallel lines
-    Z1 = impedance of the respective single line
+        Z1 = impedance of the respective single line
 
-        --- Z0 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+    sketch:
+    ::
 
+            --- Z0 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
+
+    Parameters
+    ----------
+        net - pandapower net
+
+        idx (int) - idx of the line to merge
+
+    Returns
+    -------
+    net
     """
     # impedance before changing the standard type
-
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
     x0 = net.line.at[idx, "x_ohm_per_km"]
