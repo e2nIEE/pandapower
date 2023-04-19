@@ -82,15 +82,15 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
     attributes are compared but not the addresses of the objects.
 
     INPUT:
-        **net1** (pandapower net)
+        **net1** (pandapowerNet)
 
-        **net2** (pandapower net)
+        **net2** (pandapowerNet)
 
     OPTIONAL:
-        **check_only_results** (bool, False) - if True, only result tables (starting with "res_")
+        **check_only_results** (bool, False) - if True, only result tables (starting with ``res_``)
         are compared
 
-        **check_without_results** (bool, False) - if True, result tables (starting with "res_")
+        **check_without_results** (bool, False) - if True, result tables (starting with ``res_``)
         are ignored for comparison
 
         **exclude_elms** (list, None) - list of element tables which should be ignored in the
