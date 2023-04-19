@@ -12,7 +12,7 @@ External Grid
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_ext_grid
+.. autofunction:: pandapower.create.create_ext_grid
 
 
 Input Parameters

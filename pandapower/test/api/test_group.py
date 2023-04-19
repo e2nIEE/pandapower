@@ -216,7 +216,7 @@ def test_check_unique_group_rows():
         assert False, "UserWarning expected"
     except UserWarning:
         pass
-    pp.check_unique_group_rows(net, raise_=False, log_level="debug")
+    pp.check_unique_group_rows(net, raise_error=False, log_level="debug")
 
 
 def test_drop_element():

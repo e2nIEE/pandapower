@@ -1,20 +1,20 @@
 .. _pandamodels:
 
-#################################
+####################################
 Optimization with PandaModels.jl
-#################################
+####################################
 
 
 Introduction
 --------------------
 
-`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>`__ (pandapower + PowerModels.jl) is an interface (Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
+`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>`_ (pandapower + PowerModels.jl) is an interface (Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
 
 
 Installation
 --------------
 
-If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it. For the interface to work, note that you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available `here <https://julialang.org/downloads/oldreleases/>`_.
+If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it. For the interface to work, note that you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available `here <https://julialang.org/downloads/oldreleases/>`__.
 
 .. note:: You don't necessarily need a Julia IDE if you are using PandaModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation>`_. Also, PyCharm has a Julia Plugin.
 
@@ -33,9 +33,9 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it
 
 3. Access the package manager by typing :code:`]`. Now install the packages: :code:`add Ipopt PowerModels PyCall`. To pass the python environment variable, running :code:`build PyCall` inside the julia package manager may be neccessary.
 
-4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`__ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test wether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`_.
+4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`_ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test wether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
 
-.. note:: If you cannot plot using PyCall and PyPlot in Julia, see the workarounds offered `here <https://github.com/JuliaPy/PyCall.jl/issues/665>`_.
+.. note:: If you cannot plot using PyCall and PyPlot in Julia, see the workarounds offered `here <https://github.com/JuliaPy/PyCall.jl/issues/665>`__.
 
 5. To call Julia from Python, install the pyjulia package with :code:`pip install julia`. Afterwards, test if everything works by importing PowerModels from Python with: :code:`from julia.PowerModels import run_ac_opf`. This takes some time, since Python starts a julia instance in the background, but it if the import completes without error everything is configured correctly and you can now use PowerModels to optimize pandapower networks.
 
@@ -49,7 +49,7 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it
 Additional Solvers
 --------------------
 
-Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are compatible to PowerModels.jl. To use these solvers, you first have to install the solver itself on your system and then the julia interface. Gurobi is very fast for linear problems such as the DC model and free for academic usage. Let's do this step by step for Gurobi:
+Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`_ are compatible to PowerModels.jl. To use these solvers, you first have to install the solver itself on your system and then the julia interface. Gurobi is very fast for linear problems such as the DC model and free for academic usage. Let's do this step by step for Gurobi:
 
 1. Download and install from `Gurobi download <https://www.gurobi.com/downloads/>`_ (you'll need an account for this)
 
@@ -101,7 +101,7 @@ Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`__ are co
 Usage
 ------
 
-The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_opf.ipynb>`__.
+The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_opf.ipynb>`_.
 
 .. autofunction:: pandapower.runpm_ac_opf
 
@@ -109,6 +109,6 @@ The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/p
 
 .. autofunction:: pandapower.runpm
 
-The TNEP optimization is explained in the `PandaModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_tnep.ipynb>`__. Additional packages including "juniper"
+The TNEP optimization is explained in the `PandaModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_tnep.ipynb>`_. Additional packages including "juniper"
 
 .. autofunction:: pandapower.runpm_tnep
