@@ -17,7 +17,7 @@ import pandapower.timeseries
 from copy import deepcopy
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.test.consistency_checks import consistency_checks
-from pandapower.test.toolbox import add_grid_connection, create_test_line
+from pandapower.test.helper_funktions import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.converter import convert_pp_to_pm
 from pandapower import pp_dir
@@ -30,7 +30,6 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia import Main
-
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
