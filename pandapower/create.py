@@ -4603,7 +4603,8 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
     """Add a new group to net['group'] dataframe.
 
     Attention
-    ----------
+    ::
+
         If you declare a group but forget to declare all connected elements although
         you wants to (e.g. declaring lines but forgetting to mention the connected switches),
         you may get problems after using drop_elements_and_group() or other functions.
@@ -4629,12 +4630,9 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
     index : int, optional
         index for the dataframe net.group, by default None
 
-    Example
-    -------
-    >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
-    >>> # or:
-    >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]],
-    ...                         reference_columns="name")
+    EXAMPLES:
+        >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)

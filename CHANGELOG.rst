@@ -1,6 +1,14 @@
 Change Log
 =============
 
+[2.12.1] - 2023-04-18
+-------------------------------
+- [FIXED] add minimum Python version (3.8) explicitly to setup.py
+- [FIXED] remove `import pandapower.test` from __init__
+- [FIXED] matplotlib imports are optional (but required for plotting)
+- [FIXED] missing numpy int imports
+- [FIXED] documentation; needed change: group functions parameter `raise_` is renamed by `raise_error`
+
 [2.12.0] - 2023-04-06
 -------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series

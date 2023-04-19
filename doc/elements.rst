@@ -35,6 +35,5 @@ information about the definition and interpretation of the parameters in the fol
     elements/dcline
     elements/measurement
     elements/storage
-    elements/group
     elements/svc
     elements/tcsc

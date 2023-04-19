@@ -1,8 +1,8 @@
 ﻿.. _svc:
 
-=============
+==============================
 Static Var Compensator (SVC)
-=============
+==============================
 
 We implement the FACTS devices based on the following source:
 
@@ -18,9 +18,9 @@ The thyristor firing angle regulates the total impedance of the element.
 The active range of the device is presented in the figure below:
 
 .. image:: svc_range.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 It can be seen that the device has a resonance region
 between the inductive (positive) and the capacitive (negative) impedance characteristics.
@@ -44,7 +44,7 @@ pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/t
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_svc
+.. autofunction:: pandapower.create.create_svc
 
 Input Parameters
 =====================
