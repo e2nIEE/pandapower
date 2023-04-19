@@ -1,8 +1,8 @@
 ﻿.. _tcsc:
 
-=============
+==============================================
 Thyristor-Controlled Series Capacitor (TCSC)
-=============
+==============================================
 
 We implement the FACTS devices based on the following source:
 
@@ -28,7 +28,7 @@ pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/t
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_tcsc
+.. autofunction:: pandapower.create.create_tcsc
 
 Input Parameters
 =====================
