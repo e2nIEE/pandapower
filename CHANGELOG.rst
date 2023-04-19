@@ -7,6 +7,7 @@ Change Log
 - [FIXED] remove `import pandapower.test` from __init__
 - [FIXED] matplotlib imports are optional (but required for plotting)
 - [FIXED] missing numpy int imports
+- [FIXED] documentation; needed change: group functions parameter `raise_` is renamed by `raise_error`
 
 [2.12.0] - 2023-04-06
 -------------------------------
