@@ -17,7 +17,6 @@ try:
     from matplotlib.patches import Circle, Rectangle, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
-
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -38,12 +37,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-if not MATPLOTLIB_INSTALLED:
-    logger.warning("matplotlib could not be imported. "
-                   "It is required for many plotting functions. \nThus, this might lead to errors "
-                   "with some plotting functions. To install all pandapower dependencies, "
-                   'pip install pandapower["all"] can be used.')
 
 
 class CustomTextPath(TextPath):
@@ -134,6 +127,8 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
     :type clim: list(float), default None
     :return: collection - the given collection with added colormap (no copy!)
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     collection.set_array(np.ma.masked_invalid(z))
@@ -402,6 +397,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     OUTPUT:
         **pc** - patch collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     buses = get_index_array(buses, net.bus.index)
     if len(buses) == 0:
         return None
@@ -464,6 +461,8 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if use_bus_geodata is False and line_geodata is None and net.line_geodata.empty:
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
@@ -540,6 +539,8 @@ def create_dcline_collection(net, dclines=None, bus_geodata=None, infofunc=None,
     OUTPUT:
         **lc** - line collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     use_bus_geodata = True
 
@@ -594,6 +595,9 @@ def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc
     OUTPUT:
         **lc** - line collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
     impedances = get_index_array(impedances, net.impedance.index)
     if len(impedances) == 0:
         return None
@@ -650,6 +654,9 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     OUTPUT:
         **lc** - line collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
     trafos = get_index_array(trafos, net.trafo.index)
 
     if bus_geodata is None:
@@ -759,6 +766,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
 
         **pc** - patch collection
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
     trafos = get_index_array(trafos, net.trafo.index)
 
     if bus_geodata is None:
@@ -823,6 +833,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
     trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
 
     if bus_geodata is None:
@@ -1168,7 +1179,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
         **use_line_geodata** (bool, False) - If True, line coordinates are used to identify the
         switch position
-        
+
         **switch_index** (list, []) - Possibility to create line switch collections with a subset of switches in net.switch.index.
         If left empty, all switches are taken into the line switch collection.
 
@@ -1178,7 +1189,6 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
     OUTPUT:
         **switches** - patch collection
     """
-
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
