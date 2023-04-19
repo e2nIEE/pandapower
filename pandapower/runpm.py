@@ -294,7 +294,7 @@ def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)    
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_qflex", pm_model=pm_model, pm_solver=pm_solver,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
