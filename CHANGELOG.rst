@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2023-..-..
+-------------------------------
+- [FIXED] recorrection of shunt values in CIGRE HV
+
 [2.12.1] - 2023-04-18
 -------------------------------
 - [FIXED] add minimum Python version (3.8) explicitly to setup.py
