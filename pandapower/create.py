@@ -1742,7 +1742,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for \
+        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
             short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
