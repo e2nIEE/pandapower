@@ -5,7 +5,10 @@
 import sys
 import numpy as np
 try:
-    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
+    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, Wedge, PathPatch, Polygon
+    import matplotlib.path as mpath
+    import math
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -257,52 +260,115 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
     polys, lines = list(), list()
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
-    midcirc_size = size * 0.1
+    midcirc_size = size * 0.15
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-
+    Path = mpath.Path
 
     if sgen_type == "WT": #Special patch for sgen_type "Wind Turbine"
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
+            circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2* size]), angles[i])
             mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-            midcirc_bottomedge = node_geo + _rotate_dim2(np.array([0, offset + size - midcirc_size]), angles[i])
-            #Blades end coordinates
-            blade1 = midcirc_bottomedge + 0.0225
-            blade2 = [midcirc_bottomedge[0]-0.028, midcirc_bottomedge[1]+0.01]
-            blade3 = [circ_edge[0]+0.01, circ_edge[1]+0.002]
-            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-            polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i]))
-            lines.append((node_geo, circ_edge))
-            lines.append((mid_midcirc, blade1))
-            lines.append((mid_midcirc, blade2))
-            lines.append((mid_midcirc, blade3))
+           #  midcirc_bottomedge = node_geo + _rotate_dim2(np.array([0, offset + size - midcirc_size]), angles[i])
+           #  #Blades end coordinates
+           #  blade1 = circ_topedge
+           #  blade2 = [midcirc_bottomedge[0]-0.027, midcirc_bottomedge[1]-0.01]
+           #  blade3 = [circ_edge[0]+0.026, circ_edge[1]+0.015]
+           #  polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+           #  lines.append((node_geo, circ_edge))
+           # #Line based
+           #  #lines.append((mid_midcirc, blade1))
+           #  #lines.append((mid_midcirc, blade2))
+           #  #lines.append((mid_midcirc, blade3))
 
-    else: 
+           #path based
+            codes, verts = zip(*[
+                (Path.MOVETO, mid_midcirc),
+                (Path.LINETO, circ_topedge),
+                (Path.LINETO, [circ_topedge[0] - 0.003, circ_topedge[1] - 0.003]),
+                (Path.LINETO, [mid_midcirc[0] - 0.007, mid_midcirc[1] + 0.007]),  # Blade1
+                # (Path.MOVETO, mid_midcirc),
+                # (Path.LINETO, [midcirc_bottomedge[0] - 0.027, midcirc_bottomedge[1] - 0.01]),
+                # (Path.LINETO, [midcirc_bottomedge[0] - 0.023, midcirc_bottomedge[1] - 0.013]),
+                # (Path.LINETO, [mid_midcirc[0] - 0.0055, mid_midcirc[1] - 0.01]),  # Blade2
+                # (Path.MOVETO, mid_midcirc),
+                # (Path.LINETO, [midcirc_bottomedge[0] + 0.024, midcirc_bottomedge[1] - 0.015]),
+                # (Path.LINETO, [midcirc_bottomedge[0] + 0.025, midcirc_bottomedge[1] - 0.010]),
+                # (Path.LINETO, [mid_midcirc[0] + 0.010, mid_midcirc[1] + 0.0025]),  # Blade3
+
+                (Path.CLOSEPOLY, [0.018, -0.11])])
+            polys.append(PathPatch(mpath.Path(verts, codes),fc= "k", ec="none"))
+            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+            lines.append((node_geo, circ_edge))
+
+
+            #chatgpt
+            for i in range(3):
+                angle = i * 2 * math.pi / 3
+
+                rotated_verts = []
+                for vertex in verts:
+                    # Calculate the vector from the center of the hub to the vertex
+                    x_diff = vertex[0] - mid_midcirc[0]
+                    y_diff = vertex[1] - mid_midcirc[1]
+
+                    # Rotate the vector by the desired angle
+                    rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
+                    rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
+
+                    # Calculate the coordinates of the rotated vertex
+                    rotated_vertex = [mid_midcirc[0] + rotated_x, mid_midcirc[1] + rotated_y]
+
+                    rotated_verts.append(rotated_vertex)
+
+                rotated_patch = PathPatch(mpath.Path(rotated_verts, codes), fc="k", ec="none")
+                polys.append(rotated_patch)
+
+            polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i])) #Center hub
+
+    elif sgen_type == "PV": #Special patch for sgen_type "Wind Turbine"
+        for i, node_geo in enumerate(node_coords):
+            mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+            rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
+            pv_patch = Rectangle((rect_lbottom), 0.05, 0.1, ec="k", fc="none")
+            polys.append(pv_patch)
+            lines.append((node_geo, mid_rect))
+            triangle_base = 0.05
+            triangle_height = 0.05
+            triangle_points = [
+                (mid_rect[0] - triangle_base / 2, mid_rect[1] + 0.1),
+                (mid_rect[0] + triangle_base / 2, mid_rect[1] + 0.1),
+                (mid_rect[0] , mid_rect[1] + triangle_height),
+            ]
+            triangle_patch = Polygon(triangle_points, ec="k", fc="none")
+            polys.append(triangle_patch)
+
+
+
+    else:
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
             mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angles[i])
             mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angles[i])
             # dropped perpendicular foot of triangle1
-            perp_foot1 = mid_tri1  + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
-            line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2 * r_triangle, 0]), angles[i])
+            perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angles[i])
+            line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), angles[i])
             perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angles[i])
-            line_end2 = perp_foot2 + + _rotate_dim2(np.array([2 * r_triangle, 0]), angles[i])
+            line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), angles[i])
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
             polys.append(RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle,
                                         orientation=-angles[i], fc=facecolors[i], ec=edgecolors[i]))
             polys.append(RegularPolygon(mid_tri2, numVertices=3, radius=r_triangle,
-                                        orientation=np.pi  - angles[i], fc=facecolors[i],
+                                        orientation=np.pi - angles[i], fc=facecolors[i],
                                         ec=edgecolors[i]))
             lines.append((node_geo, circ_edge))
             lines.append((perp_foot1, line_end1))
             lines.append((perp_foot2, line_end2))
-
-
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 
 
