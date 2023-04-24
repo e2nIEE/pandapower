@@ -8,6 +8,8 @@ try:
     from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, Wedge, PathPatch, Polygon
     import matplotlib.path as mpath
     import math
+    import matplotlib.pyplot as plt
+    import matplotlib.transforms as transforms
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
@@ -273,40 +275,17 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
             circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2* size]), angles[i])
             mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-           #  midcirc_bottomedge = node_geo + _rotate_dim2(np.array([0, offset + size - midcirc_size]), angles[i])
-           #  #Blades end coordinates
-           #  blade1 = circ_topedge
-           #  blade2 = [midcirc_bottomedge[0]-0.027, midcirc_bottomedge[1]-0.01]
-           #  blade3 = [circ_edge[0]+0.026, circ_edge[1]+0.015]
-           #  polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-           #  lines.append((node_geo, circ_edge))
-           # #Line based
-           #  #lines.append((mid_midcirc, blade1))
-           #  #lines.append((mid_midcirc, blade2))
-           #  #lines.append((mid_midcirc, blade3))
 
-           #path based
             codes, verts = zip(*[
                 (Path.MOVETO, mid_midcirc),
                 (Path.LINETO, circ_topedge),
                 (Path.LINETO, [circ_topedge[0] - 0.003, circ_topedge[1] - 0.003]),
                 (Path.LINETO, [mid_midcirc[0] - 0.007, mid_midcirc[1] + 0.007]),  # Blade1
-                # (Path.MOVETO, mid_midcirc),
-                # (Path.LINETO, [midcirc_bottomedge[0] - 0.027, midcirc_bottomedge[1] - 0.01]),
-                # (Path.LINETO, [midcirc_bottomedge[0] - 0.023, midcirc_bottomedge[1] - 0.013]),
-                # (Path.LINETO, [mid_midcirc[0] - 0.0055, mid_midcirc[1] - 0.01]),  # Blade2
-                # (Path.MOVETO, mid_midcirc),
-                # (Path.LINETO, [midcirc_bottomedge[0] + 0.024, midcirc_bottomedge[1] - 0.015]),
-                # (Path.LINETO, [midcirc_bottomedge[0] + 0.025, midcirc_bottomedge[1] - 0.010]),
-                # (Path.LINETO, [mid_midcirc[0] + 0.010, mid_midcirc[1] + 0.0025]),  # Blade3
-
                 (Path.CLOSEPOLY, [0.018, -0.11])])
             polys.append(PathPatch(mpath.Path(verts, codes),fc= "k", ec="none"))
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
             lines.append((node_geo, circ_edge))
 
-
-            #chatgpt
             for i in range(3):
                 angle = i * 2 * math.pi / 3
 
@@ -326,6 +305,7 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
                     rotated_verts.append(rotated_vertex)
 
                 rotated_patch = PathPatch(mpath.Path(rotated_verts, codes), fc="k", ec="none")
+
                 polys.append(rotated_patch)
 
             polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i])) #Center hub
@@ -334,21 +314,49 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
         for i, node_geo in enumerate(node_coords):
             mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
-            pv_patch = Rectangle((rect_lbottom), 0.05, 0.1, ec="k", fc="none")
+            pv_patch = Rectangle((rect_lbottom), 0.05, 0.1,angle=-angles[i]*(180/np.pi),rotation_point=(mid_rect[0],mid_rect[1]),ec="k", fc="none")
             polys.append(pv_patch)
             lines.append((node_geo, mid_rect))
             triangle_base = 0.05
             triangle_height = 0.05
             triangle_points = [
-                (mid_rect[0] - triangle_base / 2, mid_rect[1] + 0.1),
-                (mid_rect[0] + triangle_base / 2, mid_rect[1] + 0.1),
-                (mid_rect[0] , mid_rect[1] + triangle_height),
+                (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 0.1]), angles[i])),
+                (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 0.1]), angles[i])),
+                (mid_rect + _rotate_dim2(np.array([0, + triangle_height]), angles[i])),
             ]
-            triangle_patch = Polygon(triangle_points, ec="k", fc="none")
+            triangle_patch = Polygon(triangle_points,ec="k", fc="none")
             polys.append(triangle_patch)
 
+    elif sgen_type == "HEP":
 
+        for i, node_geo in enumerate(node_coords):
+            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
 
+            circ_topedge = mid_circ + _rotate_dim2(np.array([0,  size]), angles[i])
+            hep_patch = Rectangle([circ_topedge[0]-0.005,circ_topedge[1]-0], 0.01, 0.02, ec="k", fc="k")
+            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(hep_patch)
+
+            for i in range(3):
+                angle = i * 2 * math.pi / 3
+
+                rotated_verts = []
+                for vertex in hep_patch.get_verts():
+                    # Calculate the vector from the center of the hub to the vertex
+                    x_diff = vertex[0] - circ_topedge[0]
+                    y_diff = vertex[1] - circ_topedge[1]
+
+                    # Rotate the vector by the desired angle
+                    rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
+                    rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
+
+                    # Calculate the coordinates of the rotated vertex
+                    rotated_vertex = [circ_topedge[0] + rotated_x, circ_topedge[1] + rotated_y]
+
+                    rotated_verts.append(rotated_vertex)
+
+                rotated_patch = Rectangle(rotated_vertex, 0.01, 0.02, ec="k",fc="k")
+                polys.append(rotated_patch)
     else:
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
