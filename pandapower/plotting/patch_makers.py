@@ -279,9 +279,9 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
             codes, verts = zip(*[
                 (Path.MOVETO, mid_midcirc),
                 (Path.LINETO, circ_topedge),
-                (Path.LINETO, [circ_topedge[0] - 0.003, circ_topedge[1] - 0.003]),
-                (Path.LINETO, [mid_midcirc[0] - 0.007, mid_midcirc[1] + 0.007]),  # Blade1
-                (Path.CLOSEPOLY, [0.018, -0.11])])
+                (Path.LINETO,  (circ_topedge + _rotate_dim2(np.array([- 0.003, - 0.003]), angles[i])),),
+                (Path.LINETO,  (mid_midcirc + _rotate_dim2(np.array([- 0.007, + 0.007]), angles[i])),),  # Blade1
+                (Path.CLOSEPOLY, mid_midcirc)])
             polys.append(PathPatch(mpath.Path(verts, codes),fc= "k", ec="none"))
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
             lines.append((node_geo, circ_edge))
@@ -310,7 +310,7 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
 
             polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i])) #Center hub
 
-    elif sgen_type == "PV": #Special patch for sgen_type "Wind Turbine"
+    elif sgen_type == "PV": #Special patch for sgen_type "Photo-voltaic"
         for i, node_geo in enumerate(node_coords):
             mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
@@ -327,37 +327,37 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
             triangle_patch = Polygon(triangle_points,ec="k", fc="none")
             polys.append(triangle_patch)
 
-    elif sgen_type == "HEP":
-
-        for i, node_geo in enumerate(node_coords):
-            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-
-            circ_topedge = mid_circ + _rotate_dim2(np.array([0,  size]), angles[i])
-            hep_patch = Rectangle([circ_topedge[0]-0.005,circ_topedge[1]-0], 0.01, 0.02, ec="k", fc="k")
-            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-            polys.append(hep_patch)
-
-            for i in range(3):
-                angle = i * 2 * math.pi / 3
-
-                rotated_verts = []
-                for vertex in hep_patch.get_verts():
-                    # Calculate the vector from the center of the hub to the vertex
-                    x_diff = vertex[0] - circ_topedge[0]
-                    y_diff = vertex[1] - circ_topedge[1]
-
-                    # Rotate the vector by the desired angle
-                    rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
-                    rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
-
-                    # Calculate the coordinates of the rotated vertex
-                    rotated_vertex = [circ_topedge[0] + rotated_x, circ_topedge[1] + rotated_y]
-
-                    rotated_verts.append(rotated_vertex)
-
-                rotated_patch = Rectangle(rotated_vertex, 0.01, 0.02, ec="k",fc="k")
-                polys.append(rotated_patch)
-    else:
+    # elif sgen_type == "HEP":
+    #
+    #     for i, node_geo in enumerate(node_coords):
+    #         mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
+    #
+    #         circ_topedge = mid_circ + _rotate_dim2(np.array([0,  size]), angles[i])
+    #         hep_patch = Rectangle([circ_topedge[0]-0.005,circ_topedge[1]-0], 0.01, 0.02, ec="k", fc="k")
+    #         polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+    #         polys.append(hep_patch)
+    #
+    #         for i in range(3):
+    #             angle = i * 2 * math.pi / 3
+    #
+    #             rotated_verts = []
+    #             for vertex in hep_patch.get_verts():
+    #                 # Calculate the vector from the center of the hub to the vertex
+    #                 x_diff = vertex[0] - circ_topedge[0]
+    #                 y_diff = vertex[1] - circ_topedge[1]
+    #
+    #                 # Rotate the vector by the desired angle
+    #                 rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
+    #                 rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
+    #
+    #                 # Calculate the coordinates of the rotated vertex
+    #                 rotated_vertex = [circ_topedge[0] + rotated_x, circ_topedge[1] + rotated_y]
+    #
+    #                 rotated_verts.append(rotated_vertex)
+    #
+    #             rotated_patch = Rectangle(rotated_vertex, 0.01, 0.02, ec="k",fc="k")
+    #             polys.append(rotated_patch)
+    else:               #Generic patch
         for i, node_geo in enumerate(node_coords):
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
