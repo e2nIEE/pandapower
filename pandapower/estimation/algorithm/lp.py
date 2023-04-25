@@ -102,8 +102,8 @@ class LPAlgorithm(BaseAlgorithm):
         # Just to ensure floating point precision if there are any
         error_margin = 1e-10
 
-        # Create the solver object...
-        solver = pywraplp.Solver.CreateSolver('GLOP')
+        #'GLOP' fails with ortools version > 9.4.1874
+        solver = pywraplp.Solver.CreateSolver('SCIP')
 
 
         # Create the states...

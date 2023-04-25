@@ -21,14 +21,12 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
            check_connectivity=True, voltage_depend_loads=False, init="results", mode=None,
            take_slack_vm_limits=True):
     """
-     This function converts a pandapower net to a pypower case file.
+    This function converts a pandapower net to a pypower case file.
 
     INPUT:
-
         **net** - The pandapower net.
 
     OPTIONAL:
-
         **calculate_voltage_angles** (bool, False) - consider voltage angles in loadflow calculation
 
         If True, voltage angles of ext_grids and transformer shifts are considered in the
@@ -39,9 +37,11 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modeled as equivalent with the T-model.
-            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since
-            it is less exact than the T-model. It is only recommended for validation with other
-            software that uses the pi-model.
+            - "pi" - transformer is modeled as equivalent PI-model.
+
+            The "pi" - Model is not recommended, since it is less exact than the T-model. It is only
+            recommended for validation with other software that uses the pi-model.
+
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero,
         buses connected by a closed bus-bus switch are fused to model an ideal bus.
@@ -61,8 +61,8 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         **init** (str, "results") - initialization method of the converter
         pandapower ppc converter supports two methods for initializing the converter:
 
-            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for
-            PV buses as initial solution
+            - "flat" - flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
+
             - "results" - voltage vector from net.res_bus is used as initial solution.
 
         **mode** (str, None) - mode of power flow calculation type ("pf" - power flow, "opf" -
@@ -75,18 +75,13 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         net.bus[["min_vm_pu", "max_vm_pu"]], take_slack_vm_limits can be set to False.
 
     OUTPUT:
-
         **ppc** - The Pypower casefile for usage with pypower
 
     EXAMPLE:
-
-        import pandapower.converter as pc
-
-        import pandapower.networks as pn
-
-        net = pn.case9()
-
-        ppc = pc.to_ppc(net)
+        >>> import pandapower.converter as pc
+        >>> import pandapower.networks as pn
+        >>> net = pn.case9()
+        >>> ppc = pc.to_ppc(net)
 
     """
     if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and

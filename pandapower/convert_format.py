@@ -5,9 +5,9 @@
 
 import numpy as np
 import pandas as pd
-from packaging import version
+from packaging.version import Version
 
-from pandapower import __format_version__, __version__
+from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
@@ -25,16 +25,16 @@ def convert_format(net, elements_to_deserialize=None):
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            version.parse(net.format_version) > version.parse(net.version):
+            Version(net.format_version) > Version(net.version):
         net.format_version = net.version
-    if isinstance(net.format_version, str) and version.parse(net.format_version) >= version.parse(__format_version__):
+    if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if version.parse(str(net.format_version)) < version.parse("2.4.0"):
+    if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if isinstance(net.format_version, float) and net.format_version < 2:
         _convert_to_generation_system(net, elements_to_deserialize)
@@ -48,7 +48,22 @@ def convert_format(net, elements_to_deserialize=None):
     correct_dtypes(net, error=False)
     net.format_version = __format_version__
     net.version = __version__
+    _restore_index_names(net)
     return net
+
+
+def _restore_index_names(net):
+    """Restores dataframes index names stored as dictionary. With newer pp to_json() this
+    information is stored to the dataframe its self.
+    """
+    if "index_names" in net.keys():
+        if not isinstance(net["index_names"], dict):
+            raise ValueError("To restore the index names of the dataframes, a dict including this "
+                             f"information is expected, not {type(net['index_names'])}")
+        for key, index_name in net["index_names"].items():
+            if key in net.keys():
+                net[key].index.name = index_name
+        del net["index_names"]
 
 
 def correct_dtypes(net, error):

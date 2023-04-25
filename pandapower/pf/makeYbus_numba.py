@@ -150,8 +150,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = np.real(branch[:, F_BUS]).astype(int)  ## list of "from" buses
-    t = np.real(branch[:, T_BUS]).astype(int)  ## list of "to" buses
+    f = np.real(branch[:, F_BUS]).astype(np.int64)  ## list of "from" buses
+    t = np.real(branch[:, T_BUS]).astype(np.int64)  ## list of "to" buses
 
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end

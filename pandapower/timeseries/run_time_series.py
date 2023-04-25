@@ -163,7 +163,7 @@ def _check_controller_recyclability(net):
     return recycle
 
 
-def _check_output_writer_recyclability(net, recycle):
+def _check_output_writer_recyclability(net, recycle, run):
     if "output_writer" not in net:
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
@@ -171,6 +171,11 @@ def _check_output_writer_recyclability(net, recycle):
     recycle["batch_read"] = list()
     recycle["only_v_results"] = False
     new_log_variables = list()
+
+    if hasattr(run, "__name__") and run.__name__ == "rundcpp":
+        recycle["only_v_results"] = False
+        recycle["batch_read"] = False
+        return recycle
 
     for output in ow.log_variables:
         table, variable = output[0], output[1]
@@ -212,7 +217,7 @@ def get_recycle_settings(net, **kwargs):
         recycle = _check_controller_recyclability(net)
         # if still recycle is not None, also check for fast output_writer features
         if recycle is not False:
-            recycle = _check_output_writer_recyclability(net, recycle)
+            recycle = _check_output_writer_recyclability(net, recycle, kwargs.get("run", kwargs.get("run_control_fct")))
 
     return recycle
 
@@ -264,9 +269,9 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # get run function
     run = kwargs.pop("run", pp.runpp)
     recycle_options = None
-    if hasattr(run, "__name__") and run.__name__ == "runpp":
+    if hasattr(run, "__name__") and (run.__name__ == "runpp" or run.__name__ == "rundcpp"):
         # use faster runpp options if possible
-        recycle_options = get_recycle_settings(net, **kwargs)
+        recycle_options = get_recycle_settings(net, run=run, **kwargs)
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control
@@ -324,7 +329,7 @@ def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_
         run_time_step(net, time_step, ts_variables, run_control_fct, output_writer_fct, **kwargs)
 
 
-def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, **kwargs):
+def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, check_controllers=True, **kwargs):
     """
     Time Series main function
 
@@ -351,7 +356,8 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     # cleanup ppc before first time step
     cleanup(net, ts_variables)
 
-    control_diagnostic(net)
+    if check_controllers:
+        control_diagnostic(net) # produces significant overhead if you run many timeseries of short duration
     run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated

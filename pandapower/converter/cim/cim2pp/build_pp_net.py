@@ -1202,7 +1202,7 @@ class CimConverter:
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU ** 2) + \
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
-            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
+            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(np.int64)
             append_dict = dict({'id_characteristic': [], 'step': [], 'vk_percent': [], 'vkr_percent': []})
         else:
             trafo_df = trafo_df_origin.copy()
@@ -1282,7 +1282,7 @@ class CimConverter:
                  (trafo_df.x_lv + trafo_df.x * (
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
-            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
+            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(np.int64)
             append_dict = dict({'id_characteristic': [], 'step': [], 'vkr_hv_percent': [], 'vkr_mv_percent': [],
                                 'vkr_lv_percent': [], 'vk_hv_percent': [], 'vk_mv_percent': [], 'vk_lv_percent': []})
 
@@ -1321,7 +1321,7 @@ class CimConverter:
                 #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
         self.net['characteristic_temp'] = pd.concat([self.net['characteristic_temp'], pd.DataFrame(append_dict)],
                                                     ignore_index=True, sort=False)
-        self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(int)
+        self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(np.int64)
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
