@@ -174,7 +174,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(sc)
     if plot_sgens and len(net.sgen):
         sgen_type = net.sgen.type
-        sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=4)
+        sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=0)
         collections.append(sgc)
     if plot_gens and len(net.gen):
         gc = create_gen_collection(net, size=gen_size)

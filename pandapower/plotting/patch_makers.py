@@ -8,8 +8,7 @@ try:
     from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, Wedge, PathPatch, Polygon
     import matplotlib.path as mpath
     import math
-    import matplotlib.pyplot as plt
-    import matplotlib.transforms as transforms
+
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
@@ -318,7 +317,7 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
             polys.append(pv_patch)
             lines.append((node_geo, mid_rect))
             triangle_base = 0.05
-            triangle_height = 0.05
+            triangle_height = 0.06
             triangle_points = [
                 (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 0.1]), angles[i])),
                 (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 0.1]), angles[i])),
