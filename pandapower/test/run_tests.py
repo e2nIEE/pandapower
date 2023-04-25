@@ -25,7 +25,7 @@ test_dir = os.path.abspath(os.path.join(pp.pp_dir, "test"))
 logger = logging.getLogger()
 
 
-def remove_logger():
+def _remove_logger():
     for handler in logger.handlers:
         logger.removeHandler(handler)
         logger.setLevel(logging.CRITICAL)
@@ -123,7 +123,7 @@ def start_tests(**settings):
     n_cpu = settings["n_cpu"]
     parallel = False if n_cpu < 2 else True
     # run either fast or all tests
-    remove_logger()
+    _remove_logger()
     if settings["which"] == "fast":
         run_fast_tests(parallel=parallel, n_cpu=n_cpu)
     elif settings["which"] == "slow":
@@ -174,6 +174,7 @@ def run_tutorials(parallel=False, n_cpu=None):
 
 if __name__ == "__main__":
     # get some command line options
-    settings = get_command_line_args()
-    start_tests(**settings)
-    run_tutorials()
+    # settings = get_command_line_args()
+    # start_tests(**settings)
+    # run_tutorials()
+    run_all_tests(parallel=True, n_cpu=4)

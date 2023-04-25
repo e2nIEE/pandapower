@@ -1,0 +1,13 @@
+**Parameter**;**Datatype**;**Explanation**
+thyristor_firing_angle_degree*;float;the resulting value of thyristor firing angle of tcsc [degree]
+x_ohm;float;resulting value of the shunt impedance of tcsc [Ohm]
+p_from_mw;float;active power consumed at the from bus of tcsc [MW]
+q_from_mvar;float;reactive power consumed at the from bus of tcsc [MVAr]
+p_to_mw;float;active power consumed at the to bus of tcsc [MW]
+q_to_mvar;float;reactive power consumed at the to bus of tcsc [MVAr]
+p_l_mw;float;active power losses of tcsc [MW]
+q_l_mvar;float;reactive power losses of tcsc [MVAr]
+vm_from_pu;float;voltage magnitude at the from bus [pu]
+va_from_degree;float;voltage angle at the from bus [degree]
+vm_to_pu;float;voltage magnitude at the to bus [pu]
+va_to_degree;float;voltage angle at the to bus [degree]

@@ -79,9 +79,9 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     # getting unique sets of buses for each voltage level
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
-        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
+        if net.bus.loc[list(vl_buses), 'vn_kv'].unique().shape[0] > 1:
             logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
+        vn_kv = net.bus.loc[list(vl_buses), 'vn_kv'].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
         else:

@@ -100,5 +100,4 @@ def test_big_gen_network_calc_sc():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
-     
+    pytest.main([__file__, "-xs"])

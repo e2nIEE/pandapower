@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 import pytest
@@ -558,7 +558,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "max_i_ka"] == 200
 
 
-def test_create_lines_raise_except():
+def test_create_lines_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -590,13 +590,56 @@ def test_create_lines_raise_except():
             net,
             [b1, b1],
             [b2, b2],
-            index=[0, 0],
+            index=[0, 1],
             length_km=[10.0, 5.0],
             x_ohm_per_km=[1.0, 1.0],
             r_ohm_per_km=[0.2, 0.2],
             c_nf_per_km=[0, 0],
             max_i_ka=[100, 100],
         )
+
+    with pytest.raises(UserWarning, match="Passed indexes"):
+        pp.create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            index=[2, 2],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+        )
+
+
+def test_create_lines_optional_columns():
+    #
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    assert "max_loading_percent" not in net.line.columns
+
+    v = None
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
+    assert "max_loading_percent" not in net.line.columns
+
+    v = np.nan
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    # np.nan is not None:
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
+    assert "max_loading_percent" not in net.line.columns
 
 
 def test_create_line_alpha_temperature():
@@ -623,13 +666,20 @@ def test_create_line_alpha_temperature():
     assert net.line.loc[l2, "temperature_degree_celsius"] == 80
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
 
+    # make sure optional columns are not created if None or np.nan:
+    pp.create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    assert "wind_speed_m_per_s" not in net.line.columns
+
 
 def test_create_transformers_from_parameters():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(
+    index = pp.create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -642,6 +692,21 @@ def test_create_transformers_from_parameters():
         i0_percent=0.3,
         foo=2,
     )
+    with pytest.raises(UserWarning):
+        pp.create_transformers_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            vn_hv_kv=[15.0, 15.0],
+            vn_lv_kv=[0.45, 0.45],
+            sn_mva=[0.5, 0.7],
+            vk_percent=[1.0, 1.0],
+            vkr_percent=[0.3, 0.3],
+            pfe_kw=0.2,
+            i0_percent=0.3,
+            foo=2,
+            index=index
+        )
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
@@ -738,7 +803,7 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[1]] == 4
 
 
-def test_create_transformers_raise_except():
+def test_create_transformers_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -928,7 +993,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
 
-def test_create_transformers3w_raise_except():
+def test_create_transformers3w_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
@@ -1108,7 +1173,7 @@ def test_create_switches():
     assert net.switch.test_kwargs.at[2] == "aaa"
 
 
-def test_create_switches_raise_except():
+def test_create_switches_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1220,7 +1285,7 @@ def test_create_loads():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1252,7 +1317,7 @@ def test_create_loads():
     )
 
 
-def test_create_loads_raise_except():
+def test_create_loads_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1266,7 +1331,7 @@ def test_create_loads_raise_except():
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1277,7 +1342,7 @@ def test_create_loads_raise_except():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1291,7 +1356,7 @@ def test_create_loads_raise_except():
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1299,6 +1364,100 @@ def test_create_loads_raise_except():
             min_q_mvar=[0, 0.1, 0],
             index=l,
         )
+
+
+def test_create_storages():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    net_bulk = deepcopy(net)
+
+    pp.create_storage(net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0,
+                      max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_1")
+    pp.create_storage(net, b2, 0, 5, 0.5, controllable=False, max_p_mw=0.2, min_p_mw=0.1,
+                      max_q_mvar=0.2, min_q_mvar=0.1, test_kwargs="dummy_string_2")
+    pp.create_storage(net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0,
+                      max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_3")
+
+    pp.create_storages(
+        net_bulk,
+        buses=[b1, b2, b3],
+        p_mw=[0, 0, 1],
+        max_e_mwh=[3, 5, 7],
+        q_mvar=0.5,
+        controllable=[True, False, False],
+        max_p_mw=0.2,
+        min_p_mw=[0, 0.1, 0],
+        max_q_mvar=0.2,
+        min_q_mvar=[0, 0.1, 0],
+        test_kwargs=["dummy_string_1", "dummy_string_2", "dummy_string_3"],
+    )
+
+    assert net.storage.bus.at[0] == b1
+    assert net.storage.bus.at[1] == b2
+    assert net.storage.bus.at[2] == b3
+    assert net.storage.p_mw.at[0] == 0
+    assert net.storage.p_mw.at[1] == 0
+    assert net.storage.p_mw.at[2] == 1
+    assert net.storage.max_e_mwh.at[0] == 3
+    assert net.storage.max_e_mwh.at[1] == 5
+    assert net.storage.max_e_mwh.at[2] == 7
+    assert net.storage.q_mvar.at[0] == 0.5
+    assert net.storage.q_mvar.at[1] == 0.5
+    assert net.storage.q_mvar.at[2] == 0.5
+    assert net.storage.controllable.dtype == bool
+    assert net.storage.controllable.at[0]
+    assert not net.storage.controllable.at[1]
+    assert not net.storage.controllable.at[2]
+    assert all(net.storage.max_p_mw.values == 0.2)
+    assert all(net.storage.min_p_mw.values == [0, 0.1, 0])
+    assert all(net.storage.max_q_mvar.values == 0.2)
+    assert all(net.storage.min_q_mvar.values == [0, 0.1, 0])
+    assert all(
+        net.storage.test_kwargs.values
+        == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
+    )
+    assert pp.nets_equal(net, net_bulk)
+
+
+def test_create_wards():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    net_bulk = deepcopy(net)
+    vals = np.c_[[b1, b2, b3], np.reshape(np.arange(12), (3, 4)), ["asd", None, "123"], [True, False, False]]
+
+    pp.create_ward(net, *vals[0, :])
+    pp.create_ward(net, *vals[1, :])
+    pp.create_ward(net, *vals[2, :])
+
+    pp.create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4],
+                    vals[:, 5], vals[:, 6])
+
+    assert net.ward.bus.at[0] == b1
+    assert net.ward.bus.at[1] == b2
+    assert net.ward.bus.at[2] == b3
+    assert net.ward.ps_mw.at[0] == 0
+    assert net.ward.ps_mw.at[1] == 4
+    assert net.ward.ps_mw.at[2] == 8
+    assert net.ward.qs_mvar.at[0] == 1
+    assert net.ward.qs_mvar.at[1] == 5
+    assert net.ward.qs_mvar.at[2] == 9
+    assert net.ward.pz_mw.at[0] == 2
+    assert net.ward.pz_mw.at[1] == 6
+    assert net.ward.pz_mw.at[2] == 10
+    assert net.ward.qz_mvar.at[0] == 3
+    assert net.ward.qz_mvar.at[1] == 7
+    assert net.ward.qz_mvar.at[2] == 11
+    assert net.ward.name.at[0] == "asd"
+    assert net.ward.name.at[1] == None
+    assert net.ward.name.at[2] == "123"
+    assert net.ward.in_service.at[0]
+    assert not net.ward.in_service.at[1]
+    assert not net.ward.in_service.at[2]
+    assert pp.nets_equal(net, net_bulk)
 
 
 def test_create_sgens():
@@ -1311,7 +1470,7 @@ def test_create_sgens():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1346,7 +1505,7 @@ def test_create_sgens():
     assert all(net.sgen.test_kwargs == "dummy_string")
 
 
-def test_create_sgens_raise_except():
+def test_create_sgens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1360,7 +1519,7 @@ def test_create_sgens_raise_except():
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1374,7 +1533,7 @@ def test_create_sgens_raise_except():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1391,7 +1550,7 @@ def test_create_sgens_raise_except():
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1451,7 +1610,7 @@ def test_create_gens():
     assert all(net.gen.test_kwargs == "dummy_string")
 
 
-def test_create_gens_raise_except():
+def test_create_gens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1518,4 +1677,4 @@ def test_create_gens_raise_except():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_create.py"])
+    pytest.main([__file__, "-xs"])

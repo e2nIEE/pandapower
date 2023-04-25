@@ -13,6 +13,11 @@ please refer to the norm or secondary literature:
 
 pandapower currently implements symmetrical and two-phase faults. One phase faults and two-phase faults with earthing are not yet available.
 
+Note that the currents are calculated as complex domain, which allows obtaining the branch-related values for current magnitude and current angle.
+
+We implemented the superposition method that considers pre-fault voltage vector. This method is activated by passing the parameter "use_pre_fault_voltage" as True.
+In this case, the values of shunt impedance of inverter-based generators and loads are considered, which are calculated based on their pre-fault current values.
+
 
 .. toctree::
     :maxdepth: 1
