@@ -211,7 +211,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
         # If power station units defined with index in gen, no topological search needed
         ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
-        ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
+        ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(np.int64)
         ps_trafo = net.trafo.loc[ps_trafo_ix, :]
         _ps_trafo_real_ix =\
             pd.Series(index=net.trafo.index.values,
@@ -281,8 +281,8 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
 
     if np.any(ps_trafo_mask):
         ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
-        ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(int)
-        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(int)
+        ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(np.int64)
+        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(np.int64)
         ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
         # if zero_sequence:
         #     ppci["bus"][np.ix_(ps_trafo_ppci_hv_bus, [BS])] += 1/(3 * 22 / (110 ** 2))
@@ -306,7 +306,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
             ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /= (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
 
             # Correct ps transfomer
-            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
+            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(np.int64)
             # Calculating SC inside power system unit
             ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= ppci_gen["branch"][trafo_ix, K_ST]
 

@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array, allclose
+from numpy import nan_to_num, array, allclose, int64
 
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -68,8 +68,8 @@ def _powerflow(net, **kwargs):
                       "'%s'!") % algorithm)
 
     # clear lookups
-    net._pd2ppc_lookups = {"bus": array([], dtype=int), "ext_grid": array([], dtype=int),
-                           "gen": array([], dtype=int), "branch": array([], dtype=int)}
+    net._pd2ppc_lookups = {"bus": array([], dtype=int64), "ext_grid": array([], dtype=int64),
+                           "gen": array([], dtype=int64), "branch": array([], dtype=int64)}
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)
@@ -156,8 +156,9 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     if ac:
         _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
-        if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack']:
-            # ommission not correct if distributed slack is used
+        if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack'] \
+                and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0:
+            # ommission not correct if distributed slack is used or facts devices are present
             result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]
@@ -198,9 +199,9 @@ def _ppci_to_net(result, net):
 
 def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, ref, _, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]
-    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
+    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
     ppci["success"] = True
     ppci["iterations"] = 1

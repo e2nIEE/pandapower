@@ -127,9 +127,9 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     # Get elements mapping from pandapower to ppc
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
-    if (map_bus[meas_bus['element'].values.astype(int)] >= ppci["bus"].shape[0]).any():
+    if (map_bus[meas_bus['element'].values.astype(np.int64)] >= ppci["bus"].shape[0]).any():
         std_logger.warning("Measurement defined in pp-grid does not exist in ppci, will be deleted!")
-        meas_bus = meas_bus[map_bus[meas_bus['element'].values.astype(int)] < ppci["bus"].shape[0]]
+        meas_bus = meas_bus[map_bus[meas_bus['element'].values.astype(np.int64)] < ppci["bus"].shape[0]]
 
     # mapping to dict instead of np array ensures good performance for large indices
     # (e.g., 999999999 requires a large np array even if there are only 2 buses)
@@ -176,7 +176,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     for meas_type in ("v", "va", "p", "q"):
         this_meas = meas_bus[(meas_bus.measurement_type == meas_type)]
         if len(this_meas):
-            bus_positions = map_bus[this_meas.element.values.astype(int)]
+            bus_positions = map_bus[this_meas.element.values.astype(np.int64)]
             if meas_type in ("p", "q"):
                 # Convert injection reference to consumption reference (P, Q)
                 this_meas.value *= -1
@@ -220,7 +220,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                               meas.element.isin(br_map.index)]
             if len(this_meas):
                 for br_side in ("f", "t"):
-                    meas_this_side = this_meas[(this_meas.side.values.astype(int) ==
+                    meas_this_side = this_meas[(this_meas.side.values.astype(np.int64) ==
                                                 net[br_type][BR_SIDE[br_type][br_side]+"_bus"]
                                                 [this_meas.element]).values]
                     ix_side = br_map[meas_this_side.element.values].values
@@ -358,7 +358,7 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                           ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
                                           ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_IDX],
                                           ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_IDX]
-                                          )).real.astype(int)
+                                          )).real.astype(np.int64)
         # Covariance matrix R
         r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
                                 ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],

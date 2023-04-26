@@ -1,0 +1,11 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the SVC
+bus*;integer;;index of bus where the SVC is connected
+x_l_ohm*;float;:math:`\geq` 0;impedance of the reactor component of SVC
+x_cvar_ohm*;float;:math:`\leq` 0;impedance of the fixed capacitor component of SVC
+set_vm_pu*;float;;set-point for the bus voltage magnitude at the connection bus
+thyristor_firing_angle_degree*;float;:math:90 `\leq` 180;the value of thyristor firing angle of SVC
+controllable*;boolean;True / False;whether the element is considered as actively controlling or as a fixed shunt impedance
+in_service*;boolean;True / False;specifies if the SVC is in service.
+min_angle_degree;float;:math:`\geq` 90;minimum value of the thyristor_firing_angle_degree
+max_angle_degree;float;:math:`\leq` 180;maximum value of the thyristor_firing_angle_degree

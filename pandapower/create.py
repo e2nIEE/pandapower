@@ -149,6 +149,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
+        "svc":   [("name", dtype(object)),
+                  ("bus", "u4"),
+                  ("x_l_ohm", "f8"),
+                  ("x_cvar_ohm", "f8"),
+                  ("set_vm_pu", "f8"),
+                  ("thyristor_firing_angle_degree", "f8"),
+                  ("controllable", "bool"),
+                  ("in_service", "bool"),
+                  ("min_angle_degree", "f8"),
+                  ("max_angle_degree", "f8")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -231,6 +241,15 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("xtf_pu", "f8"),
                       ("sn_mva", "f8"),
                       ("in_service", 'bool')],
+        "tcsc": [("name", dtype(object)),
+                 ("from_bus", "u4"),
+                 ("to_bus", "u4"),
+                 ("x_l_ohm", "f8"),
+                 ("x_cvar_ohm", "f8"),
+                 ("set_p_to_mw", "f8"),
+                 ("thyristor_firing_angle_degree", "f8"),
+                 ("controllable", "bool"),
+                 ("in_service", "bool")],
         "dcline": [("name", dtype(object)),
                    ("from_bus", "u4"),
                    ("to_bus", "u4"),
@@ -351,6 +370,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
+        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
+                             ("x_ohm", "f8"),
+                             ("q_mvar", "f8"),
+                             ("vm_pu", "f8"),
+                             ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
                               ("loading_percent", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
@@ -361,6 +385,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                  ("ql_mvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
+        "_empty_res_tcsc": [("thyristor_firing_angle_degree", "f8"),
+                            ("x_ohm", "f8"),
+                            ("p_from_mw", "f8"),
+                            ("q_from_mvar", "f8"),
+                            ("p_to_mw", "f8"),
+                            ("q_to_mvar", "f8"),
+                            ("pl_mw", "f8"),
+                            ("ql_mvar", "f8"),
+                            ("i_ka", "f8"),
+                            ("vm_from_pu", "f8"),
+                            ("va_from_degree", "f8"),
+                            ("vm_to_pu", "f8"),
+                            ("va_to_degree", "f8")],
         "_empty_res_dcline": [("p_from_mw", "f8"),
                               ("q_from_mvar", "f8"),
                               ("p_to_mw", "f8"),
@@ -654,7 +691,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         # works with a 2-tuple or a matching array
         net.bus_geodata = pd.concat([
             net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=int),
+            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
                          index=index, columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
@@ -1435,6 +1472,101 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
+def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
+                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
+                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+    """
+    Adds storages to the network.
+
+    In order to simulate a storage system it is possible to use sgens or loads to model the
+    discharging or charging state. The power of a storage can be positive or negative, so the use
+    of either a sgen or a load is (per definition of the elements) not correct.
+    To overcome this issue, a storage element can be created.
+
+    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    default power flow calculations, the state of charge (SOC) is not updated during any power flow
+    calculation.
+    The implementation of energy content related parameters in the storage element allows to create
+    customized, time dependend simulations by running several power flow calculations and updating
+    variables manually.
+
+    INPUT:
+        **net** - The net within this storage should be created
+
+        **buses** (list of int) - The bus ids to which the generators are connected
+
+        **p_mw** (list of float) - The momentary active power of the storage \
+            (positive for charging, negative for discharging)
+
+        **max_e_mwh** (list of float) - The maximum energy content of the storage \
+            (maximum charge level)
+
+    OPTIONAL:
+        **q_mvar** (list of float, default 0) - The reactive power of the storage
+
+        **sn_mva** (list of float, default NaN) - Nominal power of the storage
+
+        **soc_percent** (list of float, NaN) - The state of charge of the storage
+
+        **min_e_mwh** (list of float, 0) - The minimum energy content of the storage \
+            (minimum charge level)
+
+        **name** (list of string, default None) - The name for this storage
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (list of float, 1.) - An OPTIONAL scaling factor to be set customly.
+        Multiplys with p_mw and q_mvar.
+
+        **type** (list of string, None) -  type variable to classify the storage
+
+        **in_service** (list of boolean, default True) - True for in_service or False for out of service
+
+        **max_p_mw** (list of float, NaN) - Maximum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_p_mw** (list of float, NaN) - Minimum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **max_q_mvar** (list of float, NaN) - Maximum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_q_mvar** (list of float, NaN) - Minimum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **controllable** (list of bool, NaN) - Whether this storage is controllable by the optimal \
+            powerflow; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created storage
+
+    EXAMPLE:
+        create_storage(net, 1, p_mw = -30, max_e_mwh = 60, soc_percent = 1.0, min_e_mwh = 5)
+
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
+              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+
+    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
+    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
+    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
+    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
+    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
+                           default_val=False)
+    defaults_to_fill = [("controllable", False)]
+
+    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, **entries,
+                          **kwargs)
+
+    return index
+
+
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
@@ -1452,12 +1584,12 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **bus** (int) - The bus id to which the generator is connected
 
-    OPTIONAL:
         **p_mw** (float, default 0) - The active power of the generator (positive for generation!)
 
+    OPTIONAL:
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
-        **sn_mva** (float, None) - Nominal power of the generator
+        **sn_mva** (float, NaN) - Nominal power of the generator
 
         **name** (string, None) - The name for this generator
 
@@ -1580,13 +1712,12 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **buses** (list of int) - The bus ids to which the generators are connected
 
+        **p_mw** (list of float) - The active power of the generator (positive for generation!)
+
     OPTIONAL:
-        **p_mw** (list of float, default 0) - The active power of the generator (positive for \
-            generation!)
+        **vm_pu** (list of float, default 1) - The voltage set point of the generator.
 
-        **vm_pu** (list of float, default 0) - The voltage set point of the generator.
-
-        **sn_mva** (list of float, None) - Nominal power of the generator
+        **sn_mva** (list of float, NaN) - Nominal power of the generator
 
         **name** (list of string, None) - The name for this generator
 
@@ -3701,6 +3832,63 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage at the connected bus
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the svc
+
+        **x_l_ohm** (float) - impedance of the reactor component of svc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+
+        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+
+    _check_node_element(net, bus)
+
+    index = _get_index_with_check(net, "svc", index)
+
+    entries = dict(zip(["name", "bus", "x_l_ohm", "x_cvar_ohm", "set_vm_pu", "thyristor_firing_angle_degree",
+                        "controllable", "in_service", "min_angle_degree", "max_angle_degree"],
+                       [name, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+                        controllable, in_service, min_angle_degree, max_angle_degree]))
+    _set_entries(net, "svc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
                      name=None, in_service=True, index=None,
                      rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
@@ -3752,6 +3940,72 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
         _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
         _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
+
+    return index
+
+
+def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
+                name=None, controllable=True, in_service=True, index=None,
+                min_angle_degree=90, max_angle_degree=180, **kwargs):
+    """
+    Creates a TCSC element - series impedance compensator to control series reactance.
+    The TCSC device allows controlling the active power flow throgh the path it is connected in.
+
+    Multiple TCSC elements in net are possible.
+    Unfortunately, TCSC is not implemented for the case when multiple TCSC elements
+    have the same from_bus or the same to_bus.
+
+    Note: in the Newton-Raphson power flow calculation, the initial voltage vector is adjusted slightly
+    if the initial voltage at the from bus is the same as at the to_bus to avoid
+    some terms in J (for TCSC) becoming zero.
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **from_bus** (int) - starting bus of the tcsc
+
+        **to_bus** (int) - ending bus of the tcsc
+
+        **x_l_ohm** (float) - impedance of the reactor component of tcsc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of tcsc
+
+        **set_p_to_mw** (float) - set-point for the branch active power at the to_bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of tcsc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling
+            or as a fixed series impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created tcsc
+
+    """
+    index = _get_index_with_check(net, "tcsc", index)
+
+    _check_branch_element(net, "TCSC", index, from_bus, to_bus)
+
+    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle_degree",
+               "controllable", "in_service", "min_angle_degree", "max_angle_degree"]
+    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
+              controllable, in_service, min_angle_degree, max_angle_degree]
+    entries = dict(zip(columns, values))
+    _set_entries(net, "tcsc", index, **entries, **kwargs)
 
     return index
 
@@ -3824,6 +4078,41 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     entries = dict(zip(["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "name", "in_service"],
                        [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name, in_service]))
     _set_entries(net, "ward", index, **entries, **kwargs)
+
+    return index
+
+
+def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None,
+                 **kwargs):
+    """
+    Creates ward equivalents.
+
+    A ward equivalent is a combination of an impedance load and a PQ load.
+
+    INPUT:
+        **net** (pandapowernet) - The pandapower net within the element should be created
+
+        **buses** (list of int) -  bus of the ward equivalent
+
+        **ps_mw** (list of float) - active power of the PQ load
+
+        **qs_mvar** (list of float) - reactive power of the PQ load
+
+        **pz_mw** (list of float) - active power of the impedance load in MW at 1.pu voltage
+
+        **qz_mvar** (list of float) - reactive power of the impedance load in MVar at 1.pu voltage
+
+    OUTPUT:
+        ward id
+    """
+    _check_multiple_node_elements(net, buses)
+
+    index = _get_multiple_index_with_check(net, "storage", index, len(buses))
+
+    entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
+              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+
+    _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
     return index
 
@@ -4299,7 +4588,8 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
     """Add a new group to net['group'] dataframe.
 
     Attention
-    ----------
+    ::
+
         If you declare a group but forget to declare all connected elements although
         you wants to (e.g. declaring lines but forgetting to mention the connected switches),
         you may get problems after using drop_elements_and_group() or other functions.
@@ -4307,29 +4597,23 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         'elements_dict', such as get_connecting_branches(),
         get_inner_branches(), get_connecting_elements_dict().
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    element_types : str or list of strings
-        defines, together with 'elements', which net elements belong to the group
-    elements : list of list of indices
-        defines, together with 'element_types', which net elements belong to the group
-    name : str, optional
-        name of the group, by default ""
-    reference_columns : string or list of strings, optional
-        If given, the elements_dict should
-        not refer to DataFrames index but to another column. It is highly relevant that the
-        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
-        by default None
-    index : int, optional
-        index for the dataframe net.group, by default None
+    INPUT:
+        **net** - pandapowerNet
 
-    Example
-    -------
-        create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
-        or
-        create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+        **element_types** (str, or list of str) - defines, together with 'elements', which net elements belong to the group
+
+        **elements** (list of list of indices) -  defines, together with 'element_types', which net elements belong to the group
+        **name** (str) - name of the group
+
+        **reference_columns** (str, or list of str) -  If given, the elements_dict should not refer
+         to DataFrames index but to another column. It is highly relevant that the reference_column
+         exists in all DataFrames of the grouped elements and have the same dtype, by default None
+
+        **index** (int) - index for the dataframe net.group, by default None
+
+    EXAMPLES:
+        >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)

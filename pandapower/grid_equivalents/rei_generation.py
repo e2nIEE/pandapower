@@ -191,7 +191,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 rft_pu_g, xft_pu_g = adapt_impedance_params(Z[elm+"_ground"].loc[idxs].values)
                 max_idx = net_zpbn.impedance.index.max() if net_zpbn.impedance.shape[0] else 0
                 new_imps_g = pd.DataFrame({
-                    "from_bus": Z.ext_bus.loc[idxs].astype(int).values, "to_bus": new_g_buses,
+                    "from_bus": Z.ext_bus.loc[idxs].astype(np.int64).values, "to_bus": new_g_buses,
                     "rft_pu": rft_pu_g, "xft_pu": xft_pu_g,
                     "rtf_pu": rft_pu_g, "xtf_pu": xft_pu_g},
                     index=range(max_idx+1, max_idx+1+len(new_g_buses)))
@@ -406,7 +406,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
     # pp.runpp(net_zpbn)
     runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
-              tolerance_mva=1e-3, max_iteration=100)
+              tolerance_mva=1e-3, max_iteration=100, **kwargs)
     return net_zpbn, net_internal, net_external
 
 
@@ -579,8 +579,8 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
     nl = (nb_bt_buses_ppc) * (nb_bt_buses_ppc - 1) // 2
     tri_upper = np.triu(params, k=1)
     non_zero = np.abs(tri_upper) > 1/max_allowed_impedance
-    rows = (np.arange(params.shape[0]).reshape(-1, 1) * np.ones(params.shape)).astype(int)[non_zero]
-    cols = (np.arange(params.shape[1]) * np.ones(params.shape)).astype(int)[non_zero]
+    rows = (np.arange(params.shape[0]).reshape(-1, 1) * np.ones(params.shape)).astype(np.int64)[non_zero]
+    cols = (np.arange(params.shape[1]) * np.ones(params.shape)).astype(np.int64)[non_zero]
 
     impedance_params = pd.DataFrame(columns=["from_bus", "to_bus", "rft_pu",
                                              "xft_pu", "rtf_pu", "xtf_pu"], index=range(len(rows)))
@@ -644,7 +644,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     net_eq["impedance"] = pd.concat([net_eq["impedance"], new_imps])
 
     # --- create switches instead of very low impedances
-    new_sws = impedance_params[["from_bus", "to_bus"]].loc[~not_very_low_imp].astype(int)
+    new_sws = impedance_params[["from_bus", "to_bus"]].loc[~not_very_low_imp].astype(np.int64)
     new_sws.rename(columns={"from_bus": "bus", "to_bus": "element"}, inplace=True)
     max_idx = net_eq.switch.index.max() if net_eq.switch.shape[0] else 0
     new_sws.index = range(max_idx+1, max_idx+1+sum(~not_very_low_imp))
@@ -667,7 +667,7 @@ def _replace_ext_area_by_impedances_and_shunts(
 
     # --- create shunts
     max_idx = net_eq.shunt.index.max() if net_eq.shunt.shape[0] else 0
-    shunt_buses = shunt_params.bus_pd.values.astype(int)
+    shunt_buses = shunt_params.bus_pd.values.astype(np.int64)
     new_shunts = pd.DataFrame({"bus": shunt_buses,
                                "q_mvar": -shunt_params.parameter.values.imag * net_eq.sn_mva,
                                "p_mw": shunt_params.parameter.values.real * net_eq.sn_mva

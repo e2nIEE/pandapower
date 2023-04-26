@@ -418,7 +418,7 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     net = iec_60909_4()
     net.trafo["power_station_unit"] = False
     ps_trafo = net.gen.power_station_trafo.values
-    ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(int)
+    ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(np.int64)
     net.trafo.loc[ps_trafo, "power_station_unit"] = True
     net.gen.power_station_trafo.values[:] = np.nan
 

@@ -7,7 +7,7 @@ Switch
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_switch
+.. autofunction:: pandapower.create.create_switch
 
 Input Parameters
 =====================
@@ -55,5 +55,3 @@ Closed bus-element switches are ignored:
 	:width: 30em
 	:alt: alternate Text
 	:align: center
-
-

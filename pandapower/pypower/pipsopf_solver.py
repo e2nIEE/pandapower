@@ -11,7 +11,7 @@
 """Solves AC optimal power flow using PIPS.
 """
 
-from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_
+from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_, int64
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
 from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST
@@ -161,11 +161,11 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     bus[:, VM] = Vm
     gen[:, PG] = Pg * baseMVA
     gen[:, QG] = Qg * baseMVA
-    gen[:, VG] = Vm[ gen[:, GEN_BUS].astype(int) ]
+    gen[:, VG] = Vm[ gen[:, GEN_BUS].astype(int64)]
 
     ## compute branch flows
-    Sf = V[ branch[:, F_BUS].astype(int) ] * conj(Yf * V)  ## cplx pwr at "from" bus, p["u"].
-    St = V[ branch[:, T_BUS].astype(int) ] * conj(Yt * V)  ## cplx pwr at "to" bus, p["u"].
+    Sf = V[ branch[:, F_BUS].astype(int64)] * conj(Yf * V)  ## cplx pwr at "from" bus, p["u"].
+    St = V[ branch[:, T_BUS].astype(int64)] * conj(Yt * V)  ## cplx pwr at "to" bus, p["u"].
     branch[:, PF] = Sf.real * baseMVA
     branch[:, QF] = Sf.imag * baseMVA
     branch[:, PT] = St.real * baseMVA

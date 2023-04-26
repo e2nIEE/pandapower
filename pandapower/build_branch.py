@@ -20,6 +20,8 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
+from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
+    TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
 def _build_branch_ppc(net, ppc):
@@ -70,6 +72,16 @@ def _build_branch_ppc(net, ppc):
         _calc_switch_parameter(net, ppc)
 
 
+def _build_tcsc_ppc(net, ppc, mode):
+    length = len(net.tcsc)
+    ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
+    if mode != "pf":
+        return
+
+    if length > 0:
+        _calc_tcsc_parameter(net, ppc)
+
+
 def _initialize_branch_lookup(net):
     start = 0
     end = 0
@@ -93,9 +105,9 @@ def _calc_trafo3w_parameter(net, ppc):
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
     r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
@@ -583,6 +595,37 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
 
+def _calc_tcsc_parameter(net, ppc):
+    f = 0
+    t = len(net.tcsc)
+
+    if t == 0:
+        return
+
+    baseMVA = ppc["baseMVA"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    f_bus = bus_lookup[net.tcsc["from_bus"].values]
+    t_bus = bus_lookup[net.tcsc["to_bus"].values]
+
+    tcsc = ppc["tcsc"]
+    baseV = ppc["bus"][f_bus, BASE_KV]
+    baseZ = baseV ** 2 / baseMVA
+
+    tcsc[f:t, TCSC_F_BUS] = f_bus
+    tcsc[f:t, TCSC_T_BUS] = t_bus
+
+    tcsc[f:t, TCSC_X_L] = net["tcsc"]["x_l_ohm"].values / baseZ
+    tcsc[f:t, TCSC_X_CVAR] = net["tcsc"]["x_cvar_ohm"].values / baseZ
+    tcsc[f:t, TCSC_SET_P] = net["tcsc"]["set_p_to_mw"].values / baseMVA
+    tcsc[f:t, TCSC_THYRISTOR_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["thyristor_firing_angle_degree"].values)
+    tcsc[f:t, TCSC_MIN_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["min_angle_degree"].values)
+    tcsc[f:t, TCSC_MAX_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["max_angle_degree"].values)
+
+    tcsc[f:t, TCSC_STATUS] = net["tcsc"]["in_service"].values
+    tcsc[f:t, TCSC_CONTROLLABLE] = net["tcsc"]["controllable"].values.astype(bool) & net["tcsc"]["in_service"].values.astype(bool)
+
+
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     impedance = net.impedance
     suffix = "0" if zero_sequence else ""
@@ -664,8 +707,8 @@ def _switch_branches(net, ppc):
         switch_buses = net["switch"]["bus"].values[switch_mask]
         switch_info = np.array(list(map(mapfunc, switch_buses, switch_element)))
         sw_sides = switch_info[:, 0]
-        sw_bus_index = bus_lookup[switch_info[:, 1].astype(int)]
-        sw_branch_index = switch_info[:, 2].astype(int)
+        sw_bus_index = bus_lookup[switch_info[:, 1].astype(np.int64)]
+        sw_branch_index = switch_info[:, 2].astype(np.int64)
         if neglect_open_switch_branches:
             # deactivate switches which have an open switch instead of creating aux buses
             ppc["branch"][sw_branch_index, BR_STATUS] = 0
@@ -693,18 +736,18 @@ def _switch_branches(net, ppc):
                     init_values = res_column.loc[switch_element].values[mask]
                 else:
                     if element == "line":
-                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
+                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(np.int64)
                         init_values = ppc["bus"][opposite_buses, col]
                     else:
                         opposite_side = T_BUS if side == F_BUS else F_BUS
                         opposite_buses = ppc["branch"][sw_branch_index[mask],
-                                                       opposite_side].real.astype(int)
+                                                       opposite_side].real.astype(np.int64)
                         if col == VM:
                             taps = ppc["branch"][sw_branch_index[mask], TAP].real
                             init_values = ppc["bus"][opposite_buses, col] * taps
                         else:
                             if calculate_voltage_angles:
-                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(int)
+                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(np.int64)
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
@@ -766,7 +809,7 @@ def _branches_with_oos_buses(net, ppc):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
+            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
             ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
@@ -778,7 +821,7 @@ def _branches_with_oos_buses(net, ppc):
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
             # 2: position of the line a switch is connected to
-            # ls_info = np.array(ls_info, dtype=int)
+            # ls_info = np.array(ls_info, dtype=np.int64)
 
             # build new buses
             new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)

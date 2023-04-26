@@ -17,12 +17,11 @@ Create Function
 .. _create_trafo3w:
 
 
-.. autofunction:: pandapower.create_transformer3w
+.. autofunction:: pandapower.create.create_transformer3w
 
-.. autofunction:: pandapower.create_transformer3w_from_parameters
-
+.. autofunction:: pandapower.create.create_transformer3w_from_parameters
 .. note::
-    All short circuit voltages are given relative to the maximum apparent power
+    All short circuit voltages are given relative to the minimum apparent power
     flow. For example vk_hv_percent is the short circuit voltage from the high to
     the medium level, it is given relative to the minimum of the rated apparent
     power in high and medium level: min(sn_hv_mva, sn_mv_mva). This is consistent

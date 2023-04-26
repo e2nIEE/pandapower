@@ -10,7 +10,7 @@ Ward
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_ward
+.. autofunction:: pandapower.create.create_ward
 
 Input Parameters
 =========================

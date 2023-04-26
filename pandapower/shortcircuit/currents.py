@@ -312,8 +312,8 @@ def _calc_branch_currents(net, ppci, bus_idx):
     Yt = ppci["internal"]["Yt"]
     baseI = ppci["internal"]["baseI"]
     n_bus = ppci["bus"].shape[0]
-    fb = np.real(ppci["branch"][:, 0]).astype(int)
-    tb = np.real(ppci["branch"][:, 1]).astype(int)
+    fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
+    tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
 
     # calculate voltage source branch current
     if net["_options"]["inverse_y"]:
@@ -350,8 +350,8 @@ def _calc_branch_currents(net, ppci, bus_idx):
             for ix, b in enumerate(bus_idx):
                 V[:, ix] = ybus_fact(current[ix, :] * baseI[b])
 
-        fb = np.real(ppci["branch"][:, 0]).astype(int)
-        tb = np.real(ppci["branch"][:, 1]).astype(int)
+        fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
+        tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
         ikss2_all_f = np.conj(Yf.dot(V))
         ikss2_all_t = np.conj(Yt.dot(V))
 

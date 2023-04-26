@@ -78,9 +78,9 @@ def test_group_element_index():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
         # ! group_element_index()
-        assert (pp.group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=int)).all()
-        assert (pp.group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=int)).all()
-        assert (pp.group_element_index(net, 0, "dcline") == pd.Index([], dtype=int)).all()
+        assert (pp.group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=np.int64)).all()
+        assert (pp.group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=np.int64)).all()
+        assert (pp.group_element_index(net, 0, "dcline") == pd.Index([], dtype=np.int64)).all()
 
 
 def test_groups_equal():
@@ -216,7 +216,7 @@ def test_check_unique_group_rows():
         assert False, "UserWarning expected"
     except UserWarning:
         pass
-    pp.check_unique_group_rows(net, raise_=False, log_level="debug")
+    pp.check_unique_group_rows(net, raise_error=False, log_level="debug")
 
 
 def test_drop_element():
@@ -437,10 +437,10 @@ def test_count_group_elements():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
         pdt.assert_series_equal(
             pp.count_group_elements(net, idxs[0]),
-            pd.Series({"gen": 2, "sgen": 2}, dtype=int))
+            pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
         pdt.assert_series_equal(
             pp.count_group_elements(net, idxs[1]),
-            pd.Series({"trafo": 3}, dtype=int))
+            pd.Series({"trafo": 3}, dtype=np.int64))
 
 
 def test_isin():

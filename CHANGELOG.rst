@@ -3,6 +3,18 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [FIXED] recorrection of shunt values in CIGRE HV
+
+[2.12.1] - 2023-04-18
+-------------------------------
+- [FIXED] add minimum Python version (3.8) explicitly to setup.py
+- [FIXED] remove `import pandapower.test` from __init__
+- [FIXED] matplotlib imports are optional (but required for plotting)
+- [FIXED] missing numpy int imports
+- [FIXED] documentation; needed change: group functions parameter `raise_` is renamed by `raise_error`
+
+[2.12.0] - 2023-04-06
+-------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
@@ -31,6 +43,8 @@ Change Log
 - [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
 - [FIXED] Shunt admittance modelling for 3 phase calculations
+- [ADDED] bulk creation function create_storages and create_wards
+- [ADDED] FACTS devices Shunt Var Compensator (SVC) and Thyristor-Controlled Series Capacitor (TCSC) as new pandapower elements net.svc and net.tcsc
 
 [2.11.1] - 2023-01-02
 -------------------------------
