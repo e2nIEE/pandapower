@@ -222,7 +222,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     return lc
 
 
-def _create_node_element_collection(node_coords, patch_maker,sgen_type = "", size=1., infos=None,
+def _create_node_element_collection(node_coords, patch_maker,sgen_type , size=1., infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
                                     patch_facecolor="w", patch_edgecolor="k", line_color="k",
                                     **kwargs):
@@ -1069,9 +1069,8 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1., infofunc=None, o
     node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
 
     color = kwargs.pop("color", "k")
-    sgen_type = sgen_type[0]
     sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches, sgen_type, size=size, infos=infos, orientation=orientation,
+        node_coords, sgen_patches, sgen_type = sgen_type, size=size, infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return sgen_pc, sgen_lc
 
@@ -1153,11 +1152,11 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids] if infofunc is not None else []
 
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
-
+    sgen_type = net.sgen.type
     color = kwargs.pop("color", "k")
 
     ext_grid_pc, ext_grid_lc = _create_node_element_collection(
-        node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
+        node_coords, ext_grid_patches,sgen_type, size=size, infos=infos, orientation=orientation,
         picker=picker, hatch='XXX', line_color=color, **kwargs)
 
     return ext_grid_pc, ext_grid_lc
