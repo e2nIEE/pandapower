@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2023-..-..
 -------------------------------
 - [FIXED] recorrection of shunt values in CIGRE HV
+- [FIXED] deprecated np.typedict to np.sctypedict in cim converter
 
 [2.12.1] - 2023-04-18
 -------------------------------
