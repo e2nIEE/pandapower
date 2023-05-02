@@ -35,9 +35,9 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     only missing columns will be created. Optional, default: True
     :return: The extended pandapower network.
     """
-    np_str_type = np.typeDict.get('str')
-    np_float_type = np.typeDict.get('float')
-    np_bool_type = np.typeDict.get('bool')
+    np_str_type = np.sctypeDict.get('str')
+    np_float_type = np.sctypeDict.get('float')
+    np_bool_type = np.sctypeDict.get('bool')
 
     sc = get_pp_net_special_columns_dict()
 
