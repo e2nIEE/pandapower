@@ -5,6 +5,9 @@ Change Log
 -------------------------------
 - [FIXED] recorrection of shunt values in CIGRE HV
 - [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [ADDED] reporting for cim2pp converter
+- [ADDED] interfaces for repair functions for cim2pp converter
+- [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
 
 [2.12.1] - 2023-04-18
 -------------------------------
