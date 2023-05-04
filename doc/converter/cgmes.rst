@@ -59,133 +59,133 @@ In the resulting pandapower-network, the following should be noted:
 **Supported** components from CIM CGMES:
 
 eq profile
-- ControlArea
-- TieFlow
-- ConnectivityNode
-- Bay
-- Substation
-- GeographicalRegion
-- SubGeographicalRegion
-- VoltageLevel
-- BaseVoltage
-- ExternalNetworkInjection
-- ACLineSegment
-- Terminal
-- OperationalLimitSet
-- OperationalLimitType
-- CurrentLimit
-- VoltageLimit
-- DCNode
-- DCEquipmentContainer
-- DCConverterUnit
-- DCLineSegment
-- CsConverter
-- VsConverter
-- DCTerminal
-- ACDCConverterDCTerminal
-- Breaker
-- Disconnector
-- Switch
-- LoadBreakSwitch
-- EnergyConsumer
-- ConformLoad
-- NonConformLoad
-- StationSupply
-- GeneratingUnit
-- WindGeneratingUnit
-- HydroGeneratingUnit
-- SolarGeneratingUnit
-- ThermalGeneratingUnit
-- NuclearGeneratingUnit
-- RegulatingControl
-- SynchronousMachine
-- AsynchronousMachine
-- EnergySource
-- EnergySchedulingType
-- StaticVarCompensator
-- PowerTransformer
-- PowerTransformerEnd
-- TapChangerControl
-- RatioTapChanger
-- PhaseTapChangerLinear
-- PhaseTapChangerAsymmetrical
-- PhaseTapChangerSymmetrical
-- PhaseTapChangerTabular
-- PhaseTapChangerTablePoint
-- RatioTapChangerTable
-- RatioTapChangerTablePoint
-- LinearShuntCompensator
-- NonlinearShuntCompensator
-- NonlinearShuntCompensatorPoint
-- EquivalentBranch
-- EquivalentInjection
-- SeriesCompensator
-- Analog
-- AnalogValue
-- MeasurementValueSource
+ - ControlArea
+ - TieFlow
+ - ConnectivityNode
+ - Bay
+ - Substation
+ - GeographicalRegion
+ - SubGeographicalRegion
+ - VoltageLevel
+ - BaseVoltage
+ - ExternalNetworkInjection
+ - ACLineSegment
+ - Terminal
+ - OperationalLimitSet
+ - OperationalLimitType
+ - CurrentLimit
+ - VoltageLimit
+ - DCNode
+ - DCEquipmentContainer
+ - DCConverterUnit
+ - DCLineSegment
+ - CsConverter
+ - VsConverter
+ - DCTerminal
+ - ACDCConverterDCTerminal
+ - Breaker
+ - Disconnector
+ - Switch
+ - LoadBreakSwitch
+ - EnergyConsumer
+ - ConformLoad
+ - NonConformLoad
+ - StationSupply
+ - GeneratingUnit
+ - WindGeneratingUnit
+ - HydroGeneratingUnit
+ - SolarGeneratingUnit
+ - ThermalGeneratingUnit
+ - NuclearGeneratingUnit
+ - RegulatingControl
+ - SynchronousMachine
+ - AsynchronousMachine
+ - EnergySource
+ - EnergySchedulingType
+ - StaticVarCompensator
+ - PowerTransformer
+ - PowerTransformerEnd
+ - TapChangerControl
+ - RatioTapChanger
+ - PhaseTapChangerLinear
+ - PhaseTapChangerAsymmetrical
+ - PhaseTapChangerSymmetrical
+ - PhaseTapChangerTabular
+ - PhaseTapChangerTablePoint
+ - RatioTapChangerTable
+ - RatioTapChangerTablePoint
+ - LinearShuntCompensator
+ - NonlinearShuntCompensator
+ - NonlinearShuntCompensatorPoint
+ - EquivalentBranch
+ - EquivalentInjection
+ - SeriesCompensator
+ - Analog
+ - AnalogValue
+ - MeasurementValueSource
 
 eq_bd profile
-- ConnectivityNode
-- BaseVoltage
-- Terminal
-- EnergySource
-- EnergySchedulingType
+ - ConnectivityNode
+ - BaseVoltage
+ - Terminal
+ - EnergySource
+ - EnergySchedulingType
 
 ssh profile
-- ControlArea
-- ExternalNetworkInjection
-- Terminal
-- DCTerminal
-- ACDCConverterDCTerminal
-- CsConverter
-- VsConverter
-- Breaker
-- Disconnector
-- Switch
-- LoadBreakSwitch
-- EnergyConsumer
-- ConformLoad
-- NonConformLoad
-- StationSupply
-- RegulatingControl
-- SynchronousMachine
-- AsynchronousMachine
-- EnergySource
-- StaticVarCompensator
-- TapChangerControl
-- RatioTapChanger
-- PhaseTapChangerLinear
-- PhaseTapChangerAsymmetrical
-- PhaseTapChangerSymmetrical
-- PhaseTapChangerTabular
-- LinearShuntCompensator
-- NonlinearShuntCompensator
-- EquivalentInjection
+ - ControlArea
+ - ExternalNetworkInjection
+ - Terminal
+ - DCTerminal
+ - ACDCConverterDCTerminal
+ - CsConverter
+ - VsConverter
+ - Breaker
+ - Disconnector
+ - Switch
+ - LoadBreakSwitch
+ - EnergyConsumer
+ - ConformLoad
+ - NonConformLoad
+ - StationSupply
+ - RegulatingControl
+ - SynchronousMachine
+ - AsynchronousMachine
+ - EnergySource
+ - StaticVarCompensator
+ - TapChangerControl
+ - RatioTapChanger
+ - PhaseTapChangerLinear
+ - PhaseTapChangerAsymmetrical
+ - PhaseTapChangerSymmetrical
+ - PhaseTapChangerTabular
+ - LinearShuntCompensator
+ - NonlinearShuntCompensator
+ - EquivalentInjection
 
 sv profile
-- SvVoltage
-- SvPowerFlow
-- SvShuntCompensatorSections
-- SvTapStep
+ - SvVoltage
+ - SvPowerFlow
+ - SvShuntCompensatorSections
+ - SvTapStep
 
 tp profile
-- TopologicalNode
-- DCTopologicalNode
-- ConnectivityNode
-- Terminal
-- DCTerminal
-- ACDCConverterDCTerminal
+ - TopologicalNode
+ - DCTopologicalNode
+ - ConnectivityNode
+ - Terminal
+ - DCTerminal
+ - ACDCConverterDCTerminal
 
 tp_bd profile
-- TopologicalNode
-- ConnectivityNode
+ - TopologicalNode
+ - ConnectivityNode
 
 dl profile
-- Diagram
-- DiagramObject
-- DiagramObjectPoint
+ - Diagram
+ - DiagramObject
+ - DiagramObjectPoint
 
 gl profile
-- CoordinateSystem
-- Location
-- PositionPoint
+ - CoordinateSystem
+ - Location
+ - PositionPoint
