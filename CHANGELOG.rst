@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [FIXED] recorrection of shunt values in CIGRE HV
 - [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [FIXED] shape issues when calculating SC with the superposition method
 
 [2.12.1] - 2023-04-18
 -------------------------------
