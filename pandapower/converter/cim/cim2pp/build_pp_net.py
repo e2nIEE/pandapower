@@ -5,6 +5,7 @@
 import logging
 import math
 from typing import Dict, Tuple, List
+import traceback
 import pandapower as pp
 import pandapower.auxiliary
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
@@ -16,6 +17,7 @@ from .convert_measurements import CreateMeasurements
 from .. import cim_tools
 from .. import pp_tools
 from .. import cim_classes
+from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
 pd.set_option('display.max_columns', 900)
@@ -34,6 +36,7 @@ class CimConverter:
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
+        self.report_container: ReportContainer = cim_parser.get_report_container()
 
     def _merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
@@ -55,13 +58,18 @@ class CimConverter:
         eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'}, inplace=True)
         eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'}, inplace=True)
         # buses for merging with assets:
-        bus_merge = pd.DataFrame(data=self.net['bus'].loc[:, sc['o_id']])
+        bus_merge = pd.DataFrame(data=self.net['bus'].loc[:, [sc['o_id'], 'vn_kv']])
+        bus_merge.rename(columns={'vn_kv': 'base_voltage_bus'}, inplace=True)
         bus_merge.reset_index(level=0, inplace=True)
         bus_merge.rename(columns={'index': 'index_bus', sc['o_id']: 'ConnectivityNode'}, inplace=True)
         bus_merge = pd.merge(eqssh_terminals, bus_merge, how='left', on='ConnectivityNode')
         self.bus_merge = bus_merge
 
         self.logger.info("Created %s busses in %ss" % (connectivity_nodes.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s busses from ConnectivityNodes / TopologicalNodes in %ss" %
+                    (connectivity_nodes.index.size, time.time() - time_start)))
 
     def _prepare_connectivity_nodes_cim16(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         # check the model: Bus-Branch or Node-Breaker: In the Bus-Branch model are no ConnectivityNodes
@@ -109,6 +117,10 @@ class CimConverter:
                 self.logger.warning(
                     "More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
                     "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates)
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
+                            "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates))
             eq_subs.drop_duplicates(['rdfId'], keep='first', inplace=True)
             # now merge the VoltageLevel with the ConnectivityNode
             eq_voltage_levels = self.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']]
@@ -214,12 +226,18 @@ class CimConverter:
             connectivity_nodes.drop(columns=['TopologicalNode_2'], inplace=True)
         if connectivity_nodes.index.size != connectivity_nodes_size:
             self.logger.warning("There is a problem at the busses!")
+            self.report_container.add_log(Report(
+                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                message="There is a problem at the busses!"))
             dups = connectivity_nodes.pivot_table(index=['rdfId'], aggfunc='size')
             dups = dups.loc[dups != 1]
             for rdfId, count in dups.items():
                 self.logger.warning("The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count))
                 self.logger.warning("The ConnectivityNode data: \n%s" %
                                     connectivity_nodes[connectivity_nodes['rdfId'] == rdfId])
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
             # raise ValueError("The number of ConnectivityNodes increased after merging with Terminals, number of "
             #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
             #                  (connectivity_nodes_size, connectivity_nodes.index.size))
@@ -236,9 +254,18 @@ class CimConverter:
 
         eqssh_eni = self._prepare_external_network_injections_cim16()
 
-        eni_ref_prio_min = eqssh_eni['slack_weight'].min()
-        sync_ref_prio_min = self.cim['ssh']['SynchronousMachine'].loc[
-            self.cim['ssh']['SynchronousMachine']['referencePriority'] > 0, 'referencePriority'].min()
+        # choose the slack
+        eni_ref_prio_min = eqssh_eni.loc[eqssh_eni['enabled'], 'slack_weight'].min()
+        # check if the slack is a SynchronousMachine
+        sync_machines = self._merge_eq_ssh_profile('SynchronousMachine')
+        regulation_controllers = self._merge_eq_ssh_profile('RegulatingControl')
+        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
+        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
+        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
+        sync_machines = pd.merge(sync_machines, regulation_controllers, how='left', on='RegulatingControl')
+
+        sync_ref_prio_min = sync_machines.loc[(sync_machines['referencePriority'] > 0) & (sync_machines['enabled']),
+                                              'referencePriority'].min()
         if pd.isna(eni_ref_prio_min):
             ref_prio_min = sync_ref_prio_min
         elif pd.isna(sync_ref_prio_min):
@@ -256,6 +283,11 @@ class CimConverter:
 
         self.logger.info("Created %s external networks, %s generators and %s static generators in %ss" %
                          (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s external networks, %s generators and %s static generators from "
+                    "ExternalNetworkInjections in %ss" %
+                    (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
 
     def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
 
@@ -278,10 +310,10 @@ class CimConverter:
         eqssh_eni = pd.merge(eqssh_eni, self.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
                              how='left', left_on=sc['ct'], right_on='TopologicalNode')
         eqssh_eni['controlEnabled'] = eqssh_eni['controlEnabled'] & eqssh_eni['enabled']
-        eqssh_eni['vm_pu'] = eqssh_eni['targetValue'] / eqssh_eni['vn_kv']
-        eqssh_eni['vm_pu'].fillna(eqssh_eni['v'] / eqssh_eni['vn_kv'], inplace=True)
-        eqssh_eni['vm_pu'].fillna(1., inplace=True)
-        eqssh_eni['angle'].fillna(0., inplace=True)
+        eqssh_eni['vm_pu'] = eqssh_eni['targetValue'] / eqssh_eni['vn_kv']  # voltage from regulation
+        eqssh_eni['vm_pu'].fillna(eqssh_eni['v'] / eqssh_eni['vn_kv'], inplace=True)  # voltage from measurement
+        eqssh_eni['vm_pu'].fillna(1., inplace=True)  # default voltage
+        eqssh_eni['angle'].fillna(0., inplace=True)  # default angle
         eqssh_eni['ratedU'] = eqssh_eni['targetValue'][:]  # targetValue in kV
         eqssh_eni['ratedU'].fillna(eqssh_eni['v'], inplace=True)  # v in kV
         eqssh_eni['ratedU'].fillna(eqssh_eni['vn_kv'], inplace=True)
@@ -358,6 +390,10 @@ class CimConverter:
 
         self.logger.info("Created %s lines and %s switches in %ss" %
                          (line_df.index.size, switch_df.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s lines and %s switches from ACLineSegments in %ss" %
+                    (line_df.index.size, switch_df.index.size, time.time() - time_start)))
 
     def _prepare_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit) -> pd.DataFrame:
         line_length_before_merge = self.cim['eq']['ACLineSegment'].index.size
@@ -378,12 +414,18 @@ class CimConverter:
         if eq_ac_line_segments.index.size != line_length_before_merge * 2:
             self.logger.error("Error processing the ACLineSegments, there is a problem with Terminals in the source "
                               "data!")
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="Error processing the ACLineSegments, there is a problem with Terminals in the source data!"))
             dups = eq_ac_line_segments.pivot_table(index=['rdfId'], aggfunc='size')
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The ACLineSegment data: \n%s" %
                                     eq_ac_line_segments[eq_ac_line_segments['rdfId'] == rdfId])
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eq_ac_line_segments = eq_ac_line_segments[0:0]
         eq_ac_line_segments.reset_index(inplace=True)
         # now merge with OperationalLimitSets and CurrentLimits
@@ -435,6 +477,10 @@ class CimConverter:
         self._copy_to_pp('dcline', eq_dc_line_segments)
 
         self.logger.info("Created %s DC lines in %ss" % (eq_dc_line_segments.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s DC lines from DCLineSegments in %ss" %
+                    (eq_dc_line_segments.index.size, time.time() - time_start)))
 
     def _prepare_dc_line_segments_cim16(self) -> pd.DataFrame:
         line_length_before_merge = self.cim['eq']['DCLineSegment'].index.size
@@ -456,6 +502,9 @@ class CimConverter:
         if dc_line_segments.index.size != line_length_before_merge * 2:
             self.logger.error("Error processing the DCLineSegments, there is a problem with Terminals in the source "
                               "data!")
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="Error processing the DCLineSegments, there is a problem with Terminals in the source data!"))
             return pd.DataFrame(None)
         dc_line_segments.reset_index(inplace=True)
 
@@ -510,14 +559,19 @@ class CimConverter:
             if conv is None:
                 self.logger.warning("Problem with converting tht DC line %s: No ACDC converter found, maybe the DC "
                                     "part is too complex to reduce it to pandapower requirements!")
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="Error processing the DCLineSegments, there is a problem with Terminals in the source "
+                            "data!"))
         dc_line_segments.drop(columns=['ConnectivityNode'], inplace=True)
         dc_line_segments = pd.merge(dc_line_segments, converters_t, how='left', on='converters')
+        dc_line_segments['targetUpcc'].fillna(dc_line_segments['base_voltage_bus'], inplace=True)
 
         # copy the columns which are needed to reduce the dc_line_segments to one row per line
         dc_line_segments.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
         # a list of DC line parameters which are used for each DC line end
         dc_line_segments.reset_index(inplace=True)
-        copy_list = ['index_bus', 'rdfId_Terminal', 'connected', 'p', 'ratedUdc', 'targetUpcc']
+        copy_list = ['index_bus', 'rdfId_Terminal', 'connected', 'p', 'ratedUdc', 'targetUpcc', 'base_voltage_bus']
         for one_item in copy_list:
             # copy the columns which are required for each line end
             dc_line_segments[one_item + '2'] = dc_line_segments[one_item].copy()
@@ -525,15 +579,19 @@ class CimConverter:
             dc_line_segments[one_item + '2'] = dc_line_segments[one_item + '2'].iloc[1:].reset_index()[one_item + '2']
         del copy_list, one_item
         dc_line_segments.drop_duplicates(['rdfId'], keep='first', inplace=True)
-
-        dc_line_segments['loss_mw'] = abs(abs(dc_line_segments['p']) - abs(dc_line_segments['p2']))
+        dc_line_segments = pd.merge(dc_line_segments,
+                                    pd.DataFrame(dc_line_segments.pivot_table(index=['converters'], aggfunc='size'),
+                                                 columns=['converter_dups']), how='left', on='converters')
+        dc_line_segments['loss_mw'] = \
+            abs(abs(dc_line_segments['p']) - abs(dc_line_segments['p2'])) / dc_line_segments['converter_dups']
+        dc_line_segments['p_mw'] = dc_line_segments['p'] / dc_line_segments['converter_dups']
         dc_line_segments['loss_percent'] = 0
-        dc_line_segments['vm_from_pu'] = dc_line_segments['targetUpcc'] / dc_line_segments['ratedUdc']
-        dc_line_segments['vm_to_pu'] = dc_line_segments['targetUpcc2'] / dc_line_segments['ratedUdc2']
+        dc_line_segments['vm_from_pu'] = dc_line_segments['targetUpcc'] / dc_line_segments['base_voltage_bus']
+        dc_line_segments['vm_to_pu'] = dc_line_segments['targetUpcc2'] / dc_line_segments['base_voltage_bus2']
         dc_line_segments['in_service'] = dc_line_segments.connected & dc_line_segments.connected2
         dc_line_segments.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'index_bus': 'from_bus',
-            'index_bus2': 'to_bus', 'p': 'p_mw'}, inplace=True)
+            'index_bus2': 'to_bus'}, inplace=True)
 
         return dc_line_segments
 
@@ -543,6 +601,10 @@ class CimConverter:
         eqssh_switches = self._prepare_switches_cim16()
         self._copy_to_pp('switch', eqssh_switches)
         self.logger.info("Created %s switches in %ss." % (eqssh_switches.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s switches from Breakers, Disconnectors, LoadBreakSwitches and Switches in %ss." %
+                    (eqssh_switches.index.size, time.time() - time_start)))
 
     def _prepare_switches_cim16(self) -> pd.DataFrame:
         eqssh_switches = self._merge_eq_ssh_profile('Breaker', add_cim_type_column=True)
@@ -587,11 +649,18 @@ class CimConverter:
         else:
             self.logger.error("Something went wrong at switches, seems like that terminals for connection with "
                               "connectivity nodes are missing!")
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="Something went wrong at switches, seems like that terminals for connection with "
+                        "connectivity nodes are missing!"))
             dups = eqssh_switches.pivot_table(index=['rdfId'], aggfunc='size')
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The switch with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The switch data: \n%s" % eqssh_switches[eqssh_switches['rdfId'] == rdfId])
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="The switch with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eqssh_switches = eqssh_switches[0:0]
         eqssh_switches.rename(columns={'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element',
                                        'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']}, inplace=True)
@@ -607,6 +676,10 @@ class CimConverter:
         eqssh_energy_consumers = self._prepare_energy_consumers_cim16()
         self._copy_to_pp('load', eqssh_energy_consumers)
         self.logger.info("Created %s loads in %ss." % (eqssh_energy_consumers.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s loads from EnergyConsumers in %ss." %
+                    (eqssh_energy_consumers.index.size, time.time() - time_start)))
 
     def _prepare_energy_consumers_cim16(self) -> pd.DataFrame:
         eqssh_energy_consumers = self._merge_eq_ssh_profile('EnergyConsumer', add_cim_type_column=True)
@@ -625,6 +698,10 @@ class CimConverter:
         eqssh_conform_loads = self._prepare_conform_loads_cim16()
         self._copy_to_pp('load', eqssh_conform_loads)
         self.logger.info("Created %s loads in %ss." % (eqssh_conform_loads.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s loads from ConformLoads in %ss." %
+                    (eqssh_conform_loads.index.size, time.time() - time_start)))
 
     def _prepare_conform_loads_cim16(self) -> pd.DataFrame:
         eqssh_conform_loads = self._merge_eq_ssh_profile('ConformLoad', add_cim_type_column=True)
@@ -643,6 +720,10 @@ class CimConverter:
         eqssh_non_conform_loads = self._prepare_non_conform_loads_cim16()
         self._copy_to_pp('load', eqssh_non_conform_loads)
         self.logger.info("Created %s loads in %ss." % (eqssh_non_conform_loads.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s loads from NonConformLoads in %ss." %
+                    (eqssh_non_conform_loads.index.size, time.time() - time_start)))
 
     def _prepare_non_conform_loads_cim16(self) -> pd.DataFrame:
         eqssh_non_conform_loads = self._merge_eq_ssh_profile('NonConformLoad', add_cim_type_column=True)
@@ -661,6 +742,10 @@ class CimConverter:
         eqssh_station_supplies = self._prepare_station_supplies_cim16()
         self._copy_to_pp('load', eqssh_station_supplies)
         self.logger.info("Created %s loads in %ss." % (eqssh_station_supplies.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s loads from StationSupplies in %ss." %
+                    (eqssh_station_supplies.index.size, time.time() - time_start)))
 
     def _prepare_station_supplies_cim16(self) -> pd.DataFrame:
         eqssh_station_supplies = self._merge_eq_ssh_profile('StationSupply', add_cim_type_column=True)
@@ -688,6 +773,10 @@ class CimConverter:
         self._copy_to_pp('sgen', eqssh_synchronous_machines)
         self.logger.info("Created %s gens and %s sgens in %ss." %
                          (eqssh_sm_gens.index.size, eqssh_synchronous_machines.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s gens and %s sgens from SynchronousMachines in %ss." %
+                         (eqssh_sm_gens.index.size, eqssh_synchronous_machines.index.size, time.time() - time_start)))
 
     def _prepare_synchronous_machines_cim16(self) -> pd.DataFrame:
         eq_generating_units = self.cim['eq']['GeneratingUnit'][['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']]
@@ -726,8 +815,28 @@ class CimConverter:
         eqssh_synchronous_machines['vm_pu'].fillna(1., inplace=True)
         eqssh_synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'}, inplace=True)
         eqssh_synchronous_machines['slack'] = False
-        # set the slack = True for gens with referencePriority == 1
-        eqssh_synchronous_machines.loc[eqssh_synchronous_machines['referencePriority'] == 1, 'slack'] = True
+        # set the slack = True for gens with highest prio
+        # get the highest prio from SynchronousMachines
+        sync_ref_prio_min = eqssh_synchronous_machines.loc[
+            (eqssh_synchronous_machines['referencePriority'] > 0) & (eqssh_synchronous_machines['enabled']),
+            'referencePriority'].min()
+        # get the highest prio from ExternalNetworkInjection and check if the slack is an ExternalNetworkInjection
+        enis = self._merge_eq_ssh_profile('ExternalNetworkInjection')
+        regulation_controllers = self._merge_eq_ssh_profile('RegulatingControl')
+        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
+        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
+        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
+        enis = pd.merge(enis, regulation_controllers, how='left', on='RegulatingControl')
+
+        eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']), 'referencePriority'].min()
+        if pd.isna(sync_ref_prio_min):
+            ref_prio_min = eni_ref_prio_min
+        elif pd.isna(eni_ref_prio_min):
+            ref_prio_min = sync_ref_prio_min
+        else:
+            ref_prio_min = min(eni_ref_prio_min, sync_ref_prio_min)
+
+        eqssh_synchronous_machines.loc[eqssh_synchronous_machines['referencePriority'] == ref_prio_min, 'slack'] = True
         eqssh_synchronous_machines['p_mw'] = -eqssh_synchronous_machines['p']
         eqssh_synchronous_machines['q_mvar'] = -eqssh_synchronous_machines['q']
         eqssh_synchronous_machines['current_source'] = True
@@ -761,6 +870,10 @@ class CimConverter:
         self._copy_to_pp('motor', eqssh_asynchronous_machines)
         self.logger.info("Created %s motors in %ss." %
                          (eqssh_asynchronous_machines.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s motors from AsynchronousMachines in %ss." %
+                         (eqssh_asynchronous_machines.index.size, time.time() - time_start)))
 
     def _prepare_asynchronous_machines_cim16(self) -> pd.DataFrame:
         eq_generating_units = self.cim['eq']['WindGeneratingUnit'].copy()
@@ -790,6 +903,8 @@ class CimConverter:
         eqssh_asynchronous_machines['sn_mva'] = \
             eqssh_asynchronous_machines['ratedS'].fillna(eqssh_asynchronous_machines['nominalP'])
         eqssh_asynchronous_machines['generator_type'] = 'async'
+        eqssh_asynchronous_machines['loading_percent'] = \
+            100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
         eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                                     'connected': 'in_service', 'index_bus': 'bus',
                                                     'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
@@ -798,15 +913,22 @@ class CimConverter:
                                                     'ratedMechanicalPower': 'pn_mech_mw'}, inplace=True)
         eqssh_asynchronous_machines['scaling'] = 1
         eqssh_asynchronous_machines['efficiency_percent'] = 100
-        eqssh_asynchronous_machines['loading_percent'] = 100
         return eqssh_asynchronous_machines
 
     def _convert_energy_sources_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting EnergySources.")
         eqssh_energy_sources = self._prepare_energy_sources_cim16()
-        self._copy_to_pp('sgen', eqssh_energy_sources)
+        es_slack = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.notna()]
+        es_sgen = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.isna()]
+        self._copy_to_pp('ext_grid', es_slack)
+        self._copy_to_pp('sgen', es_sgen)
+        # self._copy_to_pp('sgen', eqssh_energy_sources)
         self.logger.info("Created %s sgens in %ss." % (eqssh_energy_sources.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s sgens from EnergySources in %ss." %
+                    (eqssh_energy_sources.index.size, time.time() - time_start)))
 
     def _prepare_energy_sources_cim16(self) -> pd.DataFrame:
         eq_energy_scheduling_type = \
@@ -822,6 +944,9 @@ class CimConverter:
         eqssh_energy_sources['type'] = eqssh_energy_sources['type'].map(sgen_type)
         eqssh_energy_sources['p_mw'] = -eqssh_energy_sources['activePower']
         eqssh_energy_sources['q_mvar'] = -eqssh_energy_sources['reactivePower']
+        eqssh_energy_sources['va_degree'] = eqssh_energy_sources['voltageAngle'] * 180 / math.pi
+        eqssh_energy_sources['vm_pu'] = \
+            eqssh_energy_sources['voltageMagnitude'] / eqssh_energy_sources['base_voltage_bus']
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
@@ -835,6 +960,10 @@ class CimConverter:
         eq_stat_coms = self._prepare_static_var_compensator_cim16()
         self._copy_to_pp('shunt', eq_stat_coms)
         self.logger.info("Created %s generators in %ss." % (eq_stat_coms.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s generators from StaticVarCompensator in %ss." %
+                    (eq_stat_coms.index.size, time.time() - time_start)))
 
     def _prepare_static_var_compensator_cim16(self) -> pd.DataFrame:
         eq_stat_coms = self._merge_eq_ssh_profile('StaticVarCompensator', True)
@@ -857,6 +986,10 @@ class CimConverter:
         eqssh_shunts = self._prepare_linear_shunt_compensator_cim16()
         self._copy_to_pp('shunt', eqssh_shunts)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s shunts from LinearShuntCompensator in %ss." %
+                    (eqssh_shunts.index.size, time.time() - time_start)))
 
     def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
         eqssh_shunts = self._merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
@@ -879,6 +1012,10 @@ class CimConverter:
         else:
             eqssh_shunts = pd.DataFrame(None)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s shunts from NonlinearShuntCompensator in %ss." %
+                    (eqssh_shunts.index.size, time.time() - time_start)))
 
     def _prepare_nonlinear_shunt_compensator_cim16(self) -> pd.DataFrame:
         eqssh_shunts = self._merge_eq_ssh_profile('NonlinearShuntCompensator', add_cim_type_column=True)
@@ -920,6 +1057,10 @@ class CimConverter:
         eq_eb = self._prepare_equivalent_branches_cim16()
         self._copy_to_pp('impedance', eq_eb)
         self.logger.info("Created %s impedance elements in %ss." % (eq_eb.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s impedance elements from EquivalentBranches in %ss." %
+                    (eq_eb.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_branches_cim16(self) -> pd.DataFrame:
         eq_eb = pd.merge(self.cim['eq']['EquivalentBranch'],
@@ -955,11 +1096,19 @@ class CimConverter:
             self.logger.error("There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
                               "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
                               (eqb_length_before_merge * 2, eq_eb.index.size))
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
+                        "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
+                        (eqb_length_before_merge * 2, eq_eb.index.size)))
             dups = eq_eb.pivot_table(index=['rdfId'], aggfunc='size')
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The EquivalentBranch data: \n%s" % eq_eb[eq_eb['rdfId'] == rdfId])
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eq_eb = eq_eb[0:0]
         # sort by RDF ID and the sequenceNumber to make sure r12 and r21 are in the correct order
         eq_eb.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
@@ -999,6 +1148,10 @@ class CimConverter:
         eq_sc = self._prepare_series_compensators_cim16()
         self._copy_to_pp('impedance', eq_sc)
         self.logger.info("Created %s impedance elements in %ss." % (eq_sc.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s impedance elements from SeriesCompensators in %ss." %
+                    (eq_sc.index.size, time.time() - time_start)))
 
     def _prepare_series_compensators_cim16(self) -> pd.DataFrame:
         eq_sc = pd.merge(self.cim['eq']['SeriesCompensator'],
@@ -1030,11 +1183,19 @@ class CimConverter:
             self.logger.error("There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
                               "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
                               (eqs_length_before_merge * 2, eq_sc.index.size))
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
+                        "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
+                        (eqs_length_before_merge * 2, eq_sc.index.size)))
             dups = eq_sc.pivot_table(index=['rdfId'], aggfunc='size')
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The SeriesCompensator data: \n%s" % eq_sc[eq_sc['rdfId'] == rdfId])
+                self.report_container.add_log(Report(
+                    level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                    message="The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eq_sc = eq_sc[0:0]
         # sort by RDF ID and the sequenceNumber to make sure r12 and r21 are in the correct order
         eq_sc.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
@@ -1079,6 +1240,10 @@ class CimConverter:
         self._copy_to_pp('xward', eqssh_ei_xwards)
         self.logger.info("Created %s wards and %s extended ward elements in %ss." %
                          (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s wards and %s extended ward elements from EquivalentInjections in %ss." %
+                    (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
         eqssh_ei = self._merge_eq_ssh_profile('EquivalentInjection', add_cim_type_column=True)
@@ -1088,6 +1253,9 @@ class CimConverter:
         eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'}, inplace=True)
         eqssh_ei = pd.merge(eqssh_ei, eq_base_voltages, how='left', on='BaseVoltage')
         eqssh_ei = pd.merge(eqssh_ei, self.bus_merge, how='left', on='rdfId')
+        # maybe the BaseVoltage is not given, also get the nominalVoltage from the buses
+        eqssh_ei = pd.merge(eqssh_ei, self.net.bus[['vn_kv']], how='left', left_on='index_bus', right_index=True)
+        eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv, inplace=True)
         eqssh_ei['regulationStatus'].fillna(False, inplace=True)
         eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
         eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
@@ -1127,6 +1295,10 @@ class CimConverter:
 
         self.logger.info("Created %s 2w trafos and %s 3w trafos in %ss." %
                          (power_trafo2w.index.size, power_trafo3w.index.size, time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created %s 2w trafos and %s 3w trafos from PowerTransformers in %ss." %
+                    (power_trafo2w.index.size, power_trafo3w.index.size, time.time() - time_start)))
 
     def _create_trafo_characteristics(self, trafo_type, trafo_df_origin):
         if 'id_characteristic' not in trafo_df_origin.columns:
@@ -1202,7 +1374,7 @@ class CimConverter:
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU ** 2) + \
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
-            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(np.int64)
+            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
             append_dict = dict({'id_characteristic': [], 'step': [], 'vk_percent': [], 'vkr_percent': []})
         else:
             trafo_df = trafo_df_origin.copy()
@@ -1227,15 +1399,21 @@ class CimConverter:
             # just keep one transformer
             trafo_df.drop_duplicates(subset=['PowerTransformer'], keep='first', inplace=True)
             # merge the trafos with the tap changers
-            trafo_df = pd.merge(trafo_df, ptct, how='left', on=sc['pte_id'])
-            trafo_df = pd.merge(trafo_df, ptct.rename(columns={'tabular_step': 'tabular_step_mv', 'r_dev': 'r_dev_mv',
-                                                               'x_dev': 'x_dev_mv',
-                                                               sc['pte_id']: sc['pte_id']+'_mv'}),
-                                how='left', on=sc['pte_id']+'_mv')
-            trafo_df = pd.merge(trafo_df, ptct.rename(columns={'tabular_step': 'tabular_step_lv', 'r_dev': 'r_dev_lv',
-                                                               'x_dev': 'x_dev_lv',
-                                                               sc['pte_id']: sc['pte_id']+'_lv'}),
-                                how='left', on=sc['pte_id']+'_lv')
+            trafo_df = pd.concat([pd.merge(trafo_df, ptct, how='left', on=sc['pte_id']),
+                                  pd.merge(trafo_df,
+                                           ptct.rename(columns={'tabular_step': 'tabular_step_mv', 'r_dev': 'r_dev_mv',
+                                                                'x_dev': 'x_dev_mv',
+                                                                sc['pte_id']: sc['pte_id'] + '_mv'}),
+                                           how='left', on=sc['pte_id'] + '_mv'),
+                                  pd.merge(trafo_df,
+                                           ptct.rename(columns={'tabular_step': 'tabular_step_lv', 'r_dev': 'r_dev_lv',
+                                                                'x_dev': 'x_dev_lv',
+                                                                sc['pte_id']: sc['pte_id'] + '_lv'}),
+                                           how='left', on=sc['pte_id'] + '_lv')
+                                  ], ignore_index=True, sort=False)
+            # remove elements with mor than one tap changer per trafo
+            trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
+                ~trafo_df.RatioTapChangerTable.isna())]
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
                 trafo_df[one_item].fillna(trafo_df[one_item + '_mv'], inplace=True)
@@ -1282,7 +1460,7 @@ class CimConverter:
                  (trafo_df.x_lv + trafo_df.x * (
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
-            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(np.int64)
+            trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
             append_dict = dict({'id_characteristic': [], 'step': [], 'vkr_hv_percent': [], 'vkr_mv_percent': [],
                                 'vkr_lv_percent': [], 'vk_hv_percent': [], 'vk_mv_percent': [], 'vk_lv_percent': []})
 
@@ -1321,7 +1499,8 @@ class CimConverter:
                 #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
         self.net['characteristic_temp'] = pd.concat([self.net['characteristic_temp'], pd.DataFrame(append_dict)],
                                                     ignore_index=True, sort=False)
-        self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(np.int64)
+        self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(int)
+        self.net['trafo_df'] = trafo_df  # todo remove
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
@@ -1529,6 +1708,11 @@ class CimConverter:
             self.logger.warning("Modifying angle from 2W transformers. This kind of angle regulation is currently not "
                                 "supported by pandapower! Affected transformers: \n%s" %
                                 power_trafo2w.loc[power_trafo2w['angle'].notna()])
+            self.report_container.add_log(Report(
+                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                message="Modifying angle from 2W transformers. This kind of angle regulation is currently not "
+                        "supported by pandapower! Affected transformers: \n%s" %
+                        power_trafo2w.loc[power_trafo2w['angle'].notna()]))
         power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
         power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
         power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30, inplace=True)
@@ -1656,6 +1840,11 @@ class CimConverter:
             self.logger.warning("Modifying angle from 3W transformers. This kind of angle regulation is currently not "
                                 "supported by pandapower! Affected transformers: \n%s" %
                                 power_trafo3w.loc[power_trafo3w['angle_mv'].notna()])
+            self.report_container.add_log(Report(
+                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                message="Modifying angle from 3W transformers. This kind of angle regulation is currently not "
+                        "supported by pandapower! Affected transformers: \n%s" %
+                        power_trafo3w.loc[power_trafo3w['angle_mv'].notna()]))
         power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
         power_trafo3w['phaseAngleClock_mv'].fillna(power_trafo3w['phaseAngleClock_temp'], inplace=True)
@@ -1718,6 +1907,9 @@ class CimConverter:
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
         if pp_type not in self.net.keys():
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
+            self.report_container.add_log(Report(
+                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
         start_index_pp_net = self.net[pp_type].index.size
         self.net[pp_type] = pd.concat([self.net[pp_type], pd.DataFrame(None, index=[list(range(input_df.index.size))])],
@@ -1796,6 +1988,9 @@ class CimConverter:
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('coords'))
 
         self.logger.info("Finished creating the GL coordinates, needed time: %ss" % (time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created the GL coordinates, needed time: %ss" % (time.time() - time_start)))
 
     def _add_coordinates_from_dl_cim16(self, diagram_name: str = None):
         self.logger.info("Creating the coordinates from CGMES DiagramLayout.")
@@ -1843,10 +2038,11 @@ class CimConverter:
         line_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         line_geo.sort_values(by='index', inplace=True)
         # now add the line coordinates
-        start_index_pp_net = self.net.line_geodata.index.size
-        self.net.line_geodata = pd.concat([self.net.line_geodata, pd.DataFrame(None, index=line_geo['index'].values)],
+        # if there are no bus geodata in the GL profile the line geodata from DL has higher priority
+        if self.net.line_geodata.index.size > 0 and line_geo.index.size > 0:
+            self.net.line_geodata = self.net.line_geodata[0:0]
+        self.net.line_geodata = pd.concat([self.net.line_geodata, line_geo[['coords', 'index']].set_index('index')],
                                           ignore_index=False, sort=False)
-        self.net.line_geodata.coords[start_index_pp_net:] = line_geo.coords[:]
 
         # now create coordinates which are official not supported by pandapower, e.g. for transformer
         for one_ele in ['trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'impedance', 'dcline', 'shunt',
@@ -1864,15 +2060,17 @@ class CimConverter:
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('coords'))
 
         self.logger.info("Finished creating the DL coordinates, needed time: %ss" % (time.time() - time_start))
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+            message="Created the DL coordinates, needed time: %ss" % (time.time() - time_start)))
 
     # noinspection PyShadowingNames
     def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,
-                      line_x_limit: float = 0.1, log_debug: bool = False, **kwargs) \
+                      line_x_limit: float = 0.1, **kwargs) \
             -> pandapower.auxiliary.pandapowerNet:
         """
         Build the pandapower net.
 
-        :param log_debug: True to enable logging at debug level. Warning: much output. Optional, default: False
         :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
         resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
         switch. Optional, default: False
@@ -1881,6 +2079,8 @@ class CimConverter:
         :return: The pandapower net.
         """
         self.logger.info("Start building the pandapower net.")
+        self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
+                                             message="Start building the pandapower net."))
 
         # create the empty pandapower net and add the additional columns
         self.net = cim_tools.extend_pp_net_cim(self.net, override=False)
@@ -1928,21 +2128,44 @@ class CimConverter:
         self._convert_power_transformers_cim16()
 
         # create the geo coordinates
-        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0:
+        gl_or_dl = str(self.kwargs.get('use_GL_or_DL_profile', 'both')).lower()
+        if gl_or_dl == 'gl':
+            use_gl_profile = True
+            use_dl_profile = False
+        elif gl_or_dl == 'dl':
+            use_gl_profile = False
+            use_dl_profile = True
+        else:
+            use_gl_profile = True
+            use_dl_profile = True
+        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0 and \
+                use_gl_profile:
             try:
                 self._add_geo_coordinates_from_gl_cim16()
             except Exception as e:
                 self.logger.warning("Creating the geo coordinates failed, returning the net without geo coordinates!")
                 self.logger.exception(e)
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="Creating the geo coordinates failed, returning the net without geo coordinates!"))
+                self.report_container.add_log(Report(
+                    level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
+                    message=traceback.format_exc()))
                 self.net.bus_geodata = self.net.bus_geodata[0:0]
                 self.net.line_geodata = self.net.line_geodata[0:0]
         if self.cim['dl']['Diagram'].index.size > 0 and self.cim['dl']['DiagramObject'].index.size > 0 and \
-                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0:
+                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0 and \
+                use_dl_profile:
             try:
                 self._add_coordinates_from_dl_cim16(diagram_name=kwargs.get('diagram_name', None))
             except Exception as e:
                 self.logger.warning("Creating the coordinates failed, returning the net without coordinates!")
                 self.logger.exception(e)
+                self.report_container.add_log(Report(
+                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                    message="Creating the coordinates failed, returning the net without coordinates!"))
+                self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
+                                                     message=traceback.format_exc()))
                 self.net.bus_geodata = self.net.bus_geodata[0:0]
                 self.net.line_geodata = self.net.line_geodata[0:0]
         self.net = pp_tools.set_pp_col_types(net=self.net)
@@ -1972,47 +2195,22 @@ class CimConverter:
                 self._create_characteristic_object(net=self.net, trafo_type='trafo3w', trafo_id=[trafo_id],
                                                    characteristic_df=characteristic_df)
 
-        if log_debug:
-            self.logger.debug("self.net.bus: \n%s" % self.net.bus)
-            self.logger.debug("self.net.bus_geodata: \n%s" % self.net.bus_geodata)
-            self.logger.debug("self.net.ext_grid: \n%s" % self.net.ext_grid)
-            self.logger.debug("self.net.line: \n%s" % self.net.line)
-            self.logger.debug("self.net.line_geodata: \n%s" % self.net.line_geodata)
-            self.logger.debug("self.net.switch: \n%s" % self.net.switch)
-            self.logger.debug("self.net.load: \n%s" % self.net.load)
-            self.logger.debug("self.net.sgen: \n%s" % self.net.sgen)
-            self.logger.debug("self.net.gen: \n%s" % self.net.gen)
-            self.logger.debug("self.net.shunt: \n%s" % self.net.shunt)
-            self.logger.debug("self.net.trafo: \n%s" % self.net.trafo)
-            self.logger.debug("self.net.trafo3w: \n%s" % self.net.trafo3w)
-
         self.logger.info("Running a power flow.")
+        self.report_container.add_log(Report(
+            level=LogLevel.INFO, code=ReportCode.INFO, message="Running a power flow."))
         try:
             pp.runpp(self.net)
         except Exception as e:
             self.logger.error("Failed running a powerflow.")
             self.logger.exception(e)
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
+            self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
+                                                 message=traceback.format_exc()))
         else:
             self.logger.info("Power flow solved normal.")
-        if log_debug:
-            if 'res_ext_grid' in self.net:
-                self.logger.debug("self.net.res_ext_grid: \n%s" % self.net.res_ext_grid)
-            if 'res_load' in self.net:
-                self.logger.debug("self.net.res_load: \n%s" % self.net.res_load)
-            if 'res_sgen' in self.net:
-                self.logger.debug("self.net.res_sgen: \n%s" % self.net.res_sgen)
-            if 'res_shunt' in self.net:
-                self.logger.debug("self.net.res_shunt: \n%s" % self.net.res_shunt)
-            if 'res_gen' in self.net:
-                self.logger.debug("self.net.res_gen: \n%s" % self.net.res_gen)
-            if 'res_bus' in self.net:
-                self.logger.debug("self.net.res_bus: \n%s" % self.net.res_bus)
-            if 'res_line' in self.net:
-                self.logger.debug("self.net.res_line: \n%s" % self.net.res_line)
-            if 'res_trafo' in self.net:
-                self.logger.debug("self.net.res_trafo: \n%s" % self.net.res_trafo)
-            if 'res_trafo3w' in self.net:
-                self.logger.debug("self.net.res_trafo3w: \n%s" % self.net.res_trafo3w)
+            self.report_container.add_log(Report(
+                level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
         try:
             create_measurements = kwargs.get('create_measurements', None)
             if create_measurements is not None and create_measurements.lower() == 'sv':
@@ -2020,11 +2218,21 @@ class CimConverter:
             elif create_measurements is not None and create_measurements.lower() == 'analog':
                 CreateMeasurements(self.net, self.cim).create_measurements_from_analog()
             elif create_measurements is not None:
+                self.report_container.add_log(Report(
+                    level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                    message="Not supported value for argument 'create_measurements', check method signature for"
+                            "valid values!"))
                 raise ValueError("Not supported value for argument 'create_measurements', check method signature for"
                                  "valid values!")
         except Exception as e:
             self.logger.error("Creating the measurements failed, returning the net without measurements!")
             self.logger.exception(e)
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="Creating the measurements failed, returning the net without measurements!"))
+            self.report_container.add_log(Report(
+                level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
+                message=traceback.format_exc()))
             self.net.measurement = self.net.measurement[0:0]
         try:
             if kwargs.get('update_assets_from_sv', False):
@@ -2032,6 +2240,12 @@ class CimConverter:
         except Exception as e:
             self.logger.warning("Updating the assets failed!")
             self.logger.exception(e)
+            self.report_container.add_log(Report(
+                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
+                message="Updating the assets failed!"))
+            self.report_container.add_log(Report(
+                level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
+                message=traceback.format_exc()))
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
         bus_t = self.net.bus.reset_index(level=0, drop=False)
@@ -2053,4 +2267,5 @@ class CimConverter:
         xward_t['bus_prf'] = xward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
         self.net.xward.loc[(self.net.xward.bus.duplicated(keep=False) &
                             ((xward_t['bus_prf'] == 'eq_bd') | (xward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
+        self.net['report_container'] = self.report_container
         return self.net
