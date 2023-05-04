@@ -1724,7 +1724,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
             one higher than the highest already existing index is selected.
 
-        **scaling** (list of float, 1.0) - scaling factor which for the active power of the\
+        **scaling** (list of float, 1.0) - scaling factor which for the active power of the \
             generator
 
         **type** (list of string, None) - type variable to classify generators
