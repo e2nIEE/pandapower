@@ -35,18 +35,18 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     only missing columns will be created. Optional, default: True
     :return: The extended pandapower network.
     """
-    np_str_type = np.sctypeDict.get('str')
-    np_float_type = np.sctypeDict.get('float')
-    np_bool_type = np.sctypeDict.get('bool')
+    np_str_type = 'str'
+    np_float_type = 'float'
+    np_bool_type = 'bool'
 
     sc = get_pp_net_special_columns_dict()
 
     # all pandapower element types like bus, line, trafo will get the following special columns
-    fill_dict_all: Dict[type, List[str]] = dict({})
+    fill_dict_all: Dict[str, List[str]] = dict({})
     fill_dict_all[np_str_type] = [sc['o_id'], sc['o_cl']]
 
     # special elements
-    fill_dict: Dict[str, Dict[type, List[str]]] = dict()
+    fill_dict: Dict[str, Dict[str, List[str]]] = dict()
 
     fill_dict['bus'] = dict()
     fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description']
@@ -106,10 +106,12 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     for pp_type, one_fd in fill_dict.items():
         for np_type, fields in fill_dict_all.items():
+            np_type = np.sctypeDict.get(np_type)
             for field in fields:
                 if override or field not in net[pp_type].columns:
                     net[pp_type][field] = pd.Series([], dtype=np_type)
         for np_type, fields in one_fd.items():
+            np_type = np.sctypeDict.get(np_type)
             for field in fields:
                 if override or field not in net[pp_type].columns:
                     net[pp_type][field] = pd.Series([], dtype=np_type)
