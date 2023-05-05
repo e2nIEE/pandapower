@@ -4,6 +4,11 @@ Change Log
 [upcoming release] - 2023-..-..
 -------------------------------
 - [FIXED] recorrection of shunt values in CIGRE HV
+- [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [ADDED] reporting for cim2pp converter
+- [ADDED] interfaces for repair functions for cim2pp converter
+- [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
+- [FIXED] shape issues when calculating SC with the superposition method
 
 [2.12.1] - 2023-04-18
 -------------------------------

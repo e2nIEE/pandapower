@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import xml.etree.ElementTree
 import xml.etree.cElementTree as xmlET
+from .other_classes import ReportContainer, Report, LogLevel, ReportCode
 
 
 class CimParser:
@@ -24,20 +25,14 @@ class CimParser:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
+        self.file_names: Dict[str, str] = dict()
+        self.report_container = ReportContainer()
 
-    def parse_files(self, eq_file: str = None, ssh_file: str = None, tp_file: str = None, sv_file: str = None,
-                    eq_bd_file: str = None, tp_bd_file: str = None, file_list: List[str] or str = None,
-                    encoding: str = 'utf-8', prepare_cim_net: bool = False, set_data_types: bool = False) -> CimParser:
+    def parse_files(self, file_list: List[str] or str = None, encoding: str = 'utf-8', prepare_cim_net: bool = False,
+                    set_data_types: bool = False) -> CimParser:
         """
-        Parse CIM XML files from a storage. Set the paths for each profile (eq_file, ssh_file, ...) or set a list
-        containing all paths (file_list, slower).
+        Parse CIM XML files from a storage.
 
-        :param eq_file: The path to the EQ file. Optional, default: None.
-        :param ssh_file: The path to zhe SSH file. Optional, default: None.
-        :param sv_file: The path to the SV file. Optional, default: None.
-        :param tp_file: The path to the TP file. Optional, default: None.
-        :param eq_bd_file: The path to the EQ Boundary file. Optional, default: None.
-        :param tp_bd_file: The path to the TP Boundary file. Optional, default: None.
         :param file_list: The path to the CGMES files as a list. Note: The files need a FullModel to parse the
         CGMES profile. Optional, default: None.
         :param encoding: The encoding from the files. Optional, default: utf-8
@@ -48,18 +43,8 @@ class CimParser:
         :return: Self
         """
         self.logger.info("Start parsing CIM files.")
-        if eq_file is not None:
-            self._parse_source_file(file=eq_file, output=self.cim, profile_name='eq', encoding=encoding)
-        if ssh_file is not None:
-            self._parse_source_file(file=ssh_file, output=self.cim, profile_name='ssh', encoding=encoding)
-        if tp_file is not None:
-            self._parse_source_file(file=tp_file, output=self.cim, profile_name='tp', encoding=encoding)
-        if sv_file is not None:
-            self._parse_source_file(file=sv_file, output=self.cim, profile_name='sv', encoding=encoding)
-        if eq_bd_file is not None:
-            self._parse_source_file(file=eq_bd_file, output=self.cim, profile_name='eq_bd', encoding=encoding)
-        if tp_bd_file is not None:
-            self._parse_source_file(file=tp_bd_file, output=self.cim, profile_name='tp_bd', encoding=encoding)
+        self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
+                                             message="CIM parser starts parsing CIM files."))
         if file_list is not None:
             if isinstance(file_list, list):
                 for file in file_list:
@@ -72,6 +57,8 @@ class CimParser:
         if set_data_types:
             self.set_cim_data_types()
         self.logger.info("Finished parsing CIM files.")
+        self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
+                                      message="CIM parser finished parsing CIM files."))
         return self
 
     def set_cim_data_types(self) -> CimParser:
@@ -112,7 +99,8 @@ class CimParser:
                            'voltageRegulationRange': float_type, 'rxLockedRotorRatio': float_type,
                            'maxR0ToX0Ratio': float_type, 'maxZ0ToZ1Ratio': float_type, 'xground': float_type,
                            'efficiency': float_type, 'ratedMechanicalPower': float_type, 'voltageSetPoint': float_type,
-                           'zeroR12': float, 'zeroR21': float, 'zeroX12': float, 'zeroX21': float,
+                           'zeroR12': float_type, 'zeroR21': float_type, 'zeroX12': float_type, 'zeroX21': float_type,
+                           'voltageAngle': float_type, 'voltageMagnitude': float_type,
                            'controlEnabled': bool_type, 'connected': bool_type, 'open': bool_type,
                            'regulationStatus': bool_type, 'positiveFlowIn': bool_type,
                            'isPartOfGeneratorUnit': bool_type, 'ltcFlag': bool_type, 'discrete': bool_type,
@@ -145,6 +133,8 @@ class CimParser:
                             self.logger.warning("This may be harmless if the data is not need by the converter. "
                                                 "Message: %s" % e)
         self.logger.info("Finished setting the cim data types.")
+        self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
+                                             message="CIM parser set the data types from the CIM data."))
         return self
 
     def prepare_cim_net(self) -> CimParser:
@@ -190,6 +180,8 @@ class CimParser:
                 self.cim[profile][cim_element_type] = \
                     self.cim[profile][cim_element_type][cim_data_structure[profile][cim_element_type].columns]
         self.logger.info("Finished preparing the cim data.")
+        self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
+                                             message="CIM parser finished preparing the CIM data."))
         return self
 
     def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
@@ -258,7 +250,8 @@ class CimParser:
                     'rdfId', 'name', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor', 'rxLockedRotorRatio',
                     'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
                 'EnergySource': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage', 'EquipmentContainer']),
+                    'rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage', 'EquipmentContainer',
+                    'voltageAngle', 'voltageMagnitude']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'voltageSetPoint']),
                 'PowerTransformer': pd.DataFrame(columns=[
@@ -461,8 +454,13 @@ class CimParser:
                 return 'tp_bd'
         if ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
+            self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
+                                                 message="The CGMES profile could not be parsed from the XML, "
+                                                         "returning %s" % default_profile))
             return default_profile
         else:
+            self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
+                                                 message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
     def _parse_source_file(self, file: str, output: dict, encoding: str, profile_name: str = None):
@@ -495,6 +493,7 @@ class CimParser:
             prf = self._get_cgmes_profile_from_xml(xml_tree)
         else:
             prf = profile_name
+        self.file_names[prf] = file
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
         element_types.drop_duplicates(inplace=True)
@@ -544,6 +543,8 @@ class CimParser:
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):
             self.logger.error("%s is not a valid file!" % file)
+            self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
+                                                 message="%s is not a valid file!" % file))
             return False
         elif file.lower().endswith('xml') or file.lower().endswith('rdf') or file.lower().endswith('zip'):
             return True
@@ -555,3 +556,9 @@ class CimParser:
 
     def set_cim_dict(self, cim: Dict[str, Dict[str, pd.DataFrame]]):
         self.cim = cim
+
+    def get_file_names(self) -> Dict[str, str]:
+        return self.file_names
+
+    def get_report_container(self) -> ReportContainer:
+        return self.report_container

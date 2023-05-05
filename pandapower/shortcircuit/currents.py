@@ -175,10 +175,11 @@ def _current_source_current(net, ppci, bus_idx):
         # rotating machines only is used to determine the current injection. The parameter kappa here
         # is used to denote the maximal current contribution of the sgen in the short-circuit case "Type C"
         V_ikss = ppci["internal"]["V_ikss"]
-        i_sgen_n_pu = (sgen.sn_mva.values / net.sn_mva)
-        delta_V = ppci["bus"][sgen_buses_ppc, [VM]] - np.abs(V_ikss[sgen_buses_ppc])
-        i_sgen_pu = np.where(sgen.k.values * delta_V < sgen.kappa.values,
-                             sgen.k.values * i_sgen_n_pu * delta_V, i_sgen_n_pu * sgen.kappa.values)
+        i_sgen_n_pu = (sgen.sn_mva.values.reshape(-1, 1) / net.sn_mva)
+        delta_V = ppci["bus"][sgen_buses_ppc][:, [VM]] - np.abs(V_ikss[sgen_buses_ppc])
+        i_sgen_pu = np.where(sgen.k.values.reshape(-1, 1) * delta_V < sgen.kappa.values.reshape(-1, 1),
+                             sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
+                             i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1))
         i_sgen_pu = np.abs(i_sgen_pu)
         extra_angle = ppci["bus"][sgen_buses_ppc, VA]
     else:
@@ -191,7 +192,8 @@ def _current_source_current(net, ppci, bus_idx):
     #     i_sgen_pu *= 0
 
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
-    ppci["bus"][buses, IKCV] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
+    ikcv_pu = ikcv_pu.flatten()
+    ppci["bus"][buses, [IKCV]] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
     if sgen_angle is not None and fault == "3ph":
         ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 
