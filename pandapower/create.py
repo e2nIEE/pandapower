@@ -9,6 +9,8 @@ from operator import itemgetter
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
+from pandas import isnull
+from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
@@ -4756,8 +4758,12 @@ def _not_nan(value, all_=True):
         return True
     elif hasattr(value, "__iter__"):
         if all_:
+            if is_object_dtype(value):
+                return not all(isnull(value))
             return not all(isnan(value))
         else:
+            if is_object_dtype(value):
+                return not any(isnull(value))
             return not any(isnan(value))
     else:
         try:
