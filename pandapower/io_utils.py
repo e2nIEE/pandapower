@@ -19,6 +19,8 @@ from warnings import warn
 import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
+from packaging.version import Version
+from pandapower import __version__
 
 import networkx
 import numpy
@@ -361,6 +363,12 @@ def isinstance_partial(obj, cls):
     if isinstance(obj, (pandapowerNet, tuple, numpy.floating)):
         return False
     return isinstance(obj, cls)
+
+
+def check_net_version(net):
+    if Version(net["format_version"]) > Version(__version__):
+        logger.warning("pandapowerNet-version is newer than your pandapower version. Please update"
+                       " pandapower `pip install --upgrade pandapower`.")
 
 
 class PPJSONEncoder(json.JSONEncoder):
