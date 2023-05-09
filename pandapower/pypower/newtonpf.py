@@ -35,7 +35,8 @@ from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SV
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, create_J_modification_tcsc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, create_J_modification_tcsc, \
+    create_J_modification_ssc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
@@ -292,6 +293,17 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                   refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
                                                   pq_lookup, num_svc_controllable, num_tcsc)
             J = J + J_m_tcsc
+        if any_ssc:
+            size_y = Ybus.shape[0]
+            K_Y = vstack([eye(size_y, format="csr"),
+                          csr_matrix((num_ssc, size_y))], format="csr")
+            Ybus = K_Y * Ybus * K_Y.T  # this extends the Ybus matrix with 0-rows and 0-columns for the "q"-bus of SSC
+            ssc_tb = np.arange(size_y, size_y + num_ssc)
+            J_m_ssc = create_J_modification_ssc(V, Ybus_ssc, x_control_ssc, svc_controllable, tcsc_controllable,
+                                                ssc_controllable, ssc_z_pu, ssc_fb, ssc_tb,
+                                                  refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
+                                                  pq_lookup, num_svc_controllable, num_tcsc_controllable, num_ssc)
+            J = J + J_m_ssc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
         # update voltage
