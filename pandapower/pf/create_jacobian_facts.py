@@ -234,7 +234,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
 
     """
     #
-    Y_TCSC = calc_y_svc_pu(x_control, ssc_z_pu, tcsc_x_cvar_pu)
+    y_ssc_pu = 1 / ssc_z_pu
     # S_tcsc_pu = V * (Ybus_tcsc.conj() @ V.conj())
     dY_TCSC_dx = 2 * (np.cos(2 * x_control) - 1) / (np.pi * ssc_z_pu)
 
