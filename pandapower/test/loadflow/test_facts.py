@@ -11,6 +11,7 @@ from pandas.testing import assert_frame_equal
 import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.auxiliary import _preserve_dtypes
 
 try:
     import matplotlib.pyplot as plt
@@ -607,6 +608,20 @@ def test_tcsc_simple5():
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, 0, 0)
+
+
+def test_ssc_simple():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 10, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 1, 100, 25)
+    dtypes = net.ssc.dtypes
+    net.ssc.loc[0, :] = "None", 1, 1, 2, 0.99, 0, 1, True, True
+    _preserve_dtypes(net.ssc, dtypes)
+
+    pp.runpp(net)
+
 
 
 if __name__ == "__main__":
