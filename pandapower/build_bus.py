@@ -14,6 +14,8 @@ from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
+    SSC_STATUS, SSC_CONTROLLABLE
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
     SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 
@@ -549,6 +551,38 @@ def _build_svc_ppc(net, ppc, mode):
         svc[f:t, SVC_STATUS] = net["svc"]["in_service"].values
         svc[f:t, SVC_CONTROLLABLE] = net["svc"]["controllable"].values.astype(bool) & net["svc"][
             "in_service"].values.astype(bool)
+
+
+def _build_ssc_ppc(net, ppc, mode):
+    length = len(net.ssc)
+    ppc["ssc"] = np.zeros(shape=(length, ssc_cols), dtype=np.float64)
+
+    if mode != "pf":
+        return
+
+    if length > 0:
+        baseMVA = ppc["baseMVA"]
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        f = 0
+        t = length
+
+        bus = bus_lookup[net.ssc["bus"].values]
+
+        ssc = ppc["ssc"]
+        baseV = ppc["bus"][bus, BASE_KV]
+        baseZ = baseV ** 2 / baseMVA
+
+        ssc[f:t, SSC_BUS] = bus
+
+        ssc[f:t, SSC_R] = net["ssc"]["r_ohm"].values / baseZ
+        ssc[f:t, SSC_X] = net["ssc"]["x_ohm"].values / baseZ
+        ssc[f:t, SSC_SET_VM_PU] = net["ssc"]["set_vm_pu"].values
+        ssc[f:t, SSC_X_CONTROL_VA] = np.deg2rad(net["ssc"]["internal_va_degree"].values)
+        ssc[f:t, SSC_X_CONTROL_VM] = net["ssc"]["internal_vm_pu"].values
+
+        ssc[f:t, SSC_STATUS] = net["ssc"]["in_service"].values
+        ssc[f:t, SSC_CONTROLLABLE] = net["ssc"]["controllable"].values.astype(bool) & \
+                                     net["ssc"]["in_service"].values.astype(bool)
 
 
 # Short circuit relevant routines

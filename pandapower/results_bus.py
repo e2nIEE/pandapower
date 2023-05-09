@@ -11,6 +11,7 @@ from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NO
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
+from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 
 try:
@@ -488,7 +489,23 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             net["res_svc"].loc[:, "q_mvar"] = q_svc  # write all because of zeros
             net["res_svc"].loc[svc_is, "x_ohm"] = ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
             q = np.hstack([q, q_svc])
-        b = np.hstack([b, svc["bus"].values])
+        b = np.hstack([b, svc["bus"].values])   
+            
+    # ssc = net["ssc"]  # todo: uncomment this after PandaModels net also has this key
+    ssc = net.get("ssc", np.array([]))
+    if len(ssc):
+        sscidx = bus_lookup[ssc["bus"].values]
+        ssc_is = _is_elements["ssc"]
+        net["res_ssc"].loc[ssc_is, "internal_vm_pu"] = ppc["ssc"][ssc_is, SSC_X_CONTROL_VM]
+        net["res_ssc"].loc[ssc_is, "internal_va_degree"] = np.rad2deg(ppc["ssc"][ssc_is, SSC_X_CONTROL_VA])
+        p = np.hstack([p, np.zeros_like(ssc["bus"].values)])
+        if ac:
+            net["res_ssc"].loc[ssc_is, "vm_pu"] = ppc["bus"][sscidx[ssc_is], VM]
+            net["res_ssc"].loc[ssc_is, "va_degree"] = ppc["bus"][sscidx[ssc_is], VA]
+            q_ssc = ppc["ssc"][:, SSC_Q]
+            net["res_ssc"].loc[:, "q_mvar"] = q_ssc  # write all because of zeros
+            q = np.hstack([q, q_ssc])
+        b = np.hstack([b, ssc["bus"].values])
 
     if not ac:
         q = np.zeros(len(p))
