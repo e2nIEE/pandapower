@@ -14,7 +14,7 @@ import types
 import weakref
 from ast import literal_eval
 from functools import partial
-from inspect import isclass, _findclass
+from inspect import isclass
 from warnings import warn
 import numpy as np
 import pandas.errors
