@@ -13,57 +13,59 @@ from pandapower.io_utils import JSONSerializableClass
 
 class Characteristic(JSONSerializableClass):
     """
-    This class represents a characteristics curve. The curve is described as a
-    piecewise linear function.
+    This class represents a characteristics curve. The curve is described as a piecewise linear function.
 
-    |   **pts** - Expects two (or more) points of the function (i.e. kneepoints)
-    |   **eps** - Optional: An epsilon to compare the difference to.
+    INPUT:
+        **pts** - Expects two (or more) points of the function (i.e. kneepoints)
 
-    The class has an implementation of the __call__ method, which allows using it interchangeably with other interpolator objects,
-    e.g. scipy.interpolate.interp1d, scipy.interpolate.CubicSpline, scipy.interpolate.PPoly, etc.
+    OPTIONAL:
+        **eps** - An epsilon to compare the difference to
+
+    The class has an implementation of the ``__call__`` method, which allows using it interchangeably with other interpolator objects,
+    e.g. ``scipy.interpolate.interp1d``, ``scipy.interpolate.CubicSpline``, ``scipy.interpolate.PPoly``, etc.
 
     Example usage:
+        Create a simple function from two points and ask for the target y-value for a
+        given x-value.
+        Assume a characteristics curve in which for voltages < 0.95pu a power of 10kW
+        is desired, linear rising to a max. of 20 kW at 1.05 pu
 
-    Create a simple function from two points and ask for the target y-value for a
-    given x-value.
-    Assume a characteristics curve in which for voltages < 0.95pu a power of 10kW
-    is desired, linear rising to a max. of 20kW at 1.05pu
+    ::
 
-    # You can give points by lists of x/y-values
-    >>> c = Characteristic(net, x_values=[0.95, 1.05],y_values=[10, 20])
-    >>> c(x=1.0)
-    15.0
+        You can give points by lists of x/y-values
+        >>> c = Characteristic(net, x_values=[0.95, 1.05],y_values=[10, 20])
+        >>> c(x=1.0)
+        15.0
 
-    # or pass a list of points (x,y)
-    >>> c = Characteristic.from_points(net,points=[(0.95, 10), (1.05, 20)])
-    >>> c(x=1.0)
-    15.0
+        or pass a list of points (x,y)
+        >>> c = Characteristic.from_points(net,points=[(0.95, 10), (1.05, 20)])
+        >>> c(x=1.0)
+        15.0
 
-    # or in a simple case from a gradient, its zero crossing and the maximal values for y
-    >>> c = Characteristic.from_gradient(net,zero_crossing=-85,gradient=100,y_min=10,y_max=20)
-    >>> c(x=1.0)
-    15.0
+        or in a simple case from a gradient, its zero crossing and the maximal values for y
+        >>> c = Characteristic.from_gradient(net,zero_crossing=-85,gradient=100,y_min=10,y_max=20)
+        >>> c(x=1.0)
+        15.0
 
-    # Values are constant beyond the first and last defined points
-    >>> c(x=42)
-    20.0
-    >>> c(x=-42)
-    10.0
+        Values are constant beyond the first and last defined points
+        >>> c(x=42)
+        20.0
+        >>> c(x=-42)
+        10.0
 
-    # Create a curve with many points and ask for the difference between the y-value being measured
-    and the expected y-value for a given x-value
-    >>> c = Characteristic.from_points(net,points=[(1,2),(2,4),(3,2),(42,24)])
-    >>> c.diff(x=2.5, measured=3)
-    0.0
+        Create a curve with many points and ask for the difference between the y-value being measured
+        and the expected y-value for a given x-value
+        >>> c = Characteristic.from_points(net,points=[(1,2),(2,4),(3,2),(42,24)])
+        >>> c.diff(x=2.5, measured=3)
+        0.0
 
-    # You can also ask if a y-values satisfies the curve at a certain x-value. Note how the use of
-    an epsilon behaves (for x=2.5 we expect 3.0):
-    >>> c.satisfies(x=2.5, measured=3.099999999, epsilon=0.1)
-    True
-    >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
-    False
+        You can also ask if a y-values satisfies the curve at a certain x-value. Note how the use of
+        an epsilon behaves (for x=2.5 we expect 3.0):
+        >>> c.satisfies(x=2.5, measured=3.099999999, epsilon=0.1)
+        True
+        >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
+        False
     """
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__()
         self.x_vals = x_values
@@ -83,19 +85,25 @@ class Characteristic(JSONSerializableClass):
 
     def diff(self, x, measured):
         """
-        :param x: The x-value at which the current y-value is measured
-        :param actual: The actual y-value being measured.
-        :return: The difference between actual and expected value.
+
+        INPUT:
+            **x** - The x-value at which the current y-value is measured
+            **actual** - The actual y-value being measured.
+            **return** - The difference between actual and expected value.
         """
         return measured - self(x)
 
     def satisfies(self, x, measured, epsilon):
         """
 
-        :param x: The x-value at which the current y-value is measured
-        :param measured: The actual y-value being measured.
-        :return: Whether or not the point satisfies the characteristics curve with respect to the
-        epsilon being set
+        INPUT:
+            **x** - The x-value at which the current y-value is measured
+
+            **measured** - The actual y-value being measured.
+
+        OUTPUT:
+            Whether or not the point satisfies the characteristics curve with respect to the
+            epsilon being set
         """
         if abs(self.diff(x, measured)) < epsilon:
             return True
@@ -104,8 +112,12 @@ class Characteristic(JSONSerializableClass):
 
     def __call__(self, x):
         """
-        :param x: An x-value
-        :return: The corresponding target value of this characteristics
+
+        INPUT:
+            **x** - An x-value
+
+        OUTPUT:
+            The corresponding target value of this characteristics
         """
         return interp(x, self.x_vals, self.y_vals)
 
@@ -114,25 +126,27 @@ class Characteristic(JSONSerializableClass):
 
 
 class SplineCharacteristic(Characteristic):
+    """
+    SplineCharacteristic interpolates the y-value(s) for the given x-value(s) according to a non-linear function.
+    Internally the interpolator object interp1d from scipy.interpolate is used.
+    By default, the function is quadratic, but the user can specify other methods (refer to the documentation of
+    interp1d). The fill_value can be specified as "extrapolate" so that even x-values outside of the specified
+    range can be used and yield y-values outside the specified y range. Alternatively, the behavior of
+    Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
+    refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
+
+    INPUT:
+        **net**
+
+        **x_values**
+
+        **y_values**
+
+        **fill_value**
+    """
     json_excludes = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, kind="quadratic", fill_value="extrapolate", **kwargs):
-        """
-        SplineCharacteristic interpolates the y-value(s) for the given x-value(s) according to a non-linear function.
-        Internally the interpolator object interp1d from scipy.interpolate is used.
-        By default, the function is quadratic, but the user can specify other methods (refer to the documentation of
-        interp1d). The fill_value can be specified as "extrapolate" so that even x-values outside of the specified
-        range can be used and yield y-values outside the specified y range. Alternatively, the behavior of
-        Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
-        refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
-
-        Parameters
-        ----------
-        net
-        x_values
-        y_values
-        fill_value
-        """
         super().__init__(net, x_values=x_values, y_values=y_values, **kwargs)
         self.fill_value = fill_value
         self.kind = kind
@@ -160,15 +174,11 @@ class SplineCharacteristic(Characteristic):
         """
         This method allows calling the SciPy interpolator object directly.
         Codacy is complaining about this, but it is not a problem.
-        Parameters
-        ----------
-        x : float
-            The x-value at which the current y-value is interpolated for.
 
-        Returns
-        -------
-        float
+        INPUT:
+            **x** (float) -  The x-value at which the current y-value is interpolated for.
+
+        OUTPUT:
             The interpolated y-value.
         """
         return self.interpolator(x)
-

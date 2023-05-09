@@ -122,9 +122,9 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_mw=300, name='Generator 12')
 
     # Shunts
-    pp.create_shunt(net_cigre_hv, bus4, p_mw=0.0, q_mvar=-0.16, name='Shunt 4')
-    pp.create_shunt(net_cigre_hv, bus5, p_mw=0.0, q_mvar=-0.08, name='Shunt 5')
-    pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-0.18, name='Shunt 6a')
+    pp.create_shunt(net_cigre_hv, bus4, p_mw=0.0, q_mvar=-160, name='Shunt 4')
+    pp.create_shunt(net_cigre_hv, bus5, p_mw=0.0, q_mvar=-80, name='Shunt 5')
+    pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name='Shunt 6a')
 
     # Bus geo data
     net_cigre_hv.bus_geodata = read_json(

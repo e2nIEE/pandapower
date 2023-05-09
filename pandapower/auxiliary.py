@@ -67,7 +67,7 @@ def soft_dependency_error(fct_name, required_packages):
                       f"requirements: {fct_name} requires '{required_packages}'. \n"
                       f"{required_packages} could not be imported.\n"
                       "To install all pandapower dependencies, "
-                      "pip install pandapower['all'] can be used.")
+                      'pip install pandapower["all"] can be used.')
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
