@@ -1928,6 +1928,8 @@ class CimConverter:
         bus_geo = gl_data.rename(columns={'PowerSystemResources': 'Substation'})
         cn = self.cim['eq']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]
         cn = pd.concat([cn, self.cim['eq_bd']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]])
+        cn = pd.concat([cn, self.cim['tp']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
+        cn = pd.concat([cn, self.cim['tp_bd']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
         cn = pd.merge(cn, self.cim['eq']['VoltageLevel'][['rdfId', 'Substation']], how='left', on='rdfId')
         cn.drop(columns=['rdfId'], inplace=True)
