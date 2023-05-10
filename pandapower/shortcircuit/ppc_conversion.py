@@ -206,11 +206,11 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     ppc["bus"][buses, BS_P] = gen_bs_p
 
     # Calculate K_S on power station configuration
-    if np.any(~np.isnan(gen.power_station_trafo.values)):
+    if np.any(~gen.power_station_trafo.isnull().values):
         f, _ = net["_pd2ppc_lookups"]["branch"]["trafo"]
 
         # If power station units defined with index in gen, no topological search needed
-        ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
+        ps_gen_mask = ~gen.power_station_trafo.isnull().values
         ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(np.int64)
         ps_trafo = net.trafo.loc[ps_trafo_ix, :]
         _ps_trafo_real_ix =\
