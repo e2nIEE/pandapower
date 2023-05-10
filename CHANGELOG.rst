@@ -9,6 +9,8 @@ Change Log
 - [ADDED] interfaces for repair functions for cim2pp converter
 - [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
 - [FIXED] shape issues when calculating SC with the superposition method
+- [FIXED] typos in cim2pp tutorial
+- [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
 
 [2.12.1] - 2023-04-18
 -------------------------------
