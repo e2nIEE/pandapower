@@ -620,7 +620,7 @@ def test_ssc_simple():
     net.ssc.loc[0, :] = "None", 1, 1, 2, 0.99, 0, 1, True, True
     _preserve_dtypes(net.ssc, dtypes)
 
-    pp.runpp(net)
+    pp.runpp(net, max_iteration=100)
 
 
 
