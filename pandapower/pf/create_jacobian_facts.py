@@ -188,7 +188,7 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, svc_controllable, tcsc_c
 
 def create_J_modification_ssc(V, Ybus_ssc, x_control,
                               svc_controllable, tcsc_controllable, ssc_controllable,
-                              ssc_z_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup, nsvc, ntcsc, nssc):
+                              ssc_y_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup, nsvc, ntcsc, nssc):
     """
     creates the modification Jacobian matrix for SSC (STATCOM)
 
@@ -206,7 +206,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
         array of bool
     ssc_controllable
         array of bool
-    ssc_z_pu
+    ssc_y_pu
         array of np.complex128
     f
         array of np.int64
@@ -234,9 +234,6 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
 
     """
     #
-    y_ssc_pu = 1 / ssc_z_pu
-
-    # S_tcsc_pu = V * (Ybus_tcsc.conj() @ V.conj())
 
     Vf = V[f]
 
@@ -258,13 +255,9 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     # S_ij = Sbus[f] - S_ii
     # S_kj = Sbus[t] - S_kk
 
-    S_Fi_dx = dY_TCSC_dx / Y_TCSC * (S_Fii + S_Fik)
-    S_Fk_dx = dY_TCSC_dx / Y_TCSC * (S_Fkk + S_Fki)
 
     f_in_pq = np.isin(f, pq)
-    # t_in_pq = np.isin(t, pq)
     f_in_pvpq = np.isin(f, pvpq)
-    # t_in_pvpq = np.isin(t, pvpq)
 
     # todo: use _sum_by_group what multiple elements start (or end) at the same bus?
     J_C_P_d = np.zeros(shape=(len(pvpq), len(pvpq)), dtype=np.float64)
@@ -284,7 +277,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
 
 
-    if np.any(f_in_pvpq & f_in_pq):
+    if np.any(f_in_pvpq & f_in_pq):  ## TODO check if this conditon includes all cases, and check trough tests
         J_C_P_u[pvpq_lookup[f[f_in_pvpq]], pq_lookup[f[f_in_pq]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
     # if np.any(f_in_pvpq & t_in_pq):
     #     J_C_P_u[pvpq_lookup[f[f_in_pvpq]], pq_lookup[t[t_in_pq]]] = S_Fik.real / Vmt
@@ -319,36 +312,48 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
 
     J_C_P_c = np.zeros(shape=(len(pvpq), nsvc + ntcsc + 2 * nssc), dtype=np.float64)
     if np.any(f_in_pvpq):
-        J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + np.arange(ntcsc))[f_in_pvpq]] = S_Fi_dx.real
+        J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + ntcsc + np.arange(nssc))[f_in_pvpq]] = S_Fik.imag
+        J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pvpq]] = S_Fik.real #### consider deviding by Vmf
 
     # if np.any(t_in_pvpq):
     #     J_C_P_c[pvpq_lookup[t[t_in_pvpq]], (nsvc + np.arange(ntcsc))[t_in_pvpq]] = S_Fk_dx.real
     # # J_C_P_c = np.array([[S_Fi_dx.real], [S_Fk_dx.real]]).reshape(2, 1)
 
-    J_C_Q_c = np.zeros(shape=(len(pq), nsvc + ntcsc), dtype=np.float64)
+    J_C_Q_c = np.zeros(shape=(len(pq), nsvc + ntcsc + 2 * nssc), dtype=np.float64)
     if np.any(f_in_pq):
-        J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + np.arange(ntcsc))[f_in_pq]] = S_Fi_dx.imag
-    if np.any(t_in_pq):
-        J_C_Q_c[pq_lookup[t[t_in_pq]], (nsvc + np.arange(ntcsc))[t_in_pq]] = S_Fk_dx.imag
+        J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + ntcsc + np.arange(nssc))[f_in_pq]] = -S_Fik.real
+        J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pq]] = S_Fik.imag #### consider deviding by Vmf
+
+
+
+    # if np.any(t_in_pq):
+    #     J_C_Q_c[pq_lookup[t[t_in_pq]], (nsvc + np.arange(ntcsc))[t_in_pq]] = S_Fk_dx.imag
     # J_C_Q_c = np.array([[S_Fi_dx.imag], [S_Fk_dx.imag]]).reshape(2, 1)
 
     # the signs are opposite here for J_C_C_d, J_C_C_u, J_C_C_c and I don't know why
     # main mode of operation - set point for p_to_mw:
     # J_C_C_d = np.zeros(shape=(len(pvpq), len(pvpq)))
-    J_C_C_d = np.zeros(shape=(nsvc + ntcsc, len(pvpq)), dtype=np.float64)
+    J_C_C_d = np.zeros(shape=(nsvc + ntcsc + 2 * nssc, len(pvpq)), dtype=np.float64)
     if np.any(f_in_pvpq):
-        J_C_C_d[(nsvc + np.arange(ntcsc))[f_in_pvpq], pvpq_lookup[f[f_in_pvpq]]] = S_Fik.imag
-    if np.any(t_in_pvpq):
-        J_C_C_d[(nsvc + np.arange(ntcsc))[t_in_pvpq], pvpq_lookup[t[t_in_pvpq]]] = -S_Fik.imag
+        J_C_C_d[(nsvc + ntcsc + np.arange(nssc))[f_in_pvpq], pvpq_lookup[f[f_in_pvpq]]] = S_Fki.imag
 
-    J_C_C_u = np.zeros(shape=(nsvc + ntcsc, len(pq)), dtype=np.float64)
+
+
+    # if np.any(t_in_pvpq):
+    #     J_C_C_d[(nsvc + np.arange(ntcsc))[t_in_pvpq], pvpq_lookup[t[t_in_pvpq]]] = -S_Fik.imag
+
+    J_C_C_u = np.zeros(shape=(nsvc + ntcsc + 2 * nssc, len(pq)), dtype=np.float64)
     if np.any(f_in_pq):
-        J_C_C_u[(nsvc + np.arange(ntcsc))[f_in_pq], pq_lookup[f[f_in_pq]]] = S_Fik.real / Vmf
-    if np.any(t_in_pq):
-        J_C_C_u[(nsvc + np.arange(ntcsc))[t_in_pq], pq_lookup[t[t_in_pq]]] = S_Fik.real / Vmt
+        J_C_C_u[(nsvc + ntcsc + np.arange(nssc))[f_in_pq], pq_lookup[f[f_in_pq]]] =  S_Fki.real/ Vmf
+        J_C_C_u[(nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pq], pq_lookup[f[f_in_pq]]] = 1
 
-    J_C_C_c = np.zeros(shape=(nsvc + ntcsc, nsvc + ntcsc), dtype=np.float64)
-    J_C_C_c[np.r_[nsvc:nsvc + ntcsc], np.r_[nsvc:nsvc + ntcsc]] = -S_Fi_dx.real  # .flatten()?
+
+    # if np.any(t_in_pq):
+    #     J_C_C_u[(nsvc + np.arange(ntcsc))[t_in_pq], pq_lookup[t[t_in_pq]]] = S_Fik.real / Vmt
+
+    J_C_C_c = np.zeros(shape=(nsvc + ntcsc + 2 *nssc, nsvc + ntcsc + 2 *nssc), dtype=np.float64)
+    J_C_C_c[np.r_[nsvc + ntcsc: nsvc + ntcsc + nssc], np.r_[nsvc + ntcsc:nsvc + ntcsc + nssc]] = -S_Fki.imag  # .flatten()?
+    J_C_C_c[np.r_[nsvc + ntcsc: nsvc + ntcsc + nssc], np.r_[nsvc + ntcsc + nssc:nsvc + ntcsc + 2 * nssc]] = (2 * S_Fkk.real + S_Fki.real) # .flatten()?
 
     # alternative mode of operation: for Vm at to bus (mismatch and setpoint also must be adjusted):
     # J_C_C_d = np.zeros(shape=(len(x_control), len(pvpq)), dtype=np.float64)
@@ -356,11 +361,11 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     # J_C_C_u[np.arange(len(x_control)), pq_lookup[t]] = 1
     # J_C_C_c = np.zeros((len(x_control), len(x_control)), dtype=np.float64)
 
-    if np.all(tcsc_controllable):
+    if np.all(ssc_controllable):
         J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u, J_C_P_c]),
                          np.hstack([J_C_Q_d, J_C_Q_u, J_C_Q_c]),
                          np.hstack([J_C_C_d, J_C_C_u, J_C_C_c])])
-    elif np.any(tcsc_controllable) or np.any(svc_controllable):
+    elif np.any(tcsc_controllable) or np.any(svc_controllable):  # todo
         relevant = np.r_[np.arange(nsvc), nsvc + np.arange(ntcsc)[tcsc_controllable]]
         J_m = np.vstack([np.hstack([J_C_P_d, J_C_P_u, J_C_P_c[:, relevant]]),
                          np.hstack([J_C_Q_d, J_C_Q_u, J_C_Q_c[:, relevant]]),
