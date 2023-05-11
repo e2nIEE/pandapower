@@ -276,7 +276,6 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     #                     [S_Fki.real / Vm[f], S_Fki.real / Vm[t]]]).reshape(2, 2)
     J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
 
-
     if np.any(f_in_pvpq & f_in_pq):  ## TODO check if this conditon includes all cases, and check trough tests
         J_C_P_u[pvpq_lookup[f[f_in_pvpq]], pq_lookup[f[f_in_pq]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
     # if np.any(f_in_pvpq & t_in_pq):
@@ -313,7 +312,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     J_C_P_c = np.zeros(shape=(len(pvpq), nsvc + ntcsc + 2 * nssc), dtype=np.float64)
     if np.any(f_in_pvpq):
         J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + ntcsc + np.arange(nssc))[f_in_pvpq]] = S_Fik.imag
-        J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pvpq]] = S_Fik.real #### consider deviding by Vmf
+        J_C_P_c[pvpq_lookup[f[f_in_pvpq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pvpq]] = S_Fik.real /Vmt  #### consider deviding by Vmt
 
     # if np.any(t_in_pvpq):
     #     J_C_P_c[pvpq_lookup[t[t_in_pvpq]], (nsvc + np.arange(ntcsc))[t_in_pvpq]] = S_Fk_dx.real
@@ -322,7 +321,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
     J_C_Q_c = np.zeros(shape=(len(pq), nsvc + ntcsc + 2 * nssc), dtype=np.float64)
     if np.any(f_in_pq):
         J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + ntcsc + np.arange(nssc))[f_in_pq]] = -S_Fik.real
-        J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pq]] = S_Fik.imag #### consider deviding by Vmf
+        J_C_Q_c[pq_lookup[f[f_in_pq]], (nsvc + ntcsc + nssc + np.arange(nssc))[f_in_pq]] = S_Fik.imag /Vmt  #### consider deviding by Vmt
 
 
 
@@ -353,7 +352,7 @@ def create_J_modification_ssc(V, Ybus_ssc, x_control,
 
     J_C_C_c = np.zeros(shape=(nsvc + ntcsc + 2 *nssc, nsvc + ntcsc + 2 *nssc), dtype=np.float64)
     J_C_C_c[np.r_[nsvc + ntcsc: nsvc + ntcsc + nssc], np.r_[nsvc + ntcsc:nsvc + ntcsc + nssc]] = -S_Fki.imag  # .flatten()?
-    J_C_C_c[np.r_[nsvc + ntcsc: nsvc + ntcsc + nssc], np.r_[nsvc + ntcsc + nssc:nsvc + ntcsc + 2 * nssc]] = (2 * S_Fkk.real + S_Fki.real) # .flatten()?
+    J_C_C_c[np.r_[nsvc + ntcsc: nsvc + ntcsc + nssc], np.r_[nsvc + ntcsc + nssc:nsvc + ntcsc + 2 * nssc]] = (2 * S_Fkk.real + S_Fki.real)/Vmt #### consider deviding by Vmt
 
     # alternative mode of operation: for Vm at to bus (mismatch and setpoint also must be adjusted):
     # J_C_C_d = np.zeros(shape=(len(x_control), len(pvpq)), dtype=np.float64)
