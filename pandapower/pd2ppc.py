@@ -17,7 +17,7 @@ from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
-from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS
+from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.run_userfcn import run_userfcn
@@ -273,6 +273,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
+    ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
     ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
@@ -305,8 +306,9 @@ def _ppc2ppci(ppc, net, ppci=None):
           bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
     ppci["internal"]["svc_is"] = svcs
 
-    sscs = ((ppc["ssc"][:, SSC_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]])
+    sscs = ((ppc["ssc"][:, SSC_STATUS] > 0) &  # ssc status
+          bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
+          bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status

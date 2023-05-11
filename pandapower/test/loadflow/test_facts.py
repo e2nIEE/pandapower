@@ -623,6 +623,22 @@ def test_ssc_simple():
     pp.runpp(net, max_iteration=100)
 
 
+def test_example_from_components():
+    net = pp.create_empty_network(sn_mva=1)
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_load(net, 2, 100, 25)
+
+    aux_bus = pp.create_bus(net, 110)
+    pp.create_impedance(net, 1, aux_bus, 0, 0.001, 1)
+    pp.create_gen(net, aux_bus, 0, 1.02)
+
+    pp.runpp(net)
+
+    net.res_bus
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

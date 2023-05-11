@@ -39,6 +39,8 @@ from packaging import version
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
+
 from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
@@ -636,13 +638,17 @@ def _check_connectivity(ppc):
     notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
     bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
     bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(np.int64)
+    ssc_status = ppc["ssc"][:, SSC_STATUS].real.astype(bool)
+    nossc = ppc["ssc"][ssc_status, :].shape[0]
+    bus_from_ssc = ppc["ssc"][ssc_status, SSC_BUS].real.astype(np.int64)
+    bus_to_ssc = ppc["ssc"][ssc_status, SSC_INTERNAL_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, bus_from_tcsc, slacks])
-    bus_to = np.hstack([bus_to, bus_to_tcsc, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, np.ones(len(slacks)) * nobus])
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + len(slacks)),
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + len(slacks)),
                                        (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
@@ -998,6 +1004,11 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunt elements are present, "
+                                  "SVC controllable shunt elements not implemented.")
+    if len(net.ssc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SSC controllable shunt elements are present, "
                                   "SVC controllable shunt elements not implemented.")
 
     return True

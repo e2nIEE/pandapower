@@ -32,7 +32,7 @@ from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X
 from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_X_PU, \
     SVC_SET_VM_PU, SVC_THYRISTOR_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_MIN_FIRING_ANGLE, SVC_Q
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_STATUS, \
-    SSC_CONTROLLABLE, SSC_Q, SSC_X_CONTROL_VM, SSC_X_CONTROL_VA
+    SSC_CONTROLLABLE, SSC_Q, SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_INTERNAL_BUS
 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
@@ -113,9 +113,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     ## ssc
     ssc_branches = flatnonzero(nan_to_num(ssc[:, SSC_STATUS]))
     ssc_fb = ssc[ssc_branches, [SSC_BUS]].real.astype(np.int64)
+    ssc_tb = ssc[ssc_branches, [SSC_INTERNAL_BUS]].real.astype(np.int64)
     size_y = Ybus.shape[0]
     num_ssc = len(ssc_fb)
-    ssc_tb = np.arange(size_y, size_y + num_ssc)  ### already defined below , should we move it to here ?
     ssc_controllable = ssc[ssc_branches, SSC_CONTROLLABLE].real.astype(bool)
     x_control_ssc = ssc[ssc_branches, SSC_X_CONTROL_VM].real * np.exp(1j * ssc[ssc_branches, SSC_X_CONTROL_VA].real)
     num_ssc_controllable = len(x_control_ssc[ssc_controllable])
@@ -146,13 +146,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # initialize
     i = 0
     V = V0
-
-    if any_ssc:
-        K_Y = vstack([eye(size_y, format="csr"),
-                      csr_matrix((num_ssc, size_y))], format="csr")
-        Ybus = K_Y * Ybus * K_Y.T  # this extends the Ybus matrix with 0-rows and 0-columns for the "q"-bus of SSC
-        V = np.r_[V, x_control_ssc]  #### this will include the aux bus voltage in the main voltage vector
-        Sbus = r_[Sbus, np.zeros(num_ssc)]
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
@@ -421,17 +414,12 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         tcsc[tcsc_branches, TCSC_IT] = np.abs(i_tcsc_t) * baseI
         tcsc[tcsc_branches, TCSC_X_PU] = 1 / calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
-    if any_ssc:
-        V = V[:-num_ssc]
-        Ybus = Ybus[:-num_ssc, :-num_ssc]
-        Ybus_svc = Ybus_svc[:-num_ssc, :-num_ssc]
-        Ybus_tcsc = Ybus_tcsc[:-num_ssc, :-num_ssc]
-
-    # because we now have updates of the Ybus matrices due to TDPF, SVC, TCSC,
+    # because we now have updates of the Ybus matrices due to TDPF, SVC, TCSC, SSC,
     # we are interested in storing them for later use:
     ppci["internal"]["Ybus"] = Ybus
     ppci["internal"]["Ybus_svc"] = Ybus_svc
     ppci["internal"]["Ybus_tcsc"] = Ybus_tcsc
+    ppci["internal"]["Ybus_ssc"] = Ybus_ssc
     ppci["internal"]["Yf_tcsc"] = Yf_tcsc
     ppci["internal"]["Yt_tcsc"] = Yt_tcsc
     ppci["internal"]["tcsc_fb"] = tcsc_fb
