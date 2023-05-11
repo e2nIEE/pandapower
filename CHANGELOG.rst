@@ -12,6 +12,9 @@ Change Log
 - [FIXED] typos in cim2pp tutorial
 - [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
 - [FIXED] bugfix in _get_bus_v_results where vm_pu was not set for DC power flow, leading to old results staying in the bus results table
+- [ADDED] simple cim2pp converter test
+- [CHANGED] run ac pf instead of dc pf in estimation when parameter fuse_buses_with_bb_switch != 'all'
+
 
 [2.12.1] - 2023-04-18
 -------------------------------
