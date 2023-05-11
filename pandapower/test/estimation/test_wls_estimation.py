@@ -712,7 +712,7 @@ def create_net_with_bb_switch():
 def test_net_with_bb_switch_no_fusing():
     net = create_net_with_bb_switch()
     success_none = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)
-
+    pp.runpp(net, calculate_voltage_angles=True)
     assert success_none
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
@@ -724,6 +724,7 @@ def test_net_with_bb_switch_no_fusing():
 def test_net_with_bb_switch_fuse_one():
     net = create_net_with_bb_switch()
     success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=[1])
+    pp.runpp(net, calculate_voltage_angles=True)
     assert success
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
