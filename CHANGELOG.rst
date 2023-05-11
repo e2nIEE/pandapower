@@ -11,6 +11,7 @@ Change Log
 - [FIXED] shape issues when calculating SC with the superposition method
 - [FIXED] typos in cim2pp tutorial
 - [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
+- [ADDED] simple cim2pp converter test
 
 [2.12.1] - 2023-04-18
 -------------------------------
