@@ -20,5 +20,6 @@ SSC_X_CONTROL_VA = 6 # va degrees
 SSC_X_CONTROL_VM = 7 # (p.u)  vm
 
 SSC_Q = 8 # result for Q
+SSC_INTERNAL_BUS = 9
 
-ssc_cols  = 9
+ssc_cols  = 10

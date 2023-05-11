@@ -15,7 +15,7 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMI
     VM, VA, CID, CZD, bus_cols, REF
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
-    SSC_STATUS, SSC_CONTROLLABLE
+    SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
     SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 
@@ -262,8 +262,9 @@ def _build_bus_ppc(net, ppc, sequence=None):
     # get bus indices
     nr_xward = len(net.xward)
     nr_trafo3w = len(net.trafo3w)
+    nr_ssc = len(net.ssc)
     aux = dict()
-    if nr_xward > 0 or nr_trafo3w > 0:
+    if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0:
         bus_indices = [net["bus"].index.values, np.array([], dtype=np.int64)]
         max_idx = max(net["bus"].index) + 1
         if nr_xward > 0:
@@ -274,6 +275,10 @@ def _build_bus_ppc(net, ppc, sequence=None):
             aux_trafo3w = np.arange(max_idx + nr_xward, max_idx + nr_xward + nr_trafo3w)
             aux["trafo3w"] = aux_trafo3w
             bus_indices.append(aux_trafo3w)
+        if nr_ssc:
+            aux_ssc = np.arange(max_idx + nr_xward + nr_trafo3w, max_idx + nr_xward + nr_trafo3w + nr_ssc)
+            aux["ssc"] = aux_ssc
+            bus_indices.append(aux_ssc)
         bus_index = np.concatenate(bus_indices)
     else:
         bus_index = net["bus"].index.values
@@ -310,10 +315,11 @@ def _build_bus_ppc(net, ppc, sequence=None):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    if nr_xward > 0 or nr_trafo3w > 0:
+    if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0:
         in_service = np.concatenate([net["bus"]["in_service"].values,
                                      net["xward"]["in_service"].values,
-                                     net["trafo3w"]["in_service"].values])
+                                     net["trafo3w"]["in_service"].values,
+                                     net["ssc"]["in_service"].values])
     else:
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
@@ -345,6 +351,10 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     if len(net.trafo3w):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus", aux)
+
+    if len(net.ssc):
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "ssc", "bus", aux)
+
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
     net["_pd2ppc_lookups"]["aux"] = aux
 
@@ -563,6 +573,7 @@ def _build_ssc_ppc(net, ppc, mode):
     if length > 0:
         baseMVA = ppc["baseMVA"]
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        aux = net["_pd2ppc_lookups"]["aux"]
         f = 0
         t = length
 
@@ -573,6 +584,7 @@ def _build_ssc_ppc(net, ppc, mode):
         baseZ = baseV ** 2 / baseMVA
 
         ssc[f:t, SSC_BUS] = bus
+        ssc[f:t, SSC_INTERNAL_BUS] = bus_lookup[aux["ssc"]]
 
         ssc[f:t, SSC_R] = net["ssc"]["r_ohm"].values / baseZ
         ssc[f:t, SSC_X] = net["ssc"]["x_ohm"].values / baseZ
