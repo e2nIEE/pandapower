@@ -731,6 +731,7 @@ def test_runpm_ploss_loading():
     ### test loading reduction with Q-optimierung
     net = deepcopy(net_org)
     pp.runpm_loading(net)
+    assert np.all(net.res_line.loading_percent.values <= net_org.res_line.loading_percent.values + 1e-3)
     assert (net.res_line.loading_percent.values - \
             net_org.res_line.loading_percent.values).sum() < 0
 
@@ -771,10 +772,4 @@ def test_ac_opf_differnt_snmva():
 
 
 if __name__ == '__main__':
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_storage_opt()
-        test_runpm_ploss_loading()
-        # test_runpm_qflex_and_multi_qflex()
-
+    pytest.main(['-x', __file__])
