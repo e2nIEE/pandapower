@@ -1,9 +1,9 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[2.13.0] - 2023-05-12
 -------------------------------
-- [FIXED] recorrection of shunt values in CIGRE HV
+- [FIXED] another correction of shunt values in CIGRE HV
 - [FIXED] deprecated np.typedict to np.sctypedict in cim converter
 - [ADDED] reporting for cim2pp converter
 - [ADDED] interfaces for repair functions for cim2pp converter
