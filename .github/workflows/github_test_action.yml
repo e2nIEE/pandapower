@@ -191,7 +191,7 @@ jobs:
           pip list
       - name: Test with pytest
         run: |
-          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest --nbmake -n=auto --nbmake-timeout=900 **/*ipynb
   
   docs_check:
     runs-on: ubuntu-latest
