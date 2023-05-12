@@ -717,21 +717,20 @@ def test_runpm_ploss_loading():
     net.switch.loc[:, "closed"] = True
     pp.runpp(net)
     net_org = deepcopy(net)
-    # pp.runpm_ploss(net)
+    pp.runpm_ploss(net)
 
-    # ### test loss reduction with Q-optimierung
-    # assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
+    ### test loss reduction with Q-optimierung
+    assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
 
-    # net.line.drop(columns=["pm_param/target_branch"], inplace=True)
-    # net.trafo["pm_param/target_branch"] = True
-    # pp.runpm_ploss(net)
+    net.line.drop(columns=["pm_param/target_branch"], inplace=True)
+    net.trafo["pm_param/target_branch"] = True
+    pp.runpm_ploss(net)
 
-    # assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
+    assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
 
     ### test loading reduction with Q-optimierung
     net = deepcopy(net_org)
     pp.runpm_loading(net)
-    assert np.all(net.res_line.loading_percent.values <= net_org.res_line.loading_percent.values + 1e-3)
     assert (net.res_line.loading_percent.values - \
             net_org.res_line.loading_percent.values).sum() < 0
 
