@@ -15,15 +15,16 @@ Change Log
 - [FIXED] bugfix in _get_bus_v_results where vm_pu was not set for DC power flow, leading to old results staying in the bus results table
 - [ADDED] simple cim2pp converter test
 - [CHANGED] run ac pf instead of dc pf in estimation when parameter fuse_buses_with_bb_switch != 'all'
+- [REMOVED] support for deprecated functions in :code:`groups.py`: :code:`check_unique_group_names`, :code:`append_to_group`
 
 
 [2.12.1] - 2023-04-18
 -------------------------------
 - [FIXED] add minimum Python version (3.8) explicitly to setup.py
-- [FIXED] remove `import pandapower.test` from __init__
+- [FIXED] remove :code:`import pandapower.test` from :code:`__init__`
 - [FIXED] matplotlib imports are optional (but required for plotting)
 - [FIXED] missing numpy int imports
-- [FIXED] documentation; needed change: group functions parameter `raise_` is renamed by `raise_error`
+- [FIXED] documentation; needed change: group functions parameter :code:`raise_` is renamed by :code:`raise_error`
 
 [2.12.0] - 2023-04-06
 -------------------------------
