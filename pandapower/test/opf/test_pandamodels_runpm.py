@@ -35,7 +35,6 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
 
 
-
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
     if net is None:
         net = nw.create_cigre_network_mv("pv_wind")
@@ -729,6 +728,12 @@ def test_runpm_ploss_loading():
 
     assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
 
+    ### test loading reduction with Q-optimierung
+    net = deepcopy(net_org)
+    pp.runpm_loading(net)
+    assert (net.res_line.loading_percent.values - \
+            net_org.res_line.loading_percent.values).sum() < 0
+
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_convergence_dc_opf():
@@ -766,10 +771,4 @@ def test_ac_opf_differnt_snmva():
 
 
 if __name__ == '__main__':
-    if 1:
-        pytest.main(['-x', __file__])
-    else:
-        test_storage_opt()
-        # test_runpm_ploss_loading()
-        # test_runpm_qflex_and_multi_qflex()
-
+    pytest.main(['-x', __file__])

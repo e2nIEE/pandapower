@@ -287,31 +287,6 @@ def test_set_out_of_service():
         assert net.trafo.in_service.all()
 
 
-def test_append_to_group():
-    assert Version(__version__) < Version('2.13')
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
-
-        # ! group_element_lists() and ! append_to_group()
-        et0, elm0, rc0 = pp.group_element_lists(net, 0)
-        assert len(et0) == len(elm0) == len(rc0)
-        pp.append_to_group(net, idxs[1], et0, elm0, rc0)
-        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
-
-        try:
-            # no xward in net
-            pp.append_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
-                               reference_columns=rc)
-            assert False
-        except UserWarning:
-            pass
-
-        pp.append_to_group(net, idxs[1], ["trafo", "line"],
-                           [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
-        assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
-            "gen", "sgen", "trafo", "line"}
-        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
-
-
 def test_attach_to_group():
     for net, type_, rc, idxs in zip(*nets_to_test_group()):
 
@@ -334,30 +309,6 @@ def test_attach_to_group():
         assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
             "gen", "sgen", "trafo", "line"}
         assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
-
-
-def test_drop_and_compare():
-    assert Version(__version__) < Version('2.13')
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
-
-        # drop_from_group() & compare_group_elements()
-
-        # copy group 3
-        et3, elm3, rc3 = pp.group_element_lists(net, 3)
-        copy_idx = pp.create_group(net, et3, elm3, reference_columns=rc3, name="copy of group 3")
-
-        # drop elements which are not in group 3
-        pp.drop_from_group(net, 3, "xward", [1, 17])
-        pp.drop_from_group(net, 3, "line", 2)
-
-        # check that group3 is still the same as the copy
-        assert pp.compare_group_elements(net, 3, copy_idx)
-
-        # drop some members
-        pp.drop_from_group(net, 3, "trafo", 1)
-        assert pp.group_element_lists(net, 3)[0] == ["trafo"]
-        assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-        assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
 def test_detach_and_compare():
