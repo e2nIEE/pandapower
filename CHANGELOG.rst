@@ -1,6 +1,11 @@
 Change Log
 =============
 
+[2.13.1] - 2023-05-12
+-------------------------------
+- [FIXED] missing test files for CIM converter test in the release files
+
+
 [2.13.0] - 2023-05-12
 -------------------------------
 - [FIXED] another correction of shunt values in CIGRE HV
