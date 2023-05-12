@@ -75,7 +75,7 @@ def drop_group_and_elements(net, index):
 # ====================================
 
 
-def append_to_group(**kwargs):
+def append_to_group(*args, **kwargs):
     msg = "The name of the function append_to_group() is deprecated with pp.version >= 2.12. " + \
         "Use attach_to_group() instead."
     raise DeprecationWarning(msg)
@@ -189,14 +189,10 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
         net.group.sort_index(inplace=True)
 
 
-def drop_from_group(net, index, element_type, element_index):
+def drop_from_group(*args, **kwargs):
     msg = ("The name of the function drop_from_group() is deprecated with pp.version >= 2.12. "
            "Use detach_from_group() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_group(net, index, element_type, element_index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_group(net, index, element_type, element_index):
@@ -219,14 +215,10 @@ def detach_from_group(net, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_groups(net, element_type, element_index, index=None):
+def drop_from_groups(*args, **kwargs):
     msg = ("The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. "
            "Use detach_from_groups() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_groups(net, element_type, element_index, index=index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_groups(net, element_type, element_index, index=None):
@@ -576,7 +568,7 @@ def compare_group_elements(net, index1, index2):
 # =================================================
 
 
-def check_unique_group_names(**kwargs):
+def check_unique_group_names(*args, **kwargs):
     msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
            "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
     raise DeprecationWarning(msg)
