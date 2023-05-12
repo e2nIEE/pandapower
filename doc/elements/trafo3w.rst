@@ -17,10 +17,9 @@ Create Function
 .. _create_trafo3w:
 
 
-.. autofunction:: pandapower.create_transformer3w
+.. autofunction:: pandapower.create.create_transformer3w
 
-.. autofunction:: pandapower.create_transformer3w_from_parameters
-
+.. autofunction:: pandapower.create.create_transformer3w_from_parameters
 .. note::
     All short circuit voltages are given relative to the minimum apparent power
     flow. For example vk_hv_percent is the short circuit voltage from the high to

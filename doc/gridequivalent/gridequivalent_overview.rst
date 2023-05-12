@@ -1,8 +1,8 @@
 .. _gridequivalentoverview:
 
-#############################
+################################
 Grid Equivalent Module Overview
-#############################
+################################
 
 When calling the function ``get_equivalent()`` the calculation of an equivalent grid is started. During the calculation process, the internal subsystem (IS) and the external subsystem (ES) are considered separately. The following figure illustrates the flow chart for the implemented equivalent calculations.
 

@@ -12,7 +12,7 @@ Storage
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_storage
+.. autofunction:: pandapower.create.create_storage
 
 Input Parameters
 =====================

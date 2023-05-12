@@ -19,7 +19,9 @@ from warnings import warn
 import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
-
+from packaging.version import Version
+from pandapower import __version__
+from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
 import pandas as pd
@@ -363,6 +365,12 @@ def isinstance_partial(obj, cls):
     return isinstance(obj, cls)
 
 
+def check_net_version(net):
+    if Version(net["format_version"]) > Version(__version__):
+        logger.warning("pandapowerNet-version is newer than your pandapower version. Please update"
+                       " pandapower `pip install --upgrade pandapower`.")
+
+
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
         super(PPJSONEncoder, self).__init__(**kwargs)
@@ -627,7 +635,9 @@ class FromSerializableRegistry():
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
-            df = df.astype(self.d['dtype'])
+
+            # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
+            _preserve_dtypes(df, dtypes=self.d["dtype"])
             return df
 
     if SHAPELY_INSTALLED:

@@ -576,24 +576,24 @@ def compare_group_elements(net, index1, index2):
 # =================================================
 
 
-def check_unique_group_names(net, raise_=False):
+def check_unique_group_names(**kwargs):
     msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
            "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
     raise DeprecationWarning(msg)
 
 
-def check_unique_group_rows(net, raise_=True, log_level="warning"):
-    """Checks whether all groups have unique names. raise_ decides whether duplicated names lead
+def check_unique_group_rows(net, raise_error=True, log_level="warning"):
+    """Checks whether all groups have unique names. raise_error decides whether duplicated names lead
     to error or log message.
 
     Parameters
     ----------
     net : pandapowerNet
         pandapower net
-    raise_ : bool, optional
+    raise_error : bool, optional
         decides whether duplicated names lead to error or log message., by default False
     log_level : str, optional
-        the level for logs, relevant if raise_ is False
+        the level for logs, relevant if raise_error is False
 
     Notes
     -----
@@ -606,7 +606,7 @@ def check_unique_group_rows(net, raise_=True, log_level="warning"):
         "name"].agg(set)]
     if not all(single_name_per_index):
         warn = "Groups with different names have the same index."
-        if raise_:
+        if raise_error:
             raise UserWarning(warn)
         else:
             log_to_level(warn, logger, log_level)

@@ -6,18 +6,23 @@
 
 import pytest
 import numpy as np
-import pandapower as pp
 from pandas.testing import assert_frame_equal
 
-import matplotlib.pyplot as plt
-
+import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-
-import pandapower.networks
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
 
 
 def plot_z(baseZ, xl, xc):
+    if not MATPLOTLIB_INSTALLED:
+        raise ImportError('matplotlib must be installed to run plot_z()')
+
     x = np.arange(90, 181)
     y = calc_y_svc_pu(np.deg2rad(x), xl / baseZ, xc / baseZ)
     z = (1 / y) * baseZ

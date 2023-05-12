@@ -40,4 +40,4 @@ More detailed information about TDPF can be found in the tutorials:
 - `TDPF introduction <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow.ipynb>`_
 - `Sensitivity of TDPF parameters <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_parameters.ipynb>`_
 
-.. autofunction:: pandapower.runpp
+.. autofunction:: pandapower.run.runpp
