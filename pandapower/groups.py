@@ -163,7 +163,7 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
                         f"The reference column of existing group {index} for element "
                         f"type '{et}' and of the elements to append differ. Use "
                         "set_group_reference_column() to change the reference column of net.group "
-                        "before, or pass appropriate data to append_to_group().")
+                        "before, or pass appropriate data to attach_to_group().")
 
             # append
             prev_elm = net.group.element.loc[group_et].at[index]
