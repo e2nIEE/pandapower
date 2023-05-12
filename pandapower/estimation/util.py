@@ -60,8 +60,9 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
-    pp.rundcpp(net)
-
+    #pp.rundcpp(net)
+    
+    pp.runpp(net, calculate_voltage_angles=True)
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
