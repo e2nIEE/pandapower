@@ -90,8 +90,8 @@ def _controller_attributes_query(controller, parameters):
         intersect_elms = set(ensure_iterability(controller.__getattribute__("element_index"))) & \
                          set(ensure_iterability(parameters["element_index"]))
         if len(intersect_elms):
-            logger.info("'element_index' has an intersection of " + str(intersect_elms) +
-                        " with Controller %i" % controller.index)
+            logger.debug("'element_index' has an intersection of " + str(intersect_elms) +
+                         " with Controller %i" % controller.index)
 
     return complete_match & element_index_match
 
