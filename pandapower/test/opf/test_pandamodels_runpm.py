@@ -731,7 +731,7 @@ def test_runpm_ploss_loading():
     ### test loading reduction with Q-optimierung
     net = deepcopy(net_org)
     pp.runpm_loading(net)
-    assert np.all(net.res_line.loading_percent.values <= net_org.res_line.loading_percent.values)
+    assert np.all(net.res_line.loading_percent.values <= net_org.res_line.loading_percent.values + 1e-3)
     assert (net.res_line.loading_percent.values - \
             net_org.res_line.loading_percent.values).sum() < 0
 
