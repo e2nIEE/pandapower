@@ -21,7 +21,7 @@ from pandapower.toolbox.element_selection import branch_element_bus_dict, elemen
 from pandapower.toolbox.result_info import clear_result_tables
 from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
-    check_unique_group_names, element_associated_groups
+    check_unique_group_rows, element_associated_groups
 
 try:
     import pandaplan.core.pplog as logging
@@ -1063,7 +1063,7 @@ def _replace_group_member_element_type(
     old_elements = pd.Series(old_elements)
     new_elements = pd.Series(new_elements)
 
-    check_unique_group_names(net)
+    check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
         isin = old_elements.isin(gr_et.at[gr_index, "element"])

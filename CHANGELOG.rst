@@ -7,6 +7,7 @@ Change Log
 - [FIXED] deprecated np.typedict to np.sctypedict in cim converter
 - [ADDED] reporting for cim2pp converter
 - [ADDED] interfaces for repair functions for cim2pp converter
+- [ADDED] using PandaModels to optimize reactive power provision for loading reduction 
 - [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
 - [FIXED] shape issues when calculating SC with the superposition method
 - [FIXED] typos in cim2pp tutorial
