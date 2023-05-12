@@ -31,12 +31,11 @@ def _set_buses_out_of_service(ppc):
 
 
 def _get_bus_v_results(net, ppc, suffix=None):
-    ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
 
     res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
-    if ac:
-        net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
+    # always read the vm_pu from ppc, even for DC power flow - otherwise old values can persist
+    net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net[res_table]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
