@@ -1,13 +1,18 @@
 Change Log
 =============
 
+[2.13.1] - 2023-05-12
+-------------------------------
+- [FIXED] missing test files for CIM converter test in the release files
+
+
 [2.13.0] - 2023-05-12
 -------------------------------
 - [FIXED] another correction of shunt values in CIGRE HV
 - [FIXED] deprecated np.typedict to np.sctypedict in cim converter
 - [ADDED] reporting for cim2pp converter
 - [ADDED] interfaces for repair functions for cim2pp converter
-- [ADDED] using PandaModels to optimize reactive power provision for loading reduction 
+- [ADDED] using PandaModels to optimize reactive power provision for loading reduction
 - [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
 - [FIXED] shape issues when calculating SC with the superposition method
 - [FIXED] typos in cim2pp tutorial
