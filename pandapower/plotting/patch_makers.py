@@ -308,22 +308,42 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
 
             polys.append(Circle(mid_midcirc, midcirc_size, fc="k", ec=edgecolors[i])) #Center hub
 
+
          elif sgen_type[i] == "PV": #Special patch for sgen_type "Photo-voltaic"
 
-            mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
-            rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
-            pv_patch = Rectangle((rect_lbottom), 0.05, 0.1,angle=-angles[i]*(180/np.pi),rotation_point=(mid_rect[0],mid_rect[1]),ec="k", fc="none")
-            polys.append(pv_patch)
-            lines.append((node_geo, mid_rect))
-            triangle_base = 0.05
-            triangle_height = 0.06
-            triangle_points = [
-                        (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 0.1]), angles[i])),
-                        (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 0.1]), angles[i])),
-                        (mid_rect + _rotate_dim2(np.array([0, + triangle_height]), angles[i])),
-                    ]
-            triangle_patch = Polygon(triangle_points,ec="k", fc="none")
-            polys.append(triangle_patch)
+            if node_geo[0] not in node_coords[i+1:, 0]:
+                angle = angles[i]
+                mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+                rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
+                pv_patch = Rectangle((rect_lbottom), 0.05, 0.1, angle=-angle * (180 / np.pi),
+                                     rotation_point=(mid_rect[0], mid_rect[1]), ec="k", fc="none")
+                polys.append(pv_patch)
+                lines.append((node_geo, mid_rect))
+                triangle_base = 0.05
+                triangle_height = 0.06
+                triangle_points = [
+                    (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 0.1]), angle)),
+                    (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 0.1]), angle)),
+                    (mid_rect + _rotate_dim2(np.array([0, + triangle_height]), angle)),
+                ]
+                triangle_patch = Polygon(triangle_points, ec="k", fc="none")
+                polys.append(triangle_patch)
+            else:
+                angle = angles[i] + np.pi # 180° offset
+                mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+                rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
+                pv_patch = Rectangle((rect_lbottom), 0.05, 0.1,angle=-angle*(180/np.pi),rotation_point=(mid_rect[0],mid_rect[1]),ec="k", fc="none")
+                polys.append(pv_patch)
+                lines.append((node_geo, mid_rect))
+                triangle_base = 0.05
+                triangle_height = 0.06
+                triangle_points = [
+                            (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 0.1]), angle)),
+                            (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 0.1]), angle)),
+                            (mid_rect + _rotate_dim2(np.array([0, + triangle_height]), angle)),
+                        ]
+                triangle_patch = Polygon(triangle_points,ec="k", fc="none")
+                polys.append(triangle_patch)
          else:
              mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angles[i])
              circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
@@ -344,6 +364,7 @@ def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
              lines.append((perp_foot1, line_end1))
              lines.append((perp_foot2, line_end2))
 
+    # multi_check(node_coords)
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 
 

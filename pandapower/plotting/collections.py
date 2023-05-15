@@ -959,7 +959,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+def create_load_collection(net,sgen_type, loads=None, size=1., infofunc=None, orientation=np.pi, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
@@ -986,6 +986,8 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
 
         **load_lc** - line collection
     """
+    # sgens = get_index_array(sgens, net.sgen.index)
+
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
@@ -993,7 +995,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     color = kwargs.pop("color", "k")
 
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size, infos=infos, orientation=orientation,
+        node_coords, load_patches,sgen_type=sgen_type, size=size, infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return load_pc, load_lc
 

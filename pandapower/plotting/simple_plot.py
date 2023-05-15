@@ -180,7 +180,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         gc = create_gen_collection(net, size=gen_size)
         collections.append(gc)
     if plot_loads and len(net.load):
-        lc = create_load_collection(net, size=load_size)
+        lc = create_load_collection(net, sgen_type, size=load_size)
         collections.append(lc)
 
     if len(net.switch):
