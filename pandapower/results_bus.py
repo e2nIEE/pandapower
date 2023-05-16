@@ -498,7 +498,6 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         ssc_is = _is_elements["ssc"]
         ssc_tb = ppc["ssc"][ssc_is, SSC_INTERNAL_BUS].real.astype(np.int64)
 
-        net["res_ssc"] = pd.DataFrame(index=[0])
         net["res_ssc"].loc[ssc_is, "internal_vm_pu"] = ppc["bus"][ssc_tb, VM]
         net["res_ssc"].loc[ssc_is, "internal_va_degree"] = ppc["bus"][ssc_tb, VA]
         p = np.hstack([p, np.zeros_like(ssc["bus"].values)])

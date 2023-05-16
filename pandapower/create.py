@@ -3913,6 +3913,64 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
     return index
 
 
+def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal_va_degree=0.,
+               name=None, controllable=True, in_service=True, index=None, **kwargs):
+    """
+    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
+        at the connected bus
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power \
+        flow at the moment).
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the svc
+
+        **x_l_ohm** (float) - impedance of the reactor component of svc
+
+        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+
+        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
+            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
+
+        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+
+    _check_node_element(net, bus)
+
+    index = _get_index_with_check(net, "ssc", index)
+
+    entries = dict(zip([
+        "name", "bus", "r_ohm", "x_ohm", "set_vm_pu", "internal_vm_pu", "internal_va_degree",
+        "controllable", "in_service"],
+        [name, bus, r_ohm, x_ohm, set_vm_pu, internal_vm_pu, internal_va_degree, controllable, in_service]))
+    _set_entries(net, "ssc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
                      name=None, in_service=True, index=None,
                      rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
