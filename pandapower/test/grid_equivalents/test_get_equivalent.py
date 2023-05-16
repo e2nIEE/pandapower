@@ -356,6 +356,7 @@ def test_adopt_columns_to_separated_eq_elms():
 
 def test_equivalent_groups():
     net = pp.networks.example_multivoltage()
+    # net.sn_mva = 100
     for elm in pandapower.toolbox.pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
