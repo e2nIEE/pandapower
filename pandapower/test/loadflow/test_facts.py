@@ -616,9 +616,7 @@ def test_ssc_simple():
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_load(net, 1, 100, 25)
-    dtypes = net.ssc.dtypes
-    net.ssc.loc[0, :] = "None", 1, 1, 2, 0.99, 0, 1, True, True
-    _preserve_dtypes(net.ssc, dtypes)
+    pp.create_ssc(net, 1, 1, 2, 0.99)
 
     pp.runpp(net, max_iteration=100)
 
