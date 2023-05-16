@@ -51,8 +51,8 @@ def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
 
         Ybus_ssc[ssc_fb, ssc_fb] = ssc_y_pu
         Ybus_ssc[ssc_fb, ssc_tb] = -ssc_y_pu
-        Ybus_ssc[ssc_tb, ssc_fb] = ssc_y_pu
-        Ybus_ssc[ssc_tb, ssc_tb] = -ssc_y_pu
+        Ybus_ssc[ssc_tb, ssc_fb] = -ssc_y_pu
+        Ybus_ssc[ssc_tb, ssc_tb] = ssc_y_pu
 
     return csr_matrix(Ybus_ssc)
 

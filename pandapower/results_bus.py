@@ -5,13 +5,14 @@
 
 
 import numpy as np
+import pandas as pd
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
-from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q
+from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 
 try:
@@ -496,8 +497,11 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     if len(ssc):
         sscidx = bus_lookup[ssc["bus"].values]
         ssc_is = _is_elements["ssc"]
-        net["res_ssc"].loc[ssc_is, "internal_vm_pu"] = ppc["ssc"][ssc_is, SSC_X_CONTROL_VM]
-        net["res_ssc"].loc[ssc_is, "internal_va_degree"] = np.rad2deg(ppc["ssc"][ssc_is, SSC_X_CONTROL_VA])
+        ssc_tb = ppc["ssc"][ssc_is, SSC_INTERNAL_BUS].real.astype(np.int64)
+
+        net["res_ssc"] = pd.DataFrame(index=[0])
+        net["res_ssc"].loc[ssc_is, "internal_vm_pu"] = ppc["bus"][ssc_tb, VM]
+        net["res_ssc"].loc[ssc_is, "internal_va_degree"] = ppc["bus"][ssc_tb, VA]
         p = np.hstack([p, np.zeros_like(ssc["bus"].values)])
         if ac:
             net["res_ssc"].loc[ssc_is, "vm_pu"] = ppc["bus"][sscidx[ssc_is], VM]

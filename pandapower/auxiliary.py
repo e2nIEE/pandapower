@@ -730,7 +730,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
     elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage", "svc"]  # ,"impedance_load"
+                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
