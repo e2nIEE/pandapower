@@ -344,7 +344,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         #     x_control_ssc[ssc_controllable] += dx[j6c:j6d]
 
         if tdpf:
-            T = T + dx[j8:][tdpf_lines]
+            T = T + dx[j8:][tdpf_lines]  # todo check here if it is still correct
 
         # iwamoto multiplier to increase convergence
         if iwamoto and not tdpf:
