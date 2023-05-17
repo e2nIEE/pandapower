@@ -2,12 +2,8 @@ Changelog
 =============
 Keep track of the latest changes in **pandapower**.
 
-[2.14.0] - 2023-XX-XX
+[upcoming release] - 2023-..-..
 -------------------------------
-- [FIXED]
-- [ADDED]
-- [REMOVED]
-- [CHANGED]
 
 
 [2.13.1] - 2023-05-12
