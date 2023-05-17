@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] feature: Function to run powerflow using the power-grid-model library
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"

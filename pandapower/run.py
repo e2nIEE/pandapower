@@ -18,6 +18,15 @@ try:
 except ImportError:
     import logging
 
+try:
+    from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+    from power_grid_model.errors import PowerGridError
+    from power_grid_model.validation import validate_input_data
+    from power_grid_model_io.converters import PandaPowerConverter
+    PGM_IMPORTED = True
+except ImportError:
+    PGM_IMPORTED = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -241,7 +250,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         _powerflow(net, **kwargs)
 
 
-def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, max_iterations=20, validate_input=False):
+def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
     """
         Runs powerflow using power-grid-model library
 
@@ -268,21 +277,11 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
             No effect on linear approximation algorithms.
 
             **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
-            It is recommeneded to use pandapower.diagnostic tool prior.
+            It is recommended to use pandapower.diagnostic tool prior.
     """
-    try:
-        from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
-        from power_grid_model.errors import PowerGridError
-        from power_grid_model.validation import validate_input_data
-        from power_grid_model_io.converters import PandaPowerConverter
-    except ImportError:
+    if not PGM_IMPORTED:
         raise ImportError(
             "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages."
-        )
-
-    if not symmetric:
-        raise NotImplementedError(
-            "Asymmetric power flow by power-grid-model is not implemented yet. Try using pp.runpp_3ph() instead."
         )
 
     # 1. Determine the Power Grid Model calculation type corresponding to the algorithm:
@@ -322,7 +321,7 @@ def runpp_pgm(net, symmetric=True, algorithm="nr", error_tolerance_u_pu=1e-8, ma
         pgm = PowerGridModel(input_data=pgm_input_data)
         output_data = pgm.calculate_power_flow(
             symmetric=symmetric,
-            error_tolerance=error_tolerance_u_pu,
+            error_tolerance=error_tolerance_vm_pu,
             max_iterations=max_iterations,
             calculation_method=calculation_method
         )

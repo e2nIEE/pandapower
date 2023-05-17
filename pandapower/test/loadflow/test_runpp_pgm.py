@@ -3,23 +3,24 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 import pandapower as pp
-from pandapower.test.consistency_checks import runpp_pgm_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks
 
 
-def test_minimal_net_pgm():
+@pytest.mark.parametrize("consistency_fn" , [runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks])
+def test_minimal_net_pgm(consistency_fn):
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pp.create_empty_network()
     b = pp.create_bus(net, 110)
     pp.create_ext_grid(net, b)
-    runpp_pgm_with_consistency_checks(net)
+    consistency_fn(net)
 
     pp.create_load(net, b, p_mw=0.1)
-    runpp_pgm_with_consistency_checks(net)
+    consistency_fn(net)
 
     b2 = pp.create_bus(net, 110)
     pp.create_switch(net, b, b2, "b")
-    pp.create_sgen(net, b2, p_mw=0.2)
-    runpp_pgm_with_consistency_checks(net)
+    pp.create_sgen(net, b2, p_mw=0.2, q_mvar=0.1)
+    consistency_fn(net)
 
 
 def test_runpp_pgm__invalid_algorithm():
@@ -29,12 +30,6 @@ def test_runpp_pgm__invalid_algorithm():
         match="Invalid algorithm 'foo'",
     ):
         pp.runpp_pgm(net, algorithm="foo")
-
-
-def test_runpp_pgm__asym():
-    net = pp.create_empty_network()
-    with pytest.raises(NotImplementedError, match="Asymmetric power flow by power-grid-model is not implemented yet"):
-        pp.runpp_pgm(net, symmetric=False)
 
 
 @patch("pandapower.run.logger")
