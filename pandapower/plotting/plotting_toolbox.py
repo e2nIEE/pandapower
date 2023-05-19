@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 try:
     import pandaplan.core.pplog as logging
@@ -151,7 +152,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     """
     have_geo = np.isin(from_nodes, node_geodata.index.values) \
         & np.isin(to_nodes, node_geodata.index.values)
-    elements_with_geo = element_indices[have_geo]
+    elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
               in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
@@ -162,6 +163,33 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
                        % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
     return coords, elements_with_geo
+
+
+def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
+    """
+    Sets coordinates in net.line_geodata based on the from_bus and to_bus x,y coordinates
+    in net.bus_geodata
+    :param net: pandapowerNet
+    :param line_index: index of lines, coordinates of which will be set from bus geodata (all lines if None)
+    :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
+    :return: None
+    """
+    line_index = line_index if line_index is not None else net.line.index
+    if not overwrite:
+        line_index = np.setdiff1d(line_index, net.line_geodata.index)
+
+    coords, line_index_successful = coords_from_node_geodata(element_indices=line_index,
+                                                             from_nodes=net.line.loc[line_index, 'from_bus'].values,
+                                                             to_nodes=net.line.loc[line_index, 'to_bus'].values,
+                                                             node_geodata=net.bus_geodata,
+                                                             table_name="line_geodata", node_name="bus_geodata")
+
+    net.line_geodata = net.line_geodata.reindex(net.line.index)
+    net.line_geodata.loc[line_index_successful, 'coords'] = coords
+
+    num_failed = len(line_index) - len(line_index_successful)
+    if num_failed > 0:
+        logger.info(f"failed to set coordinates of {num_failed} lines")
 
 
 def position_on_busbar(net, bus, busbar_coords):

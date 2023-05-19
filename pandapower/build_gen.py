@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -124,12 +124,12 @@ def _build_pp_ext_grid(net, ppc, f, t):
         add_p_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
 
         if "controllable" in net["ext_grid"]:
-            #     if we do and one of them is false, do this only for the ones, where it is false
-            eg_constrained = net.ext_grid[eg_is][net.ext_grid.controllable == False]
+            # if we do and one of them is false, do this only for the ones, where it is false
+            eg_constrained = net.ext_grid[eg_is][~net.ext_grid.controllable]
             if len(eg_constrained):
-                eg_constrained_bus = eg_constrained.bus
-                ppc["bus"][eg_constrained_bus, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
-                ppc["bus"][eg_constrained_bus, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
+                eg_constrained_bus_ppc = [bus_lookup[egb] for egb in eg_constrained.bus.values]
+                ppc["bus"][eg_constrained_bus_ppc, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
+                ppc["bus"][eg_constrained_bus_ppc, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
         else:
             # if we dont:
             ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
@@ -299,18 +299,18 @@ def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
 def _check_voltage_setpoints_at_same_bus(ppc):
     # generator buses:
-    gen_bus = ppc['gen'][:, GEN_BUS].astype(int)
+    gen_bus = ppc['gen'][:, GEN_BUS].astype(np.int64)
     # generator setpoints:
     gen_vm = ppc['gen'][:, VG]
     if _different_values_at_one_bus(gen_bus, gen_vm):
-        raise UserWarning("Generators with different voltage setpoints connected to the same bus")
+        raise UserWarning("Voltage controlling elements, i.e. generators, external grids, or DC lines, at the same bus have different setpoints.")
 
 
 def _check_voltage_angles_at_same_bus(net, ppc):
     if net._is_elements["ext_grid"].any():
         gen_va = net.ext_grid.va_degree.values[net._is_elements["ext_grid"]]
         eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
-        gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
+        gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(np.int64)
         if _different_values_at_one_bus(gen_bus, gen_va):
             raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
 

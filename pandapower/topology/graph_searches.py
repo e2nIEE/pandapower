@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -120,8 +120,8 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
          dist = top.calc_distance_to_bus(net, 5)
 
     """
-    g = create_nxgraph(net, respect_switches=respect_switches,
-                       nogobuses=nogobuses, notravbuses=notravbuses)
+    g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses,
+                       notravbuses=notravbuses)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
@@ -386,7 +386,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     #    n1_buses = mg.nodes()
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
-    net.bus.loc[n1_buses, "on_stub"] = False
+    net.bus.loc[list(n1_buses), "on_stub"] = False
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs

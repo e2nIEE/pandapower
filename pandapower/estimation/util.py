@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -60,8 +60,9 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
-    pp.rundcpp(net)
-
+    #pp.rundcpp(net)
+    
+    pp.runpp(net, calculate_voltage_angles=True)
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)

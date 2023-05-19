@@ -28,7 +28,7 @@ def radial_grid():
 
 @pytest.fixture
 def three_bus_big_sgen_example():
-     net = pp.create_empty_network()
+     net = pp.create_empty_network(sn_mva=3)
      b1 = pp.create_bus(net, 110)
      b2 = pp.create_bus(net, 110)
      b3 = pp.create_bus(net, 110)
@@ -97,4 +97,4 @@ def test_big_gen_network_v2(three_bus_big_sgen_example):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

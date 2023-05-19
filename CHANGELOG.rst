@@ -1,8 +1,131 @@
 Change Log
+=============
 
-[CHANGED] rename u by vm (voltage magnitude) in file and functions names
-[ADDED] added support for Python 3.10
-[FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
+[2.13.1] - 2023-05-12
+-------------------------------
+- [FIXED] missing test files for CIM converter test in the release files
+
+
+[2.13.0] - 2023-05-12
+-------------------------------
+- [FIXED] another correction of shunt values in CIGRE HV
+- [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [ADDED] reporting for cim2pp converter
+- [ADDED] interfaces for repair functions for cim2pp converter
+- [ADDED] using PandaModels to optimize reactive power provision for loading reduction
+- [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
+- [FIXED] shape issues when calculating SC with the superposition method
+- [FIXED] typos in cim2pp tutorial
+- [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
+- [FIXED] bugfix in _get_bus_v_results where vm_pu was not set for DC power flow, leading to old results staying in the bus results table
+- [ADDED] simple cim2pp converter test
+- [CHANGED] run ac pf instead of dc pf in estimation when parameter fuse_buses_with_bb_switch != 'all'
+- [REMOVED] support for deprecated functions in :code:`groups.py`: :code:`check_unique_group_names`, :code:`append_to_group`
+
+
+[2.12.1] - 2023-04-18
+-------------------------------
+- [FIXED] add minimum Python version (3.8) explicitly to setup.py
+- [FIXED] remove :code:`import pandapower.test` from :code:`__init__`
+- [FIXED] matplotlib imports are optional (but required for plotting)
+- [FIXED] missing numpy int imports
+- [FIXED] documentation; needed change: group functions parameter :code:`raise_` is renamed by :code:`raise_error`
+
+[2.12.0] - 2023-04-06
+-------------------------------
+- [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
+- [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
+- [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
+- [CHANGED] cim2pp converter documentation fixes
+- [CHANGED] make legend item size constant in :code:`simple_plotly`
+- [FIXED] add (nan) field "coords" to bus geodata in create_cigre_network_hv to avoid fatal error when exporting to Excel
+- [FIXED] documentation of powerfactory converter
+- [FIXED] create.py: if optional arguments are None or nan, the optional columns will not be added
+- [FIXED] add tap_dependent_impedance attributes to trafo3w instead of trafo, in create.create_transformer3w and create.create_transformer3w_from_parameters
+- [CHANGED] renamed functions: drop_from_group() -> detach_from_group(), append_to_group() -> attach_to_group(), check_unique_group_names() -> check_unique_group_rows()
+- [CHANGED] attach_to_group(): enable handling of different reference_column passed than existing
+- [ADDED] toolbox function :code:`count_elements`, :code:`drop_elements`, :code:`res_power_columns`
+- [ADDED] new group functions :code:`element_associated_groups`, :code:`attach_to_groups`, :code:`group_res_power_per_bus`, :code:`group_index`
+- [CHANGED] __repr__ (used by print(net)) now considers groups appropriately
+- [ADDED] documentation of DeprecationWarning process
+- [ADDED] add TDPF parameters as optional parameters for create line functions in create.py
+- [CHANGED] remove support for Python 3.7 and add Python 3.11
+- [CHANGED] split toolbox.py -> better overview, avoiding circular imports
+- [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
+- [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
+- [ADDED] import of internal packages such as control or converter
+- [ADDED] group consideration in toolbox replace element functionality
+- [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+- [ADDED] calculate branch results for current magnitude and angle, voltage magnitude and angle, active and reactive power for short circuit calculation
+- [ADDED] implement the superposition method ("Type C") for the short circuit calculation - consider pre-fault voltages
+- [FIXED] Trafo control stepping direction for side=="hv"
+- [ADDED] feature: protection - implementation of over-current relay
+- [FIXED] Shunt admittance modelling for 3 phase calculations
+- [ADDED] bulk creation function create_storages and create_wards
+- [ADDED] FACTS devices Shunt Var Compensator (SVC) and Thyristor-Controlled Series Capacitor (TCSC) as new pandapower elements net.svc and net.tcsc
+
+[2.11.1] - 2023-01-02
+-------------------------------
+- [ADDED] a 'marker size legend' (scale_trace) can be displayed for weighted_marker_traces with plotly
+- [FIXED] bugfix in toolbox._merge_nets_deprecated
+- [CHANGED] added tests for pp.control.Characteristic, removed Characteristic.target
+
+[2.11.0] - 2022-12-14
+-------------------------------
+- [ADDED] plotting function for dclines (create_dcline_collection), also added in simple_plot
+- [ADDED] calculation of overhead line temperature in Newton-Raphson with two simplified methods (Frank et al. and Ngoko et al.)
+- [ADDED] group functionality
+- [ADDED] auxiliary function warn_and_fix_parameter_renaming to throw a derpecation warning (not an Error) if old name of a parameter is used
+- [ADDED] zero-sequence parameters for net.impedance
+- [ADDED] File I/O: Can now save and load pandapower serializable objects to Excel, PostgreSQL
+- [ADDED] additional_traces (prepared by the user) can be passed to simple_plotly
+- [ADDED] Added converter CGMES v2.4.15 to pandapower
+- [CHANGED] TDPF: rename r_theta to r_theta_kelvin_per_mw, add r_theta_kelvin_per_mw to net.res_line
+- [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
+- [CHANGED] from_ppc(): revision of indexing and naming of elements
+- [CHANGED] Complete revision of validate_from_ppc()
+- [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
+- [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
+- [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
+
+[2.10.1] - 2022-07-31
+-------------------------------
+- [FIXED] remove the parameter ignore_order in DeepDiff (__eq__), add __hash__ to JSONSerializableClass
+- [ADDED] store and restore functionality of dataframe index names with to_json() and from_json()
+- [ADDED] generalization from_json() with parameter empty_dict_like_object
+
+[2.10.0] - 2022-07-29
+-------------------------------
+- [ADDED] added arbitrary keyword arguments, ``**kwargs``, in all create-functions
+- [ADDED] groups functionality to allow grouping pandapower net elements and enable functionality to such groups
+- [FIX] from_ppc() converter and power system test cases: add missing factor for tap_side=="lv"; change tap_side to "hv" for all test cases (were converted without new factor, so as the tap_side is "hv")
+- [ADDED] from_mpc() converter: added functionality to import .m files via external package
+- [CHANGED] from_ppc() converter: added option of tap_side and essential speed up
+- [CHANGED] drop support of pandas versions < 1.0
+- [ADDED] parameter in_ka for rated switch current
+- [ADDED] current and loading result for switches
+- [FIXED] bug for disabled continous tap controllers
+- [ADDED] File I/O download and upload pandapowerNet to PostgreSQL
+- [ADDED] __eq__ method for JSONSerializableClass using deepdiff library, and adjusted pp.nets_equal to use it. Requires deepdiff
+- [CHANGED] enable calculating PTDF for a subset of branches
+- [ADDED] in from_json one can pass a new variable of type dict called 'replace_elements'. Dict values replace the key in the loaded json string.
+
+[2.9.0]- 2022-03-23
+----------------------
+- [ADDED] added support for Python 3.10
+- [ADDED] added a function to pandapower.plotting to set line geodata from the geodata of the connected buses
+- [ADDED] plotly hover information will indicate parallel lines, if parallel > 1
+- [ADDED] 'showlegend' option for simple_plotly
+- [CHANGED] rename u by vm (voltage magnitude) in file and functions names
+- [FIX] plotly: only one legend entry for all lines/trafos instead of single entries for each one
+- [FIX] fixed deprecation warning for pandas indexing with set (sets changed to lists inside .loc)
+- [FIX] fixed hover information for lines in plotly
+- [ADDED] functions to obtain grid equivalents (power system reduction with REI, Ward, X-Ward methods)
+- [CHANGED] use numpy to vectorize trafo_control
+- [ADDED] generic functions in pandapower.toolbox to read and write data to/from elements
+- [CHANGED] remove code duplication in const_control, characteristic_control
+- [ADDED] added the functionality to import grid data from PowerFactory
+- [FIXED] failing tests for PowerModels integration due to the missing pm option "ac"
 
 [2.8.0]- 2022-02-06
 ----------------------
@@ -80,7 +203,7 @@ Change Log
 - [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver.
 - [ADDED] the voltage set point of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
 - [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
-- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
+- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json").
 - [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
 - [CHANGED] all controllers and output writers do not have net as attribute any more.
 - [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.

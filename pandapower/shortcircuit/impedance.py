@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,7 +10,7 @@ import numpy as np
 from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
 
-from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
+from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
 
@@ -29,6 +29,7 @@ def _calc_rx(net, ppci, bus_idx):
         fault_impedance = (r_fault + x_fault * 1j) / base_r
     else:
         fault_impedance = 0 + 0j
+    net._options["fault_impedance"] = fault_impedance
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]

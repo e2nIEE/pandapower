@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,8 +10,8 @@ from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
     _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
     _init_rundcpp_options, _init_runopp_options, _internal_stored
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
+from pandapower.optimal_powerflow import _optimal_powerflow
 
 try:
     import pandaplan.core.pplog as logging
@@ -37,9 +37,10 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
-                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree', 'init_results',
+                           'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid']
+                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid',
+                           'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -62,7 +63,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
-          run_control=False, distributed_slack=False, **kwargs):
+          run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
     """
     Runs a power flow
 
@@ -114,6 +115,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - 1000 for "gs"
                 - 30 for "fdbx"
                 - 30 for "fdxb"
+                - 30 for "nr" with "tdpf"
 
         **tolerance_mva** (float, 1e-8) - loadflow termination condition referring to P / Q mismatch of node power in MVA
 
@@ -155,6 +157,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         **distributed_slack** (bool, False) - Distribute slack power
             according to contribution factor weights for external grids
             and generators.
+
+        **tdpf** (bool, False) - Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on the TDPF parameters in net.line table.
+
+        **tdpf_delay_s** (float, None) - TDPF parameter, specifies the time delay in s to consider thermal inertia of conductors.
 
 
         **KWARGS**:
@@ -202,6 +208,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **neglect_open_switch_branches** (bool, False) - If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
 
+        **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
+
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
@@ -225,6 +233,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                             enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
                             voltage_depend_loads=voltage_depend_loads,
                             consider_line_temperature=consider_line_temperature,
+                            tdpf=tdpf, tdpf_delay_s=tdpf_delay_s,
                             distributed_slack=distributed_slack,
                             passed_parameters=passed_parameters, **kwargs)
         _check_bus_index_and_print_warning_if_high(net)
@@ -268,6 +277,10 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           recycle=recycle, check_connectivity=check_connectivity,
                           switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses, **kwargs)
+
+    if isinstance(recycle, dict) and _internal_stored(net, ac=False):
+        _recycled_powerflow(net, recycle=recycle, **kwargs)
+        return
 
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)

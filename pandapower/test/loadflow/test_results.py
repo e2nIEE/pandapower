@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
@@ -11,8 +11,8 @@ import pandapower.control
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
     add_test_gen
-from pandapower.test.toolbox import assert_res_equal
-
+from pandapower.test.helper_functions import assert_res_equal
+from pandapower.test.conftest import result_test_network
 
 # simple example grid for tap dependent impedance tests:
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.helper_functions import create_test_network
 from pandapower.plotting.generic_geodata import create_generic_coordinates, build_igraph_from_pp
 import pandapower as pp
 import pandapower.networks as nw
@@ -41,7 +41,4 @@ def test_create_generic_coordinates_igraph_custom_table_index():
         assert np.all(net.test.index == buses)
 
 if __name__ == "__main__":
-    net = nw.mv_oberrhein()
-    g, meshed, roots = build_igraph_from_pp(net, buses=[1,2,3])
-    g.vcount()
-#    pytest.main(["test_generic_coordinates.py"])
+    pytest.main([__file__, "-xs"])

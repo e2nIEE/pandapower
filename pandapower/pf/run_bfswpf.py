@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,6 @@ from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
 from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pandapower.pypower.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
-from six import iteritems
 
 from pandapower.auxiliary import ppException
 from pandapower.pypower.bustypes import bustypes
@@ -56,8 +55,8 @@ def _make_bibc_bcbv(bus, branch, graph):
 
     # dictionary with impedance values keyed by branch tuple (frombus, tobus)
     # TODO use list or array, not both
-    branches_lst = list(zip(branch[:, F_BUS].real.astype(int), branch[:, T_BUS].real.astype(int)))
-    branches_arr = branch[:, F_BUS:T_BUS + 1].real.astype(int)
+    branches_lst = list(zip(branch[:, F_BUS].real.astype(np.int64), branch[:, T_BUS].real.astype(np.int64)))
+    branches_arr = branch[:, F_BUS:T_BUS + 1].real.astype(np.int64)
     branches_ind_dict = dict(zip(zip(branches_arr[:, 0], branches_arr[:, 1]), range(0, nobranch)))
     branches_ind_dict.update(dict(zip(zip(branches_arr[:, 1], branches_arr[:, 0]), range(0, nobranch))))
 
@@ -202,10 +201,10 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
     ysh_f = Ys * (1 - tap) / (tap * np.conj(tap)) + ysh / (tap * np.conj(tap))
     ysh_t = Ys * (tap - 1) / tap + ysh
 
-    Gch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.real, minlength=nobus) +
-           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.real, minlength=nobus))
-    Bch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.imag, minlength=nobus) +
-           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.imag, minlength=nobus))
+    Gch = (np.bincount(branch[:, F_BUS].real.astype(np.int64), weights=ysh_f.real, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(np.int64), weights=ysh_t.real, minlength=nobus))
+    Bch = (np.bincount(branch[:, F_BUS].real.astype(np.int64), weights=ysh_f.imag, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(np.int64), weights=ysh_t.imag, minlength=nobus))
 
     Ysh += Gch + 1j * Bch
 
@@ -304,11 +303,11 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
                 if qg_min_lim.any():
                     gen[qg_min_lim, QG] = gen[qg_min_lim, QMIN]
-                    bus[gen[qg_min_lim, GEN_BUS].astype(int), BUS_TYPE] = 1  # convert to PQ bus
+                    bus[gen[qg_min_lim, GEN_BUS].astype(np.int64), BUS_TYPE] = 1  # convert to PQ bus
 
                 if qg_max_lim.any():
                     gen[qg_max_lim, QG] = gen[qg_max_lim, QMAX]
-                    bus[gen[qg_max_lim, GEN_BUS].astype(int), BUS_TYPE] = 1  # convert to PQ bus
+                    bus[gen[qg_max_lim, GEN_BUS].astype(np.int64), BUS_TYPE] = 1  # convert to PQ bus
 
                 # TODO: correct: once all the PV buses are converted to PQ buses, conversion back to PV is not possible
                 qg_lim_new = qg_min_lim | qg_max_lim
@@ -316,7 +315,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
                     pq2pv = (qg_lim != qg_lim_new) & qg_lim
                     # convert PQ to PV bus
                     if pq2pv.any():
-                        bus[gen[qg_max_lim, GEN_BUS].astype(int), BUS_TYPE] = 2  # convert to PV bus
+                        bus[gen[qg_max_lim, GEN_BUS].astype(np.int64), BUS_TYPE] = 2  # convert to PV bus
 
                     qg_lim = qg_lim_new.copy()
                     ref, pv, pq = bustypes(bus, gen)
@@ -378,7 +377,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = perf_counter()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     enforce_q_lims, tolerance_mva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
@@ -394,8 +393,8 @@ def _run_bfswpf(ppci, options, **kwargs):
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
     # creating network graph from list of branches
-    bus_from = branch[:, F_BUS].real.astype(int)
-    bus_to = branch[:, T_BUS].real.astype(int)
+    bus_from = branch[:, F_BUS].real.astype(np.int64)
+    bus_to = branch[:, T_BUS].real.astype(np.int64)
     G = csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
                    shape=(nobus, nobus))
     # create spanning trees using breadth-first-search
@@ -424,10 +423,10 @@ def _run_bfswpf(ppci, options, **kwargs):
     # if phase-shifting trafos are present adjust final state vector angles accordingly
     if calculate_voltage_angles and any_trafo_shift:
         brch_shift_mask = branch[:, SHIFT] != 0
-        trafos_shift = dict(list(zip(list(zip(branch[brch_shift_mask, F_BUS].real.astype(int),
-                                              branch[brch_shift_mask, T_BUS].real.astype(int))),
+        trafos_shift = dict(list(zip(list(zip(branch[brch_shift_mask, F_BUS].real.astype(np.int64),
+                                              branch[brch_shift_mask, T_BUS].real.astype(np.int64))),
                                      branch[brch_shift_mask, SHIFT].real)))
-        for trafo_ind, shift_degree in iteritems(trafos_shift):
+        for trafo_ind, shift_degree in trafos_shift.items():
             neti = 0
             # if multiple reference nodes, find in which network trafo is located
             if len(ref) > 0:
@@ -451,7 +450,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     # #----- output results to ppc ------
     ppci["et"] = perf_counter() - time_start  # pf time end
 
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref, ref_gens)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success

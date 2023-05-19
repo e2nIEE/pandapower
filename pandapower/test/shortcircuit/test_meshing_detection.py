@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -85,4 +85,4 @@ def test_min_6_meshed_grid(meshed_grid):
                         1.705064, 0.7136779, 0.9041679, 1.058954, 0.9327717], atol=1e-5)
 
 if __name__ == '__main__':
-    pytest.main(["test_meshing_detection.py", '-xs'])
+    pytest.main([__file__, "-xs"])

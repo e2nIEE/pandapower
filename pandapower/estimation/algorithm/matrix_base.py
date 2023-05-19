@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -21,8 +21,8 @@ class BaseAlgebra:
         """Object to calculate matrices required in state-estimation iterations."""
         self.eppci = eppci
 
-        self.fb = eppci['branch'][:, F_BUS].real.astype(int)
-        self.tb = eppci['branch'][:, T_BUS].real.astype(int)
+        self.fb = eppci['branch'][:, F_BUS].real.astype(np.int64)
+        self.tb = eppci['branch'][:, T_BUS].real.astype(np.int64)
         self.n_bus = eppci['bus'].shape[0]
         self.n_branch = eppci['branch'].shape[0]
 

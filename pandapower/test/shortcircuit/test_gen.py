@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@ import numpy as np
 
 @pytest.fixture
 def one_line_one_generator():
-    net = pp.create_empty_network(sn_mva=2)
+    net = pp.create_empty_network(sn_mva=23)
     b1 = pp.create_bus(net, vn_kv=10.)
     b2 = pp.create_bus(net, vn_kv=10.)
     b3 = pp.create_bus(net, vn_kv=10.)
@@ -28,7 +28,7 @@ def one_line_one_generator():
 
 @pytest.fixture
 def gen_three_bus_example():
-    net = pp.create_empty_network(sn_mva=2)
+    net = pp.create_empty_network(sn_mva=12)
     b1 = pp.create_bus(net, vn_kv=10.)
     b2 = pp.create_bus(net, vn_kv=10.)
     b3 = pp.create_bus(net, vn_kv=10.)
@@ -185,4 +185,4 @@ def test_max_gen_fault_impedance(one_line_one_generator):
 #     sc.calc_sc(net)
 
 if __name__ == '__main__':
-    pytest.main(['test_gen.py'])
+    pytest.main([__file__, "-xs"])

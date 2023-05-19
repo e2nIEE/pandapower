@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
@@ -228,7 +228,7 @@ class OutputWriter(JSONSerializableClass):
         """
         save_single = False
         self._np_to_pd()
-        if recycle_options not in [None, False]:
+        if recycle_options not in [None, False] and recycle_options["batch_read"]:
             self.get_batch_outputs(net, recycle_options)
         if self.output_path is not None:
             try:

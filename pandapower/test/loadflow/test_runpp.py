@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -23,7 +23,7 @@ from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
+from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 
@@ -750,6 +750,38 @@ def test_zip_loads_with_voltage_angles():
     assert np.allclose(net.res_load.values, res_load.values)
 
 
+def test_zip_loads_out_of_service():
+    # example from https://github.com/e2nIEE/pandapower/issues/1504
+
+    # test net
+    net = pp.create_empty_network()
+    bus1 = pp.create_bus(net, vn_kv=20., name="Bus 1")
+    bus2 = pp.create_bus(net, vn_kv=0.4, name="Bus 2")
+    bus3 = pp.create_bus(net, vn_kv=0.4, name="Bus 3")
+
+    # create bus elements
+    pp.create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
+    pp.create_load(net, bus=bus3, p_mw=0.100, q_mvar=0.05, name="Load",
+                   const_i_percent=0, const_z_percent=0)
+
+    # create branch elements
+    pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2,
+                          std_type="0.4 MVA 20/0.4 kV", name="Trafo")
+    pp.create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
+                   std_type="NAYY 4x50 SE", name="Line")
+
+    net1 = net.deepcopy()
+    oos_load = pp.create_load(
+        net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
+        const_i_percent=0, const_z_percent=100)
+
+    pp.runpp(net, tolerance_mva=1e-8)
+    pp.runpp(net1, tolerance_mva=1e-8)
+    assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
+    net1.res_load.drop(oos_load, inplace=True)
+    assert nets_equal(net, net1, check_only_results=True)
+
+
 def test_xward_buses():
     """
     Issue: xward elements create dummy buses for the load flow, that are cleaned up afterwards.
@@ -817,7 +849,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False

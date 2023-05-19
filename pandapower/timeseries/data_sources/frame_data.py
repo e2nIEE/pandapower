@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+from numpy import int64
 from pandapower.timeseries.data_source import DataSource
 
 try:
@@ -34,8 +34,8 @@ class DFData(DataSource):
         self.df = df
         if multi:
             # casting column and index to int for multi- columns accessing
-            self.df.index = self.df.index.astype(int)
-            self.df.columns = self.df.columns.astype(int)
+            self.df.index = self.df.index.astype(int64)
+            self.df.columns = self.df.columns.astype(int64)
 
     def __repr__(self):
         s = "%s with %d rows and %d columns" % (
