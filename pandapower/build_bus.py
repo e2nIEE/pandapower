@@ -289,7 +289,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
+    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=np.float64)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
 
@@ -297,7 +297,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
+        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 

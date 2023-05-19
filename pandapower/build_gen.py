@@ -8,7 +8,7 @@ import numpy as np
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
-from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC
+from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
@@ -74,7 +74,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, 26), dtype=float)
+    ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0])
