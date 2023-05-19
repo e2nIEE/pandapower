@@ -43,7 +43,7 @@ from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
-    from numba._version import version_version as numba_version
+    from numba import __version__ as numba_version
 except ImportError:
     from .pf.no_numba import jit
 
