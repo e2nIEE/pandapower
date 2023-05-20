@@ -448,44 +448,48 @@ def from_json_dict(json_dict):
     return net
 
 
-def find_files(files_path:str, joined_files:list, key_words:list) -> list :
+def find_files(files_path:str, joined_files:list, key_words:list, **kwargs) -> list :
     """
     add a module which can iterate the workdir and find the target files without duplicates
     INPUT:
         **files_path** (str of path) - where the target files stored no matter it's parent dir or other.
         **key_words** (list) - use the keyword instead of exact rel or abs path of the files.
+        ****kwargs** - reserved for interfaces in overload fuctions.
 
     INPUT/OUTPUT:
-        **joined_files** (list) - initial and result of target files list. 
+        **joined_files** (list) - initial and result of target files list.
 
     EXAMPLE:
 
-        >>> find_files(folder_path, cgmes_files, key_words) 
+        >>> find_files(folder_path, cgmes_files, key_words)
 
     """
     seen_list = []
     join_files_tmp = []
     unique_dict = {}
+
     for dir_name, sub_dirs, files in os.walk(files_path):
         for file_name in files:
             if any(keyword in file_name for keyword in key_words):
                 files_path = os.path.join(dir_name, file_name)
+            # to avoid appending the file_name repeatedly, use judging condition of "not in seen_list"
             if files_path not in seen_list and any(keyword in file_name for keyword in key_words):
                 seen_list.append(files_path)
+                # the target files would be stored in many folders,which could be duplicated in appending. so a tmp list is needed here.
                 join_files_tmp.append(files_path)
+                # not necessary, only for github code analysis
                 print (sub_dirs)
             else:
                 pass
 
-# eliminate the duplicates
-    for K in join_files_tmp:
-        K_basename = os.path.basename(K)
-        if K_basename not in unique_dict:
-            unique_dict[K_basename] = K
+    # there are duplicated files in tmp list for the repeatedly store of the same files. so another iterating is needed here.
+    for Key in join_files_tmp:
+        Key_basename = os.path.basename(Key)
+        if Key_basename not in unique_dict:
+            unique_dict[Key_basename] = Key
         else:
             pass
-    # print(unique_dict)
-
+    # use the dict to pick out the unique item, in other words it exclude the duplicated files.
     for item in unique_dict.keys():
         joined_files.append(unique_dict[item])
 

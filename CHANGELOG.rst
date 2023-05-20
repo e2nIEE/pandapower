@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2023-..-..
 -------------------------------
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
+- [ADDED] a function searching local folders for CIM converter test files in :code:`file_io.py`: :code:`find_files`, as an optional optimization.
 
 
 [2.13.1] - 2023-05-12
