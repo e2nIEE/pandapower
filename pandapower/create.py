@@ -3916,7 +3916,7 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal_va_degree=0.,
                name=None, controllable=True, in_service=True, index=None, **kwargs):
     """
-    Creates an SSC element (STATCOM)- a shunt element with adjustable impedance and VSC internal voltage used to control the voltage \
+    Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
         at the connected bus
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
@@ -3941,12 +3941,6 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal
 
 
         **internal_va_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
-                                       The phase shift between the VSC and the ac system is constrained by the constant
-                                       active power. connecting the converter to a power supply on its dc side enables
-                                       VSC to exchange both active and reactive power, thereby releasing the constrained
-                                       phase angle (source PhD Panosyan).
-                                       at the moment the dc side is not modeled,therefor the voltage can only be controlled
-                                       through supplying or consuming the reactive power.
 
     OPTIONAL:
         **name** (list of strs, None) - element name
