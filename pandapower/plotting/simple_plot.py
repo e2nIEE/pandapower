@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, load_size=1.0, gen_size=1.0, sgen_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, orientation = None, load_size=1.0, gen_size=1.0, sgen_size=1.0,
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None):
@@ -174,13 +174,13 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(sc)
     if plot_sgens and len(net.sgen):
         sgen_type = net.sgen.type
-        sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=0)
+        sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=orientation)
         collections.append(sgc)
     if plot_gens and len(net.gen):
-        gc = create_gen_collection(net, size=gen_size)
+        gc = create_gen_collection(net, size=gen_size,orientation=orientation)
         collections.append(gc)
     if plot_loads and len(net.load):
-        lc = create_load_collection(net, sgen_type, size=load_size)
+        lc = create_load_collection(net, size=load_size,orientation=orientation)
         collections.append(lc)
 
     if len(net.switch):
