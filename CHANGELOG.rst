@@ -1,6 +1,11 @@
 Change Log
 =============
 
+[upcoming release] - 2023-..-..
+-------------------------------
+- [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
+
+
 [2.13.1] - 2023-05-12
 -------------------------------
 - [FIXED] missing test files for CIM converter test in the release files
