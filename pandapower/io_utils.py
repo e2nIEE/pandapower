@@ -244,9 +244,7 @@ def from_dict_of_dfs(dodfs, net=None):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            if isinstance(table.index, pd.MultiIndex):
-                table.index.names = [net[item].index.name, *table.index.names[1:]]
-            else:
+            if not isinstance(table.index, pd.MultiIndex):
                 table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
         # set the index to be Int
