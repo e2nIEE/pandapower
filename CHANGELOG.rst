@@ -1,6 +1,11 @@
 Change Log
 =============
 
+[2.13.2] - 2023-XX-YY
+-------------------------------
+- [FIXED] problem in finding version number for numba
+- [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
+
 [2.13.1] - 2023-05-12
 -------------------------------
 - [FIXED] missing test files for CIM converter test in the release files
