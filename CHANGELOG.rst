@@ -1,10 +1,11 @@
 Change Log
 =============
 
-[2.13.2] - 2023-XX-YY
+[upcoming release] - 2023-..-..
 -------------------------------
 - [FIXED] problem in finding version number for numba
 - [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
+- [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
 
 [2.13.1] - 2023-05-12
 -------------------------------
