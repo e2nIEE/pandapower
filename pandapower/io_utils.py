@@ -136,7 +136,7 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             if len(value) > 0:
                 dodfs["user_pf_options"] = pd.DataFrame(value, index=[0])
             continue
-        elif isinstance(value, (int, float, bool, str)):
+        elif isinstance(value, (int, float, bool, str, numbers.Number)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
             parameters[item] = net[item]
             continue
@@ -244,7 +244,8 @@ def from_dict_of_dfs(dodfs, net=None):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            table.rename_axis(net[item].index.name, inplace=True)
+            if not isinstance(table.index, pd.MultiIndex):
+                table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
         # set the index to be Int
         try:

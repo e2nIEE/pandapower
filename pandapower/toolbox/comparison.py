@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from pandas import testing as pdt
+from deepdiff import DeepDiff
 
 from pandapower.auxiliary import pandapowerNet
 
@@ -180,6 +181,10 @@ def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclu
                 # Maybe there is a better way, but at least this could be checked
                 if net1[key].nodes != net2[key].nodes or net1[key].edges != net2[key].edges:
                     not_equal.append(key)
+        elif isinstance(net1[key], dict):
+            diff = DeepDiff(net1[key], net2[key], math_epsilon=1e-20, ignore_numeric_type_changes=True)
+            if len(diff) > 0:
+                not_equal.append(key)
 
         else:
             try:
