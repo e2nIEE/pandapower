@@ -16,14 +16,12 @@ from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage
 from pandapower.run import runpp
-from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, \
-    branch_element_bus_dict
-from pandapower.toolbox_elm_selection import get_connected_elements, next_bus, \
-    get_connected_elements_dict
-from pandapower.toolbox_info import clear_result_tables
-from pandapower.toolbox_data_modification import reindex_elements
+from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
+    get_connected_elements, get_connected_elements_dict, next_bus
+from pandapower.toolbox.result_info import clear_result_tables
+from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
-    check_unique_group_names, element_associated_groups
+    check_unique_group_rows, element_associated_groups
 
 try:
     import pandaplan.core.pplog as logging
@@ -322,14 +320,18 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     impedance of the new line and the already existing line is equal to the impedance of the
     replaced line. Or for electrical engineers:
 
-    Z0 = impedance of the existing line
-    Z1 = impedance of the replaced line
-    Z2 = impedance of the created line
+        Z0 = impedance of the existing line
 
-        --- Z2 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+        Z1 = impedance of the replaced line
 
+        Z2 = impedance of the created line
+
+    sketch:
+    ::
+
+            --- Z2 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
 
     Parameters
     ----------
@@ -398,23 +400,29 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 def merge_parallel_line(net, idx):
     """
     Changes the impedances of the parallel line so that it equals a single line.
-    Args:
-        net: pandapower net
-        idx: idx of the line to merge
 
-    Returns:
-        net
+        Z0 = impedance of the existing parallel lines
 
-    Z0 = impedance of the existing parallel lines
-    Z1 = impedance of the respective single line
+        Z1 = impedance of the respective single line
 
-        --- Z0 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+    sketch:
+    ::
 
+            --- Z0 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
+
+    Parameters
+    ----------
+        net - pandapower net
+
+        idx (int) - idx of the line to merge
+
+    Returns
+    -------
+    net
     """
     # impedance before changing the standard type
-
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
     x0 = net.line.at[idx, "x_ohm_per_km"]
@@ -1055,7 +1063,7 @@ def _replace_group_member_element_type(
     old_elements = pd.Series(old_elements)
     new_elements = pd.Series(new_elements)
 
-    check_unique_group_names(net)
+    check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
         isin = old_elements.isin(gr_et.at[gr_index, "element"])
@@ -1656,20 +1664,27 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
     drop_elements_simple(net, "ward", wards)
 
 
-def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
+def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False,
+                                       log_level="warning"):
     """
     Replaces xward by loads, shunts, impedance and generators
 
-    INPUT:
-        **net** - pandapower net
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    xwards : iterable, optional
+        indices of xwards which should be replaced. If None, all xwards are replaced, by default None
+    set_xward_bus_limits : bool, optional
+        if True, the buses internal in xwards get vm limits from the connected buses
+    log_level : str, optional
+        logging level of the message which element types of net2 got reindexed elements. Options
+        are, for example "debug", "info", "warning", "error", or None, by default "info"
 
-    OPTIONAL:
-        **xwards** (iterable) - indices of xwards which should be replaced
-
-    OUTPUT:
-        No output - the given xwards in pandapower are replaced by buses, loads, shunts, impadance
-        and generators
-
+    Returns
+    -------
+    None
+        the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
     """
     # --- determine xwards index
     if xwards is None:
@@ -1678,20 +1693,23 @@ def replace_xward_by_internal_elements(net, xwards=None, log_level="warning"):
         xwards = ensure_iterability(xwards)
 
     ass = element_associated_groups(net, "xward", xwards)
+    default_vm_lims = [0, 2]
 
     # --- create buses, loads, shunts, gens and impedances
     for xward in net.xward.loc[xwards].itertuples():
-        bus_v = net.bus.vn_kv[xward.bus]
+        vn = net.bus.vn_kv.at[xward.bus]
+        vm_lims = net.bus.loc[xward.bus, ["min_vm_pu", "max_vm_pu"]].tolist() if \
+            set_xward_bus_limits else default_vm_lims
         new_bus = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
-                             name=xward.name)
+                             name=xward.name, min_vm_pu=vm_lims[0], max_vm_pu=vm_lims[1])
         new_load = create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
             in_service=xward.in_service, name=xward.name)
         new_shunt = create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,
             in_service=xward.in_service, name=xward.name)
         new_gen = create_gen(net, new_bus, 0, xward.vm_pu, in_service=xward.in_service,
             name=xward.name)
-        new_imp = create_impedance(net, xward.bus, new_bus, xward.r_ohm / (bus_v ** 2),
-            xward.x_ohm / (bus_v ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
+        new_imp = create_impedance(net, xward.bus, new_bus, xward.r_ohm / (vn ** 2),
+            xward.x_ohm / (vn ** 2), net.sn_mva, in_service=xward.in_service, name=xward.name)
 
         attach_to_groups(net, ass[xward.Index], ["bus", "load", "shunt", "gen", "impedance"], [
             [new_bus], [new_load], [new_shunt], [new_gen], [new_imp]])

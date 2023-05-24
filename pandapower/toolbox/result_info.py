@@ -9,6 +9,7 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
+from pandapower.toolbox import pp_elements
 
 try:
     import pandaplan.core.pplog as logging
@@ -235,7 +236,7 @@ def _determine_costs_dict(net, opf_task_overview):
         #                "index"] for idx in idxs}
 
         for cost_df in cost_dfs:
-            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
+            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(np.int64))
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
@@ -415,3 +416,52 @@ def clear_result_tables(net):
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
             net[key].drop(net[key].index, inplace=True)
+
+
+def res_power_columns(element_type, side=0):
+    """Returns columns names of result tables for active and reactive power
+
+    Parameters
+    ----------
+    element_type : str
+        name of element table, e.g. "gen"
+    side : typing.Union[int, str], optional
+        Defines for branch elements which branch side is considered, by default 0
+
+    Returns
+    -------
+    list[str]
+        columns names of result tables for active and reactive power
+
+    Examples
+    --------
+    >>> res_power_columns("gen")
+    ["p_mw", "q_mvar"]
+    >>> res_power_columns("line", "from")
+    ["p_from_mw", "q_from_mvar"]
+    >>> res_power_columns("line", 0)
+    ["p_from_mw", "q_from_mvar"]
+    >>> res_power_columns("line", "all")
+    ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    """
+    if element_type in pp_elements(branch_elements=False, other_elements=False):
+        return ["p_mw", "q_mvar"]
+    elif element_type in pp_elements(bus=False, bus_elements=False, other_elements=False):
+        if isinstance(side, int):
+            if element_type == "trafo":
+                side_options = {0: "hv", 1: "lv"}
+            elif element_type == "trafo3w":
+                side_options = {0: "hv", 1: "mv", 2: "lv"}
+            else:
+                side_options = {0: "from", 1: "to"}
+            side = side_options[side]
+        if side != "all":
+            return [f"p_{side}_mw", f"q_{side}_mvar"]
+        else:
+            cols = res_power_columns(element_type, side=0) + \
+                res_power_columns(element_type, side=1)
+            if element_type == "trafo3w":
+                cols += res_power_columns(element_type, side=2)
+            return cols
+    else:
+        raise ValueError(f'{element_type=} cannot be considered by res_power_columns().')

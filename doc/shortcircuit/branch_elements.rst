@@ -55,7 +55,8 @@ where the correction factor :math:`K_T` is defined in the standard as:
 where :math:`c_{max}` is the :ref:`voltage correction factor <c>` on the low voltage side of the transformer and :math:`x_T` is the transformer impedance relative to the
 rated values of the transformer.
 
-The ratio of the transformer is considered to be the nominal ratio, the tap changer positions are not considered according to the standard. 
+The ratio of the transformer is considered to be the nominal ratio, the tap changer positions are not considered according to the standard.
+When the superposition method is used, the impedance correction factor is not applied to transformers.
 
 Three-Winding Transformer
 --------------------------

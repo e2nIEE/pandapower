@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import pandapower as pp
-from pandapower import nets_equal
+from pandapower.toolbox import nets_equal
 from pandapower.test import add_grid_connection
 from pandapower.test.consistency_checks import runpp_with_consistency_checks, rundcpp_with_consistency_checks
 

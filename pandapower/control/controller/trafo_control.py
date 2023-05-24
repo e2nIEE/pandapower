@@ -88,10 +88,13 @@ class TrafoController(Controller):
 
         if self._read_write_flag == "single_index":
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
+            if self.side == "hv":
+                self.tap_side_coeff *= -1
             if self.tap_step_percent < 0:
                 self.tap_side_coeff *= -1
         else:
             self.tap_side_coeff = np.where(tap_side=='hv', 1, -1)
+            self.tap_side_coeff[self.side == "hv"] *= -1
             self.tap_side_coeff[self.tap_step_percent < 0] *= -1
 
     def _set_side_trafotable(self, side):

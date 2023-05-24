@@ -85,4 +85,4 @@ def test_min_6_meshed_grid(meshed_grid):
                         1.705064, 0.7136779, 0.9041679, 1.058954, 0.9327717], atol=1e-5)
 
 if __name__ == '__main__':
-    pytest.main(["test_meshing_detection.py", '-xs'])
+    pytest.main([__file__, "-xs"])

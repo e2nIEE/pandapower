@@ -4,6 +4,41 @@ Change Log
 [upcoming release] - 2023-..-..
 -------------------------------
 - [ADDED] feature: Function to run powerflow using the power-grid-model library
+- [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
+
+
+[2.13.1] - 2023-05-12
+-------------------------------
+- [FIXED] missing test files for CIM converter test in the release files
+
+
+[2.13.0] - 2023-05-12
+-------------------------------
+- [FIXED] another correction of shunt values in CIGRE HV
+- [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [ADDED] reporting for cim2pp converter
+- [ADDED] interfaces for repair functions for cim2pp converter
+- [ADDED] using PandaModels to optimize reactive power provision for loading reduction
+- [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
+- [FIXED] shape issues when calculating SC with the superposition method
+- [FIXED] typos in cim2pp tutorial
+- [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
+- [FIXED] bugfix in _get_bus_v_results where vm_pu was not set for DC power flow, leading to old results staying in the bus results table
+- [ADDED] simple cim2pp converter test
+- [CHANGED] run ac pf instead of dc pf in estimation when parameter fuse_buses_with_bb_switch != 'all'
+- [REMOVED] support for deprecated functions in :code:`groups.py`: :code:`check_unique_group_names`, :code:`append_to_group`
+
+
+[2.12.1] - 2023-04-18
+-------------------------------
+- [FIXED] add minimum Python version (3.8) explicitly to setup.py
+- [FIXED] remove :code:`import pandapower.test` from :code:`__init__`
+- [FIXED] matplotlib imports are optional (but required for plotting)
+- [FIXED] missing numpy int imports
+- [FIXED] documentation; needed change: group functions parameter :code:`raise_` is renamed by :code:`raise_error`
+
+[2.12.0] - 2023-04-06
+-------------------------------
 - [ADDED] feature: storing to json and restoring of nets with pandas multiindex dataframes and series
 - [ADDED] several 'marker size legends' sizes + a spec. color can be passed to weighted_marker_traces
 - [CHANGED] changed default optimization method in the estimation module from OptAlgorithm to "Newton-CG"
@@ -24,9 +59,16 @@ Change Log
 - [CHANGED] split toolbox.py -> better overview, avoiding circular imports
 - [CHANGED] aim for toolbox parameter name consistency: element_types, element_index (changes to mandatory parameters only)
 - [CHANGED] output type of toolbox function :code:`element_bus_tuples`: set -> list
+- [ADDED] import of internal packages such as control or converter
 - [ADDED] group consideration in toolbox replace element functionality
 - [ADDED] implementation of the "recycle" functionality for DC power flow and timeseries with run=pp.rundcpp
+- [ADDED] calculate branch results for current magnitude and angle, voltage magnitude and angle, active and reactive power for short circuit calculation
+- [ADDED] implement the superposition method ("Type C") for the short circuit calculation - consider pre-fault voltages
+- [FIXED] Trafo control stepping direction for side=="hv"
 - [ADDED] feature: protection - implementation of over-current relay
+- [FIXED] Shunt admittance modelling for 3 phase calculations
+- [ADDED] bulk creation function create_storages and create_wards
+- [ADDED] FACTS devices Shunt Var Compensator (SVC) and Thyristor-Controlled Series Capacitor (TCSC) as new pandapower elements net.svc and net.tcsc
 
 [2.11.1] - 2023-01-02
 -------------------------------

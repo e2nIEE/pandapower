@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 from pandapower.auxiliary import get_indices
 from pandapower.create import create_empty_network
-from pandapower.toolbox_general_issues import pp_elements, element_bus_tuples, compare_arrays
+from pandapower.toolbox.comparison import compare_arrays
+from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
 try:
     import pandaplan.core.pplog as logging
@@ -174,7 +175,7 @@ def reindex_buses(net, bus_lookup):
 
     # --- adapt group link
     if net.group.shape[0]:
-        for row in np.arange(net.group.shape[0], dtype=int)[
+        for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
 
@@ -290,7 +291,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
 
     # --- adapt group link
     if net.group.shape[0]:
-        for row in np.arange(net.group.shape[0], dtype=int)[
+        for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == element_type).values & \
                 net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
