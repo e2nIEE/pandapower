@@ -6,6 +6,7 @@ Change Log
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
 - [ADDED] comparison of "dict" attributes in :code:`pandapower.toolbox.comparisons.nets_equal` with :code:`DeepDiff`
 - [FIXED] loading net from xlsx with MultiIndex
+- [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
 
 
 [2.13.1] - 2023-05-12
