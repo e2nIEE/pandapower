@@ -488,8 +488,10 @@ class FromSerializableRegistry():
             ser.index.name = index_name
         if is_multiindex:
             try:
-                ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(
-                    literal_eval).tolist())
+                if len(ser) == 0:
+                    ser.index = pd.MultiIndex.from_tuples([], names=index_names, dtype=np.int64)
+                else:
+                    ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(literal_eval).tolist())
             except:
                 logger.warning("Converting index to multiindex failed.")
             else:
@@ -527,8 +529,10 @@ class FromSerializableRegistry():
             df.columns.name = column_name
         if is_multiindex:
             try:
-                df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(
-                    literal_eval).tolist())
+                if len(df) == 0:
+                    df.index = pd.MultiIndex.from_frame(pd.DataFrame(columns=index_names, dtype=np.int64))
+                else:
+                    df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(literal_eval).tolist())
                 # slower alternative code:
                 # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
             except:
@@ -538,8 +542,10 @@ class FromSerializableRegistry():
                     df.index.names = index_names
         if is_multicolumn:
             try:
-                df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(
-                    literal_eval).tolist())
+                if len(df) == 0:
+                    df.columns = pd.MultiIndex.from_frame(pd.DataFrame(columns=column_names, dtype=np.int64))
+                else:
+                    df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(literal_eval).tolist())
             except:
                 logger.warning("Converting columns to multiindex failed.")
             else:
