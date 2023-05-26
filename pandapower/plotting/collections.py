@@ -1039,7 +1039,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=No
     return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgen_type, sgens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
+def create_sgen_collection(net, sgen_type, sgens=None, size=1., infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.

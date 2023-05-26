@@ -10,10 +10,6 @@ try:
     import matplotlib.path as mpath
     import matplotlib.transforms as mtransforms
 
-
-    import math
-
-
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -27,7 +23,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
 
 def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
     """
@@ -199,6 +194,7 @@ def load_patches(node_coords, size, angles, **kwargs):
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-all_angles[i] - np.pi,
                                     fc=facecolors[i], ec=edgecolors[i]))
         lines.append((node_geo, p3))
+
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
@@ -244,7 +240,7 @@ def gen_patches(node_coords, size, angles, **kwargs):
     gen_printed = True
 
 
-def sgen_patches(node_coords, size, angles,sgen_type,load_printed= None, **kwargs):
+def sgen_patches(node_coords, size, angles,sgen_type, **kwargs):
     """
     Creation function of patches for static generators.
 
