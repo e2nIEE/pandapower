@@ -313,7 +313,8 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+    index_values = df.index.get_level_values(0) if isinstance(df.index, pd.MultiIndex) else df.index.values
+    return np.int64(0) if len(df) == 0 else index_values.max() + 1
 
 
 class ppException(Exception):
