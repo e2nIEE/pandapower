@@ -81,6 +81,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - "gs" gauss-seidel (pypower implementation)
                 - "fdbx" fast-decoupled (pypower implementation)
                 - "fdxb" fast-decoupled (pypower implementation)
+                - "helm" holomorphic embedded loadflow method
 
         **calculate_voltage_angles** (str or bool, "auto") - consider voltage angles in loadflow calculation
 
