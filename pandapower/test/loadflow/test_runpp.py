@@ -13,7 +13,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.control
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available, helmpy_available
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
     example_simple, simple_four_bus_system, example_multivoltage
 from pandapower.pd2ppc import _pd2ppc
@@ -503,6 +503,41 @@ def test_bsfw_algorithm():
     va_nr = copy.copy(net.res_bus.va_degree)
 
     pp.runpp(net, algorithm='bfsw')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_simple():
+    import pandapower.networks as nw
+    net = nw.case14()
+
+    pp.runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    pp.runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_complex():
+    import pandapower.networks as nw
+    # net = nw.mv_oberrhein()
+    net = nw.case118()
+
+    pp.runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    pp.runpp(net, algorithm='helm')
     vm_alg = net.res_bus.vm_pu
     va_alg = net.res_bus.va_degree
 
