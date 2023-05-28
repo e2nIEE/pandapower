@@ -52,6 +52,13 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
+
+try:
+    from helmpy.core import helm
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -1311,7 +1318,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 calculate_voltage_angles = True
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
-                             "fdbx": 30}
+                             "fdbx": 30, "helm": 100}
     with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
                  len(net.tcsc.query("in_service & controllable")) > 0
     if max_iteration == "auto":
@@ -1351,9 +1358,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
                 false_slack_weight_elms) + "'.")
-        if algorithm != 'nr':
+        if algorithm != 'nr' and algorithm != 'helm':
             raise NotImplementedError(
-                'Distributed slack is only implemented for Newton Raphson algorithm.')
+                'Distributed slack is only implemented for Newton Raphson algorithm and HELM.')
 
     if tdpf:
         if algorithm != 'nr':
