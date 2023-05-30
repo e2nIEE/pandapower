@@ -1318,7 +1318,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 calculate_voltage_angles = True
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
-                             "fdbx": 30, "helm": 100}
+                             "fdbx": 30, "helm": 40}
     with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
                  len(net.tcsc.query("in_service & controllable")) > 0
     if max_iteration == "auto":
