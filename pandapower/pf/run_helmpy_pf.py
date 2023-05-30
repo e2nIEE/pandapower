@@ -73,10 +73,13 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
     case = CaseData(name='pandapower', N=N, N_generators=N_generators)
 
     case.N_branches = N_branches
-    case.Pd[:] = buses[:, PD]/100
-    case.Qd[:] = buses[:, QD]/100
-    case.Shunt[:] = buses[:, BS].copy()*1j + buses[:, GS]
+    case.Pd[:] = buses[:, PD] / 100
+    case.Qd[:] = buses[:, QD] / 100
+
+    # weird but has to be done in this order. Otherwise, the values are wrong...
+    case.Shunt[:] = (buses[:, BS].copy()*1j + buses[:, GS])
     case.Yshunt[:] = np.copy(case.Shunt)
+    case.Shunt[:] = case.Shunt[:] / 100
 
     for i in range(N):
         case.Number_bus[buses[i][BUS_I]] = i
@@ -102,8 +105,6 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
     branches_df = pd.DataFrame(branches)
 
     process_branches(branches_df, N_branches, case)
-#    branches_df.loc[:, 0] = branches_df.loc[:, 0] + 1
-#    branches_df.loc[:, 1] = branches_df.loc[:, 1] + 1
 
     for i in range(N):
         case.branches_buses[i].sort()    # Variable that saves the branches
