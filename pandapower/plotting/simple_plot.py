@@ -183,7 +183,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
     total_patches = len(get_connected_elements_dict(net, element_types=["sgen", "gen", "load"], buses=1)) + len(
         net.sgen.type.unique())
-    patch_count_unique = []
+    patch_count_unique = [] #Unique patch on each node
     for i in range(len(net.bus)):
 
         if plot_sgens and len(net.sgen):
