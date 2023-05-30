@@ -1414,6 +1414,9 @@ class CimConverter:
             # remove elements with mor than one tap changer per trafo
             trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
                 ~trafo_df.RatioTapChangerTable.isna())]
+            # remove elements with mor than one tap changer per trafo
+            trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
+                ~trafo_df.RatioTapChangerTable.isna())]
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
                 trafo_df[one_item].fillna(trafo_df[one_item + '_mv'], inplace=True)

@@ -8,6 +8,7 @@ Change Log
 - [FIXED] loading net from xlsx with MultiIndex
 - [FIXED] numba version check
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
+- [FIXED] some fixes and small updates at cim2pp
 
 
 [2.13.1] - 2023-05-12
