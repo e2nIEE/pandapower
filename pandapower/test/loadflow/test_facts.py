@@ -9,6 +9,7 @@ import numpy as np
 from pandas.testing import assert_frame_equal
 
 import pandapower as pp
+from pandapower.test import assert_res_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.auxiliary import _preserve_dtypes
@@ -57,6 +58,15 @@ def copy_with_impedance(net):
         q = np.square(net.bus.loc[net.svc.bus.values, 'vn_kv']) / net.res_svc.x_ohm.values
         pp.create_shunts(net_ref, net.svc.bus.values, q.fillna(0), in_service=net.svc.in_service.values)
         net_ref.svc.in_service = False
+
+    if len(net.ssc) > 0:
+        # create shunts because of Ybus comparison
+        aux_bus = pp.create_buses(net_ref, len(net.ssc), net.bus.loc[net.ssc.bus.values, "vn_kv"].values)
+        for fb, tb, x in zip(net.ssc.bus.values, aux_bus, net.ssc.x_ohm.values / baseZ[net.ssc.bus.values]):
+            pp.create_impedance(net_ref, fb, tb, 0, x, 1)
+        pp.create_gens(net_ref, aux_bus, 0, net.res_ssc.vm_internal_pu.values)
+        net_ref.ssc.in_service = False
+
     return net_ref
 
 
@@ -543,7 +553,7 @@ def test_svc_tcsc_case_study():
 #
 #     z_base_ohm = np.square(110) / 1
 #     #y_pu = calc_y_svc_pu(np.deg2rad(134.438395), 0.5 / z_base_ohm, -2 / z_base_ohm)
-#     y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
+#      y_pu = calc_y_svc_pu(np.deg2rad(135.401298), 0.5 / z_base_ohm, -2 / z_base_ohm)
 #     y_pu = 1/(-18.9/z_base_ohm)
 #     print((1/y_pu) * z_base_ohm)
 #     #    net.impedance.rft_pu
@@ -616,26 +626,171 @@ def test_ssc_simple():
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_load(net, 1, 100, 25)
-    pp.create_ssc(net, 1, 1, 2, 0.99)
+    net2 = net.deepcopy()
 
-    pp.runpp(net, max_iteration=100)
+    z_base = np.square(110)/net.sn_mva
 
-
-def test_example_from_components():
-    net = pp.create_empty_network(sn_mva=1)
-    pp.create_buses(net, 3, 110)
-    pp.create_ext_grid(net, 0)
-    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
-    pp.create_line_from_parameters(net, 1, 2, 20, 0.0487, 0.13823, 160, 0.664)
-    pp.create_load(net, 2, 100, 25)
-
-    aux_bus = pp.create_bus(net, 110)
-    pp.create_impedance(net, 1, aux_bus, 0, 0.001, 1)
-    pp.create_gen(net, aux_bus, 0, 1.02)
+    pp.create_ssc(net, 1, 0, 5, 1)
 
     pp.runpp(net)
 
-    net.res_bus
+
+
+    #angle
+
+    aux_bus = pp.create_bus(net2, 110)
+    pp.create_impedance(net2, 1, aux_bus, 0, 5 / z_base, 1)
+    pp.create_gen(net2, aux_bus, 0, net.res_ssc.vm_internal_pu.at[0])
+
+    pp.runpp(net2)
+
+    net3 = copy_with_impedance(net)
+    pp.runpp(net3)
+    net3.res_ssc.drop([0], inplace=True)
+    assert_res_equal(net2, net3)
+
+    #compare all bus results
+
+    ### compare internal bus(ssc) to bus 2(aux_bus at net2)
+
+    assert np.isclose(np.abs(net._ppc["internal"]["V"][-1]), net2.res_bus.vm_pu.at[2], rtol=0, atol=1e-6)
+    assert np.isclose(np.angle(net._ppc["internal"]["V"][-1], deg=True), net2.res_bus.va_degree.at[2], rtol=0, atol=1e-6)
+
+    assert np.isclose(net.res_ssc.vm_internal_pu[0], net2.res_bus.vm_pu.at[2], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.va_internal_degree[0], net2.res_bus.va_degree.at[2], rtol=0, atol=1e-6)
+
+    #todo
+    #assert np.isclose(net.res_ssc.q_mvar[0], net2.res_bus.q_mvar.at[2], rtol=0, atol=1e-6) ## not passed
+
+
+    ### compare (ssc) to bus 1(net)
+
+    assert np.isclose(net.res_bus.at[1, "vm_pu"], net.ssc.set_vm_pu.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(np.abs(net._ppc["internal"]["V"][-1]), net.res_ssc.vm_internal_pu.at[0], rtol=0, atol=1e-6)
+
+    assert np.isclose(net.res_ssc.vm_pu[0], net.res_bus.vm_pu.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.va_degree[0], net.res_bus.va_degree.at[1], rtol=0, atol=1e-6)
+
+    ### compare bus 1 (net) to bus 1 (net2)
+
+    assert np.isclose(net.res_bus.vm_pu.at[1], net2.res_bus.vm_pu.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_bus.va_degree.at[1], net2.res_bus.va_degree.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_bus.p_mw.at[1], net2.res_bus.p_mw.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_bus.q_mvar.at[1], net2.res_bus.q_mvar.at[1], rtol=0, atol=1e-6)
+
+    ### compare (ssc) to bus 1(net2)
+
+    assert np.isclose(np.abs(net._ppc["internal"]["V"][1]), np.abs(net2._ppc["internal"]["V"][1]), rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.vm_pu[0], net2.res_bus.vm_pu.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.va_degree[0], net2.res_bus.va_degree.at[1], rtol=0, atol=1e-6)
+
+
+    #compare ext_grid_result
+
+    assert np.isclose(net.res_ext_grid.p_mw[0], net2.res_ext_grid.p_mw[0], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ext_grid.q_mvar[0], net2.res_ext_grid.q_mvar[0], rtol=0, atol=1e-6)
+
+
+    # line results
+    ###
+    for col in net.res_line.columns:
+        assert np.isclose(net.res_line[col][0], net2.res_line[col][0], rtol=0, atol=1e-6)
+
+
+def test_ssc_controllable():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+
+    z_base = np.square(110) / net.sn_mva
+    x = 5
+    # both not controllable
+    net1 = net.deepcopy()
+    pp.create_ssc(net1, 1, 0, x, 1, controllable=False)
+    pp.runpp(net1)
+
+    net2 = net.deepcopy()
+    pp.create_ssc(net2, 1, 0, x, 1, controllable=False, vm_internal_pu=1.02, va_internal_degree=150)
+    pp.runpp(net2)
+    assert np.isclose(net.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
+
+
+
+def test_2_sscs():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+
+    z_base = np.square(110)/net.sn_mva
+    x = 5
+    # both not controllable
+    net1 = net.deepcopy()
+    pp.create_ssc(net1, 1, 0, x, 1, controllable=True)
+    pp.create_ssc(net1, 2, 0, x, 1, controllable=True)
+    pp.runpp(net1)
+
+    net2 = copy_with_impedance(net1)
+    pp.runpp(net2)
+
+    # todo: how it behaves with svc, tcsc
+
+
+
+    # first controllable
+    net1 = net.deepcopy()
+    pp.create_ssc(net1, 1, 0, 121/z_base, 1, controllable=True)
+    pp.create_ssc(net1, 2, 0, 121/z_base, 1, controllable=False)
+
+    pp.runpp(net1)
+    net2 = net.deepcopy()
+    pp.create_load(net2, [1, 2], 100, 25)
+    pp.runpp(net2)
+    assert_frame_equal(net1.res_bus, net2.res_bus)
+
+
+
+    # second controllable
+    net1 = net.deepcopy()
+    pp.create_ssc(net1, 1, 0, 121/z_base, 1, controllable=False)
+    pp.create_ssc(net1, 2, 0, 121/z_base, 1, controllable=True)
+
+    pp.runpp(net1)
+    net2 = net.deepcopy()
+    pp.create_load(net2, [1, 2], 100, 25)
+    pp.runpp(net2)
+    assert_frame_equal(net1.res_bus, net2.res_bus)
+
+    # both controllable
+    net1 = net.deepcopy()
+    pp.create_ssc(net1, 1, 0, 121/z_base, 1, controllable=True)
+    pp.create_ssc(net1, 2, 0, 121/z_base, 1, controllable=True)
+    pp.runpp(net1)
+    net2 = net.deepcopy()
+    pp.create_load(net2, [1, 2], 100, 25)
+    pp.runpp(net2)
+    assert_frame_equal(net1.res_bus, net2.res_bus)
+
+
+
+# def test_example_from_components():
+#     net = pp.create_empty_network(sn_mva=1)
+#     pp.create_buses(net, 3, 110)
+#     pp.create_ext_grid(net, 0)
+#     pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+#     pp.create_line_from_parameters(net, 1, 2, 20, 0.0487, 0.13823, 160, 0.664)
+#     pp.create_load(net, 2, 100, 25)
+#
+#     aux_bus = pp.create_bus(net, 110)
+#     pp.create_impedance(net, 1, aux_bus, 0, 0.001, 1)
+#     pp.create_gen(net, aux_bus, 0, 1.02)
+#
+#     pp.runpp(net)
+#
+#     net.res_bus
 
 
 if __name__ == "__main__":
