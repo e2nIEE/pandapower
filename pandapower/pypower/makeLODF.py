@@ -21,7 +21,7 @@ except ImportError: # pragma: no cover
 from .idx_brch import F_BUS, T_BUS
 
 
-@jit
+@jit(nopython=True)
 def update_LODF_diag(LODF): # pragma: no cover
     for ix in range(LODF.shape[0]):
         # To preserve the data type of diagnol elments
