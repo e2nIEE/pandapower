@@ -11,6 +11,7 @@ Change Log
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
 
 
 [2.13.1] - 2023-05-12
