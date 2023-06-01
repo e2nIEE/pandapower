@@ -11,6 +11,7 @@ Change Log
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [ADDED] improved documentation for short-circuit calculation (description of the function and the element results)
 
 
 [2.13.1] - 2023-05-12
