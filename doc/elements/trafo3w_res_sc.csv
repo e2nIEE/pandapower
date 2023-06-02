@@ -1,0 +1,4 @@
+**Parameter**;**Datatype**;**Explanation**
+ikss_hv_ka ;float;magnitude of the initial SC current at the high voltage side of the transformer [kA]
+ikss_mv_ka ;float;magnitude of the initial SC current at the medium voltage side of the transformer [kA]
+ikss_lv_ka ;float;magnitude of the initial SC current at the low voltage side of the transformer [kA]
