@@ -43,7 +43,7 @@ from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
-    from numba._version import version_json as numba_version
+    from numba._version import get_versions
 except ImportError:
     from .pf.no_numba import jit
 
@@ -937,7 +937,7 @@ def _check_if_numba_is_installed(numba):
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
-        if Version(numba_version) < Version("0.25"):
+        if Version(get_versions()['version']) < Version("0.25"):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False
