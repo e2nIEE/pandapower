@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] feature: Function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
 - [ADDED] comparison of "dict" attributes in :code:`pandapower.toolbox.comparisons.nets_equal` with :code:`DeepDiff`
 - [FIXED] loading net from xlsx with MultiIndex
