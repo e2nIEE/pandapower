@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
-    VM, VA, CID, CZD, bus_cols, REF
+    VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
     SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
@@ -296,7 +296,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
+    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=np.float64)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
 
@@ -304,7 +304,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
+        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
@@ -578,6 +578,7 @@ def _build_ssc_ppc(net, ppc, mode):
         t = length
 
         bus = bus_lookup[net.ssc["bus"].values]
+        controllable = net["ssc"]["controllable"].values.astype(bool)
 
         ssc = ppc["ssc"]
         baseV = ppc["bus"][bus, BASE_KV]
@@ -589,12 +590,13 @@ def _build_ssc_ppc(net, ppc, mode):
         ssc[f:t, SSC_R] = net["ssc"]["r_ohm"].values / baseZ
         ssc[f:t, SSC_X] = net["ssc"]["x_ohm"].values / baseZ
         ssc[f:t, SSC_SET_VM_PU] = net["ssc"]["set_vm_pu"].values
-        ssc[f:t, SSC_X_CONTROL_VA] = np.deg2rad(net["ssc"]["internal_va_degree"].values)
-        ssc[f:t, SSC_X_CONTROL_VM] = net["ssc"]["internal_vm_pu"].values
+        ssc[f:t, SSC_X_CONTROL_VA] = np.deg2rad(net["ssc"]["va_internal_degree"].values)
+        ssc[f:t, SSC_X_CONTROL_VM] = net["ssc"]["vm_internal_pu"].values
 
         ssc[f:t, SSC_STATUS] = net["ssc"]["in_service"].values
-        ssc[f:t, SSC_CONTROLLABLE] = net["ssc"]["controllable"].values.astype(bool) & \
-                                     net["ssc"]["in_service"].values.astype(bool)
+        ssc[f:t, SSC_CONTROLLABLE] = controllable & net["ssc"]["in_service"].values.astype(bool)
+        ppc["bus"][aux["ssc"][~controllable], BUS_TYPE] = PV
+        ppc["bus"][aux["ssc"][~controllable], VM] = net["ssc"].loc[~controllable, "vm_internal_pu"].values
 
 
 # Short circuit relevant routines

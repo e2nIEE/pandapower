@@ -165,8 +165,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("bus", "u4"),
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
-                  ("internal_vm_pu", "f8"),
-                  ("internal_va_degree", "f8"),
+                  ("vm_internal_pu", "f8"),
+                  ("va_internal_degree", "f8"),
                   ("set_vm_pu", "f8"),
                   ("controllable", "bool"),
                   ("in_service", "bool")],
@@ -387,8 +387,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_ssc":   [("q_mvar", "f8"),
-                             ("internal_vm_pu", "f8"),
-                             ("internal_va_degree", "f8"),
+                             ("vm_internal_pu", "f8"),
+                             ("va_internal_degree", "f8"),
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
@@ -3862,7 +3862,7 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power \
+    min_angle_degree, max_angle_degree are placeholders (ignored in the Newton-Raphson power \
         flow at the moment).
 
     INPUT:
@@ -3870,9 +3870,9 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 
         **bus** (int) - connection bus of the svc
 
-        **x_l_ohm** (float) - impedance of the reactor component of svc
+        **x_l_ohm** (float) - inductive reactance of the reactor component of svc
 
-        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+        **x_cvar_ohm** (float) - capacitive reactance of the fixed capacitor component of svc
 
         **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
 
@@ -3913,30 +3913,34 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
     return index
 
 
-def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal_va_degree=0.,
+def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_internal_degree=0.,
                name=None, controllable=True, in_service=True, index=None, **kwargs):
     """
-    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
+    Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
         at the connected bus
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power \
-        flow at the moment).
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **bus** (int) - connection bus of the svc
+        **bus** (int) - connection bus of the ssc
 
-        **x_l_ohm** (float) - impedance of the reactor component of svc
+        **r_ohm** (float) - resistance of the coupling transformer component of ssc
 
-        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of svc
+        **x_ohm** (float) - reactance of the coupling transformer component of ssc
 
         **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
 
-        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
-            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+        **vm_internal_pu (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
+                                    if the amplitude of the VSC output voltage is increased above that of the ac system
+                                    voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
+                                    system, decreasing the output voltage below that of the ac system leads to the VSC
+                                    consuming reactive power acting as reactor.(source PhD Panosyan)
+
+
+        **va_internal_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
 
     OPTIONAL:
         **name** (list of strs, None) - element name
@@ -3949,12 +3953,8 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal
         **index** (int, None) - Force a specified ID if it is available. If None, the
             index one higher than the highest already existing index is selected.
 
-        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
-
-        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
-
     OUTPUT:
-        **index** (int) - The unique ID of the created svc
+        **index** (int) - The unique ID of the created ssc
 
     """
 
@@ -3963,9 +3963,9 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal
     index = _get_index_with_check(net, "ssc", index)
 
     entries = dict(zip([
-        "name", "bus", "r_ohm", "x_ohm", "set_vm_pu", "internal_vm_pu", "internal_va_degree",
+        "name", "bus", "r_ohm", "x_ohm", "set_vm_pu", "vm_internal_pu", "va_internal_degree",
         "controllable", "in_service"],
-        [name, bus, r_ohm, x_ohm, set_vm_pu, internal_vm_pu, internal_va_degree, controllable, in_service]))
+        [name, bus, r_ohm, x_ohm, set_vm_pu, vm_internal_pu, va_internal_degree, controllable, in_service]))
     _set_entries(net, "ssc", index, **entries, **kwargs)
 
     return index

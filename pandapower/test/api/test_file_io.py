@@ -595,5 +595,12 @@ def test_json_list_of_stuff():
     assert text == loaded_list[3]
 
 
+def test_multi_index():
+    df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
+    df.set_index(["a", "b"], inplace=True)
+    df2 = pp.from_json_string(pp.to_json(df))
+    assert_frame_equal(df, df2)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
