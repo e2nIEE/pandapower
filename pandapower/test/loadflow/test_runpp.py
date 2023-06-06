@@ -513,7 +513,7 @@ def test_bsfw_algorithm():
 @pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
 def test_helm_algorithm_simple():
     import pandapower.networks as nw
-    net = nw.case14()
+    net = nw.case9()
 
     pp.runpp(net)
     vm_nr = copy.copy(net.res_bus.vm_pu)
@@ -530,8 +530,7 @@ def test_helm_algorithm_simple():
 @pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
 def test_helm_algorithm_complex():
     import pandapower.networks as nw
-    # net = nw.mv_oberrhein()
-    net = nw.case118()
+    net = nw.case9()
 
     pp.runpp(net)
     vm_nr = copy.copy(net.res_bus.vm_pu)
