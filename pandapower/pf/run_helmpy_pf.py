@@ -1,7 +1,7 @@
 from time import perf_counter
 import numpy as np
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, GS, BS, BUS_I, VM, VA
-from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
+from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG, MBASE
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
@@ -67,6 +67,8 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
     generators = ppci['gen'].copy()
     branches = ppci['branch'].copy()
 
+    generators[:, MBASE] = 100.
+
     N = len(buses)
     N_generators = len(generators)
     N_branches = len(branches)
@@ -113,7 +115,7 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
     for i in range(N):
         if case.Yshunt[i].real != 0:
             case.conduc_buses[i] = True
-        case.Y[i,i] += case.Yshunt[i]
+        case.Y[i, i] += case.Yshunt[i]
         if case.phase_barras[i]:
             for k in range(len(case.phase_dict[i][0])):
                 case.Y[i, case.phase_dict[i][0][k]] += case.phase_dict[i][1][k]
