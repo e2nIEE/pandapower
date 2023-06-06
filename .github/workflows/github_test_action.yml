@@ -37,7 +37,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install .["all"]
           if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' && matrix.python-version != '3.11' }}; then python -m pip install numba; fi
+          if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
           if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
       - name: Install Julia
         if: ${{ matrix.python-version == '3.9' }}
@@ -83,7 +83,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
         pip install matplotlib
-        if ${{ matrix.python-version != '3.11' }}; then python -m pip install numba; fi
+        if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
     - name: Install pandapipes and simbench
       run: |
         python -m pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes

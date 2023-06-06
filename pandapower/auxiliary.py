@@ -34,7 +34,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import numbers
-from packaging import version
+from packaging.version import Version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
@@ -45,7 +45,7 @@ from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
-    from numba._version import version_version as numba_version
+    from numba import __version__ as numba_version
 except ImportError:
     from .pf.no_numba import jit
 
@@ -315,7 +315,8 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+    index_values = df.index.get_level_values(0) if isinstance(df.index, pd.MultiIndex) else df.index.values
+    return np.int64(0) if len(df) == 0 else index_values.max() + 1
 
 
 class ppException(Exception):
@@ -942,7 +943,7 @@ def _check_if_numba_is_installed(numba):
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
-        if version.parse(numba_version) < version.parse("0.2.5"):
+        if Version(numba_version) < Version("0.25"):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False

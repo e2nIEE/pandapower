@@ -53,15 +53,17 @@ class LogLevel(enum.Enum):
 
 
 class Report:
-    def __init__(self, message: str, code: ReportCode, level: LogLevel):
-        self.timestamp = datetime.datetime.now().isoformat()
+    def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime = None):
+        self.timestamp = datetime.datetime.now()
+        if timestamp is not None:
+            self.timestamp = timestamp
         self.message = message
         self.code = code
         self.level = level
 
     def to_dict(self) -> Dict:
         return {
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp.isoformat(),
             "message": self.message,
             "code": self.code.value,
             "level": self.level.value

@@ -103,13 +103,13 @@ jobs:
         if: matrix.os  == 'windows-latest'
         run: |
           if ( '${{ matrix.python-version }}'  -eq '3.9' ) { python -m pip install pypower }
-          if ( '${{ matrix.python-version }}'  -ne '3.9' -and '${{ matrix.python-version }}' -ne '3.11' ) { python -m pip install numba }
+          if ( '${{ matrix.python-version }}'  -ne '3.9' ) { python -m pip install numba }
           if ( '${{ matrix.python-version }}'  -eq '3.8' -or '${{ matrix.python-version }}'  -eq '3.10' ) { python -m pip install lightsim2grid }
       - name: Install specific dependencies (Ubuntu)
         if: matrix.os  == 'ubuntu-latest'
         run: |
           if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' && matrix.python-version != '3.11' }}; then python -m pip install numba; fi
+          if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
           if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
       - name: Install Julia
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
