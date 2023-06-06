@@ -165,8 +165,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("bus", "u4"),
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
-                  ("internal_vm_pu", "f8"),
-                  ("internal_va_degree", "f8"),
+                  ("vm_internal_pu", "f8"),
+                  ("va_internal_degree", "f8"),
                   ("set_vm_pu", "f8"),
                   ("controllable", "bool"),
                   ("in_service", "bool")],
@@ -387,8 +387,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_ssc":   [("q_mvar", "f8"),
-                             ("internal_vm_pu", "f8"),
-                             ("internal_va_degree", "f8"),
+                             ("vm_internal_pu", "f8"),
+                             ("va_internal_degree", "f8"),
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
@@ -3913,7 +3913,7 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
     return index
 
 
-def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal_va_degree=0.,
+def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_internal_degree=0.,
                name=None, controllable=True, in_service=True, index=None, **kwargs):
     """
     Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
@@ -3933,14 +3933,14 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal
 
         **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
 
-        **internal_vm_pu (float) - The voltage magnitude of the voltage source converter VSC at the ssc component.
+        **vm_internal_pu (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
                                     if the amplitude of the VSC output voltage is increased above that of the ac system
                                     voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
                                     system, decreasing the output voltage below that of the ac system leads to the VSC
                                     consuming reactive power acting as reactor.(source PhD Panosyan)
 
 
-        **internal_va_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
+        **va_internal_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
 
     OPTIONAL:
         **name** (list of strs, None) - element name
@@ -3963,9 +3963,9 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., internal_vm_pu=1., internal
     index = _get_index_with_check(net, "ssc", index)
 
     entries = dict(zip([
-        "name", "bus", "r_ohm", "x_ohm", "set_vm_pu", "internal_vm_pu", "internal_va_degree",
+        "name", "bus", "r_ohm", "x_ohm", "set_vm_pu", "vm_internal_pu", "va_internal_degree",
         "controllable", "in_service"],
-        [name, bus, r_ohm, x_ohm, set_vm_pu, internal_vm_pu, internal_va_degree, controllable, in_service]))
+        [name, bus, r_ohm, x_ohm, set_vm_pu, vm_internal_pu, va_internal_degree, controllable, in_service]))
     _set_entries(net, "ssc", index, **entries, **kwargs)
 
     return index

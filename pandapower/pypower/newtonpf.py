@@ -218,7 +218,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # evaluate F(x0)
 
     F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
-    if any_facts_controllable or any_ssc:
+    if any_facts_controllable or any_ssc_controllable:
         mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                        tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb, ssc_tb,
                                        ssc_controllable, ssc_set_vm_pu, Ybus_ssc, F, pq_lookup)
@@ -320,7 +320,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                   pq_lookup, num_svc_controllable, num_tcsc)
             J = J + J_m_tcsc
         if any_ssc:
-            J_m_ssc = create_J_modification_ssc(V, Ybus_ssc, x_control_ssc, svc_controllable, tcsc_controllable,
+            J_m_ssc = create_J_modification_ssc(J, V, Ybus_ssc, x_control_ssc, svc_controllable, tcsc_controllable,
                                                 ssc_controllable, ssc_y_pu, ssc_fb, ssc_tb,
                                                 refpvpq if dist_slack else pvpq, pq, pvpq_lookup, pq_lookup,
                                                 num_svc_controllable, num_tcsc_controllable, num_ssc)
@@ -370,7 +370,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
 
         F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
-        if any_facts_controllable or any_ssc:
+        if any_facts_controllable or any_ssc_controllable:
             mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                            tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb, ssc_tb,
                                            ssc_controllable, ssc_set_vm_pu, Ybus_ssc, F, pq_lookup)
@@ -385,8 +385,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             F = r_[F, F_t]
 
         converged = _check_for_convergence(F, tol)
-
-    print("converged:", converged)
 
     # write q_svc, x_control in ppc["bus"] and then later calculate q_mvar for net.res_shunt
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
