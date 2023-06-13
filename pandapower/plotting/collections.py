@@ -222,7 +222,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     return lc
 
 
-def _create_node_element_collection(node_coords, patch_maker,sgen_type = None , size=1., infos=None,
+def _create_node_element_collection(node_coords, patch_maker,sgen_type = None , size=1., angle_list = None, infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
                                     patch_facecolor="w", patch_edgecolor="k", line_color="k",
                                     **kwargs):
@@ -278,7 +278,7 @@ def _create_node_element_collection(node_coords, patch_maker,sgen_type = None , 
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
     lines, polys, popped_keywords = patch_maker(
-        node_coords, size, angles, sgen_type=sgen_type, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
+        node_coords, size, angles, sgen_type=sgen_type, angle_list=angle_list, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
@@ -959,7 +959,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=None, picker=False,
+def create_load_collection(net, loads=None, size=1.,load_angle_list = None, patch_count = None, infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
@@ -995,12 +995,12 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     color = kwargs.pop("color", "k")
 
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size, infos=infos, orientation=orientation,
+        node_coords, load_patches, size=size,angle_list=load_angle_list,  infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return load_pc, load_lc
 
 
-def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=None, picker=False,
+def create_gen_collection(net, gens=None, size=1.,gen_angle_list=None,patch_count=None, infofunc=None, orientation=None, picker=False,
                           **kwargs):
     """
     Creates a matplotlib patch collection of pandapower gens.
@@ -1034,12 +1034,12 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=No
     color = kwargs.pop("color", "k")
 
     gen_pc, gen_lc = _create_node_element_collection(
-        node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
+        node_coords, gen_patches, size=size,angle_list=gen_angle_list,  infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgen_type, sgens=None, size=1., infofunc=None, orientation=None, picker=False,
+def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list = None, infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.
@@ -1072,7 +1072,7 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1., infofunc=None, o
 
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches, sgen_type = sgen_type, size=size, infos=infos, orientation=orientation,
+        node_coords, sgen_patches, sgen_type = sgen_type, size=size,angle_list=sgen_angle_list, infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return sgen_pc, sgen_lc
 

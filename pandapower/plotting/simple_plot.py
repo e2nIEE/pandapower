@@ -18,6 +18,7 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower import get_connected_elements_dict
 import pandapower as pp
+import math
 
 try:
     import pandaplan.core.pplog as logging
@@ -183,26 +184,53 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
     total_patches = len(get_connected_elements_dict(net, element_types=["sgen", "gen", "load"], buses=1)) + len(
         net.sgen.type.unique())
-    patch_count_unique = [] #Unique patch on each node
-    for i in range(len(net.bus)):
+
+    patch_count_unique = {}
+
+    for i in range(1, len(net.bus)):  # Start from index 1 instead of 0
+        sgen_count = 0
+        gen_count = 0
+        load_count = 0
 
         if plot_sgens and len(net.sgen):
-            patch_count_unique.insert(i, (len(net.sgen[net.sgen.bus == i].type.unique())))
-            sgen_type = net.sgen.type
-            sgc = create_sgen_collection(net, sgen_type, size=sgen_size, orientation=orientation)
-            collections.append(sgc)
-        if plot_gens and len(net.gen):
-            patch_count_unique[i] += (len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=i)))
-            gc = create_gen_collection(net, size=gen_size,orientation=orientation)
-            collections.append(gc)
-        if plot_loads and len(net.load):
-            patch_count_unique[i] += (len(pp.get_connected_elements_dict(net, element_types=["load"], buses=i)))
-            lc = create_load_collection(net, size=load_size,orientation=orientation)
-            collections.append(lc)
+            sgen_count = len(net.sgen[net.sgen.bus == i].type.unique())
 
-        if len(net.switch):
-            bsc = create_bus_bus_switch_collection(net, size=switch_size)
-            collections.append(bsc)
+        if plot_gens and len(net.gen):
+            gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=i))
+
+        if plot_loads and len(net.load):
+            load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=i))
+
+        total_count = sgen_count + gen_count + load_count
+
+        patch_count_unique[i] = {
+            'sgen': [j * (2 * math.pi / total_count) for j in range(sgen_count)],
+            'gen': [j * (2 * math.pi / total_count) + sgen_count * (2 * math.pi / total_count) for j in
+                    range(gen_count)],
+            'load': [j * (2 * math.pi / total_count) + (sgen_count + gen_count) * (2 * math.pi / total_count) for j in
+                     range(load_count)]
+        }
+
+        sgen_angle_list = [value["sgen"] for value in patch_count_unique.values() if "sgen" in value]
+        gen_angle_list =  [value["gen"] for value in patch_count_unique.values() if "gen" in value]
+        load_angle_list = [value["load"] for value in patch_count_unique.values() if "load" in value]
+    if plot_sgens and len(net.sgen):
+
+        sgen_type = net.sgen.type
+        sgc = create_sgen_collection(net, sgen_type, size=sgen_size,sgen_angle_list = sgen_angle_list, orientation=orientation)
+        collections.append(sgc)
+    if plot_gens and len(net.gen):
+
+        gc = create_gen_collection(net, size=gen_size,gen_angle_list = gen_angle_list,orientation=orientation)
+        collections.append(gc)
+    if plot_loads and len(net.load):
+
+        lc = create_load_collection(net, size=load_size,load_angle_list = load_angle_list,orientation=orientation)
+        collections.append(lc)
+
+    if len(net.switch):
+        bsc = create_bus_bus_switch_collection(net, size=switch_size)
+        collections.append(bsc)
 
     ax = draw_collections(collections, ax=ax)
     if show_plot:
