@@ -9,10 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import uuid
-import warnings
-from packaging.version import Version
 
-from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence, create_group
@@ -78,14 +75,10 @@ def drop_group_and_elements(net, index):
 # ====================================
 
 
-def append_to_group(net, index, element_types, elements, reference_columns=None):
-    msg = ("The name of the function append_to_group() is deprecated with pp.version >= 2.12. "
-           "Use attach_to_group() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
+def append_to_group(*args, **kwargs):
+    msg = "The name of the function append_to_group() is deprecated with pp.version >= 2.12. " + \
+        "Use attach_to_group() instead."
+    raise DeprecationWarning(msg)
 
 
 def attach_to_groups(net, index, element_types, elements, reference_columns=None):
@@ -170,7 +163,7 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
                         f"The reference column of existing group {index} for element "
                         f"type '{et}' and of the elements to append differ. Use "
                         "set_group_reference_column() to change the reference column of net.group "
-                        "before, or pass appropriate data to append_to_group().")
+                        "before, or pass appropriate data to attach_to_group().")
 
             # append
             prev_elm = net.group.element.loc[group_et].at[index]
@@ -196,14 +189,10 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
         net.group.sort_index(inplace=True)
 
 
-def drop_from_group(net, index, element_type, element_index):
+def drop_from_group(*args, **kwargs):
     msg = ("The name of the function drop_from_group() is deprecated with pp.version >= 2.12. "
            "Use detach_from_group() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_group(net, index, element_type, element_index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_group(net, index, element_type, element_index):
@@ -226,14 +215,10 @@ def detach_from_group(net, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_groups(net, element_type, element_index, index=None):
+def drop_from_groups(*args, **kwargs):
     msg = ("The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. "
            "Use detach_from_groups() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_groups(net, element_type, element_index, index=index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_groups(net, element_type, element_index, index=None):
@@ -583,14 +568,10 @@ def compare_group_elements(net, index1, index2):
 # =================================================
 
 
-def check_unique_group_names(net, raise_error=False):
+def check_unique_group_names(*args, **kwargs):
     msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
-           "It is replaced by check_unique_group_rows() and the raise_error parameter defaults to True.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return check_unique_group_rows(net, raise_error=raise_error)
+           "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
+    raise DeprecationWarning(msg)
 
 
 def check_unique_group_rows(net, raise_error=True, log_level="warning"):

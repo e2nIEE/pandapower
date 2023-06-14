@@ -9,6 +9,8 @@ from operator import itemgetter
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
+from pandas import isnull
+from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
@@ -628,14 +630,14 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         net["bus_geodata"].at[index, "coords"] = coords
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
-    _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
 
     return index
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True, max_vm_pu=None, min_vm_pu=None, coords=None, **kwargs):
+                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -683,8 +685,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
-    _add_series_to_entries(entries, index, "min_vm_pu", min_vm_pu)
-    _add_series_to_entries(entries, index, "max_vm_pu", max_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
     if geodata is not None:
@@ -778,19 +780,19 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     _set_entries(net, "load", index, True, **entries, **kwargs)
 
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "load")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "load")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "load")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "load")
-    _create_column_and_set_value(net, index, controllable, "controllable", "load", dtyp=bool_,
-                                 default_val=False, default_for_nan=True)
+    _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "load")
+    _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
+    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
+    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
+    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_,
+                          default_val=False)
 
     return index
 
 
 def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                 name=None, scaling=1., index=None, in_service=True, type=None, max_p_mw=None,
-                 min_p_mw=None, max_q_mvar=None, min_q_mvar=None, controllable=None, **kwargs):
+                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
+                 min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
     Adds a number of loads in table net["load"].
 
@@ -863,12 +865,12 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
                "const_z_percent": const_z_percent, "const_i_percent": const_i_percent,
                "scaling": scaling, "in_service": in_service, "name": name, "type": type}
 
-    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
-    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
-    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
-    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=False)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "load", entries, index, "controllable", controllable, dtype=bool_,
+                               default_val=False)
     defaults_to_fill = [("controllable", False)]
 
     _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -1027,8 +1029,9 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=None,
-                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan,
+                **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1126,25 +1129,23 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     _set_entries(net, "sgen", index, True, **entries, **kwargs)
 
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "sgen")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "sgen")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _create_column_and_set_value(net, index, controllable, "controllable", "sgen", dtyp=bool_,
-                                 default_val=False, default_for_nan=True)
-    if rx is not None:
-        _create_column_and_set_value(net, index, rx, "rx", "sgen") # rx is always required
+    _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "sgen")
+    _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
+    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
+    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
+    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
+                          default_val=False)
+    _set_value_if_not_nan(net, index, rx, "rx", "sgen") # rx is always required
     if np.isfinite(kappa):
-        _create_column_and_set_value(net, index, kappa, "kappa", "sgen")
-    if generator_type is not None:
-        _create_column_and_set_value(net, index, generator_type, "generator_type", "sgen", dtyp="str",
-                                     default_val="current_source", default_for_nan=True)
+        _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
+    _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
+                          dtype="str", default_val="current_source")
     if generator_type == "current_source" or generator_type is None:
-        _create_column_and_set_value(net, index, k, "k", "sgen")
+        _set_value_if_not_nan(net, index, k, "k", "sgen")
     elif generator_type == "async":
-        _create_column_and_set_value(net, index, lrc_pu, "lrc_pu", "sgen")
+        _set_value_if_not_nan(net, index, lrc_pu, "lrc_pu", "sgen")
     elif generator_type == "async_doubly_fed":
-        _create_column_and_set_value(net, index, max_ik_ka, "max_ik_ka", "sgen")
+        _set_value_if_not_nan(net, index, max_ik_ka, "max_ik_ka", "sgen")
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
@@ -1153,8 +1154,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
-                 scaling=1., type='wye', in_service=True, max_p_mw=None, min_p_mw=None,
-                 max_q_mvar=None, min_q_mvar=None, controllable=None, k=None, rx=None,
+                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
                  current_source=True, generator_type="current_source", max_ik_ka=nan,
                  kappa=nan, lrc_pu=nan, **kwargs):
     """
@@ -1250,27 +1251,28 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                "in_service": in_service, "name": name, "type": type,
                'current_source': current_source}
 
-    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
-    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
-    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
-    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=False)
-    if rx is not None:
-        _add_series_to_entries(entries, index, "rx", rx)  # rx is always required
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "controllable", controllable, dtype=bool_,
+                               default_val=False)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_series_to_entries(entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
-    if generator_type is not None:
-        _add_series_to_entries(entries, index, "generator_type", generator_type, dtyp="str",
-                                     default_val="current_source")
-    if generator_type == "current_source" or generator_type is None:
-        _add_series_to_entries(entries, index, "k", k)
-    elif generator_type == "async":
-        _add_series_to_entries(entries, index, "lrc_pu", lrc_pu)
-    elif generator_type == "async_doubly_fed":
-        _add_series_to_entries(entries, index, "max_ik_ka", max_ik_ka)
-    else:
-        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
+                               dtype="str", default_val="current_source")
+    gen_types = ['current_source', 'async', 'async_doubly_fed']
+    gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
+                               keys=gen_types)
+    if gen_type_match["current_source"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
+    if gen_type_match["async"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "lrc_pu", lrc_pu)
+    if gen_type_match["async_doubly_fed"].any():
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_ik_ka", max_ik_ka)
+    if not gen_type_match.any(axis=1).all():
+        raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
     defaults_to_fill = [("controllable", False)]
@@ -1462,19 +1464,20 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     _set_entries(net, "storage", index, True, **entries, **kwargs)
 
     # check for OPF parameters and add columns to network table
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "storage")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "storage")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "storage")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "storage")
-    _create_column_and_set_value(net, index, controllable, "controllable", "storage",
-                                 dtyp=bool_, default_val=False, default_for_nan=True)
+    _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "storage")
+    _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "storage")
+    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
+    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
+    _set_value_if_not_nan(net, index, controllable, "controllable", "storage",
+                          dtype=bool_, default_val=False)
 
     return index
 
 
-def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
-                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
-                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+def create_storages(
+        net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
+        name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
+        min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
     Adds storages to the network.
 
@@ -1553,12 +1556,12 @@ def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_perce
               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
 
-    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
-    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
-    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
-    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=False)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable, dtype=bool_,
+                               default_val=False)
     defaults_to_fill = [("controllable", False)]
 
     _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -1570,7 +1573,7 @@ def create_storages(net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_perce
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=None,
+               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
                in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
@@ -1661,44 +1664,34 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     _set_entries(net, "gen", index, True, **dict(zip(columns, variables)), **kwargs)
 
     # OPF limits
-    if not isnan(controllable):
-        controllable_col_exist = "controllable" in net.gen.columns
-        if not controllable_col_exist:
-            net.gen.loc[:, "controllable"] = pd.Series(dtype=bool, data=True)
-        net.gen.at[index, "controllable"] = bool(controllable)
-        if controllable_col_exist:
-            try:
-                net.gen["controllable"] = net.gen["controllable"].astype(bool)
-            except:
-                pass
-    elif "controllable" in net.gen.columns:
-        net.gen.at[index, "controllable"] = True
+    _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
+                          dtype=bool_, default_val=True)
     # P limits for OPF if controllable == True
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "gen")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "gen")
+    _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
+    _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "gen")
     # Q limits for OPF if controllable == True
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "gen")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "gen")
+    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
+    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    _create_column_and_set_value(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
-    _create_column_and_set_value(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
 
     # Short circuit calculation variables
-    _create_column_and_set_value(net, index, vn_kv, "vn_kv", "gen")
-    _create_column_and_set_value(net, index, cos_phi, "cos_phi", "gen")
-    _create_column_and_set_value(net, index, xdss_pu, "xdss_pu", "gen")
-    _create_column_and_set_value(net, index, rdss_ohm, "rdss_ohm", "gen")
-    _create_column_and_set_value(net, index, pg_percent, "pg_percent", "gen")
-    _create_column_and_set_value(net, index, power_station_trafo,
-                                 "power_station_trafo", "gen")
+    _set_value_if_not_nan(net, index, vn_kv, "vn_kv", "gen")
+    _set_value_if_not_nan(net, index, cos_phi, "cos_phi", "gen")
+    _set_value_if_not_nan(net, index, xdss_pu, "xdss_pu", "gen")
+    _set_value_if_not_nan(net, index, rdss_ohm, "rdss_ohm", "gen")
+    _set_value_if_not_nan(net, index, pg_percent, "pg_percent", "gen")
+    _set_value_if_not_nan(net, index, power_station_trafo,
+                          "power_station_trafo", "gen", dtype="Int64")
 
     return index
 
 
-def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=None,
-                min_q_mvar=None, min_p_mw=None, max_p_mw=None, min_vm_pu=None, max_vm_pu=None,
-                scaling=1., type=None, slack=False, controllable=None, vn_kv=None,
-                xdss_pu=None, rdss_ohm=None, cos_phi=None, pg_percent=None, power_station_trafo=None,
+def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
+                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
+                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
+                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
                 in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
@@ -1751,11 +1744,13 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for short-circuit calculation
+        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
+            short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+            flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
             OPF
@@ -1789,22 +1784,24 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type, "slack": slack}
+               "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
+               "slack": slack}
 
-    _add_series_to_entries(entries, index, "min_p_mw", min_p_mw)
-    _add_series_to_entries(entries, index, "max_p_mw", max_p_mw)
-    _add_series_to_entries(entries, index, "min_q_mvar", min_q_mvar)
-    _add_series_to_entries(entries, index, "max_q_mvar", max_q_mvar)
-    _add_series_to_entries(entries, index, "min_vm_pu", min_vm_pu)
-    _add_series_to_entries(entries, index, "max_vm_pu", max_vm_pu)
-    _add_series_to_entries(entries, index, "vn_kv", vn_kv)
-    _add_series_to_entries(entries, index, "cos_phi", cos_phi)
-    _add_series_to_entries(entries, index, "xdss_pu", xdss_pu)
-    _add_series_to_entries(entries, index, "rdss_ohm", rdss_ohm)
-    _add_series_to_entries(entries, index, "pg_percent", pg_percent)
-    _add_series_to_entries(entries, index, "power_station_trafo", power_station_trafo)
-    _add_series_to_entries(entries, index, "controllable", controllable, dtyp=bool_,
-                           default_val=True)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_vm_pu", max_vm_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "vn_kv", vn_kv)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "cos_phi", cos_phi)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
+                               power_station_trafo, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
+                               default_val=True)
     defaults_to_fill = [("controllable", True)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -1960,18 +1957,19 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_entries(net, "ext_grid", index, **entries, **kwargs)
 
     # OPF limits
-    _create_column_and_set_value(net, index, s_sc_max_mva, "s_sc_max_mva", "ext_grid")
-    _create_column_and_set_value(net, index, s_sc_min_mva, "s_sc_min_mva", "ext_grid")
-    _create_column_and_set_value(net, index, rx_min, "rx_min", "ext_grid")
-    _create_column_and_set_value(net, index, rx_max, "rx_max", "ext_grid")
-    _create_column_and_set_value(net, index, min_p_mw, "min_p_mw", "ext_grid")
-    _create_column_and_set_value(net, index, max_p_mw, "max_p_mw", "ext_grid")
-    _create_column_and_set_value(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
-    _create_column_and_set_value(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
-    _create_column_and_set_value(net, index, x0x_max, "x0x_max", "ext_grid")
-    _create_column_and_set_value(net, index, r0x0_max, "r0x0_max", "ext_grid")
-    _create_column_and_set_value(net, index, controllable, "controllable", "ext_grid",
-                                 dtyp=bool_, default_val=False, default_for_nan=True)
+    _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "ext_grid")
+    _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "ext_grid")
+    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
+    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
+    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
+                          dtype=bool_, default_val=True)
+    # others
+    _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
+    _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
+    _set_value_if_not_nan(net, index, s_sc_max_mva, "s_sc_max_mva", "ext_grid")
+    _set_value_if_not_nan(net, index, s_sc_min_mva, "s_sc_min_mva", "ext_grid")
+    _set_value_if_not_nan(net, index, rx_min, "rx_min", "ext_grid")
+    _set_value_if_not_nan(net, index, rx_max, "rx_max", "ext_grid")
 
     return index
 
@@ -2036,7 +2034,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
 
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line is specified (TDPF)
 
         **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
 
@@ -2044,9 +2043,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
 
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
 
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+                tdpf_delay_s parameter)
 
     OUTPUT:
         **index** (int) - The unique ID of the created line
@@ -2072,7 +2074,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     v.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km",
                                                     "max_i_ka"]})
     if "r0_ohm_per_km" in lineparam:
-        v.update({param: lineparam[param] for param in ["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
+        v.update({param: lineparam[param] for param in [
+            "r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
 
     v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
 
@@ -2085,8 +2088,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     _set_entries(net, "line", index, **v, **kwargs)
@@ -2095,20 +2098,21 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         net["line_geodata"].loc[index, "coords"] = None
         net["line_geodata"].at[index, "coords"] = geodata
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "line")
-    _create_column_and_set_value(net, index, alpha, "alpha", "line")
-    _create_column_and_set_value(net, index, temperature_degree_celsius,
-                                 "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
+    _set_value_if_not_nan(net, index, alpha, "alpha", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius,
+                          "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
     for column, value in tdpf_parameters.items():
-        _create_column_and_set_value(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line", float64)
 
     return index
 
 
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
-                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=None, **kwargs):
+                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan,
+                 **kwargs):
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -2163,7 +2167,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
 
-            **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+            **reference_temperature_degree_celsius (float)** - reference temperature in °C for \
+                which r_ohm_per_km for the line is specified (TDPF)
 
             **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
 
@@ -2171,9 +2176,12 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
 
-            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+                simplified method)
 
-            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the \
+                specific thermal capacity of the material (TDPF, only for thermal inertia \
+                consideration with tdpf_delay_s parameter)
 
         OUTPUT:
             **index** (list of int) - The unique ID of the created line
@@ -2211,17 +2219,18 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
-    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
+                               max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_series_to_entries(entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2305,7 +2314,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
 
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line is specified (TDPF)
 
         **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
 
@@ -2313,9 +2323,12 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
 
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
 
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+            tdpf_delay_s parameter)
 
     OUTPUT:
         **index** (int) - The unique ID of the created line
@@ -2350,10 +2363,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
-        _create_column_and_set_value(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
-        _create_column_and_set_value(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
-        _create_column_and_set_value(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _create_column_and_set_value(net, index, g0_us_per_km, "g0_us_per_km", "line",
+        _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
+        _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
+        _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
+        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line",
                                      default_val=0.)
     elif not np_all(nan_0_values):
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
@@ -2363,16 +2376,16 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         net["line_geodata"].loc[index, "coords"] = None
         net["line_geodata"].at[index, "coords"] = geodata
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "line")
-    _create_column_and_set_value(net, index, alpha, "alpha", "line")
-    _create_column_and_set_value(net, index, temperature_degree_celsius,
-                                 "temperature_degree_celsius", "line")
-    _create_column_and_set_value(net, index, endtemp_degree, "endtemp_degree", "line")
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
+    _set_value_if_not_nan(net, index, alpha, "alpha", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius,
+                          "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _create_column_and_set_value(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
     for column, value in tdpf_parameters.items():
-        _create_column_and_set_value(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line", float64)
 
     return index
 
@@ -2380,9 +2393,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
                                  c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                  geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                 max_loading_percent=None, alpha=None,
-                                 temperature_degree_celsius=None, r0_ohm_per_km=None,
-                                 x0_ohm_per_km=None, c0_nf_per_km=None, g0_us_per_km=None,
+                                 max_loading_percent=nan, alpha=nan,
+                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
+                                 x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=nan,
                                  **kwargs):
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
@@ -2454,7 +2467,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
 
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line is specified (TDPF)
 
         **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
 
@@ -2462,9 +2476,12 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
 
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for simplified method)
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
 
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+            tdpf_delay_s parameter)
 
     OUTPUT:
         **index** (int) - The unique ID of the created line
@@ -2484,23 +2501,25 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
                "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
                "name": name, "df": df, "parallel": parallel, "in_service": in_service}
 
-    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
-    _add_series_to_entries(entries, index, "r0_ohm_per_km", r0_ohm_per_km)
-    _add_series_to_entries(entries, index, "x0_ohm_per_km", x0_ohm_per_km)
-    _add_series_to_entries(entries, index, "c0_nf_per_km", c0_nf_per_km)
-    _add_series_to_entries(entries, index, "g0_us_per_km", g0_us_per_km)
-    _add_series_to_entries(entries, index, "temperature_degree_celsius", temperature_degree_celsius)
-    _add_series_to_entries(entries, index, "alpha", alpha)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
+                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "x0_ohm_per_km", x0_ohm_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "c0_nf_per_km", c0_nf_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "g0_us_per_km", g0_us_per_km)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius",
+                               temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_series_to_entries(entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_series_to_entries(entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
@@ -2512,8 +2531,9 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.,
-                       tap_dependent_impedance=None, vk_percent_characteristic=None,
-                       vkr_percent_characteristic=None, pt_percent=None, oltc=None, xn_ohm=None, **kwargs):
+                       tap_dependent_impedance=nan, vk_percent_characteristic=None,
+                       vkr_percent_characteristic=None, pt_percent=nan, oltc=nan, xn_ohm=nan,
+                       **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2631,20 +2651,16 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     _set_entries(net, "trafo", index, **v, **kwargs)
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
-
-    if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
-    if vk_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")  # Int64Dtype
-    if vkr_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
-    if pt_percent is not None:
-        _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
-    if oltc is not None:
-        _create_column_and_set_value(net, index, oltc, "oltc", "trafo", bool_, False, True)
-    if xn_ohm is not None:
-        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    _set_value_if_not_nan(net, index, tap_dependent_impedance, "tap_dependent_impedance",
+                          "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, vk_percent_characteristic,
+                          "vk_percent_characteristic", "trafo", "Int64")
+    _set_value_if_not_nan(net, index, vkr_percent_characteristic,
+                          "vkr_percent_characteristic", "trafo", "Int64")
+    _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
@@ -2663,9 +2679,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan,
-                                       pt_percent=None, oltc=None, tap_dependent_impedance=None,
+                                       pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
                                        vk_percent_characteristic=None,
-                                       vkr_percent_characteristic=None, xn_ohm=None, **kwargs):
+                                       vkr_percent_characteristic=None, xn_ohm=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2794,7 +2810,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
-        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent,
+        "tap_step_degree": tap_step_degree,
         "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
     if ("tap_neutral" in v) and (tap_pos is nan):
@@ -2807,29 +2824,25 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     v.update(kwargs)
     _set_entries(net, "trafo", index, **v)
 
-    if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo", bool_, False, True)
-    if vk_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_percent_characteristic, "vk_percent_characteristic", "trafo", "Int64")
-    if vkr_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_percent_characteristic, "vkr_percent_characteristic", "trafo", "Int64")
+    _set_value_if_not_nan(net, index, tap_dependent_impedance,
+                          "tap_dependent_impedance", "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, vk_percent_characteristic,
+                          "vk_percent_characteristic", "trafo", "Int64")
+    _set_value_if_not_nan(net, index, vkr_percent_characteristic,
+                          "vkr_percent_characteristic", "trafo", "Int64")
 
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
-        _create_column_and_set_value(net, index, vk0_percent, "vk0_percent", "trafo")
-        _create_column_and_set_value(net, index, vkr0_percent, "vkr0_percent", "trafo")
-        _create_column_and_set_value(net, index, mag0_percent, "mag0_percent", "trafo")
-        _create_column_and_set_value(net, index, mag0_rx, "mag0_rx", "trafo")
-        _create_column_and_set_value(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
-        _create_column_and_set_value(net, index, vector_group, "vector_group", "trafo", dtyp=str,
-                                     default_val=None)
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    if pt_percent is not None:
-        _create_column_and_set_value(net, index, pt_percent, "pt_percent", "trafo")
-    if oltc is not None:
-        _create_column_and_set_value(net, index, oltc, "oltc", "trafo", bool_, False, True)
-    if xn_ohm is not None:
-        _create_column_and_set_value(net, index, xn_ohm, "xn_ohm", "trafo")
+        _set_value_if_not_nan(net, index, vk0_percent, "vk0_percent", "trafo")
+        _set_value_if_not_nan(net, index, vkr0_percent, "vkr0_percent", "trafo")
+        _set_value_if_not_nan(net, index, mag0_percent, "mag0_percent", "trafo")
+        _set_value_if_not_nan(net, index, mag0_rx, "mag0_rx", "trafo")
+        _set_value_if_not_nan(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
+        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtype=str)
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
+    _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
 
@@ -2839,12 +2852,12 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         tap_side=None, tap_neutral=nan, tap_max=nan, tap_min=nan,
                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
                                         tap_phase_shifter=False, in_service=True, name=None,
-                                        vector_group=None, index=None, max_loading_percent=None,
-                                        parallel=1, df=1., vk0_percent=None, vkr0_percent=None,
-                                        mag0_percent=None, mag0_rx=None, si0_hv_partial=None,
-                                        pt_percent=None, oltc=None, tap_dependent_impedance=None,
+                                        vector_group=None, index=None, max_loading_percent=nan,
+                                        parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
+                                        mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
+                                        pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
                                         vk_percent_characteristic=None,
-                                        vkr_percent_characteristic=None, xn_ohm=None, **kwargs):
+                                        vkr_percent_characteristic=None, xn_ohm=nan, **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2970,29 +2983,23 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
                "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
 
-    if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
-                               dtype=bool_, default_val=False)
-    if vk_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap_dependent_impedance",
+                               tap_dependent_impedance, dtype=bool_, default_val=False)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk_percent_characteristic",
                                vk_percent_characteristic, "Int64")
-    if vkr_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_percent_characteristic",
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr_percent_characteristic",
                                vkr_percent_characteristic, "Int64")
 
-    _add_series_to_entries(entries, index, "vk0_percent", vk0_percent)
-    _add_series_to_entries(entries, index, "vkr0_percent", vkr0_percent)
-    _add_series_to_entries(entries, index, "mag0_percent", mag0_percent)
-    _add_series_to_entries(entries, index, "mag0_rx", mag0_rx)
-    _add_series_to_entries(entries, index, "si0_hv_partial", si0_hv_partial)
-    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
-    _add_series_to_entries(entries, index, "vector_group", vector_group, dtyp=str)
-    if oltc is not None:
-        _add_series_to_entries(entries, index, "oltc", oltc, bool_, False)
-    if pt_percent is not None:
-        _add_series_to_entries(entries, index, "pt_percent", pt_percent)
-    if xn_ohm is not None:
-        _add_series_to_entries(entries, index, "xn_ohm", xn_ohm)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk0_percent", vk0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr0_percent", vkr0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_percent", mag0_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_rx", mag0_rx)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "si0_hv_partial", si0_hv_partial)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group, dtype=str)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
 
     defaults_to_fill = [("tap_dependent_impedance", False)]
     _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -3003,10 +3010,11 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
-                         tap_at_star_point=False, tap_dependent_impedance=None,
+                         tap_at_star_point=False, tap_dependent_impedance=nan,
                          vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
                          vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
-                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
+                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None,
+                         **kwargs):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -3124,41 +3132,41 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(
         net["trafo3w"].columns, axis=1)
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-
-    if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
-    if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
-    if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
-    if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _set_value_if_not_nan(net, index, tap_dependent_impedance,
+                          "tap_dependent_impedance", "trafo3w", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, vk_hv_percent_characteristic,
+                          "vk_hv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_hv_percent_characteristic,
+                          "vkr_hv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vk_mv_percent_characteristic,
+                          "vk_mv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_mv_percent_characteristic,
+                          "vkr_mv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vk_lv_percent_characteristic,
+                          "vk_lv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_lv_percent_characteristic,
+                          "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
 
-def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
-                                         vk_mv_percent, vk_lv_percent, vkr_hv_percent,
-                                         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
-                                         shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
-                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-                                         tap_neutral=nan, tap_max=nan,
-                                         tap_min=nan, name=None, in_service=True, index=None,
-                                         max_loading_percent=nan, tap_at_star_point=False,
-                                         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
-                                         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-                                         vector_group=None, tap_dependent_impedance=None,
-                                         vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
-                                         vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
-                                         vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
+def create_transformer3w_from_parameters(
+        net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
+        sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
+        vk_mv_percent, vk_lv_percent, vkr_hv_percent,
+        vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
+        shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
+        tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
+        tap_neutral=nan, tap_max=nan,
+        tap_min=nan, name=None, in_service=True, index=None,
+        max_loading_percent=nan, tap_at_star_point=False,
+        vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
+        vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
+        vector_group=None, tap_dependent_impedance=nan,
+        vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
+        vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
+        vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
     The model currently only supports one tap-changer per 3W Transformer.
@@ -3311,41 +3319,41 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     _set_entries(net, "trafo3w", index, **dict(zip(columns, values)), **kwargs)
 
-    _create_column_and_set_value(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-
-    if tap_dependent_impedance is not None:
-        _create_column_and_set_value(net, index, tap_dependent_impedance, "tap_dependent_impedance", "trafo3w", bool_, False, True)
-    if vk_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_hv_percent_characteristic, "vk_hv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_hv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_hv_percent_characteristic, "vkr_hv_percent_characteristic", "trafo3w", "Int64")
-    if vk_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_mv_percent_characteristic, "vk_mv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_mv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_mv_percent_characteristic, "vkr_mv_percent_characteristic", "trafo3w", "Int64")
-    if vk_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vk_lv_percent_characteristic, "vk_lv_percent_characteristic", "trafo3w", "Int64")
-    if vkr_lv_percent_characteristic is not None:
-        _create_column_and_set_value(net, index, vkr_lv_percent_characteristic, "vkr_lv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _set_value_if_not_nan(net, index, tap_dependent_impedance,
+                          "tap_dependent_impedance", "trafo3w", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, vk_hv_percent_characteristic,
+                          "vk_hv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_hv_percent_characteristic,
+                          "vkr_hv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vk_mv_percent_characteristic,
+                          "vk_mv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_mv_percent_characteristic,
+                          "vkr_mv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vk_lv_percent_characteristic,
+                          "vk_lv_percent_characteristic", "trafo3w", "Int64")
+    _set_value_if_not_nan(net, index, vkr_lv_percent_characteristic,
+                          "vkr_lv_percent_characteristic", "trafo3w", "Int64")
 
     return index
 
 
-def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_hv_kv, vn_mv_kv,
-                                          vn_lv_kv, sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
-                                          vk_mv_percent, vk_lv_percent, vkr_hv_percent,
-                                          vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
-                                          shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
-                                          tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-                                          tap_neutral=nan, tap_max=nan, tap_min=nan, name=None,
-                                          in_service=True, index=None, max_loading_percent=None,
-                                          tap_at_star_point=False,
-                                          vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
-                                          vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-                                          vector_group=None, tap_dependent_impedance=None,
-                                          vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
-                                          vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
-                                          vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
+def create_transformers3w_from_parameters(
+        net, hv_buses, mv_buses, lv_buses, vn_hv_kv, vn_mv_kv,
+        vn_lv_kv, sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
+        vk_mv_percent, vk_lv_percent, vkr_hv_percent,
+        vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
+        shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
+        tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
+        tap_neutral=nan, tap_max=nan, tap_min=nan, name=None,
+        in_service=True, index=None, max_loading_percent=nan,
+        tap_at_star_point=False,
+        vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
+        vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
+        vector_group=None, tap_dependent_impedance=nan,
+        vk_hv_percent_characteristic=None, vkr_hv_percent_characteristic=None,
+        vk_mv_percent_characteristic=None, vkr_mv_percent_characteristic=None,
+        vk_lv_percent_characteristic=None, vkr_lv_percent_characteristic=None, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -3507,23 +3515,22 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
                "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
                "vector_group": vector_group}
 
-    _add_series_to_entries(entries, index, "max_loading_percent", max_loading_percent)
-
-    if tap_dependent_impedance is not None:
-        _add_series_to_entries(entries, index, "tap_dependent_impedance", tap_dependent_impedance,
-                               dtype=bool_, default_val=False)
-    if vk_hv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_hv_percent_characteristic", vk_hv_percent_characteristic, "Int64")
-    if vkr_hv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_hv_percent_characteristic", vkr_hv_percent_characteristic, "Int64")
-    if vk_mv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_mv_percent_characteristic", vk_mv_percent_characteristic, "Int64")
-    if vkr_mv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_mv_percent_characteristic", vkr_mv_percent_characteristic, "Int64")
-    if vk_lv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vk_lv_percent_characteristic", vk_lv_percent_characteristic, "Int64")
-    if vkr_lv_percent_characteristic is not None:
-        _add_series_to_entries(entries, index, "vkr_lv_percent_characteristic", vkr_lv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent",
+                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_dependent_impedance",
+                               tap_dependent_impedance, dtype=bool_, default_val=False)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_hv_percent_characteristic",
+                               vk_hv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_hv_percent_characteristic",
+                               vkr_hv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_mv_percent_characteristic",
+                               vk_mv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_mv_percent_characteristic",
+                               vkr_mv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vk_lv_percent_characteristic",
+                               vk_lv_percent_characteristic, "Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "vkr_lv_percent_characteristic",
+                               vkr_lv_percent_characteristic, "Int64")
     defaults_to_fill = [("tap_dependent_impedance", False)]
 
     _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
@@ -3533,7 +3540,7 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
 
 
 def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0,
-                  in_ka=None, **kwargs):
+                  in_ka=nan, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3620,7 +3627,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
 
 def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None,
-                    z_ohm=0, in_ka=None, **kwargs):
+                    z_ohm=0, in_ka=nan, **kwargs):
     """
     Adds a switch in the net["switch"] table.
 
@@ -3836,11 +3843,13 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
                 name=None, controllable=True, in_service=True, index=None,
                 min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
-    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage at the connected bus
+    Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
+        at the connected bus
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power \
+        flow at the moment).
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -3880,10 +3889,11 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 
     index = _get_index_with_check(net, "svc", index)
 
-    entries = dict(zip(["name", "bus", "x_l_ohm", "x_cvar_ohm", "set_vm_pu", "thyristor_firing_angle_degree",
-                        "controllable", "in_service", "min_angle_degree", "max_angle_degree"],
-                       [name, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-                        controllable, in_service, min_angle_degree, max_angle_degree]))
+    entries = dict(zip([
+        "name", "bus", "x_l_ohm", "x_cvar_ohm", "set_vm_pu", "thyristor_firing_angle_degree",
+        "controllable", "in_service", "min_angle_degree", "max_angle_degree"],
+        [name, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+         controllable, in_service, min_angle_degree, max_angle_degree]))
     _set_entries(net, "svc", index, **entries, **kwargs)
 
     return index
@@ -3936,15 +3946,16 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     _set_entries(net, "impedance", index, **entries, **kwargs)
 
     if rft0_pu is not None:
-        _create_column_and_set_value(net, index, rft0_pu, "rft0_pu", "impedance")
-        _create_column_and_set_value(net, index, xft0_pu, "xft0_pu", "impedance")
-        _create_column_and_set_value(net, index, rtf0_pu, "rtf0_pu", "impedance")
-        _create_column_and_set_value(net, index, xtf0_pu, "xtf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
+        _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
+        _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
 
     return index
 
 
-def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
+def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
+                thyristor_firing_angle_degree,
                 name=None, controllable=True, in_service=True, index=None,
                 min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
@@ -4000,10 +4011,12 @@ def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyrist
 
     _check_branch_element(net, "TCSC", index, from_bus, to_bus)
 
-    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw", "thyristor_firing_angle_degree",
-               "controllable", "in_service", "min_angle_degree", "max_angle_degree"]
-    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw, thyristor_firing_angle_degree,
-              controllable, in_service, min_angle_degree, max_angle_degree]
+    columns = ["name", "from_bus", "to_bus", "x_l_ohm", "x_cvar_ohm", "set_p_to_mw",
+               "thyristor_firing_angle_degree", "controllable", "in_service", "min_angle_degree",
+               "max_angle_degree"]
+    values = [name, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
+              thyristor_firing_angle_degree, controllable, in_service, min_angle_degree,
+              max_angle_degree]
     entries = dict(zip(columns, values))
     _set_entries(net, "tcsc", index, **entries, **kwargs)
 
@@ -4049,7 +4062,8 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     return index
 
 
-def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None, **kwargs):
+def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True,
+                index=None, **kwargs):
     """
     Creates a ward equivalent.
 
@@ -4144,7 +4158,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power
+            flow calculation (active power balancing)
 
     OUTPUT:
         xward id
@@ -4155,7 +4170,8 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
     columns = ["bus", "ps_mw", "qs_mvar", "pz_mw", "qz_mvar", "r_ohm", "x_ohm", "vm_pu", "name",
                "slack_weight", "in_service"]
-    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, slack_weight, in_service]
+    values = [bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, name, slack_weight,
+              in_service]
     _set_entries(net, "xward", index, **dict(zip(columns, values)), **kwargs)
 
     return index
@@ -4432,7 +4448,8 @@ def create_pwl_costs(net, elements, et, points, power_type="p", index=None, chec
 
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True, **kwargs):
+                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True,
+                     **kwargs):
     """
     Creates an entry for polynimoal costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -4597,19 +4614,23 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         'elements_dict', such as get_connecting_branches(),
         get_inner_branches(), get_connecting_elements_dict().
 
-    INPUT:
-        **net** - pandapowerNet
-
-        **element_types** (str, or list of str) - defines, together with 'elements', which net elements belong to the group
-
-        **elements** (list of list of indices) -  defines, together with 'element_types', which net elements belong to the group
-        **name** (str) - name of the group
-
-        **reference_columns** (str, or list of str) -  If given, the elements_dict should not refer
-         to DataFrames index but to another column. It is highly relevant that the reference_column
-         exists in all DataFrames of the grouped elements and have the same dtype, by default None
-
-        **index** (int) - index for the dataframe net.group, by default None
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net
+    element_types : str or list of strings
+        defines, together with 'elements', which net elements belong to the group
+    elements : list of list of indices
+        defines, together with 'element_types', which net elements belong to the group
+    name : str, optional
+        name of the group, by default ""
+    reference_columns : string or list of strings, optional
+        If given, the elements_dict should
+        not refer to DataFrames index but to another column. It is highly relevant that the
+        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
+        by default None
+    index : int, optional
+        index for the dataframe net.group, by default None
 
     EXAMPLES:
         >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
@@ -4732,45 +4753,94 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
                           % (element_name, node_name, plural, node_not_exist))
 
 
-def _create_column_and_set_value(net, index, variable, column, element, dtyp=float64,
-                                 default_val=nan, default_for_nan=False):
-    # if variable (e.g. p_mw) is not None and column (e.g. "p_mw") doesn't exist in element
-    # (e.g. "gen") table
-    # create this column and write the value of variable to the index of this element
-    try:
-        set_value = not (variable is None or isnan(variable))  # if None, condition is known before execution of isnan()
-    except TypeError:
-        set_value = True
-    column_exists = column in net[element].columns
-    if set_value:
-        if not column_exists:
-            net[element].loc[:, column] = pd.Series(
-                data=default_val, index=net[element].index, dtype=dtyp)
-        net[element].at[index, column] = variable
-    elif default_for_nan and column_exists:
-        net[element].at[index, column] = default_val
-    # only execute if the column was actually set:
-    if column_exists and dtyp is not None:
+def _not_nan(value, all_=True):
+    if isinstance(value, str):
+        return True
+    elif hasattr(value, "__iter__"):
+        if all_:
+            if is_object_dtype(value):
+                return not all(isnull(value))
+            return not all(isnan(value))
+        else:
+            if is_object_dtype(value):
+                return not any(isnull(value))
+            return not any(isnan(value))
+    else:
         try:
-            net[element][column] = net[element][column].astype(dtyp)
-        except:
-            pass
-
-
-def _add_series_to_entries(entries, index, column, values, dtyp=float64, default_val=nan):
-    if values is not None:
-        try:
-            fill_default = not isnan(default_val)
+            return not (value is None or isnan(value))
         except TypeError:
-            fill_default = True
-        s = pd.Series(values, index=index, dtype=dtyp)
-        if fill_default:
-            s = s.fillna(default_val)
-        entries[column] = s
+            return True
+
+
+def try_astype(df, column, dtyp):
+    try:
+        df[column] = df[column].astype(dtyp)
+    except TypeError:
+        pass
+
+
+def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64, default_val=nan):
+    """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
+    is assumed if this is not nan.
+    If the value is not nan and the column does not exist already, the column is created and filled
+    by default_val.
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        pp net
+    index : int
+        index of the element to get a value
+    value : Any
+        value to be set
+    column : str
+        name of column
+    element_type : str
+        element_type type, e.g. "gen"
+    dtyp : Any, optional
+        e.g. float64, "Int64", bool_, ..., by default float64
+    default_val : Any, optional
+        default value to be set if the column exists and value is nan and if the column does not
+        exist and the value is not nan, by default nan
+
+    See Also
+    --------
+    _add_to_entries_if_not_nan
+    """
+    column_exists = column in net[element_type].columns
+    if _not_nan(value):
+        if not column_exists:
+            net[element_type].loc[:, column] = pd.Series(
+                data=default_val, index=net[element_type].index)
+        net[element_type].at[index, column] = value
+        try_astype(net[element_type], column, dtype)
+    elif column_exists:
+        if _not_nan(default_val):
+            net[element_type].at[index, column] = default_val
+        try_astype(net[element_type], column, dtype)
+
+
+def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, dtype=float64,
+                               default_val=nan):
+    """
+
+    See Also
+    --------
+    _set_value_if_not_nan
+    """
+    column_exists = column in net[element_type].columns
+    if _not_nan(values):
+        entries[column] = pd.Series(values, index=index)
+        if _not_nan(default_val):
+            entries[column] = entries[column].fillna(default_val)
+        try_astype(entries, column, dtype)
+    elif column_exists:
+        entries[column] = pd.Series(data=default_val, index=index)
+        try_astype(entries, column, dtype)
 
 
 def _add_multiple_branch_geodata(net, table, geodata, index):
-    geo_table = "%s_geodata" % table
+    geo_table = f"{table}_geodata"
     dtypes = net[geo_table].dtypes
     df = pd.DataFrame(index=index, columns=net[geo_table].columns)
     # works with single or multiple lists of coordinates

@@ -19,7 +19,9 @@ from warnings import warn
 import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
-
+from packaging.version import Version
+from pandapower import __version__
+from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
 import pandas as pd
@@ -134,7 +136,7 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             if len(value) > 0:
                 dodfs["user_pf_options"] = pd.DataFrame(value, index=[0])
             continue
-        elif isinstance(value, (int, float, bool, str)):
+        elif isinstance(value, (int, float, bool, str, numbers.Number)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
             parameters[item] = net[item]
             continue
@@ -242,7 +244,8 @@ def from_dict_of_dfs(dodfs, net=None):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            table.rename_axis(net[item].index.name, inplace=True)
+            if not isinstance(table.index, pd.MultiIndex):
+                table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
         # set the index to be Int
         try:
@@ -363,6 +366,12 @@ def isinstance_partial(obj, cls):
     return isinstance(obj, cls)
 
 
+def check_net_version(net):
+    if Version(net["format_version"]) > Version(__version__):
+        logger.warning("pandapowerNet-version is newer than your pandapower version. Please update"
+                       " pandapower `pip install --upgrade pandapower`.")
+
+
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
         super(PPJSONEncoder, self).__init__(**kwargs)
@@ -479,8 +488,10 @@ class FromSerializableRegistry():
             ser.index.name = index_name
         if is_multiindex:
             try:
-                ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(
-                    literal_eval).tolist())
+                if len(ser) == 0:
+                    ser.index = pd.MultiIndex.from_tuples([], names=index_names, dtype=np.int64)
+                else:
+                    ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(literal_eval).tolist())
             except:
                 logger.warning("Converting index to multiindex failed.")
             else:
@@ -518,8 +529,10 @@ class FromSerializableRegistry():
             df.columns.name = column_name
         if is_multiindex:
             try:
-                df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(
-                    literal_eval).tolist())
+                if len(df) == 0:
+                    df.index = pd.MultiIndex.from_frame(pd.DataFrame(columns=index_names, dtype=np.int64))
+                else:
+                    df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(literal_eval).tolist())
                 # slower alternative code:
                 # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
             except:
@@ -529,8 +542,10 @@ class FromSerializableRegistry():
                     df.index.names = index_names
         if is_multicolumn:
             try:
-                df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(
-                    literal_eval).tolist())
+                if len(df) == 0:
+                    df.columns = pd.MultiIndex.from_frame(pd.DataFrame(columns=column_names, dtype=np.int64))
+                else:
+                    df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(literal_eval).tolist())
             except:
                 logger.warning("Converting columns to multiindex failed.")
             else:
@@ -627,7 +642,9 @@ class FromSerializableRegistry():
                 valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
-            df = df.astype(self.d['dtype'])
+
+            # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
+            _preserve_dtypes(df, dtypes=self.d["dtype"])
             return df
 
     if SHAPELY_INSTALLED:

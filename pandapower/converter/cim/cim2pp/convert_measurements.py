@@ -19,7 +19,7 @@ class CreateMeasurements:
         self.cim = cim
 
     def _set_measurement_element_datatype(self):
-        self.net.measurement.element = self.net.measurement.element.astype(np.typeDict.get("UInt32"))
+        self.net.measurement.element = self.net.measurement.element.astype(np.sctypeDict.get("UInt32"))
 
     def _copy_to_measurement(self, input_df: pd.DataFrame):
         pp_type = 'measurement'

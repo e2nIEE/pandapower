@@ -3,15 +3,48 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
-- [FIXED] recorrection of shunt values in CIGRE HV
+- [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
+- [ADDED] function to run powerflow using the power-grid-model library
+- [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
+- [ADDED] comparison of "dict" attributes in :code:`pandapower.toolbox.comparisons.nets_equal` with :code:`DeepDiff`
+- [FIXED] loading net from xlsx with MultiIndex
+- [FIXED] numba version check
+- [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
+- [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
+- [FIXED] some fixes and small updates at cim2pp
+- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+
+
+[2.13.1] - 2023-05-12
+-------------------------------
+- [FIXED] missing test files for CIM converter test in the release files
+
+
+[2.13.0] - 2023-05-12
+-------------------------------
+- [FIXED] another correction of shunt values in CIGRE HV
+- [FIXED] deprecated np.typedict to np.sctypedict in cim converter
+- [ADDED] reporting for cim2pp converter
+- [ADDED] interfaces for repair functions for cim2pp converter
+- [ADDED] using PandaModels to optimize reactive power provision for loading reduction
+- [FIXED] several bugs in cim2pp converter, e.g. non linear tap changer issue
+- [FIXED] shape issues when calculating SC with the superposition method
+- [FIXED] typos in cim2pp tutorial
+- [FIXED] creating geo coordinates form GL profile when ConnectivityNode is only in tp/tp_bd profile for cim2pp converter
+- [FIXED] bugfix in _get_bus_v_results where vm_pu was not set for DC power flow, leading to old results staying in the bus results table
+- [ADDED] simple cim2pp converter test
+- [CHANGED] run ac pf instead of dc pf in estimation when parameter fuse_buses_with_bb_switch != 'all'
+- [REMOVED] support for deprecated functions in :code:`groups.py`: :code:`check_unique_group_names`, :code:`append_to_group`
+
 
 [2.12.1] - 2023-04-18
 -------------------------------
 - [FIXED] add minimum Python version (3.8) explicitly to setup.py
-- [FIXED] remove `import pandapower.test` from __init__
+- [FIXED] remove :code:`import pandapower.test` from :code:`__init__`
 - [FIXED] matplotlib imports are optional (but required for plotting)
 - [FIXED] missing numpy int imports
-- [FIXED] documentation; needed change: group functions parameter `raise_` is renamed by `raise_error`
+- [FIXED] documentation; needed change: group functions parameter :code:`raise_` is renamed by :code:`raise_error`
 
 [2.12.0] - 2023-04-06
 -------------------------------

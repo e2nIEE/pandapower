@@ -184,6 +184,9 @@ def from_pickle(filename, convert=True):
 
     if convert:
         convert_format(net)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     return net
 
 
@@ -219,6 +222,9 @@ def from_excel(filename, convert=True):
         net = _from_excel_old(xls)
     if convert:
         convert_format(net)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     return net
 
 
@@ -395,6 +401,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
     if convert:
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     if add_basic_std_types:
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
@@ -417,7 +426,7 @@ def from_json_dict(json_dict):
 
     EXAMPLE:
 
-        >>> net = pp.pp.from_json_dict(json.loads(json_str))
+        >>> net = pp.from_json_dict(json.loads(json_str))
 
     """
     name = json_dict["name"] if "name" in json_dict else None
