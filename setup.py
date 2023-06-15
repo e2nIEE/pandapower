@@ -51,7 +51,7 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "geojson"],
         # "shapely", "pyproj" are depedencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
@@ -60,7 +60,7 @@ setup(
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly", "matplotlib", "python-igraph", "geopandas",
+                "plotly", "matplotlib", "python-igraph", "geopandas", "geojson"
                 "pytest", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
