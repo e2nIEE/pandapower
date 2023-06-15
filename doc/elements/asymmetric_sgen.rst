@@ -14,7 +14,7 @@ Asymmetric Static Generator
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_asymmetric_sgen
+.. autofunction:: pandapower.create.create_asymmetric_sgen
 
 
 Input Parameters

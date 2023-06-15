@@ -10,7 +10,7 @@
 
 """Builds the B matrices and phase shift injections for DC power flow.
 """
-from numpy import ones, r_, pi, flatnonzero as find, real
+from numpy import ones, r_, pi, flatnonzero as find, real, int64
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
 
@@ -62,16 +62,11 @@ def makeBdc(bus, branch, return_csr=True):
     ##      |    | = |          | * |     | + |       |
     ##      | Pt |   | Btf  Btt |   | Vat |   | Ptinj |
     ##
-    stat = branch[:, BR_STATUS]               ## ones at in-service branches
-    b = stat / branch[:, BR_X]                ## series susceptance
-    tap = ones(nl)                            ## default tap ratio = 1
-    i = find(real(branch[:, TAP]))               ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])                   ## assign non-zero tap ratios
-    b = b / tap
+    b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int64)                           ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int64)                           ## list of "to" buses
     i = r_[range(nl), range(nl)]                   ## double set of row indices
     ## connection matrix
     Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl, nb))
@@ -84,8 +79,24 @@ def makeBdc(bus, branch, return_csr=True):
     Bbus = Cft.T * Bf
 
     ## build phase shift injection vectors
-    Pfinj = b * (-branch[:, SHIFT] * pi / 180.)  ## injected at the from bus ...
-    # Ptinj = -Pfinj                            ## and extracted at the to bus
-    Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    Pfinj, Pbusinj = phase_shift_injection(b, branch[:, SHIFT], Cft)
 
-    return Bbus, Bf, Pbusinj, Pfinj
+    return Bbus, Bf, Pbusinj, Pfinj, Cft
+
+
+def phase_shift_injection(b, shift, Cft):
+    ## build phase shift injection vectors
+    Pfinj = b * (-shift * pi / 180.)  ## injected at the from bus ...
+    # Ptinj = -Pfinj                            ## and extracted at the to bus
+    Pbusinj = Cft.T * Pfinj  ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    return Pfinj, Pbusinj
+
+
+def calc_b_from_branch(branch, nl):
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    b = stat / branch[:, BR_X]  ## series susceptance
+    tap = ones(nl)  ## default tap ratio = 1
+    i = find(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    b = b / tap
+    return b

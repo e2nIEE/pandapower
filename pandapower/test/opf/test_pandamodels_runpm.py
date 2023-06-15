@@ -17,7 +17,7 @@ import pandapower.timeseries
 from copy import deepcopy
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.test.consistency_checks import consistency_checks
-from pandapower.test.toolbox import add_grid_connection, create_test_line
+from pandapower.test.helper_functions import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.converter import convert_pp_to_pm
 from pandapower import pp_dir
@@ -30,7 +30,6 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia import Main
-
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -729,6 +728,12 @@ def test_runpm_ploss_loading():
 
     assert net.res_trafo.pl_mw.values.sum() < net_org.res_trafo.pl_mw.values.sum()
 
+    ### test loading reduction with Q-optimierung
+    net = deepcopy(net_org)
+    pp.runpm_loading(net)
+    assert (net.res_line.loading_percent.values - \
+            net_org.res_line.loading_percent.values).sum() < 0
+
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_convergence_dc_opf():
@@ -766,10 +771,4 @@ def test_ac_opf_differnt_snmva():
 
 
 if __name__ == '__main__':
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_storage_opt()
-        test_runpm_ploss_loading()
-        # test_runpm_qflex_and_multi_qflex()
-
+    pytest.main(['-x', __file__])

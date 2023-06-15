@@ -11,7 +11,7 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower.build_bus import _build_bus_ppc
+from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
@@ -22,7 +22,7 @@ from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, \
     _calc_nominal_ratio_from_dataframe, \
     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter, \
-    _calc_impedance_parameters_from_dataframe
+    _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
@@ -41,6 +41,8 @@ def _pd2ppc_zero(net, k_st, sequence=0):
 
     _build_bus_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
+    _build_svc_ppc(net, ppc, "sc")   # needed for shape reasons
+    _build_tcsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
@@ -116,12 +118,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     trafo_df['k_st'] = k_st[trafo_df["_ppc_idx"].values].real
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     ppc["branch"][f:t, F_BUS] = bus_lookup[hv_bus]
     ppc["branch"][f:t, T_BUS] = bus_lookup[lv_bus]
-    buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), np.array([])
+    buses_all, gs_all, bs_all = np.array([], dtype=np.int64), np.array([]), np.array([])
     BIG_NUMBER = 1e20 * ppc["baseMVA"]
     if mode == "sc":
         # Should be considered as connected for all in_service branches
@@ -138,7 +140,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
         # TODO Roman: check this/expand this
-        ppc_idx = trafos["_ppc_idx"].values.astype(int)
+        ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
             continue
@@ -160,8 +162,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         vkr0_percent = trafos["vkr0_percent"].values.astype(float) if \
             trafos["vkr0_percent"].values.astype(float).all() != 0. else \
             trafos["vkr_percent"].values.astype(float)
-        lv_buses = trafos["lv_bus"].values.astype(int)
-        hv_buses = trafos["hv_bus"].values.astype(int)
+        lv_buses = trafos["lv_bus"].values.astype(np.int64)
+        hv_buses = trafos["hv_bus"].values.astype(np.int64)
         lv_buses_ppc = bus_lookup[lv_buses]
         hv_buses_ppc = bus_lookup[hv_buses]
         if "mag0_percent" not in trafos:
@@ -184,7 +186,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
         else:
             power_station_unit = np.zeros(len(trafos), dtype=bool)
-        in_service = trafos["in_service"].astype(int)
+        in_service = trafos["in_service"].astype(np.int64)
 
         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
@@ -457,7 +459,7 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values *
                                 1e-9 * baseR * length * parallel)
-    ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
+    ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(np.int64)
 
 
 def _add_impedance_sc_impedance_zero(net, ppc):
@@ -489,9 +491,9 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net, sequence=0)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(int)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(int)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(int)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
