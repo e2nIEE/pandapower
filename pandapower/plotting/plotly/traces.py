@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import sys
 import math
 
 import numpy as np
@@ -11,6 +11,7 @@ import pandas as pd
 from packaging import version
 from collections.abc import Iterable
 
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
     MapboxTokenMissing
@@ -29,8 +30,9 @@ try:
     from plotly.graph_objs.scatter import Line, Marker
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
+    PLOTLY_INSTALLED = True
 except ImportError:
-    logger.info("Failed to import plotly - interactive plotting will not be available")
+    PLOTLY_INSTALLED = False
 
 
 def version_check():
@@ -257,6 +259,8 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
                                            net, this is alwas "line"
 
     """
+    if not PLOTLY_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
     color = get_plotly_color(color)
     node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
@@ -488,6 +492,8 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                                       this is alwas "bus" (net.bus)
 
        """
+    if not PLOTLY_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
 
     color = get_plotly_color(color)
 
@@ -705,6 +711,9 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 
 
     """
+    if not PLOTLY_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
+
     color = get_plotly_color(color)
 
     if trafotype == '2W':
@@ -727,7 +736,6 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
     if len(trafos) == 0:
         return []
 
-
     trafos_mask = net[trafotable].index.isin(trafos)
     trafos_to_plot = net[trafotable].loc[trafo_buses_with_geodata & trafos_mask]
 
@@ -738,7 +746,6 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         assert isinstance(infofunc, pd.Series), \
             "infofunc should be a pandas series with the net.trafo.index to the infofunc contents"
         infofunc = infofunc.loc[trafos_to_plot.index]
-
 
     cmap_colors = []
     if cmap is not None:
@@ -779,7 +786,7 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
     trafo_traces[0]["showlegend"] = True
 
     center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
-                                                    use_line_geodata=use_line_geodata,
+                                            use_line_geodata=use_line_geodata,
                                             showlegend=False, legendgroup=trace_name)
     trafo_traces.append(center_trace)
     return trafo_traces
@@ -1011,6 +1018,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **figure** (graph_objs._figure.Figure) figure object
 
     """
+    if not PLOTLY_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
     if on_map:
         try:
             on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])

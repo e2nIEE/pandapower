@@ -97,4 +97,4 @@ def test_big_gen_network_v2(three_bus_big_sgen_example):
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

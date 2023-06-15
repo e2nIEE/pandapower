@@ -11,6 +11,7 @@ from warnings import warn
 
 import numpy
 import pandas as pd
+from packaging.version import Version
 from packaging import version
 import sys
 try:
@@ -26,9 +27,9 @@ except ImportError:
 
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
-from pandapower.convert_format import convert_format
-from pandapower.create import create_empty_network
 from pandapower.std_types import basic_std_types
+from pandapower.create import create_empty_network
+from pandapower.convert_format import convert_format
 import pandapower.io_utils as io_utils
 
 try:
@@ -93,7 +94,11 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
                                        include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
-    writer.save()
+
+    try:
+        writer.save()
+    except AttributeError:
+        writer._save()
 
 
 def to_json(net, filename=None, encryption_key=None, store_index_names=False):
@@ -179,6 +184,9 @@ def from_pickle(filename, convert=True):
 
     if convert:
         convert_format(net)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     return net
 
 
@@ -214,6 +222,9 @@ def from_excel(filename, convert=True):
         net = _from_excel_old(xls)
     if convert:
         convert_format(net)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     return net
 
 
@@ -356,7 +367,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
                          empty_dict_like_object=empty_dict_like_object)
         net_dummy = create_empty_network()
-        if ('version' not in net.keys()) | (version.parse(net.version) < version.parse('2.1.0')):
+        if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')
         if keep_serialized_elements:
@@ -390,6 +401,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
     if convert:
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
+
+        # compare pandapowerNet-format_version and package-version
+        io_utils.check_net_version(net)
     if add_basic_std_types:
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
@@ -412,7 +426,7 @@ def from_json_dict(json_dict):
 
     EXAMPLE:
 
-        >>> net = pp.pp.from_json_dict(json.loads(json_str))
+        >>> net = pp.from_json_dict(json.loads(json_str))
 
     """
     name = json_dict["name"] if "name" in json_dict else None

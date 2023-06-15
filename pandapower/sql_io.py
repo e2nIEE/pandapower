@@ -7,9 +7,7 @@
 import pandas as pd
 import numpy as np
 
-import pandapower as pp
 from pandapower import io_utils
-from pandapower.auxiliary import _preserve_dtypes
 
 try:
     import psycopg2
