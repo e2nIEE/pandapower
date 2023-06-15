@@ -60,7 +60,7 @@ setup(
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly", "matplotlib", "python-igraph", "geopandas", "geojson"
+                "plotly", "matplotlib", "python-igraph", "geopandas", "geojson",
                 "pytest", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
