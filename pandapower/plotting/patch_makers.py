@@ -8,7 +8,7 @@ try:
     from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, Wedge, PathPatch, Polygon
     from matplotlib import text
     import matplotlib.path as mpath
-    import matplotlib.transforms as mtransforms
+    import matplotlib.transforms as transforms
     import math
 
     MATPLOTLIB_INSTALLED = True
@@ -183,7 +183,7 @@ def load_patches(node_coords, size, angles,angle_list, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    offset = kwargs.get("offset", 1.2 * size)
+    offset = kwargs.get("offset", 1.5 * size)
     all_angles = get_angle_list(angles, len(node_coords))
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
@@ -191,28 +191,24 @@ def load_patches(node_coords, size, angles,angle_list, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
     polys, lines = list(), list()
 
-
     flatten_list = [item for sublist in angle_list for item in sublist]
-
     angle_list = flatten_list
     last_entry = angle_list.pop()
     angle_list.insert(0, last_entry)
 
     for i, node_geo in enumerate(node_coords):
         try:
-            angle = angle_list[i]  #Exception for index out of range in case of multiple elements of same type
+            angle = angles[i] + angle_list[i]  #Exception for index out of range in case of multiple elements of same type
         except IndexError:
             print("Index out of range!")
-            angle = angle_list[- 1]
-        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle  )
+            angle = angles[i] + angle_list[- 1]
+        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
         p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=angle,
+        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,
                                     fc=facecolors[i], ec=edgecolors[i]))
         lines.append((node_geo, p3))
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
-
-
 
 def gen_patches(node_coords, size, angles, angle_list, **kwargs):
     """
@@ -251,11 +247,13 @@ def gen_patches(node_coords, size, angles, angle_list, **kwargs):
 
     for i, node_geo in enumerate(node_coords):
         try:
-            angle = angle_list[i]  #Exception for index out of range in case of multiple elements of same type
+            angle = angles[i] + angle_list[i]  #Exception for index out of range in case of multiple elements of same type
         except IndexError:
             print("Index out of range!")
-            angle = angle_list[- 1]
+            angle = angles[i] + angle_list[- 1]
         p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
+        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
+
         polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
         polys.append(
             Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
@@ -263,7 +261,7 @@ def gen_patches(node_coords, size, angles, angle_list, **kwargs):
         polys.append(
             Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
                 ec=edgecolors[i]))
-        lines.append((node_geo, p2 + _rotate_dim2(np.array([0, size]), -angle)))
+        lines.append((node_geo, circ_edge))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
     gen_printed = True
 
@@ -297,6 +295,8 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
     Path = mpath.Path
+    x = angle_list
+    #x.insert(0, x.pop())
 
     flatten_list = [item for sublist in angle_list for item in sublist]
 
@@ -306,12 +306,14 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
 
 
     for i, node_geo in enumerate(node_coords):
+        try:
+            sgen_type[i]
+        except KeyError:
+            continue
         if sgen_type[i] == "WT":  # Special patch for sgen_type "Wind Turbine"
-            try:                    #Exception for index out of range in case of multiple elements of same type
-                angle = angle_list[i]
-            except IndexError:
-                print("Index out of range!")
-                angle = angle_list[- 1]
+            # Exception for index out of range in case of multiple elements of same type
+            angle = angles[i] + angle_list[i]
+
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
             circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
@@ -354,14 +356,9 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
             center_point = mid_midcirc  # Define the center point of the wind turbine patch
             rotation_angle = math.pi / 4  # Define the angle of rotation
 
-
         elif sgen_type[i] == "PV":  # Special patch for sgen_type "Photo-voltaic"
-            try:
-                angle = angle_list[i]  #Exception for index out of range in case of multiple elements of same type
-            except IndexError:
-                print("Index out of range!")
-                angle = angle_list[- 1]
-            mid_rect = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+            angle = angles[i] + angle_list[i]   #Exception for index out of range in case of multiple elements of same type
+            mid_rect = node_geo + _rotate_dim2(np.array([0,  2*size]), angle)
             rect_lbottom = [mid_rect[0] - 0.025, mid_rect[1]]
             pv_patch = Rectangle((rect_lbottom), 0.05, 0.1, angle=-angle * (180 / np.pi),
                                  rotation_point=(mid_rect[0], mid_rect[1]), ec="k", fc="none")
@@ -377,11 +374,8 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
             triangle_patch = Polygon(triangle_points, ec="k", fc="none")
             polys.append(triangle_patch)
         else:  # Generic Patch
-            try:
-                angle = angle_list[i]  #Exception for index out of range in case of multiple elements of same type
-            except IndexError:
-                print("Index out of range!")
-                angle = angle_list[-1]
+            angle = angles[i] + angle_list[i]  #Exception for index out of range in case of multiple elements of same type
+
 
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)

@@ -1066,9 +1066,24 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list =
 
         **sgen_lc** - line collection
     """
+    sgens_unique = []
+    for bus in net.sgen.bus.unique():
+        for type in net.sgen[net.sgen.bus == bus].type.unique():
+            idx = net.sgen[(net.sgen.bus ==  bus) & (net.sgen.type == type)].index[0]
+            sgens_unique.append(idx)
+
+
     sgens = get_index_array(sgens, net.sgen.index)
+    sgens = sgens_unique
+    sgen_type = net.sgen.type.loc[sgens]
+
+
+
+
+
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
+
 
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(

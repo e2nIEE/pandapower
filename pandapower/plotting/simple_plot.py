@@ -186,14 +186,23 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         net.sgen.type.unique())
 
     patch_count_unique = {}
+    sgen_types = {}
 
     for i in range(1, len(net.bus)):  # Start from index 1 instead of 0
         sgen_count = 0
         gen_count = 0
         load_count = 0
 
+
         if plot_sgens and len(net.sgen):
             sgen_count = len(net.sgen[net.sgen.bus == i].type.unique())
+
+            sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
+
+            sgen_types[i] = {
+                "WT": sgen_types_counts.get("WT", 0),
+                "PV": sgen_types_counts.get("PV", 0),
+                "wye": sgen_types_counts.get("wye", 0)}
 
         if plot_gens and len(net.gen):
             gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=i))
@@ -204,6 +213,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         total_count = sgen_count + gen_count + load_count
 
         patch_count_unique[i] = {
+
+
             'sgen': [j * (2 * math.pi / total_count) for j in range(sgen_count)],
             'gen': [j * (2 * math.pi / total_count) + sgen_count * (2 * math.pi / total_count) for j in
                     range(gen_count)],

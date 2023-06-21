@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] patches for different sgen types
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
@@ -14,6 +15,7 @@ Change Log
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+
 
 
 [2.13.1] - 2023-05-12
