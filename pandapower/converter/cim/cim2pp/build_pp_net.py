@@ -1503,7 +1503,6 @@ class CimConverter:
         self.net['characteristic_temp'] = pd.concat([self.net['characteristic_temp'], pd.DataFrame(append_dict)],
                                                     ignore_index=True, sort=False)
         self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(int)
-        self.net['trafo_df'] = trafo_df  # todo remove
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))

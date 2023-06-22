@@ -34,6 +34,8 @@ def test_cim2pp(smallgrid):
 
 
 def test_fullgrid(fullgrid):
+    assert 1 == len(fullgrid.trafo3w.index)  # TODO: test with more elements
+
 
     assert True
 
@@ -129,7 +131,7 @@ def test_fullgrid_trafo(fullgrid):
 
 
 def test_fullgrid_tcsc(fullgrid):
-    assert 0 == len(fullgrid.tcsc.index)  # TODO:
+    assert 0 == len(fullgrid.tcsc.index)
 
 
 def test_fullgrid_switch(fullgrid):
@@ -148,11 +150,11 @@ def test_fullgrid_switch(fullgrid):
 
 
 def test_fullgrid_svc(fullgrid):
-    assert 0 == len(fullgrid.svc.index)  # TODO:
+    assert 0 == len(fullgrid.svc.index)
 
 
 def test_fullgrid_storage(fullgrid):
-    assert 0 == len(fullgrid.storage.index)  # TODO:
+    assert 0 == len(fullgrid.storage.index)
 
 
 def test_fullgrid_shunt(fullgrid):
@@ -174,15 +176,15 @@ def test_fullgrid_sgen(fullgrid):
 
 
 def test_fullgrid_pwl_cost(fullgrid):
-    assert 0 == len(fullgrid.pwl_cost.index)  # TODO:
+    assert 0 == len(fullgrid.pwl_cost.index)
 
 
 def test_fullgrid_poly_cost(fullgrid):
-    assert 0 == len(fullgrid.poly_cost.index)  # TODO:
+    assert 0 == len(fullgrid.poly_cost.index)
 
 
 def test_fullgrid_motor(fullgrid):
-    assert 1 == len(fullgrid.motor.index)  # TODO: test with more elements
+    assert 1 == len(fullgrid.motor.index)
     assert 'ASM_1' == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['name'].item()
     assert '_f70f6bad-eb8d-4b8f-8431-4ab93581514e' == fullgrid.bus.iloc[fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['bus'].item()]['origin_id']
     assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['pn_mech_mw'].item())
@@ -201,7 +203,7 @@ def test_fullgrid_motor(fullgrid):
 
 
 def test_fullgrid_measurement(fullgrid):
-    assert 0 == len(fullgrid.measurement.index)  # TODO:
+    assert 0 == len(fullgrid.measurement.index)  # TODO: sv und analogs
 
 
 def test_fullgrid_load(fullgrid):
@@ -353,15 +355,16 @@ def test_fullgrid_dcline(fullgrid):
 
 
 def test_fullgrid_controller(fullgrid):
-    assert True  # TODO:
+    assert 0 == len(fullgrid.controller.index)
+    assert True  # TODO: altes simens simbench netz
 
 
 def test_fullgrid_characteristic_temp(fullgrid):
-    assert True  # TODO:
+    assert 0 == len(fullgrid.characteristic_temp.index)
 
 
 def test_fullgrid_characteristic(fullgrid):
-    assert True  # TODO:
+    assert 0 == len(fullgrid.characteristic.index)
 
 
 def test_fullgrid_bus_geodata(fullgrid):
@@ -387,11 +390,11 @@ def test_fullgrid_bus(fullgrid):
 
 
 def test_fullgrid_asymmetric_sgen(fullgrid):
-    assert 0 == len(fullgrid.asymmetric_sgen.index)  # TODO:
+    assert 0 == len(fullgrid.asymmetric_sgen.index)
 
 
 def test_fullgrid_asymmetric_load(fullgrid):
-    assert 0 == len(fullgrid.asymmetric_load.index)  # TODO:
+    assert 0 == len(fullgrid.asymmetric_load.index)
 
 
 if __name__ == "__main__":
