@@ -34,10 +34,67 @@ def test_cim2pp(smallgrid):
 
 
 def test_fullgrid(fullgrid):
-    assert 1 == len(fullgrid.trafo3w.index)  # TODO: test with more elements
-
 
     assert True
+
+
+def test_fullgrid_trafo3w(fullgrid):
+    assert 1 == len(fullgrid.trafo3w.index)  # TODO: test with more elements
+    assert 'BE-TR3_1' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['name'].item()
+    assert None is fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['std_type'].item()
+    assert '_ac279ca9-c4e2-0145-9f39-c7160fff094d' == fullgrid.bus.iloc[fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['hv_bus'].item()]['origin_id']
+    assert '_99b219f3-4593-428b-a4da-124a54630178' == fullgrid.bus.iloc[fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['mv_bus'].item()]['origin_id']
+    assert '_f96d552a-618d-4d0c-a39a-2dea3c411dee' == fullgrid.bus.iloc[fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['lv_bus'].item()]['origin_id']
+    assert 650.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['sn_hv_mva'].item()
+    assert 650.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['sn_mv_mva'].item()
+    assert 650.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['sn_lv_mva'].item()
+    assert 380.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vn_hv_kv'].item()
+    assert 220.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vn_mv_kv'].item()
+    assert 21.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vn_lv_kv'].item()
+    assert 15.7560924405895 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_hv_percent'].item()
+    assert 17.000038713248305 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_mv_percent'].item()
+    assert 16.752945398532603 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_lv_percent'].item()
+    assert 0.8394327539433621 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_hv_percent'].item()
+    assert 2.400034426828583 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_mv_percent'].item()
+    assert 2.369466354325664 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_lv_percent'].item()
+    assert 0.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['pfe_kw'].item()
+    assert 0.05415 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['i0_percent'].item()
+    assert 0.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['shift_mv_degree'].item()
+    assert 0.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['shift_lv_degree'].item()
+    assert 'mv' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_side'].item()
+    assert 17 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_neutral'].item()
+    assert 1.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_min'].item()
+    assert 33.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_max'].item()
+    assert 0.6250 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_step_percent'].item()
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_step_degree'].item())
+    assert 17.0 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_pos'].item()
+    assert not fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_at_star_point'].item()
+    assert fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['in_service'].item()
+    assert 'PowerTransformer' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['origin_class'].item()
+    assert '_76e9ca77-f805-40ea-8120-5a6d58416d34' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['terminal_hv'].item()
+    assert '_53fd6693-57e6-482e-8fbe-dcf3531a7ce0' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['terminal_mv'].item()
+    assert '_ca0f7e2e-3442-4ada-a704-91f319c0ebe3' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['terminal_lv'].item()
+    assert '_5f68a129-d5d8-4b71-9743-9ca2572ba26b' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['PowerTransformerEnd_id_hv'].item()
+    assert '_e1f661c0-971d-4ce5-ad39-0ec427f288ab' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['PowerTransformerEnd_id_mv'].item()
+    assert '_2e21d1ef-2287-434c-a767-1ca807cf2478' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['PowerTransformerEnd_id_lv'].item()
+    assert 'RatioTapChanger' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tapchanger_class'].item()
+    assert '_fe25f43a-7341-446e-a71a-8ab7119ba806' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tapchanger_id'].item()
+    assert 'YYY' == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vector_group'].item()
+    assert isinstance(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['id_characteristic'].item(), float)
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk0_hv_percent'].item())
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk0_mv_percent'].item())
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk0_lv_percent'].item())
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr0_hv_percent'].item())
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr0_mv_percent'].item())
+    assert math.isnan(fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr0_lv_percent'].item())
+    assert not fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['power_station_unit'].item()
+    assert fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['tap_dependent_impedance'].item()
+    assert 14 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_hv_percent_characteristic'].item()
+    assert 16 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_mv_percent_characteristic'].item()
+    assert 18 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vk_lv_percent_characteristic'].item()
+    assert 15 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_hv_percent_characteristic'].item()
+    assert 17 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_mv_percent_characteristic'].item()
+    assert 19 == fullgrid.trafo3w[fullgrid.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']['vkr_lv_percent_characteristic'].item()
 
 
 def test_fullgrid_trafo(fullgrid):
@@ -82,6 +139,7 @@ def test_fullgrid_trafo(fullgrid):
     assert fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c']['tap_dependent_impedance'].item()
     assert 0 == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c']['vkr_percent_characteristic'].item()
     assert 1 == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c']['vk_percent_characteristic'].item()
+
     assert 'BE-TR2_6' == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['name'].item()
     assert None is fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['std_type'].item()
     assert '_e44141af-f1dc-44d3-bfa4-b674e5c953d7' == fullgrid.bus.iloc[fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['hv_bus'].item()]['origin_id']
@@ -122,6 +180,7 @@ def test_fullgrid_trafo(fullgrid):
     assert fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['tap_dependent_impedance'].item()
     assert 8 == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item()
     assert 9 == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vk_percent_characteristic'].item()
+
     assert 1.990 == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']['tap_step_degree'].item()
     assert 'PhaseTapChangerLinear' == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']['tapchanger_class'].item()
     assert math.isnan(fullgrid.trafo[fullgrid.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']['id_characteristic'].item())
