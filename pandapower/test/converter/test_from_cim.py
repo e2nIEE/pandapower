@@ -458,12 +458,19 @@ def test_fullgrid_controller(fullgrid):
     assert 8 == len(fullgrid.controller.index)  # TODO: altes simens simbench netz
 
 
-def test_fullgrid_characteristic_temp(fullgrid):  # TODO:
+def test_fullgrid_characteristic_temp(fullgrid):
     assert 8 == len(fullgrid.characteristic_temp.index)
 
 
-def test_fullgrid_characteristic(fullgrid):  # TODO:
+def test_fullgrid_characteristic(fullgrid):
     assert 20 == len(fullgrid.characteristic.index)
+    for obj in fullgrid.characteristic.iterrows():
+        if obj.index == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
+            assert 'quadratic' == obj.kind
+            assert [1] == obj.x_vals
+            assert [1.3405981856094185] == obj.y_vals
+            break
+
 
 
 def test_fullgrid_bus_geodata(fullgrid):
