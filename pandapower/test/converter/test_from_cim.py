@@ -34,9 +34,26 @@ def test_cim2pp(smallgrid):
 
 
 def test_fullgrid(fullgrid):
-    test_fullgrid_shunt(fullgrid)
-
     assert True
+
+
+def test_fullgrid_tcsc(fullgrid):
+    assert 0 == len(fullgrid.tcsc.index)  # TODO:
+
+
+def test_fullgrid_switch(fullgrid):
+    assert 4 == len(fullgrid.switch.index)
+    assert '_5c74cb26-ce2f-40c6-951d-89091eb781b6' == fullgrid.bus.iloc[fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['bus'].item()]['origin_id']
+    assert '_c21be5da-d2a6-d94f-8dcb-92e4d6fa48a7' == fullgrid.bus.iloc[fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['element'].item()]['origin_id']
+    assert 'b' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['et'].item()
+    assert 'DS' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['type'].item()
+    assert fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['closed'].item()
+    assert 'BE_DSC_5' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['name'].item()
+    assert 0.0 == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['z_ohm'].item()
+    assert math.isnan(fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['in_ka'].item())
+    assert 'Disconnector' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['origin_class'].item()
+    assert '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['terminal_bus'].item()
+    assert '_916578a1-7a6e-7347-a5e0-aaf35538949c' == fullgrid.switch[fullgrid.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']['terminal_element'].item()
 
 
 def test_fullgrid_svc(fullgrid):
