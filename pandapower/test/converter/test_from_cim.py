@@ -87,7 +87,7 @@ def test_fullgrid_impedance(fullgrid):
 def test_fullgrid_gen(fullgrid):
     assert 9 == len(fullgrid.gen.index)
     assert 'BE-G5' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['name'].item()
-    assert 5 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['bus'].item()  # TODO:
+    assert '_f96d552a-618d-4d0c-a39a-2dea3c411dee' == fullgrid.bus.iloc[fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['bus'].item()]['origin_id']
     assert 118.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['p_mw'].item()
     assert 1.04700 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['vm_pu'].item()
     assert 300.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['sn_mva'].item()
@@ -96,17 +96,19 @@ def test_fullgrid_gen(fullgrid):
     assert 1.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['scaling'].item()
     assert not fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['slack'].item()
     assert fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['in_service'].item()
-    # assert 'BE-G5' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['name'].item()
+    assert math.isnan(fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['slack_weight'].item())
     assert 'Nuclear' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['type'].item()
     assert 'SynchronousMachine' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['origin_class'].item()
     assert '_b2dcbf07-4676-774f-ae35-86c1ab695de0' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['terminal'].item()
     assert 50.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['min_p_mw'].item()
     assert 200 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['max_p_mw'].item()
     assert 21.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['vn_kv'].item()
-    # assert 'BE-G5' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['name'].item()
-    # assert 'BE-G5' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['name'].item()
+    assert math.isnan(fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['rdss_ohm'].item())
+    assert math.isnan(fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['xdss_pu'].item())
     assert 0.850 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['cos_phi'].item()
     assert 0.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['pg_percent'].item()
+
+    # TODO: debug errors and alter test if needed
 
 
 def test_fullgrid_ext_grid(fullgrid):
