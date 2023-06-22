@@ -6,8 +6,6 @@ from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
 
-
-# TODO: gl dl test
 @pytest.fixture(scope="session")
 def fullgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
@@ -38,8 +36,18 @@ def smallgrid_DL():
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
-def test_smallgrid_DL(smallgrid_DL):
-    assert True  # TODO busgeo linegeo
+def test_smallgrid_DL_line_geodata(smallgrid_DL):
+    assert 176 == len(smallgrid_DL.line_geodata.index)
+    assert [[162.363632, 128.4656], [162.328033, 134.391541], [181.746033, 134.43364]] == smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index]['coords'].item()
+    assert [[12.87877, 58.5714264], [12.8923006, 69.33862]] == smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index]['coords'].item()
+
+
+def test_smallgrid_DL_bus_geodata(smallgrid_DL):
+    assert 118 == len(smallgrid_DL.bus_geodata.index)
+    assert 18.5449734 == smallgrid_DL.bus_geodata.iloc[smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]['x'].item()
+    assert 11.8253975 == smallgrid_DL.bus_geodata.iloc[smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]['y'].item()
+    assert [[18.5449734, 11.8253975], [18.5449734, 19.41799]] == smallgrid_DL.bus_geodata.iloc[smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index][
+        'coords'].item()
 
 
 def test_cim2pp(smallgrid_GL):
