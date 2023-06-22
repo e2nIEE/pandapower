@@ -458,7 +458,7 @@ def test_fullgrid_dcline(fullgrid):
 def test_fullgrid_controller(fullgrid):
     assert 8 == len(fullgrid.controller.index)
     for _, obj in fullgrid.controller.iterrows():
-        if (obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c'].index).item():
+        if obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c'].index:
             assert not obj['in_service']
             assert 0.0 == obj['order']
             assert 0 == obj['level']
@@ -479,14 +479,14 @@ def test_fullgrid_controller(fullgrid):
             assert 1.25 == obj.object.tap_step_percent
             assert 0 == obj.object.tid
             assert math.isnan(obj.object.tol)
-            assert 11 == obj.object.trafobus  # TODO:
+            assert '_b01fe92f-68ab-4123-ae45-f22d3e8daad1' == fullgrid.bus.iloc[obj.object.trafobus]['origin_id']
             assert 'trafo' == obj.object.trafotable
             assert '2W' == obj.object.trafotype
             assert math.isnan(obj.object.vm_delta_pu)
             assert math.isnan(obj.object.vm_lower_pu)
             assert None is obj.object.vm_set_pu
             assert math.isnan(obj.object.vm_upper_pu)
-        if (obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_69a301e8-f6b2-47ad-9f65-52f2eabc9917'].index).item():
+        if obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_69a301e8-f6b2-47ad-9f65-52f2eabc9917'].index:
             assert obj['in_service']
             assert 0.0 == obj['order']
             assert 0 == obj['level']
@@ -507,7 +507,7 @@ def test_fullgrid_controller(fullgrid):
             assert 1.25 == obj.object.tap_step_percent
             assert 3 == obj.object.tid
             assert math.isnan(obj.object.tol)
-            assert 10 == obj.object.trafobus  # TODO:
+            assert '_ac772dd8-7910-443f-8af0-a7fca0fb57f9' == fullgrid.bus.iloc[obj.object.trafobus]['origin_id']
             assert 'trafo' == obj.object.trafotable
             assert '2W' == obj.object.trafotype
             assert math.isnan(obj.object.vm_delta_pu)
