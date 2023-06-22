@@ -8,7 +8,7 @@ from pandapower.converter import from_cim as cim2pp
 
 
 # TODO: gl dl test
-@pytest.fixture
+@pytest.fixture(scope="session")
 def fullgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -18,7 +18,7 @@ def fullgrid():
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def smallgrid_GL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -28,7 +28,7 @@ def smallgrid_GL():
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def smallgrid_DL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -36,6 +36,7 @@ def smallgrid_DL():
                    os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
 
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
+
 
 def test_smallgrid_DL(smallgrid_DL):
     assert True  # TODO busgeo linegeo
@@ -455,7 +456,64 @@ def test_fullgrid_dcline(fullgrid):
 
 
 def test_fullgrid_controller(fullgrid):
-    assert 8 == len(fullgrid.controller.index)  # TODO: altes simens simbench netz
+    assert 8 == len(fullgrid.controller.index)
+    for _, obj in fullgrid.controller.iterrows():
+        if (obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c'].index).item():
+            assert not obj['in_service']
+            assert 0.0 == obj['order']
+            assert 0 == obj['level']
+            assert obj['initial_run']
+            assert not obj['recycle'].get('bus_pq')
+            assert not obj['recycle'].get('gen')
+            assert obj['recycle'].get('trafo')
+            assert 11 == obj.object.controlled_bus
+            assert 0 == obj.object.controlled_tid
+            assert 'lv' == obj.object.side
+            assert 15.0 == obj.object.tap_max
+            assert -15.0 == obj.object.tap_min
+            assert 0.0 == obj.object.tap_neutral
+            assert -2.0 == obj.object.tap_pos
+            assert 1 == obj.object.tap_side_coeff
+            assert 1 == obj.object.tap_sign
+            assert math.isnan(obj.object.tap_step_degree)
+            assert 1.25 == obj.object.tap_step_percent
+            assert 0 == obj.object.tid
+            assert math.isnan(obj.object.tol)
+            assert 11 == obj.object.trafobus  # TODO:
+            assert 'trafo' == obj.object.trafotable
+            assert '2W' == obj.object.trafotype
+            assert math.isnan(obj.object.vm_delta_pu)
+            assert math.isnan(obj.object.vm_lower_pu)
+            assert None is obj.object.vm_set_pu
+            assert math.isnan(obj.object.vm_upper_pu)
+        if (obj.object.matching_params.get('tid') == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_69a301e8-f6b2-47ad-9f65-52f2eabc9917'].index).item():
+            assert obj['in_service']
+            assert 0.0 == obj['order']
+            assert 0 == obj['level']
+            assert obj['initial_run']
+            assert not obj['recycle'].get('bus_pq')
+            assert not obj['recycle'].get('gen')
+            assert obj['recycle'].get('trafo')
+            assert 10 == obj.object.controlled_bus
+            assert 3 == obj.object.controlled_tid
+            assert 'lv' == obj.object.side
+            assert 10.0 == obj.object.tap_max
+            assert -10.0 == obj.object.tap_min
+            assert 0.0 == obj.object.tap_neutral
+            assert 0.0 == obj.object.tap_pos
+            assert 1 == obj.object.tap_side_coeff
+            assert 1 == obj.object.tap_sign
+            assert math.isnan(obj.object.tap_step_degree)
+            assert 1.25 == obj.object.tap_step_percent
+            assert 3 == obj.object.tid
+            assert math.isnan(obj.object.tol)
+            assert 10 == obj.object.trafobus  # TODO:
+            assert 'trafo' == obj.object.trafotable
+            assert '2W' == obj.object.trafotype
+            assert math.isnan(obj.object.vm_delta_pu)
+            assert math.isnan(obj.object.vm_lower_pu)
+            assert None is obj.object.vm_set_pu
+            assert math.isnan(obj.object.vm_upper_pu)
 
 
 def test_fullgrid_characteristic_temp(fullgrid):
@@ -464,13 +522,12 @@ def test_fullgrid_characteristic_temp(fullgrid):
 
 def test_fullgrid_characteristic(fullgrid):
     assert 20 == len(fullgrid.characteristic.index)
-    for obj in fullgrid.characteristic.iterrows():
-        if obj.index == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
-            assert 'quadratic' == obj.kind
-            assert [1] == obj.x_vals
-            assert [1.3405981856094185] == obj.y_vals
+    for _, obj in fullgrid.characteristic.iterrows():
+        if obj.object.index == fullgrid.trafo[fullgrid.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
+            assert 'quadratic' == obj.object.kind
+            assert [1] == obj.object.x_vals
+            assert [1.3405981856094185] == obj.object.y_vals
             break
-
 
 
 def test_fullgrid_bus_geodata(fullgrid):
