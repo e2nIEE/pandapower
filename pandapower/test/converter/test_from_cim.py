@@ -19,7 +19,7 @@ def fullgrid():
 
 
 @pytest.fixture
-def smallgrid():
+def smallgrid_GL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
@@ -28,9 +28,38 @@ def smallgrid():
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-def test_cim2pp(smallgrid):
-    assert 118 == len(smallgrid.bus.index)
-    assert 115 == len(smallgrid.bus_geodata.index)
+@pytest.fixture
+def smallgrid_DL():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
+                   os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
+
+def test_smallgrid_DL(smallgrid_DL):
+    assert True  # TODO busgeo linegeo
+
+
+def test_cim2pp(smallgrid_GL):
+    assert 118 == len(smallgrid_GL.bus.index)
+
+
+def test_smallgrid_GL_line_geodata(smallgrid_GL):
+    assert 176 == len(smallgrid_GL.line_geodata.index)
+    assert [[-0.741597592830658, 51.33917999267578], [-0.9601190090179443, 51.61038589477539], [-1.0638651847839355, 51.73857879638672], [-1.1654152870178223, 52.01515579223633],
+            [-1.1700644493103027, 52.199188232421875]] == smallgrid_GL.line_geodata.iloc[smallgrid_GL.line[smallgrid_GL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index][
+               'coords'].item()
+    assert [[-3.339864492416382, 58.50086212158203], [-3.3406713008880615, 58.31454086303711], [-3.6551620960235596, 58.135623931884766], [-4.029672145843506, 57.973060607910156],
+            [-4.254667282104492, 57.71146774291992], [-4.405538082122803, 57.53498840332031]] == \
+           smallgrid_GL.line_geodata.iloc[smallgrid_GL.line[smallgrid_GL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index]['coords'].item()
+
+
+def test_smallgrid_GL_bus_geodata(smallgrid_GL):
+    assert 115 == len(smallgrid_GL.bus_geodata.index)
+    assert -4.844991207122803 == smallgrid_GL.bus_geodata.iloc[smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]['x'].item()
+    assert 55.92612075805664 == smallgrid_GL.bus_geodata.iloc[smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]['y'].item()
+    assert [[-4.844991207122803, 55.92612075805664]] == smallgrid_GL.bus_geodata.iloc[smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]['coords'].item()
 
 
 def test_fullgrid_xward(fullgrid):
@@ -294,7 +323,7 @@ def test_fullgrid_load(fullgrid):
 
 
 def test_fullgrid_line_geodata(fullgrid):
-    assert 0 == len(fullgrid.line_geodata.index)  # TODO:
+    assert 0 == len(fullgrid.line_geodata.index)
 
 
 def test_fullgrid_line(fullgrid):
@@ -426,20 +455,19 @@ def test_fullgrid_dcline(fullgrid):
 
 
 def test_fullgrid_controller(fullgrid):
-    assert 0 == len(fullgrid.controller.index)
-    assert True  # TODO: altes simens simbench netz
+    assert 8 == len(fullgrid.controller.index)  # TODO: altes simens simbench netz
 
 
-def test_fullgrid_characteristic_temp(fullgrid):
-    assert 0 == len(fullgrid.characteristic_temp.index)
+def test_fullgrid_characteristic_temp(fullgrid):  # TODO:
+    assert 8 == len(fullgrid.characteristic_temp.index)
 
 
-def test_fullgrid_characteristic(fullgrid):
-    assert 0 == len(fullgrid.characteristic.index)
+def test_fullgrid_characteristic(fullgrid):  # TODO:
+    assert 20 == len(fullgrid.characteristic.index)
 
 
 def test_fullgrid_bus_geodata(fullgrid):
-    assert 0 == len(fullgrid.bus_geodata.index)  # TODO:
+    assert 0 == len(fullgrid.bus_geodata.index)
 
 
 def test_fullgrid_bus(fullgrid):
