@@ -40,9 +40,9 @@ def test_fullgrid(fullgrid):
 def test_fullgrid_line(fullgrid):
     assert 11 == len(fullgrid.line.index)
     assert 'BE-Line_7' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['name'].item()
-    assert None == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['std_type'].item()
-    assert 24 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['from_bus'].item()  # TODO:
-    assert 3 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['to_bus'].item()  # TODO:
+    assert None is fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['std_type'].item()
+    assert '_1fa19c281c8f4e1eaad9e1cab70f923e' == fullgrid.bus.iloc[fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['from_bus'].item()]['origin_id']
+    assert '_f70f6bad-eb8d-4b8f-8431-4ab93581514e' == fullgrid.bus.iloc[fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['to_bus'].item()]['origin_id']
     assert 23.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['length_km'].item()
     assert 0.19999999999999998 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['r_ohm_per_km'].item()
     assert 3.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['x_ohm_per_km'].item()
@@ -51,7 +51,7 @@ def test_fullgrid_line(fullgrid):
     assert 1.0620 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['max_i_ka'].item()
     assert 1.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['df'].item()
     assert 1.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['parallel'].item()
-    assert None == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['type'].item()
+    assert None is fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['type'].item()
     assert fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['in_service'].item()
     assert 'ACLineSegment' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['origin_class'].item()
     assert '_57ae9251-c022-4c67-a8eb-611ad54c963c' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['terminal_from'].item()
@@ -61,14 +61,15 @@ def test_fullgrid_line(fullgrid):
     assert math.isnan(fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['c0_nf_per_km'].item())
     assert 0.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['g0_us_per_km'].item()
     assert math.isnan(fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['endtemp_degree'].item())
+
     assert math.isnan(fullgrid.line[fullgrid.line['origin_id'] == '_6052bacf-9eaa-4217-be91-4c7c89e92a52']['max_i_ka'].item())
 
 
 def test_fullgrid_impedance(fullgrid):
-    assert 1 == len(fullgrid.impedance.index)
+    assert 1 == len(fullgrid.impedance.index)  # TODO: test with more elements
     assert 'BE_SC_1' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['name'].item()
-    assert 1 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['from_bus'].item()  # TODO:
-    assert 7 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['to_bus'].item()  # TODO:
+    assert '_514fa0d5-a432-5743-8204-1c8518ffed76' == fullgrid.bus.iloc[fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['from_bus'].item()]['origin_id']
+    assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == fullgrid.bus.iloc[fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['to_bus'].item()]['origin_id']
     assert 8.181818181818182e-05 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['rft_pu'].item()
     assert 8.181818181818182e-05 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['xft_pu'].item()
     assert 8.181818181818182e-05 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['rtf_pu'].item()
@@ -78,10 +79,10 @@ def test_fullgrid_impedance(fullgrid):
     assert 'SeriesCompensator' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['origin_class'].item()
     assert '_0b2c4a73-e4dd-4445-acc3-1284ad5a8a70' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['terminal_from'].item()
     assert '_8c735a96-1b4c-a34d-8823-d6124bd87042' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['terminal_to'].item()
-    # assert 'BE_SC_1' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362'][].item()
-    # assert 'BE_SC_1' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362'][].item()
-    # assert 'BE_SC_1' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362'][].item()
-    # assert 'BE_SC_1' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362'][].item()
+    assert math.isnan(fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['rft0_pu'].item())
+    assert math.isnan(fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['xft0_pu'].item())
+    assert math.isnan(fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['rtf0_pu'].item())
+    assert math.isnan(fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['xtf0_pu'].item())
 
 
 def test_fullgrid_gen(fullgrid):
