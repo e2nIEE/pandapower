@@ -7,7 +7,7 @@ import pytest
 import pandas
 
 import pandapower.plotting.geo as geo
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.helper_functions import create_test_network
 
 
 def test__node_geometries_from_geodata():
@@ -63,11 +63,25 @@ def test__transform_branch_geometry_to_coords():
 
 
 def test__convert_xy_epsg():
-    # I am not sure if it is feasible to test this function here.
-    #  This function is more or less a wrapper around pyproj transformer
-    #  which I assume is tested by the pyproj developers
-    pytest.skip("Not implemented")
-
+    x = 9.487
+    y = 51.320
+    result = geo._convert_xy_epsg(x, y, 4326, 31467)
+    expected = (3534023, 5687359)
+    assert result == pytest.approx(expected)
+    result = geo._convert_xy_epsg(x, y, 4326, 3857)
+    expected = (1056088, 6678094)
+    assert result == pytest.approx(expected)
+    x = 3534023
+    y = 5687359
+    result = geo._convert_xy_epsg(x, y, 31467, 4326)
+    expected = (9.487, 51.320)
+    assert result == pytest.approx(expected, abs=1e-3)
+    x = [9.487, 9]
+    y = [51.320, 51]
+    result_x, result_y = geo._convert_xy_epsg(x, y, 4326, 31467)
+    expected_x, expected_y = ([3534023, 3500073], [5687359, 5651645])
+    assert result_x == pytest.approx(expected_x)
+    assert result_y == pytest.approx(expected_y)
 
 def test_convert_gis_to_geodata():
     pytest.importorskip("geopandas")
@@ -135,8 +149,10 @@ def test_convert_geodata_to_gis():
 
 
 def test_convert_epsg_bus_geodata():
-    # I am not sure if it is feasible to test this function here.
-    #  This function applies _convert_xy_epsg to the bus_geodata dataframe
+    pytest.skip("Not implemented")
+
+
+def test_convert_crs():
     pytest.skip("Not implemented")
 
 
