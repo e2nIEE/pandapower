@@ -33,9 +33,21 @@ def test_cim2pp(smallgrid):
     assert 115 == len(smallgrid.bus_geodata.index)
 
 
-def test_fullgrid(fullgrid):
+def test_fullgrid_xward(fullgrid):
+    assert 0 == len(fullgrid.xward.index)  # TODO:
 
-    assert True
+
+def test_fullgrid_ward(fullgrid):
+    assert 5 == len(fullgrid.ward.index)
+    assert 'BE-Inj-XCA_AL11' == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['name'].item()
+    assert '_d4affe50316740bdbbf4ae9c7cbf3cfd' == fullgrid.bus.iloc[fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['bus'].item()]['origin_id']
+    assert -46.816625 == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['ps_mw'].item()
+    assert 79.193778 == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['qs_mvar'].item()
+    assert 0.0 == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['qz_mvar'].item()
+    assert 0.0 == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['pz_mw'].item()
+    assert fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['in_service'].item()
+    assert 'EquivalentInjection' == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['origin_class'].item()
+    assert '_53072f42-f77b-47e2-bd9a-e097c910b173' == fullgrid.ward[fullgrid.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']['terminal'].item()
 
 
 def test_fullgrid_trafo3w(fullgrid):
