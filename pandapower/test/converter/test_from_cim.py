@@ -112,26 +112,27 @@ def test_fullgrid_gen(fullgrid):
 def test_fullgrid_ext_grid(fullgrid):
     assert 1 == len(fullgrid.ext_grid.index)
     assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    assert 3 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['bus'].item()  # TODO:
+    assert '_f70f6bad-eb8d-4b8f-8431-4ab93581514e' == fullgrid.bus.iloc[fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['bus'].item()]['origin_id']
     assert 1 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['vm_pu'].item()
     assert 0 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['va_degree'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['slack_weight'].item())
     assert fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['in_service'].item()
     assert 'EnergySource' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['origin_class'].item()
     assert '_9835652b-053f-cb44-822e-1e26950d989c' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['terminal'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['min_p_mw'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['max_p_mw'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['min_q_mvar'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['max_q_mvar'].item())
     assert -9.99000 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['p_mw'].item()
     assert -0.99000 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['q_mvar'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['s_sc_max_mva'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['s_sc_min_mva'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['rx_max'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['rx_min'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['r0x0_max'].item())
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['x0x_max'].item())
+
+    # TODO: other networks with more than one slack
 
 
 def test_fullgrid_dcline(fullgrid):
