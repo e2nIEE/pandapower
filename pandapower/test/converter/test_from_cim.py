@@ -38,6 +38,25 @@ def test_fullgrid(fullgrid):
     assert True
 
 
+def test_fullgrid_motor(fullgrid):
+    assert 1 == len(fullgrid.motor.index)  # TODO: test with more elements
+    assert 'ASM_1' == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['name'].item()
+    assert '_f70f6bad-eb8d-4b8f-8431-4ab93581514e' == fullgrid.bus.iloc[fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['bus'].item()]['origin_id']
+    assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['pn_mech_mw'].item())
+    assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['loading_percent'].item())
+    assert 0.9 == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['cos_phi'].item()
+    assert 0.9 == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['cos_phi_n'].item()
+    assert 100.0 == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['efficiency_percent'].item()
+    assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['efficiency_n_percent'].item())
+    assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['lrc_pu'].item())
+    assert 225.0 == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['vn_kv'].item()
+    assert 1.0 == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['scaling'].item()
+    assert fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['in_service'].item()
+    assert math.isnan(fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['rx'].item())
+    assert 'AsynchronousMachine' == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['origin_class'].item()
+    assert '_7b71e695-3977-f544-b31f-777cfbbde49b' == fullgrid.motor[fullgrid.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']['terminal'].item()
+
+
 def test_fullgrid_measurement(fullgrid):
     assert 0 == len(fullgrid.measurement.index)
 
