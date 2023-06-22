@@ -34,8 +34,43 @@ def test_cim2pp(smallgrid):
 
 
 def test_fullgrid(fullgrid):
+    test_fullgrid_shunt(fullgrid)
 
     assert True
+
+
+def test_fullgrid_svc(fullgrid):
+    assert 0 == len(fullgrid.svc.index)  # TODO:
+
+
+def test_fullgrid_storage(fullgrid):
+    assert 0 == len(fullgrid.storage.index)  # TODO:
+
+
+def test_fullgrid_shunt(fullgrid):
+    assert 6 == len(fullgrid.shunt.index)
+    assert 'BE_S1' == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['name'].item()
+    assert '_f6ee76f7-3d28-6740-aa78-f0bf7176cdad' == fullgrid.bus.iloc[fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['bus'].item()]['origin_id']
+    assert -299.99530 == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['q_mvar'].item()
+    assert 0.0 == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['p_mw'].item()
+    assert 110.0 == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['vn_kv'].item()
+    assert 1 == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['step'].item()
+    assert 1 == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['max_step'].item()
+    assert fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['in_service'].item()
+    assert 'LinearShuntCompensator' == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['origin_class'].item()
+    assert '_d5e2e58e-ccf6-47d9-b3bb-3088eb7a9b6c' == fullgrid.shunt[fullgrid.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']['terminal'].item()
+
+
+def test_fullgrid_sgen(fullgrid):
+    assert 0 == len(fullgrid.sgen.index)  # TODO:
+
+
+def test_fullgrid_pwl_cost(fullgrid):
+    assert 0 == len(fullgrid.pwl_cost.index)  # TODO:
+
+
+def test_fullgrid_poly_cost(fullgrid):
+    assert 0 == len(fullgrid.poly_cost.index)  # TODO:
 
 
 def test_fullgrid_motor(fullgrid):
@@ -58,7 +93,7 @@ def test_fullgrid_motor(fullgrid):
 
 
 def test_fullgrid_measurement(fullgrid):
-    assert 0 == len(fullgrid.measurement.index)
+    assert 0 == len(fullgrid.measurement.index)  # TODO:
 
 
 def test_fullgrid_load(fullgrid):
