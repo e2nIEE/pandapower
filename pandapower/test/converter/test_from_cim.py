@@ -1,6 +1,7 @@
 import os
 import pytest
 import math
+import pandas as pd
 from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
@@ -51,7 +52,7 @@ def test_fullgrid_line(fullgrid):
     assert 1.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['df'].item()
     assert 1.0 == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['parallel'].item()
     assert None == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['type'].item()
-    assert True == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['in_service'].item()
+    assert fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['in_service'].item()
     assert 'ACLineSegment' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['origin_class'].item()
     assert '_57ae9251-c022-4c67-a8eb-611ad54c963c' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['terminal_from'].item()
     assert '_5b2c65b0-68ce-4530-85b7-385346a3b5e1' == fullgrid.line[fullgrid.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']['terminal_to'].item()
@@ -73,7 +74,7 @@ def test_fullgrid_impedance(fullgrid):
     assert 8.181818181818182e-05 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['rtf_pu'].item()
     assert 8.181818181818182e-05 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['xtf_pu'].item()
     assert 1.0 == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['sn_mva'].item()
-    assert True == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['in_service'].item()
+    assert fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['in_service'].item()
     assert 'SeriesCompensator' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['origin_class'].item()
     assert '_0b2c4a73-e4dd-4445-acc3-1284ad5a8a70' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['terminal_from'].item()
     assert '_8c735a96-1b4c-a34d-8823-d6124bd87042' == fullgrid.impedance[fullgrid.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']['terminal_to'].item()
@@ -93,8 +94,8 @@ def test_fullgrid_gen(fullgrid):
     assert -200.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['min_q_mvar'].item()
     assert 200.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['max_q_mvar'].item()
     assert 1.0 == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['scaling'].item()
-    assert False == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['slack'].item()
-    assert True == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['in_service'].item()
+    assert not fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['slack'].item()
+    assert fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['in_service'].item()
     # assert 'BE-G5' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['name'].item()
     assert 'Nuclear' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['type'].item()
     assert 'SynchronousMachine' == fullgrid.gen[fullgrid.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']['origin_class'].item()
@@ -115,7 +116,7 @@ def test_fullgrid_ext_grid(fullgrid):
     assert 1 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['vm_pu'].item()
     assert 0 == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['va_degree'].item()
     # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
-    assert True == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['in_service'].item()
+    assert fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['in_service'].item()
     assert 'EnergySource' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['origin_class'].item()
     assert '_9835652b-053f-cb44-822e-1e26950d989c' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['terminal'].item()
     # assert 'ES_1' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['name'].item()
@@ -136,23 +137,28 @@ def test_fullgrid_ext_grid(fullgrid):
 def test_fullgrid_dcline(fullgrid):
     assert 2 == len(fullgrid.dcline.index)
     assert 'LDC-1230816355' == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['name'].item()
-    assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()  # TODO:
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
+    assert '_27d57afa-6c9d-4b06-93ea-8c88d14af8b1' == fullgrid.bus.iloc[fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()]['origin_id']
+    assert '_d3d9c515-2ddb-436a-bf17-2f8be2394de3' == fullgrid.bus.iloc[int(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['to_bus'].item())]['origin_id']
     assert 0.0 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['p_mw'].item()
     assert 0.0 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['loss_percent'].item()
     assert 0.0 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['loss_mw'].item()
     assert 1.0 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['vm_from_pu'].item()
     assert 1.0 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['vm_to_pu'].item()
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
-    # assert 19 == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['from_bus'].item()
-    assert True == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['in_service'].item()
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['max_p_mw'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['min_q_from_mvar'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['min_q_to_mvar'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['max_q_from_mvar'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['max_q_to_mvar'].item())
+    assert fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['in_service'].item()
     assert 'DCLineSegment' == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['origin_class'].item()
     assert '_4123e718-716a-4988-bf71-0e525a4422f2' == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['terminal_from'].item()
     assert '_c4c335b5-0405-4539-be10-697f5a3f3e83' == fullgrid.dcline[fullgrid.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']['terminal_to'].item()
 
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['to_bus'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['loss_mw'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['vm_to_pu'].item())
+    assert pd.isna(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['in_service'].item())
+    assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['terminal_to'].item())
 
 def test_fullgrid_controller(fullgrid):
     assert True  # TODO:
@@ -165,7 +171,7 @@ def test_fullgrid_characteristic(fullgrid):
 
 
 def test_fullgrid_bus_geodata(fullgrid):
-    assert 0 == len(fullgrid.bus_geodata.index)
+    assert 0 == len(fullgrid.bus_geodata.index)  # TODO:
 
 
 def test_fullgrid_bus(fullgrid):
@@ -174,7 +180,7 @@ def test_fullgrid_bus(fullgrid):
     assert 110.00000 == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['vn_kv'].item()
     assert 'b' == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['type'].item()
     assert '' == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['zone'].item()
-    assert True == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['in_service'].item()
+    assert fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['in_service'].item()
     assert 'TopologicalNode' == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['origin_class'].item()
     assert 'tp' == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['origin_profile'].item()
     assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == fullgrid.bus[fullgrid.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']['cim_topnode'].item()
