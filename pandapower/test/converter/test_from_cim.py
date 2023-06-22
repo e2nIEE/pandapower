@@ -34,7 +34,32 @@ def test_cim2pp(smallgrid):
 
 
 def test_fullgrid(fullgrid):
+
     assert True
+
+
+def test_fullgrid_measurement(fullgrid):
+    assert 0 == len(fullgrid.measurement.index)
+
+
+def test_fullgrid_load(fullgrid):
+    assert 5 == len(fullgrid.load.index)
+    assert 'BE_CL_1' == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['name'].item()
+    assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == fullgrid.bus.iloc[fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['bus'].item()]['origin_id']
+    assert 0.010 == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['p_mw'].item()
+    assert 0.010 == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['q_mvar'].item()
+    assert 0.0 == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['const_z_percent'].item()
+    assert 0.0 == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['const_i_percent'].item()
+    assert math.isnan(fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['sn_mva'].item())
+    assert 1.0 == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['scaling'].item()
+    assert fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['in_service'].item()
+    assert None is fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['type'].item()
+    assert 'ConformLoad' == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['origin_class'].item()
+    assert '_84f6ff75-6bf9-8742-ae06-1481aa3b34de' == fullgrid.load[fullgrid.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']['terminal'].item()
+
+
+def test_fullgrid_line_geodata(fullgrid):
+    assert 0 == len(fullgrid.line_geodata.index)  # TODO:
 
 
 def test_fullgrid_line(fullgrid):
@@ -164,11 +189,14 @@ def test_fullgrid_dcline(fullgrid):
     assert pd.isna(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['in_service'].item())
     assert math.isnan(fullgrid.dcline[fullgrid.dcline['origin_id'] == '_d7693c6d-58bd-49da-bb24-973a63f9faf1']['terminal_to'].item())
 
+
 def test_fullgrid_controller(fullgrid):
     assert True  # TODO:
 
+
 def test_fullgrid_characteristic_temp(fullgrid):
     assert True  # TODO:
+
 
 def test_fullgrid_characteristic(fullgrid):
     assert True  # TODO:
