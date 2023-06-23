@@ -6,6 +6,7 @@ from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
 
+
 @pytest.fixture(scope="session")
 def fullgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
@@ -13,7 +14,7 @@ def fullgrid():
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
                    os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
+    return cim2pp.from_cim(file_list=cgmes_files)
 
 
 @pytest.fixture(scope="session")
@@ -36,10 +37,62 @@ def smallgrid_DL():
     return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
+@pytest.fixture(scope="session")
+def realgrid():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_RealGridTestConfiguration_v2.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files)
+
+
+def test_realgrid_sgen(realgrid):
+    assert 819 == len(realgrid.sgen.index)
+    assert '1149773851' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['name'].item()
+    assert '_1362221690_VL_TN1' == realgrid.bus.iloc[realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['bus'].item()]['origin_id']
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['p_mw'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['q_mvar'].item()
+    assert 26.53770 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['sn_mva'].item()
+    assert 1.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['scaling'].item()
+    assert not realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['in_service'].item()
+    assert 'Hydro' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['type'].item()
+    assert realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['current_source'].item()
+    assert 'SynchronousMachine' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['origin_class'].item()
+    assert '_1149773851_HGU_SM_T0' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['terminal'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['k'].item()
+    assert math.isnan(realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['rx'].item())
+    assert 20.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['vn_kv'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['rdss_ohm'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['xdss_pu'].item()
+    assert math.isnan(realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['lrc_pu'].item())
+    assert 'current_source' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['generator_type'].item()
+
+    assert '1994364905' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['name'].item()
+    assert '_1129435962_VL_TN1' == realgrid.bus.iloc[realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['bus'].item()]['origin_id']
+    assert 1.00658 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['p_mw'].item()
+    assert 1.65901 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['q_mvar'].item()
+    assert 49.2443 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['sn_mva'].item()
+    assert 1.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['scaling'].item()
+    assert realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['in_service'].item()
+    assert 'GeneratingUnit' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['type'].item()
+    assert realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['current_source'].item()
+    assert 'SynchronousMachine' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['origin_class'].item()
+    assert '_1994364905_GU_SM_T0' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['terminal'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['k'].item()
+    assert math.isnan(realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['rx'].item())
+    assert 20.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['vn_kv'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['rdss_ohm'].item()
+    assert 0.0 == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['xdss_pu'].item()
+    assert math.isnan(realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['lrc_pu'].item())
+    assert 'current_source' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1994364905_GU_SM']['generator_type'].item()
+
+
 def test_smallgrid_DL_line_geodata(smallgrid_DL):
     assert 176 == len(smallgrid_DL.line_geodata.index)
-    assert [[162.363632, 128.4656], [162.328033, 134.391541], [181.746033, 134.43364]] == smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index]['coords'].item()
-    assert [[12.87877, 58.5714264], [12.8923006, 69.33862]] == smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index]['coords'].item()
+    assert [[162.363632, 128.4656], [162.328033, 134.391541], [181.746033, 134.43364]] == \
+           smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index]['coords'].item()
+    assert [[12.87877, 58.5714264], [12.8923006, 69.33862]] == smallgrid_DL.line_geodata.iloc[smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index][
+        'coords'].item()
 
 
 def test_smallgrid_DL_bus_geodata(smallgrid_DL):
@@ -281,7 +334,7 @@ def test_fullgrid_shunt(fullgrid):
 
 
 def test_fullgrid_sgen(fullgrid):
-    assert 0 == len(fullgrid.sgen.index)  # TODO:
+    assert 0 == len(fullgrid.sgen.index)
 
 
 def test_fullgrid_pwl_cost(fullgrid):
