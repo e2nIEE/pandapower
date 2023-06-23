@@ -46,6 +46,34 @@ def realgrid():
     return cim2pp.from_cim(file_list=cgmes_files)
 
 
+@pytest.fixture(scope="session")
+def SimBench_1_HVMVmixed_1_105_0_sw_modified():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified)
+
+    assert True
+
+
+def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 3 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid.index)
+    assert 1.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['slack_weight'].item()
+    assert '_01ff3523-9c93-45fe-8e35-0d2f4f2' == \
+           SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['substation'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['min_p_mw'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['max_p_mw'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['min_q_mvar'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']['max_q_mvar'].item()
+    assert [[11.3706, 53.601]] == SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'][
+        'coords'].item()
+
+
 def test_realgrid_sgen(realgrid):
     assert 819 == len(realgrid.sgen.index)
     assert '1149773851' == realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']['name'].item()
@@ -473,6 +501,7 @@ def test_fullgrid_ext_grid(fullgrid):
     assert fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['in_service'].item()
     assert 'EnergySource' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['origin_class'].item()
     assert '_9835652b-053f-cb44-822e-1e26950d989c' == fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['terminal'].item()
+    assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['substation'].item())
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['min_p_mw'].item())
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['max_p_mw'].item())
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['min_q_mvar'].item())
@@ -485,8 +514,6 @@ def test_fullgrid_ext_grid(fullgrid):
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['rx_min'].item())
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['r0x0_max'].item())
     assert math.isnan(fullgrid.ext_grid[fullgrid.ext_grid['origin_id'] == '_484436ac-0c91-6743-8db9-91daf8ec5182']['x0x_max'].item())
-
-    # TODO: other networks with more than one slack
 
 
 def test_fullgrid_dcline(fullgrid):
