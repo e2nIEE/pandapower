@@ -56,8 +56,94 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified)
 
     assert True
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 194 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.index)
+    assert 0.32908338928873615 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_from_mw'].item()
+    assert 0.2780429963361799 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_from_mvar'].item()
+    assert -0.32900641703695693 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_to_mw'].item()
+    assert -0.2883800215714708 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_to_mvar'].item()
+    assert 7.697225177921707e-05 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['pl_mw'].item()
+    assert -0.010337025235290898 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['ql_mvar'].item()
+    assert 0.011939852254315474 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_from_ka'].item()
+    assert 0.012127162630402383 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_to_ka'].item()
+    assert 0.012127162630402383 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_ka'].item()
+    assert 1.0416068764183433 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_from_pu'].item()
+    assert -143.8090530125839 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_from_degree'].item()
+    assert 1.0414310265920257 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_to_pu'].item()
+    assert -143.80472033332924 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_to_degree'].item()
+    assert 5.512346650182902 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['loading_percent'].item()
+
+    assert 7.351456938401352 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_from_mw'].item()
+    assert -3.803087780045516 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_from_mvar'].item()
+    assert -7.343577009323737 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_to_mw'].item()
+    assert 3.2534705172294767 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_to_mvar'].item()
+    assert 0.007879929077614811 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['pl_mw'].item()
+    assert -0.5496172628160392 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['ql_mvar'].item()
+    assert 0.04090204224410598 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_from_ka'].item()
+    assert 0.03968146590932959 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_to_ka'].item()
+    assert 0.04090204224410598 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_ka'].item()
+    assert 1.0621122647814087 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_from_pu'].item()
+    assert 7.268678685699929 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_from_degree'].item()
+    assert 1.0623882310901724 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_to_pu'].item()
+    assert 7.109722073381289 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_to_degree'].item()
+    assert 6.015006212368526 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['loading_percent'].item()
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance_est.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: different net that contains elements?
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_3ph.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -68,7 +154,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmi
         SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['q_mvar'].item()
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: ?
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: different net that contains elements?
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index)
 
 
