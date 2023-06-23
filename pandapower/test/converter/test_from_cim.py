@@ -60,6 +60,30 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_s
     assert True
 
 
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 3 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.index)
+    assert -257.1300942171846 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['p_mw'].item()
+    assert 134.7707263896562 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['q_mvar'].item()
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: ?
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_est.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_3ph.index)
+
+
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 605 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.index)
     assert 1.0491329283083566 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
@@ -100,6 +124,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen(SimBench_1
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load_3ph.index)
+
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load.index)
