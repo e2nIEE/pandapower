@@ -57,9 +57,38 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
 
-
-
     assert True
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 8 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.index)
+    assert pytest.approx(-128.5650471085923, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['p_hv_mw'].item()
+    assert pytest.approx(67.3853631948281, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['q_hv_mvar'].item()
+    assert pytest.approx(128.83323218784219, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['p_lv_mw'].item()
+    assert pytest.approx(-56.07814415772255, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['q_lv_mvar'].item()
+    assert pytest.approx(0.2681850792498892, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['pl_mw'].item()
+    assert pytest.approx(11.307219037105554, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['ql_mvar'].item()
+    assert pytest.approx(0.2019588628357026, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['i_hv_ka'].item()
+    assert pytest.approx(0.6978657735602077, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['i_lv_ka'].item()
+    assert pytest.approx(1.092, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['vm_hv_pu'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['va_hv_degree'].item()
+    assert pytest.approx(1.0567657300787896, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['vm_lv_pu'].item()
+    assert pytest.approx(4.042276580597498, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['va_lv_degree'].item()
+    assert pytest.approx(37.98893926676003, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]['loading_percent'].item()
+
+    assert pytest.approx(4.683488464449254, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_97701d2b-79ef-4fcc-958b-c6628e065798'].index]['va_hv_degree'].item()
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_tcsc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_tcsc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_est.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified):
