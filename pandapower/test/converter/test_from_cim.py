@@ -64,10 +64,37 @@ def Simbench_1_EHV_mixed__2_no_sw():
     return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV')
 
 
-def test_Simbench_1_EHV_mixed__2_no_sw(Simbench_1_EHV_mixed__2_no_sw):
+@pytest.fixture(scope="session")
+def example_multivoltage():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'example_multivoltage.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files)
+
+
+def test_example_multivoltage(example_multivoltage):
+
 
 
     assert True
+
+
+def test_example_multivoltage_xward(example_multivoltage):
+    assert 2 == len(example_multivoltage.xward.index)
+    assert 'XWard 1' == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['name'].item()
+    assert '_7783eaac-d397-4b74-9b20-4d10e5861213' == example_multivoltage.bus.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['bus'].item()]['origin_id']
+    assert 23.942 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['ps_mw'].item()
+    assert -12.24187 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['qs_mvar'].item()
+    assert 0.0 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['qz_mvar'].item()
+    assert 0.0 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['pz_mw'].item()
+    assert 0.0 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['r_ohm'].item()
+    assert 12.18951 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['x_ohm'].item()
+    assert 1.02616 == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['vm_pu'].item()
+    assert math.isnan(example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['slack_weight'].item())
+    assert example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['in_service'].item()
+    assert 'EquivalentInjection' == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['origin_class'].item()
+    assert '_044c980b-210d-4ec0-8a99-245dcf1ae5c5' == example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']['terminal'].item()
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
