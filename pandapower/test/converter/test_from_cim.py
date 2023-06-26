@@ -54,6 +54,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     return cim2pp.from_cim(file_list=cgmes_files)
 
+
 @pytest.fixture(scope="session")
 def Simbench_1_EHV_mixed__2_no_sw():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
@@ -64,7 +65,6 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw(Simbench_1_EHV_mixed__2_no_sw):
-
     assert True
 
 
@@ -79,6 +79,16 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
     assert pytest.approx(-37.964890640820215, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['q_mvar'].item()
     assert pytest.approx(37.18871679516421, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['va_degree'].item()
     assert pytest.approx(1.0679999999999996, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['vm_pu'].item()
+
+
+def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
+    assert 571 == len(Simbench_1_EHV_mixed__2_no_sw.measurement.index)
+    assert 'EHV Bus 1' == Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['name'].item()
+    assert 'v' == Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['measurement_type'].item()
+    assert 'bus' == Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['element_type'].item()
+    assert 1.0920 == Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['value'].item()
+    assert 0.001092 == Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['std_dev'].item()
+    assert None is Simbench_1_EHV_mixed__2_no_sw.measurement[Simbench_1_EHV_mixed__2_no_sw.measurement['element'] == Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus['origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]['side'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
