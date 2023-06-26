@@ -65,6 +65,8 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw(Simbench_1_EHV_mixed__2_no_sw):
+
+
     assert True
 
 
@@ -79,6 +81,19 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
     assert pytest.approx(-37.964890640820215, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['q_mvar'].item()
     assert pytest.approx(37.18871679516421, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['va_degree'].item()
     assert pytest.approx(1.0679999999999996, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['vm_pu'].item()
+
+
+def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw):
+    assert 6 == len(Simbench_1_EHV_mixed__2_no_sw.res_dcline.index)
+    assert pytest.approx(0.0, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['p_from_mw'].item()
+    assert pytest.approx(-297.4030725955963, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['q_from_mvar'].item()
+    assert pytest.approx(0.0, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['p_to_mw'].item()
+    assert pytest.approx(-124.6603285074234, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['q_to_mvar'].item()
+    assert pytest.approx(0.0, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['pl_mw'].item()
+    assert pytest.approx(1.0680, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['vm_from_pu'].item()
+    assert pytest.approx(30.248519550084087, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['va_from_degree'].item()
+    assert pytest.approx(1.0680, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['vm_to_pu'].item()
+    assert pytest.approx(33.3178813629858, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]['va_to_degree'].item()
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
@@ -283,7 +298,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixe
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen_sc.index)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: different net that contains elements?
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen.index)
 
 
@@ -301,7 +316,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmi
     assert pytest.approx(134.7707263896562, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['q_mvar'].item()
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: different net that contains elements?
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index)
 
 
@@ -683,7 +698,7 @@ def test_fullgrid_motor(fullgrid):
 
 
 def test_fullgrid_measurement(fullgrid):
-    assert 0 == len(fullgrid.measurement.index)  # TODO: sv und analogs
+    assert 0 == len(fullgrid.measurement.index)  # TODO: analogs
 
 
 def test_fullgrid_load(fullgrid):
