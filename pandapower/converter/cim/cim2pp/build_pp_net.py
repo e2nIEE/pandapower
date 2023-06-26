@@ -1264,10 +1264,12 @@ class CimConverter:
         eqssh_ei['regulationStatus'].fillna(False, inplace=True)
         eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
         eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar', 'r': 'r_ohm', 'x': 'x_ohm'},
+                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
                         inplace=True)
         eqssh_ei['pz_mw'] = 0.
         eqssh_ei['qz_mvar'] = 0.
+        eqssh_ei['r_ohm'] = 0.
+        eqssh_ei['x_ohm'] = .1
         return eqssh_ei
 
     def _convert_power_transformers_cim16(self):
