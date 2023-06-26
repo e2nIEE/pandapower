@@ -73,9 +73,13 @@ def example_multivoltage():
     return cim2pp.from_cim(file_list=cgmes_files)
 
 
-def test_example_multivoltage(example_multivoltage):
-
-    assert True
+def test_example_multivoltage_res_xward(example_multivoltage):
+    assert 2 == len(example_multivoltage.res_xward.index)
+    assert pytest.approx(23.94199999999999, abs=0.0001) == example_multivoltage.res_xward.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]['p_mw'].item()
+    assert pytest.approx(-12.750986379265516, abs=0.0001) == example_multivoltage.res_xward.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]['q_mvar'].item()
+    assert pytest.approx(1.0256599487121985, abs=0.000001) == example_multivoltage.res_xward.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]['vm_pu'].item()
+    assert pytest.approx(-3.146519564893976, abs=0.0001) == example_multivoltage.res_xward.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]['va_internal_degree'].item()
+    assert pytest.approx(1.02616, abs=0.000001) == example_multivoltage.res_xward.iloc[example_multivoltage.xward[example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]['vm_internal_pu'].item()
 
 
 def test_example_multivoltage_res_trafo3w(example_multivoltage):
