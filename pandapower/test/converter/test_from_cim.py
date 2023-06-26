@@ -75,9 +75,31 @@ def example_multivoltage():
 
 def test_example_multivoltage(example_multivoltage):
 
-
-
     assert True
+
+
+def test_example_multivoltage_res_trafo3w(example_multivoltage):
+    assert 1 == len(example_multivoltage.res_trafo3w)
+    assert pytest.approx(8.657189331869493, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['p_hv_mw'].item()
+    assert pytest.approx(-2.999999999999994, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['p_mv_mw'].item()
+    assert pytest.approx(-5.651470170221995, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['p_lv_mw'].item()
+    assert pytest.approx(3.8355852461132804, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['q_hv_mvar'].item()
+    assert pytest.approx(-0.9999999999999507, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['q_mv_mvar'].item()
+    assert pytest.approx(-2.5354889107435277, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['q_lv_mvar'].item()
+    assert pytest.approx(0.005719161647503412, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['pl_mw'].item()
+    assert pytest.approx(0.30009633536980207, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['ql_mvar'].item()
+    assert pytest.approx(0.04898024799408357, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['i_hv_ka'].item()
+    assert pytest.approx(0.09116289611973895, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['i_mv_ka'].item()
+    assert pytest.approx(0.3570309680658673, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['i_lv_ka'].item()
+    assert pytest.approx(1.014662907573544, abs=0.000001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['vm_hv_pu'].item()
+    assert pytest.approx(1.0013623612574243, abs=0.000001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['vm_mv_pu'].item()
+    assert pytest.approx(1.0016524140902006, abs=0.000001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['vm_lv_pu'].item()
+    assert pytest.approx(-4.103909160796573, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['va_hv_degree'].item()
+    assert pytest.approx(-5.864564595164003, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['va_mv_degree'].item()
+    assert pytest.approx(-5.7253521277882395, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['va_lv_degree'].item()
+    assert pytest.approx(-5.066087782177226, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['va_internal_degree'].item()
+    assert pytest.approx(1.0064414626767895, abs=0.000001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['vm_internal_pu'].item()
+    assert pytest.approx(24.73583106262334, abs=0.0001) == example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index]['loading_percent'].item()
 
 
 def test_example_multivoltage_xward(example_multivoltage):
@@ -162,7 +184,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVM
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index)  # TODO:
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -485,7 +507,7 @@ def test_smallgrid_GL_bus_geodata(smallgrid_GL):
 
 
 def test_fullgrid_xward(fullgrid):
-    assert 0 == len(fullgrid.xward.index)  # TODO:
+    assert 0 == len(fullgrid.xward.index)
 
 
 def test_fullgrid_ward(fullgrid):
