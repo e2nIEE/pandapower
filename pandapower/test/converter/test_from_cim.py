@@ -55,9 +55,36 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     return cim2pp.from_cim(file_list=cgmes_files)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index)  # TODO:
 
-    assert True
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ward.index)  # TODO:
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_est.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_3ph.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_est.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index)  # TODO:
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
