@@ -57,7 +57,34 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
 
+
     assert True
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 205 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.index)
+    assert 2.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['p_mw'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['q_mvar'].item()
+
+    assert 149.060 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['p_mw'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['q_mvar'].item()
+
+    assert 0.1450 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['p_mw'].item()
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['q_mvar'].item()
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_motor.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load_3ph.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
