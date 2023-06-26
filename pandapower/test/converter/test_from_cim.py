@@ -99,7 +99,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixe
     assert math.isnan(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
                           SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_004e90a8-cc0d-43f2-a9eb-c374f9479e8f'].index][
                           'loading_percent'].item())
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_00bf6ec7-fb79-4a7b-a3d2-ea35490b067c'].index]['i_ka'].item()
 
 
@@ -133,20 +133,14 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmi
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 205 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.index)
-    assert 2.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['p_mw'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['q_mvar'].item()
+    assert pytest.approx(2.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['p_mw'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]['q_mvar'].item()
 
-    assert 149.060 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['p_mw'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['q_mvar'].item()
+    assert pytest.approx(149.060, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['p_mw'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_00d5cff1-01a8-4193-92c6-0e16088efe9b'].index]['q_mvar'].item()
 
-    assert 0.1450 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['p_mw'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['q_mvar'].item()
+    assert pytest.approx(0.1450, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['p_mw'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_5527d842-0d46-44c6-94ed-f5772fab1393'].index]['q_mvar'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -159,20 +153,14 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmi
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 154 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.index)
-    assert 0.230 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6bcbb329-364a-461e-bdd0-aef5fb25947a'].index]['p_mw'].item()
-    assert 0.09090 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6bcbb329-364a-461e-bdd0-aef5fb25947a'].index]['q_mvar'].item()
+    assert pytest.approx(0.230, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6bcbb329-364a-461e-bdd0-aef5fb25947a'].index]['p_mw'].item()
+    assert pytest.approx(0.09090, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6bcbb329-364a-461e-bdd0-aef5fb25947a'].index]['q_mvar'].item()
 
-    assert 3.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_dcad3c20-024f-4234-83aa-67f03745cec4'].index]['p_mw'].item()
-    assert 1.1860 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_dcad3c20-024f-4234-83aa-67f03745cec4'].index]['q_mvar'].item()
+    assert pytest.approx(3.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_dcad3c20-024f-4234-83aa-67f03745cec4'].index]['p_mw'].item()
+    assert pytest.approx(1.1860, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_dcad3c20-024f-4234-83aa-67f03745cec4'].index]['q_mvar'].item()
 
-    assert 34.480 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6184b5be-a494-4ae9-ab24-528a33b19a41'].index]['p_mw'].item()
-    assert 13.6270 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6184b5be-a494-4ae9-ab24-528a33b19a41'].index]['q_mvar'].item()
+    assert pytest.approx(34.480, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6184b5be-a494-4ae9-ab24-528a33b19a41'].index]['p_mw'].item()
+    assert pytest.approx(13.6270, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6184b5be-a494-4ae9-ab24-528a33b19a41'].index]['q_mvar'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -189,63 +177,35 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_3ph(SimBench_1_HVMVmi
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 194 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.index)
-    assert 0.32908338928873615 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_from_mw'].item()
-    assert 0.2780429963361799 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_from_mvar'].item()
-    assert -0.32900641703695693 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_to_mw'].item()
-    assert -0.2883800215714708 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_to_mvar'].item()
-    assert 7.697225177921707e-05 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['pl_mw'].item()
-    assert -0.010337025235290898 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['ql_mvar'].item()
-    assert 0.011939852254315474 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_from_ka'].item()
-    assert 0.012127162630402383 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_to_ka'].item()
-    assert 0.012127162630402383 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_ka'].item()
-    assert 1.0416068764183433 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_from_pu'].item()
-    assert -143.8090530125839 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_from_degree'].item()
-    assert 1.0414310265920257 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_to_pu'].item()
-    assert -143.80472033332924 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_to_degree'].item()
-    assert 5.512346650182902 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['loading_percent'].item()
+    assert pytest.approx(0.32908338928873615, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_from_mw'].item()
+    assert pytest.approx(0.2780429963361799, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_from_mvar'].item()
+    assert pytest.approx(-0.32900641703695693, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['p_to_mw'].item()
+    assert pytest.approx(-0.2883800215714708, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['q_to_mvar'].item()
+    assert pytest.approx(7.697225177921707e-05, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['pl_mw'].item()
+    assert pytest.approx(-0.010337025235290898, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['ql_mvar'].item()
+    assert pytest.approx(0.011939852254315474, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_from_ka'].item()
+    assert pytest.approx(0.012127162630402383, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_to_ka'].item()
+    assert pytest.approx(0.012127162630402383, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['i_ka'].item()
+    assert pytest.approx(1.0416068764183433, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_from_pu'].item()
+    assert pytest.approx(-143.8090530125839, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_from_degree'].item()
+    assert pytest.approx(1.0414310265920257, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['vm_to_pu'].item()
+    assert pytest.approx(-143.80472033332924, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['va_to_degree'].item()
+    assert pytest.approx(5.512346650182902, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]['loading_percent'].item()
 
-    assert 7.351456938401352 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_from_mw'].item()
-    assert -3.803087780045516 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_from_mvar'].item()
-    assert -7.343577009323737 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_to_mw'].item()
-    assert 3.2534705172294767 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_to_mvar'].item()
-    assert 0.007879929077614811 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['pl_mw'].item()
-    assert -0.5496172628160392 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['ql_mvar'].item()
-    assert 0.04090204224410598 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_from_ka'].item()
-    assert 0.03968146590932959 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_to_ka'].item()
-    assert 0.04090204224410598 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_ka'].item()
-    assert 1.0621122647814087 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_from_pu'].item()
-    assert 7.268678685699929 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_from_degree'].item()
-    assert 1.0623882310901724 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_to_pu'].item()
-    assert 7.109722073381289 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_to_degree'].item()
-    assert 6.015006212368526 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['loading_percent'].item()
+    assert pytest.approx(7.351456938401352, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_from_mw'].item()
+    assert pytest.approx(-3.803087780045516, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_from_mvar'].item()
+    assert pytest.approx(-7.343577009323737, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['p_to_mw'].item()
+    assert pytest.approx(3.2534705172294767, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['q_to_mvar'].item()
+    assert pytest.approx(0.007879929077614811, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['pl_mw'].item()
+    assert pytest.approx(-0.5496172628160392, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['ql_mvar'].item()
+    assert pytest.approx(0.04090204224410598, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_from_ka'].item()
+    assert pytest.approx(0.03968146590932959, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_to_ka'].item()
+    assert pytest.approx(0.04090204224410598, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['i_ka'].item()
+    assert pytest.approx(1.0621122647814087, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_from_pu'].item()
+    assert pytest.approx(7.268678685699929, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_from_degree'].item()
+    assert pytest.approx(1.0623882310901724, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['vm_to_pu'].item()
+    assert pytest.approx(7.109722073381289, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['va_to_degree'].item()
+    assert pytest.approx(6.015006212368526, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_00279ee7-01a9-4f5e-a99a-6c02f7bebddb'].index]['loading_percent'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -274,10 +234,8 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HV
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 3 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.index)
-    assert -257.1300942171846 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['p_mw'].item()
-    assert 134.7707263896562 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['q_mvar'].item()
+    assert pytest.approx(-257.1300942171846, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['p_mw'].item()
+    assert pytest.approx(134.7707263896562, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]['q_mvar'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):  # TODO: different net that contains elements?
@@ -298,32 +256,20 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmix
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 605 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.index)
-    assert 1.0491329283083566 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['vm_pu'].item()
-    assert -144.2919795390245 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['va_degree'].item()
-    assert -1.770 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['p_mw'].item()
-    assert 0.09090 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['q_mvar'].item()
+    assert pytest.approx(1.0491329283083566, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['vm_pu'].item()
+    assert pytest.approx(-144.2919795390245, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['va_degree'].item()
+    assert pytest.approx(-1.770, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['p_mw'].item()
+    assert pytest.approx(0.09090, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]['q_mvar'].item()
 
-    assert 1.0568812557235927 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['vm_pu'].item()
-    assert 3.616330520902283 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['va_degree'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['p_mw'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['q_mvar'].item()
+    assert pytest.approx(1.0568812557235927, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['vm_pu'].item()
+    assert pytest.approx(3.616330520902283, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['va_degree'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['p_mw'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_b7704afe-8d9f-4154-b51c-72f60567f94d'].index]['q_mvar'].item()
 
-    assert 1.0471714107338401 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['vm_pu'].item()
-    assert -144.16663009041676 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['va_degree'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['p_mw'].item()
-    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[
-        SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['q_mvar'].item()
+    assert pytest.approx(1.0471714107338401, abs=0.000001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['vm_pu'].item()
+    assert pytest.approx(-144.16663009041676, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['va_degree'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['p_mw'].item()
+    assert pytest.approx(0.0, abs=0.0001) == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_290a09c9-4b06-4135-aaa7-45db9172e33d'].index]['q_mvar'].item()
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
