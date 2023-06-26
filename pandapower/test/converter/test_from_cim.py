@@ -58,7 +58,48 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified(SimBench_1_HVMVmixed_1_105_0_sw_modified):
 
 
+
     assert True
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 625 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch)  # TODO: test with different net with better values
+    assert math.isnan(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
+                          SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_004e90a8-cc0d-43f2-a9eb-c374f9479e8f'].index][
+                          'i_ka'].item())
+    assert math.isnan(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
+                          SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_004e90a8-cc0d-43f2-a9eb-c374f9479e8f'].index][
+                          'loading_percent'].item())
+    assert 0.0 == SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[
+        SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_00bf6ec7-fb79-4a7b-a3d2-ea35490b067c'].index]['i_ka'].item()
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_svc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_svc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage_3ph.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt_3ph.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_sc.index)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_3ph.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
