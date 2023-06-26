@@ -54,6 +54,32 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     return cim2pp.from_cim(file_list=cgmes_files)
 
+@pytest.fixture(scope="session")
+def Simbench_1_EHV_mixed__2_no_sw():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV')
+
+
+def test_Simbench_1_EHV_mixed__2_no_sw(Simbench_1_EHV_mixed__2_no_sw):
+
+    assert True
+
+
+def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
+    assert 338 == len(Simbench_1_EHV_mixed__2_no_sw.res_gen.index)
+    assert pytest.approx(297.0, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_5b01c8ba-9847-49bc-a1f2-0100ccf7df74'].index]['p_mw'].item()
+    assert pytest.approx(-5.003710432303805, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_5b01c8ba-9847-49bc-a1f2-0100ccf7df74'].index]['q_mvar'].item()
+    assert pytest.approx(34.87201407457379, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_5b01c8ba-9847-49bc-a1f2-0100ccf7df74'].index]['va_degree'].item()
+    assert pytest.approx(1.0920, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_5b01c8ba-9847-49bc-a1f2-0100ccf7df74'].index]['vm_pu'].item()
+
+    assert pytest.approx(604.0, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['p_mw'].item()
+    assert pytest.approx(-37.964890640820215, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['q_mvar'].item()
+    assert pytest.approx(37.18871679516421, abs=0.0001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['va_degree'].item()
+    assert pytest.approx(1.0679999999999996, abs=0.000001) == Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_4f01682d-ee27-4f5e-b073-bdc90431d61b'].index]['vm_pu'].item()
+
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index)  # TODO:
