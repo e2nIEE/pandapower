@@ -3,10 +3,17 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
+- [ADDED] function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
 - [ADDED] comparison of "dict" attributes in :code:`pandapower.toolbox.comparisons.nets_equal` with :code:`DeepDiff`
 - [FIXED] loading net from xlsx with MultiIndex
+- [FIXED] numba version check
+- [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
+- [FIXED] some fixes and small updates at cim2pp
+- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
 
 
 [2.13.1] - 2023-05-12
