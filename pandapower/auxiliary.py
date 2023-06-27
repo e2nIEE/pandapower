@@ -35,6 +35,7 @@ import pandas as pd
 import scipy as sp
 import numbers
 from packaging.version import Version
+import importlib.metadata
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
@@ -43,7 +44,6 @@ from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
-    from numba import __version__ as numba_version
 except ImportError:
     from .pf.no_numba import jit
 
@@ -937,7 +937,7 @@ def _check_if_numba_is_installed(numba):
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
-        if Version(numba_version) < Version("0.25"):
+        if Version(importlib.metadata.version("numba")) < Version("0.25"):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False
