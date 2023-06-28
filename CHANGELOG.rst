@@ -14,7 +14,9 @@ Change Log
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
-
+- [ADDED] extensive unit tests for cim2pp converter (element parameter and load flow results)
+- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
+- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 
 [2.13.1] - 2023-05-12
 -------------------------------

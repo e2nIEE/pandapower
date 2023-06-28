@@ -177,7 +177,7 @@ def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index)  # TODO:
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
