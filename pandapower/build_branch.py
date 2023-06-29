@@ -117,13 +117,13 @@ def _calc_trafo3w_parameter(net, ppc):
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
-    if net["_options"]["mode"] == "opf":
-        if "max_loading_percent" in trafo_df:
-            max_load = get_trafo_values(trafo_df, "max_loading_percent")
-            sn_mva = get_trafo_values(trafo_df, "sn_mva")
-            branch[f:t, RATE_A] = max_load / 100. * sn_mva
-        else:
-            branch[f:t, RATE_A] = np.nan
+    # always set RATE_A for completeness
+    if "max_loading_percent" in trafo_df:
+        max_load = get_trafo_values(trafo_df, "max_loading_percent")
+        sn_mva = get_trafo_values(trafo_df, "sn_mva")
+        branch[f:t, RATE_A] = max_load / 100. * sn_mva
+    else:
+        branch[f:t, RATE_A] = np.nan
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
@@ -195,14 +195,14 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, BR_B] = b - g * 1j
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
-    if net._options["mode"] == "opf":
-        # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
-        vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
-        max_i_ka = line.max_i_ka.values
-        df = line.df.values
-        # This calculates the maximum apparent power at 1.0 p.u.
-        branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    # always set RATE_A for completeness:
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
+    vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
+    max_i_ka = line.max_i_ka.values
+    df = line.df.values
+    # This calculates the maximum apparent power at 1.0 p.u.
+    branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
 
 
 def _calc_trafo_parameter(net, ppc):
@@ -236,11 +236,11 @@ def _calc_trafo_parameter(net, ppc):
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
-    if net._options["mode"] == "opf":
-        max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
-        sn_mva = trafo.sn_mva.values
-        df = trafo.df.values
-        branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
+    # always set RATE_A for completeness
+    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
+    sn_mva = trafo.sn_mva.values
+    df = trafo.df.values
+    branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
 
 
 def get_trafo_values(trafo_df, par):
