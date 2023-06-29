@@ -1082,7 +1082,7 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list =
 
 
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
 
 
     color = kwargs.pop("color", "k")

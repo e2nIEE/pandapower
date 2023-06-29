@@ -188,21 +188,28 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     patch_count_unique = {}
     sgen_types = {}
 
-    for i in range(1, len(net.bus)):  # Start from index 1 instead of 0
-        sgen_count = 0
+    for i in net.bus_geodata.index:  # Start from index 1 instead of 0
+        #sgen_types = 0
         gen_count = 0
         load_count = 0
 
 
         if plot_sgens and len(net.sgen):
-            sgen_count = len(net.sgen[net.sgen.bus == i].type.unique())
+            #sgen_types = net.sgen[net.sgen.bus == i].type.unique()
 
             sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
 
-            sgen_types[i] = {
-                "WT": sgen_types_counts.get("WT", 0),
-                "PV": sgen_types_counts.get("PV", 0),
-                "wye": sgen_types_counts.get("wye", 0)}
+            PV = sgen_types_counts.get("PV", 0)
+            WT = sgen_types_counts.get("WT", 0)
+            WYE = sum(sgen_types_counts) - PV - WT
+            types = {}
+            if PV:
+                types["PV"] = PV
+            if WT:
+                types["WT"] = WT
+            if WYE:
+                types["wye"] = WYE
+            sgen_types[i] = types
 
         if plot_gens and len(net.gen):
             gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=i))
@@ -210,25 +217,24 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         if plot_loads and len(net.load):
             load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=i))
 
-        total_count = sgen_count + gen_count + load_count
-
+        total_count = len(sgen_types[i]) + gen_count + load_count
+        try: seperation_angle = 2 * math.pi / total_count
+        except ZeroDivisionError: seperation_angle =  None
         patch_count_unique[i] = {
 
-
-            'sgen': [j * (2 * math.pi / total_count) for j in range(sgen_count)],
-            'gen': [j * (2 * math.pi / total_count) + sgen_count * (2 * math.pi / total_count) for j in
+            'sgen': dict(zip(sgen_types[i].keys(), [j * (2 * math.pi / total_count) for j in range(len(sgen_types[i]))])),
+            'gen': [j * (2 * math.pi / total_count) + len(sgen_types[i]) * (2 * math.pi / total_count) for j in
                     range(gen_count)],
-            'load': [j * (2 * math.pi / total_count) + (sgen_count + gen_count) * (2 * math.pi / total_count) for j in
-                     range(load_count)]
+            'load': [j * (2 * math.pi / total_count) + (len(sgen_types[i]) + gen_count) * (2 * math.pi / total_count) for j in range(load_count)]
         }
 
-        sgen_angle_list = [value["sgen"] for value in patch_count_unique.values() if "sgen" in value]
+        #sgen_angle_list = [value["sgen"] for value in patch_count_unique.values() if "sgen" in value]
         gen_angle_list =  [value["gen"] for value in patch_count_unique.values() if "gen" in value]
         load_angle_list = [value["load"] for value in patch_count_unique.values() if "load" in value]
     if plot_sgens and len(net.sgen):
 
         sgen_type = net.sgen.type
-        sgc = create_sgen_collection(net, sgen_type, size=sgen_size,sgen_angle_list = sgen_angle_list, orientation=orientation)
+        sgc = create_sgen_collection(net, sgen_type, size=sgen_size,sgen_angle_list = patch_count_unique, orientation=orientation)
         collections.append(sgc)
     if plot_gens and len(net.gen):
 
