@@ -14,6 +14,7 @@ Change Log
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+- [FIXED] fixed bug in hoverinfo for plotly for the parameter "parallel"
 
 
 [2.13.1] - 2023-05-12

@@ -39,7 +39,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 + ' Ohm' + '<br />'
                 + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm' +
-                + net.line['parallel'].apply(lambda x: '<br />Parallel: ' + str(x) if x > 1 else  '<br />')
+                + net.line['parallel'].apply(lambda x: f"<br />Parallel:  {x}" if x > 1 else '<br />')
                 ).tolist()
     elif element == "trafo":
         hoverinfo = (
