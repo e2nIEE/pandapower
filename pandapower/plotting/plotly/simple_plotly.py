@@ -7,7 +7,7 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, version_check, \
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_scale_trace,  create_trafo_trace, draw_traces, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
@@ -194,7 +194,6 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                            separator_element, branch_trace_func, node_trace_func,
                            hoverinfo_func, filename='temp-plot.html', auto_open=True,
                            showlegend=True):
-    version_check()
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
                     showlegend=showlegend)

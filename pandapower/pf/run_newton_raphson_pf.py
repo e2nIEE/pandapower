@@ -19,10 +19,12 @@ from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
+from pandapower.auxiliary import version_check
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
+    version_check('numba')
     numba_installed = True
 except ImportError:
     numba_installed = False
