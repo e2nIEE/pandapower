@@ -1,7 +1,7 @@
 name: Blank template
 description: Template for issues that are no bug report or feature request
 title: 'YOUR TITLE'
-labels:
+labels: []
 
 body:
   - type: checkboxes
@@ -20,13 +20,12 @@ body:
     id: description
     attributes:
       label: Issue
-      description: >
+      description: Describe your issue.
 
-      placeholder: >
     validations:
       required: true
   - type: checkboxes
-    id: checks
+    id: label_checks
     attributes:
       label: Label
       description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).
