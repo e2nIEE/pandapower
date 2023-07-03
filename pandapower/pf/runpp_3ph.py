@@ -468,7 +468,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = perf_counter()
-    while (s_mismatch > outer_tolerance_mva).any() and count < 30*max_iteration:
+    while (s_mismatch > outer_tolerance_mva).any() and count < max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
@@ -519,7 +519,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0
-    success = (count < 30 * max_iteration)
+    success = (count < max_iteration)
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
