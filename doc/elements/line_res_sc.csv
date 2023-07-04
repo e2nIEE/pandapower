@@ -4,10 +4,10 @@ ikss_from_ka;float;magnitude of the initial SC current at ""from"" bus [kA]
 ikss_from_degree;float;degree of the initial SC current at ""from"" bus [degrees]
 ikss_to_ka;float;magnitude of the initial SC current at ""to"" bus [kA]
 ikss_to_degree;float;degree of the initial SC current at ""to"" bus [degrees]
-p_from_mw;float;"active SC power flow into the line at ""from"" bus [MW]"
-q_from_mvar;float;"reactive SC power flow into the line at ""from"" bus [MVar]"
-p_to_mw;float;"active SC power flow into the line at ""to"" bus [MW]"
-q_to_mvar;float;"reactive SC power flow into the line at ""to"" bus [MVar]"
+p_from_mw;float;active SC power flow into the line at ""from"" bus [MW]
+q_from_mvar;float;reactive SC power flow into the line at ""from"" bus [MVar]
+p_to_mw;float;active SC power flow into the line at ""to"" bus [MW]
+q_to_mvar;float;reactive SC power flow into the line at ""to"" bus [MVar]
 vm_from_pu;float;voltage magnitude at ""from"" bus [p.u.]
 vm_to_pu;float;voltage magnitude at ""to"" bus [p.u.]
 va_from_degree;float;voltage angle at ""from"" bus [degrees]
