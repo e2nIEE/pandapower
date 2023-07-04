@@ -14,6 +14,7 @@ Change Log
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+- [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
 
 
 
