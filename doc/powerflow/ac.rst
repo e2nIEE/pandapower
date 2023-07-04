@@ -41,3 +41,15 @@ More detailed information about TDPF can be found in the tutorials:
 - `Sensitivity of TDPF parameters <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_parameters.ipynb>`_
 
 .. autofunction:: pandapower.run.runpp
+
+Balanced AC Power Flow using power-grid-model
+---------------------------------------
+.. _ppAC_PGM_PF:
+
+AC power flow can also be computed using the power-grid-model library.
+Power-grid-model has a C++ core which leads to a higher performance (`documentation <https://power-grid-model.readthedocs.io/en/stable/>`_)
+The power-grid-model and conversion library is required for running this function.
+They can be installed using `pip install power-grid-model power-grid-model-io`
+Also refer `conversion documentation <https://power-grid-model-io.readthedocs.io/en/stable/converters/pandapower_converter.html>`_ for more details on conversion.
+
+.. autofunction:: pandapower.run.runpp_pgm
