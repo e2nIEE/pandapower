@@ -171,11 +171,6 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
                                        color=trafo_color)
         collections.append(tc)
 
-    #TODO Calculate patch angles based on number of elements here
-    # get_connected_elements_dict
-    # unique()
-
-
     if plot_line_switches and len(net.switch):
         sc = create_line_switch_collection(
             net, size=switch_size, distance_to_bus=switch_distance,
@@ -188,17 +183,13 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     patch_count_unique = {}
     sgen_types = {}
 
-    for i in net.bus_geodata.index:  # Start from index 1 instead of 0
-        #sgen_types = 0
+    for i in net.bus_geodata.index:
         gen_count = 0
         load_count = 0
 
 
         if plot_sgens and len(net.sgen):
-            #sgen_types = net.sgen[net.sgen.bus == i].type.unique()
-
             sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
-
             PV = sgen_types_counts.get("PV", 0)
             WT = sgen_types_counts.get("WT", 0)
             WYE = sum(sgen_types_counts) - PV - WT
@@ -228,21 +219,16 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             'load': [j * (2 * math.pi / total_count) + (len(sgen_types[i]) + gen_count) * (2 * math.pi / total_count) for j in range(load_count)]
         }
 
-        #sgen_angle_list = [value["sgen"] for value in patch_count_unique.values() if "sgen" in value]
-        gen_angle_list =  [value["gen"] for value in patch_count_unique.values() if "gen" in value]
-        load_angle_list = [value["load"] for value in patch_count_unique.values() if "load" in value]
     if plot_sgens and len(net.sgen):
-
-        sgen_type = net.sgen.type
-        sgc = create_sgen_collection(net, sgen_type, size=sgen_size,sgen_angle_list = patch_count_unique, orientation=orientation)
+        sgc = create_sgen_collection(net, size=sgen_size, unique_angles=patch_count_unique, orientation=orientation)
         collections.append(sgc)
     if plot_gens and len(net.gen):
 
-        gc = create_gen_collection(net, size=gen_size,gen_angle_list = gen_angle_list,orientation=orientation)
+        gc = create_gen_collection(net, size=gen_size, unique_angles=patch_count_unique, orientation=orientation)
         collections.append(gc)
     if plot_loads and len(net.load):
 
-        lc = create_load_collection(net, size=load_size,load_angle_list = load_angle_list,orientation=orientation)
+        lc = create_load_collection(net, size=load_size, unique_angles=patch_count_unique, orientation=orientation)
         collections.append(lc)
 
     if len(net.switch):

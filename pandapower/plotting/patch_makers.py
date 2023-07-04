@@ -163,7 +163,7 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
 
 
 
-def load_patches(node_coords, size, angles,angle_list, **kwargs):
+def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
     Creation function of patches for loads.
 
@@ -191,24 +191,22 @@ def load_patches(node_coords, size, angles,angle_list, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
     polys, lines = list(), list()
 
-    flatten_list = [item for sublist in angle_list for item in sublist]
-    angle_list = flatten_list
-    last_entry = angle_list.pop()
-    angle_list.insert(0, last_entry)
+    for i in node_coords.index:
+        node_geo = list(node_coords.loc[i])
+        if "load" in unique_angles[i]:
+            try:
+                angle = unique_angles[i]["load"][0] + all_angles[i]
+            except IndexError:
+                continue
 
-    for i, node_geo in enumerate(node_coords):
-
-        angle = angles[i] + angle_list[i]
-
-        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
-        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,
-                                    fc=facecolors[i], ec=edgecolors[i]))
-        lines.append((node_geo, p3))
+            p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+            p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
+            polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,fc = "w",ec="k"))
+            lines.append((node_geo, p3))
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
-def gen_patches(node_coords, size, angles, angle_list, **kwargs):
+def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
     Creation function of patches for generators.
 
@@ -236,33 +234,29 @@ def gen_patches(node_coords, size, angles, angle_list, **kwargs):
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
 
-    flatten_list = [item for sublist in angle_list for item in sublist]
+    for i in node_coords.index:
+        node_geo = list(node_coords.loc[i])
+        if "gen" in unique_angles[i]:
+            try:
+                angle = unique_angles[i]["gen"][0] + all_angles[i]
+            except IndexError:
+                continue
 
-    angle_list = flatten_list
-    last_entry = angle_list.pop()
-    angle_list.insert(0, last_entry)
-
-
-    for i, node_geo in enumerate(node_coords):
-
-        angle = angles[i] + angle_list[i]
-
-        p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
-        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
-
-        polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
-        polys.append(
-            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
-                ec=edgecolors[i]))
-        polys.append(
-            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
-                ec=edgecolors[i]))
-        lines.append((node_geo, circ_edge))
+            p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
+            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
+            polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
+            polys.append(
+                Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
+                    ec=edgecolors[i]))
+            polys.append(
+                Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
+                    ec=edgecolors[i]))
+            lines.append((node_geo, circ_edge))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
     gen_printed = True
 
 
-def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
+def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
     Creation function of patches for static generators.
 
@@ -296,15 +290,11 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
     Path = mpath.Path
 
-
-
-
-
     for i in node_coords.index:
         node_geo = list(node_coords.loc[i])
-        if "WT" in angle_list[i]["sgen"]:  # Special patch for sgen_type "Wind Turbine"
+        if "WT" in unique_angles[i]["sgen"]:  # WT patch
             try:
-                angle = angle_list[i]["sgen"]["WT"] + angles[i]
+                angle = unique_angles[i]["sgen"]["WT"] + angles[i]
             except IndexError:
                 continue
 
@@ -350,9 +340,9 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
             center_point = mid_midcirc  # Define the center point of the wind turbine patch
             rotation_angle = math.pi / 4  # Define the angle of rotation
 
-        if "PV" in angle_list[i]["sgen"]:
+        if "PV" in unique_angles[i]["sgen"]:   # PV patch
             try:
-                angle = angle_list[i]["sgen"]["PV"] + angles[i]
+                angle = unique_angles[i]["sgen"]["PV"] + angles[i]
             except IndexError:
                 continue
             mid_rect = node_geo + _rotate_dim2(np.array([0,  2*size]), angle)
@@ -370,9 +360,9 @@ def sgen_patches(node_coords, size, angles,sgen_type,angle_list, **kwargs):
             ]
             triangle_patch = Polygon(triangle_points, ec="k", fc="none")
             polys.append(triangle_patch)
-        if "wye" in angle_list[i]["sgen"]:  # Generic Patch
+        if "wye" in unique_angles[i]["sgen"]:  # Generic Patch
             try:
-                angle = angle_list[i]["sgen"]["wye"] + angles[i]
+                angle = unique_angles[i]["sgen"]["wye"] + angles[i]
             except IndexError:
                 continue
 

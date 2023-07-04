@@ -222,7 +222,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     return lc
 
 
-def _create_node_element_collection(node_coords, patch_maker,sgen_type = None , size=1., angle_list = None, infos=None,
+def _create_node_element_collection(node_coords, patch_maker, size=1., unique_angles=None, infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
                                     patch_facecolor="w", patch_edgecolor="k", line_color="k",
                                     **kwargs):
@@ -278,7 +278,7 @@ def _create_node_element_collection(node_coords, patch_maker,sgen_type = None , 
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
     lines, polys, popped_keywords = patch_maker(
-        node_coords, size, angles, sgen_type=sgen_type, angle_list=angle_list, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
+        node_coords, size, angles, unique_angles=unique_angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
@@ -959,7 +959,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1.,load_angle_list = None, patch_count = None, infofunc=None, orientation=None, picker=False,
+def create_load_collection(net, loads=None, size=1., unique_angles=None, patch_count = None, infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
@@ -990,17 +990,17 @@ def create_load_collection(net, loads=None, size=1.,load_angle_list = None, patc
 
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
 
     color = kwargs.pop("color", "k")
 
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size,angle_list=load_angle_list,  infos=infos, orientation=orientation,
+        node_coords, load_patches, size=size, unique_angles=unique_angles,  infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return load_pc, load_lc
 
 
-def create_gen_collection(net, gens=None, size=1.,gen_angle_list=None,patch_count=None, infofunc=None, orientation=None, picker=False,
+def create_gen_collection(net, gens=None, size=1., unique_angles=None, patch_count=None, infofunc=None, orientation=None, picker=False,
                           **kwargs):
     """
     Creates a matplotlib patch collection of pandapower gens.
@@ -1029,17 +1029,17 @@ def create_gen_collection(net, gens=None, size=1.,gen_angle_list=None,patch_coun
     """
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.gen.loc[gens, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
 
     color = kwargs.pop("color", "k")
 
     gen_pc, gen_lc = _create_node_element_collection(
-        node_coords, gen_patches, size=size,angle_list=gen_angle_list,  infos=infos, orientation=orientation,
+        node_coords, gen_patches, size=size, unique_angles=unique_angles,  infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list = None, infofunc=None, orientation=None, picker=False,
+def create_sgen_collection(net, sgens=None, size=1., unique_angles=None, infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.
@@ -1066,20 +1066,6 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list =
 
         **sgen_lc** - line collection
     """
-    sgens_unique = []
-    for bus in net.sgen.bus.unique():
-        for type in net.sgen[net.sgen.bus == bus].type.unique():
-            idx = net.sgen[(net.sgen.bus ==  bus) & (net.sgen.type == type)].index[0]
-            sgens_unique.append(idx)
-
-
-    sgens = get_index_array(sgens, net.sgen.index)
-    sgens = sgens_unique
-    sgen_type = net.sgen.type.loc[sgens]
-
-
-
-
 
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]]
@@ -1087,7 +1073,7 @@ def create_sgen_collection(net, sgen_type, sgens=None, size=1.,sgen_angle_list =
 
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches, sgen_type = sgen_type, size=size,angle_list=sgen_angle_list, infos=infos, orientation=orientation,
+        node_coords, sgen_patches, size=size, unique_angles=unique_angles, infos=infos, orientation=orientation,
         picker=picker, line_color=color, **kwargs)
     return sgen_pc, sgen_lc
 
@@ -1173,7 +1159,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     color = kwargs.pop("color", "k")
 
     ext_grid_pc, ext_grid_lc = _create_node_element_collection(
-        node_coords, ext_grid_patches,sgen_type, size=size, infos=infos, orientation=orientation,
+        node_coords, ext_grid_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, hatch='XXX', line_color=color, **kwargs)
 
     return ext_grid_pc, ext_grid_lc
