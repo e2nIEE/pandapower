@@ -42,6 +42,9 @@ More detailed information about TDPF can be found in the tutorials:
 
 .. autofunction:: pandapower.run.runpp
 
+
+.. _PGMPF:
+
 Balanced AC Power Flow using power-grid-model
 ---------------------------------------------
 
