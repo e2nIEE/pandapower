@@ -1,0 +1,61 @@
+name: Feature Request
+description: Suggest an idea for pandapower
+title: '[feature] YOUR TITLE'
+labels: [Enhancement]
+
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Feature Checklist
+      description: Please make sure that the feature does not already exist.
+      options:
+        - label: >
+            Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar feature requests
+        - label: >
+            Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html)
+        - label: >
+            Browse the repository, [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for already existing functionalities
+  - type: checkboxes
+    id: feature_checks
+    attributes:
+      label: Feature Type
+      description: Please check what type of feature request you would like to propose.
+      options:
+        - label: >
+            Adding new functionality to pandapower
+        - label: >
+            Changing existing functionality in pandapower
+        - label: >
+            Removing existing functionality in pandapower
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: >
+        Please describe what problem the feature would solve.
+    validations:
+      required: true
+  - type: textarea
+    id: feature
+    attributes:
+      label: Feature Description
+      description: >
+        Please describe how the new feature would be implemented.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: >
+        Please provide any relevant GitHub issues, code examples or references that help describe and support
+        the feature request.
+  - type: checkboxes
+    id: label_checks
+    attributes:
+      label: Label
+      description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).
+      options:
+        - label: >
+            Relevant labels are selected

@@ -17,6 +17,8 @@ Change Log
 - [ADDED] extensive unit tests for cim2pp converter (element parameter and load flow results)
 - [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
 - [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
+- [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+
 
 [2.13.1] - 2023-05-12
 -------------------------------
