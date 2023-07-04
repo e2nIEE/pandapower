@@ -15,6 +15,7 @@ Change Log
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
 - [CHANGED] adjust default iterations for runpp_3ph
+- [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
 
 
 [2.13.1] - 2023-05-12
