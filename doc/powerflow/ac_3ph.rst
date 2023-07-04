@@ -17,7 +17,7 @@ pandapower uses Sequence Frame to solve three phase power flow :
 
 
 Asymmetric Power Flow using power-grid-model
----------------------------------------
+--------------------------------------------
 
-The same function mentioned in :ref:`Balanced AC Power Flow <_ppAC_PGM_PF>`, ie. :func:`pandapower.run.runpp_pgm` can be used for asymmetric power flow calculation.
-The argument `symmetric=False` should be added to do so.
+The same function mentioned in `Balanced AC Power Flow using power-grid-model`_, ie. `pandapower.run.runpp_pgm()` can be used for asymmetric power flow calculation.
+The argument `symmetric=False` should be set for this purpose.
