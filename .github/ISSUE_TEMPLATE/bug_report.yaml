@@ -1,0 +1,84 @@
+name: Bug Report
+description: Report incorrect behavior in the pandapower library
+title: '[bug] YOUR TITLE'
+labels: bug
+
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Bug report checklis
+      options:
+        - label: >
+            Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports
+          required: true
+        - label: >
+            Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html)
+          required: true
+        - label: >
+            Browse the [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for usefull code snippets and examples of use
+        - label: >
+            Reproduced the issue after updating with `pip install --upgrade pandapower` (or `git pull`)
+          required: true
+        - label: >
+            Tried basic troubleshooting (if a bug/error) like restarting the interpreter and checking the pythonpath
+          required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Reproducible Example
+      description: >
+        Please follow [this guide](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) on how to
+        provide a minimal, copy-pastable example.
+      placeholder: >
+        import pandapower as pp
+
+        net = pp.create_empty_network()
+
+        ...
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Issue Description and Traceback
+      description: >
+        Please provide a description of the issue and the Traceback/Error.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: >
+        Please describe or show a code example of the expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Installed Versions
+      description: >
+        Please paste the output of ``pd.show_versions()``
+      value: >
+        * python version:
+        * pandas version: 
+        * networkx version: 
+        * scipy version: 
+        * numpy version: 
+        * packaging version: 
+        * tqdm version: 
+        * deepdiff version: 
+        * Operating System name/version:
+    validations:
+      required: true
+  - type: checkboxes
+    id: label_checks
+    attributes:
+      label: Label
+      description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).
+      options:
+        - label: >
+            Relevant labels are selected
