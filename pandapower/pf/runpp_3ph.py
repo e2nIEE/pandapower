@@ -384,7 +384,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         init = "auto"
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
-    default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,
+    default_max_iteration = {"nr": 30, "bfsw": 10, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
