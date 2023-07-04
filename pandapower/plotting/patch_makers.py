@@ -173,6 +173,10 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
+    :param unique_angles: angles for patches
+    :param unique_angles: angles for patches
+    :type size: dict
+    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:
@@ -216,6 +220,8 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
+    :param unique_angles: angles for patches
+    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:
@@ -266,6 +272,8 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
+    :param unique_angles: angles for patches
+    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset", "r_triangle",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:

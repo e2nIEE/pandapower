@@ -238,6 +238,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., unique_an
     :type patch_maker: function
     :param size: patch size
     :type size: float, default 1
+    :param unique_angles: angles for patches
+    :type size: dict
     :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
         over them)
     :type infos: iterable, default None
@@ -972,6 +974,8 @@ def create_load_collection(net, loads=None, size=1., unique_angles=None, patch_c
 
         **size** (float, 1) - patch size
 
+        **unique_angles** {dict} angles for patches
+
         **infofunc** (function, None) - infofunction for the patch element
 
         **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
@@ -1013,6 +1017,8 @@ def create_gen_collection(net, gens=None, size=1., unique_angles=None, patch_cou
 
         **size** (float, 1) - patch size
 
+        **unique_angles** {dict} angles for patches
+
         **infofunc** (function, None) - infofunction for the patch element
 
         **orientation** (float or list of floats, np.pi) - orientation of gen collection. pi is\
@@ -1051,6 +1057,8 @@ def create_sgen_collection(net, sgens=None, size=1., unique_angles=None, infofun
         **sgens** (list of ints, None) - the static generators to include in the collection
 
         **size** (float, 1) - patch size
+
+        **unique_angles** {dict} angles for patches
 
         **infofunc** (function, None) - infofunction for the patch elem
 
