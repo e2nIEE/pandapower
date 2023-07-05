@@ -3,7 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
-- [ADDED] a patch for PV-plants (:code:`sgen.type = "PV"`) and Windturbines (:code:`sgen.type = "WT"`) to :code:`simple_plot`
+- [ADDED] patches for PV-plants (:code:`sgen.type = "PV"`) and Windturbines (:code:`sgen.type = "WT"`) to :code:`simple_plot`
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
