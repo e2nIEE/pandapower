@@ -187,7 +187,6 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         sgen_count = 0
         gen_count = 0
         load_count = 0
-        sgen_key = {}
         if plot_sgens and len(net.sgen):
             try:
                 sgen_count = len(sgen_types[i])
