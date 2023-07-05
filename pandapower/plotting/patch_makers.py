@@ -197,9 +197,9 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
 
     for i in node_coords.index:
         node_geo = list(node_coords.loc[i])
-        if "load" in unique_angles[i]:
+        if "load" in unique_angles[i] and unique_angles[i]["load"] != []:
             try:
-                angle = unique_angles[i]["load"][0] + all_angles[i]
+                angle = (unique_angles[i]["load"][0]) + (all_angles[i] or 0)
             except IndexError:
                 continue
 
@@ -242,9 +242,9 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
 
     for i in node_coords.index:
         node_geo = list(node_coords.loc[i])
-        if "gen" in unique_angles[i]:
+        if "gen" in unique_angles[i] and unique_angles[i]["gen"] != []:
             try:
-                angle = unique_angles[i]["gen"][0] + all_angles[i]
+                angle = (unique_angles[i]["gen"][0]) + (all_angles[i] or 0)
             except IndexError:
                 continue
 
@@ -302,7 +302,7 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
         node_geo = list(node_coords.loc[i])
         if "WT" in unique_angles[i]["sgen"]:  # WT patch
             try:
-                angle = unique_angles[i]["sgen"]["WT"] + angles[i]
+                angle = unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)
             except IndexError:
                 continue
 
@@ -350,7 +350,7 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
 
         if "PV" in unique_angles[i]["sgen"]:   # PV patch
             try:
-                angle = unique_angles[i]["sgen"]["PV"] + angles[i]
+                angle = unique_angles[i]["sgen"]["PV"] + (angles[i] or 0)
             except IndexError:
                 continue
             mid_rect = node_geo + _rotate_dim2(np.array([0,  2*size]), angle)
@@ -370,7 +370,7 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
             polys.append(triangle_patch)
         if "wye" in unique_angles[i]["sgen"]:  # Generic Patch
             try:
-                angle = unique_angles[i]["sgen"]["wye"] + angles[i]
+                angle = unique_angles[i]["sgen"]["wye"] + (angles[i] or 0)
             except IndexError:
                 continue
 
