@@ -51,7 +51,8 @@ Balanced AC Power Flow using power-grid-model
 AC power flow can also be computed using the power-grid-model library.
 Power-grid-model has a C++ core which leads to a higher performance (`pgm documentation <https://power-grid-model.readthedocs.io/en/stable/>`_)
 The power-grid-model and conversion library is required for running this function.
-They can be installed using `pip install power-grid-model power-grid-model-io`
-Also refer `pgm conversion documentation <https://power-grid-model-io.readthedocs.io/en/stable/converters/pandapower_converter.html>`_ for more details on conversion.
+They can be installed using `pip install power-grid-model-io`.
+Currently the conversion does not support the elements of Generator, DC lines, SVC, TCSC, extended ward and impedance elements in the net.
+Check `pgm conversion documentation <https://power-grid-model-io.readthedocs.io/en/stable/converters/pandapower_converter.html>`_ for details on the conversion and attribute support.
 
 .. autofunction:: pandapower.run.runpp_pgm
