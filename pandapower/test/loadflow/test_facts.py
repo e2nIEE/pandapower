@@ -750,6 +750,17 @@ def test_ssc_controllable():
     pp.runpp(net2)
     assert np.isclose(net.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
 
+def test_ssc_case_study():
+    net = facts_case_study_grid()
+
+
+    pp.create_ssc(net,bus=6,r_ohm=0,x_ohm=5,set_vm_pu=1,controllable=True)
+    # pp.create_svc(net, 6, 1, -10, 1., 90,controllable=True)
+    # net.res_ssc.q_mvar = -9.139709
+
+    pp.runpp(net, init='flat') ###TODO fix this flat issue
+
+
 
 def test_2_sscs():
     net = pp.create_empty_network()
