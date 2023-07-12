@@ -123,7 +123,8 @@ def _calc_trafo3w_parameter(net, ppc):
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
         branch[f:t, RATE_A] = max_load / 100. * sn_mva
     else:
-        branch[f:t, RATE_A] = np.nan
+        # PowerModels considers "0" as "no limit" - we set the limit here to 0 for consistency with line and trafo
+        branch[f:t, RATE_A] = 0
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
