@@ -10,7 +10,7 @@ from pandapower.plotting import create_weighted_marker_trace
 from pandapower.plotting.plotly import simple_plotly
 import pandapower.networks as nw
 try:
-    from plotly import __version__
+    import plotly
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False

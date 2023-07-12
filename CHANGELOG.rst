@@ -12,7 +12,7 @@ Change Log
 - [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
 - [FIXED] some fixes and small updates at cim2pp
-- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions; revise numba version checks
 - [ADDED] improved documentation for short-circuit calculation (description of the function and the element results)
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
 - [CHANGED] adjust default iterations for runpp_3ph
