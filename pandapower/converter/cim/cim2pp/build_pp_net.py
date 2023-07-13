@@ -800,17 +800,22 @@ class CimConverter:
             eqssh_synchronous_machines.drop(columns=['EquipmentContainer'], inplace=True)
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, eq_generating_units,
                                               how='left', on='GeneratingUnit')
+        eqssh_reg_control = self._merge_eq_ssh_profile('RegulatingControl')[['rdfId', 'mode', 'enabled', 'targetValue', 'Terminal']]
+        # if voltage is not on connectivity node, topological node will be used
+        eqtp_terminals = pd.merge(self.cim['eq']['Terminal'], self.cim['tp']['Terminal'], how='left', on='rdfId')
+        eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode, inplace=True)
+        eqtp_terminals = eqtp_terminals[['rdfId', 'ConnectivityNode']].rename(columns={'rdfId': 'Terminal', 'ConnectivityNode': 'reg_control_cnode'})
+        eqssh_reg_control = pd.merge(eqssh_reg_control, eqtp_terminals, how='left', on='Terminal')
+        eqssh_reg_control.drop(columns=['Terminal'], inplace=True)
+        # add the voltage from the bus
+        eqssh_reg_control = pd.merge(eqssh_reg_control, self.net.bus[['vn_kv', sc['o_id']]].rename(columns={sc['o_id']: 'reg_control_cnode'}), how='left', on='reg_control_cnode')
         # merge with RegulatingControl to check if it is a voltage controlled generator
-        eqssh_reg_control = self._merge_eq_ssh_profile('RegulatingControl')[['rdfId', 'mode', 'enabled', 'targetValue']]
         eqssh_reg_control = eqssh_reg_control.loc[eqssh_reg_control['mode'] == 'voltage']
         eqssh_synchronous_machines = pd.merge(
             eqssh_synchronous_machines, eqssh_reg_control.rename(columns={'rdfId': 'RegulatingControl'}),
             how='left', on='RegulatingControl')
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, self.bus_merge, how='left', on='rdfId')
         eqssh_synchronous_machines.drop_duplicates(['rdfId'], keep='first', inplace=True)
-        # add the voltage from the bus
-        eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, self.net.bus[['vn_kv']],
-                                              how='left', left_on='index_bus', right_index=True)
         eqssh_synchronous_machines['vm_pu'] = eqssh_synchronous_machines.targetValue / eqssh_synchronous_machines.vn_kv
         eqssh_synchronous_machines['vm_pu'].fillna(1., inplace=True)
         eqssh_synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'}, inplace=True)
@@ -1259,10 +1264,12 @@ class CimConverter:
         eqssh_ei['regulationStatus'].fillna(False, inplace=True)
         eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
         eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar', 'r': 'r_ohm', 'x': 'x_ohm'},
+                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
                         inplace=True)
         eqssh_ei['pz_mw'] = 0.
         eqssh_ei['qz_mvar'] = 0.
+        eqssh_ei['r_ohm'] = 0.
+        eqssh_ei['x_ohm'] = .1
         return eqssh_ei
 
     def _convert_power_transformers_cim16(self):
@@ -1503,7 +1510,6 @@ class CimConverter:
         self.net['characteristic_temp'] = pd.concat([self.net['characteristic_temp'], pd.DataFrame(append_dict)],
                                                     ignore_index=True, sort=False)
         self.net['characteristic_temp']['step'] = self.net['characteristic_temp']['step'].astype(int)
-        self.net['trafo_df'] = trafo_df  # todo remove
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
