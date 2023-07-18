@@ -6,7 +6,7 @@
 import sys
 import math
 import pandas as pd
-from numpy import array, setdiff1d
+from numpy import array
 
 from pandapower.auxiliary import soft_dependency_error
 
@@ -36,7 +36,7 @@ except ImportError:
     geojson_INSTALLED = False
 
 
-def _node_geometries_from_geodata(node_geo, epsg=31467):
+def _node_geometries_from_geodata(node_geo, epsg=31467, remove_xy=False):
     """
     Creates a geopandas geodataframe from a given dataframe of with node coordinates as x and y
     values.
@@ -45,23 +45,29 @@ def _node_geometries_from_geodata(node_geo, epsg=31467):
     :type node_geo: pandas.dataframe
     :param epsg: The epsg projection of the node coordinates
     :type epsg: int, default 31467 (= Gauss-Krüger Zone 3)
+    :param remove_xy: If x/y and coords columns should be removed from the geodataframe
+    :type remove_xy: bool, default False
     :return: node_geodata - a geodataframe containing the node_geo and Points in the geometry column
     """
     missing_packages = array(["shapely", "geopandas"])[~array([
         shapely_INSTALLED, geopandas_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     geoms = [Point(x, y) for x, y in node_geo[["x", "y"]].values]
+    if remove_xy:
+        return GeoDataFrame(crs=f"epsg:{epsg}", geometry=geoms, index=node_geo.index)
     return GeoDataFrame(node_geo, crs=f"epsg:{epsg}", geometry=geoms, index=node_geo.index)
 
 
-def _branch_geometries_from_geodata(branch_geo, epsg=31467):
+def _branch_geometries_from_geodata(branch_geo, epsg=31467, remove_xy=False):
     missing_packages = array(["shapely", "geopandas"])[~array([
         shapely_INSTALLED, geopandas_INSTALLED])]
     if len(missing_packages):
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     geoms = GeoSeries([LineString(x) for x in branch_geo.coords.values], index=branch_geo.index,
                       crs=f"epsg:{epsg}")
+    if remove_xy:
+        return GeoDataFrame(crs=f"epsg:{epsg}", geometry=geoms, index=branch_geo.index)
     return GeoDataFrame(branch_geo, crs=f"epsg:{epsg}", geometry=geoms, index=branch_geo.index)
 
 
@@ -90,6 +96,36 @@ def _transform_branch_geometry_to_coords(branch_geo):
     return branch_geo
 
 
+def _transform_node_geometry_to_geojson(node_geo):
+    """
+    Create geojson from geodataframe geometries
+
+    ! forces projection to wgs84 !
+
+    :param node_geo: The dataframe containing the node geometries (as shapely points)
+    :type node_geo: geopandas.GeoDataFrame
+    :return: A geojson object for the node_geo
+    """
+    if not geojson_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
+    return geojson.loads(node_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True))
+
+
+def _transform_branch_geometry_to_geojson(branch_geo):
+    """
+    Create geojson from geodataframe geometries
+
+    ! forces projection to wgs84 !
+
+    :param branch_geo: The dataframe containing the branch geometries (as shapely LineStrings)
+    :type branch_geo: geopandas.GeoDataFrame
+    :return: A geojson object for the branch_geo
+    """
+    if not geojson_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
+    return geojson.loads(branch_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True))
+
+
 def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     """
     Converts the given x and y coordinates according to the defined epsg projections.
@@ -105,7 +141,7 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     :return: transformed_coords - x and y values in new coordinate system
     """
     if not pyproj_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "pyproj")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     in_proj = Proj(init='epsg:%i' % epsg_in)
     out_proj = Proj(init='epsg:%i' % epsg_out)
     return transform(in_proj, out_proj, x, y)
@@ -129,7 +165,7 @@ def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
         _transform_branch_geometry_to_coords(net.line_geodata)
 
 
-def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True):
+def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True, remove_xy=False):
     """
     Transforms the bus and line geodata of a net into a geopandaas geodataframe with the respective
     geometries.
@@ -142,13 +178,32 @@ def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=Tr
     :type node_geodata: bool, default True
     :param branch_geodata: flag if to transform the line geodata table
     :type branch_geodata: bool, default True
+    :param remove_xy: flag if to remove x,y and coords columns from geodata tables
     :return: No output.
     """
     if node_geodata:
-        net["bus_geodata"] = _node_geometries_from_geodata(net["bus_geodata"], epsg)
+        net["bus_geodata"] = _node_geometries_from_geodata(net["bus_geodata"], epsg, remove_xy)
     if branch_geodata:
-        net["line_geodata"] = _branch_geometries_from_geodata(net["line_geodata"], epsg)
+        net["line_geodata"] = _branch_geometries_from_geodata(net["line_geodata"], epsg, remove_xy)
     net["gis_epsg_code"] = epsg
+
+
+def convert_gis_to_geojson(net, node_geodata=True, branch_geodata=True):
+    """
+    Transforms the bus and line geodataframes of a net into a geojson object.
+
+    :param net: The net for which to convert the geodataframes
+    :type net: pandapowerNet
+    :param node_geodata: flag if to transform the bus geodataframe
+    :type node_geodata: bool, default True
+    :param branch_geodata: flag if to transform the line geodataframe
+    :type branch_geodata: bool, default True
+    :return: No output.
+    """
+    if node_geodata:
+        net["bus_geodata"] = _transform_node_geometry_to_geojson(net["bus_geodata"])
+    if branch_geodata:
+        net["line_geodata"] = _transform_branch_geometry_to_geojson(net["line_geodata"])
 
 
 def convert_epsg_bus_geodata(net, epsg_in=4326, epsg_out=31467):
@@ -187,7 +242,7 @@ def convert_crs(net, epsg_in=4326, epsg_out=31467):
         return
 
     if not pyproj_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "pyproj")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
     def _geo_node_transformer(r):
