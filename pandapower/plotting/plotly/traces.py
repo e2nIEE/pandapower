@@ -8,10 +8,9 @@ import math
 
 import numpy as np
 import pandas as pd
-from packaging import version
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, version_check
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
     MapboxTokenMissing
@@ -23,27 +22,16 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly import __version__ as plotly_version
     from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
+    version_check('plotly')
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False
-
-
-def version_check():
-    if "plotly_version" not in locals() and "plotly_version" not in globals():
-        raise UserWarning("You are trying to use plotly, which is not installed.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
-    if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
 
 
 def _in_ipynb():

@@ -29,6 +29,8 @@
 import copy
 from collections.abc import MutableMapping
 import warnings
+from importlib.metadata import version as version_str
+from importlib.metadata import PackageNotFoundError
 
 import numpy as np
 import pandas as pd
@@ -39,13 +41,14 @@ from packaging.version import Version
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
-from .pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
+from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from numba import jit
-    from numba import __version__ as numba_version
+    NUMBA_INSTALLED = True
 except ImportError:
     from .pf.no_numba import jit
+    NUMBA_INSTALLED = False
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -60,14 +63,36 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def version_check(package_name, level="UserWarning", ignore_not_installed=False):
+
+    minimum_version = {'plotly': "3.1.1",
+                       'numba': "0.25",
+                      }
+    if ignore_not_installed and package_name not in minimum_version.keys():
+        return
+
+    try:
+        version = version_str(package_name)
+        if Version(version) < Version(minimum_version.get(package_name, '0.0.0')):
+            log_to_level((
+                f"{package_name} version {version} is no longer supported by pandapower.\r\n"
+                f"Please upgrade your installation. Possibly it can be done via "
+                f"'pip install --upgrade {package_name}'."), logger, level)
+    except PackageNotFoundError:
+        if ignore_not_installed:
+            raise PackageNotFoundError(
+                f"Python package '{package_name}', is needed.\r\nPlease install it. "
+                f"Possibly it can be installed via 'pip install {package_name}'.")
+
+
 def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
-    raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      f"requirements: {fct_name} requires '{required_packages}'. \n"
-                      f"{required_packages} could not be imported.\n"
-                      "To install all pandapower dependencies, "
-                      'pip install pandapower["all"] can be used.')
+    raise ImportError(
+        "Some pandapower functionality use modules outside the setup.py "
+        f"requirements: {fct_name} requires '{required_packages}'. \n"
+        f"{required_packages} could not be imported.\n"
+        'To install all pandapower dependencies, pip install pandapower["all"] can be used.')
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
@@ -428,6 +453,10 @@ def log_to_level(msg, passed_logger, level):
         passed_logger.info(msg)
     elif level == "debug":
         passed_logger.debug(msg)
+    elif level == "UserWarning":
+        raise UserWarning(msg)
+    elif level is None:
+        pass
 
 
 def read_from_net(net, element, index, variable, flag='auto'):
@@ -928,24 +957,25 @@ def _write_lookup_to_net(net, element, element_lookup):
     net["_pd2ppc_lookups"][element] = element_lookup
 
 
-def _check_if_numba_is_installed(numba):
-    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n' \
-                        'Probably the execution is slow.\n' \
-                        'Please install numba to gain a massive speedup.\n' \
-                        '(or if you prefer slow execution, set the flag numba=False to avoid ' + \
-                        'this warning!)\n'
+def _check_if_numba_is_installed(level="warning"):
+    msg = (
+        'numba cannot be imported and numba functions are disabled.\n'
+        'Probably the execution is slow.\n'
+        'Please install numba to gain a massive speedup.\n'
+        '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
 
+    if not NUMBA_INSTALLED:
+        log_to_level(msg, logger, level)
+        return False
     try:
-        # get numba Version (in order to use it it must be > 0.25)
-        if Version(numba_version) < Version("0.25"):
-            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
-                           numba_warning_str)
-            numba = False
-    except:
-        logger.warning(numba_warning_str)
-        numba = False
+        version_check("numba")
+        return NUMBA_INSTALLED
+    except UserWarning:
+        if NUMBA_INSTALLED:
+            msg = 'The numba version is too old.\n' + msg
+        log_to_level(msg, logger, level)
+        return False
 
-    return numba
 
 
 def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
@@ -1289,7 +1319,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     # check if numba is available and the corresponding flag
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values)
@@ -1395,7 +1425,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     mode = "pf"
     init = 'flat'
 
-    numba = _check_if_numba_is_installed(numba)
+    numba = _check_if_numba_is_installed()
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
@@ -1418,7 +1448,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
                          init, numba, trafo3w_losses, consider_line_temperature=False, **kwargs):
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
     mode = "opf"
     ac = True
     trafo_model = "t"

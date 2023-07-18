@@ -7,7 +7,7 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, version_check, \
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_scale_trace,  create_trafo_trace, draw_traces, _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
@@ -38,9 +38,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 'R: ' + (net.line['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm' + '<br />'
                 + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
-                + ' Ohm' +
-                + net.line['parallel'].apply(lambda x: '<br />Parallel: ' + str(x) if x > 1 else  '<br />')
-                ).tolist()
+                + ' Ohm'
+                + net.line['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
     elif element == "trafo":
         hoverinfo = (
                 "Index: " + net.trafo.index.astype(str) + '<br />' +
@@ -194,7 +193,6 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                            separator_element, branch_trace_func, node_trace_func,
                            hoverinfo_func, filename='temp-plot.html', auto_open=True,
                            showlegend=True):
-    version_check()
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
                     showlegend=showlegend)
