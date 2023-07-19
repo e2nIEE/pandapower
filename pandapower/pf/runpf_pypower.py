@@ -29,6 +29,8 @@ from pandapower.pypower.ppoption import ppoption
 from pandapower.pypower.fdpf import fdpf
 from pandapower.pypower.gausspf import gausspf
 
+from pandapower.auxiliary import _check_if_numba_is_installed
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -98,17 +100,7 @@ def _ac_runpf(ppci, ppopt, numba, recycle):
 def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
     if numba:
-        try:
-            from numba._version import version_version as nb_version
-            # get numba Version (in order to use it it must be > 0.25)
-            if version.parse(nb_version) < version.parse("0.25"):
-                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
-                numba = False
-
-        except ImportError:
-            # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
-            logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
-            numba = False
+        numba = _check_if_numba_is_installed(level=None)
 
     if numba:
         from pandapower.pf.makeYbus_numba import makeYbus

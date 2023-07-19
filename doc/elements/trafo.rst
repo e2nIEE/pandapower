@@ -304,3 +304,13 @@ For trafo_loading="power", the loading is defined as:
    \begin{align*}  
     loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_mva}, \frac{i_{lv} \cdot v_{lv}}{sn\_mva}) \cdot 100
     \end{align*} 
+
+*net.res_trafo_sc*
+
+The short-circuit (SC) results are put into *net.res_trafo_sc* with following definitions:
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. csv-table:: 
+   :file: trafo_res_sc.csv
+   :delim: ;
+   :widths: 15, 10, 55

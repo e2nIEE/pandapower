@@ -52,7 +52,7 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas"],
+        "plotting": ["plotly", "matplotlib", "python-igraph", "geopandas", "geojson"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest<=7.0", "pytest-xdist"],
@@ -62,13 +62,14 @@ setup(
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly", "matplotlib", "python-igraph", "geopandas",
+                "plotly>=3.1.1", "matplotlib", "python-igraph", "geopandas", "geojson",
                 "pytest<=7.0", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
                 "psycopg2",  # for PostgreSQL I/O
                 "matpowercaseframes",
-                "power-grid-model-io"
+                "power-grid-model-io",
+                "numba>=0.25"
                 ]},  # "shapely", "pyproj", "fiona" are dependencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
     packages=find_packages(),
