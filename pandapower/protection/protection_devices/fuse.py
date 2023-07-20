@@ -76,10 +76,10 @@ class Fuse(ProtectionDevice):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.xlim(10**np.floor(start), 10**np.ceil(stop))
-        plt.ylim(10**np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)), 10**np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
+        plt.ylim(10**np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
+                 10**np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
         plt.title(title)
         plt.grid(True, which="both", ls="-")
-        pass
 
     # def __repr__(): display Fuse + name instead of Fuse
 

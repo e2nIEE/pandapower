@@ -89,6 +89,8 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
                         "vk_hv_percent", "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
                         "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
                         "shift_lv_degree"]
+        elif element == "fuse":
+            required = ["fuse_type", "i_rated_a"]
         else:
             raise ValueError("Unkown element type %s" % element)
         for par in required:
@@ -1111,6 +1113,22 @@ def basic_trafo3w_std_types():
     }
     return trafo3wtypes
 
+import numpy as np
+nan = np.nan
+def basic_fuse_std_types():
+    fusetypes = {
+        'Siemens NH-2-224': {'fuse_type': ['Siemens NH-2-224'],
+                             'i_rated_a': [224.0],
+                             't_avg': [4800.0, 120.0, 7.0, 0.2, 0.04, 0.004],
+                             't_min': [nan],
+                             't_total': [nan],
+                             'x_avg': [400.0, 750.0, 1453.0, 3025.0, 4315.0, 7600.0],
+                             'x_min': [nan],
+                             'x_total': [nan]},
+
+    }
+    return fusetypes
+
 
 def basic_std_types():
     return {
@@ -1120,8 +1138,6 @@ def basic_std_types():
         "fuse"   : basic_fuse_std_types()
     }
 
-def basic_fuse_std_types():
-    pass
 
 def add_basic_std_types(net):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
@@ -1140,13 +1156,15 @@ def add_basic_std_types(net):
     """
 
     if "std_types" not in net:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
 
     linetypes = basic_line_std_types()
     trafotypes = basic_trafo_std_types()
     trafo3wtypes = basic_trafo3w_std_types()
+    fusetypes = basic_fuse_std_types()
 
     create_std_types(net, data=linetypes, element="line")
     create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
-    return linetypes, trafotypes, trafo3wtypes
+    create_std_types(net, data=fusetypes, element="fuse")
+    return linetypes, trafotypes, trafo3wtypes, fusetypes
