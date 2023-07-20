@@ -43,7 +43,7 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None):
         graph, meshed, roots = build_igraph_from_pp(net)
     """
     if not IGRAPH_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "python-igraph")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "igraph")
     g = igraph.Graph(directed=True)
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
@@ -191,7 +191,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     _prepare_geodata_table(net, geodata_table, overwrite)
     if library == "igraph":
         if not IGRAPH_INSTALLED:
-            soft_dependency_error("build_igraph_from_pp()", "python-igraph")
+            soft_dependency_error("build_igraph_from_pp()", "igraph")
         graph, meshed, roots = build_igraph_from_pp(net, respect_switches, buses=buses)
         coords = coords_from_igraph(graph, roots, meshed)
     elif library == "networkx":
