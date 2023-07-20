@@ -29,9 +29,6 @@ class Fuse(ProtectionDevice):
         self.characteristic_index = c.index
         self.i_start_a = min(x_values)
         self.i_stop_a = max(x_values)
-        # todo: for fuses with multiple characteristics either a) create a separate class or
-        #  b) adjust the code to use a list of indices for characteristic_index by default and then
-        #  add the c.index value to the list
 
     def reset_device(self):
         self.tripped = False

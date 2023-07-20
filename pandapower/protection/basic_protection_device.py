@@ -17,7 +17,6 @@ class ProtectionDevice(JSONSerializableClass):
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None and "protection" in net.keys():
             index = get_free_id(net.protection)
-        # todo: implement a check similar to drop_same_type_existing_controllers
         fill_dict = {"in_service": in_service}
         self.index = super().add_to_net(net=net, element='protection', index=index, overwrite=overwrite,
                                         fill_dict=fill_dict, preserve_dtypes=True)

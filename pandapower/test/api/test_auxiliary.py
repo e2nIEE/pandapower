@@ -285,7 +285,6 @@ def test_create_trafo_characteristics():
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
-    # todo test SplineCharacteristic
     net = pp.create_empty_network()
     c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
