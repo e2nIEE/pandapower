@@ -837,3 +837,11 @@ def parallel_lines(net):
                 new_parallel.append(l)
 
     return new_parallel
+
+def read_fuse_from_std_type():
+    # write characteristic of fuse from fuse_std_library
+    # net,overwrite already existing characteristic
+    # raise error if name of fuse is not available in fuse library
+
+
+    pass

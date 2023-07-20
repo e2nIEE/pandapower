@@ -1116,9 +1116,12 @@ def basic_std_types():
     return {
         "line"   : basic_line_std_types(),
         "trafo"  : basic_trafo_std_types(),
-        "trafo3w": basic_trafo3w_std_types()
+        "trafo3w": basic_trafo3w_std_types(),
+        "fuse"   : basic_fuse_std_types()
     }
 
+def basic_fuse_std_types():
+    pass
 
 def add_basic_std_types(net):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
