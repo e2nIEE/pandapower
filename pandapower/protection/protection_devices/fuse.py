@@ -1,3 +1,5 @@
+from pandapower import std_type_exists, load_std_type
+
 try:
     import matplotlib.pyplot as plt
 
@@ -12,17 +14,29 @@ from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 
 
 class Fuse(ProtectionDevice):
-    def __init__(self, net, rated_i_a, switch_index, fuse_type = "none", characteristic_index=None, in_service=True, overwrite=False,
-                 **kwargs):
+    def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
+                 overwrite=False, curve_select=0, **kwargs):
         super().__init__(net, in_service=in_service, overwrite=overwrite, **kwargs)
-        self.rated_i_a = rated_i_a
         self.switch_index = switch_index
         self.fuse_type = fuse_type
-        self.characteristic_index = characteristic_index
-        self.tripped = False
-        self.i_start_a = None
-        self.i_stop_a = None
+        self.in_service = in_service
+        if std_type_exists(net, fuse_type, element="fuse"):
+            fuse_data = load_std_type(net=net, name=fuse_type, element="fuse")
+            self.rated_i_a = fuse_data['i_rated_a']
+            if not np.isnan(fuse_data["t_avg"]).any():
+                self.create_characteristic(net, fuse_data["x_avg"], fuse_data["t_avg"])
+            elif not np.isnan(fuse_data["t_min"]).any() and curve_select == 0:
+                self.create_characteristic(net, fuse_data["x_min"], fuse_data["t_min"])
+            elif not np.isnan(fuse_data["t_total"]).any() and curve_select == 1:
+                self.create_characteristic(net, fuse_data["x_total"], fuse_data["t_total"])
+        else:
+            self.rated_i_a = rated_i_a
+            self.characteristic_index = characteristic_index
+            self.i_start_a = None
+            self.i_stop_a = None
+
         self.activation_parameter = "i_ka"
+        self.tripped = False
 
     def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", fill_value="extrapolate", **kwargs):
         c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind, **kwargs)

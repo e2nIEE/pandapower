@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 import pandapower as pp
+from pandapower import load_std_type
 from pandapower.control import plot_characteristic
 from pandapower.protection.protection_devices.fuse import Fuse
 from pandapower.protection.run_protection import calculate_protection_times
@@ -127,6 +128,39 @@ def test_fuse_plot_protection_characteristic():
     plt.show()
 
 
+def test_create_fuse_from_std_type():
+    # figure out a clean way to create fuses from std type library
+    net = fuse_test_net2()
+
+    # create list of fuse selections, loop through in for loop
+    fuse_list = ["HV 63A", "Siemens NH-2-630", "Siemens NH-2-425", "Siemens NH-2-315", "Siemens NH-2-224"]
+
+    for k in range(5):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+
+    fuse_info = load_std_type(net=net, name="HV 10A", element="fuse")
+    print(fuse_info)
+
+    print(net)
+    print(net.protection.at[0, 'object'])
+
+def test_calc_prot_times_with_std_lib():
+    net = fuse_test_net2()
+
+    # create list of fuse selections, loop through in for loop
+    fuse_list = ["HV 63A", "Siemens NH-2-630", "Siemens NH-2-425", "Siemens NH-2-315", "Siemens NH-2-224"]
+
+    for k in range(5):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+
+    # test faults at each bus
+    print(net.bus)
+    for row_index, row in net.bus.iterrows():
+        net_sc = copy.deepcopy(net)
+        sc.calc_sc(net_sc, bus=row_index, branch_results=True)
+        print("\nnet_sc has fault at bus " + str(row_index) + '\n')
+        df_protection_results = calculate_protection_times(net_sc)
+
 
 def fuse_test_net2():
     # network with transformer to test HV fuse curve_select
@@ -134,10 +168,44 @@ def fuse_test_net2():
     net = pp.create_empty_network()
 
     # create buses
-    pp.create_buses(net, nr_buses=5, vn_kv=[20, 0.4, 0.4, 0.4], index=[0, 1, 2, 3], name=None, type="n",
+    pp.create_buses(net, nr_buses=4, vn_kv=[20, 0.4, 0.4, 0.4], index=[0, 1, 2, 3], name=None, type="n",
                     geodata=[(0, 0), (0, -2), (0, -4), (0, -6)])
 
-    # create external grids
+    # create external grid
+    pp.create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
+
+    pp.create_lines_from_parameters(net, from_buses=[1, 2], to_buses=[2, 3], length_km=[0.1, 0.1], r_ohm_per_km=0.2067,
+                                    x_ohm_per_km=0.080424, c_nf_per_km=261, name=None, index=[0, 1], max_i_ka=0.27)
+
+    net.line["endtemp_degree"] = 250
+
+    # create transformer
+    pp.create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.63 MVA 20/0.4 kV")
+
+    # Define trafo fuses
+    pp.create_switches(net, buses=[0, 1], elements=[0, 0], et='t', type="fuse")
+
+    # Define line fuses
+    pp.create_switches(net, buses=[1, 2, 3], elements=[0, 1, 1], et='l', type="fuse")
+
+    # define load
+    pp.create_load(net, bus=3, p_mw=0.1, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=.1,
+                   name=None, scaling=1., index=0)
+
+    return net
+
+
+def fuse_test_net3():
+    # network with transformer to test HV fuse curve_select
+    # load switch (index 4) is configured as bus-bus
+
+    net = pp.create_empty_network()
+
+    # create buses
+    pp.create_buses(net, nr_buses=5, vn_kv=[20, 0.4, 0.4, 0.4, 0.4], index=[0, 1, 2, 3], name=None, type="n",
+                    geodata=[(0, 0), (0, -2), (0, -4), (0, -6)])
+
+    # create external grid
     pp.create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
 
     pp.create_lines_from_parameters(net, from_buses=[1, 2], to_buses=[2, 3], length_km=[0.1, 0.1], r_ohm_per_km=0.2067,
