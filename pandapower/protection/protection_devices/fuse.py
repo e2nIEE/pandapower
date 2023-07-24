@@ -15,11 +15,13 @@ from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 
 class Fuse(ProtectionDevice):
     def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
-                 overwrite=False, curve_select=0, **kwargs):
+                 overwrite=False, curve_select=0, name=None, **kwargs):
         super().__init__(net, in_service=in_service, overwrite=overwrite, **kwargs)
         self.switch_index = switch_index
         self.fuse_type = fuse_type
         self.in_service = in_service
+        self.name = name
+        # create protection characteristic curve from std type
         if std_type_exists(net, fuse_type, element="fuse"):
             fuse_data = load_std_type(net=net, name=fuse_type, element="fuse")
             self.rated_i_a = fuse_data['i_rated_a']
@@ -38,8 +40,9 @@ class Fuse(ProtectionDevice):
         self.activation_parameter = "i_ka"
         self.tripped = False
 
-    def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", fill_value="extrapolate", **kwargs):
-        c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind, **kwargs)
+    def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", **kwargs):
+        c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind,
+                                    **kwargs)
         self.characteristic_index = c.index
         self.i_start_a = min(x_values)
         self.i_stop_a = max(x_values)
@@ -50,18 +53,18 @@ class Fuse(ProtectionDevice):
     def has_tripped(self):
         return self.tripped
 
-    def protection_function(self, net):  # separate into protection_time and protection_decision?
+    def protection_function(self, net):
         # trips switch in net accordingly, returns dictionary protection_result
         i_ka = net.res_switch_sc.ikss_ka.at[self.switch_index]
         c = net.characteristic.at[self.characteristic_index, "object"]
-        if i_ka*1000 < self.i_start_a:
+        if i_ka * 1000 < self.i_start_a:
             self.tripped = False
             net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
             act_time_s = np.inf
-        elif i_ka*1000 <= self.i_stop_a:
+        elif i_ka * 1000 <= self.i_stop_a:
             self.tripped = True
             net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
-            act_time_s = c(i_ka*1000)
+            act_time_s = c(i_ka * 1000)
         else:
             self.tripped = True
             net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
@@ -89,12 +92,13 @@ class Fuse(ProtectionDevice):
         plt.loglog(x, y)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        plt.xlim(10**np.floor(start), 10**np.ceil(stop))
-        plt.ylim(10**np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
-                 10**np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
+        plt.xlim(10 ** np.floor(start), 10 ** np.ceil(stop))
+        plt.ylim(10 ** np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
+                 10 ** np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
         plt.title(title)
         plt.grid(True, which="both", ls="-")
 
-    # def __repr__(): display Fuse + name instead of Fuse
-
-
+    def __repr__(self):  # display Fuse + name instead of Fuse
+        s = '%s %s' % (self.__class__.__name__, self.name)
+        self.characteristic_index = 1
+        return s
