@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] Documentation for running powerflow using power-grid-model
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
@@ -12,9 +13,12 @@ Change Log
 - [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
 - [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
 - [FIXED] some fixes and small updates at cim2pp
-- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions
+- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions; revise numba version checks
 - [ADDED] improved documentation for short-circuit calculation (description of the function and the element results)
 - [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+- [ADDED] extensive unit tests for cim2pp converter (element parameter and load flow results)
+- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
+- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 - [CHANGED] adjust default iterations for runpp_3ph
 - [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
 

@@ -10,7 +10,7 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _sum_by_group, phase_to_sequence
+from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
@@ -21,6 +21,7 @@ from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_AN
 
 try:
     from numba import jit
+    version_check('numba')
 except ImportError:
     from .pf.no_numba import jit
 
