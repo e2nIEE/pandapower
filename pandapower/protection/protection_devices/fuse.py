@@ -61,10 +61,10 @@ class Fuse(ProtectionDevice):
         # compute protection time in net under short-circuit or operating conditions
         if scenario == "sc":
             i_ka = net.res_switch_sc.ikss_ka.at[self.switch_index]
-        elif scenario == "op":
+        elif scenario == "pp":
             i_ka = net.res_switch.i_ka.at[self.switch_index]
         else:
-            raise ValueError("scenario must be either sc or op")
+            raise ValueError("scenario must be either sc or pp")
         c = net.characteristic.at[self.characteristic_index, "object"]
         if i_ka * 1000 < self.i_start_a:
             self.tripped = False

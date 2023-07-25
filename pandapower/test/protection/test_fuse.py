@@ -73,10 +73,8 @@ def test_calculate_protection_times():
 def test_fuse_plot_protection_characteristic():
     # test plot_protection_characteristic method of Fuse class
     net = fuse_test_net2()
-    HVTrafoFuse = Fuse(net=net, rated_i_a=63, fuse_type="HV 63A", switch_index=0)
-    HVTrafoFuse.create_characteristic(net, [189, 220, 300, 350, 393, 450, 530, 700, 961],
-                                      [10, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01])
-    HVTrafoFuse.plot_protection_characteristic(net)
+    Fuse1 = Fuse(net=net, rated_i_a=63, fuse_type="Siemens NH-1-160", switch_index=0)
+    Fuse1.plot_protection_characteristic(net)
     plt.show()
 
 

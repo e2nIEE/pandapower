@@ -9,13 +9,13 @@ def calculate_protection_times(net, scenario="sc"):
 
         INPUT:
             **net** - pandapower network
-            **scenario** (string, 'sc') - specify what type of scenario to calculate for: 'sc' for short-circuit, 'op'
-                for operating conditions. Default is 'sc'
+            **scenario** (string, 'sc') - specify what type of scenario to calculate for: 'sc' for short-circuit, 'pp'
+                for power flow. Default is 'sc'
         OUTPUT:
             **df_protection_results** - pandas dataframe containing results
     '''
 
-    if scenario != "sc" and scenario != "op":
+    if scenario != "sc" and scenario != "pp":
         raise ValueError("scenario must be either sc or op")
 
     protection_devices = net.protection.query("in_service").object.values
