@@ -15,7 +15,7 @@ from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 
 class Fuse(ProtectionDevice):
     def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
-                 overwrite=False, curve_select=0, name=None, **kwargs):
+                 overwrite=False, curve_select=0, z_ohm=0.0001, name=None, **kwargs):
         super().__init__(net, in_service=in_service, overwrite=overwrite, **kwargs)
         self.switch_index = switch_index
         self.fuse_type = fuse_type
@@ -31,6 +31,8 @@ class Fuse(ProtectionDevice):
                 self.create_characteristic(net, fuse_data["x_min"], fuse_data["t_min"])
             elif not np.isnan(fuse_data["t_total"]).any() and curve_select == 1:
                 self.create_characteristic(net, fuse_data["x_total"], fuse_data["t_total"])
+            else:
+                raise ValueError("curve_select must equal 0 or 1")
         else:
             self.rated_i_a = rated_i_a
             self.characteristic_index = characteristic_index
@@ -39,6 +41,8 @@ class Fuse(ProtectionDevice):
 
         self.activation_parameter = "i_ka"
         self.tripped = False
+        self.z_ohm = z_ohm
+        net.switch.at[self.switch_index, 'z_ohm'] = self.z_ohm
 
     def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", **kwargs):
         c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind,
@@ -53,21 +57,23 @@ class Fuse(ProtectionDevice):
     def has_tripped(self):
         return self.tripped
 
-    def protection_function(self, net):
-        # trips switch in net accordingly, returns dictionary protection_result
-        i_ka = net.res_switch_sc.ikss_ka.at[self.switch_index]
+    def protection_function(self, net, scenario="sc"):
+        # compute protection time in net under short-circuit or operating conditions
+        if scenario == "sc":
+            i_ka = net.res_switch_sc.ikss_ka.at[self.switch_index]
+        elif scenario == "op":
+            i_ka = net.res_switch.i_ka.at[self.switch_index]
+        else:
+            raise ValueError("scenario must be either sc or op")
         c = net.characteristic.at[self.characteristic_index, "object"]
         if i_ka * 1000 < self.i_start_a:
             self.tripped = False
-            net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
             act_time_s = np.inf
         elif i_ka * 1000 <= self.i_stop_a:
             self.tripped = True
-            net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
             act_time_s = c(i_ka * 1000)
         else:
             self.tripped = True
-            net.switch.at[self.switch_index, 'closed'] = not self.has_tripped()
             act_time_s = 0
 
         protection_result = {"switch_id": self.switch_index,
@@ -98,7 +104,7 @@ class Fuse(ProtectionDevice):
         plt.title(title)
         plt.grid(True, which="both", ls="-")
 
-    def __repr__(self):  # display Fuse + name instead of Fuse
-        s = '%s %s' % (self.__class__.__name__, self.name)
+    def __str__(self):  # display Fuse + name instead of Fuse
+        s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.fuse_type, self.name)
         self.characteristic_index = 1
         return s
