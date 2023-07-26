@@ -11,7 +11,7 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc
+from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
@@ -43,6 +43,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     _build_gen_ppc(net, ppc)
     _build_svc_ppc(net, ppc, "sc")   # needed for shape reasons
     _build_tcsc_ppc(net, ppc, "sc")  # needed for shape reasons
+    _build_ssc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)

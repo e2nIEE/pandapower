@@ -182,6 +182,7 @@ def _ppci_bus_to_ppc(result, ppc):
     ppc['bus'] = updated_bus
 
     ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
+    ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
 
 
 def _ppci_branch_to_ppc(result, ppc):

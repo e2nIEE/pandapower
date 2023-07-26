@@ -154,6 +154,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):
         V[tcsc_tb] -= 0.01 + 0.001j
+    if any_ssc_controllable and np.all(V[ssc_fb] == V[ssc_tb]):
+        V[ssc_tb] -= 0.01 + 0.001j
 
     Va = angle(V)
     Vm = abs(V)
@@ -411,6 +413,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         tcsc[tcsc_branches, TCSC_IF] = np.abs(i_tcsc_f) * baseI
         tcsc[tcsc_branches, TCSC_IT] = np.abs(i_tcsc_t) * baseI
         tcsc[tcsc_branches, TCSC_X_PU] = 1 / calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+
+    if any_ssc:
+        Yf_ssc, Yt_ssc = makeYft_tcsc(Ybus_ssc, ssc_fb, ssc_tb)
+        s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
+        ssc[ssc_branches, SSC_Q] = s_ssc_f.imag
 
     # because we now have updates of the Ybus matrices due to TDPF, SVC, TCSC, SSC,
     # we are interested in storing them for later use:

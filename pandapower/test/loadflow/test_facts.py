@@ -75,6 +75,9 @@ def copy_with_impedance(net):
 
 
 def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
+    backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
+    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
+        net_ref.impedance.query("name=='SSC'").index, "q_from_mvar"].values
     bus_idx = net.bus.index.values
     for col in ("vm_pu", "va_degree", "p_mw", "q_mvar"):
         assert np.allclose(net.res_bus[col], net_ref.res_bus.loc[bus_idx, col], rtol=0, atol=1e-6)
@@ -86,10 +89,13 @@ def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
                            rtol=0, atol=1e-6)
     assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
                        atol=1e-6)
+    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
 
 
 def compare_ssc_impedance_gen(net, net_ref):
-    ### comparing the original buses in net and net_ref(witout the auxilary buses)
+    backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
+    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[net_ref.impedance.query(
+        "name=='SSC'").index, "q_from_mvar"].values  ### comparing the original buses in net and net_ref(witout the auxilary buses)
     assert np.allclose(np.abs(net._ppc["internal"]["V"][net.bus.index]),
                        np.abs(net_ref._ppc["internal"]["V"][net.bus.index]), rtol=0, atol=1e-6)
 
@@ -119,6 +125,7 @@ def compare_ssc_impedance_gen(net, net_ref):
 
     assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
                        atol=1e-6)
+    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
 
 
 def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
@@ -495,9 +502,7 @@ def test_multiple_facts():
 
     runpp_with_consistency_checks(net)
 
-
     # net = _many_tcsc_test_net()
-
 
     net.tcsc.loc[1, "thyristor_firing_angle_degree"] = net.res_tcsc.loc[1, "thyristor_firing_angle_degree"]
     net.tcsc.loc[1, "controllable"] = False
@@ -510,13 +515,12 @@ def test_multiple_facts():
     runpp_with_consistency_checks(net)
 
     net.svc.thyristor_firing_angle_degree.at[0] = net.res_svc.loc[0, "thyristor_firing_angle_degree"]
-    net.svc.controllable =False
+    net.svc.controllable = False
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
     compare_tcsc_impedance(net, net_ref, net.svc.index, net_ref.impedance.query("name=='SVC'").index)
-
 
 
 def _many_tcsc_test_net():
@@ -552,12 +556,6 @@ def _many_tcsc_test_net():
     pp.create_svc(net, 2, 1, -10, 1., 144)
 
     pp.create_ssc(net, 6, 0, 5, 1, controllable=True, in_service=True)
-
-    # todo> remove after init fixed for ssc:
-    pp.set_user_pf_options(net, init="flat")
-    #
-    # pp.runpp(net, init='flat')
-
     return net
 
 
@@ -570,8 +568,7 @@ def test_multiple_facts_combinations(svc_status, tcsc_status, ssc_status):
     net.svc.controllable = svc_status
     net.tcsc.controllable = tcsc_status
     net.ssc.in_service = ssc_status
-    pp.runpp(net, init='flat')
-    # runpp_with_consistency_checks(net) #todo
+    runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
@@ -584,14 +581,12 @@ def test_multiple_facts_combinations(svc_status, tcsc_status, ssc_status):
 
     # pp.create_ssc(net, 6, 0, 5, 1,controllable=True,in_service=True)
 
-    # runpp_with_consistency_checks(net) ## TODO: after we fix the q we release this line
+    runpp_with_consistency_checks(net)
 
-    pp.runpp(net, init='flat')
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
     compare_ssc_impedance_gen(net, net_ref)
-
 
 
 def test_svc_tcsc_case_study():
@@ -711,7 +706,7 @@ def test_ssc_simple():
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_load(net, 1, 100, 25)
     pp.create_ssc(net, 1, 0, 5, 1)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
@@ -726,8 +721,9 @@ def test_ssc_simple():
 
     compare_ssc_impedance_gen(net, net_ref)
 
-    # todo
-    # assert np.isclose(net.res_ssc.q_mvar[0], net2.res_bus.q_mvar.at[2], rtol=0, atol=1e-6) ## not passed
+    assert np.isclose(net.res_bus.q_mvar[0], net_ref.res_bus.q_mvar.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.q_mvar[0], net.res_bus.q_mvar.at[1] - net.load.q_mvar.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(net.res_ssc.q_mvar[0], net_ref.res_impedance.q_from_mvar.at[0], rtol=0, atol=1e-6)
 
 
 @pytest.mark.xfail(reason="SSC not controllable is not implemented")
@@ -750,15 +746,15 @@ def test_ssc_controllable():
     pp.runpp(net2)
     assert np.isclose(net.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
 
+
 def test_ssc_case_study():
     net = facts_case_study_grid()
 
-
-    pp.create_ssc(net,bus=6,r_ohm=0,x_ohm=5,set_vm_pu=1,controllable=True)
+    pp.create_ssc(net, bus=6, r_ohm=0, x_ohm=5, set_vm_pu=1, controllable=True)
     # pp.create_svc(net, 6, 1, -10, 1., 90,controllable=True)
     # net.res_ssc.q_mvar = -9.139709
 
-    pp.runpp(net, init='flat') ###TODO fix this flat issue
+    runpp_with_consistency_checks(net)
 
 
 
@@ -775,7 +771,7 @@ def test_2_sscs():
     net1 = net.deepcopy()
     pp.create_ssc(net1, 1, 0, x, 1, controllable=True)
     pp.create_ssc(net1, 2, 0, x, 1, controllable=True)
-    pp.runpp(net1)
+    runpp_with_consistency_checks(net1)
 
     net2 = copy_with_impedance(net1)
     pp.runpp(net2)
@@ -812,7 +808,6 @@ def test_2_sscs():
     # pp.create_load(net2, [1, 2], 100, 25)
     # pp.runpp(net2)
     # assert_frame_equal(net1.res_bus, net2.res_bus)
-
 
 
 if __name__ == "__main__":
