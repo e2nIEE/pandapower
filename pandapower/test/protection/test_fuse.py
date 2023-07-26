@@ -108,6 +108,15 @@ def test_calc_prot_times_with_std_lib():
         df_protection_results = calculate_protection_times(net_sc)
 
 
+def test_calc_prot_times_pp_scenario():
+    # test calculate_protection_times() function with power flow scenario
+    net = fuse_test_net3()
+    Fuse(net=net, switch_index=4, fuse_type="Siemens NH-1-16") # fuse is underrated
+    pp.runpp(net)
+    protection_times = calculate_protection_times(net, scenario="pp")
+    assert protection_times.trip_melt.at[0] == True, 'trip_melt for switch 4 should be True in pp scenario'
+
+
 def test_reset_device():
     # test reset_device() method of Fuse class
     net = fuse_test_net3()
@@ -127,6 +136,14 @@ def test_has_tripped():
     assert net.protection.at[0, "object"].has_tripped() == True, '.has_tripped() should equal True'
 
 
+def test_status_to_net():
+    net = fuse_test_net3()
+    Fuse(net=net, switch_index=0, fuse_type="HV 63A")
+    net.protection.at[0, "object"].tripped = True
+    net.protection.object.at[0].status_to_net(net)
+    assert net.switch.closed.at[0] == False, 'switch 0 should be open (Closed = False)'
+
+
 def test_create_new_std_type():
     # test creating a new fuse std type, adding it to std library, and using it in network
     net = fuse_test_net3()
@@ -134,12 +151,16 @@ def test_create_new_std_type():
     new_fuse_data = {'fuse_type': 'New Fuse',
                 'i_rated_a': 15.0,
                 't_avg': nan,
-                't_min': [20, 2000],
-                't_total': [30, 3000],
+                't_min': [15, 0.01],
+                't_total': [15, 0.01],
                 'x_avg': nan,
-                'x_min': [1000, 0.1],
-                'x_total': [1000, 0.1]}
+                'x_min': [20, 2000],
+                'x_total': [30, 3000]}
     create_std_type(net, data=new_fuse_data, name='New Fuse', element="fuse")
+    Fuse(net=net, switch_index=4, fuse_type='New Fuse', curve_select=1)
+    sc.calc_sc(net, bus=4, branch_results=True)
+    protection_results = calculate_protection_times(net, scenario='sc')
+    assert protection_results.trip_melt.at[0] == True, 'New Fuse should melt'
 
 
 

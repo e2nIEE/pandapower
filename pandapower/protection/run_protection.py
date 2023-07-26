@@ -22,7 +22,7 @@ def calculate_protection_times(net, scenario="sc"):
     protection_results = []
 
     for p in protection_devices:
-        protection_result = p.protection_function(net=net, )
+        protection_result = p.protection_function(net=net, scenario=scenario )
         protection_results.append(protection_result)
 
     df_protection_results = pd.DataFrame.from_dict(protection_results)
