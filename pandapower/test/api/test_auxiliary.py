@@ -293,7 +293,7 @@ def test_characteristic(file_io):
 
     if file_io:
         net_copy = pp.from_json_string(pp.to_json(net))
-        c1, c2, c3 = net_copy.characteristic.object.values
+        c1, c2, c3, c4 = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
     #assert c1(3) == 4
