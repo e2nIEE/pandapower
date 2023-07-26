@@ -163,7 +163,6 @@ def test_create_new_std_type():
     assert protection_results.trip_melt.at[0] == True, 'New Fuse should melt'
 
 
-
 def test_net3():
     # investigate why bus-bus switch isn't working
     net = fuse_test_net3()
@@ -175,8 +174,9 @@ def test_net3():
     net_sc = sc.calc_sc(net_sc, bus=4, branch_results=True)
     print("\n\n\n")
     print(net.res_switch_sc)
-    assert not np.isnan(net.res_switch.i_ka.at[4]),           'i_ka for switch 4 should not be NaN '
-    assert not np.isnan(net_sc.res_switch_sc.i_kss.at[4]), 'ikss_ka for switch 4 should not be NaN '
+    assert not np.isnan(net.res_switch.i_ka.at[4]),  'i_ka for switch 4 should not be NaN '
+    assert not np.isnan(net.res_switch_sc.i_kss.at[4]), 'ikss_ka for switch 4 should not be NaN '
+
 
 def test_prot_func_tripping():
     # test whether protection_function of Fuse called by calculate_protection_times() updates switch status in net
@@ -194,7 +194,6 @@ def test_prot_func_tripping():
     df_protection_results = calculate_protection_times(net)
 
     print(net.switch)
-
 
 
 def test_powerflow_simple():
@@ -263,6 +262,7 @@ def fuse_test_net2():
                    name=None, scaling=1., index=0)
 
     return net
+
 
 def modified_simple_net():
     # modify simple network from create_examples.py to include resistance values for switches
