@@ -129,7 +129,6 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
                     if t == "fuse":
                         for c in type_df.columns:
                             type_df[c] = type_df[c].apply(lambda x: str(x) if isinstance(x, list) else x)
-                        #todo: for c in columns, apply if isinstance list str(x)
                     dodfs["%s_std_types" % t] = type_df
             continue
         elif item == "profiles":

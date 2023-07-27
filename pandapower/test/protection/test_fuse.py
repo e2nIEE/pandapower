@@ -206,7 +206,7 @@ def test_powerflow_simple():
     print(net.switch)
     print(net.res_switch)
 
-#TODO: create test with fuse network, pp.from_json_string(pp.to_json(net)), make sure second net has functional fuse and assert_net_equal
+
 def test_json_fuse():
     # test conversion to and from json string, make sure that resulting network still has functional fuse and
     # assert_net_equal
