@@ -411,9 +411,7 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, svc_controllable, tcsc_c
 
 
 
-def create_J_modification_ssc(J, V, Ybus_ssc, x_control,
-                              svc_controllable, tcsc_controllable, ssc_controllable,
-                              ssc_y_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup, nsvc, ntcsc, nssc):
+def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lookup):
     """
     creates the modification Jacobian matrix for SSC (STATCOM)
 
@@ -423,16 +421,6 @@ def create_J_modification_ssc(J, V, Ybus_ssc, x_control,
         array of np.complex128
     Ybus_ssc
         scipy.sparse.csr_matrix
-    x_control
-        array of np.complex128
-    svc_controllable
-        array of bool
-    tcsc_controllable
-        array of bool
-    ssc_controllable
-        array of bool
-    ssc_y_pu
-        array of np.complex128
     f
         array of np.int64
     t
@@ -445,12 +433,6 @@ def create_J_modification_ssc(J, V, Ybus_ssc, x_control,
         array of np.int64
     pq_lookup
         array of np.int64
-    nsvc
-        int
-    ntcsc
-        int
-    nssc
-        int
 
     Returns
     -------

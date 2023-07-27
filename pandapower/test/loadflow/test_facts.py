@@ -726,7 +726,6 @@ def test_ssc_simple():
     assert np.isclose(net.res_ssc.q_mvar[0], net_ref.res_impedance.q_from_mvar.at[0], rtol=0, atol=1e-6)
 
 
-@pytest.mark.xfail(reason="SSC not controllable is not implemented")
 def test_ssc_controllable():
     net = pp.create_empty_network()
     pp.create_buses(net, 3, 110)
@@ -739,12 +738,15 @@ def test_ssc_controllable():
     # both not controllable
     net1 = net.deepcopy()
     pp.create_ssc(net1, 1, 0, x, 1, controllable=False)
-    pp.runpp(net1)
+    pp.create_ssc(net1, 2, 0, x, 1)
+    runpp_with_consistency_checks(net1)
+    assert np.isclose(net1.res_ssc.vm_internal_pu.at[0], 1, rtol=0, atol=1e-6)
+    assert np.isclose(net1.res_ssc.vm_pu.at[1], 1, rtol=0, atol=1e-6)
 
     net2 = net.deepcopy()
     pp.create_ssc(net2, 1, 0, x, 1, controllable=False, vm_internal_pu=1.02, va_internal_degree=150)
-    pp.runpp(net2)
-    assert np.isclose(net.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
+    runpp_with_consistency_checks(net2)
+    assert np.isclose(net2.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
 
 
 def test_ssc_case_study():

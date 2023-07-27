@@ -149,13 +149,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-    Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
+    Ybus_ssc_not_controllable = makeYbus_ssc(Ybus, ssc_y_pu[~ssc_controllable], ssc_fb[~ssc_controllable], ssc_tb[~ssc_controllable], np.any(~ssc_controllable))
+    Ybus_ssc_controllable = makeYbus_ssc(Ybus, ssc_y_pu[ssc_controllable], ssc_fb[ssc_controllable], ssc_tb[ssc_controllable], any_ssc_controllable)
+    Ybus_ssc = Ybus_ssc_not_controllable + Ybus_ssc_controllable
 
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):
         V[tcsc_tb] -= 0.01 + 0.001j
-    if any_ssc_controllable and np.all(V[ssc_fb] == V[ssc_tb]):
-        V[ssc_tb] -= 0.01 + 0.001j
+    if any_ssc_controllable and np.all(V[ssc_fb[ssc_controllable]] == V[ssc_tb[ssc_controllable]]):
+        V[ssc_tb[ssc_controllable]] -= 0.01 + 0.001j
 
     Va = angle(V)
     Vm = abs(V)
@@ -222,8 +224,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     if any_facts_controllable or any_ssc_controllable:
         mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
-                                       tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb, ssc_tb,
-                                       ssc_controllable, ssc_set_vm_pu, Ybus_ssc, F, pq_lookup)
+                                       tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb[ssc_controllable],
+                                       ssc_tb[ssc_controllable], ssc_controllable, ssc_set_vm_pu, F, pq_lookup)
         F = r_[F, mis_facts]
 
     T_base = 100  # T in p.u. for better convergence
@@ -298,7 +300,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)  # todo expansion with SSC
             g, b = calc_g_b(r, x)
 
-        J = create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        # todo: adjust the SSC J function to take care about the Ybus_ssc_not_controllable instead
+        J = create_jacobian_matrix(Ybus+Ybus_ssc_not_controllable, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
 
         if tdpf:
             # p.u. values for T, a1, a2, I, S
@@ -321,11 +324,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                   refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
                                                   pq_lookup, num_svc_controllable, num_tcsc)
             J = J + J_m_tcsc
-        if any_ssc:
-            J_m_ssc = create_J_modification_ssc(J, V, Ybus_ssc, x_control_ssc, svc_controllable, tcsc_controllable,
-                                                ssc_controllable, ssc_y_pu, ssc_fb, ssc_tb,
-                                                refpvpq if dist_slack else pvpq, pq, pvpq_lookup, pq_lookup,
-                                                num_svc_controllable, num_tcsc_controllable, num_ssc)
+        if any_ssc_controllable:
+            J_m_ssc = create_J_modification_ssc(J, V, Ybus_ssc_controllable, ssc_fb[ssc_controllable],
+                                                ssc_tb[ssc_controllable], refpvpq if dist_slack else pvpq, pq,
+                                                pvpq_lookup, pq_lookup)
             J = J + J_m_ssc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -368,14 +370,16 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         if any_tcsc_controllable:
             Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
-        if any_ssc_controllable:
-            Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
+        # Ybus_ssc does not change
+        # if any_ssc_controllable:
+        #     Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
 
         F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
         if any_facts_controllable or any_ssc_controllable:
             mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
-                                           tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb, ssc_tb,
-                                           ssc_controllable, ssc_set_vm_pu, Ybus_ssc, F, pq_lookup)
+                                           tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc,
+                                           ssc_fb[ssc_controllable], ssc_tb[ssc_controllable], ssc_controllable,
+                                           ssc_set_vm_pu, F, pq_lookup)
             F = r_[F, mis_facts]
 
         if tdpf:
@@ -446,7 +450,8 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
 
 
 def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None,
-                       Ybus_tcsc=None, ssc_fb=None,ssc_tb=None ,ssc_controllable=None, ssc_set_vm_pu=None, Ybus_ssc=None, old_F=None, pq_lookup=None):
+                       Ybus_tcsc=None, ssc_fb=None, ssc_tb=None,
+                       ssc_controllable=None, ssc_set_vm_pu=None, old_F=None, pq_lookup=None):
     mis_facts = np.array([], dtype=np.float64)
 
     if svc_buses is not None and len(svc_buses) > 0:
@@ -458,16 +463,16 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
             mis_tcsc = Sbus_tcsc[tcsc_tb[tcsc_controllable]].real - tcsc_set_p_pu
             mis_facts = np.r_[mis_facts, mis_tcsc]
 
-    if ssc_fb is not None and len(ssc_fb) > 0:
-        if np.any(ssc_controllable):
-            # Sbus_ssc = V * conj(Ybus_ssc * V)
-            # ssc_set_p_pu = 0
-            # mis_ssc_p = Sbus_ssc[ssc_tb[ssc_controllable]].real - ssc_set_p_pu  ####  here used ssc_tb refereing to the q bus
-            mis_ssc_v = np.abs(V[ssc_fb]) - ssc_set_vm_pu
-            # mis_facts = np.r_[mis_facts, mis_ssc_p, mis_ssc_v]
-            # old_F[-(len(pq)+len(ssc_fb))] = mis_ssc_p
-            # old_F[-len(ssc_fb)] = mis_ssc_v
-            old_F[-len(pq)+pq_lookup[ssc_tb]] = mis_ssc_v
+    # if ssc_fb is not None and len(ssc_fb) > 0:
+    if np.any(ssc_controllable):
+        # Sbus_ssc = V * conj(Ybus_ssc * V)
+        # ssc_set_p_pu = 0
+        # mis_ssc_p = Sbus_ssc[ssc_tb[ssc_controllable]].real - ssc_set_p_pu  ####  here used ssc_tb refereing to the q bus
+        mis_ssc_v = np.abs(V[ssc_fb]) - ssc_set_vm_pu
+        # mis_facts = np.r_[mis_facts, mis_ssc_p, mis_ssc_v]
+        # old_F[-(len(pq)+len(ssc_fb))] = mis_ssc_p
+        # old_F[-len(ssc_fb)] = mis_ssc_v
+        old_F[-len(pq)+pq_lookup[ssc_tb]] = mis_ssc_v
 
     return mis_facts
 
