@@ -1,3 +1,4 @@
+import pytest
 import copy
 import numpy as np
 import pandapower as pp
@@ -6,6 +7,7 @@ from pandapower.control import plot_characteristic
 from pandapower.protection.protection_devices.fuse import Fuse
 from pandapower.protection.run_protection import calculate_protection_times
 import pandapower.shortcircuit as sc
+from pandapower.test.helper_functions import assert_net_equal
 
 try:
     import matplotlib.pyplot as plt
@@ -30,7 +32,8 @@ def test_protection_function():
     print(protection_result)
     assert protection_result['trip_melt'] == True, 'trip_melt should be True'
     assert net.protection.at[0, "object"].tripped == True, 'Fuse.tripped should be True'
-    assert np.isclose(protection_result['trip_melt_time_s'], 0.145108), 'melt_time_s3 should be close to 0.145108 seconds for fault at bus 3'
+    assert np.isclose(protection_result['trip_melt_time_s'],
+                      0.145108), 'melt_time_s3 should be close to 0.145108 seconds for fault at bus 3'
 
 
 def test_calculate_protection_times():
@@ -46,7 +49,8 @@ def test_calculate_protection_times():
     LoadFuse = Fuse(net=net, rated_i_a=224, fuse_type="Siemens NH-2-224", switch_index=4)
 
     # add fuse characteristics (done manually for now because no function to automate this (yet))
-    HVTrafoFuse.create_characteristic(net, [189, 220, 300, 350, 393, 450, 530, 700, 961], [10, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01])
+    HVTrafoFuse.create_characteristic(net, [189, 220, 300, 350, 393, 450, 530, 700, 961],
+                                      [10, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01])
     LVTrafoFuse.create_characteristic(net, [1200, 2000, 4800, 12000, 26000], [4800, 120, 7, 0.1, 0.004])
     Line0Fuse.create_characteristic(net, [850, 1500, 3050, 7500, 16500], [4800, 120, 7, 0.1, 0.004])
     Line1Fuse.create_characteristic(net, [550, 920, 1900, 5000, 11000], [4800, 120, 7, 0.1, 0.004])
@@ -75,7 +79,6 @@ def test_fuse_plot_protection_characteristic():
     net = fuse_test_net2()
     Fuse1 = Fuse(net=net, rated_i_a=63, fuse_type="Siemens NH-1-160", switch_index=0)
     Fuse1.plot_protection_characteristic(net)
-    plt.show()
 
 
 def test_create_fuse_from_std_type():
@@ -111,7 +114,7 @@ def test_calc_prot_times_with_std_lib():
 def test_calc_prot_times_pp_scenario():
     # test calculate_protection_times() function with power flow scenario
     net = fuse_test_net3()
-    Fuse(net=net, switch_index=4, fuse_type="Siemens NH-1-16") # fuse is underrated
+    Fuse(net=net, switch_index=4, fuse_type="Siemens NH-1-16")  # fuse is underrated
     pp.runpp(net)
     protection_times = calculate_protection_times(net, scenario="pp")
     assert protection_times.trip_melt.at[0] == True, 'trip_melt for switch 4 should be True in pp scenario'
@@ -148,13 +151,13 @@ def test_create_new_std_type():
     # test creating a new fuse std type, adding it to std library, and using it in network
     net = fuse_test_net3()
     new_fuse_data = {'fuse_type': 'New Fuse',
-                'i_rated_a': 15.0,
-                't_avg': 0,
-                't_min': [15, 0.01],
-                't_total': [15, 0.01],
-                'x_avg': 0,
-                'x_min': [20, 2000],
-                'x_total': [50, 5000]}
+                     'i_rated_a': 15.0,
+                     't_avg': 0,
+                     't_min': [15, 0.01],
+                     't_total': [15, 0.01],
+                     'x_avg': 0,
+                     'x_min': [20, 2000],
+                     'x_total': [50, 5000]}
     create_std_type(net, data=new_fuse_data, name='New Fuse', element="fuse")
     Fuse(net=net, switch_index=4, fuse_type='New Fuse', curve_select=1)
     sc.calc_sc(net, bus=4, branch_results=True)
@@ -173,7 +176,7 @@ def test_net3():
     sc.calc_sc(net, bus=4, branch_results=True)
     print("\n\n\n")
     print(net.res_switch_sc)
-    assert not np.isnan(net.res_switch.i_ka.at[4]),  'i_ka for switch 4 should not be NaN '
+    assert not np.isnan(net.res_switch.i_ka.at[4]), 'i_ka for switch 4 should not be NaN '
     assert not np.isnan(net.res_switch_sc.ikss_ka.at[4]), 'ikss_ka for switch 4 should not be NaN '
 
 
@@ -202,6 +205,37 @@ def test_powerflow_simple():
     print(net)
     print(net.switch)
     print(net.res_switch)
+
+#TODO: create test with fuse network, pp.from_json_string(pp.to_json(net)), make sure second net has functional fuse and assert_net_equal
+def test_json_fuse():
+    # test conversion to and from json string, make sure that resulting network still has functional fuse and
+    # assert_net_equal
+
+    net = fuse_test_net3()
+    fuse_list = ["HV 63A", "Siemens NH-2-630", "Siemens NH-2-425", "Siemens NH-2-315", "Siemens NH-2-224"]
+    # create fuses at each switch location
+    for k in range(5):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+    # net2 is copy of net before calc_sc is done
+    net2 = pp.from_json_string(pp.to_json(net))
+    assert_net_equal(net, net2)
+
+    #pp.runpp(net2)
+    sc.calc_sc(net2, bus=3, branch_results=True)
+
+    # net3 is copy of net after calc_sc is run on net
+    sc.calc_sc(net, bus=3, branch_results=True)
+    net3 = pp.from_json_string(pp.to_json(net))
+
+    protection_results2 = calculate_protection_times(net2, scenario="sc")
+    protection_results3 = calculate_protection_times(net3, scenario="sc")
+
+    assert protection_results2.trip_melt.at[3] == True, 'trip_melt Fuse 3 should be True'
+    assert np.isclose(protection_results2.trip_melt_time_s.at[3], 0.145108), \
+        'melt_time_s3 should be close to 0.145108 seconds for fault at bus 3'
+    assert protection_results3.trip_melt.at[3] == True, 'trip_melt Fuse 3 should be True'
+    assert np.isclose(protection_results3.trip_melt_time_s.at[3], 0.145108), \
+        'melt_time_s3 should be close to 0.145108 seconds for fault at bus 3'
 
 
 def fuse_test_net3():
@@ -320,4 +354,10 @@ def modified_simple_net():
     pp.create_shunt(net, bus3, q_mvar=-0.96, p_mw=0, name='Shunt')
 
     return net
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-s"])
+
+
 

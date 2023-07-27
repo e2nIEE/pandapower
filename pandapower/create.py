@@ -538,6 +538,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
                            ("vm_pu", "f8")],
+        "_empty_res_protection": [("switch_id", "f8"),
+                                  ("prot_type", dtype(object)),
+                                  ("trip_melt", "bool"),
+                                  ("act_param", dtype(object)),
+                                   ("act_param_val", "f8"),
+                                   ("trip_melt_time_s", "f8")],
 
         # internal
         "_ppc": None,
@@ -565,7 +571,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     if add_stdtypes:
         add_basic_std_types(net)
     else:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
     for mode in ["pf", "se", "sc", "pf_3ph"]:
         reset_results(net, mode)
     net['user_pf_options'] = dict()
