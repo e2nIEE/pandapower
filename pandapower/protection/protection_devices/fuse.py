@@ -25,11 +25,11 @@ class Fuse(ProtectionDevice):
         if std_type_exists(net, fuse_type, element="fuse"):
             fuse_data = load_std_type(net=net, name=fuse_type, element="fuse")
             self.rated_i_a = fuse_data['i_rated_a']
-            if not np.isnan(fuse_data["t_avg"]).any():
+            if fuse_data["t_avg"] != 0:
                 self.create_characteristic(net, fuse_data["x_avg"], fuse_data["t_avg"])
-            elif not np.isnan(fuse_data["t_min"]).any() and curve_select == 0:
+            elif fuse_data["t_min"] != 0 and curve_select == 0:
                 self.create_characteristic(net, fuse_data["x_min"], fuse_data["t_min"])
-            elif not np.isnan(fuse_data["t_total"]).any() and curve_select == 1:
+            elif fuse_data["t_total"] != 0 and curve_select == 1:
                 self.create_characteristic(net, fuse_data["x_total"], fuse_data["t_total"])
             else:
                 raise ValueError("curve_select must equal 0 or 1")

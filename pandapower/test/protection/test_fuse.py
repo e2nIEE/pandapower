@@ -147,20 +147,20 @@ def test_status_to_net():
 def test_create_new_std_type():
     # test creating a new fuse std type, adding it to std library, and using it in network
     net = fuse_test_net3()
-    nan = np.nan
     new_fuse_data = {'fuse_type': 'New Fuse',
                 'i_rated_a': 15.0,
-                't_avg': nan,
+                't_avg': 0,
                 't_min': [15, 0.01],
                 't_total': [15, 0.01],
-                'x_avg': nan,
+                'x_avg': 0,
                 'x_min': [20, 2000],
-                'x_total': [30, 3000]}
+                'x_total': [50, 5000]}
     create_std_type(net, data=new_fuse_data, name='New Fuse', element="fuse")
     Fuse(net=net, switch_index=4, fuse_type='New Fuse', curve_select=1)
     sc.calc_sc(net, bus=4, branch_results=True)
     protection_results = calculate_protection_times(net, scenario='sc')
     assert protection_results.trip_melt.at[0] == True, 'New Fuse should melt'
+    assert protection_results.trip_melt_time_s.at[0] > 0, 'Melt time should be from x_total curve (greater than 0)'
 
 
 def test_net3():
@@ -170,12 +170,11 @@ def test_net3():
     pp.runpp(net)
     print("\n\n\n")
     print(net.res_switch)
-    net_sc = copy.deepcopy(net)
-    net_sc = sc.calc_sc(net_sc, bus=4, branch_results=True)
+    sc.calc_sc(net, bus=4, branch_results=True)
     print("\n\n\n")
     print(net.res_switch_sc)
     assert not np.isnan(net.res_switch.i_ka.at[4]),  'i_ka for switch 4 should not be NaN '
-    assert not np.isnan(net.res_switch_sc.i_kss.at[4]), 'ikss_ka for switch 4 should not be NaN '
+    assert not np.isnan(net.res_switch_sc.ikss_ka.at[4]), 'ikss_ka for switch 4 should not be NaN '
 
 
 def test_prot_func_tripping():
