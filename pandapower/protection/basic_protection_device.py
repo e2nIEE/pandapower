@@ -12,6 +12,9 @@ logger = pplog.getLogger(__name__)
 
 
 class ProtectionDevice(JSONSerializableClass):
+    """
+    Base Class of protection devices found in protection module
+    """
     def __init__(self, net, index=None, in_service=True, overwrite=False, **kwargs):
         super().__init__()
         # add oneself to net, creating the ['controller'] DataFrame, if necessary

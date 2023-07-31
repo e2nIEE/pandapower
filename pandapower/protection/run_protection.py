@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def calculate_protection_times(net, scenario="sc"):
-    '''
+    """
         Calculates the reaction times of protection devices in a network for short-circuit or operating conditions.
         Calls the protection_function() method of protection device instances in net
 
@@ -13,7 +13,7 @@ def calculate_protection_times(net, scenario="sc"):
                 for power flow. Default is 'sc'
         OUTPUT:
             **df_protection_results** - pandas dataframe containing results
-    '''
+    """
 
     if scenario != "sc" and scenario != "pp":
         raise ValueError("scenario must be either sc or op")
@@ -22,14 +22,15 @@ def calculate_protection_times(net, scenario="sc"):
     protection_results = []
 
     for p in protection_devices:
-        protection_result = p.protection_function(net=net, scenario=scenario )
+        protection_result = p.protection_function(net=net, scenario=scenario)
         protection_results.append(protection_result)
 
     df_protection_results = pd.DataFrame.from_dict(protection_results)
-    print(df_protection_results)
     return df_protection_results
 
-def run_protection(net, fault_bus):
+
+#def run_protection(net, fault_bus):
+    # DO NOT USE
     # similar logic as the control loop
     # simulates cascading faults
     # FINISH IMPLEMENTING ONLY AFTER ALL OTHER METHODS AND FUNCTIONS ARE DONE
@@ -55,4 +56,5 @@ def run_protection(net, fault_bus):
         # if any of the protection devices tripped we re-analyze the grid
         sc.calc_sc(net, bus=fault_bus)
         pt = calculate_protection_times(net)
+
 
