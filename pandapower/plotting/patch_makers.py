@@ -197,16 +197,19 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
 
     for i in node_coords.index:
         node_geo = list(node_coords.loc[i])
-        if "load" in unique_angles[i] and unique_angles[i]["load"] != []:
-            try:
-                angle = (unique_angles[i]["load"][0]) + (all_angles[i] or 0)
-            except IndexError:
-                continue
+        if len(unique_angles) != 0:
+            if "load" in unique_angles[i] and unique_angles[i]["load"] != []:
+                try:
+                    angle = (unique_angles[i]["load"][0]) + (all_angles[i] or 0)
+                except IndexError:
+                    continue
+        else:
+            angle = all_angles[i] or 0
 
-            p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
-            p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
-            polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,fc = "w",ec="k"))
-            lines.append((node_geo, p3))
+        p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+        p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
+        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,fc = "w",ec="k"))
+        lines.append((node_geo, p3))
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
@@ -241,25 +244,28 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
 
     for i in node_coords.index:
-        node_geo = list(node_coords.loc[i])
-        if "gen" in unique_angles[i] and unique_angles[i]["gen"] != []:
-            try:
-                angle = (unique_angles[i]["gen"][0]) + (all_angles[i] or 0)
-            except IndexError:
-                continue
+        if len(unique_angles) != 0:
+            node_geo = list(node_coords.loc[i])
+            if "gen" in unique_angles[i] and unique_angles[i]["gen"] != []:
+                try:
+                    angle = (unique_angles[i]["gen"][0]) + (all_angles[i] or 0)
+                except IndexError:
+                    continue
+        else:
+            angle = all_angles[i] or 0
 
-            p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
-            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
-            polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
-            polys.append(
-                Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
-                    ec=edgecolors[i]))
-            polys.append(
-                Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
-                    ec=edgecolors[i]))
-            lines.append((node_geo, circ_edge))
+        p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
+        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
+        polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
+        polys.append(
+            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
+                ec=edgecolors[i]))
+        polys.append(
+            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
+                ec=edgecolors[i]))
+        lines.append((node_geo, circ_edge))
+
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
-    gen_printed = True
 
 
 def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
@@ -299,60 +305,68 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     Path = mpath.Path
 
     for i in node_coords.index:
-        node_geo = list(node_coords.loc[i])
-        if "WT" in unique_angles[i]["sgen"]:  # WT patch
-            try:
-                angle = unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)
-            except IndexError:
-                continue
+        if len(unique_angles) != 0:
+            node_geo = list(node_coords.loc[i])
+            if "WT" in unique_angles[i]["sgen"]:  # WT patch
+                try:
+                    angle = unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)
+                except IndexError:
+                    continue
+        else:
+            angle = angles[i] or 0
 
-            mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
-            circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
-            circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
-            mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+        mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
+        circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
+        circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
+        mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
 
-            codes, verts = zip(*[
-                (Path.MOVETO, mid_midcirc),
-                (Path.LINETO, circ_topedge,),
-                (Path.LINETO, (circ_topedge + _rotate_dim2(np.array([- blade_coord1, - blade_coord1 ]), angle)),),
-                (Path.LINETO, (mid_midcirc + _rotate_dim2(np.array([- blade_coord2, + blade_coord2]), angle)),),  # Blade1
-                (Path.CLOSEPOLY, mid_midcirc)])
-            polys.append(PathPatch(mpath.Path(verts, codes), fc="k", ec="none",lw=200000000))
-            polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
-            lines.append((node_geo, circ_edge))
+        codes, verts = zip(*[
+            (Path.MOVETO, mid_midcirc),
+            (Path.LINETO, circ_topedge,),
+            (Path.LINETO, (circ_topedge + _rotate_dim2(np.array([- blade_coord1, - blade_coord1 ]), angle)),),
+            (Path.LINETO, (mid_midcirc + _rotate_dim2(np.array([- blade_coord2, + blade_coord2]), angle)),),  # Blade1
+            (Path.CLOSEPOLY, mid_midcirc)])
+        polys.append(PathPatch(mpath.Path(verts, codes), fc="k", ec="none",lw=200000000))
+        polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
+        lines.append((node_geo, circ_edge))
 
 
-            for j in range(3):
-                angle = j * 2 * math.pi / 3
-                rotated_verts = []
-                for vertex in verts:
-                    # Calculate the vector from the center of the hub to the vertex
-                    x_diff = vertex[0] - mid_midcirc[0]
-                    y_diff = vertex[1] - mid_midcirc[1]
+        for j in range(3):
+            angle = j * 2 * math.pi / 3
+            rotated_verts = []
+            for vertex in verts:
+                # Calculate the vector from the center of the hub to the vertex
+                x_diff = vertex[0] - mid_midcirc[0]
+                y_diff = vertex[1] - mid_midcirc[1]
 
-                    # Rotate the vector by the desired angle
-                    rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
-                    rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
+                # Rotate the vector by the desired angle
+                rotated_x = x_diff * math.cos(angle) - y_diff * math.sin(angle)
+                rotated_y = x_diff * math.sin(angle) + y_diff * math.cos(angle)
 
-                    # Calculate the coordinates of the rotated vertex
-                    rotated_vertex = [mid_midcirc[0] + rotated_x, mid_midcirc[1] + rotated_y]
+                # Calculate the coordinates of the rotated vertex
+                rotated_vertex = [mid_midcirc[0] + rotated_x, mid_midcirc[1] + rotated_y]
 
-                    rotated_verts.append(rotated_vertex)
+                rotated_verts.append(rotated_vertex)
 
-                rotated_patch = PathPatch(mpath.Path(rotated_verts, codes), fc="k", ec="none")
+            rotated_patch = PathPatch(mpath.Path(rotated_verts, codes), fc="k", ec="none")
 
-                polys.append(rotated_patch)
+            polys.append(rotated_patch)
 
-            polys.append(Circle(mid_midcirc, hub_size, fc="k", ec=edgecolors[i]))  # Center hub
+        polys.append(Circle(mid_midcirc, hub_size, fc="k", ec=edgecolors[i]))  # Center hub
 
-            center_point = mid_midcirc  # Define the center point of the wind turbine patch
-            rotation_angle = math.pi / 4  # Define the angle of rotation
+        center_point = mid_midcirc  # Define the center point of the wind turbine patch
+        rotation_angle = math.pi / 4  # Define the angle of rotation
 
         if "PV" in unique_angles[i]["sgen"]:   # PV patch
-            try:
-                angle = unique_angles[i]["sgen"]["PV"] + (angles[i] or 0)
-            except IndexError:
-                continue
+            if len(unique_angles) != 0:
+
+                try:
+                    angle = unique_angles[i]["sgen"]["PV"] + (angles[i] or 0)
+                except IndexError:
+                    continue
+            else:
+                angle = angles[i] or 0
+
             mid_rect = node_geo + _rotate_dim2(np.array([0,  2*size]), angle)
             rect_lbottom = [mid_rect[0] - (pv_rect_size/4), mid_rect[1]]
             pv_patch = Rectangle((rect_lbottom), pv_rect_size/2, pv_rect_size, angle=-angle * (180 / np.pi),
@@ -368,11 +382,16 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
             ]
             triangle_patch = Polygon(triangle_points, ec="k", fc="none")
             polys.append(triangle_patch)
+
         if "wye" in unique_angles[i]["sgen"]:  # Generic Patch
-            try:
-                angle = unique_angles[i]["sgen"]["wye"] + (angles[i] or 0)
-            except IndexError:
-                continue
+            if len(unique_angles) != 0:
+
+                try:
+                    angle = unique_angles[i]["sgen"]["wye"] + (angles[i] or 0)
+                except IndexError:
+                    continue
+            else:
+                angle = angles[i] or 0
 
             mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
             circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)

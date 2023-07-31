@@ -961,7 +961,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1., unique_angles=None, infofunc=None, orientation=None, picker=False,
+def create_load_collection(net, loads=None, size=1., unique_angles={}, infofunc=None, orientation=None, picker=False,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
