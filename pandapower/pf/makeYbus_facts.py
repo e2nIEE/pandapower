@@ -57,6 +57,15 @@ def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
     return csr_matrix(Ybus_ssc)
 
 
+def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):
+    Ybus_hvdc = np.zeros(shape=(len(hvdc_fb) * 2, len(hvdc_tb) * 2), dtype=np.float64)
+    Ybus_hvdc[hvdc_fb, hvdc_tb] = -hvdc_y_pu
+    Ybus_hvdc[hvdc_tb, hvdc_fb] = -hvdc_y_pu
+    Ybus_hvdc[np.diag_indices_from(Ybus_hvdc)] = -Ybus_hvdc.sum(axis=1)
+
+    return csr_matrix(Ybus_hvdc)
+
+
 def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end

@@ -556,3 +556,27 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     return J_m
 
+def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, f, t, dc_p, dc_p_lookup):
+    J_m = np.zeros_like(J.toarray())
+
+    P = V_dc * Ybus_hvdc.dot(V_dc)
+
+    offset = J.shape[0] - len(dc_p)
+    num_p = len(dc_p)
+    f_in_p = np.isin(f, dc_p)
+    t_in_p = np.isin(t, dc_p)
+
+    # here we assume that the slack bus is always the 0 bus
+    #J_m[offset + dc_p_lookup[t], offset + dc_p_lookup[t]] = P[t] / V_dc[t]
+    J_m[offset + dc_p_lookup[t], offset + dc_p_lookup[t]] = V_dc[t] * Ybus_hvdc[t, t]
+
+    # J_m[offset+p_lookup[f[f_in_p]], offset+p_lookup[f[f_in_p]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
+    # J_m[offset+p_lookup[f[f_in_p]], offset+p_lookup[t[f_in_p]]] = S_Fik.real / Vmt
+    # J_m[offset+p_lookup[t[f_in_p]], offset+p_lookup[t[f_in_p]]] = S_Fki.real / Vmf
+    # J_m[offset+p_lookup[t[f_in_p]], offset+p_lookup[t[f_in_p]]] = (2 * S_Fkk.real + S_Fki.real) / Vmt
+    #
+
+    J_m = csr_matrix(J_m)
+
+    return J_m
+
