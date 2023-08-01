@@ -203,6 +203,8 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
                     angle = (unique_angles[i]["load"][0]) + (all_angles[i] or 0)
                 except IndexError:
                     continue
+            else:
+                continue
         else:
             angle = all_angles[i] or 0
 
@@ -251,6 +253,8 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
                     angle = (unique_angles[i]["gen"][0]) + (all_angles[i] or 0)
                 except IndexError:
                     continue
+            else:
+                continue
         else:
             angle = all_angles[i] or 0
 
@@ -312,6 +316,8 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
                     angle = unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)
                 except IndexError:
                     continue
+            else:
+                continue
         else:
             angle = angles[i] or 0
 
