@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check
+    create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
 from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
 from pandapower.topology import create_nxgraph, connected_components
@@ -109,8 +109,6 @@ def _draw_colored_bus_groups_plotly(
 
     **bus_groups** - list of tuples consisting of set of bus indices, color, legendgroup
     """
-    version_check()
-
     # create geocoord if none are available
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])

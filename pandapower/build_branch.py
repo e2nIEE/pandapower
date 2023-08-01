@@ -123,7 +123,8 @@ def _calc_trafo3w_parameter(net, ppc):
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
         branch[f:t, RATE_A] = max_load / 100. * sn_mva
     else:
-        branch[f:t, RATE_A] = np.nan
+        # PowerModels considers "0" as "no limit" - we set the limit here to 0 for consistency with line and trafo
+        branch[f:t, RATE_A] = 0
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
@@ -1008,7 +1009,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
-    if net._options["mode"] == "opf" and "max_loading_percent" in net.trafo3w:
+    if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
