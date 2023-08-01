@@ -87,7 +87,7 @@ def connected_components(mg, notravbuses=set()):
 
 
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
-                         notravbuses=None, weight='weight'):
+                         notravbuses=None, weight='weight', g=None):
     """
         Calculates the shortest distance between a source bus and all buses connected to it.
 
@@ -110,6 +110,8 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
         **weight** (string, None) – Edge data key corresponding to the edge weight.
 
+        **g** (nx.MultiGraph, None) – MultiGraph of the network. If None, the graph will be created.
+
      OUTPUT:
         **dist** - Returns a pandas series with containing all distances to the source bus
                    in km. If weight=None dist is the topological distance (int).
@@ -120,8 +122,9 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
          dist = top.calc_distance_to_bus(net, 5)
 
     """
-    g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses,
-                       notravbuses=notravbuses)
+    if g is None:
+        g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses,
+                           notravbuses=notravbuses)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
