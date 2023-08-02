@@ -285,10 +285,6 @@ def test_fuse_fault_oc_scenario():
     net.protection.object.at[protection_results.trip_melt_time_s.idxmin()].status_to_net(net)
     assert net.switch.closed.at[3] == False, 'Fuse 3 should melt, switch 3 should be open'
 
-    # manually open switch from other side to clear fault
-    net.protection.object.at[4].tripped = True
-    net.protection.object.at[4].status_to_net(net)
-
     # after fault is cleared, close the CB at bus 6 so that Load 0 continues to get power
     net.switch.closed.at[9] = True
 
