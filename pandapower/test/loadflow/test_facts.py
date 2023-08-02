@@ -818,7 +818,10 @@ def test_hvdc():
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, 10)
+    pp.create_load(net, 2, 10)
+
+    pp.create_ssc(net, 1, 0, 5)
+    pp.create_ssc(net, 2, 0, 5)
 
     pp.runpp(net, lightsim2grid=False)
 

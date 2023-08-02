@@ -125,6 +125,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     any_ssc = num_ssc > 0
     any_ssc_controllable = num_ssc_controllable > 0
 
+    # todo: implement element instead of hard-coding the DC line
     ## hvdc
     hvdc_fb = np.array([0], dtype=np.int64)
     hvdc_tb = np.array([1], dtype=np.int64)
@@ -133,7 +134,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     hvdc_y_pu = 1 / (np.array([5], dtype=np.float64) / baseR)  # R = 5 Ohm
     num_hvdc = len(hvdc_fb)
     any_hvdc = num_hvdc > 0
-    P_dc = np.array([0, 12 / baseMVA], dtype=np.float64)
+    P_dc = np.array([0, -12 / baseMVA], dtype=np.float64)
 
     num_facts_controllable = num_svc_controllable + num_tcsc_controllable + num_hvdc # + 2 * num_ssc_controllable
     any_facts_controllable = num_facts_controllable > 0
@@ -219,6 +220,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     nref = len(ref)
     npv = len(pv)
     npq = len(pq)
+    # todo: tidy up the indices below
     j0 = 0
     j1 = nref if dist_slack else 0
     j2 = j1 + npv  # j1:j2 - V angle of pv buses
@@ -228,9 +230,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     j6 = j4 + npq  # j5:j6 - V mag of pq buses
     j6a = j6 + num_svc_controllable  # svc
     j6b = j6a + num_tcsc_controllable  # tcsc
-    j6c = j6b + num_ssc_controllable # ssc Vq angle
+    j6c = j6b + 0 # num_ssc_controllable # ssc Vq angle
     j7 = j6c
-    j6d = j6c + num_ssc_controllable # ssc Vq mag
+    j6d = j6c + 0 # num_ssc_controllable # ssc Vq mag
     j6e = j6d + num_hvdc  # V of the p-buses of the DC grid
     j8 = j6e
 
@@ -242,8 +244,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if any_facts_controllable or any_ssc_controllable:
         mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                        tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb[ssc_controllable],
-                                       ssc_tb[ssc_controllable], ssc_controllable, ssc_set_vm_pu, F, pq_lookup, V_dc,
-                                       Ybus_hvdc, P_dc, dc_p)
+                                       ssc_tb[ssc_controllable], Ybus_ssc, ssc_controllable, ssc_set_vm_pu, F,
+                                       pq_lookup, V_dc, Ybus_hvdc, P_dc, dc_p)
         F = r_[F, mis_facts]
 
     T_base = 100  # T in p.u. for better convergence
@@ -401,8 +403,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if any_facts_controllable or any_ssc_controllable:
             mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                            tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc,
-                                           ssc_fb[ssc_controllable], ssc_tb[ssc_controllable], ssc_controllable,
-                                           ssc_set_vm_pu, F, pq_lookup, V_dc, Ybus_hvdc, P_dc, dc_p)
+                                           ssc_fb[ssc_controllable], ssc_tb[ssc_controllable], Ybus_ssc,
+                                           ssc_controllable, ssc_set_vm_pu, F, pq_lookup, V_dc, Ybus_hvdc, P_dc, dc_p)
             F = r_[F, mis_facts]
 
         if tdpf:
@@ -444,7 +446,19 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if any_ssc:
         Yf_ssc, Yt_ssc = makeYft_tcsc(Ybus_ssc, ssc_fb, ssc_tb)
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
+        s_ssc_t = conj(Yt_ssc.dot(V)) * V[ssc_tb] * baseMVA
         ssc[ssc_branches, SSC_Q] = s_ssc_f.imag
+        # todo: remove print
+        print("SSC P from:", s_ssc_f.real, "SSC Q from:", s_ssc_f.imag)
+        print("SSC P to:", s_ssc_t.real, "SSC Q to:", s_ssc_t.imag)
+
+    # todo: remove this
+    # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+    # Sf =  conj(Yf.dot(V)) * V[[0, 0]] * baseMVA
+    # St =  conj(Yt.dot(V)) * V[[1, 2]] * baseMVA
+    # print("P from:", Sf.real)
+    # print("P to:", St.real)
+    # print("Sbus:", Sbus.real)
 
     # because we now have updates of the Ybus matrices due to TDPF, SVC, TCSC, SSC,
     # we are interested in storing them for later use:
@@ -473,7 +487,7 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
 
 
 def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None,
-                       Ybus_tcsc=None, ssc_fb=None, ssc_tb=None,
+                       Ybus_tcsc=None, ssc_fb=None, ssc_tb=None, Ybus_ssc=None,
                        ssc_controllable=None, ssc_set_vm_pu=None, old_F=None, pq_lookup=None,
                        V_dc=None, Ybus_hvdc=None, P_dc=None, dc_p=None):
     mis_facts = np.array([], dtype=np.float64)
@@ -489,9 +503,6 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
     # if ssc_fb is not None and len(ssc_fb) > 0:
     if np.any(ssc_controllable):
-        # Sbus_ssc = V * conj(Ybus_ssc * V)
-        # ssc_set_p_pu = 0
-        # mis_ssc_p = Sbus_ssc[ssc_tb[ssc_controllable]].real - ssc_set_p_pu  ####  here used ssc_tb refereing to the q bus
         mis_ssc_v = np.abs(V[ssc_fb]) - ssc_set_vm_pu
         # mis_facts = np.r_[mis_facts, mis_ssc_p, mis_ssc_v]
         # old_F[-(len(pq)+len(ssc_fb))] = mis_ssc_p
@@ -499,9 +510,20 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         old_F[-len(pq)+pq_lookup[ssc_tb]] = mis_ssc_v
 
     if len(dc_p) > 0:
-        mis_hvdc = V_dc * Ybus_hvdc.dot(V_dc) - P_dc
+        Pbus_hvdc = V_dc * Ybus_hvdc.dot(V_dc)
+        mis_hvdc = Pbus_hvdc - P_dc
         mis_facts = np.r_[mis_facts, mis_hvdc[dc_p]]
-        print("F:", mis_hvdc, "V:", V_dc, "P:", V_dc * Ybus_hvdc.dot(V_dc))
+        # todo: remove print
+        print("F:", mis_hvdc, "V:", V_dc, "P:", Pbus_hvdc)
+
+        # todo implement VSC converter separately
+        # coupling of P with SSC happens here:
+        Sbus_ssc = V * conj(Ybus_ssc * V)
+        ssc_set_p_pu = np.array([-Pbus_hvdc[0], -P_dc[1]], dtype=np.float64)  # power sign convention issue
+        ####  here used ssc_tb refereing to the q bus
+        mis_ssc_p = Sbus_ssc[ssc_tb[ssc_controllable]].real - ssc_set_p_pu
+        old_F[-len(pq) * 2 + pq_lookup[ssc_tb]] = mis_ssc_p
+
 
     return mis_facts
 
