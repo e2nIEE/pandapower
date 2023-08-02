@@ -58,7 +58,8 @@ def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
 
 
 def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):
-    Ybus_hvdc = np.zeros(shape=(len(hvdc_fb) * 2, len(hvdc_tb) * 2), dtype=np.float64)
+    num_hvdc = np.max(np.r_[hvdc_fb, hvdc_tb]) + 1
+    Ybus_hvdc = np.zeros(shape=(num_hvdc, num_hvdc), dtype=np.float64)
     Ybus_hvdc[hvdc_fb, hvdc_tb] = -hvdc_y_pu
     Ybus_hvdc[hvdc_tb, hvdc_fb] = -hvdc_y_pu
     Ybus_hvdc[np.diag_indices_from(Ybus_hvdc)] = -Ybus_hvdc.sum(axis=1)

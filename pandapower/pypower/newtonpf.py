@@ -128,8 +128,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     ## hvdc
     hvdc_fb = np.array([0], dtype=np.int64)
     hvdc_tb = np.array([1], dtype=np.int64)
+
     baseR = 110 ** 2 / baseMVA
-    hvdc_y_pu = 1 / (5 / baseR)  # R = 5 Ohm
+    hvdc_y_pu = 1 / (np.array([5], dtype=np.float64) / baseR)  # R = 5 Ohm
     num_hvdc = len(hvdc_fb)
     any_hvdc = num_hvdc > 0
     P_dc = np.array([0, 12 / baseMVA], dtype=np.float64)
@@ -152,7 +153,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # initialize
     i = 0
     V = V0
-    V_dc = np.ones(len(hvdc_fb) * 2, dtype=np.float64)  # initial voltage vector for the DC line
+    V_dc = np.ones(max(r_[hvdc_fb, hvdc_tb]) + 1, dtype=np.float64)  # initial voltage vector for the DC line
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
