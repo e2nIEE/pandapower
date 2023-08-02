@@ -109,6 +109,7 @@ def test_calc_prot_times_with_std_lib():
         sc.calc_sc(net_sc, bus=row_index, branch_results=True)
         print("\nnet_sc has fault at bus " + str(row_index) + '\n')
         df_protection_results = calculate_protection_times(net_sc)
+        print(df_protection_results)
 
 
 def test_calc_prot_times_pp_scenario():
@@ -263,6 +264,44 @@ def fuse_test_net3():
     return net
 
 
+def test_fuse_fault_oc_scenario():
+    net = fuse_test_net4()
+    print(net.switch)
+    assert net.switch.type.at[0] == "fuse"
+
+    # assign fuses to switches
+    fuse_list = ['HV 25A', 'Siemens NH-2-400', 'Siemens NH-2-250', 'Siemens NH-2-224', 'Siemens NH-2-200',
+                 'Siemens NH-1-160', 'Siemens NH-1-125', 'Siemens NH-1-100', 'Siemens NH-1-80']
+    for k in range(9):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+
+    # perform short circuit calculation at bus 2
+    sc.calc_sc(net, bus=3, branch_results=True)
+
+    # calculate protection times
+    protection_results = calculate_protection_times(net, scenario='sc')
+
+    # for fuse with the fastest melting time, melt the corresponding switch
+    net.protection.object.at[protection_results.trip_melt_time_s.idxmin()].status_to_net(net)
+    assert net.switch.closed.at[3] == False, 'Fuse 3 should melt, switch 3 should be open'
+
+    # manually open switch from other side to clear fault
+    net.protection.object.at[4].tripped = True
+    net.protection.object.at[4].status_to_net(net)
+
+    # after fault is cleared, close the CB at bus 6 so that Load 0 continues to get power
+    net.switch.closed.at[9] = True
+
+    # perform power flow calculation
+    pp.runpp(net)
+
+    # check if any fuses melt after fault has been cleared
+    overload_results = calculate_protection_times(net, scenario="pp")
+    net.protection.object.at[overload_results.trip_melt_time_s.idxmin()].status_to_net(net)
+    assert net.switch.closed.at[6] == False, 'Fuse 6 should melt, switch 6 should open'
+
+
+
 def fuse_test_net2():
     # network with transformer to test HV fuse curve_select
     # load switch (index 4) is configured as bus-bus
@@ -355,6 +394,42 @@ def modified_simple_net():
 
     return net
 
+
+def fuse_test_net4():
+    # test network to demonstrate overcurrent protection in tutorial
+
+    net = pp.create_empty_network()
+
+    # create buses
+    pp.create_buses(net, nr_buses=9, vn_kv=[20, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
+                    index=[0, 1, 2, 3, 4, 5, 6, 7, 8], name=None, type="n",
+                    geodata=[(0, 0), (0, -2), (-2, -4), (-2, -6), (-2, -8), (2, -4), (2, -6), (2, -8), (2, -10)])
+
+    # create external grid
+    pp.create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=500, s_sc_min_mva=80, rx_max=0.1, rx_min=0.1)
+
+    pp.create_lines(net, from_buses=[1, 2, 3, 1, 5, 6, 7, 6], to_buses=[2, 3, 4, 5, 6, 7, 8, 4],
+                    length_km=[0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1], std_type="94-AL1/15-ST1A 0.4")
+
+    net.line["endtemp_degree"] = 250
+
+    # create transformer
+    pp.create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.25 MVA 20/0.4 kV")
+
+    # Define trafo fuses
+    pp.create_switches(net, buses=[0, 1], elements=[0, 0], et='t', type="fuse")
+
+    # Define line fuses
+    pp.create_switches(net, buses=[1, 2, 3, 1, 5, 6, 7], elements=[0, 1, 2, 3, 4, 5, 6], et='l', type="fuse")
+
+    # Define circuit breaker switch
+    pp.create_switch(net, bus=6, element=7, et='l', type="CB", closed=False)
+
+    # define load
+    pp.create_loads(net, buses=[3, 4], p_mw=[0.1, 0.05], q_mvar=0, const_z_percent=0, const_i_percent=0, name=None,
+                    index=[0, 1])
+
+    return net
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
