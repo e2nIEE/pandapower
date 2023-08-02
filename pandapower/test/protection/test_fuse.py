@@ -294,6 +294,8 @@ def test_fuse_fault_oc_scenario():
     # check if any fuses melt after fault has been cleared
     overload_results = calculate_protection_times(net, scenario="pp")
     net.protection.object.at[overload_results.trip_melt_time_s.idxmin()].status_to_net(net)
+
+    pp.runpp(net)
     assert net.switch.closed.at[6] == False, 'Fuse 6 should melt, switch 6 should open'
 
 

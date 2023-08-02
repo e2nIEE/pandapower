@@ -25,7 +25,7 @@ class Fuse(ProtectionDevice):
     OPTIONAL:
 
         **fuse_type** (str, "none") - string of the fuse type to be used. If it is in the standard library, it will
-        automatically create generate the characteristic curve. Otherwise, it has no effect.
+        automatically generate the characteristic curve. Otherwise, it has no effect.
         Example: fuse_type = "Siemens NH-1-100"
 
         **rated_i_a** (float, 0) - the rated current of the fuse in amps
