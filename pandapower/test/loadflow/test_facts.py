@@ -814,8 +814,9 @@ def test_2_sscs():
 
 def test_hvdc():
     net = pp.create_empty_network()
-    pp.create_buses(net, 2, 110)
+    pp.create_buses(net, 3, 110)
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, 10)
 
