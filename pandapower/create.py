@@ -3933,14 +3933,14 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
 
         **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
 
-        **vm_internal_pu (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
+        **vm_internal_pu** (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
                                     if the amplitude of the VSC output voltage is increased above that of the ac system
                                     voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
                                     system, decreasing the output voltage below that of the ac system leads to the VSC
                                     consuming reactive power acting as reactor.(source PhD Panosyan)
 
 
-        **va_internal_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
+        **va_internal_degree** (float) - The voltage angle of the voltage source converter VSC at the ssc component.
 
     OPTIONAL:
         **name** (list of strs, None) - element name
